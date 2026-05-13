@@ -1,0 +1,57 @@
+{
+  "name": "HealthRecord",
+  "type": "object",
+  "properties": {
+    "tortoise_id": {
+      "type": "string",
+      "description": "ID tortoise"
+    },
+    "tortoise_name": {
+      "type": "string",
+      "description": "Nama tortoise"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pemeriksaan"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "checkup",
+        "sakit",
+        "obat",
+        "vaksin",
+        "timbang",
+        "lainnya"
+      ],
+      "default": "checkup",
+      "description": "Jenis catatan"
+    },
+    "weight_grams": {
+      "type": "number",
+      "description": "Berat saat pemeriksaan (gram)"
+    },
+    "shell_length_cm": {
+      "type": "number",
+      "description": "Panjang cangkang (cm)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi kondisi/tindakan"
+    },
+    "treatment": {
+      "type": "string",
+      "description": "Penanganan/obat yang diberikan"
+    },
+    "vet_name": {
+      "type": "string",
+      "description": "Nama dokter hewan"
+    }
+  },
+  "required": [
+    "tortoise_name",
+    "date",
+    "type"
+  ]
+}

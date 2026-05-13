@@ -1,0 +1,65 @@
+{
+  "name": "Sale",
+  "type": "object",
+  "properties": {
+    "tortoise_id": {
+      "type": "string",
+      "description": "ID tortoise yang dijual"
+    },
+    "tortoise_name": {
+      "type": "string",
+      "description": "Nama/kode tortoise"
+    },
+    "buyer_name": {
+      "type": "string",
+      "description": "Nama pembeli"
+    },
+    "buyer_phone": {
+      "type": "string",
+      "description": "Nomor telepon pembeli"
+    },
+    "buyer_address": {
+      "type": "string",
+      "description": "Alamat pembeli"
+    },
+    "sale_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal penjualan"
+    },
+    "price": {
+      "type": "number",
+      "description": "Harga jual (Rp)"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "lunas",
+        "dp",
+        "belum_bayar"
+      ],
+      "default": "lunas",
+      "description": "Status pembayaran"
+    },
+    "shipping_method": {
+      "type": "string",
+      "enum": [
+        "ambil_sendiri",
+        "kirim_kurir",
+        "cargo"
+      ],
+      "default": "ambil_sendiri",
+      "description": "Metode pengiriman"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "tortoise_name",
+    "buyer_name",
+    "price",
+    "sale_date"
+  ]
+}

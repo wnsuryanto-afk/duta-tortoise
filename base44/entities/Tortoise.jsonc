@@ -1,0 +1,71 @@
+{
+  "name": "Tortoise",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama tortoise"
+    },
+    "code": {
+      "type": "string",
+      "description": "Kode identifikasi unik"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "jantan",
+        "betina",
+        "belum_diketahui"
+      ],
+      "default": "belum_diketahui",
+      "description": "Jenis kelamin"
+    },
+    "birth_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal lahir / menetas"
+    },
+    "weight_grams": {
+      "type": "number",
+      "description": "Berat dalam gram"
+    },
+    "shell_length_cm": {
+      "type": "number",
+      "description": "Panjang cangkang dalam cm"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "aktif",
+        "terjual",
+        "mati",
+        "breeding"
+      ],
+      "default": "aktif",
+      "description": "Status tortoise"
+    },
+    "enclosure": {
+      "type": "string",
+      "description": "Nama/nomor kandang"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL foto tortoise"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan"
+    },
+    "parent_male": {
+      "type": "string",
+      "description": "ID induk jantan"
+    },
+    "parent_female": {
+      "type": "string",
+      "description": "ID induk betina"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

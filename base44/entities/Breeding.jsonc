@@ -1,0 +1,73 @@
+{
+  "name": "Breeding",
+  "type": "object",
+  "properties": {
+    "male_id": {
+      "type": "string",
+      "description": "ID tortoise jantan"
+    },
+    "female_id": {
+      "type": "string",
+      "description": "ID tortoise betina"
+    },
+    "male_name": {
+      "type": "string",
+      "description": "Nama tortoise jantan"
+    },
+    "female_name": {
+      "type": "string",
+      "description": "Nama tortoise betina"
+    },
+    "mating_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kawin"
+    },
+    "egg_laying_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal bertelur"
+    },
+    "egg_count": {
+      "type": "number",
+      "description": "Jumlah telur"
+    },
+    "fertile_count": {
+      "type": "number",
+      "description": "Jumlah telur fertil"
+    },
+    "hatch_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal menetas"
+    },
+    "hatched_count": {
+      "type": "number",
+      "description": "Jumlah yang menetas"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "kawin",
+        "bertelur",
+        "inkubasi",
+        "menetas",
+        "gagal"
+      ],
+      "default": "kawin",
+      "description": "Status breeding"
+    },
+    "incubation_temp": {
+      "type": "number",
+      "description": "Suhu inkubasi (\u00b0C)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "male_name",
+    "female_name"
+  ]
+}
