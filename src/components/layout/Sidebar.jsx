@@ -1,20 +1,27 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { canAccess, ROLE_LABELS, ROLE_COLORS } from "@/lib/permissions";
+import { Badge } from "@/components/ui/badge";
 
-const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/tortoise", label: "Tortoise", icon: Shell },
-  { path: "/breeding", label: "Pembiakan", icon: Baby },
-  { path: "/health", label: "Kesehatan", icon: Heart },
-  { path: "/sales", label: "Penjualan", icon: DollarSign },
+const ALL_NAV_ITEMS = [
+  { path: "/",         section: "dashboard", label: "Dashboard",  icon: LayoutDashboard },
+  { path: "/tortoise", section: "tortoise",  label: "Tortoise",   icon: Shell },
+  { path: "/breeding", section: "breeding",  label: "Pembiakan",  icon: Baby },
+  { path: "/health",   section: "health",    label: "Kesehatan",  icon: Heart },
+  { path: "/sales",    section: "sales",     label: "Penjualan",  icon: DollarSign },
+  { path: "/users",    section: "users",     label: "Users",      icon: Users },
 ];
 
 export default function Sidebar() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { user, role } = useCurrentUser();
+
+  const navItems = ALL_NAV_ITEMS.filter((item) => canAccess(role, item.section));
 
   return (
     <>
@@ -39,6 +46,7 @@ export default function Sidebar() {
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
+        {/* Logo */}
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-sidebar-primary/20 flex items-center justify-center">
@@ -54,7 +62,8 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-2 space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -76,7 +85,25 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border">
+        {/* User info + logout */}
+        <div className="p-4 border-t border-sidebar-border space-y-3">
+          {user && (
+            <div className="px-2 py-2 rounded-xl bg-sidebar-accent">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-bold text-sidebar-primary">
+                    {(user.full_name || user.email || "?")[0].toUpperCase()}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium truncate">{user.full_name || user.email}</p>
+                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium mt-0.5 inline-block", ROLE_COLORS[role])}>
+                    {ROLE_LABELS[role] || role}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
           <button
             onClick={() => base44.auth.logout()}
             className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all w-full"

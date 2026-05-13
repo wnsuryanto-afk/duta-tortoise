@@ -8,6 +8,8 @@ import { Plus, Pencil, Trash2, Heart } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import HealthForm from "@/components/health/HealthForm";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { getPerms } from "@/lib/permissions";
 
 const typeColors = {
   checkup: "bg-primary/10 text-primary",
@@ -25,6 +27,8 @@ const typeLabels = {
 
 export default function HealthList() {
   const queryClient = useQueryClient();
+  const { role } = useCurrentUser();
+  const perms = getPerms(role, "health");
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
 
@@ -47,10 +51,12 @@ export default function HealthList() {
           <h1 className="text-3xl font-heading font-bold">Kesehatan</h1>
           <p className="text-muted-foreground mt-1">Catatan kesehatan & perawatan</p>
         </div>
-        <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Catatan
-        </Button>
+        {perms.canCreate && (
+          <Button onClick={() => { setEditData(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Catatan
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -86,14 +92,20 @@ export default function HealthList() {
                     {r.treatment && <p className="text-xs mt-1 text-primary/80">💊 {r.treatment}</p>}
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(r); setShowForm(true); }}>
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(r)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
+                {(perms.canEdit || perms.canDelete) && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    {perms.canEdit && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(r); setShowForm(true); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {perms.canDelete && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(r)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
           ))}

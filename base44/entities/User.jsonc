@@ -1,0 +1,17 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "admin",
+        "manajer",
+        "keeper"
+      ],
+      "default": "keeper",
+      "description": "Peran pengguna dalam peternakan"
+    }
+  }
+}

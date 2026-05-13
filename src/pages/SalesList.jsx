@@ -8,6 +8,9 @@ import { Plus, Pencil, Trash2, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import SaleForm from "@/components/sales/SaleForm";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { canAccess, getPerms } from "@/lib/permissions";
+import AccessDenied from "@/components/common/AccessDenied";
 
 const paymentColors = {
   lunas: "bg-primary/10 text-primary",
@@ -20,6 +23,8 @@ const shippingLabels = { ambil_sendiri: "Ambil Sendiri", kirim_kurir: "Kurir", c
 
 export default function SalesList() {
   const queryClient = useQueryClient();
+  const { role } = useCurrentUser();
+  const perms = getPerms(role, "sales");
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
 
@@ -27,6 +32,8 @@ export default function SalesList() {
     queryKey: ["sales"],
     queryFn: () => base44.entities.Sale.list("-sale_date", 200),
   });
+
+  if (!canAccess(role, "sales")) return <AccessDenied />;
 
   const totalRevenue = sales.reduce((sum, s) => sum + (s.price || 0), 0);
 
@@ -46,10 +53,12 @@ export default function SalesList() {
             Total: Rp {totalRevenue.toLocaleString("id-ID")} dari {sales.length} transaksi
           </p>
         </div>
-        <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Penjualan
-        </Button>
+        {perms.canCreate && (
+          <Button onClick={() => { setEditData(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Penjualan
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -90,14 +99,20 @@ export default function SalesList() {
                     Rp {s.price?.toLocaleString("id-ID")}
                   </p>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(s); setShowForm(true); }}>
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(s)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
+                {(perms.canEdit || perms.canDelete) && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    {perms.canEdit && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(s); setShowForm(true); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {perms.canDelete && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(s)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
           ))}

@@ -8,6 +8,9 @@ import { Plus, Pencil, Trash2, Egg } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { canAccess, getPerms } from "@/lib/permissions";
+import AccessDenied from "@/components/common/AccessDenied";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -19,6 +22,8 @@ const statusColors = {
 
 export default function BreedingList() {
   const queryClient = useQueryClient();
+  const { role } = useCurrentUser();
+  const perms = getPerms(role, "breeding");
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
 
@@ -26,6 +31,8 @@ export default function BreedingList() {
     queryKey: ["breedings"],
     queryFn: () => base44.entities.Breeding.list("-created_date", 200),
   });
+
+  if (!canAccess(role, "breeding")) return <AccessDenied />;
 
   const handleDelete = async (breeding) => {
     if (confirm("Hapus data pembiakan ini?")) {
@@ -41,10 +48,12 @@ export default function BreedingList() {
           <h1 className="text-3xl font-heading font-bold">Pembiakan</h1>
           <p className="text-muted-foreground mt-1">Kelola data breeding tortoise</p>
         </div>
-        <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Pembiakan
-        </Button>
+        {perms.canCreate && (
+          <Button onClick={() => { setEditData(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Pembiakan
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -67,14 +76,20 @@ export default function BreedingList() {
                     {b.status}
                   </Badge>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(b); setShowForm(true); }}>
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(b)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
+                {(perms.canEdit || perms.canDelete) && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {perms.canEdit && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(b); setShowForm(true); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {perms.canDelete && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(b)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-xs">
@@ -121,7 +136,7 @@ export default function BreedingList() {
         </div>
       )}
 
-      {showForm && (
+      {showForm && perms.canCreate && (
         <BreedingForm open={showForm} onClose={() => setShowForm(false)} editData={editData} />
       )}
     </div>

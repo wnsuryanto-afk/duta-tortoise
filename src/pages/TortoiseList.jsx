@@ -7,9 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search } from "lucide-react";
 import TortoiseCard from "@/components/tortoise/TortoiseCard";
 import TortoiseForm from "@/components/tortoise/TortoiseForm";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { getPerms } from "@/lib/permissions";
 
 export default function TortoiseList() {
   const queryClient = useQueryClient();
+  const { role } = useCurrentUser();
+  const perms = getPerms(role, "tortoise");
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [search, setSearch] = useState("");
@@ -45,10 +49,12 @@ export default function TortoiseList() {
           <h1 className="text-3xl font-heading font-bold">Tortoise</h1>
           <p className="text-muted-foreground mt-1">{filtered.length} tortoise ditemukan</p>
         </div>
-        <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Tortoise
-        </Button>
+        {perms.canCreate && (
+          <Button onClick={() => { setEditData(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Tortoise
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -82,7 +88,7 @@ export default function TortoiseList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((t) => (
-            <TortoiseCard key={t.id} tortoise={t} onEdit={handleEdit} onDelete={handleDelete} />
+            <TortoiseCard key={t.id} tortoise={t} onEdit={perms.canEdit ? handleEdit : null} onDelete={perms.canDelete ? handleDelete : null} />
           ))}
         </div>
       )}

@@ -19,6 +19,7 @@ const genderLabels = {
 };
 
 export default function TortoiseCard({ tortoise, onEdit, onDelete }) {
+  const showActions = onEdit || onDelete;
   return (
     <Card className="p-4 hover:shadow-md transition-shadow duration-200 group">
       <div className="flex items-start gap-4">
@@ -47,14 +48,20 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete }) {
             {tortoise.birth_date && <span>{format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: id })}</span>}
           </div>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(tortoise)}>
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(tortoise)}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+        {showActions && (
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onEdit && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(tortoise)}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(tortoise)}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
