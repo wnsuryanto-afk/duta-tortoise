@@ -1,0 +1,81 @@
+{
+  "name": "DailyChecklist",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal checklist"
+    },
+    "employee_id": {
+      "type": "string",
+      "description": "ID karyawan"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "completed_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "task_title": {
+            "type": "string"
+          },
+          "points": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Daftar task yang diselesaikan"
+    },
+    "total_points_claimed": {
+      "type": "number",
+      "default": 0,
+      "description": "Total poin yang diklaim"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "approved",
+        "rejected"
+      ],
+      "default": "submitted",
+      "description": "Status checklist"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Nama admin yang approve"
+    },
+    "approved_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Poin yang disetujui admin"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Alasan ditolak"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan"
+    }
+  },
+  "required": [
+    "date",
+    "employee_name",
+    "employee_email"
+  ]
+}

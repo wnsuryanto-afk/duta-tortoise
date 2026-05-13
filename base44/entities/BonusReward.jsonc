@@ -1,0 +1,56 @@
+{
+  "name": "BonusReward",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "ID karyawan"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "period": {
+      "type": "string",
+      "description": "Periode bonus (misal: 2026-05)"
+    },
+    "total_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Total poin periode ini"
+    },
+    "bonus_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Nominal bonus (Rp)"
+    },
+    "reward_description": {
+      "type": "string",
+      "description": "Deskripsi hadiah/bonus"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Status pembayaran bonus"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "period",
+    "total_points"
+  ]
+}

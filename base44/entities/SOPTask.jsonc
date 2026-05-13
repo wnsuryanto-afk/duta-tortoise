@@ -1,0 +1,51 @@
+{
+  "name": "SOPTask",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Nama task SOP"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi task"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "pakan",
+        "kebersihan",
+        "pemeriksaan",
+        "breeding",
+        "administrasi",
+        "lainnya"
+      ],
+      "default": "lainnya",
+      "description": "Kategori task"
+    },
+    "points": {
+      "type": "number",
+      "default": 10,
+      "description": "Poin per task selesai"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": [
+        "harian",
+        "mingguan",
+        "bulanan"
+      ],
+      "default": "harian",
+      "description": "Frekuensi task"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Task aktif atau tidak"
+    }
+  },
+  "required": [
+    "title",
+    "points"
+  ]
+}

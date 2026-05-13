@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const ALL_NAV_ITEMS = [
   { path: "/breeding", section: "breeding",  label: "Pembiakan",  icon: Baby },
   { path: "/health",   section: "health",    label: "Kesehatan",  icon: Heart },
   { path: "/sales",    section: "sales",     label: "Penjualan",  icon: DollarSign },
+  { path: "/sop",      section: "sop",       label: "SOP & KPI",  icon: ClipboardList },
   { path: "/users",    section: "users",     label: "Users",      icon: Users },
 ];
 

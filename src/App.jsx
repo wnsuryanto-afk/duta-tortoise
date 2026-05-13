@@ -13,6 +13,7 @@ import BreedingList from '@/pages/BreedingList';
 import HealthList from '@/pages/HealthList';
 import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
+import SOPPage from '@/pages/SOPPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
         <Route path="/health" element={<HealthList />} />
         <Route path="/sales" element={<SalesList />} />
         <Route path="/users" element={<UserManagement />} />
+        <Route path="/sop" element={<SOPPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
