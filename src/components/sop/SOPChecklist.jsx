@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, Clock, XCircle, Star, Send } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import PhotoUploadWithWatermark from "./PhotoUploadWithWatermark";
 
 const categoryColors = {
   pakan: "bg-green-100 text-green-700",
@@ -26,6 +27,7 @@ export default function SOPChecklist() {
   const today = format(new Date(), "yyyy-MM-dd");
   const [checked, setChecked] = useState({});
   const [taskNotes, setTaskNotes] = useState({});
+  const [taskPhotos, setTaskPhotos] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [generalNotes, setGeneralNotes] = useState("");
 
@@ -62,6 +64,7 @@ export default function SOPChecklist() {
         task_title: t.title,
         points: t.points,
         notes: taskNotes[t.id] || "",
+        photo_url: taskPhotos[t.id] || null,
       }));
 
     await base44.entities.DailyChecklist.create({
@@ -118,11 +121,16 @@ export default function SOPChecklist() {
               ❌ Alasan ditolak: {todayChecklist.rejection_reason}
             </p>
           )}
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {(todayChecklist.completed_tasks || []).map((t, i) => (
-              <li key={i} className="flex items-center justify-between text-sm">
-                <span>✓ {t.task_title}</span>
-                <Badge variant="outline" className="text-amber-600">{t.points} poin</Badge>
+              <li key={i} className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span>✓ {t.task_title}</span>
+                  <Badge variant="outline" className="text-amber-600">{t.points} poin</Badge>
+                </div>
+                {t.photo_url && (
+                  <img src={t.photo_url} alt="Bukti" className="h-20 w-32 object-cover rounded border ml-4" />
+                )}
               </li>
             ))}
           </ul>
@@ -176,12 +184,20 @@ export default function SOPChecklist() {
                     </label>
                   </div>
                   {checked[task.id] && (
-                    <Textarea
-                      placeholder="Catatan (opsional)"
-                      className="ml-7 h-16 text-xs resize-none"
-                      value={taskNotes[task.id] || ""}
-                      onChange={(e) => setTaskNotes((p) => ({ ...p, [task.id]: e.target.value }))}
-                    />
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Catatan (opsional)"
+                        className="ml-7 h-16 text-xs resize-none"
+                        value={taskNotes[task.id] || ""}
+                        onChange={(e) => setTaskNotes((p) => ({ ...p, [task.id]: e.target.value }))}
+                      />
+                      <PhotoUploadWithWatermark
+                        taskTitle={task.title}
+                        employeeName={user?.full_name || user?.email || "Karyawan"}
+                        photoUrl={taskPhotos[task.id] || null}
+                        onUploaded={(url) => setTaskPhotos((p) => ({ ...p, [task.id]: url }))}
+                      />
+                    </div>
                   )}
                 </div>
               ))}

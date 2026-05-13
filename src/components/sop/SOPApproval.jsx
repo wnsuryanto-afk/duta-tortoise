@@ -133,11 +133,18 @@ export default function SOPApproval() {
 
               {expanded[c.id] && (
                 <div className="mt-4 pt-4 border-t space-y-3">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {(c.completed_tasks || []).map((t, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">✓ {t.task_title}</span>
-                        <span className="text-amber-600 font-medium">{t.points} poin</span>
+                      <div key={i} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">✓ {t.task_title}</span>
+                          <span className="text-amber-600 font-medium">{t.points} poin</span>
+                        </div>
+                        {t.photo_url && (
+                          <a href={t.photo_url} target="_blank" rel="noopener noreferrer">
+                            <img src={t.photo_url} alt="Bukti" className="h-20 w-32 object-cover rounded border ml-4 hover:opacity-80 transition-opacity cursor-zoom-in" />
+                          </a>
+                        )}
                       </div>
                     ))}
                   </div>
