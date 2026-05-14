@@ -38,6 +38,10 @@
       "default": "harian",
       "description": "Frekuensi task"
     },
+    "deadline_time": {
+      "type": "string",
+      "description": "Batas waktu pengerjaan (HH:mm), misal 09:00. Jika kosong tidak ada batas waktu."
+    },
     "is_active": {
       "type": "boolean",
       "default": true,

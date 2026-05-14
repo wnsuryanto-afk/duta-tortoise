@@ -20,7 +20,7 @@ const categoryColors = {
   lainnya: "bg-muted text-muted-foreground",
 };
 
-const DEFAULT_FORM = { title: "", description: "", category: "lainnya", points: 10, frequency: "harian", is_active: true };
+const DEFAULT_FORM = { title: "", description: "", category: "lainnya", points: 10, frequency: "harian", deadline_time: "", is_active: true };
 
 export default function SOPTaskManager() {
   const queryClient = useQueryClient();
@@ -92,6 +92,9 @@ export default function SOPTaskManager() {
                       {t.points} poin
                     </Badge>
                     <span className="text-[11px] text-muted-foreground capitalize">{t.frequency}</span>
+                    {t.deadline_time && (
+                      <span className="text-[11px] text-red-500 font-medium">⏰ Batas: {t.deadline_time}</span>
+                    )}
                   </div>
                   {t.description && <p className="text-xs text-muted-foreground mt-1">{t.description}</p>}
                 </div>
@@ -148,9 +151,16 @@ export default function SOPTaskManager() {
                 </Select>
               </div>
             </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block">Poin per Task</label>
-              <Input type="number" value={form.points} onChange={(e) => setForm((p) => ({ ...p, points: e.target.value }))} min={1} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Poin per Task</label>
+                <Input type="number" value={form.points} onChange={(e) => setForm((p) => ({ ...p, points: e.target.value }))} min={1} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Batas Waktu (opsional)</label>
+                <Input type="time" value={form.deadline_time} onChange={(e) => setForm((p) => ({ ...p, deadline_time: e.target.value }))} placeholder="09:00" />
+                <p className="text-[11px] text-muted-foreground mt-0.5">Lewat waktu = poin 0</p>
+              </div>
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Batal</Button>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, Clock, XCircle, Star, Send } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Star, Send, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PhotoUploadWithWatermark from "./PhotoUploadWithWatermark";
@@ -48,10 +48,19 @@ export default function SOPChecklist() {
     enabled: !!user?.email,
   });
 
+  // Check if a task's deadline has passed
+  const isDeadlinePassed = (task) => {
+    if (!task.deadline_time) return false;
+    const now = format(new Date(), "HH:mm");
+    return now > task.deadline_time;
+  };
+
+  const getTaskPoints = (task) => isDeadlinePassed(task) ? 0 : (task.points || 0);
+
   const totalPoints = useMemo(() => {
     return tasks
       .filter((t) => checked[t.id])
-      .reduce((sum, t) => sum + (t.points || 0), 0);
+      .reduce((sum, t) => sum + getTaskPoints(t), 0);
   }, [tasks, checked]);
 
   const handleSubmit = async () => {
@@ -62,9 +71,10 @@ export default function SOPChecklist() {
       .map((t) => ({
         task_id: t.id,
         task_title: t.title,
-        points: t.points,
+        points: getTaskPoints(t),
         notes: taskNotes[t.id] || "",
         photo_url: taskPhotos[t.id] || null,
+        deadline_passed: isDeadlinePassed(t),
       }));
 
     await base44.entities.DailyChecklist.create({
@@ -174,12 +184,25 @@ export default function SOPChecklist() {
                       className="mt-0.5"
                     />
                     <label htmlFor={task.id} className="flex-1 cursor-pointer">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="text-sm font-medium">{task.title}</span>
-                        <Badge variant="outline" className="text-amber-600 text-[11px]">{task.points} poin</Badge>
+                        <div className="flex items-center gap-1.5">
+                          {task.deadline_time && (
+                            <span className={`text-[11px] flex items-center gap-0.5 ${isDeadlinePassed(task) ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
+                              {isDeadlinePassed(task) ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                              {isDeadlinePassed(task) ? "Terlambat!" : `≤ ${task.deadline_time}`}
+                            </span>
+                          )}
+                          <Badge variant="outline" className={`text-[11px] ${isDeadlinePassed(task) ? "text-red-400 line-through" : "text-amber-600"}`}>
+                            {isDeadlinePassed(task) ? "0 poin" : `${task.points} poin`}
+                          </Badge>
+                        </div>
                       </div>
                       {task.description && (
                         <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>
+                      )}
+                      {task.deadline_time && isDeadlinePassed(task) && (
+                        <p className="text-[11px] text-red-500 mt-0.5">⚠️ Batas waktu {task.deadline_time} sudah lewat — task ini tidak mendapat poin</p>
                       )}
                     </label>
                   </div>
