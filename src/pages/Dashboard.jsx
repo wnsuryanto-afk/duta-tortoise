@@ -1,13 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Shell, Baby, Heart, DollarSign, Egg, TrendingUp } from "lucide-react";
+import { Shell, Baby, Egg, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/dashboard/StatCard";
+import CheckInWidget from "@/components/attendance/CheckInWidget";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 export default function Dashboard() {
+  const { role } = useCurrentUser();
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],
     queryFn: () => base44.entities.Tortoise.list("-created_date", 100),
@@ -46,6 +49,8 @@ export default function Dashboard() {
         <h1 className="text-3xl font-heading font-bold">Dashboard</h1>
         <p className="text-muted-foreground mt-1">Ringkasan peternakan sulcata tortoise Anda</p>
       </div>
+
+      {(role === "keeper" || role === "manajer") && <CheckInWidget />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((stat) => (

@@ -1,0 +1,51 @@
+{
+  "name": "Attendance",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "ID karyawan"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal absensi"
+    },
+    "check_in": {
+      "type": "string",
+      "description": "Waktu check-in (HH:mm)"
+    },
+    "check_out": {
+      "type": "string",
+      "description": "Waktu check-out (HH:mm)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "hadir",
+        "izin",
+        "sakit"
+      ],
+      "default": "hadir",
+      "description": "Status kehadiran"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "date",
+    "check_in"
+  ]
+}

@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Shell } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -18,8 +18,8 @@ const genderLabels = {
   belum_diketahui: "? Belum Diketahui",
 };
 
-export default function TortoiseCard({ tortoise, onEdit, onDelete }) {
-  const showActions = onEdit || onDelete;
+export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove }) {
+  const showActions = onEdit || onDelete || onMove;
   return (
     <Card className="p-4 hover:shadow-md transition-shadow duration-200 group">
       <div className="flex items-start gap-4">
@@ -53,6 +53,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete }) {
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(tortoise)}>
                 <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {onMove && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-chart-4" title="Pindah Kandang" onClick={() => onMove(tortoise)}>
+                <ArrowRightLeft className="w-3.5 h-3.5" />
               </Button>
             )}
             {onDelete && (
