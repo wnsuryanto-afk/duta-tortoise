@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList, FileSpreadsheet, Bell } from "lucide-react";
+import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 const ALL_NAV_ITEMS = [
   { path: "/",         section: "dashboard", label: "Dashboard",  icon: LayoutDashboard },
   { path: "/tortoise", section: "tortoise",  label: "Tortoise",   icon: Shell },
-  { path: "/breeding", section: "breeding",  label: "Pembiakan",  icon: Baby },
+  { path: "/breeding",        section: "breeding",        label: "Pembiakan",        icon: Baby },
+  { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",    icon: BarChart2 },
   { path: "/health",   section: "health",    label: "Kesehatan",  icon: Heart },
   { path: "/sales",    section: "sales",     label: "Penjualan",  icon: DollarSign },
   { path: "/sop",      section: "sop",       label: "SOP & KPI",  icon: ClipboardList },
