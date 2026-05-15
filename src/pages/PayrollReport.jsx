@@ -10,7 +10,6 @@ import { FileDown, Star, Trophy, Gift, CheckCircle2, Clock } from "lucide-react"
 import { format, subMonths, startOfMonth } from "date-fns";
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 // Generate last 12 months options
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
@@ -90,59 +89,87 @@ export default function PayrollReport() {
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
 
     // Header
-    doc.setFontSize(18);
+    doc.setFillColor(52, 101, 58);
+    doc.rect(0, 0, pageW, 28, "F");
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("Laporan Rekapitulasi KPI & Bonus Karyawan", 14, 20);
-
-    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Laporan Rekapitulasi KPI & Bonus Karyawan", 14, 12);
+    doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Periode: ${selectedLabel}`, 14, 30);
-    doc.text(`Tanggal Cetak: ${format(new Date(), "d MMMM yyyy", { locale: id })}`, 14, 37);
+    doc.text(`Periode: ${selectedLabel}   |   Cetak: ${format(new Date(), "d MMMM yyyy", { locale: id })}`, 14, 22);
 
-    // Summary line
+    // Summary box
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text(`Total Karyawan: ${employees.length}   |   Total Poin: ${totalPoints}   |   Total Bonus: Rp ${totalBonus.toLocaleString("id-ID")}`, 14, 47);
+    doc.setFillColor(245, 249, 245);
+    doc.rect(14, 32, pageW - 28, 12, "F");
+    doc.text(`Total Karyawan: ${employees.length}`, 18, 40);
+    doc.text(`Total Poin: ${totalPoints.toLocaleString()}`, 80, 40);
+    doc.text(`Total Bonus: Rp ${totalBonus.toLocaleString("id-ID")}`, 150, 40);
 
-    // Table
-    doc.autoTable({
-      startY: 55,
-      head: [["No", "Nama Karyawan", "Email", "Hari Hadir", "Total Poin", "Bonus (Rp)", "Status"]],
-      body: employees.map((e, i) => [
-        i + 1,
-        e.name || "-",
-        e.email || "-",
-        e.approvedDays || "-",
-        e.approvedPoints,
-        e.bonus_amount ? `Rp ${e.bonus_amount.toLocaleString("id-ID")}` : "-",
-        e.status ? statusLabels[e.status] || e.status : "Belum Ada Data",
-      ]),
-      headStyles: { fillColor: [52, 101, 58], textColor: 255, fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [245, 249, 245] },
-      styles: { fontSize: 9, cellPadding: 4 },
-      columnStyles: {
-        0: { halign: "center", cellWidth: 10 },
-        3: { halign: "center" },
-        4: { halign: "center" },
-        5: { halign: "right" },
-        6: { halign: "center" },
-      },
+    // Table header
+    const cols = ["No", "Nama Karyawan", "Email", "Hari", "Poin", "Bonus (Rp)", "Status"];
+    const colX = [14, 24, 74, 124, 141, 158, 187];
+    const colW = [10, 50, 50, 17, 17, 29, 28];
+    let y = 52;
+
+    doc.setFillColor(52, 101, 58);
+    doc.rect(14, y - 5, pageW - 28, 8, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    cols.forEach((col, i) => doc.text(col, colX[i] + 1, y));
+
+    // Table rows
+    doc.setFont("helvetica", "normal");
+    employees.forEach((emp, i) => {
+      y += 9;
+      if (y > pageH - 20) {
+        doc.addPage();
+        y = 20;
+      }
+      // Alternating row
+      if (i % 2 === 0) {
+        doc.setFillColor(249, 252, 249);
+        doc.rect(14, y - 5, pageW - 28, 8, "F");
+      }
+      doc.setTextColor(0, 0, 0);
+      const row = [
+        String(i + 1),
+        (emp.name || emp.email || "-").substring(0, 22),
+        (emp.email || "-").substring(0, 22),
+        String(emp.approvedDays || 0),
+        String(emp.approvedPoints),
+        emp.bonus_amount ? `Rp ${emp.bonus_amount.toLocaleString("id-ID")}` : "-",
+        emp.status ? (statusLabels[emp.status] || emp.status) : "Belum Ada Data",
+      ];
+      row.forEach((cell, j) => doc.text(cell, colX[j] + 1, y));
     });
+
+    // Total row
+    y += 9;
+    doc.setFillColor(220, 237, 220);
+    doc.rect(14, y - 5, pageW - 28, 8, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("TOTAL", colX[0] + 1, y);
+    doc.text(String(totalPoints), colX[4] + 1, y);
+    doc.text(`Rp ${totalBonus.toLocaleString("id-ID")}`, colX[5] + 1, y);
 
     // Footer
     const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(150);
-      doc.text(
-        `Halaman ${i} dari ${pageCount}  —  Sulcata Farm Manager`,
-        doc.internal.pageSize.getWidth() / 2,
-        doc.internal.pageSize.getHeight() - 8,
-        { align: "center" }
-      );
+      doc.text(`Halaman ${p} dari ${pageCount}  —  Sulcata Farm Manager`, pageW / 2, pageH - 6, { align: "center" });
     }
 
     doc.save(`Laporan-KPI-${selectedPeriod}.pdf`);
