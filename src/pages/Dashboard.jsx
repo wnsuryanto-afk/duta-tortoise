@@ -9,6 +9,7 @@ import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
 import EnclosureFilterWidget from "@/components/dashboard/EnclosureFilterWidget";
+import HealthReminderAlert from "@/components/dashboard/HealthReminderAlert";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -55,6 +56,7 @@ export default function Dashboard() {
 
       {(role === "keeper" || role === "manajer") && <CheckInWidget />}
       {role === "keeper" && <SOPDeadlineAlert />}
+      <HealthReminderAlert />
       {role === "keeper" && <KPISummaryWidget />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
