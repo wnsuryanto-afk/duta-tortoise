@@ -7,6 +7,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import CheckInWidget from "@/components/attendance/CheckInWidget";
 import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -52,6 +53,7 @@ export default function Dashboard() {
       </div>
 
       {(role === "keeper" || role === "manajer") && <CheckInWidget />}
+      {role === "keeper" && <SOPDeadlineAlert />}
       {role === "keeper" && <KPISummaryWidget />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
