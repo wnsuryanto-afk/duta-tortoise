@@ -1,9 +1,16 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Shell, ArrowRightLeft } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, HeartPulse } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+
+const healthConfig = {
+  critical: { border: "border-l-4 border-l-red-500", dot: "bg-red-500", label: "Butuh Perawatan", badge: "bg-red-100 text-red-700" },
+  warning:  { border: "border-l-4 border-l-yellow-400", dot: "bg-yellow-400", label: "Perlu Perhatian", badge: "bg-yellow-100 text-yellow-700" },
+  ok:       { border: "border-l-4 border-l-green-400", dot: "bg-green-400", label: "Sehat", badge: "bg-green-100 text-green-700" },
+  none:     { border: "", dot: "bg-muted-foreground/30", label: "Belum Ada Rekam Medis", badge: "bg-muted text-muted-foreground" },
+};
 
 const statusColors = {
   aktif: "bg-primary/10 text-primary border-primary/20",
@@ -18,10 +25,11 @@ const genderLabels = {
   belum_diketahui: "? Belum Diketahui",
 };
 
-export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove }) {
+export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth }) {
   const showActions = onEdit || onDelete || onMove;
+  const health = healthConfig[healthStatus] || healthConfig.none;
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow duration-200 group">
+    <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border}`}>
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0">
           {tortoise.photo_url ? (
@@ -40,6 +48,10 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove }) {
               {tortoise.status}
             </Badge>
             <span className="text-xs text-muted-foreground">{genderLabels[tortoise.gender]}</span>
+            <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full font-medium ${health.badge}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`} />
+              {health.label}
+            </span>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
             {tortoise.weight_grams && <span>{tortoise.weight_grams}g</span>}

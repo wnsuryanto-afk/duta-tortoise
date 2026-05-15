@@ -29,6 +29,31 @@ export default function TortoiseList() {
     queryFn: () => base44.entities.Tortoise.list("-created_date", 300),
   });
 
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["health-records-all"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 500),
+  });
+
+  // Buat map: tortoise_id -> record kesehatan terbaru
+  const latestHealthMap = useMemo(() => {
+    const map = {};
+    healthRecords.forEach((r) => {
+      if (!r.tortoise_id) return;
+      if (!map[r.tortoise_id] || r.date > map[r.tortoise_id].date) {
+        map[r.tortoise_id] = r;
+      }
+    });
+    return map;
+  }, [healthRecords]);
+
+  const getHealthStatus = (tortoiseId) => {
+    const rec = latestHealthMap[tortoiseId];
+    if (!rec) return "none";
+    if (rec.type === "sakit" || rec.type === "obat") return "critical";
+    if (rec.type === "vaksin") return "warning";
+    return "ok";
+  };
+
   const filtered = tortoises.filter((t) => {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "semua" || t.status === statusFilter;
@@ -132,6 +157,8 @@ export default function TortoiseList() {
             <TortoiseCard
               key={t.id}
               tortoise={t}
+              healthStatus={getHealthStatus(t.id)}
+              latestHealth={latestHealthMap[t.id]}
               onEdit={perms.canEdit ? handleEdit : null}
               onDelete={perms.canDelete ? handleDelete : null}
               onMove={perms.canEdit ? handleMove : null}
@@ -165,6 +192,8 @@ export default function TortoiseList() {
                       <TortoiseCard
                         key={t.id}
                         tortoise={t}
+                        healthStatus={getHealthStatus(t.id)}
+                        latestHealth={latestHealthMap[t.id]}
                         onEdit={perms.canEdit ? handleEdit : null}
                         onDelete={perms.canDelete ? handleDelete : null}
                         onMove={perms.canEdit ? handleMove : null}
