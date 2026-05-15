@@ -34,6 +34,11 @@ export default function TortoiseList() {
     queryFn: () => base44.entities.HealthRecord.list("-date", 500),
   });
 
+  const { data: breedingRecords = [] } = useQuery({
+    queryKey: ["breeding-records-all"],
+    queryFn: () => base44.entities.Breeding.list("-mating_date", 500),
+  });
+
   // Buat map: tortoise_id -> record kesehatan terbaru
   const latestHealthMap = useMemo(() => {
     const map = {};
@@ -45,6 +50,26 @@ export default function TortoiseList() {
     });
     return map;
   }, [healthRecords]);
+
+  // Set betina yang pernah bertelur (ada egg_laying_date)
+  const hasLaidEggs = useMemo(() => {
+    const s = new Set();
+    breedingRecords.forEach((b) => {
+      if (b.egg_laying_date && b.female_id) s.add(b.female_id);
+    });
+    return s;
+  }, [breedingRecords]);
+
+  // Indikator warna induk: prioritas merah > orange > hijau
+  const getParentIndicator = (tortoise) => {
+    const rec = latestHealthMap[tortoise.id];
+    const isSick = rec && (rec.type === "sakit" || rec.type === "obat");
+    if (isSick) return "sick"; // merah
+    const notes = (tortoise.notes || "").toLowerCase();
+    if (notes.includes("rare")) return "rare"; // orange
+    if (tortoise.gender === "betina" && hasLaidEggs.has(tortoise.id)) return "hasEggs"; // hijau
+    return null;
+  };
 
   const getHealthStatus = (tortoiseId) => {
     const rec = latestHealthMap[tortoiseId];
@@ -159,6 +184,7 @@ export default function TortoiseList() {
               tortoise={t}
               healthStatus={getHealthStatus(t.id)}
               latestHealth={latestHealthMap[t.id]}
+              parentIndicator={getParentIndicator(t)}
               onEdit={perms.canEdit ? handleEdit : null}
               onDelete={perms.canDelete ? handleDelete : null}
               onMove={perms.canEdit ? handleMove : null}
@@ -194,6 +220,7 @@ export default function TortoiseList() {
                         tortoise={t}
                         healthStatus={getHealthStatus(t.id)}
                         latestHealth={latestHealthMap[t.id]}
+                        parentIndicator={getParentIndicator(t)}
                         onEdit={perms.canEdit ? handleEdit : null}
                         onDelete={perms.canDelete ? handleDelete : null}
                         onMove={perms.canEdit ? handleMove : null}

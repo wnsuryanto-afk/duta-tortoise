@@ -25,9 +25,16 @@ const genderLabels = {
   belum_diketahui: "? Belum Diketahui",
 };
 
-export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth }) {
+const parentIndicatorConfig = {
+  sick:    { label: "Sakit", className: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500" },
+  rare:    { label: "Rare",  className: "bg-orange-100 text-orange-700 border-orange-200", dot: "bg-orange-500" },
+  hasEggs: { label: "Pernah Bertelur", className: "bg-green-100 text-green-700 border-green-200", dot: "bg-green-500" },
+};
+
+export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth, parentIndicator }) {
   const showActions = onEdit || onDelete || onMove;
   const health = healthConfig[healthStatus] || healthConfig.none;
+  const pind = parentIndicator ? parentIndicatorConfig[parentIndicator] : null;
   return (
     <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border}`}>
       <div className="flex items-start gap-4">
@@ -52,6 +59,12 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
               <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`} />
               {health.label}
             </span>
+            {pind && (
+              <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full font-medium border ${pind.className}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${pind.dot}`} />
+                {pind.label}
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
             {tortoise.weight_grams && <span>{tortoise.weight_grams}g</span>}
