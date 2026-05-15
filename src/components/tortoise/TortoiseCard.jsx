@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Shell, ArrowRightLeft, HeartPulse } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
 
 const healthConfig = {
   critical: { border: "border-l-4 border-l-red-500", dot: "bg-red-500", label: "Butuh Perawatan", badge: "bg-red-100 text-red-700" },
@@ -32,10 +35,12 @@ const parentIndicatorConfig = {
 };
 
 export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth, parentIndicator }) {
+  const [showHistory, setShowHistory] = useState(false);
   const showActions = onEdit || onDelete || onMove;
   const health = healthConfig[healthStatus] || healthConfig.none;
   const pind = parentIndicator ? parentIndicatorConfig[parentIndicator] : null;
   return (
+    <>
     <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border}`}>
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0">
@@ -75,6 +80,9 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         </div>
         {showActions && (
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Riwayat Kandang" onClick={() => setShowHistory(true)}>
+              <MapPin className="w-3.5 h-3.5" />
+            </Button>
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(tortoise)}>
                 <Pencil className="w-3.5 h-3.5" />
@@ -94,5 +102,20 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         )}
       </div>
     </Card>
+
+    <Dialog open={showHistory} onOpenChange={setShowHistory}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <MapPin className="w-4 h-4 text-primary" />
+            Riwayat Kandang — {tortoise.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          <EnclosureHistoryPanel tortoiseId={tortoise.id} />
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
