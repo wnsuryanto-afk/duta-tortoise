@@ -8,6 +8,7 @@ import CheckInWidget from "@/components/attendance/CheckInWidget";
 import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
+import EnclosureFilterWidget from "@/components/dashboard/EnclosureFilterWidget";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -61,6 +62,8 @@ export default function Dashboard() {
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
+
+      <EnclosureFilterWidget />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Breeding */}
