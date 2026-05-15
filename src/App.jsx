@@ -14,6 +14,7 @@ import HealthList from '@/pages/HealthList';
 import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
 import SOPPage from '@/pages/SOPPage';
+import PayrollReport from '@/pages/PayrollReport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="/sales" element={<SalesList />} />
         <Route path="/users" element={<UserManagement />} />
         <Route path="/sop" element={<SOPPage />} />
+        <Route path="/payroll" element={<PayrollReport />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
