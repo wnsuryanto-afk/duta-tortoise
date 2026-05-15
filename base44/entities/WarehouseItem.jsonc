@@ -1,0 +1,77 @@
+{
+  "name": "WarehouseItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama barang"
+    },
+    "code": {
+      "type": "string",
+      "description": "Kode barang / barcode"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "obat",
+        "vitamin",
+        "pakan",
+        "alat_kerja",
+        "lainnya"
+      ],
+      "default": "lainnya",
+      "description": "Kategori barang"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "pcs",
+        "botol",
+        "sachet",
+        "kg",
+        "gram",
+        "liter",
+        "ml",
+        "ikat",
+        "buah",
+        "lusin",
+        "box"
+      ],
+      "default": "pcs",
+      "description": "Satuan"
+    },
+    "current_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Stok saat ini"
+    },
+    "minimum_stock": {
+      "type": "number",
+      "default": 1,
+      "description": "Stok minimum"
+    },
+    "purchase_price": {
+      "type": "number",
+      "default": 0,
+      "description": "Harga beli per satuan (Rp)"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Nama supplier/toko"
+    },
+    "location": {
+      "type": "string",
+      "description": "Lokasi penyimpanan di gudang"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "name",
+    "unit",
+    "current_stock",
+    "minimum_stock"
+  ]
+}

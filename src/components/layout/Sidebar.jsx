@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat,
-  CalendarDays, ChevronDown
+  Warehouse, TrendingUp
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -29,18 +29,19 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Penjualan",
+    label: "Keuangan",
     items: [
-      { path: "/sales",           section: "sales",           label: "Penjualan",       icon: DollarSign },
-      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",   icon: BarChart2 },
+      { path: "/finance",         section: "finance",         label: "Laporan Keuangan", icon: TrendingUp },
+      { path: "/sales",           section: "sales",           label: "Penjualan",        icon: DollarSign },
+      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",    icon: BarChart2 },
+      { path: "/warehouse",       section: "warehouse",       label: "Gudang Gazebo",    icon: Warehouse },
     ],
   },
   {
     label: "SDM & KPI",
     items: [
-      { path: "/sop",             section: "sop",             label: "SOP & KPI",       icon: ClipboardList },
-      { path: "/payroll",         section: "payroll",         label: "Laporan KPI",     icon: FileSpreadsheet },
-      { path: "/daily-payroll",   section: "daily-payroll",   label: "Gaji Harian",     icon: CalendarDays },
+      { path: "/sop",             section: "sop",             label: "SOP & KPI",        icon: ClipboardList },
+      { path: "/payroll",         section: "payroll",         label: "Laporan KPI",      icon: FileSpreadsheet },
     ],
   },
   {

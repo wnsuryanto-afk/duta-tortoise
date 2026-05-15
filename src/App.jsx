@@ -19,6 +19,8 @@ import HealthReminderPage from '@/pages/HealthReminderPage';
 import BreedingReport from '@/pages/BreedingReport';
 import FeedStockPage from '@/pages/FeedStockPage';
 import DailyPayrollReport from '@/pages/DailyPayrollReport';
+import WarehousePage from '@/pages/WarehousePage';
+import FinancePage from '@/pages/FinancePage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -55,6 +57,8 @@ const AuthenticatedApp = () => {
         <Route path="/breeding-report" element={<BreedingReport />} />
         <Route path="/feed-stock" element={<FeedStockPage />} />
         <Route path="/daily-payroll" element={<DailyPayrollReport />} />
+        <Route path="/warehouse" element={<WarehousePage />} />
+        <Route path="/finance" element={<FinancePage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

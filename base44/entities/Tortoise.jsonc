@@ -20,6 +20,24 @@
       "default": "belum_diketahui",
       "description": "Jenis kelamin"
     },
+    "morph": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "over_scute",
+        "less_scute",
+        "het_albino",
+        "ivory",
+        "albino"
+      ],
+      "default": "normal",
+      "description": "Jenis/morph kura-kura"
+    },
+    "is_proven": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sudah proven (terbukti kawin/bertelur)"
+    },
     "birth_date": {
       "type": "string",
       "format": "date",

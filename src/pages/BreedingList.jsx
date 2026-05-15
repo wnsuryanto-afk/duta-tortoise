@@ -45,13 +45,13 @@ export default function BreedingList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-bold">Pembiakan</h1>
-          <p className="text-muted-foreground mt-1">Kelola data breeding tortoise</p>
+          <h1 className="text-3xl font-heading font-bold">Induk Bertelur</h1>
+          <p className="text-muted-foreground mt-1">Kelola data breeding & induk yang sudah bertelur</p>
         </div>
         {perms.canCreate && (
           <Button onClick={() => { setEditData(null); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
-            Tambah Pembiakan
+            Tambah Data
           </Button>
         )}
       </div>

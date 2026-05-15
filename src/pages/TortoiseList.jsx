@@ -21,6 +21,7 @@ export default function TortoiseList() {
   const [moveTarget, setMoveTarget] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua");
+  const [genderFilter, setGenderFilter] = useState("semua");
   const [viewMode, setViewMode] = useState("kandang"); // "kandang" | "semua"
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -82,7 +83,8 @@ export default function TortoiseList() {
   const filtered = tortoises.filter((t) => {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "semua" || t.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchGender = genderFilter === "semua" || t.gender === genderFilter;
+    return matchSearch && matchStatus && matchGender;
   });
 
   // Group by enclosure
@@ -140,7 +142,7 @@ export default function TortoiseList() {
           <Input placeholder="Cari nama atau kode..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -149,6 +151,17 @@ export default function TortoiseList() {
             <SelectItem value="breeding">Breeding</SelectItem>
             <SelectItem value="terjual">Terjual</SelectItem>
             <SelectItem value="mati">Mati</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={genderFilter} onValueChange={setGenderFilter}>
+          <SelectTrigger className="w-full sm:w-36">
+            <SelectValue placeholder="Gender" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="semua">Semua Gender</SelectItem>
+            <SelectItem value="jantan">♂ Jantan</SelectItem>
+            <SelectItem value="betina">♀ Betina</SelectItem>
+            <SelectItem value="belum_diketahui">? Belum Diketahui</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex rounded-lg border overflow-hidden">

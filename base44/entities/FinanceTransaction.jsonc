@@ -1,0 +1,52 @@
+{
+  "name": "FinanceTransaction",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "pemasukan",
+        "pengeluaran"
+      ],
+      "description": "Jenis transaksi"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "penjualan_tortoise",
+        "pembelian_barang",
+        "gaji_karyawan",
+        "operasional",
+        "lainnya"
+      ],
+      "description": "Kategori"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Nominal (Rp)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal"
+    },
+    "description": {
+      "type": "string",
+      "description": "Keterangan"
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "ID referensi (sale_id / warehouse_tx_id dll)"
+    },
+    "created_by_name": {
+      "type": "string",
+      "description": "Dicatat oleh"
+    }
+  },
+  "required": [
+    "type",
+    "category",
+    "amount",
+    "date"
+  ]
+}
