@@ -1,33 +1,88 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat, CalendarDays } from "lucide-react";
+import {
+  LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
+  LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat,
+  CalendarDays, ChevronDown
+} from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, ROLE_LABELS, ROLE_COLORS } from "@/lib/permissions";
-import { Badge } from "@/components/ui/badge";
 
-const ALL_NAV_ITEMS = [
-  { path: "/",         section: "dashboard", label: "Dashboard",  icon: LayoutDashboard },
-  { path: "/tortoise", section: "tortoise",  label: "Tortoise",   icon: Shell },
-  { path: "/breeding",        section: "breeding",        label: "Pembiakan",        icon: Baby },
-  { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",    icon: BarChart2 },
-  { path: "/health",   section: "health",    label: "Kesehatan",  icon: Heart },
-  { path: "/sales",    section: "sales",     label: "Penjualan",  icon: DollarSign },
-  { path: "/sop",      section: "sop",       label: "SOP & KPI",  icon: ClipboardList },
-  { path: "/payroll",   section: "payroll",   label: "Laporan KPI",   icon: FileSpreadsheet },
-  { path: "/reminders",  section: "reminders",  label: "Pengingat",    icon: Bell },
-  { path: "/feed-stock", section: "feed-stock", label: "Stok Pakan",   icon: Wheat },
-  { path: "/daily-payroll", section: "daily-payroll", label: "Gaji Harian", icon: CalendarDays },
-  { path: "/users",      section: "users",      label: "Users",        icon: Users },
+// Navigasi dikelompokkan
+const NAV_GROUPS = [
+  {
+    label: null,
+    items: [
+      { path: "/",         section: "dashboard",       label: "Dashboard",       icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Pengelolaan",
+    items: [
+      { path: "/tortoise",        section: "tortoise",        label: "Tortoise",        icon: Shell },
+      { path: "/breeding",        section: "breeding",        label: "Pembiakan",       icon: Baby },
+      { path: "/health",          section: "health",          label: "Kesehatan",       icon: Heart },
+      { path: "/reminders",       section: "reminders",       label: "Pengingat",       icon: Bell },
+      { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
+    ],
+  },
+  {
+    label: "Penjualan",
+    items: [
+      { path: "/sales",           section: "sales",           label: "Penjualan",       icon: DollarSign },
+      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",   icon: BarChart2 },
+    ],
+  },
+  {
+    label: "SDM & KPI",
+    items: [
+      { path: "/sop",             section: "sop",             label: "SOP & KPI",       icon: ClipboardList },
+      { path: "/payroll",         section: "payroll",         label: "Laporan KPI",     icon: FileSpreadsheet },
+      { path: "/daily-payroll",   section: "daily-payroll",   label: "Gaji Harian",     icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Pengaturan",
+    items: [
+      { path: "/users",           section: "users",           label: "Manajemen User",  icon: Users },
+    ],
+  },
 ];
+
+function NavItem({ item, isActive, onClick }) {
+  return (
+    <Link
+      to={item.path}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+        isActive
+          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+      )}
+    >
+      <item.icon className="w-[17px] h-[17px] flex-shrink-0" />
+      {item.label}
+    </Link>
+  );
+}
 
 export default function Sidebar() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const { user, role } = useCurrentUser();
 
-  const navItems = ALL_NAV_ITEMS.filter((item) => canAccess(role, item.section));
+  const close = () => setOpen(false);
+
+  // Filter items per group berdasarkan akses
+  const visibleGroups = NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => canAccess(role, item.section)),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <>
@@ -40,70 +95,66 @@ export default function Sidebar() {
       </button>
 
       {/* Overlay */}
-      {open && (
-        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setOpen(false)} />
-      )}
+      {open && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={close} />}
 
       {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed top-0 left-0 h-full w-64 bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-transform duration-300",
-          "lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
+      <aside className={cn(
+        "fixed top-0 left-0 h-full w-60 bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-transform duration-300",
+        "lg:translate-x-0",
+        open ? "translate-x-0" : "-translate-x-full"
+      )}>
         {/* Logo */}
-        <div className="p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sidebar-primary/20 flex items-center justify-center">
-              <Shell className="w-5 h-5 text-sidebar-primary" />
+        <div className="px-4 py-5 flex items-center justify-between border-b border-sidebar-border">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-sidebar-primary/20 flex items-center justify-center">
+              <Shell className="w-4 h-4 text-sidebar-primary" />
             </div>
             <div>
-              <h1 className="font-heading text-lg font-semibold tracking-tight">Sulcata</h1>
-              <p className="text-xs text-sidebar-foreground/50">Farm Manager</p>
+              <h1 className="font-heading text-base font-semibold leading-tight">Sulcata Farm</h1>
+              <p className="text-[11px] text-sidebar-foreground/45 leading-tight">Manager</p>
             </div>
           </div>
-          <button onClick={() => setOpen(false)} className="lg:hidden">
-            <X className="w-5 h-5" />
+          <button onClick={close} className="lg:hidden p-1 rounded-lg hover:bg-sidebar-accent">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-2 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
-                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                )}
-              >
-                <item.icon className="w-[18px] h-[18px]" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          {visibleGroups.map((group, gi) => (
+            <div key={gi}>
+              {group.label && (
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/35 px-3 mb-1">
+                  {group.label}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavItem
+                    key={item.path}
+                    item={item}
+                    isActive={location.pathname === item.path}
+                    onClick={close}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* User info + logout */}
-        <div className="p-4 border-t border-sidebar-border space-y-3">
+        <div className="px-3 py-4 border-t border-sidebar-border space-y-2">
           {user && (
-            <div className="px-2 py-2 rounded-xl bg-sidebar-accent">
+            <div className="px-3 py-2.5 rounded-xl bg-sidebar-accent">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-sidebar-primary/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-xs font-bold text-sidebar-primary">
                     {(user.full_name || user.email || "?")[0].toUpperCase()}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium truncate">{user.full_name || user.email}</p>
-                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium mt-0.5 inline-block", ROLE_COLORS[role])}>
+                  <p className="text-xs font-medium truncate leading-tight">{user.full_name || user.email}</p>
+                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium inline-block mt-0.5", ROLE_COLORS[role])}>
                     {ROLE_LABELS[role] || role}
                   </span>
                 </div>
@@ -112,9 +163,9 @@ export default function Sidebar() {
           )}
           <button
             onClick={() => base44.auth.logout()}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all w-full"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all w-full"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             Keluar
           </button>
         </div>
