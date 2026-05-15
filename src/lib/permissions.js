@@ -22,9 +22,9 @@ export const ROLE_COLORS = {
 
 // Navigasi yang boleh dilihat
 export const NAV_ACCESS = {
-  owner:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock"],
-  admin:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock"],
-  manajer: ["dashboard", "tortoise", "breeding", "health", "sales", "sop", "payroll", "reminders", "breeding-report", "feed-stock"],
+  owner:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "daily-payroll"],
+  admin:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "daily-payroll"],
+  manajer: ["dashboard", "tortoise", "breeding", "health", "sales", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "daily-payroll"],
   keeper:  ["dashboard", "tortoise", "breeding", "health", "sop", "reminders", "feed-stock"],
 };
 

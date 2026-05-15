@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat } from "lucide-react";
+import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat, CalendarDays } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ const ALL_NAV_ITEMS = [
   { path: "/payroll",   section: "payroll",   label: "Laporan KPI",   icon: FileSpreadsheet },
   { path: "/reminders",  section: "reminders",  label: "Pengingat",    icon: Bell },
   { path: "/feed-stock", section: "feed-stock", label: "Stok Pakan",   icon: Wheat },
+  { path: "/daily-payroll", section: "daily-payroll", label: "Gaji Harian", icon: CalendarDays },
   { path: "/users",      section: "users",      label: "Users",        icon: Users },
 ];
 
