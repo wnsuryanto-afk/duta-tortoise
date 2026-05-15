@@ -4,6 +4,7 @@ import { Shell, Baby, Egg, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/dashboard/StatCard";
+import MonthlySalesSummary from "@/components/dashboard/MonthlySalesSummary";
 import CheckInWidget from "@/components/attendance/CheckInWidget";
 import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -28,7 +29,7 @@ export default function Dashboard() {
 
   const { data: sales = [] } = useQuery({
     queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list("-created_date", 10),
+    queryFn: () => base44.entities.Sale.list("-sale_date", 500),
   });
 
   const { data: healthRecords = [] } = useQuery({
@@ -68,6 +69,8 @@ export default function Dashboard() {
       </div>
 
       <EnclosureFilterWidget />
+
+      <MonthlySalesSummary sales={sales} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Breeding */}
