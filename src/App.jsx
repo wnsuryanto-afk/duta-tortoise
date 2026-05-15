@@ -17,6 +17,7 @@ import SOPPage from '@/pages/SOPPage';
 import PayrollReport from '@/pages/PayrollReport';
 import HealthReminderPage from '@/pages/HealthReminderPage';
 import BreedingReport from '@/pages/BreedingReport';
+import FeedStockPage from '@/pages/FeedStockPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
         <Route path="/payroll" element={<PayrollReport />} />
         <Route path="/reminders" element={<HealthReminderPage />} />
         <Route path="/breeding-report" element={<BreedingReport />} />
+        <Route path="/feed-stock" element={<FeedStockPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -1,0 +1,54 @@
+{
+  "name": "FeedStock",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama pakan (cth: Kubis, Wortel, Rumput)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "sayuran",
+        "buah",
+        "rumput",
+        "suplemen",
+        "lainnya"
+      ],
+      "default": "sayuran",
+      "description": "Kategori pakan"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "gram",
+        "ikat",
+        "buah",
+        "liter"
+      ],
+      "default": "kg",
+      "description": "Satuan"
+    },
+    "current_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Stok saat ini"
+    },
+    "minimum_stock": {
+      "type": "number",
+      "default": 1,
+      "description": "Batas minimum stok (notifikasi akan muncul di bawah angka ini)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "name",
+    "unit",
+    "current_stock",
+    "minimum_stock"
+  ]
+}

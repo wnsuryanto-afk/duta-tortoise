@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2 } from "lucide-react";
+import { LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X, LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -16,8 +16,9 @@ const ALL_NAV_ITEMS = [
   { path: "/sales",    section: "sales",     label: "Penjualan",  icon: DollarSign },
   { path: "/sop",      section: "sop",       label: "SOP & KPI",  icon: ClipboardList },
   { path: "/payroll",   section: "payroll",   label: "Laporan KPI",   icon: FileSpreadsheet },
-  { path: "/reminders", section: "reminders", label: "Pengingat",     icon: Bell },
-  { path: "/users",     section: "users",     label: "Users",         icon: Users },
+  { path: "/reminders",  section: "reminders",  label: "Pengingat",    icon: Bell },
+  { path: "/feed-stock", section: "feed-stock", label: "Stok Pakan",   icon: Wheat },
+  { path: "/users",      section: "users",      label: "Users",        icon: Users },
 ];
 
 export default function Sidebar() {

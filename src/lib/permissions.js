@@ -22,41 +22,45 @@ export const ROLE_COLORS = {
 
 // Navigasi yang boleh dilihat
 export const NAV_ACCESS = {
-  owner:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report"],
-  admin:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report"],
-  manajer: ["dashboard", "tortoise", "breeding", "health", "sales", "sop", "payroll", "reminders", "breeding-report"],
-  keeper:  ["dashboard", "tortoise", "breeding", "health", "sop", "reminders"],
+  owner:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock"],
+  admin:   ["dashboard", "tortoise", "breeding", "health", "sales", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock"],
+  manajer: ["dashboard", "tortoise", "breeding", "health", "sales", "sop", "payroll", "reminders", "breeding-report", "feed-stock"],
+  keeper:  ["dashboard", "tortoise", "breeding", "health", "sop", "reminders", "feed-stock"],
 };
 
 // Aksi per halaman: canCreate, canEdit, canDelete
 export const PAGE_PERMISSIONS = {
   owner: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true },
-    breeding:  { canCreate: true,  canEdit: true,  canDelete: true },
-    health:    { canCreate: true,  canEdit: true,  canDelete: true },
-    sales:     { canCreate: true,  canEdit: true,  canDelete: true },
-    users:     { canCreate: true,  canEdit: true,  canDelete: true },
+    tortoise:   { canCreate: true,  canEdit: true,  canDelete: true },
+    breeding:   { canCreate: true,  canEdit: true,  canDelete: true },
+    health:     { canCreate: true,  canEdit: true,  canDelete: true },
+    sales:      { canCreate: true,  canEdit: true,  canDelete: true },
+    users:      { canCreate: true,  canEdit: true,  canDelete: true },
+    feedstock:  { canCreate: true,  canEdit: true,  canDelete: true },
   },
   admin: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true },
-    breeding:  { canCreate: true,  canEdit: true,  canDelete: true },
-    health:    { canCreate: true,  canEdit: true,  canDelete: true },
-    sales:     { canCreate: true,  canEdit: true,  canDelete: true },
-    users:     { canCreate: true,  canEdit: true,  canDelete: true },
+    tortoise:   { canCreate: true,  canEdit: true,  canDelete: true },
+    breeding:   { canCreate: true,  canEdit: true,  canDelete: true },
+    health:     { canCreate: true,  canEdit: true,  canDelete: true },
+    sales:      { canCreate: true,  canEdit: true,  canDelete: true },
+    users:      { canCreate: true,  canEdit: true,  canDelete: true },
+    feedstock:  { canCreate: true,  canEdit: true,  canDelete: true },
   },
   manajer: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true },
-    breeding:  { canCreate: true,  canEdit: true,  canDelete: true },
-    health:    { canCreate: true,  canEdit: true,  canDelete: true },
-    sales:     { canCreate: false, canEdit: false, canDelete: false },
-    users:     { canCreate: false, canEdit: false, canDelete: false },
+    tortoise:   { canCreate: true,  canEdit: true,  canDelete: true },
+    breeding:   { canCreate: true,  canEdit: true,  canDelete: true },
+    health:     { canCreate: true,  canEdit: true,  canDelete: true },
+    sales:      { canCreate: false, canEdit: false, canDelete: false },
+    users:      { canCreate: false, canEdit: false, canDelete: false },
+    feedstock:  { canCreate: true,  canEdit: true,  canDelete: false },
   },
   keeper: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false },
-    breeding:  { canCreate: false, canEdit: false, canDelete: false },
-    health:    { canCreate: true,  canEdit: true,  canDelete: false },
-    sales:     { canCreate: false, canEdit: false, canDelete: false },
-    users:     { canCreate: false, canEdit: false, canDelete: false },
+    tortoise:   { canCreate: true,  canEdit: true,  canDelete: false },
+    breeding:   { canCreate: false, canEdit: false, canDelete: false },
+    health:     { canCreate: true,  canEdit: true,  canDelete: false },
+    sales:      { canCreate: false, canEdit: false, canDelete: false },
+    users:      { canCreate: false, canEdit: false, canDelete: false },
+    feedstock:  { canCreate: false, canEdit: true,  canDelete: false },
   },
 };
 
@@ -66,4 +70,13 @@ export function canAccess(role, section) {
 
 export function getPerms(role, section) {
   return PAGE_PERMISSIONS[role]?.[section] ?? { canCreate: false, canEdit: false, canDelete: false };
+}
+
+// Helper alias used by FeedStockPage
+export function canPerformAction(role, section, action) {
+  const perms = getPerms(role, section);
+  if (action === "create") return perms.canCreate;
+  if (action === "edit") return perms.canEdit;
+  if (action === "delete") return perms.canDelete;
+  return false;
 }
