@@ -37,7 +37,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [videoError, setVideoError] = useState("");
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "belum_diketahui", morph: "normal",
-    is_proven: false, birth_date: "", weight_grams: "", shell_length_cm: "",
+    is_proven: false, birth_date: "", purchase_date: "", weight_grams: "", shell_length_cm: "",
     status: "aktif", enclosure: "", notes: "",
   });
 
@@ -156,6 +156,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
                 <SelectContent>
                   <SelectItem value="aktif">Aktif</SelectItem>
                   <SelectItem value="breeding">Breeding</SelectItem>
+                  <SelectItem value="sakit">Sakit</SelectItem>
                   <SelectItem value="terjual">Terjual</SelectItem>
                   <SelectItem value="mati">Mati</SelectItem>
                 </SelectContent>
@@ -183,17 +184,23 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Tanggal Lahir</Label>
+              <Label>Tanggal Lahir / Menetas</Label>
               <Input type="date" value={form.birth_date} onChange={(e) => set("birth_date", e.target.value)} />
             </div>
+            <div className="space-y-1.5">
+              <Label>Tanggal Pembelian</Label>
+              <Input type="date" value={form.purchase_date || ""} onChange={(e) => set("purchase_date", e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Berat (gram)</Label>
               <Input type="number" value={form.weight_grams} onChange={(e) => set("weight_grams", e.target.value)} />
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Panjang Cangkang (cm)</Label>
-            <Input type="number" step="0.1" value={form.shell_length_cm} onChange={(e) => set("shell_length_cm", e.target.value)} />
+            <div className="space-y-1.5">
+              <Label>Panjang Cangkang (cm)</Label>
+              <Input type="number" step="0.1" value={form.shell_length_cm} onChange={(e) => set("shell_length_cm", e.target.value)} />
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Catatan</Label>

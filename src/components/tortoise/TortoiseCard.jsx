@@ -20,9 +20,19 @@ const healthConfig = {
 const statusColors = {
   aktif:    "bg-primary/10 text-primary border-primary/20",
   breeding: "bg-accent/10 text-accent border-accent/20",
-  terjual:  "bg-chart-4/10 text-chart-4 border-chart-4/20",
+  terjual:  "bg-yellow-100 text-yellow-800 border-yellow-300",
   mati:     "bg-muted text-muted-foreground border-border",
+  sakit:    "bg-red-100 text-red-700 border-red-300",
 };
+
+// Background warna untuk card berdasarkan kondisi
+function getCardBg(tortoise) {
+  if (tortoise.status === "sakit") return "bg-red-50 border-red-200";
+  if (tortoise.status === "terjual") return "bg-yellow-50 border-yellow-200";
+  if (tortoise.is_proven) return "bg-green-50 border-green-200";
+  if (tortoise.gender === "betina") return "bg-pink-50 border-pink-200";
+  return "";
+}
 
 const morphLabels = {
   normal: "Normal", over_scute: "Over Scute", less_scute: "Less Scute",
@@ -76,9 +86,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
+  const cardBg = getCardBg(tortoise);
+
   return (
     <>
-    <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border}`}>
+    <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border} ${cardBg}`}>
       <div className="flex items-start gap-3">
         {/* Foto Thumbnail */}
         <button
@@ -102,7 +114,9 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-sm">{tortoise.name}</h3>
+            <h3 className={`font-bold ${tortoise.gender === "betina" ? "text-base text-pink-700" : "text-sm"}`}>
+              {tortoise.name}
+            </h3>
             {tortoise.code && <span className="text-xs text-muted-foreground">({tortoise.code})</span>}
             {tortoise.is_proven && <ProvenBadge gender={tortoise.gender} />}
           </div>
@@ -127,7 +141,8 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             {tortoise.weight_grams && <span>{tortoise.weight_grams}g</span>}
             {tortoise.shell_length_cm && <span>{tortoise.shell_length_cm}cm</span>}
             {tortoise.enclosure && <span>📍 {tortoise.enclosure}</span>}
-            {tortoise.birth_date && <span>{format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: id })}</span>}
+            {tortoise.birth_date && <span>🐣 {format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: id })}</span>}
+            {tortoise.purchase_date && <span>🛒 {format(new Date(tortoise.purchase_date), "d MMM yyyy", { locale: id })}</span>}
           </div>
         </div>
 

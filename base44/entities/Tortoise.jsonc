@@ -41,7 +41,12 @@
     "birth_date": {
       "type": "string",
       "format": "date",
-      "description": "Tanggal lahir"
+      "description": "Tanggal lahir / menetas"
+    },
+    "purchase_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pembelian (jika dibeli, bukan dari farm)"
     },
     "weight_grams": {
       "type": "number",
@@ -57,7 +62,8 @@
         "aktif",
         "terjual",
         "mati",
-        "breeding"
+        "breeding",
+        "sakit"
       ],
       "default": "aktif",
       "description": "Status tortoise"

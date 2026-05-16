@@ -21,10 +21,11 @@ export default function TortoiseList() {
   const [editData, setEditData] = useState(null);
   const [moveTarget, setMoveTarget] = useState(null);
   const [renameEnclosure, setRenameEnclosure] = useState(null); // { name, ids }
-  const canRenameEnclosure = ["admin", "owner"].includes(role);
+  const canRenameEnclosure = ["admin", "owner", "manajer"].includes(role);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua");
   const [genderFilter, setGenderFilter] = useState("semua");
+  const [enclosureFilter, setEnclosureFilter] = useState(null); // null = tampil semua
   const [viewMode, setViewMode] = useState("kandang"); // "kandang" | "semua"
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -87,7 +88,8 @@ export default function TortoiseList() {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "semua" || t.status === statusFilter;
     const matchGender = genderFilter === "semua" || t.gender === genderFilter;
-    return matchSearch && matchStatus && matchGender;
+    const matchEnclosure = !enclosureFilter || (t.enclosure || "Tidak Ada Kandang") === enclosureFilter;
+    return matchSearch && matchStatus && matchGender && matchEnclosure;
   });
 
   // Group by enclosure
@@ -97,6 +99,11 @@ export default function TortoiseList() {
       const key = t.enclosure || "Tidak Ada Kandang";
       if (!map[key]) map[key] = [];
       map[key].push(t);
+    });
+    // Sort terjual to bottom within each group
+    const statusOrder = { aktif: 0, breeding: 1, sakit: 2, mati: 3, terjual: 4 };
+    Object.values(map).forEach((arr) => {
+      arr.sort((a, b) => (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0));
     });
     // Sort: standard enclosures first
     const order = ["W1","W2","W3","W4","W5","N1","N2","E1","E2","E3","E4","E5","L2"];
@@ -152,6 +159,7 @@ export default function TortoiseList() {
             <SelectItem value="semua">Semua Status</SelectItem>
             <SelectItem value="aktif">Aktif</SelectItem>
             <SelectItem value="breeding">Breeding</SelectItem>
+            <SelectItem value="sakit">Sakit</SelectItem>
             <SelectItem value="terjual">Terjual</SelectItem>
             <SelectItem value="mati">Mati</SelectItem>
           </SelectContent>
@@ -183,6 +191,16 @@ export default function TortoiseList() {
         </div>
       </div>
 
+      {/* Filter kandang aktif */}
+      {enclosureFilter && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg text-sm">
+          <span className="font-medium text-primary">Menampilkan: Kandang {enclosureFilter}</span>
+          <button onClick={() => setEnclosureFilter(null)} className="ml-auto text-xs text-muted-foreground hover:text-destructive underline">
+            Tampilkan Semua
+          </button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -194,7 +212,10 @@ export default function TortoiseList() {
         </div>
       ) : viewMode === "semua" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((t) => (
+          {[...filtered].sort((a, b) => {
+            const o = { aktif: 0, breeding: 1, sakit: 2, mati: 3, terjual: 4 };
+            return (o[a.status] ?? 0) - (o[b.status] ?? 0);
+          }).map((t) => (
             <TortoiseCard
               key={t.id}
               tortoise={t}
@@ -219,7 +240,13 @@ export default function TortoiseList() {
                 >
                   <div className="flex items-center gap-3">
                     {collapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                    <span className="font-semibold text-sm">Kandang {enclosure}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setEnclosureFilter(enclosureFilter === enclosure ? null : enclosure); }}
+                      className={`font-semibold text-sm hover:text-primary hover:underline transition-colors ${enclosureFilter === enclosure ? "text-primary underline" : ""}`}
+                    >
+                      Kandang {enclosure}
+                    </button>
                     <Badge variant="secondary" className="text-xs">{items.length} ekor</Badge>
                     <div className="flex gap-1 text-xs text-muted-foreground">
                       <span>♂ {items.filter(t => t.gender === "jantan").length}</span>

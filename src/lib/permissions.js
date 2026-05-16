@@ -52,7 +52,7 @@ export const PAGE_PERMISSIONS = {
     warehouse: { canCreate: true,  canEdit: true,  canDelete: false },
   },
   keeper: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false },
+    tortoise:  { canCreate: false, canEdit: false, canDelete: false },
     breeding:  { canCreate: false, canEdit: false, canDelete: false },
     health:    { canCreate: true,  canEdit: true,  canDelete: false },
     finance:   { canCreate: false, canEdit: false, canDelete: false },
