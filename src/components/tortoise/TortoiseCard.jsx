@@ -3,15 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Image } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
+import EggHistoryPanel from "./EggHistoryPanel";
 
 const healthConfig = {
-  critical: { border: "border-l-4 border-l-red-500",    dot: "bg-red-500",    label: "Butuh Perawatan",      badge: "bg-red-100 text-red-700" },
-  warning:  { border: "border-l-4 border-l-yellow-400", dot: "bg-yellow-400", label: "Perlu Perhatian",       badge: "bg-yellow-100 text-yellow-700" },
-  ok:       { border: "border-l-4 border-l-green-400",  dot: "bg-green-400",  label: "Sehat",                 badge: "bg-green-100 text-green-700" },
+  critical: { border: "border-l-4 border-l-red-500",    dot: "bg-red-500",    label: "Butuh Perawatan",  badge: "bg-red-100 text-red-700" },
+  warning:  { border: "border-l-4 border-l-yellow-400", dot: "bg-yellow-400", label: "Perlu Perhatian",  badge: "bg-yellow-100 text-yellow-700" },
+  ok:       { border: "border-l-4 border-l-green-400",  dot: "bg-green-400",  label: "Sehat",            badge: "bg-green-100 text-green-700" },
   none:     { border: "",                                dot: "bg-muted-foreground/30", label: "Belum Ada Rekam", badge: "bg-muted text-muted-foreground" },
 };
 
@@ -23,48 +24,75 @@ const statusColors = {
 };
 
 const morphLabels = {
-  normal:     "Normal",
-  over_scute: "Over Scute",
-  less_scute: "Less Scute",
-  het_albino: "Het Albino",
-  ivory:      "Ivory",
-  albino:     "Albino",
+  normal: "Normal", over_scute: "Over Scute", less_scute: "Less Scute",
+  het_albino: "Het Albino", ivory: "Ivory", albino: "Albino",
 };
-
 const morphColors = {
-  normal:     "bg-muted text-muted-foreground",
-  over_scute: "bg-blue-100 text-blue-700",
-  less_scute: "bg-purple-100 text-purple-700",
-  het_albino: "bg-orange-100 text-orange-700",
-  ivory:      "bg-yellow-100 text-yellow-700",
-  albino:     "bg-pink-100 text-pink-700",
+  normal: "bg-muted text-muted-foreground", over_scute: "bg-blue-100 text-blue-700",
+  less_scute: "bg-purple-100 text-purple-700", het_albino: "bg-orange-100 text-orange-700",
+  ivory: "bg-yellow-100 text-yellow-700", albino: "bg-pink-100 text-pink-700",
+};
+const genderLabels = {
+  jantan: "♂ Jantan", betina: "♀ Betina", belum_diketahui: "? Belum Diketahui",
 };
 
-const genderLabels = {
-  jantan:         "♂ Jantan",
-  betina:         "♀ Betina",
-  belum_diketahui: "? Belum Diketahui",
-};
+function ProvenBadge({ gender }) {
+  if (gender === "jantan") return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-600 text-white shadow-sm">
+      ♂ ✓ Proven
+    </span>
+  );
+  if (gender === "betina") return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-pink-500 text-white shadow-sm">
+      ♀ ✓ Proven
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-green-500 text-white shadow-sm">
+      ✓ Proven
+    </span>
+  );
+}
 
 export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth, parentIndicator }) {
   const [showHistory, setShowHistory] = useState(false);
-  const [showPhoto, setShowPhoto] = useState(false);
+  const [showEggHistory, setShowEggHistory] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+
   const showActions = onEdit || onDelete || onMove;
   const health = healthConfig[healthStatus] || healthConfig.none;
   const morph = tortoise.morph || "normal";
+
+  // Ambil semua foto (support multi-foto & backward compat single photo_url)
+  const photos = Array.isArray(tortoise.photos) && tortoise.photos.length > 0
+    ? tortoise.photos
+    : tortoise.photo_url ? [{ url: tortoise.photo_url }] : [];
+  const thumbnailUrl = tortoise.photo_url || (photos[0]?.url || "");
+
+  const shareWA = (url) => {
+    const text = encodeURIComponent(`Foto kura-kura ${tortoise.name}: ${url}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
 
   return (
     <>
     <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border}`}>
       <div className="flex items-start gap-3">
-        {/* Foto */}
+        {/* Foto Thumbnail */}
         <button
-          className="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border hover:opacity-80 transition-opacity"
-          onClick={() => tortoise.photo_url && setShowPhoto(true)}
+          className="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border hover:opacity-80 transition-opacity relative"
+          onClick={() => photos.length > 0 && setLightboxIdx(0)}
           type="button"
         >
-          {tortoise.photo_url ? (
-            <img src={tortoise.photo_url} alt={tortoise.name} className="w-14 h-14 object-cover" />
+          {thumbnailUrl ? (
+            <>
+              <img src={thumbnailUrl} alt={tortoise.name} className="w-14 h-14 object-cover" />
+              {photos.length > 1 && (
+                <span className="absolute bottom-0 right-0 bg-black/50 text-white text-[9px] px-1 rounded-tl-md">
+                  +{photos.length - 1}
+                </span>
+              )}
+            </>
           ) : (
             <Shell className="w-6 h-6 text-primary/40" />
           )}
@@ -74,12 +102,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-sm">{tortoise.name}</h3>
             {tortoise.code && <span className="text-xs text-muted-foreground">({tortoise.code})</span>}
-            {/* Proven badge — hijau */}
-            {tortoise.is_proven && (
-              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-green-500 text-white">
-                ✓ Proven
-              </span>
-            )}
+            {tortoise.is_proven && <ProvenBadge gender={tortoise.gender} />}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -111,6 +134,9 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="Riwayat Kandang" onClick={() => setShowHistory(true)}>
               <MapPin className="w-3 h-3" />
             </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-accent" title="History Bertelur" onClick={() => setShowEggHistory(true)}>
+              <Egg className="w-3 h-3" />
+            </Button>
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(tortoise)}>
                 <Pencil className="w-3 h-3" />
@@ -131,18 +157,47 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
       </div>
     </Card>
 
-    {/* Foto fullscreen */}
-    {showPhoto && tortoise.photo_url && (
-      <Dialog open={showPhoto} onOpenChange={setShowPhoto}>
+    {/* Lightbox multi-foto */}
+    {lightboxIdx !== null && photos.length > 0 && (
+      <Dialog open={lightboxIdx !== null} onOpenChange={() => setLightboxIdx(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{tortoise.name}</DialogTitle>
+            <DialogTitle>{tortoise.name} — Foto {lightboxIdx + 1}/{photos.length}</DialogTitle>
           </DialogHeader>
-          <img src={tortoise.photo_url} alt={tortoise.name} className="w-full rounded-xl object-contain max-h-96" />
+          <div className="relative">
+            <img src={photos[lightboxIdx].url} alt={tortoise.name} className="w-full rounded-xl object-contain max-h-96" />
+            {photos.length > 1 && (
+              <>
+                <button type="button" onClick={() => setLightboxIdx((lightboxIdx - 1 + photos.length) % photos.length)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button type="button" onClick={() => setLightboxIdx((lightboxIdx + 1) % photos.length)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
+          {/* Thumbnail strip */}
+          {photos.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto py-1">
+              {photos.map((p, i) => (
+                <button key={i} type="button" onClick={() => setLightboxIdx(i)}
+                  className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${i === lightboxIdx ? "border-primary" : "border-transparent"}`}>
+                  <img src={p.url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+          <Button type="button" variant="outline" size="sm" className="gap-2 mt-1" onClick={() => shareWA(photos[lightboxIdx].url)}>
+            <Share2 className="w-3.5 h-3.5 text-green-600" /> Share ke WhatsApp
+          </Button>
         </DialogContent>
       </Dialog>
     )}
 
+    {/* Riwayat Kandang */}
     <Dialog open={showHistory} onOpenChange={setShowHistory}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
@@ -153,6 +208,21 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         </DialogHeader>
         <div className="py-2">
           <EnclosureHistoryPanel tortoiseId={tortoise.id} />
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* History Bertelur */}
+    <Dialog open={showEggHistory} onOpenChange={setShowEggHistory}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Egg className="w-4 h-4 text-accent" />
+            History Bertelur — {tortoise.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          <EggHistoryPanel tortoiseId={tortoise.id} tortoiseName={tortoise.name} />
         </div>
       </DialogContent>
     </Dialog>

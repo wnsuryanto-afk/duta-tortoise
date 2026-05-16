@@ -68,7 +68,19 @@
     },
     "photo_url": {
       "type": "string",
-      "description": "URL foto tortoise"
+      "description": "URL foto thumbnail utama (backward compat)"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Daftar foto tortoise"
     },
     "notes": {
       "type": "string",

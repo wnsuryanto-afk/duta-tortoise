@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, ChevronDown, ChevronRight, Shell } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine } from "lucide-react";
 import TortoiseCard from "@/components/tortoise/TortoiseCard";
 import TortoiseForm from "@/components/tortoise/TortoiseForm";
 import MoveEnclosureDialog from "@/components/tortoise/MoveEnclosureDialog";
+import RenameEnclosureDialog from "@/components/tortoise/RenameEnclosureDialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms } from "@/lib/permissions";
 
@@ -19,6 +20,8 @@ export default function TortoiseList() {
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [moveTarget, setMoveTarget] = useState(null);
+  const [renameEnclosure, setRenameEnclosure] = useState(null); // { name, ids }
+  const canRenameEnclosure = ["admin", "owner"].includes(role);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua");
   const [genderFilter, setGenderFilter] = useState("semua");
@@ -224,6 +227,16 @@ export default function TortoiseList() {
                       <span>♀ {items.filter(t => t.gender === "betina").length}</span>
                     </div>
                   </div>
+                  {canRenameEnclosure && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setRenameEnclosure({ name: enclosure, ids: items.map(t => t.id) }); }}
+                      className="mr-2 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Ubah nama kandang"
+                    >
+                      <PenLine className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </button>
                 {!collapsed && (
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -257,6 +270,15 @@ export default function TortoiseList() {
           open={!!moveTarget}
           onClose={() => setMoveTarget(null)}
           onMoved={handleMoved}
+        />
+      )}
+
+      {renameEnclosure && (
+        <RenameEnclosureDialog
+          open={!!renameEnclosure}
+          onClose={() => setRenameEnclosure(null)}
+          enclosureName={renameEnclosure.name}
+          tortoiseIds={renameEnclosure.ids}
         />
       )}
     </div>

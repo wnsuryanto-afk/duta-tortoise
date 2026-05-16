@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import TortoisePhotoGallery from "./TortoisePhotoGallery";
 
 const MORPHS = [
   { value: "normal",      label: "Normal" },
@@ -18,25 +19,30 @@ const MORPHS = [
   { value: "albino",      label: "Albino" },
 ];
 
+// Migrasi: jika editData hanya punya photo_url (string lama), ubah ke array
+function initPhotos(editData) {
+  if (!editData) return [];
+  if (Array.isArray(editData.photos)) return editData.photos;
+  if (editData.photo_url) return [{ url: editData.photo_url }];
+  return [];
+}
+
 export default function TortoiseForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photos, setPhotos] = useState(initPhotos(editData));
+  const [thumbnailUrl, setThumbnailUrl] = useState(editData?.photo_url || (initPhotos(editData)[0]?.url || ""));
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "belum_diketahui", morph: "normal",
     is_proven: false, birth_date: "", weight_grams: "", shell_length_cm: "",
-    status: "aktif", enclosure: "", photo_url: "", notes: "",
+    status: "aktif", enclosure: "", notes: "",
   });
 
   const set = (field, value) => setForm((p) => ({ ...p, [field]: value }));
 
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingPhoto(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    set("photo_url", file_url);
-    setUploadingPhoto(false);
+  const handlePhotosChange = (newPhotos, newThumb) => {
+    setPhotos(newPhotos);
+    setThumbnailUrl(newThumb || "");
   };
 
   const handleSubmit = async (e) => {
@@ -46,6 +52,8 @@ export default function TortoiseForm({ open, onClose, editData }) {
       ...form,
       weight_grams: form.weight_grams ? Number(form.weight_grams) : undefined,
       shell_length_cm: form.shell_length_cm ? Number(form.shell_length_cm) : undefined,
+      photos: photos,
+      photo_url: thumbnailUrl || (photos[0]?.url || ""), // backward compat
     };
     if (editData?.id) {
       await base44.entities.Tortoise.update(editData.id, data);
@@ -65,30 +73,15 @@ export default function TortoiseForm({ open, onClose, editData }) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
 
-          {/* Foto */}
+          {/* Foto Gallery */}
           <div className="space-y-1.5">
             <Label>Foto Tortoise</Label>
-            <div className="flex items-center gap-3">
-              {form.photo_url ? (
-                <div className="relative w-20 h-20">
-                  <img src={form.photo_url} alt="foto" className="w-20 h-20 rounded-xl object-cover border" />
-                  <button type="button" onClick={() => set("photo_url", "")}
-                    className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <div className="w-20 h-20 rounded-xl bg-muted border-2 border-dashed flex items-center justify-center text-muted-foreground">
-                  <Upload className="w-5 h-5" />
-                </div>
-              )}
-              <label className="cursor-pointer">
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                <span className="text-sm text-primary underline hover:no-underline">
-                  {uploadingPhoto ? "Mengupload..." : "Pilih foto"}
-                </span>
-              </label>
-            </div>
+            <TortoisePhotoGallery
+              photos={photos}
+              thumbnailUrl={thumbnailUrl}
+              tortoiseName={form.name || "Tortoise"}
+              onChange={handlePhotosChange}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -180,7 +173,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <Button type="submit" disabled={saving || uploadingPhoto}>
+            <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editData?.id ? "Simpan" : "Tambah"}
             </Button>
