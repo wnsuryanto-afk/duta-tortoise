@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UserPlus, Mail, Shield, Loader2, Users } from "lucide-react";
+import { UserPlus, Mail, Shield, Loader2, Users, UserX, AlertTriangle } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { ROLE_LABELS, ROLE_COLORS, canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
@@ -23,7 +23,8 @@ function InviteUserDialog({ open, onClose }) {
     e.preventDefault();
     setLoading(true);
     await base44.users.inviteUser(email, role === "owner" || role === "admin" ? "admin" : "user");
-    // Also store role in our User entity (will be updated when user first logs in)
+    // Kirim notifikasi ke owner & manajer
+    base44.functions.invoke("notifyNewUser", { newUserEmail: email, newUserName: email });
     setLoading(false);
     setDone(true);
     setTimeout(() => { setDone(false); onClose(); setEmail(""); setRole("keeper"); }, 2000);
@@ -137,15 +138,62 @@ function EditRoleDialog({ open, onClose, targetUser }) {
   );
 }
 
+function KickUserDialog({ open, onClose, targetUser, onKicked }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleKick = async () => {
+    setLoading(true);
+    // Ubah role ke "kicked" sebagai penanda, lalu update
+    await base44.entities.User.update(targetUser.id, { role: "kicked" });
+    setLoading(false);
+    onKicked();
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <UserX className="w-5 h-5" /> Keluarkan Pengguna
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 border border-red-200">
+            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-800">Konfirmasi Kick User</p>
+              <p className="text-xs text-red-700 mt-1">
+                <strong>{targetUser?.full_name || targetUser?.email}</strong> akan dikeluarkan dan tidak dapat mengakses sistem. Tindakan ini dapat dibatalkan dengan mengubah role kembali.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
+            <Button variant="destructive" className="flex-1" onClick={handleKick} disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Ya, Keluarkan
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function UserManagement() {
   const { user: currentUser, role } = useCurrentUser();
+  const queryClient = useQueryClient();
   const [showInvite, setShowInvite] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [kickTarget, setKickTarget] = useState(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: () => base44.entities.User.list("-created_date", 100),
   });
+
+  const canKick = ["admin", "owner"].includes(role);
 
   if (!canAccess(role, "users")) return <AccessDenied />;
 
@@ -216,26 +264,35 @@ export default function UserManagement() {
         ) : (
           <div className="divide-y">
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
+              <div key={u.id} className={`flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors ${u.role === "kicked" ? "opacity-50 bg-red-50/30" : ""}`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-semibold text-primary">
-                      {(u.full_name || u.email || "?")[0].toUpperCase()}
-                    </span>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${u.role === "kicked" ? "bg-red-100" : "bg-primary/10"}`}>
+                    {u.role === "kicked"
+                      ? <UserX className="w-4 h-4 text-red-500" />
+                      : <span className="text-sm font-semibold text-primary">{(u.full_name || u.email || "?")[0].toUpperCase()}</span>
+                    }
                   </div>
                   <div>
                     <p className="text-sm font-medium">{u.full_name || "—"}</p>
                     <p className="text-xs text-muted-foreground">{u.email}</p>
+                    {u.role === "kicked" && <span className="text-[10px] text-red-500 font-medium">Dikeluarkan dari sistem</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className={`text-xs ${ROLE_COLORS[u.role] || ROLE_COLORS.keeper}`}>
-                    {ROLE_LABELS[u.role] || "Keeper"}
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={`text-xs ${u.role === "kicked" ? "border-red-200 text-red-500" : (ROLE_COLORS[u.role] || ROLE_COLORS.keeper)}`}>
+                    {u.role === "kicked" ? "Kicked" : (ROLE_LABELS[u.role] || "Keeper")}
                   </Badge>
                   {u.id !== currentUser?.id && (
-                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditTarget(u)}>
-                      Ubah Role
-                    </Button>
+                    <>
+                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditTarget(u)}>
+                        Ubah Role
+                      </Button>
+                      {canKick && u.role !== "kicked" && (
+                        <Button variant="ghost" size="sm" className="text-xs h-7 text-destructive hover:text-destructive hover:bg-red-50" onClick={() => setKickTarget(u)}>
+                          <UserX className="w-3 h-3 mr-1" /> Kick
+                        </Button>
+                      )}
+                    </>
                   )}
                   {u.id === currentUser?.id && (
                     <span className="text-xs text-muted-foreground italic">(Anda)</span>
@@ -250,6 +307,14 @@ export default function UserManagement() {
       <InviteUserDialog open={showInvite} onClose={() => setShowInvite(false)} />
       {editTarget && (
         <EditRoleDialog open={!!editTarget} onClose={() => setEditTarget(null)} targetUser={editTarget} />
+      )}
+      {kickTarget && (
+        <KickUserDialog
+          open={!!kickTarget}
+          onClose={() => setKickTarget(null)}
+          targetUser={kickTarget}
+          onKicked={() => queryClient.invalidateQueries({ queryKey: ["users"] })}
+        />
       )}
     </div>
   );

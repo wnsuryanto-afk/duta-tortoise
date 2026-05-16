@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, Video } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
 
 const MORPHS = [
@@ -32,6 +32,9 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState(initPhotos(editData));
   const [thumbnailUrl, setThumbnailUrl] = useState(editData?.photo_url || (initPhotos(editData)[0]?.url || ""));
+  const [deathVideoUrl, setDeathVideoUrl] = useState(editData?.death_video_url || "");
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoError, setVideoError] = useState("");
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "belum_diketahui", morph: "normal",
     is_proven: false, birth_date: "", weight_grams: "", shell_length_cm: "",
@@ -45,15 +48,40 @@ export default function TortoiseForm({ open, onClose, editData }) {
     setThumbnailUrl(newThumb || "");
   };
 
+  const isMati = form.status === "mati";
+
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVideo(true);
+    setVideoError("");
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setDeathVideoUrl(file_url);
+    setUploadingVideo(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validasi wajib foto + video saat status mati
+    if (isMati) {
+      if (photos.length === 0) {
+        setVideoError("Wajib upload minimal 1 foto saat status kura-kura Mati.");
+        return;
+      }
+      if (!deathVideoUrl) {
+        setVideoError("Wajib upload video saat status kura-kura Mati.");
+        return;
+      }
+    }
+    setVideoError("");
     setSaving(true);
     const data = {
       ...form,
       weight_grams: form.weight_grams ? Number(form.weight_grams) : undefined,
       shell_length_cm: form.shell_length_cm ? Number(form.shell_length_cm) : undefined,
       photos: photos,
-      photo_url: thumbnailUrl || (photos[0]?.url || ""), // backward compat
+      photo_url: thumbnailUrl || (photos[0]?.url || ""),
+      death_video_url: deathVideoUrl || undefined,
     };
     if (editData?.id) {
       await base44.entities.Tortoise.update(editData.id, data);
@@ -171,6 +199,41 @@ export default function TortoiseForm({ open, onClose, editData }) {
             <Label>Catatan</Label>
             <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
           </div>
+
+          {/* Wajib foto + video saat mati */}
+          {isMati && (
+            <div className="space-y-3 p-3 rounded-xl bg-red-50 border border-red-200">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <p className="text-sm font-medium text-red-800">Status Mati — Dokumentasi Wajib</p>
+              </div>
+              <p className="text-xs text-red-700">Foto dan video wajib diupload sebagai bukti dokumentasi kematian.</p>
+
+              {/* Upload Video */}
+              <div className="space-y-1.5">
+                <Label className="text-red-800">Video Dokumentasi *</Label>
+                {deathVideoUrl ? (
+                  <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-red-200">
+                    <Video className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <span className="text-xs text-green-700 font-medium truncate flex-1">Video berhasil diupload ✓</span>
+                    <button type="button" onClick={() => setDeathVideoUrl("")} className="text-xs text-red-500 hover:underline">Hapus</button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-red-300 rounded-lg p-3 hover:border-red-400 transition-colors bg-white">
+                    <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} disabled={uploadingVideo} />
+                    {uploadingVideo
+                      ? <><Loader2 className="w-4 h-4 animate-spin text-red-500" /><span className="text-xs text-red-600">Mengupload video...</span></>
+                      : <><Video className="w-4 h-4 text-red-400" /><span className="text-xs text-red-600">Klik untuk upload video</span></>
+                    }
+                  </label>
+                )}
+              </div>
+              {videoError && (
+                <p className="text-xs text-red-600 font-medium">{videoError}</p>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={saving}>

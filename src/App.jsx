@@ -21,6 +21,7 @@ import FeedStockPage from '@/pages/FeedStockPage';
 import DailyPayrollReport from '@/pages/DailyPayrollReport';
 import WarehousePage from '@/pages/WarehousePage';
 import FinancePage from '@/pages/FinancePage';
+import InfoPage from '@/pages/InfoPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -59,6 +60,7 @@ const AuthenticatedApp = () => {
         <Route path="/daily-payroll" element={<DailyPayrollReport />} />
         <Route path="/warehouse" element={<WarehousePage />} />
         <Route path="/finance" element={<FinancePage />} />
+        <Route path="/info" element={<InfoPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
