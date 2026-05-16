@@ -22,7 +22,7 @@ const NAV_GROUPS = [
     label: "Pengelolaan",
     items: [
       { path: "/tortoise",        section: "tortoise",        label: "Tortoise",        icon: Shell },
-      { path: "/breeding",        section: "breeding",        label: "Pembiakan",       icon: Baby },
+      { path: "/breeding",        section: "breeding",        label: "Torto Bertelor",  icon: Baby },
       { path: "/health",          section: "health",          label: "Kesehatan",       icon: Heart },
       { path: "/reminders",       section: "reminders",       label: "Pengingat",       icon: Bell },
       { path: "/treatment",       section: "treatment",       label: "Jadwal Treatment", icon: Stethoscope },

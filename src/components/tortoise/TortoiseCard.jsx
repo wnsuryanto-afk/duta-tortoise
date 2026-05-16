@@ -18,17 +18,18 @@ const healthConfig = {
 };
 
 const statusColors = {
-  aktif:    "bg-primary/10 text-primary border-primary/20",
-  breeding: "bg-accent/10 text-accent border-accent/20",
-  terjual:  "bg-yellow-100 text-yellow-800 border-yellow-300",
-  mati:     "bg-muted text-muted-foreground border-border",
-  sakit:    "bg-red-100 text-red-700 border-red-300",
+  aktif:   "bg-primary/10 text-primary border-primary/20",
+  baby:    "bg-sky-100 text-sky-700 border-sky-300",
+  terjual: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  mati:    "bg-muted text-muted-foreground border-border",
+  sakit:   "bg-red-100 text-red-700 border-red-300",
 };
 
 // Background warna untuk card berdasarkan kondisi
 function getCardBg(tortoise) {
   if (tortoise.status === "sakit") return "bg-red-50 border-red-200";
   if (tortoise.status === "terjual") return "bg-yellow-50 border-yellow-200";
+  if (tortoise.status === "baby") return "bg-sky-50 border-sky-200";
   if (tortoise.is_proven) return "bg-green-50 border-green-200";
   if (tortoise.gender === "betina") return "bg-pink-50 border-pink-200";
   return "";

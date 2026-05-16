@@ -60,10 +60,10 @@
       "type": "string",
       "enum": [
         "aktif",
+        "baby",
+        "sakit",
         "terjual",
-        "mati",
-        "breeding",
-        "sakit"
+        "mati"
       ],
       "default": "aktif",
       "description": "Status tortoise"

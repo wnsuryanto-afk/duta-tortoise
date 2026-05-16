@@ -100,8 +100,8 @@ export default function TortoiseList() {
       if (!map[key]) map[key] = [];
       map[key].push(t);
     });
-    // Sort terjual to bottom within each group
-    const statusOrder = { aktif: 0, breeding: 1, sakit: 2, mati: 3, terjual: 4 };
+    // Sort terjual/mati to bottom within each group
+    const statusOrder = { aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 };
     Object.values(map).forEach((arr) => {
       arr.sort((a, b) => (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0));
     });
@@ -158,7 +158,7 @@ export default function TortoiseList() {
           <SelectContent>
             <SelectItem value="semua">Semua Status</SelectItem>
             <SelectItem value="aktif">Aktif</SelectItem>
-            <SelectItem value="breeding">Breeding</SelectItem>
+            <SelectItem value="baby">🐣 Baby</SelectItem>
             <SelectItem value="sakit">Sakit</SelectItem>
             <SelectItem value="terjual">Terjual</SelectItem>
             <SelectItem value="mati">Mati</SelectItem>
@@ -213,7 +213,7 @@ export default function TortoiseList() {
       ) : viewMode === "semua" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...filtered].sort((a, b) => {
-            const o = { aktif: 0, breeding: 1, sakit: 2, mati: 3, terjual: 4 };
+            const o = { aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 };
             return (o[a.status] ?? 0) - (o[b.status] ?? 0);
           }).map((t) => (
             <TortoiseCard

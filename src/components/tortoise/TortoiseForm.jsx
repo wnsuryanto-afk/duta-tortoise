@@ -155,7 +155,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="aktif">Aktif</SelectItem>
-                  <SelectItem value="breeding">Breeding</SelectItem>
+                  <SelectItem value="baby">🐣 Baby (&lt;10cm)</SelectItem>
                   <SelectItem value="sakit">Sakit</SelectItem>
                   <SelectItem value="terjual">Terjual</SelectItem>
                   <SelectItem value="mati">Mati</SelectItem>
