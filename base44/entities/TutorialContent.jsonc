@@ -1,0 +1,55 @@
+{
+  "name": "TutorialContent",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul tutorial"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "dasar",
+        "pakan",
+        "kandang",
+        "kesehatan",
+        "breeding",
+        "lainnya"
+      ],
+      "default": "lainnya",
+      "description": "Kategori"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "artikel",
+        "video"
+      ],
+      "default": "artikel"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Ringkasan singkat"
+    },
+    "content": {
+      "type": "string",
+      "description": "Isi artikel (teks panjang)"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "URL video (YouTube embed atau link langsung)"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL gambar thumbnail"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "type"
+  ]
+}

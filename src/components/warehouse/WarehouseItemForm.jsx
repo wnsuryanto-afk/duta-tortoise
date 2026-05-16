@@ -45,7 +45,9 @@ export default function WarehouseItemForm({ open, editData, onClose, onBarcode }
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editData?.id ? "Edit Barang" : "Tambah Barang"}</DialogTitle>
+          <DialogTitle>
+            {editData?.id ? "Edit Barang" : editData?.code && !editData?.id ? `Tambah Barang Baru (Kode: ${editData.code})` : "Tambah Barang"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3 mt-2">
           <div className="grid grid-cols-2 gap-3">

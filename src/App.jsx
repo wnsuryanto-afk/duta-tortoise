@@ -23,6 +23,8 @@ import WarehousePage from '@/pages/WarehousePage';
 import FinancePage from '@/pages/FinancePage';
 import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
+import FeedbackPage from '@/pages/FeedbackPage';
+import TutorialManagePage from '@/pages/TutorialManagePage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -63,6 +65,8 @@ const AuthenticatedApp = () => {
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/info" element={<InfoPage />} />
         <Route path="/treatment" element={<TreatmentPage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="/tutorial" element={<TutorialManagePage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

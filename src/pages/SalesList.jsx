@@ -95,9 +95,14 @@ export default function SalesList() {
                       {s.buyer_address && <span className="truncate max-w-[200px]">📍 {s.buyer_address}</span>}
                     </div>
                   </div>
-                  <p className="text-sm font-bold text-primary flex-shrink-0">
-                    Rp {s.price?.toLocaleString("id-ID")}
-                  </p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-bold text-primary">Rp {s.price?.toLocaleString("id-ID")}</p>
+                    {s.hpp > 0 && (
+                      <p className={`text-xs font-medium ${(s.price - s.hpp) >= 0 ? "text-green-600" : "text-destructive"}`}>
+                        Profit: Rp {(s.price - s.hpp).toLocaleString("id-ID")}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 {(perms.canEdit || perms.canDelete) && (
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">

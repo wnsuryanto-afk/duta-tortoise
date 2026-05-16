@@ -38,9 +38,44 @@
       "default": "harian",
       "description": "Frekuensi task"
     },
+    "weekly_days": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Hari dalam seminggu untuk task mingguan (0=Minggu, 1=Senin,...6=Sabtu)"
+    },
+    "monthly_dates": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Tanggal-tanggal dalam bulan untuk task bulanan (1-31)"
+    },
+    "target_enclosures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Kandang yang dituju (kosong = semua)"
+    },
+    "target_tortoise_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ID kura-kura yang dituju (kosong = semua)"
+    },
+    "target_tortoise_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Nama kura-kura yang dituju"
+    },
     "deadline_time": {
       "type": "string",
-      "description": "Batas waktu pengerjaan (HH:mm), misal 09:00. Jika kosong tidak ada batas waktu."
+      "description": "Batas waktu pengerjaan (HH:mm)"
     },
     "is_active": {
       "type": "boolean",

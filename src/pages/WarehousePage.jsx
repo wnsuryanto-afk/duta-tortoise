@@ -93,9 +93,11 @@ export default function WarehousePage() {
     const found = items.find((i) => i.code === code);
     if (found) {
       setTxDialog(found);
-      setTxType("keluar");
+      setTxType("masuk");
     } else {
-      alert(`Barang dengan kode "${code}" tidak ditemukan.`);
+      // Kode tidak ditemukan → buka form tambah barang baru dengan kode ini
+      setEditItem({ code });
+      setShowForm(true);
     }
   };
 

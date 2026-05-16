@@ -12,6 +12,8 @@ import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import EggHatchChart from "@/components/dashboard/EggHatchChart";
 import AttendanceSummary from "@/components/dashboard/AttendanceSummary";
 import FinanceSummaryWidget from "@/components/dashboard/FinanceSummaryWidget";
+import AttendanceDashboardBanner from "@/components/dashboard/AttendanceDashboardBanner";
+import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -50,6 +52,9 @@ export default function Dashboard() {
         <p className="text-muted-foreground text-sm mt-1">Ringkasan peternakan sulcata tortoise</p>
       </div>
 
+      {/* Absensi feeder selalu di paling atas */}
+      <AttendanceDashboardBanner />
+
       {role === "manajer" && <CheckInWidget />}
       <HealthReminderAlert />
       <FeedStockAlert />
@@ -71,6 +76,9 @@ export default function Dashboard() {
         <AttendanceSummary />
         <FinanceSummaryWidget />
       </div>
+
+      {/* Target Tahunan */}
+      <AnnualGoalWidget breedings={breedings} />
     </div>
   );
 }

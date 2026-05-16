@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, TrendingUp } from "lucide-react";
 
 export default function SaleForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -15,15 +15,15 @@ export default function SaleForm({ open, onClose, editData }) {
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 200),
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 300),
   });
 
-  const available = tortoises.filter((t) => t.status === "aktif");
+  const available = tortoises.filter((t) => t.status === "aktif" || t.status === "breeding");
 
   const [form, setForm] = useState(editData || {
     tortoise_name: "", tortoise_id: "", buyer_name: "", buyer_phone: "",
     buyer_address: "", sale_date: new Date().toISOString().split("T")[0],
-    price: "", payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
+    price: "", hpp: "", payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
   });
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
@@ -33,17 +33,26 @@ export default function SaleForm({ open, onClose, editData }) {
     setForm((prev) => ({ ...prev, tortoise_id: id, tortoise_name: t?.name || "" }));
   };
 
+  const profit = (Number(form.price) || 0) - (Number(form.hpp) || 0);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const data = { ...form, price: form.price ? Number(form.price) : 0 };
+    const data = {
+      ...form,
+      price: form.price ? Number(form.price) : 0,
+      hpp: form.hpp ? Number(form.hpp) : 0,
+    };
     if (editData?.id) {
       await base44.entities.Sale.update(editData.id, data);
     } else {
       await base44.entities.Sale.create(data);
-      // Update tortoise status
+      // Update tortoise status to terjual and remove from enclosure
       if (data.tortoise_id) {
-        await base44.entities.Tortoise.update(data.tortoise_id, { status: "terjual" });
+        await base44.entities.Tortoise.update(data.tortoise_id, {
+          status: "terjual",
+          enclosure: "",
+        });
         queryClient.invalidateQueries({ queryKey: ["tortoises"] });
       }
     }
@@ -67,7 +76,9 @@ export default function SaleForm({ open, onClose, editData }) {
                   <SelectTrigger><SelectValue placeholder="Pilih tortoise" /></SelectTrigger>
                   <SelectContent>
                     {available.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name} {t.code ? `(${t.code})` : ""}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name} {t.code ? `(${t.code})` : ""} {t.enclosure ? `— ${t.enclosure}` : ""}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -94,11 +105,31 @@ export default function SaleForm({ open, onClose, editData }) {
             <Label>Alamat Pembeli</Label>
             <Textarea value={form.buyer_address} onChange={(e) => handleChange("buyer_address", e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Harga (Rp) *</Label>
+              <Label>Harga Jual (Rp) *</Label>
               <Input type="number" value={form.price} onChange={(e) => handleChange("price", e.target.value)} required />
             </div>
+            <div className="space-y-1.5">
+              <Label>HPP / Modal (Rp)</Label>
+              <Input type="number" value={form.hpp} onChange={(e) => handleChange("hpp", e.target.value)} placeholder="0" />
+            </div>
+          </div>
+          {/* Profit preview */}
+          {(form.price || form.hpp) && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${profit >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+              <TrendingUp className="w-4 h-4 flex-shrink-0" />
+              <span>
+                <strong>Profit: Rp {profit.toLocaleString("id-ID")}</strong>
+                {Number(form.hpp) > 0 && Number(form.price) > 0 && (
+                  <span className="ml-2 text-xs opacity-80">
+                    ({Math.round((profit / Number(form.price)) * 100)}% margin)
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Pembayaran</Label>
               <Select value={form.payment_status} onValueChange={(v) => handleChange("payment_status", v)}>
@@ -126,6 +157,11 @@ export default function SaleForm({ open, onClose, editData }) {
             <Label>Catatan</Label>
             <Textarea value={form.notes} onChange={(e) => handleChange("notes", e.target.value)} rows={2} />
           </div>
+          {!editData?.id && (
+            <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              ⚠️ Setelah disimpan, status tortoise akan otomatis berubah menjadi <strong>Terjual</strong> dan dilepas dari kandang.
+            </p>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={saving}>
