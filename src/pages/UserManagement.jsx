@@ -67,6 +67,7 @@ function InviteUserDialog({ open, onClose }) {
                   <SelectItem value="manajer">Manajer</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="investor">Investor</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
@@ -74,6 +75,7 @@ function InviteUserDialog({ open, onClose }) {
                 {role === "manajer" && "Kelola tortoise, kesehatan, pembiakan, lihat penjualan"}
                 {role === "admin" && "Akses penuh termasuk manajemen user"}
                 {role === "owner" && "Akses penuh semua fitur & pengaturan"}
+                {role === "investor" && "Hanya lihat: Dashboard, Tortoise, Pembiakan, Keuangan"}
               </p>
             </div>
             <div className="flex justify-end gap-3 pt-2">
@@ -122,6 +124,7 @@ function EditRoleDialog({ open, onClose, targetUser }) {
                 <SelectItem value="manajer">Manajer</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="owner">Owner</SelectItem>
+                <SelectItem value="investor">Investor</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -232,6 +235,11 @@ export default function UserManagement() {
             role: "owner",
             desc: "Akses penuh semua fitur",
             perms: ["✅ Lihat Dashboard", "✅ Kelola Tortoise", "✅ Kelola Kesehatan", "✅ Kelola Pembiakan", "✅ Kelola Penjualan", "✅ Manajemen User"],
+          },
+          {
+            role: "investor",
+            desc: "Hanya lihat laporan & data",
+            perms: ["✅ Lihat Dashboard", "👁 Lihat Tortoise", "👁 Lihat Pembiakan", "👁 Lihat Keuangan", "❌ Edit/Hapus Data", "❌ Manajemen User"],
           },
         ].map(({ role, desc, perms }) => (
           <Card key={role} className="p-4">

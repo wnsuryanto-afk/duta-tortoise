@@ -1,0 +1,71 @@
+{
+  "name": "Kasbon",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "ID karyawan"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Total kasbon (Rp) - maksimal 1.000.000"
+    },
+    "request_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pengajuan kasbon"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Alasan / keperluan kasbon"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "lunas"
+      ],
+      "default": "pending",
+      "description": "Status kasbon"
+    },
+    "weekly_deduction": {
+      "type": "number",
+      "default": 100000,
+      "description": "Potongan per minggu (Rp)"
+    },
+    "total_paid": {
+      "type": "number",
+      "default": 0,
+      "description": "Total sudah dipotong (Rp)"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Disetujui oleh"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal disetujui"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan admin"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "amount",
+    "request_date"
+  ]
+}

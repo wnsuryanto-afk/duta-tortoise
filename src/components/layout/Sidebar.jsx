@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat,
-  Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, PlayCircle
+  Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, PlayCircle, CreditCard
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -43,6 +43,7 @@ const NAV_GROUPS = [
     items: [
       { path: "/sop",             section: "sop",             label: "SOP & KPI",        icon: ClipboardList },
       { path: "/payroll",         section: "payroll",         label: "Laporan KPI",      icon: FileSpreadsheet },
+      { path: "/kasbon",          section: "kasbon",          label: "Kasbon Keeper",    icon: CreditCard },
     ],
   },
   {

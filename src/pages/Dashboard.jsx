@@ -35,7 +35,7 @@ export default function Dashboard() {
     return <KeeperDashboard />;
   }
 
-  const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "breeding");
+  const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "baby");
   const totalEggs = breedings.reduce((sum, b) => sum + (b.egg_count || 0), 0);
   const totalHatched = breedings.reduce((sum, b) => sum + (b.hatched_count || 0), 0);
 

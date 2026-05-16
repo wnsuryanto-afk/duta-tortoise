@@ -62,12 +62,8 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validasi wajib foto + video saat status mati
+    // Validasi wajib video saat status mati
     if (isMati) {
-      if (photos.length === 0) {
-        setVideoError("Wajib upload minimal 1 foto saat status kura-kura Mati.");
-        return;
-      }
       if (!deathVideoUrl) {
         setVideoError("Wajib upload video saat status kura-kura Mati.");
         return;
@@ -214,7 +210,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
                 <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
                 <p className="text-sm font-medium text-red-800">Status Mati — Dokumentasi Wajib</p>
               </div>
-              <p className="text-xs text-red-700">Foto dan video wajib diupload sebagai bukti dokumentasi kematian.</p>
+              <p className="text-xs text-red-700">Video wajib diupload sebagai bukti dokumentasi kematian.</p>
 
               {/* Upload Video */}
               <div className="space-y-1.5">

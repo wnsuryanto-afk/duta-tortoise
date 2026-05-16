@@ -25,6 +25,7 @@ export default function TortoiseList() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua");
   const [genderFilter, setGenderFilter] = useState("semua");
+  const [morphFilter, setMorphFilter] = useState("semua");
   const [enclosureFilter, setEnclosureFilter] = useState(null); // null = tampil semua
   const [viewMode, setViewMode] = useState("kandang"); // "kandang" | "semua"
   const [collapsedGroups, setCollapsedGroups] = useState({});
@@ -88,8 +89,9 @@ export default function TortoiseList() {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "semua" || t.status === statusFilter;
     const matchGender = genderFilter === "semua" || t.gender === genderFilter;
+    const matchMorph = morphFilter === "semua" || (t.morph || "normal") === morphFilter;
     const matchEnclosure = !enclosureFilter || (t.enclosure || "Tidak Ada Kandang") === enclosureFilter;
-    return matchSearch && matchStatus && matchGender && matchEnclosure;
+    return matchSearch && matchStatus && matchGender && matchMorph && matchEnclosure;
   });
 
   // Group by enclosure
@@ -173,6 +175,20 @@ export default function TortoiseList() {
             <SelectItem value="jantan">♂ Jantan</SelectItem>
             <SelectItem value="betina">♀ Betina</SelectItem>
             <SelectItem value="belum_diketahui">? Belum Diketahui</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={morphFilter} onValueChange={setMorphFilter}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="Morph" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="semua">Semua Morph</SelectItem>
+            <SelectItem value="normal">Normal</SelectItem>
+            <SelectItem value="over_scute">Over Scute</SelectItem>
+            <SelectItem value="less_scute">Less Scute</SelectItem>
+            <SelectItem value="het_albino">Het Albino</SelectItem>
+            <SelectItem value="ivory">Ivory</SelectItem>
+            <SelectItem value="albino">Albino</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex rounded-lg border overflow-hidden">

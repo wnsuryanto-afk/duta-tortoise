@@ -3,24 +3,27 @@
  */
 
 export const ROLE_LABELS = {
-  owner: "Owner",
-  admin: "Admin",
-  manajer: "Manajer",
-  keeper: "Keeper",
+  owner:    "Owner",
+  admin:    "Admin",
+  manajer:  "Manajer",
+  keeper:   "Keeper",
+  investor: "Investor",
 };
 
 export const ROLE_COLORS = {
-  owner:   "bg-amber-100 text-amber-800 border-amber-200",
-  admin:   "bg-primary/10 text-primary border-primary/20",
-  manajer: "bg-chart-4/10 text-chart-4 border-chart-4/20",
-  keeper:  "bg-muted text-muted-foreground border-border",
+  owner:    "bg-amber-100 text-amber-800 border-amber-200",
+  admin:    "bg-primary/10 text-primary border-primary/20",
+  manajer:  "bg-chart-4/10 text-chart-4 border-chart-4/20",
+  keeper:   "bg-muted text-muted-foreground border-border",
+  investor: "bg-blue-100 text-blue-800 border-blue-200",
 };
 
 export const NAV_ACCESS = {
-  owner:   ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback"],
-  admin:   ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback"],
-  manajer: ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback"],
-  keeper:  ["dashboard", "tortoise", "breeding", "health", "sop", "reminders", "feed-stock", "warehouse", "info", "treatment", "tutorial", "feedback"],
+  owner:    ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  admin:    ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  manajer:  ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  keeper:   ["dashboard", "tortoise", "breeding", "health", "sop", "reminders", "feed-stock", "warehouse", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  investor: ["dashboard", "tortoise", "breeding", "health", "finance", "breeding-report", "info"],
 };
 
 export const PAGE_PERMISSIONS = {
@@ -59,6 +62,15 @@ export const PAGE_PERMISSIONS = {
     users:     { canCreate: false, canEdit: false, canDelete: false },
     feedstock: { canCreate: false, canEdit: true,  canDelete: false },
     warehouse: { canCreate: false, canEdit: true,  canDelete: false },
+  },
+  investor: {
+    tortoise:  { canCreate: false, canEdit: false, canDelete: false },
+    breeding:  { canCreate: false, canEdit: false, canDelete: false },
+    health:    { canCreate: false, canEdit: false, canDelete: false },
+    finance:   { canCreate: false, canEdit: false, canDelete: false },
+    users:     { canCreate: false, canEdit: false, canDelete: false },
+    feedstock: { canCreate: false, canEdit: false, canDelete: false },
+    warehouse: { canCreate: false, canEdit: false, canDelete: false },
   },
 };
 
