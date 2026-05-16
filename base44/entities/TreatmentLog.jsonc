@@ -1,0 +1,39 @@
+{
+  "name": "TreatmentLog",
+  "type": "object",
+  "properties": {
+    "schedule_id": {
+      "type": "string",
+      "description": "ID jadwal treatment"
+    },
+    "schedule_title": {
+      "type": "string",
+      "description": "Nama treatment"
+    },
+    "tortoise_id": {
+      "type": "string",
+      "description": "ID kura-kura"
+    },
+    "tortoise_name": {
+      "type": "string",
+      "description": "Nama kura-kura"
+    },
+    "done_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal selesai"
+    },
+    "done_by": {
+      "type": "string",
+      "description": "Dikerjakan oleh"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schedule_title",
+    "tortoise_name",
+    "done_date"
+  ]
+}

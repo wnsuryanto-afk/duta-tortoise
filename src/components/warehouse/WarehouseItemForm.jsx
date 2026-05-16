@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 const CATEGORIES = ["obat", "vitamin", "pakan", "alat_kerja", "lainnya"];
 const UNITS = ["pcs", "botol", "sachet", "kg", "gram", "liter", "ml", "ikat", "buah", "lusin", "box"];
 
-export default function WarehouseItemForm({ open, editData, onClose }) {
+export default function WarehouseItemForm({ open, editData, onClose, onBarcode }) {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(editData || {
@@ -33,7 +33,8 @@ export default function WarehouseItemForm({ open, editData, onClose }) {
     if (editData?.id) {
       await base44.entities.WarehouseItem.update(editData.id, data);
     } else {
-      await base44.entities.WarehouseItem.create(data);
+      const created = await base44.entities.WarehouseItem.create(data);
+      if (onBarcode) onBarcode({ ...data, id: created.id });
     }
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
     setSaving(false);

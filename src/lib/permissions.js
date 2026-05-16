@@ -17,10 +17,10 @@ export const ROLE_COLORS = {
 };
 
 export const NAV_ACCESS = {
-  owner:   ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info"],
-  admin:   ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info"],
-  manajer: ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info"],
-  keeper:  ["dashboard", "tortoise", "breeding", "health", "sop", "reminders", "feed-stock", "warehouse", "info"],
+  owner:   ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment"],
+  admin:   ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment"],
+  manajer: ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment"],
+  keeper:  ["dashboard", "tortoise", "breeding", "health", "sop", "reminders", "feed-stock", "warehouse", "info", "treatment"],
 };
 
 export const PAGE_PERMISSIONS = {

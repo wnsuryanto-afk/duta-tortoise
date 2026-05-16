@@ -11,8 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus, Pencil, Trash2, PackageOpen, AlertTriangle, CheckCircle2,
-  QrCode, ArrowUpCircle, ArrowDownCircle, History
+  QrCode, ArrowUpCircle, ArrowDownCircle, History, Printer
 } from "lucide-react";
+import BarcodeModal from "@/components/warehouse/BarcodeModal";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -64,6 +65,7 @@ export default function WarehousePage() {
   const [txPrice, setTxPrice] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [savingTx, setSavingTx] = useState(false);
+  const [barcodeItem, setBarcodeItem] = useState(null);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
@@ -256,6 +258,9 @@ export default function WarehousePage() {
                         <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => { setTxDialog(item); setTxType("keluar"); }}>
                           <ArrowDownCircle className="w-3.5 h-3.5 text-red-500" /> Keluar
                         </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Cetak Barcode" onClick={() => setBarcodeItem(item)}>
+                          <Printer className="w-3.5 h-3.5" />
+                        </Button>
                         {canEdit && (
                           <>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditItem(item); setShowForm(true); }}>
@@ -374,7 +379,8 @@ export default function WarehousePage() {
       </Dialog>
 
       {showScanner && <QRScanner onResult={handleScanResult} onClose={() => setShowScanner(false)} />}
-      {showForm && <WarehouseItemForm open={showForm} editData={editItem} onClose={() => setShowForm(false)} />}
+      {showForm && <WarehouseItemForm open={showForm} editData={editItem} onClose={() => setShowForm(false)} onBarcode={setBarcodeItem} />}
+      {barcodeItem && <BarcodeModal open={!!barcodeItem} item={barcodeItem} onClose={() => setBarcodeItem(null)} />}
     </div>
   );
 }

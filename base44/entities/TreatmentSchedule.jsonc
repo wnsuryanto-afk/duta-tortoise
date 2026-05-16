@@ -1,0 +1,55 @@
+{
+  "name": "TreatmentSchedule",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Nama treatment (cth: Mandi, Timbang, Obat Cacing)"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": [
+        "harian",
+        "mingguan",
+        "bulanan",
+        "tahunan"
+      ],
+      "default": "mingguan",
+      "description": "Frekuensi treatment"
+    },
+    "tortoise_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ID kura-kura yang dijadwalkan (kosong = semua)"
+    },
+    "tortoise_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Nama kura-kura"
+    },
+    "apply_to_all": {
+      "type": "boolean",
+      "default": false,
+      "description": "Berlaku untuk semua kura-kura"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    },
+    "sop_task_title": {
+      "type": "string",
+      "description": "Judul SOP task yang terhubung (auto-insert)"
+    }
+  },
+  "required": [
+    "title",
+    "frequency"
+  ]
+}

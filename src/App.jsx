@@ -22,6 +22,7 @@ import DailyPayrollReport from '@/pages/DailyPayrollReport';
 import WarehousePage from '@/pages/WarehousePage';
 import FinancePage from '@/pages/FinancePage';
 import InfoPage from '@/pages/InfoPage';
+import TreatmentPage from '@/pages/TreatmentPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
         <Route path="/warehouse" element={<WarehousePage />} />
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/info" element={<InfoPage />} />
+        <Route path="/treatment" element={<TreatmentPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

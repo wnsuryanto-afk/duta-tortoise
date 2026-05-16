@@ -3,11 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
 import EggHistoryPanel from "./EggHistoryPanel";
+import SizeHistoryPanel from "./SizeHistoryPanel";
 
 const healthConfig = {
   critical: { border: "border-l-4 border-l-red-500",    dot: "bg-red-500",    label: "Butuh Perawatan",  badge: "bg-red-100 text-red-700" },
@@ -57,6 +58,7 @@ function ProvenBadge({ gender }) {
 export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth, parentIndicator }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showEggHistory, setShowEggHistory] = useState(false);
+  const [showSizeHistory, setShowSizeHistory] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
   const showActions = onEdit || onDelete || onMove;
@@ -136,6 +138,9 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 text-accent" title="History Bertelur" onClick={() => setShowEggHistory(true)}>
               <Egg className="w-3 h-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-chart-4" title="Riwayat Ukuran" onClick={() => setShowSizeHistory(true)}>
+              <Ruler className="w-3 h-3" />
             </Button>
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(tortoise)}>
@@ -223,6 +228,21 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         </DialogHeader>
         <div className="py-2">
           <EggHistoryPanel tortoiseId={tortoise.id} tortoiseName={tortoise.name} />
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Riwayat Ukuran */}
+    <Dialog open={showSizeHistory} onOpenChange={setShowSizeHistory}>
+      <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Ruler className="w-4 h-4 text-chart-4" />
+            Riwayat Ukuran — {tortoise.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          <SizeHistoryPanel tortoiseId={tortoise.id} tortoiseName={tortoise.name} />
         </div>
       </DialogContent>
     </Dialog>
