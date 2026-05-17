@@ -34,7 +34,7 @@ export default function HealthList() {
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["health"],
-    queryFn: () => base44.entities.HealthRecord.list("-date", 200),
+    queryFn: () => base44.entities.HealthRecord.filter({ type: "sakit" }, "-date", 200),
   });
 
   const handleDelete = async (record) => {
@@ -48,8 +48,8 @@ export default function HealthList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-bold">Kesehatan</h1>
-          <p className="text-muted-foreground mt-1">Catatan kesehatan & perawatan</p>
+          <h1 className="text-3xl font-heading font-bold">Catatan Sakit</h1>
+          <p className="text-muted-foreground mt-1">Daftar kura-kura yang sedang atau pernah sakit</p>
         </div>
         {perms.canCreate && (
           <Button onClick={() => { setEditData(null); setShowForm(true); }}>
@@ -66,7 +66,7 @@ export default function HealthList() {
       ) : records.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <Heart className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-lg">Belum ada catatan kesehatan</p>
+          <p className="text-lg">Tidak ada catatan kura-kura sakit</p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -55,6 +55,7 @@ export default function WarehousePage() {
 
   const [tab, setTab] = useState("stok");
   const [catFilter, setCatFilter] = useState("semua");
+  const [rackFilter, setRackFilter] = useState("semua");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -75,8 +76,9 @@ export default function WarehousePage() {
 
   const filtered = items.filter((i) => {
     const matchCat = catFilter === "semua" || i.category === catFilter;
+    const matchRack = rackFilter === "semua" || (i.location || "").toLowerCase().includes(`rak ${rackFilter}`) || (i.location || "").toLowerCase().includes(`rak-${rackFilter}`);
     const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || (i.code || "").toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
+    return matchCat && matchRack && matchSearch;
   });
 
   const lowItems = items.filter((i) => i.current_stock <= i.minimum_stock);
@@ -196,21 +198,33 @@ export default function WarehousePage() {
 
         <TabsContent value="stok" className="space-y-4 mt-4">
           {/* Filters */}
-          <div className="flex flex-wrap gap-2">
-            <Input
-              placeholder="Cari nama / kode..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-48"
-            />
-            <div className="flex flex-wrap gap-1.5">
-              {[{ value: "semua", label: "Semua" }, ...CATEGORIES].map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => setCatFilter(c.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${catFilter === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}
-                >
-                  {c.label}
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <Input
+                placeholder="Cari nama / kode..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-48"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {[{ value: "semua", label: "Semua" }, ...CATEGORIES].map((c) => (
+                  <button
+                    key={c.value}
+                    onClick={() => setCatFilter(c.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${catFilter === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Filter Rak */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground font-medium">Rak:</span>
+              {["semua", "1", "2", "3", "4", "5"].map(r => (
+                <button key={r} onClick={() => setRackFilter(r)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${rackFilter === r ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                  {r === "semua" ? "Semua" : `Rak ${r}`}
                 </button>
               ))}
             </div>

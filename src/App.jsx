@@ -15,7 +15,6 @@ import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
 import SOPPage from '@/pages/SOPPage';
 import PayrollReport from '@/pages/PayrollReport';
-import HealthReminderPage from '@/pages/HealthReminderPage';
 import BreedingReport from '@/pages/BreedingReport';
 import FeedStockPage from '@/pages/FeedStockPage';
 import DailyPayrollReport from '@/pages/DailyPayrollReport';
@@ -24,7 +23,6 @@ import FinancePage from '@/pages/FinancePage';
 import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
 import FeedbackPage from '@/pages/FeedbackPage';
-import TutorialManagePage from '@/pages/TutorialManagePage';
 import KasbonPage from '@/pages/KasbonPage';
 
 const AuthenticatedApp = () => {
@@ -58,7 +56,6 @@ const AuthenticatedApp = () => {
         <Route path="/users" element={<UserManagement />} />
         <Route path="/sop" element={<SOPPage />} />
         <Route path="/payroll" element={<PayrollReport />} />
-        <Route path="/reminders" element={<HealthReminderPage />} />
         <Route path="/breeding-report" element={<BreedingReport />} />
         <Route path="/feed-stock" element={<FeedStockPage />} />
         <Route path="/daily-payroll" element={<DailyPayrollReport />} />
@@ -67,7 +64,6 @@ const AuthenticatedApp = () => {
         <Route path="/info" element={<InfoPage />} />
         <Route path="/treatment" element={<TreatmentPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
-        <Route path="/tutorial" element={<TutorialManagePage />} />
         <Route path="/kasbon" element={<KasbonPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

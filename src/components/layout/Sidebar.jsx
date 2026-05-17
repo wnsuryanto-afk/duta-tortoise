@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
-  LogOut, ClipboardList, FileSpreadsheet, Bell, BarChart2, Wheat,
-  Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, PlayCircle, CreditCard
+  LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
+  Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -23,9 +23,8 @@ const NAV_GROUPS = [
     items: [
       { path: "/tortoise",        section: "tortoise",        label: "Tortoise",        icon: Shell },
       { path: "/breeding",        section: "breeding",        label: "Torto Bertelor",  icon: Baby },
-      { path: "/health",          section: "health",          label: "Kesehatan",       icon: Heart },
-      { path: "/reminders",       section: "reminders",       label: "Pengingat",       icon: Bell },
-      { path: "/treatment",       section: "treatment",       label: "Jadwal Treatment", icon: Stethoscope },
+      { path: "/health",          section: "health",          label: "Catatan Sakit",   icon: Heart },
+      { path: "/treatment",       section: "treatment",       label: "Treatment & Pengingat", icon: Stethoscope },
       { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
     ],
   },
@@ -49,8 +48,7 @@ const NAV_GROUPS = [
   {
     label: "Informasi",
     items: [
-      { path: "/info",            section: "info",            label: "Panduan Sulcata",  icon: BookOpen },
-      { path: "/tutorial",        section: "tutorial",        label: "Tutorial & Video", icon: PlayCircle },
+      { path: "/info",            section: "info",            label: "Pusat Informasi",  icon: BookOpen },
       { path: "/feedback",        section: "feedback",        label: "Kritik & Saran",   icon: MessageSquare },
     ],
   },

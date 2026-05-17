@@ -101,6 +101,8 @@ export default function FeedStockPage() {
   const [adjustType, setAdjustType] = useState("add");
   const [showSeedDialog, setShowSeedDialog] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [editMinId, setEditMinId] = useState(null);
+  const [editMinVal, setEditMinVal] = useState("");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["feedstocks"] });
 
@@ -119,6 +121,12 @@ export default function FeedStockPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.FeedStock.delete(id),
+    onSuccess: invalidate,
+  });
+
+  const updateMinMutation = useMutation({
+    mutationFn: ({ id, minimum_stock }) =>
+      base44.entities.FeedStock.update(id, { minimum_stock: Number(minimum_stock) }),
     onSuccess: invalidate,
   });
 
@@ -284,7 +292,34 @@ export default function FeedStockPage() {
                       {s.current_stock}
                       <span className="text-sm font-normal text-muted-foreground ml-1">{s.unit}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Min: {s.minimum_stock} {s.unit}</p>
+                    {editMinId === s.id ? (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-xs text-muted-foreground">Min:</span>
+                        <input
+                          type="number" min={0} step="0.1"
+                          value={editMinVal}
+                          onChange={e => setEditMinVal(e.target.value)}
+                          className="w-16 h-6 text-xs border rounded px-1 bg-background"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === "Enter") { updateMinMutation.mutate({ id: s.id, minimum_stock: editMinVal }); setEditMinId(null); }
+                            if (e.key === "Escape") setEditMinId(null);
+                          }}
+                        />
+                        <span className="text-xs text-muted-foreground">{s.unit}</span>
+                        <button onClick={() => { updateMinMutation.mutate({ id: s.id, minimum_stock: editMinVal }); setEditMinId(null); }}
+                          className="text-xs text-primary font-medium hover:underline">✓</button>
+                        <button onClick={() => setEditMinId(null)} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                        Min: {s.minimum_stock} {s.unit}
+                        <button onClick={() => { setEditMinId(s.id); setEditMinVal(String(s.minimum_stock)); }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary/80">
+                          <Pencil className="w-2.5 h-2.5" />
+                        </button>
+                      </p>
+                    )}
                     {s.daily_ideal > 0 && (
                       <p className="text-xs text-primary mt-0.5">Ideal harian: {s.daily_ideal} {s.unit}</p>
                     )}
