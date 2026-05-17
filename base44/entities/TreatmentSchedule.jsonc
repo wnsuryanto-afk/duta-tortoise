@@ -17,6 +17,30 @@
       "default": "mingguan",
       "description": "Frekuensi treatment"
     },
+    "weekly_days": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Hari dalam seminggu untuk mingguan (0=Minggu,1=Senin,...6=Sabtu)"
+    },
+    "monthly_dates": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Tanggal-tanggal dalam bulan untuk bulanan (1-31)"
+    },
+    "gender_filter": {
+      "type": "string",
+      "enum": [
+        "semua",
+        "jantan",
+        "betina"
+      ],
+      "default": "semua",
+      "description": "Filter berdasarkan jenis kelamin"
+    },
     "tortoise_ids": {
       "type": "array",
       "items": {

@@ -40,6 +40,16 @@
       "default": 1,
       "description": "Batas minimum stok (notifikasi akan muncul di bawah angka ini)"
     },
+    "price_per_unit": {
+      "type": "number",
+      "default": 0,
+      "description": "Harga per satuan (Rp)"
+    },
+    "daily_ideal": {
+      "type": "number",
+      "default": 0,
+      "description": "Kebutuhan harian ideal (dalam satuan)"
+    },
     "notes": {
       "type": "string",
       "description": "Catatan"
