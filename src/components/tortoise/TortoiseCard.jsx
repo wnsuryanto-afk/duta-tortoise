@@ -95,21 +95,21 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
       <div className="flex items-start gap-3">
         {/* Foto Thumbnail */}
         <button
-          className="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border hover:opacity-80 transition-opacity relative"
+          className="w-24 h-24 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border hover:opacity-80 transition-opacity relative"
           onClick={() => photos.length > 0 && setLightboxIdx(0)}
           type="button"
         >
           {thumbnailUrl ? (
             <>
-              <img src={thumbnailUrl} alt={tortoise.name} className="w-14 h-14 object-cover" />
+              <img src={thumbnailUrl} alt={tortoise.name} className="w-24 h-24 object-cover" />
               {photos.length > 1 && (
-                <span className="absolute bottom-0 right-0 bg-black/50 text-white text-[9px] px-1 rounded-tl-md">
+                <span className="absolute bottom-0 right-0 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded-tl-md">
                   +{photos.length - 1}
                 </span>
               )}
             </>
           ) : (
-            <Shell className="w-6 h-6 text-primary/40" />
+            <Shell className="w-8 h-8 text-primary/40" />
           )}
         </button>
 

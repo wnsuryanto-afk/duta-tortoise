@@ -226,8 +226,7 @@ export default function TreatmentPage() {
 
   const filtered = schedules.filter(s => {
     const matchFreq = freqFilter === "semua" || s.frequency === freqFilter;
-    const matchTortoise = tortoiseFilter === "semua" ||
-      (s.apply_to_all ? true : (s.tortoise_ids || []).includes(tortoiseFilter));
+    const matchTortoise = tortoiseFilter === "semua" || getTargetTortoises(s).some(t => t.id === tortoiseFilter);
     return matchFreq && matchTortoise;
   });
   const formTortoises = form.gender_filter !== "semua" ? tortoises.filter(t => t.gender === form.gender_filter) : tortoises;
