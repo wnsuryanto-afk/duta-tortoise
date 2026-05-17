@@ -14,6 +14,7 @@ import AttendanceSummary from "@/components/dashboard/AttendanceSummary";
 import FinanceSummaryWidget from "@/components/dashboard/FinanceSummaryWidget";
 import AttendanceDashboardBanner from "@/components/dashboard/AttendanceDashboardBanner";
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
+import HatchReminderAlert from "@/components/dashboard/HatchReminderAlert";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -57,6 +58,7 @@ export default function Dashboard() {
 
       {role === "manajer" && <CheckInWidget />}
       <HealthReminderAlert />
+      <HatchReminderAlert />
       <FeedStockAlert />
 
       <div className="grid grid-cols-3 gap-4">

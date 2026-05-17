@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { addDays, format } from "date-fns";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -23,9 +24,9 @@ export default function BreedingForm({ open, onClose, editData }) {
 
   const [form, setForm] = useState(editData || {
     male_name: "", female_name: "", male_id: "", female_id: "",
-    mating_date: "", egg_laying_date: "", egg_count: "",
-    fertile_count: "", hatch_date: "", hatched_count: "",
-    status: "kawin", incubation_temp: "", notes: "",
+    egg_laying_date: "", egg_count: "",
+    estimated_hatch_date: "",
+    status: "bertelur", incubation_temp: "", notes: "",
   });
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
@@ -40,14 +41,21 @@ export default function BreedingForm({ open, onClose, editData }) {
     setForm((prev) => ({ ...prev, female_id: id, female_name: female?.name || "" }));
   };
 
+  const handleEggLayingDate = (value) => {
+    // Auto-hitung perkiraan menetas: 105 hari (tengah antara 90-120)
+    let estimated = "";
+    if (value) {
+      estimated = format(addDays(new Date(value), 105), "yyyy-MM-dd");
+    }
+    setForm((prev) => ({ ...prev, egg_laying_date: value, estimated_hatch_date: estimated }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     const data = {
       ...form,
       egg_count: form.egg_count ? Number(form.egg_count) : undefined,
-      fertile_count: form.fertile_count ? Number(form.fertile_count) : undefined,
-      hatched_count: form.hatched_count ? Number(form.hatched_count) : undefined,
       incubation_temp: form.incubation_temp ? Number(form.incubation_temp) : undefined,
     };
     if (editData?.id) {
@@ -99,17 +107,13 @@ export default function BreedingForm({ open, onClose, editData }) {
               )}
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Tanggal Kawin</Label>
-              <Input type="date" value={form.mating_date} onChange={(e) => handleChange("mating_date", e.target.value)} />
-            </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(v) => handleChange("status", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="kawin">Kawin</SelectItem>
                   <SelectItem value="bertelur">Bertelur</SelectItem>
                   <SelectItem value="inkubasi">Inkubasi</SelectItem>
                   <SelectItem value="menetas">Menetas</SelectItem>
@@ -117,41 +121,36 @@ export default function BreedingForm({ open, onClose, editData }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>Suhu Inkubasi (°C)</Label>
+              <Input type="number" step="0.1" value={form.incubation_temp} onChange={(e) => handleChange("incubation_temp", e.target.value)} />
+            </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Tanggal Bertelur</Label>
-              <Input type="date" value={form.egg_laying_date} onChange={(e) => handleChange("egg_laying_date", e.target.value)} />
+              <Input type="date" value={form.egg_laying_date} onChange={(e) => handleEggLayingDate(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>Jumlah Telur</Label>
               <Input type="number" value={form.egg_count} onChange={(e) => handleChange("egg_count", e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Telur Fertil</Label>
-              <Input type="number" value={form.fertile_count} onChange={(e) => handleChange("fertile_count", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Suhu Inkubasi (°C)</Label>
-              <Input type="number" step="0.1" value={form.incubation_temp} onChange={(e) => handleChange("incubation_temp", e.target.value)} />
-            </div>
+
+          <div className="space-y-1.5">
+            <Label>
+              Perkiraan Tgl Menetas
+              <span className="ml-1 text-[11px] text-muted-foreground font-normal">(otomatis ~105 hari dari bertelur, bisa diedit)</span>
+            </Label>
+            <Input type="date" value={form.estimated_hatch_date} onChange={(e) => handleChange("estimated_hatch_date", e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Tanggal Menetas</Label>
-              <Input type="date" value={form.hatch_date} onChange={(e) => handleChange("hatch_date", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Jumlah Menetas</Label>
-              <Input type="number" value={form.hatched_count} onChange={(e) => handleChange("hatched_count", e.target.value)} />
-            </div>
-          </div>
+
           <div className="space-y-1.5">
             <Label>Catatan</Label>
             <Textarea value={form.notes} onChange={(e) => handleChange("notes", e.target.value)} rows={3} />
           </div>
+
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={saving}>

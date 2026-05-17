@@ -18,11 +18,6 @@
       "type": "string",
       "description": "Nama tortoise betina"
     },
-    "mating_date": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal kawin"
-    },
     "egg_laying_date": {
       "type": "string",
       "format": "date",
@@ -32,29 +27,33 @@
       "type": "number",
       "description": "Jumlah telur"
     },
-    "fertile_count": {
-      "type": "number",
-      "description": "Jumlah telur fertil"
+    "estimated_hatch_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Perkiraan tanggal menetas (~105 hari)"
     },
     "hatch_date": {
       "type": "string",
       "format": "date",
-      "description": "Tanggal menetas"
+      "description": "Tanggal aktual menetas"
     },
     "hatched_count": {
       "type": "number",
-      "description": "Jumlah yang menetas"
+      "description": "Jumlah yang berhasil menetas"
+    },
+    "failed_count": {
+      "type": "number",
+      "description": "Jumlah telur yang gagal menetas"
     },
     "status": {
       "type": "string",
       "enum": [
-        "kawin",
         "bertelur",
         "inkubasi",
         "menetas",
         "gagal"
       ],
-      "default": "kawin",
+      "default": "bertelur",
       "description": "Status breeding"
     },
     "incubation_temp": {

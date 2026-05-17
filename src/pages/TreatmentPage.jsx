@@ -67,6 +67,7 @@ export default function TreatmentPage() {
 
   const [tab, setTab] = useState("jadwal");
   const [freqFilter, setFreqFilter] = useState("semua");
+  const [tortoiseFilter, setTortoiseFilter] = useState("semua");
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [logDialog, setLogDialog] = useState(null);
@@ -223,7 +224,12 @@ export default function TreatmentPage() {
     qc.invalidateQueries({ queryKey: ["health-reminders"] });
   };
 
-  const filtered = freqFilter === "semua" ? schedules : schedules.filter(s => s.frequency === freqFilter);
+  const filtered = schedules.filter(s => {
+    const matchFreq = freqFilter === "semua" || s.frequency === freqFilter;
+    const matchTortoise = tortoiseFilter === "semua" ||
+      (s.apply_to_all ? true : (s.tortoise_ids || []).includes(tortoiseFilter));
+    return matchFreq && matchTortoise;
+  });
   const formTortoises = form.gender_filter !== "semua" ? tortoises.filter(t => t.gender === form.gender_filter) : tortoises;
   const pendingRemindersCount = reminders.filter(r => !r.is_done).length;
 
@@ -255,13 +261,30 @@ export default function TreatmentPage() {
 
         {/* ── Tab Jadwal Treatment ── */}
         <TabsContent value="jadwal" className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-1.5">
-            {["semua", "harian", "mingguan", "bulanan", "tahunan"].map(f => (
-              <button key={f} onClick={() => setFreqFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${freqFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                {f === "semua" ? "Semua" : FREQ_LABELS[f]}
+          <div className="space-y-2">
+            {/* Filter Frekuensi */}
+            <div className="flex flex-wrap gap-1.5">
+              {["semua", "harian", "mingguan", "bulanan", "tahunan"].map(f => (
+                <button key={f} onClick={() => setFreqFilter(f)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${freqFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                  {f === "semua" ? "Semua Frekuensi" : FREQ_LABELS[f]}
+                </button>
+              ))}
+            </div>
+            {/* Filter per Kura */}
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <span className="text-xs text-muted-foreground font-medium">Kura:</span>
+              <button onClick={() => setTortoiseFilter("semua")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === "semua" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                Semua
               </button>
-            ))}
+              {tortoises.map(t => (
+                <button key={t.id} onClick={() => setTortoiseFilter(t.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === t.id ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                  {t.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {filtered.length === 0 ? (
