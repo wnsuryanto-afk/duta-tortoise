@@ -100,8 +100,17 @@ export default function WarehouseItemForm({ open, editData, onClose, onBarcode }
               <Input value={form.supplier} onChange={(e) => set("supplier", e.target.value)} className="mt-1" />
             </div>
             <div>
-              <Label className="text-xs">Lokasi Gudang</Label>
-              <Input value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="cth: Rak A1" className="mt-1" />
+              <Label className="text-xs">Lokasi / Rak</Label>
+              <Select value={form.location || ""} onValueChange={(v) => set("location", v)}>
+                <SelectTrigger className="mt-1 text-xs"><SelectValue placeholder="Pilih rak..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Rak 1">Rak 1</SelectItem>
+                  <SelectItem value="Rak 2">Rak 2</SelectItem>
+                  <SelectItem value="Rak 3">Rak 3</SelectItem>
+                  <SelectItem value="Rak 4">Rak 4</SelectItem>
+                  <SelectItem value="Rak 5">Rak 5</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div>

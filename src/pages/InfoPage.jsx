@@ -29,7 +29,7 @@ const BUILT_IN = [
     id: "b1", category: "dasar", type: "artikel",
     title: "Mengenal Sulcata (African Spurred Tortoise)",
     summary: "Sulcata adalah kura-kura darat terbesar ketiga di dunia. Asli dari padang pasir Sub-Sahara Afrika, bisa hidup hingga 70–100 tahun.",
-    image_url: "https://images.unsplash.com/photo-1591348278863-a8fb3887e2aa?w=600&q=80",
+    image_url: "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=600&q=80",
     content: `Sulcata (Centrochelys sulcata) adalah salah satu spesies kura-kura darat paling populer. Mereka memiliki taji (spurs) di kaki belakang.
 
 **Fakta Penting:**
@@ -45,7 +45,7 @@ Sulcata membutuhkan komitmen jangka panjang dan ruang yang sangat besar saat dew
     id: "b2", category: "pakan", type: "artikel",
     title: "Panduan Lengkap Pakan Sulcata",
     summary: "Diet yang tepat adalah kunci kesehatan dan umur panjang Sulcata. Pelajari apa yang boleh dan tidak boleh diberikan.",
-    image_url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80",
+    image_url: "https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=600&q=80",
     content: `Diet Sulcata harus mengandung serat tinggi dan kalsium yang cukup.
 
 **✅ Boleh Diberikan:**
@@ -66,7 +66,7 @@ Tabur kalsium karbonat / cuttlebone 2-3x seminggu.`,
     id: "b3", category: "kandang", type: "artikel",
     title: "Setup Kandang Sulcata yang Ideal",
     summary: "Kandang yang benar menentukan kesehatan Sulcata. Pelajari kebutuhan suhu, cahaya, dan ukuran kandang yang tepat.",
-    image_url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
+    image_url: "https://images.unsplash.com/photo-1617575521317-d2974f3b56d2?w=600&q=80",
     content: `**Ukuran Kandang:**
 • Baby (< 500g): min. 60x120 cm
 • Juvenile (0.5–5 kg): min. 1x2 meter
@@ -85,7 +85,7 @@ Tabur kalsium karbonat / cuttlebone 2-3x seminggu.`,
     id: "b4", category: "kesehatan", type: "artikel",
     title: "Tanda-tanda Sulcata Sakit & Penanganannya",
     summary: "Kenali tanda dini Sulcata yang sakit agar bisa ditangani lebih cepat.",
-    image_url: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600&q=80",
+    image_url: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&q=80",
     content: `**Tanda Sulcata Tidak Sehat:**
 • Tidak mau makan lebih dari 3 hari
 • Mata tertutup atau bengkak
@@ -105,7 +105,7 @@ Rendam di air hangat 15-20 menit, 2-3x seminggu (baby), 1x seminggu (adult).`,
     id: "b5", category: "breeding", type: "artikel",
     title: "Panduan Breeding Sulcata",
     summary: "Persiapan breeding, proses kawin, inkubasi telur, hingga merawat baby sulcata.",
-    image_url: "https://images.unsplash.com/photo-1550159930-40066082a4fc?w=600&q=80",
+    image_url: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600&q=80",
     content: `**Syarat Indukan:**
 • Jantan: min. 5-6 tahun, berat 8-10 kg+
 • Betina: min. 8-10 tahun, berat 15 kg+
@@ -123,7 +123,7 @@ Rendam di air hangat 15-20 menit, 2-3x seminggu (baby), 1x seminggu (adult).`,
     id: "b6", category: "kesehatan", type: "artikel",
     title: "Jadwal Perawatan Rutin Sulcata",
     summary: "Checklist perawatan harian, mingguan, bulanan, dan tahunan.",
-    image_url: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80",
+    image_url: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=600&q=80",
     content: `**📅 Harian:**
 • Berikan makan segar
 • Cek suhu kandang
