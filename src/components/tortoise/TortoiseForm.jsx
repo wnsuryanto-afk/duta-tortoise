@@ -71,19 +71,42 @@ export default function TortoiseForm({ open, onClose, editData }) {
     }
     setVideoError("");
     setSaving(true);
+    const newWeight = form.weight_grams ? Number(form.weight_grams) : undefined;
+    const newLength = form.shell_length_cm ? Number(form.shell_length_cm) : undefined;
     const data = {
       ...form,
-      weight_grams: form.weight_grams ? Number(form.weight_grams) : undefined,
-      shell_length_cm: form.shell_length_cm ? Number(form.shell_length_cm) : undefined,
+      weight_grams: newWeight,
+      shell_length_cm: newLength,
       photos: photos,
       photo_url: thumbnailUrl || (photos[0]?.url || ""),
       death_video_url: deathVideoUrl || undefined,
     };
+
+    let tortoiseId = editData?.id;
     if (editData?.id) {
       await base44.entities.Tortoise.update(editData.id, data);
     } else {
-      await base44.entities.Tortoise.create(data);
+      const created = await base44.entities.Tortoise.create(data);
+      tortoiseId = created.id;
     }
+
+    // Auto-insert MeasurementHistory jika berat atau panjang berubah (atau tortoise baru)
+    const prevWeight = editData?.weight_grams ? Number(editData.weight_grams) : undefined;
+    const prevLength = editData?.shell_length_cm ? Number(editData.shell_length_cm) : undefined;
+    const weightChanged = newWeight && newWeight !== prevWeight;
+    const lengthChanged = newLength && newLength !== prevLength;
+    if ((weightChanged || lengthChanged) && tortoiseId) {
+      await base44.entities.MeasurementHistory.create({
+        tortoise_id: tortoiseId,
+        tortoise_name: form.name,
+        date: new Date().toISOString().split("T")[0],
+        weight_grams: newWeight,
+        shell_length_cm: newLength,
+        notes: "Otomatis dari update data tortoise",
+      });
+      queryClient.invalidateQueries({ queryKey: ["measurements"] });
+    }
+
     queryClient.invalidateQueries({ queryKey: ["tortoises"] });
     setSaving(false);
     onClose();

@@ -148,11 +148,18 @@ export default function TortoiseList() {
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cari nama atau kode..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
-        </div>
+      {/* Search bar besar */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <Input
+          placeholder="Cari nama atau kode tortoise..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-12 h-12 text-base rounded-xl shadow-sm"
+        />
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Status" />
