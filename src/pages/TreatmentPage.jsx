@@ -65,9 +65,12 @@ export default function TreatmentPage() {
     queryFn: () => base44.entities.HealthReminder.list("-due_date", 200),
   });
 
+  const enclosures = [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort();
+
   const [tab, setTab] = useState("jadwal");
   const [freqFilter, setFreqFilter] = useState("semua");
   const [tortoiseFilter, setTortoiseFilter] = useState("semua");
+  const [filterMode, setFilterMode] = useState("kura"); // "kura" | "kandang"
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [logDialog, setLogDialog] = useState(null);
@@ -84,7 +87,7 @@ export default function TreatmentPage() {
   const EMPTY_FORM = {
     title: "", frequency: "mingguan", apply_to_all: true,
     gender_filter: "semua", tortoise_ids: [], tortoise_names: [],
-    weekly_days: [], monthly_dates: [], notes: "",
+    weekly_days: [], monthly_dates: [], deadline_time: "", notes: "",
   };
   const [form, setForm] = useState(EMPTY_FORM);
 
@@ -98,6 +101,7 @@ export default function TreatmentPage() {
       tortoise_names: s.tortoise_names || [],
       weekly_days: s.weekly_days || [],
       monthly_dates: s.monthly_dates || [],
+      deadline_time: s.deadline_time || "",
       notes: s.notes || "",
     } : EMPTY_FORM);
     setShowForm(true);
@@ -125,6 +129,7 @@ export default function TreatmentPage() {
       };
       if (form.frequency === "mingguan" && form.weekly_days?.length > 0) sopData.weekly_days = form.weekly_days;
       if (form.frequency === "bulanan" && form.monthly_dates?.length > 0) sopData.monthly_dates = form.monthly_dates;
+      if (form.deadline_time) sopData.deadline_time = form.deadline_time;
       await base44.entities.SOPTask.create(sopData);
     }
     qc.invalidateQueries({ queryKey: ["treatment-schedules"] });
@@ -226,7 +231,14 @@ export default function TreatmentPage() {
 
   const filtered = schedules.filter(s => {
     const matchFreq = freqFilter === "semua" || s.frequency === freqFilter;
-    const matchTortoise = tortoiseFilter === "semua" || getTargetTortoises(s).some(t => t.id === tortoiseFilter);
+    let matchTortoise = true;
+    if (tortoiseFilter !== "semua") {
+      if (filterMode === "kura") {
+        matchTortoise = getTargetTortoises(s).some(t => t.id === tortoiseFilter);
+      } else {
+        matchTortoise = getTargetTortoises(s).some(t => t.enclosure === tortoiseFilter);
+      }
+    }
     return matchFreq && matchTortoise;
   });
   const formTortoises = form.gender_filter !== "semua" ? tortoises.filter(t => t.gender === form.gender_filter) : tortoises;
@@ -270,19 +282,37 @@ export default function TreatmentPage() {
                 </button>
               ))}
             </div>
-            {/* Filter per Kura */}
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <span className="text-xs text-muted-foreground font-medium">Kura:</span>
-              <button onClick={() => setTortoiseFilter("semua")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === "semua" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                Semua
-              </button>
-              {tortoises.map(t => (
-                <button key={t.id} onClick={() => setTortoiseFilter(t.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === t.id ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                  {t.name}
+            {/* Filter per Kura / Kandang */}
+            <div className="space-y-1.5">
+              <div className="flex gap-1.5 items-center">
+                <span className="text-xs text-muted-foreground font-medium mr-1">Filter:</span>
+                {[["kura","Per Kura"],["kandang","Per Kandang"]].map(([m,l]) => (
+                  <button key={m} onClick={() => { setFilterMode(m); setTortoiseFilter("semua"); }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${filterMode === m ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => setTortoiseFilter("semua")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === "semua" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                  Semua
                 </button>
-              ))}
+                {filterMode === "kura"
+                  ? tortoises.map(t => (
+                      <button key={t.id} onClick={() => setTortoiseFilter(t.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === t.id ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                        {t.name}
+                      </button>
+                    ))
+                  : enclosures.map(enc => (
+                      <button key={enc} onClick={() => setTortoiseFilter(enc)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === enc ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                        📍 {enc}
+                      </button>
+                    ))
+                }
+              </div>
             </div>
           </div>
 
@@ -486,29 +516,47 @@ export default function TreatmentPage() {
                 </SelectContent>
               </Select>
             </div>
-            {form.frequency === "mingguan" && (
+            {form.frequency === "harian" && (
               <div>
-                <Label className="text-xs mb-2 block">Pilih Hari (opsional)</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {DAY_NAMES.map((name, idx) => (
-                    <button key={idx} type="button" onClick={() => toggleDay(idx)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${form.weekly_days.includes(idx) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                      {name}
-                    </button>
-                  ))}
+                <Label className="text-xs mb-1 block">Waktu Pelaksanaan (opsional)</Label>
+                <Input type="time" value={form.deadline_time} onChange={e => setForm(p=>({...p,deadline_time:e.target.value}))} className="w-36" />
+              </div>
+            )}
+            {form.frequency === "mingguan" && (
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs mb-2 block">Pilih Hari (opsional)</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DAY_NAMES.map((name, idx) => (
+                      <button key={idx} type="button" onClick={() => toggleDay(idx)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${form.weekly_days.includes(idx) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs mb-1 block">Waktu Pelaksanaan (opsional)</Label>
+                  <Input type="time" value={form.deadline_time} onChange={e => setForm(p=>({...p,deadline_time:e.target.value}))} className="w-36" />
                 </div>
               </div>
             )}
             {form.frequency === "bulanan" && (
-              <div>
-                <Label className="text-xs mb-2 block">Pilih Tanggal dalam Bulan (opsional)</Label>
-                <div className="flex flex-wrap gap-1">
-                  {Array.from({length:31},(_,i)=>i+1).map(date => (
-                    <button key={date} type="button" onClick={() => toggleDate(date)}
-                      className={`w-8 h-8 rounded-lg text-xs font-medium border transition-colors ${form.monthly_dates.includes(date) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                      {date}
-                    </button>
-                  ))}
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs mb-2 block">Pilih Tanggal dalam Bulan (opsional)</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from({length:31},(_,i)=>i+1).map(date => (
+                      <button key={date} type="button" onClick={() => toggleDate(date)}
+                        className={`w-8 h-8 rounded-lg text-xs font-medium border transition-colors ${form.monthly_dates.includes(date) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                        {date}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs mb-1 block">Waktu Pelaksanaan (opsional)</Label>
+                  <Input type="time" value={form.deadline_time} onChange={e => setForm(p=>({...p,deadline_time:e.target.value}))} className="w-36" />
                 </div>
               </div>
             )}

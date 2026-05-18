@@ -77,19 +77,42 @@ export default function BreedingList() {
               : null;
             const isNearHatch = daysToHatch !== null && daysToHatch <= 10 && daysToHatch >= 0;
 
+            const isOverdue = daysToHatch !== null && daysToHatch < 0;
+            const isVeryNear = daysToHatch !== null && daysToHatch < 10 && daysToHatch >= 0;
+
             return (
-              <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow group ${isNearHatch ? "border-amber-300" : ""}`}>
+              <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow group ${isOverdue ? "border-red-400 bg-red-50" : isVeryNear ? "border-amber-300 bg-amber-50" : ""}`}>
+                {/* Foto preview */}
+                {b.photos?.length > 0 && (
+                  <div className="flex gap-1.5 mb-3 overflow-x-auto">
+                    {b.photos.slice(0, 4).map((p, i) => (
+                      <img key={i} src={p.url} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0 border" />
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold text-sm">{b.male_name} × {b.female_name}</h3>
-                    <Badge variant="outline" className={`mt-2 text-[11px] capitalize ${statusColors[b.status] || ""}`}>
-                      {b.status}
-                    </Badge>
-                    {isNearHatch && (
-                      <span className="ml-2 text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                        🥚 {daysToHatch === 0 ? "Hari ini!" : `${daysToHatch} hari lagi`}
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <Badge variant="outline" className={`text-[11px] capitalize ${statusColors[b.status] || ""}`}>
+                        {b.status}
+                      </Badge>
+                      {daysToHatch !== null && daysToHatch < 0 && (
+                        <span className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">
+                          🔴 Terlambat {Math.abs(daysToHatch)} hari!
+                        </span>
+                      )}
+                      {daysToHatch !== null && daysToHatch >= 0 && daysToHatch <= 10 && (
+                        <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                          🥚 {daysToHatch === 0 ? "Hari ini!" : `${daysToHatch} hari lagi`}
+                        </span>
+                      )}
+                      {daysToHatch !== null && daysToHatch > 10 && (
+                        <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                          ⏳ {daysToHatch} hari lagi
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {/* Tombol Tandai Menetas */}

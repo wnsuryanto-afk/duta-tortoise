@@ -60,6 +60,18 @@
       "type": "number",
       "description": "Suhu inkubasi (\u00b0C)"
     },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Foto dokumentasi telur / breeding"
+    },
     "notes": {
       "type": "string",
       "description": "Catatan"

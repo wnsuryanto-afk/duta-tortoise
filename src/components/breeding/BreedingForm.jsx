@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,12 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Camera, X, ImagePlus } from "lucide-react";
 import { addDays, format } from "date-fns";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],
@@ -26,8 +29,20 @@ export default function BreedingForm({ open, onClose, editData }) {
     male_name: "", female_name: "", male_id: "", female_id: "",
     egg_laying_date: "", egg_count: "",
     estimated_hatch_date: "",
-    status: "bertelur", incubation_temp: "", notes: "",
+    status: "bertelur", incubation_temp: "", notes: "", photos: [],
   });
+
+  const handlePhotoUpload = async (file) => {
+    if (!file) return;
+    setUploadingPhoto(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(prev => ({ ...prev, photos: [...(prev.photos || []), { url: file_url }] }));
+    setUploadingPhoto(false);
+  };
+
+  const removePhoto = (idx) => {
+    setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== idx) }));
+  };
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -144,6 +159,40 @@ export default function BreedingForm({ open, onClose, editData }) {
               <span className="ml-1 text-[11px] text-muted-foreground font-normal">(otomatis ~105 hari dari bertelur, bisa diedit)</span>
             </Label>
             <Input type="date" value={form.estimated_hatch_date} onChange={(e) => handleChange("estimated_hatch_date", e.target.value)} />
+          </div>
+
+          {/* Foto Dokumentasi */}
+          <div className="space-y-1.5">
+            <Label>Foto Dokumentasi</Label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {(form.photos || []).map((p, i) => (
+                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                  <img src={p.url} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removePhoto(i)}
+                    className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <button type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                  {uploadingPhoto ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ImagePlus className="w-5 h-5 mb-1" /><span className="text-[10px]">Galeri</span></>}
+                </button>
+                <button type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                  <Camera className="w-5 h-5 mb-1" /><span className="text-[10px]">Kamera</span>
+                </button>
+              </div>
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+              onChange={e => handlePhotoUpload(e.target.files?.[0])} />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+              onChange={e => handlePhotoUpload(e.target.files?.[0])} />
           </div>
 
           <div className="space-y-1.5">

@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, PlayCircle, ChevronRight, Leaf, Heart, AlertTriangle, Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { BookOpen, PlayCircle, ChevronRight, Leaf, Heart, AlertTriangle, Plus, Pencil, Trash2, ExternalLink, ImagePlus, Wand2, Loader2 } from "lucide-react";
+import { useRef } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const CATEGORIES = [
@@ -201,6 +202,16 @@ function ContentModal({ item, onClose }) {
 
 const DEFAULT_FORM = { title: "", category: "lainnya", type: "artikel", summary: "", content: "", video_url: "", image_url: "", is_published: true };
 
+// Auto thumbnail per kategori (fallback jika tidak upload manual)
+const CATEGORY_THUMBNAILS = {
+  dasar:      "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=600&q=80",
+  pakan:      "https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=600&q=80",
+  kandang:    "https://images.unsplash.com/photo-1617575521317-d2974f3b56d2?w=600&q=80",
+  kesehatan:  "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&q=80",
+  breeding:   "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600&q=80",
+  lainnya:    "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=600&q=80",
+};
+
 export default function InfoPage() {
   const { role } = useCurrentUser();
   const qc = useQueryClient();
@@ -212,6 +223,9 @@ export default function InfoPage() {
   const [editData, setEditData] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [generatingImg, setGeneratingImg] = useState(false);
+  const imgInputRef = useRef(null);
 
   const { data: tutorials = [], isLoading } = useQuery({
     queryKey: ["tutorials"],
@@ -225,6 +239,24 @@ export default function InfoPage() {
 
   const openNew = () => { setForm(DEFAULT_FORM); setEditData(null); setShowForm(true); };
   const openEdit = (t) => { setForm({ ...DEFAULT_FORM, ...t }); setEditData(t); setShowForm(true); };
+
+  const handleImgUpload = async (file) => {
+    if (!file) return;
+    setUploadingImg(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(p => ({ ...p, image_url: file_url }));
+    setUploadingImg(false);
+  };
+
+  const handleAutoGenImg = async () => {
+    setGeneratingImg(true);
+    const topic = form.title || form.category || "sulcata tortoise";
+    const { url } = await base44.integrations.Core.GenerateImage({
+      prompt: `High quality photo related to sulcata tortoise care topic: "${topic}". Natural, realistic, bright lighting.`
+    });
+    setForm(p => ({ ...p, image_url: url }));
+    setGeneratingImg(false);
+  };
 
   const handleSave = async () => {
     if (!form.title.trim()) return;
@@ -294,8 +326,8 @@ export default function InfoPage() {
             {filtered.map(item => (
               <Card key={item.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group" onClick={() => setSelected(item)}>
                 <div className="relative overflow-hidden">
-                  {item.image_url || item.image ? (
-                    <img src={item.image_url || item.image} alt={item.title} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {(item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]) ? (
+                    <img src={item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]} alt={item.title} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-40 bg-muted/50 flex items-center justify-center">
                       {item.type === "video" ? <PlayCircle className="w-12 h-12 text-muted-foreground/40" /> : <BookOpen className="w-12 h-12 text-muted-foreground/40" />}
@@ -350,8 +382,8 @@ export default function InfoPage() {
               {videos.map(item => (
                 <Card key={item.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group" onClick={() => setSelected(item)}>
                   <div className="relative">
-                    {item.image_url || item.image ? (
-                      <img src={item.image_url || item.image} alt={item.title} className="w-full h-40 object-cover" />
+                    {(item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]) ? (
+                      <img src={item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]} alt={item.title} className="w-full h-40 object-cover" />
                     ) : (
                       <div className="w-full h-40 bg-slate-800 flex items-center justify-center">
                         <PlayCircle className="w-16 h-16 text-white/40" />
@@ -424,8 +456,33 @@ export default function InfoPage() {
               </div>
             )}
             <div>
-              <label className="text-xs font-medium mb-1 block">URL Gambar Thumbnail</label>
-              <Input value={form.image_url} onChange={e=>setForm(p=>({...p,image_url:e.target.value}))} placeholder="https://... (URL gambar)" />
+              <label className="text-xs font-medium mb-1 block">Gambar Thumbnail</label>
+              {form.image_url && (
+                <div className="relative mb-2 w-full h-32 rounded-lg overflow-hidden border">
+                  <img src={form.image_url} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setForm(p=>({...p,image_url:""}))}
+                    className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80">✕</button>
+                </div>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                <Button type="button" size="sm" variant="outline" className="gap-1.5 text-xs"
+                  onClick={() => imgInputRef.current?.click()} disabled={uploadingImg || generatingImg}>
+                  {uploadingImg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
+                  Dari Galeri
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="gap-1.5 text-xs"
+                  onClick={handleAutoGenImg} disabled={uploadingImg || generatingImg}>
+                  {generatingImg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                  Auto Carikan Gambar
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="gap-1.5 text-xs text-muted-foreground"
+                  onClick={() => setForm(p=>({...p,image_url: CATEGORY_THUMBNAILS[p.category] || CATEGORY_THUMBNAILS.lainnya}))}
+                  disabled={uploadingImg || generatingImg}>
+                  Gunakan Default Kategori
+                </Button>
+              </div>
+              <input ref={imgInputRef} type="file" accept="image/*" className="hidden"
+                onChange={e => handleImgUpload(e.target.files?.[0])} />
             </div>
             <div>
               <label className="text-xs font-medium mb-1 block">Ringkasan</label>
