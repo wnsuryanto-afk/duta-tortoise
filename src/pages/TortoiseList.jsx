@@ -103,7 +103,7 @@ export default function TortoiseList() {
       map[key].push(t);
     });
     // Sort terjual/mati to bottom within each group
-    const statusOrder = { aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 };
+    const statusOrder = { aktif: 0, proven: 1, baby: 2, sakit: 3, mati: 4, terjual: 5 };
     Object.values(map).forEach((arr) => {
       arr.sort((a, b) => (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0));
     });
@@ -241,7 +241,7 @@ export default function TortoiseList() {
       ) : viewMode === "semua" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...filtered].sort((a, b) => {
-            const o = { aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 };
+            const o = { aktif: 0, proven: 1, baby: 2, sakit: 3, mati: 4, terjual: 5 };
             return (o[a.status] ?? 0) - (o[b.status] ?? 0);
           }).map((t) => (
             <TortoiseCard
