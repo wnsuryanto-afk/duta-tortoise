@@ -23,12 +23,6 @@ const statusColors = {
   terjual: "bg-yellow-100 text-yellow-800 border-yellow-300",
   mati:    "bg-muted text-muted-foreground border-border",
   sakit:   "bg-red-100 text-red-700 border-red-300",
-  proven:  "bg-amber-100 text-amber-800 border-amber-300",
-};
-
-const statusLabels = {
-  aktif: "aktif", baby: "baby", terjual: "terjual",
-  mati: "mati", sakit: "sakit", proven: "⭐ Proven",
 };
 
 // Background warna untuk card berdasarkan kondisi
@@ -36,7 +30,7 @@ function getCardBg(tortoise) {
   if (tortoise.status === "sakit") return "bg-red-50 border-red-200";
   if (tortoise.status === "terjual") return "bg-yellow-50 border-yellow-200";
   if (tortoise.status === "baby") return "bg-sky-50 border-sky-200";
-  if (tortoise.status === "proven" || tortoise.is_proven) return "bg-amber-50 border-amber-200";
+  if (tortoise.is_proven) return "bg-green-50 border-green-200";
   if (tortoise.gender === "betina") return "bg-pink-50 border-pink-200";
   return "";
 }
@@ -44,14 +38,11 @@ function getCardBg(tortoise) {
 const morphLabels = {
   normal: "Normal", over_scute: "Over Scute", less_scute: "Less Scute",
   het_albino: "Het Albino", ivory: "Ivory", albino: "Albino",
-  redfoot: "Redfoot", aldabra: "Aldabra", pardalis: "Pardalis", ambon: "Ambon",
 };
 const morphColors = {
   normal: "bg-muted text-muted-foreground", over_scute: "bg-blue-100 text-blue-700",
   less_scute: "bg-purple-100 text-purple-700", het_albino: "bg-orange-100 text-orange-700",
   ivory: "bg-yellow-100 text-yellow-700", albino: "bg-pink-100 text-pink-700",
-  redfoot: "bg-red-100 text-red-700", aldabra: "bg-teal-100 text-teal-700",
-  pardalis: "bg-lime-100 text-lime-700", ambon: "bg-indigo-100 text-indigo-700",
 };
 const genderLabels = {
   jantan: "♂ Jantan", betina: "♀ Betina", belum_diketahui: "? Belum Diketahui",
@@ -133,7 +124,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
 
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
             <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${statusColors[tortoise.status] || ""}`}>
-              {statusLabels[tortoise.status] || tortoise.status}
+              {tortoise.status}
             </Badge>
             <span className="text-[11px] text-muted-foreground">{genderLabels[tortoise.gender]}</span>
             {morph !== "normal" && (
