@@ -17,6 +17,10 @@ const MORPHS = [
   { value: "het_albino",  label: "Het Albino" },
   { value: "ivory",       label: "Ivory" },
   { value: "albino",      label: "Albino" },
+  { value: "redfoot",     label: "Redfoot" },
+  { value: "aldabra",     label: "Aldabra" },
+  { value: "pardalis",    label: "Pardalis" },
+  { value: "ambon",       label: "Ambon" },
 ];
 
 // Migrasi: jika editData hanya punya photo_url (string lama), ubah ke array
@@ -178,6 +182,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
                   <SelectItem value="sakit">Sakit</SelectItem>
                   <SelectItem value="terjual">Terjual</SelectItem>
                   <SelectItem value="mati">Mati</SelectItem>
+                  <SelectItem value="proven">⭐ Proven</SelectItem>
                 </SelectContent>
               </Select>
             </div>

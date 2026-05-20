@@ -28,7 +28,11 @@
         "less_scute",
         "het_albino",
         "ivory",
-        "albino"
+        "albino",
+        "redfoot",
+        "aldabra",
+        "pardalis",
+        "ambon"
       ],
       "default": "normal",
       "description": "Jenis/morph kura-kura"
@@ -63,7 +67,8 @@
         "baby",
         "sakit",
         "terjual",
-        "mati"
+        "mati",
+        "proven"
       ],
       "default": "aktif",
       "description": "Status tortoise"

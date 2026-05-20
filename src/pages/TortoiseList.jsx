@@ -171,6 +171,7 @@ export default function TortoiseList() {
             <SelectItem value="sakit">Sakit</SelectItem>
             <SelectItem value="terjual">Terjual</SelectItem>
             <SelectItem value="mati">Mati</SelectItem>
+            <SelectItem value="proven">⭐ Proven</SelectItem>
           </SelectContent>
         </Select>
         <Select value={genderFilter} onValueChange={setGenderFilter}>
@@ -196,6 +197,10 @@ export default function TortoiseList() {
             <SelectItem value="het_albino">Het Albino</SelectItem>
             <SelectItem value="ivory">Ivory</SelectItem>
             <SelectItem value="albino">Albino</SelectItem>
+            <SelectItem value="redfoot">Redfoot</SelectItem>
+            <SelectItem value="aldabra">Aldabra</SelectItem>
+            <SelectItem value="pardalis">Pardalis</SelectItem>
+            <SelectItem value="ambon">Ambon</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex rounded-lg border overflow-hidden">
