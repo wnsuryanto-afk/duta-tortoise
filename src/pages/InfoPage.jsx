@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, PlayCircle, ChevronRight, Leaf, Heart, AlertTriangle, Plus, Pencil, Trash2, ExternalLink, ImagePlus, Wand2, Loader2 } from "lucide-react";
+import { BookOpen, PlayCircle, ChevronRight, Leaf, Heart, AlertTriangle, Plus, Pencil, Trash2, ImagePlus, Wand2, Loader2, Youtube } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import GenerateVideoTabContent from "@/components/info/GenerateVideoTabContent";
 
 const CATEGORIES = [
   { id: "all", label: "Semua" },
@@ -224,6 +225,7 @@ export default function InfoPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [generatingImg, setGeneratingImg] = useState(false);
+  const [generatingYT, setGeneratingYT] = useState(false);
   const imgInputRef = useRef(null);
 
   const { data: tutorials = [], isLoading } = useQuery({
@@ -257,6 +259,49 @@ export default function InfoPage() {
     setGeneratingImg(false);
   };
 
+  const handleAutoGenerateYouTube = async () => {
+    setGeneratingYT(true);
+    const topics = [
+      "cara merawat sulcata tortoise harian",
+      "pakan terbaik untuk sulcata tortoise",
+      "setup kandang sulcata yang ideal",
+      "tanda-tanda sulcata sakit dan penanganannya",
+      "cara mandi dan soak sulcata",
+      "breeding sulcata untuk pemula",
+      "pertumbuhan dan perkembangan baby sulcata",
+    ];
+    const idx = new Date().getDate() % topics.length;
+    const topic = topics[idx];
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Carikan 1 video YouTube edukatif terbaik tentang: "${topic}" untuk peternak sulcata tortoise.
+Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap valid, contoh: https://www.youtube.com/watch?v=xxxxx), summary (string 1 kalimat bahasa Indonesia), category (salah satu: pakan/kandang/kesehatan/breeding/dasar/lainnya).`,
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          youtube_url: { type: "string" },
+          summary: { type: "string" },
+          category: { type: "string" },
+        },
+      },
+    });
+
+    if (result?.youtube_url && result?.title) {
+      await base44.entities.TutorialContent.create({
+        title: result.title,
+        type: "video",
+        category: result.category || "lainnya",
+        summary: result.summary || "",
+        video_url: result.youtube_url,
+        is_published: true,
+      });
+      qc.invalidateQueries({ queryKey: ["tutorials"] });
+    }
+    setGeneratingYT(false);
+  };
+
   const handleSave = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
@@ -283,7 +328,13 @@ export default function InfoPage() {
           <p className="text-muted-foreground mt-1">Panduan lengkap, artikel, & video merawat Sulcata</p>
         </div>
         {isAdmin && (
-          <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" /> Tambah Konten</Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={handleAutoGenerateYouTube} variant="outline" className="gap-2" disabled={generatingYT}>
+              {generatingYT ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4 text-red-600" />}
+              {generatingYT ? "Mencari..." : "Auto Generate Video"}
+            </Button>
+            <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" /> Tambah Konten</Button>
+          </div>
         )}
       </div>
 
@@ -309,6 +360,7 @@ export default function InfoPage() {
         <TabsList>
           <TabsTrigger value="panduan">Panduan & Artikel</TabsTrigger>
           <TabsTrigger value="video">Video Tutorial</TabsTrigger>
+          {isAdmin && <TabsTrigger value="generate">🤖 Generate Video</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="panduan" className="mt-4 space-y-4">
@@ -404,6 +456,12 @@ export default function InfoPage() {
             </div>
           )}
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="generate" className="mt-4">
+            <GenerateVideoTabContent />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Disclaimer */}

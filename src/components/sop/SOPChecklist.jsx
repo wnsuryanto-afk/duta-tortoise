@@ -11,6 +11,7 @@ import { CheckCircle2, Clock, XCircle, Star, Send, AlertTriangle } from "lucide-
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PhotoUploadWithWatermark from "./PhotoUploadWithWatermark";
+import SOPVideoTask from "./SOPVideoTask";
 
 const categoryColors = {
   pakan: "bg-green-100 text-green-700",
@@ -162,6 +163,9 @@ export default function SOPChecklist() {
           </div>
         </div>
       </Card>
+
+      {/* Video wajib tonton harian */}
+      <SOPVideoTask />
 
       {["pakan", "kebersihan", "pemeriksaan", "breeding", "administrasi", "lainnya"].map((cat) => {
         const catTasks = tasks.filter((t) => t.category === cat && t.frequency === "harian");
