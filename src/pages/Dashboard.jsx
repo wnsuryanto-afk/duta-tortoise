@@ -53,6 +53,9 @@ export default function Dashboard() {
         <p className="text-muted-foreground text-sm mt-1">Ringkasan peternakan sulcata tortoise</p>
       </div>
 
+      {/* Target Tahunan */}
+      <AnnualGoalWidget breedings={breedings} />
+
       {/* Absensi feeder selalu di paling atas */}
       <AttendanceDashboardBanner />
 
@@ -78,9 +81,6 @@ export default function Dashboard() {
         <AttendanceChartCard />
         <FinanceSummaryWidget />
       </div>
-
-      {/* Target Tahunan */}
-      <AnnualGoalWidget breedings={breedings} />
     </div>
   );
 }

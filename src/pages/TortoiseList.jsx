@@ -212,6 +212,17 @@ export default function TortoiseList() {
             <SelectItem value="belum">Belum Proven</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={enclosureFilter || "semua"} onValueChange={v => setEnclosureFilter(v === "semua" ? null : v)}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="Kandang" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="semua">Semua Kandang</SelectItem>
+            {[...new Set(tortoises.map(t => t.enclosure || "Tidak Ada Kandang"))].sort().map(enc => (
+              <SelectItem key={enc} value={enc}>Kandang {enc}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="flex rounded-lg border overflow-hidden">
           <button
             onClick={() => setViewMode("kandang")}

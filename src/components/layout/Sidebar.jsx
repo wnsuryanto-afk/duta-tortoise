@@ -43,7 +43,7 @@ const NAV_GROUPS = [
       { path: "/sop",             section: "sop",             label: "SOP & KPI",        icon: ClipboardList },
       { path: "/payroll",         section: "payroll",         label: "Laporan KPI",      icon: FileSpreadsheet },
       { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Penggajian",       icon: Wallet },
-      { path: "/kasbon",          section: "kasbon",          label: "Kasbon Keeper",    icon: CreditCard },
+      { path: "/payroll-gaji?tab=kasbon", section: "kasbon", label: "Kasbon Keeper", icon: CreditCard },
     ],
   },
   {

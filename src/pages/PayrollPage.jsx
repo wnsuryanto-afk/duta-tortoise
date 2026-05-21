@@ -10,12 +10,229 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Wallet, Settings, Plus, Calculator, Users, Clock, Leaf, Star, Pencil } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { Wallet, Settings, Plus, Calculator, Users, Clock, Leaf, Star, Pencil, CreditCard, CheckCircle2, XCircle, Minus } from "lucide-react";
+import { format, startOfMonth, endOfMonth, addWeeks, nextSaturday } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+
+const MAX_KASBON = 1000000;
+
+function KasbonTab({ user, role, isOwnerOrManajer }) {
+  const qc = useQueryClient();
+  const isKeeper = role === "keeper";
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ amount: "", reason: "", deduction_type: "weekly", deduction_amount: "100000" });
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const { data: kasbons = [], isLoading } = useQuery({
+    queryKey: ["kasbons"],
+    queryFn: () => base44.entities.Kasbon.list("-request_date", 200),
+  });
+
+  const myKasbons = useMemo(() => {
+    if (isOwnerOrManajer) return kasbons;
+    return kasbons.filter(k => k.employee_email === user?.email);
+  }, [kasbons, user, isOwnerOrManajer]);
+
+  const activeKasbon = myKasbons.find(k => k.employee_email === user?.email && k.status === "approved");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    const amt = Number(form.amount);
+    const ded = Number(form.deduction_amount);
+    if (!amt || amt <= 0) { setFormError("Nominal kasbon harus diisi."); return; }
+    if (amt > MAX_KASBON) { setFormError(`Maksimal kasbon Rp ${MAX_KASBON.toLocaleString("id-ID")}`); return; }
+    if (!ded || ded <= 0) { setFormError("Jumlah potongan harus diisi."); return; }
+    if (activeKasbon) { setFormError("Anda masih memiliki kasbon aktif."); return; }
+    setSaving(true);
+    await base44.entities.Kasbon.create({
+      employee_name: user.full_name || user.email,
+      employee_email: user.email,
+      amount: amt,
+      reason: form.reason,
+      request_date: format(new Date(), "yyyy-MM-dd"),
+      weekly_deduction: form.deduction_type === "weekly" ? ded : 0,
+      total_paid: 0,
+      status: "pending",
+      notes: `Potongan ${form.deduction_type === "weekly" ? "mingguan" : "bulanan"}: Rp ${ded.toLocaleString("id-ID")}`,
+    });
+    qc.invalidateQueries({ queryKey: ["kasbons"] });
+    setSaving(false);
+    setShowForm(false);
+    setForm({ amount: "", reason: "", deduction_type: "weekly", deduction_amount: "100000" });
+  };
+
+  const handleApprove = async (kasbon) => {
+    await base44.entities.Kasbon.update(kasbon.id, {
+      status: "approved",
+      approved_by: user.full_name || user.email,
+      approved_date: format(new Date(), "yyyy-MM-dd"),
+    });
+    qc.invalidateQueries({ queryKey: ["kasbons"] });
+  };
+
+  const handleReject = async (kasbon) => {
+    if (!confirm("Tolak pengajuan kasbon ini?")) return;
+    await base44.entities.Kasbon.update(kasbon.id, { status: "rejected" });
+    qc.invalidateQueries({ queryKey: ["kasbons"] });
+  };
+
+  const handlePotong = async (kasbon) => {
+    const dedAmount = kasbon.weekly_deduction || 100000;
+    const sisa = (kasbon.amount || 0) - (kasbon.total_paid || 0);
+    const potongan = Math.min(dedAmount, sisa);
+    const newPaid = (kasbon.total_paid || 0) + potongan;
+    const lunas = newPaid >= kasbon.amount;
+    await base44.entities.Kasbon.update(kasbon.id, { total_paid: newPaid, status: lunas ? "lunas" : "approved" });
+    qc.invalidateQueries({ queryKey: ["kasbons"] });
+  };
+
+  const statusConfig = {
+    pending:  { label: "Menunggu",  color: "bg-amber-100 text-amber-700" },
+    approved: { label: "Disetujui", color: "bg-green-100 text-green-700" },
+    rejected: { label: "Ditolak",   color: "bg-red-100 text-red-700" },
+    lunas:    { label: "Lunas",     color: "bg-muted text-muted-foreground" },
+  };
+
+  const dedType = form.deduction_type;
+  const dedAmt = Number(form.deduction_amount) || 0;
+  const totalAmt = Number(form.amount) || 0;
+  const periods = dedAmt > 0 && totalAmt > 0 ? Math.ceil(totalAmt / dedAmt) : 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Maksimal Rp {MAX_KASBON.toLocaleString("id-ID")} · Potongan bisa per minggu atau bulan
+        </p>
+        {isKeeper && (
+          <Button size="sm" onClick={() => setShowForm(true)} disabled={!!activeKasbon}>
+            <Plus className="w-4 h-4 mr-1.5" /> Ajukan Kasbon
+          </Button>
+        )}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b bg-muted/30">
+          <h2 className="font-semibold text-sm flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            {isOwnerOrManajer ? "Semua Pengajuan Kasbon" : "Riwayat Kasbon Saya"}
+          </h2>
+        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>
+        ) : myKasbons.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">Belum ada pengajuan kasbon</div>
+        ) : (
+          <div className="divide-y">
+            {myKasbons.map(k => {
+              const sisa = (k.amount || 0) - (k.total_paid || 0);
+              const pct = k.amount ? Math.round(((k.total_paid || 0) / k.amount) * 100) : 0;
+              const conf = statusConfig[k.status] || statusConfig.pending;
+              const dedLabel = k.notes?.includes("bulanan") ? "bulanan" : "mingguan";
+              return (
+                <div key={k.id} className="p-4 hover:bg-muted/20 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-semibold text-sm">{k.employee_name}</span>
+                        <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
+                        <Badge variant="outline" className="text-[11px]">potong {dedLabel}</Badge>
+                      </div>
+                      <p className="text-lg font-bold text-primary">Rp {(k.amount || 0).toLocaleString("id-ID")}</p>
+                      {k.reason && <p className="text-xs text-muted-foreground mt-0.5">"{k.reason}"</p>}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Diajukan: {k.request_date ? format(new Date(k.request_date), "d MMM yyyy", { locale: id }) : "—"}
+                        {k.approved_date && ` · Disetujui: ${format(new Date(k.approved_date), "d MMM yyyy", { locale: id })}`}
+                      </p>
+                      {k.weekly_deduction > 0 && <p className="text-xs text-muted-foreground">Potongan: Rp {k.weekly_deduction.toLocaleString("id-ID")}/{dedLabel}</p>}
+                      {k.status === "approved" && (
+                        <div className="mt-2">
+                          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                            <span>Terbayar: Rp {(k.total_paid || 0).toLocaleString("id-ID")}</span>
+                            <span>Sisa: Rp {sisa.toLocaleString("id-ID")} ({pct}%)</span>
+                          </div>
+                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {isOwnerOrManajer && (
+                      <div className="flex gap-2 flex-shrink-0">
+                        {k.status === "pending" && (
+                          <>
+                            <Button size="sm" onClick={() => handleApprove(k)} className="gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Setujui</Button>
+                            <Button size="sm" variant="outline" onClick={() => handleReject(k)} className="gap-1 text-destructive border-destructive hover:bg-destructive/10"><XCircle className="w-3.5 h-3.5" /> Tolak</Button>
+                          </>
+                        )}
+                        {k.status === "approved" && sisa > 0 && (
+                          <Button size="sm" variant="outline" onClick={() => handlePotong(k)} className="gap-1">
+                            <Minus className="w-3.5 h-3.5" /> Potong Sekarang
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="font-heading">Ajukan Kasbon</DialogTitle></DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+              <p>• Maksimal kasbon: <strong>Rp {MAX_KASBON.toLocaleString("id-ID")}</strong></p>
+              <p>• Potongan dapat diatur per minggu atau bulan</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nominal Kasbon (Rp) *</Label>
+              <Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="500000" max={MAX_KASBON} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Jenis Potongan</Label>
+                <Select value={form.deduction_type} onValueChange={v => setForm(p => ({ ...p, deduction_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Per Minggu</SelectItem>
+                    <SelectItem value="monthly">Per Bulan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Jumlah Potongan (Rp)</Label>
+                <Input type="number" value={form.deduction_amount} onChange={e => setForm(p => ({ ...p, deduction_amount: e.target.value }))} placeholder="100000" />
+              </div>
+            </div>
+            {periods > 0 && (
+              <p className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
+                Lunas dalam <strong>{periods} {dedType === "weekly" ? "minggu" : "bulan"}</strong>
+              </p>
+            )}
+            <div className="space-y-1.5">
+              <Label>Keperluan / Alasan</Label>
+              <Textarea value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))} placeholder="Jelaskan keperluan..." rows={3} />
+            </div>
+            {formError && <p className="text-xs text-destructive font-medium">{formError}</p>}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
+              <Button type="submit" disabled={saving}>{saving ? "Mengajukan..." : "Ajukan Kasbon"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 const ROLE_OPTIONS = [
   { value: "keeper", label: "Keeper" },
@@ -202,7 +419,7 @@ function VegetableDialog({ open, onClose, employees }) {
 }
 
 export default function PayrollPage() {
-  const { role } = useCurrentUser();
+  const { user, role } = useCurrentUser();
   const isOwnerOrManajer = ["owner", "admin", "manajer"].includes(role);
   const qc = useQueryClient();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
@@ -286,6 +503,9 @@ export default function PayrollPage() {
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const defaultTab = urlParams.get("tab") || "payroll";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -308,9 +528,10 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="payroll">
-        <TabsList>
+      <Tabs defaultValue={defaultTab}>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="payroll"><Calculator className="w-4 h-4 mr-1.5" />Rekap Gaji</TabsTrigger>
+          <TabsTrigger value="kasbon"><CreditCard className="w-4 h-4 mr-1.5" />Kasbon</TabsTrigger>
           <TabsTrigger value="config"><Settings className="w-4 h-4 mr-1.5" />Konfigurasi Gaji</TabsTrigger>
           <TabsTrigger value="overtime"><Clock className="w-4 h-4 mr-1.5" />Log Lembur</TabsTrigger>
           <TabsTrigger value="vegetable"><Leaf className="w-4 h-4 mr-1.5" />Log Sayur</TabsTrigger>
@@ -378,6 +599,11 @@ export default function PayrollPage() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* TAB: Kasbon */}
+        <TabsContent value="kasbon" className="mt-4">
+          <KasbonTab user={user} role={role} isOwnerOrManajer={isOwnerOrManajer} />
         </TabsContent>
 
         {/* TAB: Konfigurasi Gaji */}

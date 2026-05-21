@@ -62,12 +62,47 @@ export default function FeedbackPage() {
     setSaving(false);
   };
 
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => base44.entities.User.list(),
+  });
+  const { data: bonusRewards = [] } = useQuery({
+    queryKey: ["bonus-rewards"],
+    queryFn: () => base44.entities.BonusReward.list("-period", 100),
+  });
+
   const handleReply = async () => {
     if (!replyDialog) return;
     await base44.entities.FeedbackSuggestion.update(replyDialog.id, {
       response: replyText,
       status: "selesai",
     });
+
+    // Jika feedback diterima (selesai), beri poin 10 ke pengirim
+    if (replyDialog.submitted_by_email && !replyDialog.is_anonymous) {
+      const email = replyDialog.submitted_by_email;
+      const emp = users.find(u => u.email === email);
+      if (emp) {
+        const period = format(new Date(), "yyyy-MM");
+        const existing = bonusRewards.find(b => b.employee_email === email && b.period === period);
+        const FEEDBACK_POINTS = 10;
+        if (existing) {
+          await base44.entities.BonusReward.update(existing.id, {
+            total_points: (existing.total_points || 0) + FEEDBACK_POINTS,
+          });
+        } else {
+          await base44.entities.BonusReward.create({
+            employee_email: email,
+            employee_name: emp.full_name || emp.email,
+            period,
+            total_points: FEEDBACK_POINTS,
+            notes: "Poin dari kritik/saran diterima",
+          });
+        }
+        qc.invalidateQueries({ queryKey: ["bonus-rewards"] });
+      }
+    }
+
     qc.invalidateQueries({ queryKey: ["feedbacks"] });
     setReplyDialog(null);
     setReplyText("");
