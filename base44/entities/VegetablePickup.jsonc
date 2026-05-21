@@ -1,0 +1,38 @@
+{
+  "name": "VegetablePickup",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "ID karyawan"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pengambilan"
+    },
+    "trips": {
+      "type": "number",
+      "default": 1,
+      "description": "Jumlah trip pengambilan"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "date",
+    "trips"
+  ]
+}

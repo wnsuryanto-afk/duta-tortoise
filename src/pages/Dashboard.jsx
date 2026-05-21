@@ -10,7 +10,7 @@ import FeedStockAlert from "@/components/dashboard/FeedStockAlert";
 import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import EggHatchChart from "@/components/dashboard/EggHatchChart";
-import AttendanceSummary from "@/components/dashboard/AttendanceSummary";
+import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
 import FinanceSummaryWidget from "@/components/dashboard/FinanceSummaryWidget";
 import AttendanceDashboardBanner from "@/components/dashboard/AttendanceDashboardBanner";
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
@@ -73,9 +73,9 @@ export default function Dashboard() {
         <EggHatchChart breedings={breedings} />
       </div>
 
-      {/* Baris 2: Absensi + Finance */}
+      {/* Baris 2: Absensi (dengan grafik) + Finance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AttendanceSummary />
+        <AttendanceChartCard />
         <FinanceSummaryWidget />
       </div>
 

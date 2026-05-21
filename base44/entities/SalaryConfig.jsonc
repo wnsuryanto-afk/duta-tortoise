@@ -1,0 +1,47 @@
+{
+  "name": "SalaryConfig",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "keeper",
+        "admin",
+        "manajer"
+      ],
+      "description": "Role karyawan"
+    },
+    "base_salary": {
+      "type": "number",
+      "default": 0,
+      "description": "Gaji pokok per bulan (Rp)"
+    },
+    "overtime_rate_per_hour": {
+      "type": "number",
+      "default": 0,
+      "description": "Tarif lembur per jam (Rp)"
+    },
+    "vegetable_rate_per_trip": {
+      "type": "number",
+      "default": 0,
+      "description": "Tunjangan per pengambilan sayur (Rp)"
+    },
+    "point_value": {
+      "type": "number",
+      "default": 0,
+      "description": "Nilai per poin KPI (Rp)"
+    },
+    "absent_deduction": {
+      "type": "number",
+      "default": 0,
+      "description": "Potongan per hari tidak hadir (Rp)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

@@ -17,6 +17,8 @@ const MORPHS = [
   { value: "het_albino",  label: "Het Albino" },
   { value: "ivory",       label: "Ivory" },
   { value: "albino",      label: "Albino" },
+  { value: "wc",          label: "WC (Wild Caught)" },
+  { value: "cb",          label: "CB (Captive Bred)" },
 ];
 
 // Migrasi: jika editData hanya punya photo_url (string lama), ubah ke array

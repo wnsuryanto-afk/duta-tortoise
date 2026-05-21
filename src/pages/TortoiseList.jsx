@@ -26,6 +26,7 @@ export default function TortoiseList() {
   const [statusFilter, setStatusFilter] = useState("semua");
   const [genderFilter, setGenderFilter] = useState("semua");
   const [morphFilter, setMorphFilter] = useState("semua");
+  const [provenFilter, setProvenFilter] = useState("semua"); // "semua" | "proven" | "belum"
   const [enclosureFilter, setEnclosureFilter] = useState(null); // null = tampil semua
   const [viewMode, setViewMode] = useState("kandang"); // "kandang" | "semua"
   const [collapsedGroups, setCollapsedGroups] = useState({});
@@ -91,7 +92,8 @@ export default function TortoiseList() {
     const matchGender = genderFilter === "semua" || t.gender === genderFilter;
     const matchMorph = morphFilter === "semua" || (t.morph || "normal") === morphFilter;
     const matchEnclosure = !enclosureFilter || (t.enclosure || "Tidak Ada Kandang") === enclosureFilter;
-    return matchSearch && matchStatus && matchGender && matchMorph && matchEnclosure;
+    const matchProven = provenFilter === "semua" || (provenFilter === "proven" ? !!t.is_proven : !t.is_proven);
+    return matchSearch && matchStatus && matchGender && matchMorph && matchEnclosure && matchProven;
   });
 
   // Group by enclosure
@@ -196,6 +198,18 @@ export default function TortoiseList() {
             <SelectItem value="het_albino">Het Albino</SelectItem>
             <SelectItem value="ivory">Ivory</SelectItem>
             <SelectItem value="albino">Albino</SelectItem>
+            <SelectItem value="wc">WC (Wild Caught)</SelectItem>
+            <SelectItem value="cb">CB (Captive Bred)</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={provenFilter} onValueChange={setProvenFilter}>
+          <SelectTrigger className="w-full sm:w-36">
+            <SelectValue placeholder="Proven" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="semua">Semua</SelectItem>
+            <SelectItem value="proven">✅ Proven</SelectItem>
+            <SelectItem value="belum">Belum Proven</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex rounded-lg border overflow-hidden">

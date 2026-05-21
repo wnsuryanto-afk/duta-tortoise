@@ -19,9 +19,9 @@ export const ROLE_COLORS = {
 };
 
 export const NAV_ACCESS = {
-  owner:    ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
-  admin:    ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
-  manajer:  ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "sop", "payroll", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  owner:    ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "payroll-gaji", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  admin:    ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "users", "sop", "payroll", "payroll-gaji", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  manajer:  ["dashboard", "tortoise", "breeding", "health", "warehouse", "finance", "sop", "payroll", "payroll-gaji", "reminders", "breeding-report", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
   keeper:   ["dashboard", "tortoise", "breeding", "health", "sop", "reminders", "feed-stock", "warehouse", "info", "treatment", "tutorial", "feedback", "kasbon"],
   investor: ["dashboard", "tortoise", "breeding", "health", "finance", "breeding-report", "info"],
 };

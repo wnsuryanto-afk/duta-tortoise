@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
@@ -38,11 +38,13 @@ function getCardBg(tortoise) {
 const morphLabels = {
   normal: "Normal", over_scute: "Over Scute", less_scute: "Less Scute",
   het_albino: "Het Albino", ivory: "Ivory", albino: "Albino",
+  wc: "WC", cb: "CB",
 };
 const morphColors = {
   normal: "bg-muted text-muted-foreground", over_scute: "bg-blue-100 text-blue-700",
   less_scute: "bg-purple-100 text-purple-700", het_albino: "bg-orange-100 text-orange-700",
   ivory: "bg-yellow-100 text-yellow-700", albino: "bg-pink-100 text-pink-700",
+  wc: "bg-amber-100 text-amber-800", cb: "bg-teal-100 text-teal-700",
 };
 const genderLabels = {
   jantan: "♂ Jantan", betina: "♀ Betina", belum_diketahui: "? Belum Diketahui",
@@ -85,6 +87,16 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
   const shareWA = (url) => {
     const text = encodeURIComponent(`Foto kura-kura ${tortoise.name}: ${url}`);
     window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
+  const saveToDevice = async (url) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${tortoise.name || "tortoise"}.jpg`;
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const cardBg = getCardBg(tortoise);
@@ -211,9 +223,14 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
               ))}
             </div>
           )}
-          <Button type="button" variant="outline" size="sm" className="gap-2 mt-1" onClick={() => shareWA(photos[lightboxIdx].url)}>
-            <Share2 className="w-3.5 h-3.5 text-green-600" /> Share ke WhatsApp
-          </Button>
+          <div className="flex gap-2 mt-1">
+            <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => shareWA(photos[lightboxIdx].url)}>
+              <Share2 className="w-3.5 h-3.5 text-green-600" /> WhatsApp
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => saveToDevice(photos[lightboxIdx].url)}>
+              <Download className="w-3.5 h-3.5 text-blue-600" /> Simpan ke HP
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     )}

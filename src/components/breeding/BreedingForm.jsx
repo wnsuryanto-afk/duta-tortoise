@@ -49,11 +49,25 @@ export default function BreedingForm({ open, onClose, editData }) {
   const handleMaleSelect = (id) => {
     const male = tortoises.find((t) => t.id === id);
     setForm((prev) => ({ ...prev, male_id: id, male_name: male?.name || "" }));
+    // Auto-proven jika belum proven
+    if (male && !male.is_proven) {
+      queryClient.setQueryData(["tortoises"], (old) =>
+        old?.map(t => t.id === id ? { ...t, is_proven: true } : t)
+      );
+      base44.entities.Tortoise.update(id, { is_proven: true });
+    }
   };
 
   const handleFemaleSelect = (id) => {
     const female = tortoises.find((t) => t.id === id);
     setForm((prev) => ({ ...prev, female_id: id, female_name: female?.name || "" }));
+    // Auto-proven jika belum proven
+    if (female && !female.is_proven) {
+      queryClient.setQueryData(["tortoises"], (old) =>
+        old?.map(t => t.id === id ? { ...t, is_proven: true } : t)
+      );
+      base44.entities.Tortoise.update(id, { is_proven: true });
+    }
   };
 
   const handleEggLayingDate = (value) => {

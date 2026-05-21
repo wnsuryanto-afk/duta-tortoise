@@ -1,0 +1,52 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID user (dari base44 auth)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email user"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Nama lengkap"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "address": {
+      "type": "string",
+      "description": "Alamat"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL foto profil"
+    },
+    "id_number": {
+      "type": "string",
+      "description": "Nomor KTP"
+    },
+    "join_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal mulai bergabung"
+    },
+    "emergency_contact": {
+      "type": "string",
+      "description": "Kontak darurat"
+    },
+    "is_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "Data pribadi sudah diisi"
+    }
+  },
+  "required": [
+    "user_id",
+    "user_email"
+  ]
+}

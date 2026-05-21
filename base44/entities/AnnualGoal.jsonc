@@ -10,9 +10,13 @@
       "type": "number",
       "description": "Target produksi telur"
     },
+    "revenue_target": {
+      "type": "number",
+      "description": "Target pendapatan (Rp)"
+    },
     "notes": {
       "type": "string",
-      "description": "Catatan dari owner"
+      "description": "Catatan dari owner/manajer"
     },
     "set_by": {
       "type": "string",

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, PlayCircle, ChevronRight, Leaf, Heart, AlertTriangle, Plus, Pencil, Trash2, ExternalLink, ImagePlus, Wand2, Loader2 } from "lucide-react";
-import { useRef } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const CATEGORIES = [

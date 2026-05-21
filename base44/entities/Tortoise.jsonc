@@ -28,7 +28,9 @@
         "less_scute",
         "het_albino",
         "ivory",
-        "albino"
+        "albino",
+        "wc",
+        "cb"
       ],
       "default": "normal",
       "description": "Jenis/morph kura-kura"
@@ -46,7 +48,7 @@
     "purchase_date": {
       "type": "string",
       "format": "date",
-      "description": "Tanggal pembelian (jika dibeli, bukan dari farm)"
+      "description": "Tanggal pembelian"
     },
     "weight_grams": {
       "type": "number",
@@ -74,7 +76,7 @@
     },
     "photo_url": {
       "type": "string",
-      "description": "URL foto thumbnail utama (backward compat)"
+      "description": "URL foto thumbnail utama"
     },
     "photos": {
       "type": "array",
@@ -90,7 +92,7 @@
     },
     "death_video_url": {
       "type": "string",
-      "description": "URL video dokumentasi kematian (wajib diisi jika status mati)"
+      "description": "URL video dokumentasi kematian"
     },
     "notes": {
       "type": "string",

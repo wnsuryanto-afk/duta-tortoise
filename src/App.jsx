@@ -24,6 +24,7 @@ import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
 import FeedbackPage from '@/pages/FeedbackPage';
 import KasbonPage from '@/pages/KasbonPage';
+import PayrollPage from '@/pages/PayrollPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
         <Route path="/treatment" element={<TreatmentPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/kasbon" element={<KasbonPage />} />
+        <Route path="/payroll-gaji" element={<PayrollPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

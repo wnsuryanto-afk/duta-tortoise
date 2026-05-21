@@ -5,16 +5,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Target, Pencil, Egg, Timer } from "lucide-react";
+import { Target, Pencil, Egg, Timer, TrendingUp } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 export default function AnnualGoalWidget({ breedings = [] }) {
   const { role } = useCurrentUser();
   const qc = useQueryClient();
-  const isOwner = role === "owner";
+  const canEdit = ["owner", "admin", "manajer"].includes(role);
   const currentYear = new Date().getFullYear();
   const [showForm, setShowForm] = useState(false);
   const [goalInput, setGoalInput] = useState("");
+  const [revenueInput, setRevenueInput] = useState("");
   const [notesInput, setNotesInput] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -26,12 +27,22 @@ export default function AnnualGoalWidget({ breedings = [] }) {
   const currentGoal = goals.find(g => g.year === currentYear);
 
   // Hitung total telur tahun ini dari breeding
+  const { data: salesToday = [] } = useQuery({
+    queryKey: ["sales-for-goal"],
+    queryFn: () => base44.entities.Sale.filter({}),
+  });
+  const currentYearRevenue = salesToday
+    .filter(s => s.sale_date && s.sale_date.startsWith(String(currentYear)))
+    .reduce((sum, s) => sum + (s.price || 0), 0);
+
   const currentYearEggs = breedings
     .filter(b => b.egg_laying_date && b.egg_laying_date.startsWith(String(currentYear)))
     .reduce((sum, b) => sum + (b.egg_count || 0), 0);
 
   const target = currentGoal?.egg_production_target || 0;
+  const revenueTarget = currentGoal?.revenue_target || 0;
   const progress = target > 0 ? Math.min(100, Math.round((currentYearEggs / target) * 100)) : 0;
+  const revenueProgress = revenueTarget > 0 ? Math.min(100, Math.round((currentYearRevenue / revenueTarget) * 100)) : 0;
 
   // Countdown ke akhir tahun
   const endOfYear = new Date(currentYear, 11, 31);
@@ -41,6 +52,7 @@ export default function AnnualGoalWidget({ breedings = [] }) {
 
   const openForm = () => {
     setGoalInput(currentGoal?.egg_production_target || "");
+    setRevenueInput(currentGoal?.revenue_target || "");
     setNotesInput(currentGoal?.notes || "");
     setShowForm(true);
   };
@@ -51,8 +63,9 @@ export default function AnnualGoalWidget({ breedings = [] }) {
     const data = {
       year: currentYear,
       egg_production_target: Number(goalInput),
+      revenue_target: Number(revenueInput) || 0,
       notes: notesInput,
-      set_by: "owner",
+      set_by: role,
     };
     if (currentGoal?.id) {
       await base44.entities.AnnualGoal.update(currentGoal.id, data);
@@ -77,7 +90,7 @@ export default function AnnualGoalWidget({ breedings = [] }) {
               <p className="text-xs text-muted-foreground">Produksi Telur</p>
             </div>
           </div>
-          {isOwner && (
+          {canEdit && (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openForm}>
               <Pencil className="w-3.5 h-3.5" />
             </Button>
@@ -87,7 +100,7 @@ export default function AnnualGoalWidget({ breedings = [] }) {
         {!currentGoal ? (
           <div className="text-center py-4">
             <p className="text-sm text-muted-foreground">Belum ada target untuk tahun ini</p>
-            {isOwner && (
+            {canEdit && (
               <Button size="sm" className="mt-3" onClick={openForm}>
                 <Target className="w-3.5 h-3.5 mr-1.5" />
                 Set Target
@@ -124,6 +137,22 @@ export default function AnnualGoalWidget({ breedings = [] }) {
               </div>
             </div>
 
+            {/* Target Revenue */}
+            {revenueTarget > 0 && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="flex items-center gap-1 text-muted-foreground"><TrendingUp className="w-3 h-3" /> Pendapatan {currentYear}</span>
+                  <span className={`font-semibold ${revenueProgress >= 100 ? "text-green-600" : "text-accent"}`}>
+                    {revenueProgress}% — Rp {currentYearRevenue.toLocaleString("id-ID")} / Rp {revenueTarget.toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-500 ${revenueProgress >= 100 ? "bg-green-500" : "bg-accent"}`}
+                    style={{ width: `${revenueProgress}%` }} />
+                </div>
+              </div>
+            )}
+
             {/* Countdown */}
             <div className="flex items-center gap-2 p-3 rounded-xl bg-background/70">
               <Timer className="w-4 h-4 text-accent flex-shrink-0" />
@@ -148,6 +177,10 @@ export default function AnnualGoalWidget({ breedings = [] }) {
             <div>
               <label className="text-xs font-medium mb-1 block">Target Produksi Telur *</label>
               <Input type="number" value={goalInput} onChange={(e) => setGoalInput(e.target.value)} placeholder="Contoh: 500" min={1} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Target Pendapatan (Rp)</label>
+              <Input type="number" value={revenueInput} onChange={(e) => setRevenueInput(e.target.value)} placeholder="Contoh: 50000000" />
             </div>
             <div>
               <label className="text-xs font-medium mb-1 block">Catatan / Motivasi</label>
