@@ -323,15 +323,15 @@ export default function BreedingAndEggs() {
                         <div className="col-span-2">
                           <div className={`p-3 rounded-lg border-2 ${
                             daysToStart <= 7 
-                              ? "bg-green-50 border-green-300" 
+                              ? "bg-red-50 border-red-300" 
                               : "bg-blue-50 border-blue-200"
                           }`}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-green-600" : "text-blue-600"}`} />
+                                <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-red-600" : "text-blue-600"}`} />
                                 <span className="text-xs font-semibold">Menetas dalam</span>
                               </div>
-                              <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-green-700" : "text-blue-700"}`}>
+                              <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-red-700" : "text-blue-700"}`}>
                                 {daysToStart} hari
                               </span>
                             </div>
@@ -471,15 +471,15 @@ export default function BreedingAndEggs() {
                       {b.status === "inkubasi" && daysToStart !== null && daysToStart > 0 && (
                         <div className={`p-3 rounded-lg border-2 ${
                           daysToStart <= 7 
-                            ? "bg-green-50 border-green-300" 
+                            ? "bg-red-50 border-red-300" 
                             : "bg-blue-50 border-blue-200"
                         }`}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-green-600" : "text-blue-600"}`} />
+                              <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-red-600" : "text-blue-600"}`} />
                               <span className="text-xs font-semibold">Menetas dalam</span>
                             </div>
-                            <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-green-700" : "text-blue-700"}`}>
+                            <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-red-700" : "text-blue-700"}`}>
                               {daysToStart} hari
                             </span>
                           </div>
