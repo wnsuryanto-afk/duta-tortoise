@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye } from "lucide-react";
+import { Eye, User, Bell, HelpCircle, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import TourController from "@/components/tutorial/TourController";
@@ -17,9 +17,20 @@ export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
   const { viewAsRole, viewAsLabel, resetViewAs } = useViewAs();
   const [showViewAsSelector, setShowViewAsSelector] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
 
   const isOwner = user?.role === "owner";
   const isViewingAs = !!viewAsRole;
+
+  // Close user menu on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
+    };
+    if (showUserMenu) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showUserMenu]);
 
   const { data: profiles = [], isLoading: profileLoading, refetch: refetchProfile } = useQuery({
     queryKey: ["user-profile", user?.email],
@@ -64,11 +75,77 @@ export default function AppLayout() {
 
       <main className={`lg:ml-64 min-h-screen ${isViewingAs ? "mt-10" : ""}`}>
         <div className="p-4 pt-16 lg:pt-6 lg:p-8 max-w-7xl mx-auto">
-          {/* Top bar: bell + owner view-as button */}
+          {/* Top bar: bell + user menu */}
           <div className="flex justify-end items-center gap-2 mb-4">
-            <div className="flex items-center gap-1.5 bg-sidebar rounded-xl px-2 py-1 shadow-sm">
+            <div className="flex items-center gap-1.5">
               <NotificationBell />
+              
+              {/* User menu dropdown */}
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(v => !v)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-sidebar hover:bg-sidebar-accent transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-xs font-bold text-primary">
+                      {(user?.full_name || user?.email || "?")[0].toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium hidden sm:block">{user?.full_name || user?.email}</span>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b">
+                      <p className="text-sm font-semibold">{user?.full_name || user?.email}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{user?.role || "user"}</p>
+                    </div>
+                    <div className="py-2">
+                      <button
+                        onClick={() => { navigate("/edit-profil"); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
+                      >
+                        <User className="w-4 h-4 text-primary" />
+                        Edit Profil
+                      </button>
+                      <button
+                        onClick={() => { navigate("/notifications"); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
+                      >
+                        <Bell className="w-4 h-4 text-primary" />
+                        Notifikasi
+                      </button>
+                      <button
+                        onClick={() => { navigate("/help"); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
+                      >
+                        <HelpCircle className="w-4 h-4 text-primary" />
+                        Bantuan & Tutorial
+                      </button>
+                      {isOwner && !isViewingAs && (
+                        <button
+                          onClick={() => { setShowViewAsSelector(true); setShowUserMenu(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                          <Eye className="w-4 h-4 text-amber-600" />
+                          Lihat Sebagai...
+                        </button>
+                      )}
+                    </div>
+                    <div className="py-2 border-t">
+                      <button
+                        onClick={() => base44.auth.logout()}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Keluar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+            
             {isOwner && !isViewingAs && (
               <Button
                 variant="outline"

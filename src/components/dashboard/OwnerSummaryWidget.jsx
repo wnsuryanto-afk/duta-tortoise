@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
-import { Shell, Egg, TrendingUp, TrendingDown, Users, AlertTriangle, DollarSign, Clock, Weight } from "lucide-react";
+import { Shell, Egg, TrendingUp, TrendingDown, Users, AlertTriangle, DollarSign, Clock, Weight, ArrowRight } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
@@ -119,7 +119,31 @@ export default function OwnerSummaryWidget() {
       icon: Shell,
       color: "text-primary",
       bg: "bg-primary/10",
-      link: "/tortoise",
+      link: "/tortoise?filter=aktif",
+    },
+    {
+      label: "Total Baby",
+      value: tortoises.filter(t => t.status === "baby").length,
+      icon: Shell,
+      color: "text-chart-4",
+      bg: "bg-chart-4/10",
+      link: "/tortoise?filter=baby",
+    },
+    {
+      label: "Kura-kura Sakit",
+      value: tortoises.filter(t => t.status === "sakit").length,
+      icon: Shell,
+      color: "text-red-600",
+      bg: "bg-red-100",
+      link: "/tortoise?filter=sakit",
+    },
+    {
+      label: "Belum Ditimbang >30 hari",
+      value: notWeighedRecently.length,
+      icon: Weight,
+      color: "text-slate-600",
+      bg: "bg-slate-100",
+      link: "/tortoise?filter=timbang",
     },
     {
       label: "Telur Inkubasi",
@@ -141,12 +165,20 @@ export default function OwnerSummaryWidget() {
       link: "/incubator",
     },
     {
+      label: "Dalam Masa Penetasan",
+      value: inHatchRange.length,
+      icon: Egg,
+      color: "text-red-600",
+      bg: "bg-red-100",
+      link: "/breeding?filter=hatch",
+    },
+    {
       label: "Omzet Bulan Ini",
       value: fmtRp(omzet),
       icon: TrendingUp,
       color: "text-green-600",
       bg: "bg-green-100",
-      link: "/finance",
+      link: "/sales-report?period=current",
     },
     {
       label: "Pengeluaran",
@@ -154,7 +186,7 @@ export default function OwnerSummaryWidget() {
       icon: TrendingDown,
       color: "text-red-600",
       bg: "bg-red-100",
-      link: "/finance",
+      link: "/finance?filter=pengeluaran",
     },
     {
       label: profit >= 0 ? "Profit" : "Rugi",
@@ -162,7 +194,7 @@ export default function OwnerSummaryWidget() {
       icon: DollarSign,
       color: profit >= 0 ? "text-primary" : "text-orange-600",
       bg: profit >= 0 ? "bg-primary/10" : "bg-orange-100",
-      link: "/finance",
+      link: "/finance?period=current",
     },
     {
       label: "Hadir Hari Ini",
@@ -170,7 +202,23 @@ export default function OwnerSummaryWidget() {
       icon: Users,
       color: "text-blue-600",
       bg: "bg-blue-100",
-      link: "/daily-payroll",
+      link: "/daily-payroll?date=today",
+    },
+    {
+      label: "Stok Menipis",
+      value: lowFeed.length + lowWarehouse.length,
+      icon: AlertTriangle,
+      color: "text-orange-600",
+      bg: "bg-orange-100",
+      link: "/warehouse?filter=low",
+    },
+    {
+      label: "Obat Kadaluarsa",
+      value: expiredSoon.length,
+      icon: AlertTriangle,
+      color: "text-red-600",
+      bg: "bg-red-100",
+      link: "/warehouse?filter=expired",
     },
   ];
 
@@ -179,9 +227,12 @@ export default function OwnerSummaryWidget() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {stats.map((s) => (
           <Link to={s.link} key={s.label}>
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
-              <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
-                <s.icon className={`w-5 h-5 ${s.color}`} />
+            <Card className="p-4 hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer group border-2">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}>
+                  <s.icon className={`w-5 h-5 ${s.color}`} />
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
               </div>
               <p className="text-lg font-bold leading-tight">{s.value}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
@@ -194,44 +245,54 @@ export default function OwnerSummaryWidget() {
         <div className="space-y-2">
           {/* Stok menipis */}
           {(lowFeed.length > 0 || lowWarehouse.length > 0) && (
-            <Card className="p-4 border-orange-200 bg-orange-50">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-orange-800">{lowFeed.length + lowWarehouse.length} stok menipis!</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {lowFeed.map((f) => (
-                      <span key={f.id} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">🌿 {f.name}: {f.current_stock} {f.unit}</span>
-                    ))}
-                    {lowWarehouse.map((w) => (
-                      <span key={w.id} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">📦 {w.name}: {w.current_stock} {w.unit}</span>
-                    ))}
+            <Link to="/warehouse?filter=low">
+              <Card className="p-4 border-orange-200 bg-orange-50 hover:shadow-md transition-shadow cursor-pointer group">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-sm text-orange-800">{lowFeed.length + lowWarehouse.length} stok menipis!</p>
+                      <ArrowRight className="w-4 h-4 text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {lowFeed.map((f) => (
+                        <span key={f.id} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">🌿 {f.name}: {f.current_stock} {f.unit}</span>
+                      ))}
+                      {lowWarehouse.map((w) => (
+                        <span key={w.id} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">📦 {w.name}: {w.current_stock} {w.unit}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           )}
 
           {/* Obat kadaluarsa */}
           {expiredSoon.length > 0 && (
-            <Card className="p-4 border-red-300 bg-red-50">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-red-800">{expiredSoon.length} obat/vitamin akan kadaluarsa dalam 30 hari!</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {expiredSoon.map((w) => {
-                      const days = differenceInDays(parseISO(w.expired_date), todayDate);
-                      return (
-                        <span key={w.id} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">
-                          💊 {w.name} ({days === 0 ? "hari ini!" : `${days} hari lagi`})
-                        </span>
-                      );
-                    })}
+            <Link to="/warehouse?filter=expired">
+              <Card className="p-4 border-red-300 bg-red-50 hover:shadow-md transition-shadow cursor-pointer group">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-sm text-red-800">{expiredSoon.length} obat/vitamin akan kadaluarsa!</p>
+                      <ArrowRight className="w-4 h-4 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {expiredSoon.map((w) => {
+                        const days = differenceInDays(parseISO(w.expired_date), todayDate);
+                        return (
+                          <span key={w.id} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">
+                            💊 {w.name} ({days === 0 ? "hari ini!" : `${days} hari lagi`})
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           )}
 
           {/* Telur dalam masa penetasan (RED ALERT) */}
@@ -282,22 +343,27 @@ export default function OwnerSummaryWidget() {
 
           {/* Belum ditimbang */}
           {notWeighedRecently.length > 0 && (
-            <Card className="p-4 border-slate-300 bg-slate-50">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-slate-700">{notWeighedRecently.length} kura-kura belum ditimbang lebih dari 30 hari</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {notWeighedRecently.slice(0, 8).map((t) => (
-                      <span key={t.id} className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full border border-slate-200">🐢 {t.name}</span>
-                    ))}
-                    {notWeighedRecently.length > 8 && (
-                      <span className="text-xs text-slate-500">+{notWeighedRecently.length - 8} lainnya</span>
-                    )}
+            <Link to="/tortoise?filter=timbang">
+              <Card className="p-4 border-slate-300 bg-slate-50 hover:shadow-md transition-shadow cursor-pointer group">
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-sm text-slate-700">{notWeighedRecently.length} kura-kura belum ditimbang {">"}30 hari</p>
+                      <ArrowRight className="w-4 h-4 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {notWeighedRecently.slice(0, 8).map((t) => (
+                        <span key={t.id} className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full border border-slate-200">🐢 {t.name}</span>
+                      ))}
+                      {notWeighedRecently.length > 8 && (
+                        <span className="text-xs text-slate-500">+{notWeighedRecently.length - 8} lainnya</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           )}
         </div>
       )}

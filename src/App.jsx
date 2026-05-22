@@ -43,6 +43,8 @@ import CRMPage from '@/pages/CRMPage';
 import HelpCenterPage from '@/pages/HelpCenterPage';
 import IncubatorPage from '@/pages/IncubatorPage';
 import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
+import EditProfilePage from '@/pages/EditProfilePage.jsx';
+import IncompleteDataPage from '@/pages/IncompleteDataPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -100,7 +102,9 @@ const AuthenticatedApp = () => {
         <Route path="/crm" element={<CRMPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/incubator" element={<IncubatorPage />} />
-      <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
+        <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
+        <Route path="/edit-profil" element={<EditProfilePage />} />
+        <Route path="/incomplete-data" element={<IncompleteDataPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

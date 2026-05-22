@@ -27,7 +27,7 @@ function ProgressBar({ done, total }) {
   );
 }
 
-function DataTable({ items, entityType, editPath, nameField = "name", filterIncomplete }) {
+function DataTable({ items, entityType, editPath, nameField = "name", filterIncomplete, getEditUrl }) {
   const rows = items.map(item => ({
     ...item,
     missing: getMissingFields(entityType, item),
@@ -47,36 +47,39 @@ function DataTable({ items, entityType, editPath, nameField = "name", filterInco
         </div>
       ) : (
         <div className="space-y-2">
-          {displayed.map(item => (
-            <div key={item.id} className={`flex items-center gap-3 p-3 rounded-xl border text-sm ${item.missing.length > 0 ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200"}`}>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {item.missing.length > 0
-                    ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                    : <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                  }
-                  <span className="font-medium truncate">{item[nameField] || item.title || item.buyer_name || item.tortoise_name || item.employee_name || "-"}</span>
+          {displayed.map(item => {
+            const editUrl = getEditUrl ? getEditUrl(item) : editPath;
+            return (
+              <Link key={item.id} to={editUrl}>
+                <div className={`flex items-center gap-3 p-3 rounded-xl border text-sm transition-all hover:shadow-md cursor-pointer ${item.missing.length > 0 ? "bg-amber-50 border-amber-200 hover:border-amber-300" : "bg-green-50 border-green-200"}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item.missing.length > 0
+                        ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                        : <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                      }
+                      <span className="font-medium truncate">{item[nameField] || item.title || item.buyer_name || item.tortoise_name || item.employee_name || "-"}</span>
+                      {item.missing.length > 0 && (
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-300 border text-[10px] px-1.5">
+                          {item.missing.length} field kosong
+                        </Badge>
+                      )}
+                    </div>
+                    {item.missing.length > 0 && (
+                      <p className="text-xs text-amber-700 mt-1 ml-5">
+                        {item.missing.join(" · ")}
+                      </p>
+                    )}
+                  </div>
                   {item.missing.length > 0 && (
-                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 border text-[10px] px-1.5">
-                      {item.missing.length} field kosong
-                    </Badge>
+                    <Button size="sm" className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white shrink-0">
+                      Lengkapi →
+                    </Button>
                   )}
                 </div>
-                {item.missing.length > 0 && (
-                  <p className="text-xs text-amber-700 mt-1 ml-5">
-                    {item.missing.join(" · ")}
-                  </p>
-                )}
-              </div>
-              {item.missing.length > 0 && editPath && (
-                <Link to={editPath}>
-                  <Button size="sm" className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white shrink-0">
-                    Lengkapi
-                  </Button>
-                </Link>
-              )}
-            </div>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
@@ -180,7 +183,14 @@ export default function IncompleteDataPage() {
         <TabsContent value="kura" className="mt-4">
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">🐢 Kura-kura Aktif</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={tortoises.filter(t => t.status === "aktif" || t.status === "baby")} entityType="tortoise" editPath="/tortoise" nameField="name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={tortoises.filter(t => t.status === "aktif" || t.status === "baby")} 
+                entityType="tortoise" 
+                editPath="/tortoise" 
+                nameField="name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/tortoise?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -188,7 +198,14 @@ export default function IncompleteDataPage() {
         <TabsContent value="breeding" className="mt-4">
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">🥚 Breeding</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={breedings} entityType="breeding" editPath="/breeding" nameField="female_name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={breedings} 
+                entityType="breeding" 
+                editPath="/breeding" 
+                nameField="female_name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/breeding?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -196,7 +213,14 @@ export default function IncompleteDataPage() {
         <TabsContent value="sale" className="mt-4">
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">💰 Penjualan</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={sales} entityType="sale" editPath="/sales" nameField="tortoise_name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={sales} 
+                entityType="sale" 
+                editPath="/sales" 
+                nameField="tortoise_name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/sales?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -204,7 +228,14 @@ export default function IncompleteDataPage() {
         <TabsContent value="karyawan" className="mt-4">
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">👥 Profil Karyawan</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={profiles} entityType="userProfile" editPath="/hr" nameField="full_name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={profiles} 
+                entityType="userProfile" 
+                editPath="/hr" 
+                nameField="full_name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/hr?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -212,12 +243,26 @@ export default function IncompleteDataPage() {
         <TabsContent value="gudang" className="mt-4 space-y-4">
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">🏭 Barang Gudang</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={warehouseItems} entityType="warehouseItem" editPath="/warehouse" nameField="name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={warehouseItems} 
+                entityType="warehouseItem" 
+                editPath="/warehouse" 
+                nameField="name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/warehouse?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">🌿 Stok Pakan</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={feedStocks} entityType="feedStock" editPath="/feed-stock" nameField="name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={feedStocks} 
+                entityType="feedStock" 
+                editPath="/feed-stock" 
+                nameField="name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/feed-stock?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -225,17 +270,38 @@ export default function IncompleteDataPage() {
         <TabsContent value="lainnya" className="mt-4 space-y-4">
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">👤 Profil Pembeli (CRM)</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={buyers} entityType="buyerProfile" editPath="/crm" nameField="name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={buyers} 
+                entityType="buyerProfile" 
+                editPath="/crm" 
+                nameField="name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/crm?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">🏠 Kandang</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={enclosures} entityType="enclosure" editPath="/tortoise" nameField="name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={enclosures} 
+                entityType="enclosure" 
+                editPath="/enclosure" 
+                nameField="name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/enclosure?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">💵 Kasbon</CardTitle></CardHeader>
             <CardContent>
-              <DataTable items={kasbons} entityType="kasbon" editPath="/payroll-gaji" nameField="employee_name" filterIncomplete={filterIncomplete} />
+              <DataTable 
+                items={kasbons} 
+                entityType="kasbon" 
+                editPath="/payroll-gaji" 
+                nameField="employee_name" 
+                filterIncomplete={filterIncomplete}
+                getEditUrl={(item) => `/payroll-gaji?edit=${item.id}`}
+              />
             </CardContent>
           </Card>
         </TabsContent>
