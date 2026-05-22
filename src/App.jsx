@@ -47,6 +47,10 @@ import IncompleteDataPage from '@/pages/IncompleteDataPage';
 import DeathRecordsPage from '@/pages/DeathRecordsPage';
 import ActivityLogPage from '@/pages/ActivityLogPage';
 import SystemMaintenancePage from '@/pages/SystemMaintenancePage';
+import QuarantinePage from '@/pages/QuarantinePage.jsx';
+import VetContactPage from '@/pages/VetContactPage.jsx';
+import OperationalSchedulePage from '@/pages/OperationalSchedulePage.jsx';
+import TortoiseTagManagementPage from '@/pages/TortoiseTagManagementPage.jsx';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -106,6 +110,10 @@ const AuthenticatedApp = () => {
         <Route path="/death-records" element={<DeathRecordsPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/system-maintenance" element={<SystemMaintenancePage />} />
+        <Route path="/quarantine" element={<QuarantinePage />} />
+        <Route path="/vet-contacts" element={<VetContactPage />} />
+        <Route path="/operational-schedule" element={<OperationalSchedulePage />} />
+        <Route path="/tag-management" element={<TortoiseTagManagementPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

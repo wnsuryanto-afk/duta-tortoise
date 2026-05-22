@@ -17,7 +17,7 @@ import RenameEnclosureDialog from "@/components/tortoise/RenameEnclosureDialog";
 import EnclosureForm from "@/components/enclosure/EnclosureForm";
 import EnclosureAuditForm from "@/components/enclosure/EnclosureAuditForm";
 import EmptyState from "@/components/common/EmptyState";
-import { CardSkeleton } from "@/components/common/Skeleton";
+import CardSkeleton from "@/components/common/Skeleton";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms } from "@/lib/permissions";
 import { differenceInDays, parseISO } from "date-fns";

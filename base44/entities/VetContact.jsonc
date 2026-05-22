@@ -1,0 +1,76 @@
+{
+  "name": "VetContact",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama dokter hewan"
+    },
+    "clinic_name": {
+      "type": "string",
+      "description": "Nama klinik/RS hewan"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "whatsapp": {
+      "type": "string",
+      "description": "Nomor WhatsApp"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email"
+    },
+    "address": {
+      "type": "string",
+      "description": "Alamat klinik"
+    },
+    "specialization": {
+      "type": "string",
+      "description": "Spesialisasi (Reptil, Eksotik, Umum)"
+    },
+    "availability": {
+      "type": "string",
+      "description": "Jam operasional"
+    },
+    "emergency_available": {
+      "type": "boolean",
+      "default": false,
+      "description": "Bisa dipanggil darurat"
+    },
+    "consultation_fee": {
+      "type": "number",
+      "description": "Perkiraan biaya konsultasi"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Rating internal (1-5)"
+    },
+    "last_consulted": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal konsultasi terakhir"
+    },
+    "total_consultations": {
+      "type": "number",
+      "default": 0,
+      "description": "Total konsultasi"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan internal"
+    },
+    "is_preferred": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dokter andalan"
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ]
+}

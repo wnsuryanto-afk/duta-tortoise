@@ -4,8 +4,8 @@ import {
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
   Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag,
-  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle, Skull,
-  Activity, Settings
+  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle, Skull, AlertCircle,
+  Activity, Settings, Clock, Tag
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -25,11 +25,14 @@ const NAV_GROUPS = [
     label: "Pengelolaan",
     items: [
       { path: "/tortoise",        section: "tortoise",        label: "Tortoise & Kandang", icon: Shell },
+      { path: "/quarantine",      section: "tortoise",        label: "Karantina",          icon: AlertCircle },
       { path: "/breeding",        section: "breeding",        label: "Breeding & Telur", icon: Baby },
       { path: "/family-tree",     section: "family-tree",     label: "Silsilah",         icon: GitBranch },
       { path: "/health",          section: "health",          label: "Catatan Sakit",    icon: Heart },
+      { path: "/vet-contacts",    section: "health",          label: "Dokter Hewan",     icon: Users },
       { path: "/treatment",       section: "treatment",       label: "Treatment & Pengingat", icon: Stethoscope },
       { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
+      { path: "/operational-schedule", section: "tortoise",   label: "Jadwal Operasional", icon: Clock },
     ],
   },
   {
@@ -47,6 +50,7 @@ const NAV_GROUPS = [
     label: "Breeding",
     items: [
       { path: "/breeding-planner", section: "breeding-planner", label: "Breeding Planner", icon: CalendarHeart },
+      { path: "/tag-management",   section: "tortoise",        label: "Tag Management",   icon: Tag },
     ],
   },
   {

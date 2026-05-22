@@ -1,0 +1,53 @@
+{
+  "name": "CleaningLog",
+  "type": "object",
+  "properties": {
+    "schedule_id": {
+      "type": "string",
+      "description": "ID jadwal pembersihan"
+    },
+    "enclosure_name": {
+      "type": "string",
+      "description": "Nama kandang"
+    },
+    "cleaning_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pembersihan"
+    },
+    "cleaned_by": {
+      "type": "string",
+      "description": "Dibersihkan oleh"
+    },
+    "tasks_completed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tugas yang diselesaikan"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Durasi (menit)"
+    },
+    "issues_found": {
+      "type": "string",
+      "description": "Masalah ditemukan"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Foto setelah pembersihan"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "enclosure_name",
+    "cleaning_date",
+    "cleaned_by"
+  ]
+}
