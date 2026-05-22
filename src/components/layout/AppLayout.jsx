@@ -34,11 +34,14 @@ export default function AppLayout() {
 
   // Non-owner: force complete profile (fullscreen, no skip)
   const showForce = isProfileLoaded && !isOwner && !profileComplete;
-  // Owner: legacy modal (closeable) — actually we just show banner, no modal needed
-  // But keep old modal for first-time owner as informational (optional)
+
+  const handleProfileComplete = () => {
+    // Refresh profile data setelah user melengkapi profil
+    window.location.reload();
+  };
 
   if (showForce) {
-    return <ForceProfileSetupModal user={user} />;
+    return <ForceProfileSetupModal user={user} onComplete={handleProfileComplete} />;
   }
 
   return (

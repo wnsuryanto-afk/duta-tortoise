@@ -103,8 +103,13 @@ export default function BreedingForm({ open, onClose, editData }) {
       egg_laying_date: value,
       estimated_hatch_date_start: start,
       estimated_hatch_date_end: end,
-      estimated_hatch_date: end, // keep for backward compat
+      estimated_hatch_date: end,
     }));
+  };
+
+  const handleManualEstimateChange = (field, value) => {
+    // Field estimasi sekarang read-only, tapi tetap handle untuk safety
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -213,7 +218,7 @@ export default function BreedingForm({ open, onClose, editData }) {
             </div>
           </div>
 
-          {/* Perkiraan menetas range 80-105 hari */}
+          {/* Perkiraan menetas range 80-105 hari - AUTO READ ONLY */}
           {(form.estimated_hatch_date_start || form.estimated_hatch_date_end) && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
               <p className="text-xs font-medium text-amber-800 mb-1">🥚 Perkiraan masa penetasan (80–105 hari):</p>
@@ -227,11 +232,11 @@ export default function BreedingForm({ open, onClose, editData }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Estimasi Menetas Awal <span className="text-muted-foreground font-normal">(+80 hari)</span></Label>
-              <Input type="date" value={form.estimated_hatch_date_start} onChange={(e) => handleChange("estimated_hatch_date_start", e.target.value)} />
+              <Input type="date" value={form.estimated_hatch_date_start} onChange={(e) => handleManualEstimateChange("estimated_hatch_date_start", e.target.value)} disabled />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Estimasi Menetas Akhir <span className="text-muted-foreground font-normal">(+105 hari)</span></Label>
-              <Input type="date" value={form.estimated_hatch_date_end} onChange={(e) => { handleChange("estimated_hatch_date_end", e.target.value); handleChange("estimated_hatch_date", e.target.value); }} />
+              <Input type="date" value={form.estimated_hatch_date_end} onChange={(e) => handleManualEstimateChange("estimated_hatch_date_end", e.target.value)} disabled />
             </div>
           </div>
 

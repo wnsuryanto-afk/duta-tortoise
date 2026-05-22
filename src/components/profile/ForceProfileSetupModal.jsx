@@ -9,13 +9,14 @@ import { Camera, ImagePlus, Loader2, UserCircle2, ShieldCheck, AlertCircle } fro
 
 const REQUIRED_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number", "bank_account_name"];
 
-export default function ForceProfileSetupModal({ user }) {
+export default function ForceProfileSetupModal({ user, onComplete }) {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState("");
   const fileRef = useRef(null);
   const camRef = useRef(null);
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     full_name: user?.full_name || "",
@@ -29,7 +30,21 @@ export default function ForceProfileSetupModal({ user }) {
     bank_account_name: "",
   });
 
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k, v) => {
+    setForm(p => ({ ...p, [k]: v }));
+    if (errors[k]) setErrors(e => ({ ...e, [k]: "" }));
+  };
+
+  const validate = () => {
+    const e = {};
+    REQUIRED_FIELDS.forEach(f => {
+      if (!form[f] || form[f].toString().trim() === "") {
+        e[f] = "Wajib diisi";
+      }
+    });
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const isValid = REQUIRED_FIELDS.every(f => form[f] && form[f].toString().trim() !== "");
 
@@ -43,7 +58,7 @@ export default function ForceProfileSetupModal({ user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isValid) return;
+    if (!validate()) return;
     setSaving(true);
 
     await base44.auth.updateMe({ full_name: form.full_name });
@@ -74,6 +89,7 @@ export default function ForceProfileSetupModal({ user }) {
     qc.invalidateQueries({ queryKey: ["user-profile"] });
     qc.invalidateQueries({ queryKey: ["currentUser"] });
     setSaving(false);
+    if (onComplete) onComplete();
   };
 
   return (
@@ -131,11 +147,13 @@ export default function ForceProfileSetupModal({ user }) {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <Label className="text-xs">Nama Lengkap <span className="text-red-500">*</span></Label>
-                <Input value={form.full_name} onChange={e => set("full_name", e.target.value)} placeholder="Nama lengkap Anda" className="mt-0.5" />
+                <Input value={form.full_name} onChange={e => set("full_name", e.target.value)} placeholder="Nama lengkap Anda" className={`mt-0.5 ${errors.full_name ? "border-red-500" : ""}`} />
+                {errors.full_name && <p className="text-xs text-red-500 mt-0.5">{errors.full_name}</p>}
               </div>
               <div>
                 <Label className="text-xs">No. Telepon <span className="text-red-500">*</span></Label>
-                <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="08xx" className="mt-0.5" />
+                <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="08xx" className={`mt-0.5 ${errors.phone ? "border-red-500" : ""}`} />
+                {errors.phone && <p className="text-xs text-red-500 mt-0.5">{errors.phone}</p>}
               </div>
               <div>
                 <Label className="text-xs">No. KTP</Label>
@@ -143,7 +161,8 @@ export default function ForceProfileSetupModal({ user }) {
               </div>
               <div>
                 <Label className="text-xs">Tanggal Bergabung <span className="text-red-500">*</span></Label>
-                <Input type="date" value={form.join_date} onChange={e => set("join_date", e.target.value)} className="mt-0.5" />
+                <Input type="date" value={form.join_date} onChange={e => set("join_date", e.target.value)} className={`mt-0.5 ${errors.join_date ? "border-red-500" : ""}`} />
+                {errors.join_date && <p className="text-xs text-red-500 mt-0.5">{errors.join_date}</p>}
               </div>
               <div>
                 <Label className="text-xs">Kontak Darurat</Label>
@@ -162,15 +181,18 @@ export default function ForceProfileSetupModal({ user }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Nama Bank <span className="text-red-500">*</span></Label>
-                <Input value={form.bank_name} onChange={e => set("bank_name", e.target.value)} placeholder="BCA, BRI, Mandiri..." className="mt-0.5" />
+                <Input value={form.bank_name} onChange={e => set("bank_name", e.target.value)} placeholder="BCA, BRI, Mandiri..." className={`mt-0.5 ${errors.bank_name ? "border-red-500" : ""}`} />
+                {errors.bank_name && <p className="text-xs text-red-500 mt-0.5">{errors.bank_name}</p>}
               </div>
               <div>
                 <Label className="text-xs">No. Rekening <span className="text-red-500">*</span></Label>
-                <Input value={form.bank_account_number} onChange={e => set("bank_account_number", e.target.value)} placeholder="No. rekening" className="mt-0.5" />
+                <Input value={form.bank_account_number} onChange={e => set("bank_account_number", e.target.value)} placeholder="No. rekening" className={`mt-0.5 ${errors.bank_account_number ? "border-red-500" : ""}`} />
+                {errors.bank_account_number && <p className="text-xs text-red-500 mt-0.5">{errors.bank_account_number}</p>}
               </div>
               <div className="col-span-2">
                 <Label className="text-xs">Nama Pemilik Rekening <span className="text-red-500">*</span></Label>
-                <Input value={form.bank_account_name} onChange={e => set("bank_account_name", e.target.value)} placeholder="Nama sesuai rekening" className="mt-0.5" />
+                <Input value={form.bank_account_name} onChange={e => set("bank_account_name", e.target.value)} placeholder="Nama sesuai rekening" className={`mt-0.5 ${errors.bank_account_name ? "border-red-500" : ""}`} />
+                {errors.bank_account_name && <p className="text-xs text-red-500 mt-0.5">{errors.bank_account_name}</p>}
               </div>
             </div>
           </div>
@@ -182,13 +204,15 @@ export default function ForceProfileSetupModal({ user }) {
             </p>
           )}
 
-          <Button type="submit" className="w-full gap-2 h-10" disabled={saving || !isValid}>
-            {saving ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...</>
-            ) : (
-              <><ShieldCheck className="w-4 h-4" /> Simpan & Lanjutkan</>
-            )}
-          </Button>
+          <div className="sticky bottom-0 pt-4 bg-card border-t border-border -mx-6 px-6 pb-6">
+            <Button type="submit" className="w-full gap-2 h-11" disabled={saving || !isValid}>
+              {saving ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...</>
+              ) : (
+                <><ShieldCheck className="w-4 h-4" /> Simpan & Lanjutkan</>
+              )}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
