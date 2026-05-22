@@ -1,11 +1,9 @@
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import ProfileSetupModal from "@/components/profile/ProfileSetupModal";
-import ForceProfileSetupModal from "@/components/profile/ForceProfileSetupModal";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
@@ -45,20 +43,15 @@ export default function AppLayout() {
 
   const profileComplete = profiles.length > 0 && profiles[0]?.is_complete === true && !needsProfileCompletion();
   const isProfileLoaded = !isLoading && !profileLoading && !!user;
+  const navigate = useNavigate();
 
-  // Non-owner: force complete profile (fullscreen, no skip)
-  const showForce = isProfileLoaded && !isOwner && !profileComplete;
-
-  const handleProfileComplete = async () => {
-    console.log("Profile completed, refetching...");
-    await refetchProfile();
-    window.location.reload();
-  };
-
-  if (showForce) {
-    console.log("Showing ForceProfileSetupModal");
-    return <ForceProfileSetupModal user={user} onComplete={handleProfileComplete} />;
-  }
+  // Non-owner: redirect to profile setup page if profile incomplete
+  useEffect(() => {
+    if (isProfileLoaded && !isOwner && !profileComplete) {
+      console.log("Redirecting to /lengkapi-profil");
+      navigate("/lengkapi-profil", { replace: true });
+    }
+  }, [isProfileLoaded, isOwner, profileComplete, navigate]);
 
   return (
     <div className="min-h-screen bg-background">

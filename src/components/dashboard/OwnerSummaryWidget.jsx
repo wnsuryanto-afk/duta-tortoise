@@ -82,6 +82,14 @@ export default function OwnerSummaryWidget() {
     return days >= 0 && days <= 30;
   });
 
+  // Alert: telur dalam masa penetasan (antara estimasi_awal dan estimasi_akhir)
+  const inHatchRange = allBreedings.filter(b => {
+    if (!b.estimated_hatch_date_start || !b.estimated_hatch_date_end) return false;
+    const start = parseISO(b.estimated_hatch_date_start);
+    const end = parseISO(b.estimated_hatch_date_end);
+    return todayDate >= start && todayDate <= end;
+  });
+
   // Alert: telur mendekati estimasi menetas dalam 7 hari
   const hatchingSoon = allBreedings.filter(b => {
     if (!b.estimated_hatch_date) return false;
@@ -102,7 +110,7 @@ export default function OwnerSummaryWidget() {
     return differenceInDays(todayDate, parseISO(lastWeigh.date)) > 30;
   });
 
-  const totalAlerts = lowFeed.length + lowWarehouse.length + expiredSoon.length + hatchingSoon.length + (notWeighedRecently.length > 0 ? 1 : 0);
+  const totalAlerts = lowFeed.length + lowWarehouse.length + expiredSoon.length + hatchingSoon.length + inHatchRange.length + (notWeighedRecently.length > 0 ? 1 : 0);
 
   const stats = [
     {
@@ -217,6 +225,30 @@ export default function OwnerSummaryWidget() {
                       return (
                         <span key={w.id} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">
                           💊 {w.name} ({days === 0 ? "hari ini!" : `${days} hari lagi`})
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Telur dalam masa penetasan (RED ALERT) */}
+          {inHatchRange.length > 0 && (
+            <Card className="p-4 border-red-500 bg-red-50">
+              <div className="flex items-start gap-3">
+                <Egg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-red-900 font-bold">{inHatchRange.length} clutch telur SEDANG DALAM MASA PENETASAN!</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {inHatchRange.map((b) => {
+                      const start = parseISO(b.estimated_hatch_date_start);
+                      const totalDays = differenceInDays(parseISO(b.estimated_hatch_date_end), start);
+                      const daysSinceStart = differenceInDays(todayDate, start) + 1;
+                      return (
+                        <span key={b.id} className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full border border-red-700 font-semibold animate-pulse">
+                          🔴 {b.male_name} × {b.female_name} — Hari ke-{daysSinceStart}/{totalDays}
                         </span>
                       );
                     })}

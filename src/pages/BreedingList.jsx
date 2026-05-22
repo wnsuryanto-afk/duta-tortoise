@@ -80,24 +80,33 @@ export default function BreedingList() {
           {breedings.map((b) => {
             const active = b.status !== "menetas" && b.status !== "gagal";
             const startDate = b.estimated_hatch_date_start ? parseISO(b.estimated_hatch_date_start) : null;
-            const endDate = b.estimated_hatch_date_end ? parseISO(b.estimated_hatch_date_end) : (b.estimated_hatch_date ? parseISO(b.estimated_hatch_date) : null);
+            const endDate = b.estimated_hatch_date_end ? parseISO(b.estimated_hatch_date_end) : null;
             const daysToStart = startDate && active ? differenceInDays(startDate, today) : null;
             const daysToEnd = endDate && active ? differenceInDays(endDate, today) : null;
 
-            // In range: today is between start and end
-            const inHatchRange = active && daysToStart !== null && daysToEnd !== null && daysToStart <= 0 && daysToEnd >= 0;
-            // Near start: within 7 days before start
-            const nearStart = active && daysToStart !== null && daysToStart > 0 && daysToStart <= 7;
-            // Overdue: past end date
-            const isOverdue = active && daysToEnd !== null && daysToEnd < 0;
-            const isVeryNear = nearStart || inHatchRange;
+            // Calculate day in range if in hatch window
+            const dayInRange = (inRange, start, end) => {
+              if (!inRange || !start || !end) return null;
+              const totalDays = differenceInDays(end, start);
+              const daysSinceStart = differenceInDays(today, start);
+              return daysSinceStart + 1; // Day 1 = start date
+            };
 
-            // Legacy support
-            const daysToHatch = endDate && active ? differenceInDays(endDate, today) : null;
-            const isNearHatch = daysToHatch !== null && daysToHatch <= 10 && daysToHatch >= 0;
+            // Status conditions
+            const isMenetas = b.status === "menetas";
+            const isGagal = b.status === "gagal";
+            const isOverdue = active && daysToEnd !== null && daysToEnd < 0;
+            const inHatchRange = active && daysToStart !== null && daysToEnd !== null && daysToStart <= 0 && daysToEnd >= 0;
+            const beforeRange = active && daysToStart !== null && daysToStart > 0;
+            
+            const dayInHatchRange = dayInRange(inHatchRange, startDate, endDate);
 
             return (
-              <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow group ${isOverdue ? "border-red-400 bg-red-50" : isVeryNear ? "border-amber-300 bg-amber-50" : ""}`}>
+              <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow group ${
+                isOverdue ? "border-red-400 bg-red-50" : 
+                inHatchRange ? "border-red-500 bg-red-100" : 
+                ""
+              }`}>
                 {/* Foto preview */}
                 {b.photos?.length > 0 && (
                   <div className="flex gap-1.5 mb-3 overflow-x-auto">
@@ -116,22 +125,34 @@ export default function BreedingList() {
                       <Badge variant="outline" className={`text-[11px] capitalize ${statusColors[b.status] || ""}`}>
                         {b.status}
                       </Badge>
+                      
+                      {/* Countdown badge with color coding */}
+                      {isMenetas && (
+                        <Badge className="text-[11px] bg-gray-200 text-gray-700 border-gray-300 font-semibold">
+                          ✅ Sudah menetas
+                        </Badge>
+                      )}
+                      {isGagal && (
+                        <Badge className="text-[11px] bg-gray-800 text-white border-gray-900 font-semibold">
+                          ❌ Gagal menetas
+                        </Badge>
+                      )}
+                      {active && inHatchRange && dayInHatchRange && (
+                        <Badge className="text-[11px] bg-red-600 text-white border-red-700 font-bold animate-pulse px-3 py-1">
+                          🔴 DALAM MASA PENETASAN! Hari ke-{dayInHatchRange}
+                        </Badge>
+                      )}
                       {active && isOverdue && (
-                        <span className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">
-                          🔴 Masa penetasan terlewat!
-                        </span>
+                        <Badge className="text-[11px] bg-red-800 text-white border-red-900 font-bold px-3 py-1">
+                          ⚠️ Melewati estimasi! Segera cek telur.
+                        </Badge>
                       )}
-                      {active && inHatchRange && (
-                        <span className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold animate-pulse">
-                          🐣 Dalam masa penetasan!
-                        </span>
-                      )}
-                      {active && nearStart && (
-                        <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                      {active && beforeRange && daysToStart !== null && daysToStart <= 7 && (
+                        <Badge className="text-[11px] bg-green-600 text-white border-green-700 font-semibold px-3 py-1">
                           🥚 Mulai menetas dalam {daysToStart} hari
-                        </span>
+                        </Badge>
                       )}
-                      {active && !inHatchRange && !nearStart && !isOverdue && daysToStart !== null && daysToStart > 7 && (
+                      {active && beforeRange && daysToStart !== null && daysToStart > 7 && (
                         <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                           ⏳ {daysToStart} hari lagi
                         </span>
@@ -178,7 +199,7 @@ export default function BreedingList() {
                   {(b.estimated_hatch_date_start || b.estimated_hatch_date_end || b.estimated_hatch_date) && (
                     <div className="col-span-2">
                       <p className="text-muted-foreground">Perkiraan Menetas</p>
-                      <p className={`font-medium text-xs ${inHatchRange ? "text-green-700" : isNearHatch ? "text-amber-600" : ""}`}>
+                      <p className={`font-medium text-xs ${inHatchRange ? "text-green-700" : ""}`}>
                         {b.estimated_hatch_date_start
                           ? `${format(new Date(b.estimated_hatch_date_start), "d MMM", { locale: id })} s/d ${b.estimated_hatch_date_end ? format(new Date(b.estimated_hatch_date_end), "d MMM yyyy", { locale: id }) : "-"}`
                           : b.estimated_hatch_date ? format(new Date(b.estimated_hatch_date), "d MMM yyyy", { locale: id }) : "-"
