@@ -115,6 +115,7 @@ export default function BreedingForm({ open, onClose, editData }) {
       ...form,
       egg_count: form.egg_count ? Number(form.egg_count) : undefined,
       incubation_temp: form.incubation_temp ? Number(form.incubation_temp) : undefined,
+      season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
     };
     if (editData?.id) {
       await base44.entities.Breeding.update(editData.id, data);
