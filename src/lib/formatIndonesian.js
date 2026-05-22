@@ -100,3 +100,14 @@ export function parseCurrency(str) {
   const cleaned = str.replace(/[^0-9,-]/g, '').replace(',', '.');
   return parseFloat(cleaned) || 0;
 }
+
+// Default export for backward compatibility
+export default {
+  formatCurrency,
+  formatCurrencyDecimal,
+  formatDateIndonesian,
+  formatDateShort,
+  formatDateTime,
+  formatNumber,
+  parseCurrency,
+};

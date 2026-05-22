@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import { formatIndonesian } from "@/lib/formatIndonesian";
+import { formatDateIndonesian } from "@/lib/formatIndonesian";
 import EmptyState from "@/components/common/EmptyState";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -196,11 +196,11 @@ export default function MaintenanceSchedulePage() {
                   <div className="text-sm text-muted-foreground">
                     <p className="flex items-center gap-2">
                       <Calendar className="w-3 h-3" />
-                      Terakhir: {schedule.last_done ? formatIndonesian.date(schedule.last_done) : 'Belum ada'}
+                      Terakhir: {schedule.last_done ? formatDateIndonesian(schedule.last_done) : 'Belum ada'}
                     </p>
                     <p className="flex items-center gap-2">
                       <Clock className="w-3 h-3" />
-                      Berikutnya: {nextDue ? formatIndonesian.date(nextDue) : '-'}
+                      Berikutnya: {nextDue ? formatDateIndonesian(nextDue) : '-'}
                     </p>
                     {schedule.assigned_to && (
                       <p>Petugas: {schedule.assigned_to}</p>
