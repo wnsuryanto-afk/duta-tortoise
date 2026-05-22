@@ -19,15 +19,45 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
     if (!newEnclosure.trim()) return;
     setSaving(true);
     const target = newEnclosure.trim().toUpperCase();
+    const oldEnclosure = tortoise.enclosure || "";
+
+    // Update tortoise enclosure
     await base44.entities.Tortoise.update(tortoise.id, { enclosure: target });
+
+    // Log history
     await base44.entities.EnclosureHistory.create({
       tortoise_id: tortoise.id,
       tortoise_name: tortoise.name,
-      from_enclosure: tortoise.enclosure || "",
+      from_enclosure: oldEnclosure,
       to_enclosure: target,
       moved_date: format(new Date(), "yyyy-MM-dd"),
       reason: reason.trim() || null,
     });
+
+    // Sync current_count di entity Enclosure
+    try {
+      const allEnclosures = await base44.entities.Enclosure.list();
+      const allTortoises = await base44.entities.Tortoise.list("-created_date", 500);
+      const activeTortoises = allTortoises.filter(t => t.status !== "terjual" && t.status !== "mati");
+
+      // Update count kandang lama
+      if (oldEnclosure) {
+        const fromEnc = allEnclosures.find(e => e.name === oldEnclosure);
+        if (fromEnc) {
+          const newCount = activeTortoises.filter(t => t.enclosure === oldEnclosure && t.id !== tortoise.id).length;
+          await base44.entities.Enclosure.update(fromEnc.id, { current_count: newCount });
+        }
+      }
+      // Update count kandang baru
+      const toEnc = allEnclosures.find(e => e.name === target);
+      if (toEnc) {
+        const newCount = activeTortoises.filter(t => t.enclosure === target && t.id !== tortoise.id).length + 1;
+        await base44.entities.Enclosure.update(toEnc.id, { current_count: newCount });
+      }
+    } catch (_) {
+      // Sync enclosure gagal, tidak perlu blokir
+    }
+
     onMoved();
     onClose();
     setSaving(false);

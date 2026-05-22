@@ -4,7 +4,28 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Shell, Search, GitBranch, ChevronDown, ChevronRight, Baby } from "lucide-react";
+import { Shell, Search, GitBranch, ChevronDown, ChevronRight, Baby, AlertCircle } from "lucide-react";
+
+const SOURCE_LABEL = {
+  hasil_sendiri: { text: "CBB", title: "Captive Bred & Born", color: "bg-green-100 text-green-800 border-green-300" },
+  import: { text: "CB", title: "Captive Born (Import)", color: "bg-blue-100 text-blue-800 border-blue-300" },
+  beli_lokal: { text: "WC/LB", title: "Lokal / Tidak Jelas", color: "bg-amber-100 text-amber-800 border-amber-300" },
+  tidak_diketahui: { text: "?", title: "Tidak Diketahui", color: "bg-gray-100 text-gray-700 border-gray-300" },
+};
+
+function SourceBadge({ source }) {
+  const s = SOURCE_LABEL[source] || SOURCE_LABEL.tidak_diketahui;
+  return (
+    <span title={s.title} className={`text-[10px] px-1.5 py-0.5 rounded-md border font-bold ${s.color}`}>{s.text}</span>
+  );
+}
+
+const UNKNOWN_NODE = {
+  id: "__unknown__",
+  name: "Tidak Diketahui",
+  gender: "belum_diketahui",
+  source: "tidak_diketahui",
+};
 
 const GENDER_COLOR = {
   jantan: "bg-blue-100 text-blue-700",
@@ -13,11 +34,18 @@ const GENDER_COLOR = {
 };
 const GENDER_LABEL = { jantan: "♂", betina: "♀", belum_diketahui: "?" };
 
-function TortoiseNode({ tortoise, tortoiseMap, depth = 0, maxDepth = 4, onSelect }) {
+function TortoiseNode({ tortoise, tortoiseMap, depth = 0, maxDepth = 3, onSelect }) {
   const [expanded, setExpanded] = useState(depth < 2);
-  const father = tortoise.parent_male ? tortoiseMap[tortoise.parent_male] : null;
-  const mother = tortoise.parent_female ? tortoiseMap[tortoise.parent_female] : null;
-  const hasParents = father || mother;
+  const isUnknown = tortoise.id === "__unknown__";
+
+  // Untuk hasil_sendiri: tunjukkan parent node (jika ada parent_id tapi tidak ada di map, tampilkan "Tidak Diketahui")
+  const father = tortoise.parent_male
+    ? (tortoiseMap[tortoise.parent_male] || { ...UNKNOWN_NODE, id: `__unk_male_${depth}` })
+    : null;
+  const mother = tortoise.parent_female
+    ? (tortoiseMap[tortoise.parent_female] || { ...UNKNOWN_NODE, id: `__unk_female_${depth}` })
+    : null;
+  const hasParents = (father || mother) && !isUnknown;
 
   return (
     <div className={depth > 0 ? "ml-6 border-l-2 border-dashed border-border pl-4" : ""}>
@@ -29,12 +57,19 @@ function TortoiseNode({ tortoise, tortoiseMap, depth = 0, maxDepth = 4, onSelect
         ) : (
           <span className="w-4 mt-2 inline-block" />
         )}
-        <div className="flex items-center gap-2 p-2 rounded-lg border bg-card hover:shadow-sm transition-shadow">
-          {tortoise.photo_url ? (
+        <div
+          className={`flex items-center gap-2 p-2 rounded-lg border transition-shadow ${
+            isUnknown
+              ? "bg-gray-50 border-gray-200 opacity-70"
+              : "bg-card hover:shadow-sm cursor-pointer"
+          }`}
+          onClick={() => !isUnknown && onSelect && onSelect(tortoise.id)}
+        >
+          {!isUnknown && tortoise.photo_url ? (
             <img src={tortoise.photo_url} alt={tortoise.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 border" />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Shell className="w-5 h-5 text-primary" />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isUnknown ? "bg-gray-100" : "bg-primary/10"}`}>
+              <Shell className={`w-5 h-5 ${isUnknown ? "text-gray-400" : "text-primary"}`} />
             </div>
           )}
           <div>
@@ -43,7 +78,8 @@ function TortoiseNode({ tortoise, tortoiseMap, depth = 0, maxDepth = 4, onSelect
               <span className={`text-[10px] px-1.5 py-0 rounded-md ${GENDER_COLOR[tortoise.gender] || GENDER_COLOR.belum_diketahui}`}>
                 {GENDER_LABEL[tortoise.gender] || "?"}
               </span>
-              {tortoise.morph && tortoise.morph !== "normal" && (
+              {!isUnknown && <SourceBadge source={tortoise.source} />}
+              {!isUnknown && tortoise.morph && tortoise.morph !== "normal" && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{tortoise.morph}</Badge>
               )}
             </div>
@@ -96,13 +132,19 @@ export default function FamilyTreePage() {
     return ids;
   }, [tortoises]);
 
+  // Hanya tampilkan kura-kura CBB (hasil_sendiri) di panel kiri
+  const cbbTortoises = useMemo(() =>
+    tortoises.filter(t => t.source === "hasil_sendiri"),
+  [tortoises]);
+
   const filteredList = useMemo(() => {
     const q = search.toLowerCase();
-    return tortoises
+    return cbbTortoises
       .filter((t) => t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q))
       .slice(0, 60);
-  }, [tortoises, search]);
+  }, [cbbTortoises, search]);
 
+  // Untuk panel kiri: tampilkan semua tortoise tapi tandai CBB
   const selectedTortoise = selected ? tortoiseMap[selected] : null;
 
   const children = useMemo(() =>
@@ -115,7 +157,12 @@ export default function FamilyTreePage() {
         <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
           <GitBranch className="w-6 h-6 text-primary" /> Silsilah Kura-Kura
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Pohon keturunan berdasarkan data induk jantan &amp; betina</p>
+        <p className="text-sm text-muted-foreground mt-1">Pohon keturunan CBB (Captive Bred & Born) — hanya tersedia untuk kura-kura hasil sendiri</p>
+        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+          <span className="bg-green-100 text-green-800 border border-green-300 px-1.5 py-0.5 rounded font-bold">CBB</span> Hasil Sendiri (Captive Bred & Born)
+          <span className="bg-blue-100 text-blue-800 border border-blue-300 px-1.5 py-0.5 rounded font-bold ml-2">CB</span> Import (Captive Born)
+          <span className="bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded font-bold ml-2">WC/LB</span> Beli Lokal
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -170,16 +217,32 @@ export default function FamilyTreePage() {
         {/* Pohon silsilah */}
         <div className="lg:col-span-2">
           {selectedTortoise ? (
+            selectedTortoise.source !== "hasil_sendiri" ? (
+              <Card className="p-8 flex flex-col items-center justify-center text-center gap-4">
+                <AlertCircle className="w-12 h-12 text-amber-400" />
+                <div>
+                  <h3 className="font-semibold text-base mb-1">Silsilah Tidak Tersedia</h3>
+                  <p className="text-sm text-muted-foreground">
+                    <strong>{selectedTortoise.name}</strong> bukan kura-kura CBB (Captive Bred & Born).
+                    Silsilah hanya tersedia untuk kura-kura dengan asal <strong>Hasil Sendiri</strong>.
+                  </p>
+                  <div className="mt-3 flex justify-center">
+                    <SourceBadge source={selectedTortoise.source} />
+                  </div>
+                </div>
+              </Card>
+            ) : (
             <Card className="p-5 overflow-auto max-h-[80vh]">
               <div className="flex items-center gap-2 mb-4">
                 <GitBranch className="w-5 h-5 text-primary" />
                 <h2 className="font-semibold">Silsilah: {selectedTortoise.name}</h2>
+                <SourceBadge source={selectedTortoise.source} />
               </div>
               <TortoiseNode
                 tortoise={selectedTortoise}
                 tortoiseMap={tortoiseMap}
                 depth={0}
-                maxDepth={5}
+                maxDepth={3}
                 onSelect={setSelected}
               />
 
@@ -212,10 +275,12 @@ export default function FamilyTreePage() {
                 </div>
               )}
             </Card>
+            )
           ) : (
             <Card className="h-64 flex flex-col items-center justify-center text-muted-foreground gap-3">
               <GitBranch className="w-12 h-12 opacity-20" />
-              <p className="text-sm">Pilih kura-kura dari daftar untuk melihat silsilahnya</p>
+              <p className="text-sm">Pilih kura-kura CBB dari daftar untuk melihat silsilahnya</p>
+              <p className="text-xs opacity-60">Hanya kura-kura hasil sendiri (CBB) yang memiliki silsilah</p>
             </Card>
           )}
         </div>

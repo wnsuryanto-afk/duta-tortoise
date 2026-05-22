@@ -43,9 +43,11 @@
       "enum": [
         "hasil_sendiri",
         "beli_lokal",
-        "import"
+        "import",
+        "tidak_diketahui"
       ],
-      "default": "hasil_sendiri"
+      "default": "tidak_diketahui",
+      "description": "Asal kura-kura: hasil_sendiri = CBB, beli_lokal = lokal, import = import, tidak_diketahui = tidak jelas"
     },
     "is_proven": {
       "type": "boolean",

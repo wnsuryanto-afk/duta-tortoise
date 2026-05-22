@@ -3,13 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag, QrCode } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
 import EggHistoryPanel from "./EggHistoryPanel";
 import SizeHistoryPanel from "./SizeHistoryPanel";
 import GrowthTimeline from "./GrowthTimeline";
+import TortoiseQRCode from "./TortoiseQRCode";
 
 const healthConfig = {
   critical: { border: "border-l-4 border-l-red-500",    dot: "bg-red-500",    label: "Butuh Perawatan",  badge: "bg-red-100 text-red-700" },
@@ -24,6 +25,12 @@ const statusColors = {
   terjual: "bg-yellow-100 text-yellow-800 border-yellow-300",
   mati:    "bg-muted text-muted-foreground border-border",
   sakit:   "bg-red-100 text-red-700 border-red-300",
+};
+
+const sourceLabel = {
+  hasil_sendiri: { text: "CBB", color: "bg-green-100 text-green-800 border-green-300" },
+  import:        { text: "CB",  color: "bg-blue-100 text-blue-800 border-blue-300" },
+  beli_lokal:    { text: "LB",  color: "bg-amber-100 text-amber-800 border-amber-300" },
 };
 
 // Background warna untuk card berdasarkan kondisi
@@ -74,6 +81,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
   const [showEggHistory, setShowEggHistory] = useState(false);
   const [showSizeHistory, setShowSizeHistory] = useState(false);
   const [showGrowth, setShowGrowth] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
   const showActions = onEdit || onDelete || onMove;
@@ -146,6 +154,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
                 {morphLabels[morph]}
               </span>
             )}
+            {tortoise.source && sourceLabel[tortoise.source] && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-bold ${sourceLabel[tortoise.source].color}`}>
+                {sourceLabel[tortoise.source].text}
+              </span>
+            )}
             <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${health.badge}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`} />
               {health.label}
@@ -184,6 +197,9 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 text-accent" title="Foto Perkembangan" onClick={() => setShowGrowth(true)}>
               <Camera className="w-3 h-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="QR Code" onClick={() => setShowQR(true)}>
+              <QrCode className="w-3 h-3" />
             </Button>
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(tortoise)}>
@@ -291,6 +307,21 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         </DialogHeader>
         <div className="py-2">
           <SizeHistoryPanel tortoiseId={tortoise.id} tortoiseName={tortoise.name} />
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* QR Code Dialog */}
+    <Dialog open={showQR} onOpenChange={setShowQR}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <QrCode className="w-4 h-4" />
+            QR Code — {tortoise.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          <TortoiseQRCode tortoise={tortoise} />
         </div>
       </DialogContent>
     </Dialog>

@@ -39,6 +39,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [videoError, setVideoError] = useState("");
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "belum_diketahui", morph: "normal",
+    source: "tidak_diketahui",
     is_proven: false, birth_date: "", purchase_date: "", weight_grams: "", shell_length_cm: "",
     status: "aktif", enclosure: "", notes: "",
   });
@@ -85,11 +86,40 @@ export default function TortoiseForm({ open, onClose, editData }) {
     };
 
     let tortoiseId = editData?.id;
+    const oldEnclosure = editData?.enclosure || "";
+    const newEnclosureName = data.enclosure || "";
     if (editData?.id) {
       await base44.entities.Tortoise.update(editData.id, data);
     } else {
       const created = await base44.entities.Tortoise.create(data);
       tortoiseId = created.id;
+    }
+
+    // Sync Enclosure current_count jika kandang berubah
+    if (newEnclosureName !== oldEnclosure) {
+      try {
+        const [allEnc, allTort] = await Promise.all([
+          base44.entities.Enclosure.list(),
+          base44.entities.Tortoise.list("-created_date", 500),
+        ]);
+        const activeTort = allTort.filter(t => t.status !== "terjual" && t.status !== "mati");
+        // Kandang baru
+        if (newEnclosureName) {
+          const toEnc = allEnc.find(e => e.name === newEnclosureName);
+          if (toEnc) {
+            const count = activeTort.filter(t => t.enclosure === newEnclosureName && t.id !== tortoiseId).length + 1;
+            await base44.entities.Enclosure.update(toEnc.id, { current_count: count });
+          }
+        }
+        // Kandang lama (jika edit & pindah)
+        if (oldEnclosure && oldEnclosure !== newEnclosureName) {
+          const fromEnc = allEnc.find(e => e.name === oldEnclosure);
+          if (fromEnc) {
+            const count = activeTort.filter(t => t.enclosure === oldEnclosure && t.id !== tortoiseId).length;
+            await base44.entities.Enclosure.update(fromEnc.id, { current_count: count });
+          }
+        }
+      } catch (_) {}
     }
 
     // Auto-insert MeasurementHistory jika berat atau panjang berubah (atau tortoise baru)
@@ -187,6 +217,24 @@ export default function TortoiseForm({ open, onClose, editData }) {
               <Label>Kandang</Label>
               <Input value={form.enclosure} onChange={(e) => set("enclosure", e.target.value)} placeholder="Kandang A" />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Asal Kura-Kura (Source)</Label>
+            <Select value={form.source || "tidak_diketahui"} onValueChange={(v) => set("source", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hasil_sendiri">🐣 Hasil Sendiri (CBB — Captive Bred & Born)</SelectItem>
+                <SelectItem value="beli_lokal">🛒 Beli Lokal</SelectItem>
+                <SelectItem value="import">✈️ Import (CB — Captive Born)</SelectItem>
+                <SelectItem value="tidak_diketahui">❓ Tidak Diketahui</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.source === "hasil_sendiri" && (
+              <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1">
+                ✓ Silsilah akan tersedia — pastikan data induk terisi di breeding record
+              </p>
+            )}
           </div>
 
           {/* Proven checkbox */}
