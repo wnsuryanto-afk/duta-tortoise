@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Shell, Baby, Egg } from "lucide-react";
+import { Shell, Baby, Egg, AlertTriangle, ClipboardList, Syringe, Home, Users, Wallet, Package, Target } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import CheckInWidget from "@/components/attendance/CheckInWidget";
 import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
@@ -20,6 +20,12 @@ import ExpiredItemAlert from "@/components/dashboard/ExpiredItemAlert";
 import IncompleteDataWidget from "@/components/dashboard/IncompleteDataWidget";
 import GettingStartedChecklist from "@/components/tutorial/GettingStartedChecklist";
 import PageTooltip from "@/components/tutorial/PageTooltip";
+import QuickActionsBar from "@/components/dashboard/QuickActionsBar";
+import GreetingAndSummary from "@/components/dashboard/GreetingAndSummary";
+import UrgentAlerts from "@/components/dashboard/UrgentAlerts";
+import OperationalToday from "@/components/dashboard/OperationalToday";
+import DashboardSection from "@/components/dashboard/DashboardSection";
+import HRMetrics from "@/components/dashboard/HRMetrics";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -55,53 +61,85 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
-          <PageTooltip page="dashboard" />
-        </div>
-        <p className="text-muted-foreground text-sm mt-1">Ringkasan peternakan sulcata tortoise</p>
-      </div>
+    <div className="space-y-8 pb-8">
+      {/* Quick Actions Bar */}
+      <QuickActionsBar />
 
-      {/* Ringkasan Owner */}
-      <OwnerSummaryWidget />
+      {/* Greeting & Summary */}
+      <GreetingAndSummary />
 
-      {/* Getting Started Checklist */}
+      {/* Getting Started Checklist - hilang otomatis jika selesai */}
       <GettingStartedChecklist />
 
-      {/* Data Tidak Lengkap */}
+      {/* SECTION 1: Alert Urgent (selalu di atas, tidak bisa collapse jika ada alert) */}
+      <UrgentAlerts />
+
+      {/* SECTION 2: Operasional Hari Ini */}
+      <DashboardSection title="Operasional Hari Ini" icon={ClipboardList}>
+        <OperationalToday />
+      </DashboardSection>
+
+      {/* SECTION 3: Statistik Kura-kura */}
+      <DashboardSection title="Statistik Kura-kura" icon={Shell}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <StatCard key={stat.label} {...stat} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <TortoiseMorphSummary tortoises={tortoises} />
+          <EggHatchChart breedings={breedings} />
+        </div>
+      </DashboardSection>
+
+      {/* SECTION 4: Breeding & Telur */}
+      <DashboardSection title="Breeding & Telur" icon={Egg}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard 
+            label="Telur Inkubasi" 
+            value={breedings.filter(b => b.status === 'inkubasi').reduce((sum, b) => sum + (b.egg_count || 0), 0)} 
+            icon={Egg}
+            color="bg-accent/15 text-accent"
+          />
+          <StatCard 
+            label="Breeding Aktif" 
+            value={breedings.filter(b => b.status === 'bertelur' || b.status === 'inkubasi').length} 
+            icon={Shell}
+            color="bg-primary/15 text-primary"
+          />
+          <StatCard 
+            label="Total Menetas" 
+            value={totalHatched} 
+            icon={Baby}
+            color="bg-chart-4/15 text-chart-4"
+          />
+        </div>
+      </DashboardSection>
+
+      {/* SECTION 5: Keuangan Bulan Ini */}
+      <DashboardSection title="Keuangan Bulan Ini" icon={Wallet}>
+        <FinanceSummaryWidget />
+      </DashboardSection>
+
+      {/* SECTION 6: Tim & SDM */}
+      <DashboardSection title="Tim & SDM" icon={Users}>
+        <HRMetrics />
+      </DashboardSection>
+
+      {/* SECTION 7: Stok & Gudang */}
+      <DashboardSection title="Stok & Gudang" icon={Package}>
+        <div className="space-y-4">
+          <FeedStockAlert />
+          <ExpiredItemAlert />
+        </div>
+      </DashboardSection>
+
+      {/* SECTION 8: Data Tidak Lengkap (oranye, tidak urgent) */}
       <IncompleteDataWidget />
 
-      {/* Target Tahunan */}
-      <AnnualGoalWidget breedings={breedings} />
-
-      {/* Absensi feeder selalu di paling atas */}
-      <AttendanceDashboardBanner />
-
-      {role === "manajer" && <CheckInWidget />}
+      {/* Health & Hatch reminders */}
       <HealthReminderAlert />
       <HatchReminderAlert />
-      <FeedStockAlert />
-      <ExpiredItemAlert />
-
-      <div className="grid grid-cols-3 gap-4">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
-
-      {/* Baris 1: Jenis kura + Telur */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TortoiseMorphSummary tortoises={tortoises} />
-        <EggHatchChart breedings={breedings} />
-      </div>
-
-      {/* Baris 2: Absensi (dengan grafik) + Finance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AttendanceChartCard />
-        <FinanceSummaryWidget />
-      </div>
     </div>
   );
 }
