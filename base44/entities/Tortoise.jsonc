@@ -95,7 +95,6 @@
         "baby",
         "sakit",
         "breeding",
-        "karantina",
         "mati",
         "terjual",
         "diarsipkan"
@@ -105,8 +104,31 @@
     "enclosure": {
       "type": "string"
     },
-    "photo_url": {
-      "type": "string"
+    "in_quarantine": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah sedang dikarantina"
+    },
+    "quarantine_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal mulai karantina"
+    },
+    "quarantine_reason": {
+      "type": "string",
+      "enum": [
+        "pendatang_baru",
+        "sakit",
+        "cedera",
+        "observasi",
+        "sebelum_dijual",
+        "lainnya"
+      ],
+      "description": "Alasan karantina"
+    },
+    "quarantine_notes": {
+      "type": "string",
+      "description": "Catatan karantina"
     },
     "photos": {
       "type": "array",
@@ -115,9 +137,23 @@
         "properties": {
           "url": {
             "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "weight_grams": {
+            "type": "number"
+          },
+          "shell_length_cm": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
           }
         }
-      }
+      },
+      "description": "Foto pertumbuhan dengan data biometrik"
     },
     "death_video_url": {
       "type": "string"
@@ -126,13 +162,24 @@
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Preset tags: Indukan Premium, Akan Dijual, Perlu Treatment, Favorit Owner, Tidak Untuk Dijual, Pendatang Baru, Juara Kontes"
     },
     "qr_code_url": {
       "type": "string"
     },
     "sale_channel": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "Instagram",
+        "Tokopedia",
+        "Shopee",
+        "WhatsApp",
+        "Facebook",
+        "Referral",
+        "Langsung",
+        "Lainnya"
+      ]
     },
     "notes": {
       "type": "string"

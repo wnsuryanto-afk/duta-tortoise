@@ -1,0 +1,70 @@
+{
+  "backup_date": "2026-05-22",
+  "note": "Backup sebelum simplifikasi aplikasi",
+  "tutorial_content": [
+    {
+      "title": "Cara Memberi Makan Kura-kura Sulcata",
+      "category": "pakan",
+      "video_url": "https://www.youtube.com/watch?v=k-LHCKuIvEw",
+      "summary": "Video ini mengajarkan cara memberikan makanan yang tepat kepada kura-kura sulcata pada berbagai tahap pertumbuhan untuk mencegah penyakit."
+    },
+    {
+      "title": "Baby SULCATA TORTOISE & How to take care of them",
+      "category": "dasar",
+      "video_url": "https://www.youtube.com/watch?v=2001070117",
+      "summary": "Panduan lengkap merawat baby sulcata tortoise untuk peternak profesional."
+    },
+    {
+      "title": "Cara Membiakkan Kura-Kura Sulcata: Panduan Sederhana Anda",
+      "category": "breeding",
+      "video_url": "https://www.youtube.com/watch?v=XXXXXXXXXXX",
+      "summary": "Panduan lengkap tentang proses pembiakan kura-kura Sulcata, termasuk persiapan habitat, pemilihan pasangan, dan perawatan telur serta anak kura-kura."
+    },
+    {
+      "title": "Cara Mandi dan Soak Sulcata Tortoise untuk Peternak Profesional",
+      "category": "kesehatan",
+      "video_url": "https://www.youtube.com/watch?v=XXXXXXXXXXX",
+      "summary": "Panduan lengkap tentang teknik mandi dan soak yang tepat untuk sulcata tortoise, termasuk frekuensi dan durasi yang disarankan."
+    },
+    {
+      "title": "Sulcata Tortoise Care Guide",
+      "category": "kesehatan",
+      "video_url": "https://www.youtube.com/watch?v=XXXXXXXXXXX",
+      "summary": "Panduan lengkap perawatan kura-kura sulcata, termasuk tanda-tanda penyakit dan penanganannya."
+    }
+  ],
+  "feedback_suggestions": [
+    {
+      "type": "saran",
+      "title": "Point",
+      "content": "Terimakasih pointnya",
+      "submitted_by": "deny verdinand",
+      "status": "selesai",
+      "response": "Baik saya kasih , kalau kurang banyakkkkk"
+    },
+    {
+      "type": "saran",
+      "title": "Point",
+      "content": "Pointnya jangan pelit",
+      "submitted_by": "deny verdinand",
+      "status": "selesai",
+      "response": "Ok tak kasih banyak "
+    },
+    {
+      "type": "kritik",
+      "title": "Manajemen",
+      "content": "Vilka banyak senyum",
+      "submitted_by": "Iwan Suryanto",
+      "status": "selesai",
+      "response": "Siap"
+    },
+    {
+      "type": "saran",
+      "title": "Manajemen",
+      "content": "Pak deni harus lebih lucu",
+      "submitted_by": "Iwan Suryanto",
+      "status": "selesai",
+      "response": "Siap"
+    }
+  ]
+}

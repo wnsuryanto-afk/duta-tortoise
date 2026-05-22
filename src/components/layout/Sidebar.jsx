@@ -2,10 +2,10 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
-  Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
-  Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag,
-  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle, Skull, AlertCircle,
-  Activity, Settings, Clock, Tag
+  Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
+  PieChart, Bell,
+  CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
+  Activity, Settings, Clock, Calendar
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -22,75 +22,74 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Pengelolaan",
+    label: "Kura-kura & Kandang",
     items: [
-      { path: "/tortoise",        section: "tortoise",        label: "Tortoise & Kandang", icon: Shell },
-      { path: "/quarantine",      section: "tortoise",        label: "Karantina",          icon: AlertCircle },
+      { path: "/tortoise",        section: "tortoise",        label: "Kura-kura & Kandang", icon: Shell },
       { path: "/breeding",        section: "breeding",        label: "Breeding & Telur", icon: Baby },
       { path: "/family-tree",     section: "family-tree",     label: "Silsilah",         icon: GitBranch },
-      { path: "/health",          section: "health",          label: "Catatan Sakit",    icon: Heart },
-      { path: "/vet-contacts",    section: "health",          label: "Dokter Hewan",     icon: Users },
-      { path: "/treatment",       section: "treatment",       label: "Treatment & Pengingat", icon: Stethoscope },
-      { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
-      { path: "/operational-schedule", section: "tortoise",   label: "Jadwal Operasional", icon: Clock },
+      { path: "/death-records",   section: "death-records",   label: "Catatan Kematian", icon: Skull },
     ],
   },
   {
-    label: "Keuangan",
+    label: "Kesehatan",
+    items: [
+      { path: "/health",          section: "health",          label: "Rekam Medis",    icon: Heart },
+      { path: "/vet-contacts",    section: "health",          label: "Dokter Hewan",     icon: Users },
+      { path: "/treatment",       section: "treatment",       label: "Jadwal Treatment", icon: Stethoscope },
+    ],
+  },
+  {
+    label: "Perawatan",
+    items: [
+      { path: "/maintenance-schedule", section: "maintenance", label: "Jadwal Perawatan Kandang", icon: Calendar },
+      { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
+    ],
+  },
+  {
+    label: "Gudang & Penjualan",
+    items: [
+      { path: "/warehouse",       section: "warehouse",       label: "Gudang",    icon: Warehouse },
+      { path: "/sales",           section: "sales",           label: "Penjualan",        icon: DollarSign },
+      { path: "/crm",             section: "crm",             label: "CRM",        icon: Users },
+    ],
+  },
+  {
+    label: "SDM",
+    items: [
+      { path: "/hr",              section: "hr",              label: "Manajemen SDM",    icon: Users },
+      { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Gaji & Kasbon", icon: Wallet },
+      { path: "/salary",          section: "salary",          label: "Gaji Bulanan",     icon: Calculator },
+    ],
+  },
+  {
+    label: "SOP & Tugas",
+    items: [
+      { path: "/sop",             section: "sop",             label: "SOP & Tugas Harian",        icon: ClipboardList },
+      { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP", icon: Library },
+      { path: "/task-template",   section: "task-template",   label: "Template Task",    icon: ListTodo },
+    ],
+  },
+  {
+    label: "Laporan",
     items: [
       { path: "/finance",         section: "finance",         label: "Laporan Keuangan", icon: TrendingUp },
-      { path: "/sales",           section: "sales",           label: "Penjualan",        icon: DollarSign },
       { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",   icon: PieChart },
-
       { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",    icon: BarChart2 },
-      { path: "/warehouse",       section: "warehouse",       label: "Gudang Gazebo",    icon: Warehouse },
-    ],
-  },
-  {
-    label: "Breeding",
-    items: [
-      { path: "/breeding-planner", section: "breeding-planner", label: "Breeding Planner", icon: CalendarHeart },
-      { path: "/tag-management",   section: "tortoise",        label: "Tag Management",   icon: Tag },
-    ],
-  },
-  {
-    label: "SDM & KPI",
-    items: [
-      { path: "/sop",             section: "sop",             label: "SOP & KPI",        icon: ClipboardList },
-      { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP", icon: Library },
-
-      { path: "/task-template",   section: "task-template",   label: "Template Task",    icon: ListTodo },
-      { path: "/payroll",         section: "payroll",         label: "Laporan KPI",      icon: FileSpreadsheet },
-      { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Penggajian & Kasbon", icon: Wallet },
-      { path: "/salary",          section: "salary",          label: "Gaji Bulanan",     icon: Calculator },
-      { path: "/hr",              section: "hr",              label: "Manajemen SDM",    icon: Users },
-    ],
-  },
-  {
-    label: "Audit",
-    items: [
-      { path: "/enclosure-audit", section: "enclosure-audit", label: "Audit Kandang",    icon: ClipboardCheck },
-      { path: "/death-records", section: "death-records", label: "Catatan Kematian", icon: Skull },
-    ],
-  },
-  {
-    label: "Informasi",
-    items: [
-      { path: "/info",            section: "info",            label: "Pusat Informasi",  icon: BookOpen },
-      { path: "/help",            section: "dashboard",       label: "Bantuan & Tutorial", icon: HelpCircle },
-      { path: "/feedback",        section: "feedback",        label: "Kritik & Saran",   icon: MessageSquare },
-      { path: "/notifications",   section: "notifications",   label: "Notifikasi",       icon: Bell },
     ],
   },
   {
     label: "Pengaturan",
     items: [
-      { path: "/incomplete-data", section: "incomplete-data", label: "Data Tidak Lengkap", icon: AlertTriangle },
+      { path: "/notifications",   section: "notifications",   label: "Notifikasi",       icon: Bell },
       { path: "/activity-log",    section: "incomplete-data", label: "Riwayat Aktivitas",  icon: Activity },
       { path: "/system-maintenance", section: "incomplete-data", label: "Pemeliharaan Sistem", icon: Settings },
-      { path: "/cctv",            section: "cctv",            label: "Monitoring CCTV",  icon: Video },
-      { path: "/marketplace",     section: "marketplace",     label: "Marketplace",      icon: ShoppingBag },
       { path: "/users",           section: "users",           label: "Manajemen User",  icon: Users },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { path: "/help",            section: "dashboard",       label: "Bantuan", icon: HelpCircle },
     ],
   },
 ];

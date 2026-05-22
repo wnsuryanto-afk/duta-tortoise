@@ -33,12 +33,9 @@ import EnclosurePage from '@/pages/EnclosurePage';
 import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
-import CCTVPage from '@/pages/CCTVPage';
-import MarketplacePage from '@/pages/MarketplacePage';
 import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
 import SOPLibraryPage from '@/pages/SOPLibraryPage';
 import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
-import EnclosureAuditPage from '@/pages/EnclosureAuditPage';
 import CRMPage from '@/pages/CRMPage';
 import HelpCenterPage from '@/pages/HelpCenterPage';
 import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
@@ -47,10 +44,8 @@ import IncompleteDataPage from '@/pages/IncompleteDataPage';
 import DeathRecordsPage from '@/pages/DeathRecordsPage';
 import ActivityLogPage from '@/pages/ActivityLogPage';
 import SystemMaintenancePage from '@/pages/SystemMaintenancePage';
-import QuarantinePage from '@/pages/QuarantinePage.jsx';
 import VetContactPage from '@/pages/VetContactPage.jsx';
-import OperationalSchedulePage from '@/pages/OperationalSchedulePage.jsx';
-import TortoiseTagManagementPage from '@/pages/TortoiseTagManagementPage.jsx';
+import MaintenanceSchedulePage from '@/pages/MaintenanceSchedulePage.jsx';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -99,21 +94,16 @@ const AuthenticatedApp = () => {
         <Route path="/sales-report" element={<SalesReportPage />} />
         <Route path="/hr" element={<HRPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/cctv" element={<CCTVPage />} />
-        <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path="/breeding-planner" element={<BreedingPlannerPage />} />
         <Route path="/sop-library" element={<SOPLibraryPage />} />
         <Route path="/task-template" element={<DailyTaskTemplatePage />} />
-        <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
         <Route path="/crm" element={<CRMPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/death-records" element={<DeathRecordsPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/system-maintenance" element={<SystemMaintenancePage />} />
-        <Route path="/quarantine" element={<QuarantinePage />} />
         <Route path="/vet-contacts" element={<VetContactPage />} />
-        <Route path="/operational-schedule" element={<OperationalSchedulePage />} />
-        <Route path="/tag-management" element={<TortoiseTagManagementPage />} />
+        <Route path="/maintenance-schedule" element={<MaintenanceSchedulePage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

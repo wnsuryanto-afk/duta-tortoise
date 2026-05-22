@@ -1,23 +1,33 @@
 {
-  "name": "CleaningLog",
+  "name": "MaintenanceLog",
   "type": "object",
   "properties": {
     "schedule_id": {
       "type": "string",
-      "description": "ID jadwal pembersihan"
+      "description": "ID jadwal perawatan"
     },
     "enclosure_name": {
       "type": "string",
       "description": "Nama kandang"
     },
-    "cleaning_date": {
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "pakan",
+        "kebersihan_harian",
+        "kebersihan_mingguan",
+        "kebersihan_bulanan"
+      ],
+      "description": "Jenis perawatan"
+    },
+    "done_date": {
       "type": "string",
       "format": "date",
-      "description": "Tanggal pembersihan"
+      "description": "Tanggal pelaksanaan"
     },
-    "cleaned_by": {
+    "done_by": {
       "type": "string",
-      "description": "Dibersihkan oleh"
+      "description": "Dilakukan oleh"
     },
     "tasks_completed": {
       "type": "array",
@@ -30,16 +40,12 @@
       "type": "number",
       "description": "Durasi (menit)"
     },
-    "issues_found": {
-      "type": "string",
-      "description": "Masalah ditemukan"
-    },
     "photos": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Foto setelah pembersihan"
+      "description": "Foto dokumentasi"
     },
     "notes": {
       "type": "string"
@@ -47,7 +53,8 @@
   },
   "required": [
     "enclosure_name",
-    "cleaning_date",
-    "cleaned_by"
+    "task_type",
+    "done_date",
+    "done_by"
   ]
 }

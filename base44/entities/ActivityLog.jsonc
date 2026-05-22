@@ -15,9 +15,7 @@
       "enum": [
         "create",
         "update",
-        "delete",
-        "login",
-        "logout"
+        "delete"
       ],
       "description": "Jenis aksi"
     },
@@ -33,18 +31,14 @@
       "type": "string",
       "description": "Nama entity untuk display"
     },
-    "changes": {
-      "type": "object",
-      "description": "Perubahan (before/after) untuk action update"
+    "changes_summary": {
+      "type": "string",
+      "description": "Ringkasan perubahan: 'field X: dari A ke B'"
     },
     "timestamp": {
       "type": "string",
       "format": "date-time",
       "description": "Waktu aksi"
-    },
-    "ip_address": {
-      "type": "string",
-      "description": "IP address (opsional)"
     },
     "notes": {
       "type": "string",

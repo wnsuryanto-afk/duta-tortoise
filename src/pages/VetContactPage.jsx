@@ -11,7 +11,7 @@ import {
   Plus, Phone, MessageCircle, Mail, Star, MapPin, Clock, 
   AlertCircle, Search, Filter, Calendar
 } from "lucide-react";
-import { formatIndonesian } from "@/lib/formatIndonesian";
+import { formatDateIndonesian, formatCurrency } from "@/lib/formatIndonesian";
 import EmptyState from "@/components/common/EmptyState";
 import { toast } from "sonner";
 
@@ -341,7 +341,7 @@ export default function VetContactPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Biaya Konsultasi</p>
-                  <p>{selectedVet.consultation_fee ? formatIndonesian.currency(selectedVet.consultation_fee) : "-"}</p>
+                  <p>{selectedVet.consultation_fee ? formatCurrency(selectedVet.consultation_fee) : "-"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Jam Operasional</p>
@@ -364,7 +364,7 @@ export default function VetContactPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Konsultasi Terakhir</p>
-                  <p>{selectedVet.last_consulted ? formatIndonesian.date(selectedVet.last_consulted) : "Belum pernah"}</p>
+                  <p>{selectedVet.last_consulted ? formatDateIndonesian(selectedVet.last_consulted) : "Belum pernah"}</p>
                 </div>
               </div>
 

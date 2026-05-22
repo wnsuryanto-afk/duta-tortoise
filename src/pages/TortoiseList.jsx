@@ -9,21 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, ClipboardCheck, Eye, TrendingUp } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, Eye, TrendingUp, CalendarX, Skull } from "lucide-react";
 import TortoiseCard from "@/components/tortoise/TortoiseCard";
 import TortoiseForm from "@/components/tortoise/TortoiseForm";
 import MoveEnclosureDialog from "@/components/tortoise/MoveEnclosureDialog";
 import RenameEnclosureDialog from "@/components/tortoise/RenameEnclosureDialog";
 import EnclosureForm from "@/components/enclosure/EnclosureForm";
-import EnclosureAuditForm from "@/components/enclosure/EnclosureAuditForm";
 import EmptyState from "@/components/common/EmptyState";
 import CardSkeleton from "@/components/common/Skeleton";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms } from "@/lib/permissions";
-import { differenceInDays, parseISO } from "date-fns";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-
-const GRADE_COLORS = { A: "bg-green-100 text-green-800", B: "bg-blue-100 text-blue-800", C: "bg-yellow-100 text-yellow-800", D: "bg-red-100 text-red-800" };
 
 function getEnclosureStatus(enc) {
   if (!enc.max_capacity) return "normal";
@@ -37,7 +32,6 @@ export default function TortoiseList() {
   const { role, user } = useCurrentUser();
   const perms = getPerms(role, "tortoise");
   const canEditEnclosure = ["admin", "owner", "manajer"].includes(role);
-  const canAudit = ["owner", "admin", "manajer"].includes(role);
   const [mainTab, setMainTab] = useState("kura");
 
   // Tortoise state
@@ -61,11 +55,8 @@ export default function TortoiseList() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [selectedEnclosureDetail, setSelectedEnclosureDetail] = useState(null);
 
-  // Audit state
-  const [showAuditForm, setShowAuditForm] = useState(false);
-  const [editAudit, setEditAudit] = useState(null);
-  const [auditEnclosureFilter, setAuditEnclosureFilter] = useState("semua");
-  const [viewAudit, setViewAudit] = useState(null);
+  // Karantina state
+  const [quarantineFilter, setQuarantineFilter] = useState("all");
 
   // ── Data Queries ──
   const { data: tortoises = [], isLoading } = useQuery({
@@ -84,9 +75,9 @@ export default function TortoiseList() {
     queryKey: ["enclosures"],
     queryFn: () => base44.entities.Enclosure.list("-created_date"),
   });
-  const { data: audits = [], isLoading: auditsLoading } = useQuery({
-    queryKey: ["enclosure-audits"],
-    queryFn: () => base44.entities.EnclosureAudit.list("-audit_date"),
+  const { data: deathRecords = [] } = useQuery({
+    queryKey: ["death-records"],
+    queryFn: () => base44.entities.DeathRecord.list("-death_date"),
   });
 
   const deleteMutation = useMutation({
@@ -134,7 +125,8 @@ export default function TortoiseList() {
     const matchShell = shellTypeFilter === "semua" || (t.shell_type || "normal") === shellTypeFilter;
     const matchEnclosure = !enclosureFilter || (t.enclosure || "Tidak Ada Kandang") === enclosureFilter;
     const matchProven = provenFilter === "semua" || (provenFilter === "proven" ? !!t.is_proven : !t.is_proven);
-    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven;
+    const matchQuarantine = quarantineFilter === "all" || (quarantineFilter === "yes" ? t.in_quarantine : !t.in_quarantine);
+    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchQuarantine;
   });
 
   const grouped = useMemo(() => {
@@ -179,35 +171,15 @@ export default function TortoiseList() {
     ? tortoises.filter(t => t.enclosure === selectedEnclosureDetail.name && t.status !== "terjual" && t.status !== "mati")
     : [];
 
-  // ── Audit derived ──
-  const today = new Date();
-  const enclosureNames = [...new Set(audits.map(a => a.enclosure_name))];
-  const overdueAlerts = useMemo(() => {
-    const lastAudit = {};
-    audits.forEach(a => { if (!lastAudit[a.enclosure_name] || a.audit_date > lastAudit[a.enclosure_name]) lastAudit[a.enclosure_name] = a.audit_date; });
-    return enclosures.filter(e => e.is_active !== false).filter(e => {
-      const last = lastAudit[e.name];
-      if (!last) return true;
-      return differenceInDays(today, parseISO(last)) > 30;
-    }).map(e => ({ name: e.name, lastAudit: lastAudit[e.name] || null }));
-  }, [audits, enclosures]);
+  // Karantina tortoises
+  const quarantinedTortoises = tortoises.filter(t => t.in_quarantine === true);
 
-  const filteredAudits = auditEnclosureFilter === "semua" ? audits : audits.filter(a => a.enclosure_name === auditEnclosureFilter);
-  const chartData = useMemo(() => {
-    const grp = {};
-    filteredAudits.forEach(a => {
-      if (!grp[a.enclosure_name]) grp[a.enclosure_name] = [];
-      grp[a.enclosure_name].push({ date: a.audit_date, score: a.total_score || 0 });
-    });
-    return grp;
-  }, [filteredAudits]);
-
-  const handleAuditSaved = () => { queryClient.invalidateQueries({ queryKey: ["enclosure-audits"] }); setShowAuditForm(false); setEditAudit(null); };
+  const handleSaveEnclosure = () => { setShowEnclosureForm(false); queryClient.invalidateQueries({ queryKey: ["enclosures"] }); };
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-heading font-bold text-foreground">Tortoise & Kandang</h1>
+        <h1 className="text-2xl font-heading font-bold text-foreground">Kura-kura & Kandang</h1>
         <p className="text-muted-foreground text-sm mt-1">Kelola kura-kura dan kandang dalam satu tempat</p>
       </div>
 
@@ -221,8 +193,13 @@ export default function TortoiseList() {
             <Home className="w-4 h-4" /> Kandang
             <Badge variant="secondary" className="text-xs ml-1">{enclosures.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="audit" className="flex-1 sm:flex-none gap-1.5">
-            <ClipboardCheck className="w-4 h-4" /> Audit
+          <TabsTrigger value="karantina" className="flex-1 sm:flex-none gap-1.5">
+            <CalendarX className="w-4 h-4" /> Karantina
+            <Badge variant="secondary" className="text-xs ml-1">{quarantinedTortoises.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="kematian" className="flex-1 sm:flex-none gap-1.5">
+            <Skull className="w-4 h-4" /> Kematian
+            <Badge variant="secondary" className="text-xs ml-1">{deathRecords.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -251,7 +228,6 @@ export default function TortoiseList() {
                 <SelectItem value="baby">🐣 Baby</SelectItem>
                 <SelectItem value="sakit">Sakit</SelectItem>
                 <SelectItem value="breeding">Breeding</SelectItem>
-                <SelectItem value="karantina">Karantina</SelectItem>
                 <SelectItem value="terjual">Terjual</SelectItem>
                 <SelectItem value="mati">Mati</SelectItem>
                 <SelectItem value="diarsipkan">Diarsipkan</SelectItem>
@@ -310,7 +286,6 @@ export default function TortoiseList() {
                     </div>
                   );
                 })}
-                {/* enclosures not in any group */}
                 {enclosures.filter(e => !["W","N","E","L","B"].some(p => e.name.startsWith(p)) && !e.name.startsWith("Baby")).map(enc => (
                   <SelectItem key={enc.id} value={enc.name}>{enc.name}</SelectItem>
                 ))}
@@ -338,7 +313,7 @@ export default function TortoiseList() {
             />
           ) : viewMode === "semua" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, karantina: 4, mati: 5, terjual: 6, diarsipkan: 7 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, karantina: 4, mati: 5, terjual: 6, diarsipkan: 7 }[b.status] ?? 0)).map((t) => (
+              {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[b.status] ?? 0)).map((t) => (
                 <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={perms.canDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
               ))}
             </div>
@@ -461,86 +436,87 @@ export default function TortoiseList() {
           )}
         </TabsContent>
 
-        {/* ══════════ TAB AUDIT ══════════ */}
-        <TabsContent value="audit" className="mt-5 space-y-5">
-          {!canAudit ? (
-            <div className="text-center py-16 text-muted-foreground">Anda tidak memiliki akses ke halaman ini.</div>
+        {/* ══════════ TAB KARANTINA ══════════ */}
+        <TabsContent value="karantina" className="mt-5 space-y-4">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">{quarantinedTortoises.length} tortoise dalam karantina</p>
+            <Select value={quarantineFilter} onValueChange={setQuarantineFilter}>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="yes">Sedang Karantina</SelectItem>
+                <SelectItem value="no">Tidak Karantina</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {quarantinedTortoises.length === 0 ? (
+            <EmptyState
+              type="health"
+              customTitle="Tidak Ada Karantina"
+              customDescription="Tidak ada tortoise yang sedang dikarantina saat ini"
+            />
           ) : (
-            <>
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <p className="text-sm text-muted-foreground">{audits.length} rekaman audit kandang</p>
-                <div className="flex items-center gap-2">
-                  <Select value={auditEnclosureFilter} onValueChange={setAuditEnclosureFilter}>
-                    <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Semua Kandang" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="semua">Semua Kandang</SelectItem>
-                      {enclosureNames.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={() => { setEditAudit(null); setShowAuditForm(true); }} className="gap-2 bg-primary">
-                    <Plus className="w-4 h-4" /> Audit Baru
-                  </Button>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {quarantinedTortoises.map(t => (
+                <Card key={t.id} className="border-amber-300 bg-amber-50">
+                  <CardHeader>
+                    <CardTitle className="flex justify-between items-start">
+                      <span>{t.name}</span>
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-300">Karantina</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Alasan: {t.quarantine_reason || '-'}</p>
+                    {t.quarantine_start_date && (
+                      <p className="text-sm text-muted-foreground">
+                        Mulai: {new Date(t.quarantine_start_date).toLocaleDateString('id-ID')}
+                      </p>
+                    )}
+                    {t.quarantine_notes && (
+                      <p className="text-xs text-muted-foreground">{t.quarantine_notes}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-              {overdueAlerts.length > 0 && (
-                <div className="space-y-2">
-                  {overdueAlerts.map(a => (
-                    <div key={a.name} className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-                      <AlertTriangle className="w-4 h-4 shrink-0" />
-                      <span><strong>{a.name}</strong> belum diaudit {a.lastAudit ? `sejak ${differenceInDays(today, parseISO(a.lastAudit))} hari lalu` : "— belum pernah diaudit"}.</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {auditsLoading ? (
-                <div className="text-center py-16 text-muted-foreground">Memuat...</div>
-              ) : filteredAudits.length === 0 ? (
-                <EmptyState
-                  type="sop"
-                  customTitle="Belum ada audit kandang"
-                  customDescription="Lakukan audit pertama untuk mulai monitoring kualitas kandang."
-                  customButtonText="+ Audit Pertama"
-                  onAction={canAudit ? () => { setEditAudit(null); setShowAuditForm(true); } : null}
-                />
-              ) : (
-                <div className="space-y-6">
-                  {Object.entries(chartData).map(([name, data]) => data.length > 1 && (
-                    <Card key={name}>
-                      <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Tren Skor: {name}</CardTitle></CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={120}>
-                          <LineChart data={[...data].sort((a, b) => a.date > b.date ? 1 : -1)}>
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                            <YAxis domain={[0, 35]} tick={{ fontSize: 10 }} />
-                            <Tooltip formatter={v => [`${v}`, "Skor"]} />
-                            <Line type="monotone" dataKey="score" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredAudits.map(audit => (
-                      <Card key={audit.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-2 mb-3">
-                            <div><div className="font-semibold">{audit.enclosure_name}</div><div className="text-xs text-muted-foreground">{audit.audit_date} · oleh {audit.auditor_name}</div></div>
-                            {audit.grade && <Badge className={`${GRADE_COLORS[audit.grade] || ""} border-0 font-bold text-sm`}>Grade {audit.grade}</Badge>}
-                          </div>
-                          {audit.total_score != null && <div className="text-sm">Skor Total: <span className="font-bold">{audit.total_score}</span><span className="text-muted-foreground">/35</span></div>}
-                          {audit.action_items && <div className="mt-2 text-xs text-muted-foreground line-clamp-2">🔧 {audit.action_items}</div>}
-                          <div className="flex gap-1 mt-3 pt-2 border-t">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => setViewAudit(audit)}><Eye className="w-3 h-3 mr-1" /> Detail</Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+        {/* ══════════ TAB KEMATIAN ══════════ */}
+        <TabsContent value="kematian" className="mt-5 space-y-4">
+          <p className="text-sm text-muted-foreground">{deathRecords.length} catatan kematian</p>
+          
+          {deathRecords.length === 0 ? (
+            <EmptyState
+              type="sop"
+              customTitle="Belum Ada Catatan Kematian"
+              customDescription="Belum ada记录 kematian tortoise"
+            />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {deathRecords.map(record => (
+                <Card key={record.id}>
+                  <CardHeader>
+                    <CardTitle>{record.tortoise_name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Tanggal: {new Date(record.death_date).toLocaleDateString('id-ID')}
+                    </p>
+                    <p className="text-sm">
+                      Penyebab: <Badge variant="outline">{record.cause_of_death}</Badge>
+                    </p>
+                    {record.cause_detail && (
+                      <p className="text-xs text-muted-foreground">{record.cause_detail}</p>
+                    )}
+                    {record.recorded_by && (
+                      <p className="text-xs text-muted-foreground">Dicatat oleh: {record.recorded_by}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
       </Tabs>
@@ -550,7 +526,7 @@ export default function TortoiseList() {
       {moveTarget && <MoveEnclosureDialog tortoise={moveTarget} open={!!moveTarget} onClose={() => setMoveTarget(null)} onMoved={handleMoved} />}
       {renameEnclosure && <RenameEnclosureDialog open={!!renameEnclosure} onClose={() => setRenameEnclosure(null)} enclosureName={renameEnclosure.name} tortoiseIds={renameEnclosure.ids} />}
       {showEnclosureForm && (
-        <EnclosureForm enclosure={editingEnclosure} onClose={() => setShowEnclosureForm(false)} onSaved={() => { setShowEnclosureForm(false); queryClient.invalidateQueries({ queryKey: ["enclosures"] }); }} />
+        <EnclosureForm enclosure={editingEnclosure} onClose={() => setShowEnclosureForm(false)} onSaved={handleSaveEnclosure} />
       )}
 
       <Dialog open={!!selectedEnclosureDetail} onOpenChange={() => setSelectedEnclosureDetail(null)}>
@@ -595,42 +571,6 @@ export default function TortoiseList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={showAuditForm} onOpenChange={() => { setShowAuditForm(false); setEditAudit(null); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Form Audit Kandang</DialogTitle></DialogHeader>
-          <EnclosureAuditForm data={editAudit} enclosures={enclosures} onSave={handleAuditSaved} onClose={() => { setShowAuditForm(false); setEditAudit(null); }} auditorName={user?.full_name || user?.email} />
-        </DialogContent>
-      </Dialog>
-
-      {viewAudit && (
-        <Dialog open={!!viewAudit} onOpenChange={() => setViewAudit(null)}>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Hasil Audit: {viewAudit.enclosure_name}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div className="flex gap-4 text-sm flex-wrap">
-                <div><span className="text-muted-foreground">Tanggal: </span>{viewAudit.audit_date}</div>
-                <div><span className="text-muted-foreground">Auditor: </span>{viewAudit.auditor_name}</div>
-                {viewAudit.grade && <Badge className={`${GRADE_COLORS[viewAudit.grade]} border-0`}>Grade {viewAudit.grade}</Badge>}
-              </div>
-              {viewAudit.checklist?.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-2 bg-muted/40 rounded-lg text-sm">
-                  <span className="font-medium capitalize">{item.aspect}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-0.5">{[1,2,3,4,5].map(s => <div key={s} className={`w-4 h-4 rounded-sm ${s <= item.score ? "bg-green-500" : "bg-muted"}`} />)}</div>
-                    <span className="text-xs text-muted-foreground">{item.score}/5</span>
-                  </div>
-                </div>
-              ))}
-              <div className="flex justify-between font-semibold text-sm p-2 bg-primary/5 rounded-lg">
-                <span>Total Skor</span><span>{viewAudit.total_score}/{(viewAudit.checklist?.length || 7) * 5}</span>
-              </div>
-              {viewAudit.action_items && <div><p className="text-sm font-medium mb-1">Tindakan Perbaikan:</p><p className="text-sm text-muted-foreground">{viewAudit.action_items}</p></div>}
-              {viewAudit.follow_up_date && <p className="text-sm"><span className="font-medium">Follow Up: </span>{viewAudit.follow_up_date}</p>}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

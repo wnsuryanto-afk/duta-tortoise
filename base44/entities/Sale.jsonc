@@ -48,14 +48,18 @@
       ],
       "default": "ambil_sendiri"
     },
-    "certificate_number": {
-      "type": "string"
-    },
-    "certificate_url": {
-      "type": "string"
-    },
     "platform": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "Instagram",
+        "Tokopedia",
+        "Shopee",
+        "WhatsApp",
+        "Facebook",
+        "Referral",
+        "Langsung",
+        "Lainnya"
+      ]
     },
     "is_repeat_buyer": {
       "type": "boolean",
