@@ -10,5 +10,3 @@ export function useCurrentUser() {
 
   return { user, isLoading, role: user?.role || "keeper" };
 }
-
-export default useCurrentUser;
