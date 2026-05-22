@@ -1,0 +1,88 @@
+{
+  "name": "BuyerProfile",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama pembeli"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "whatsapp": {
+      "type": "string",
+      "description": "Nomor WhatsApp"
+    },
+    "email": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string",
+      "description": "Kota"
+    },
+    "platform_asal": {
+      "type": "string",
+      "enum": [
+        "Instagram",
+        "Tokopedia",
+        "Shopee",
+        "WhatsApp",
+        "Referral",
+        "Langsung",
+        "Lainnya"
+      ]
+    },
+    "first_purchase_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "last_purchase_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "total_purchases": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah transaksi"
+    },
+    "total_spent": {
+      "type": "number",
+      "default": 0,
+      "description": "Total nilai belanja (Rp)"
+    },
+    "favorite_morph": {
+      "type": "string"
+    },
+    "budget_range": {
+      "type": "string",
+      "enum": [
+        "<500rb",
+        "500rb-1jt",
+        "1jt-5jt",
+        "5jt-10jt",
+        ">10jt"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "baru",
+        "reguler",
+        "vip"
+      ],
+      "default": "baru"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_blacklist": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ]
+}

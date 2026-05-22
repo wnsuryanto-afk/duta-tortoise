@@ -40,6 +40,7 @@ import SOPLibraryPage from '@/pages/SOPLibraryPage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
 import EnclosureAuditPage from '@/pages/EnclosureAuditPage';
+import CRMPage from '@/pages/CRMPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -96,6 +97,7 @@ const AuthenticatedApp = () => {
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/task-template" element={<DailyTaskTemplatePage />} />
         <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
+        <Route path="/crm" element={<CRMPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

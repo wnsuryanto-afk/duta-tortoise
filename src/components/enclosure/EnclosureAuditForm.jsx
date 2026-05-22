@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 
 const ASPECTS = ["kebersihan", "ketersediaan_air", "ketersediaan_pakan", "kondisi_lantai", "pencahayaan", "ventilasi", "kepadatan_isi"];
 const ASPECT_LABELS = {
@@ -15,13 +14,12 @@ const ASPECT_LABELS = {
   kondisi_lantai: "Kondisi Lantai",
   pencahayaan: "Pencahayaan",
   ventilasi: "Ventilasi",
-  kepadatan_isi: "Kepadatan Isi Kandang",
+  kepadatan_isi: "Kepadatan Isi",
 };
 
-const SCORE_LABELS = ["", "Sangat Buruk", "Buruk", "Cukup", "Baik", "Sangat Baik"];
-
-function calcGrade(total, max) {
-  const pct = (total / max) * 100;
+function calcGrade(score) {
+  const max = ASPECTS.length * 5;
+  const pct = (score / max) * 100;
   if (pct >= 85) return "A";
   if (pct >= 70) return "B";
   if (pct >= 55) return "C";
@@ -31,43 +29,38 @@ function calcGrade(total, max) {
 export default function EnclosureAuditForm({ data, enclosures, onSave, onClose, auditorName }) {
   const today = new Date().toISOString().split("T")[0];
   const initChecklist = ASPECTS.map(a => ({ aspect: a, score: 3, notes: "" }));
-
-  const [form, setForm] = useState(data || {
-    enclosure_name: "",
-    audit_date: today,
-    auditor_name: auditorName || "",
-    action_items: "",
-    follow_up_date: "",
+  const [form, setForm] = useState({
+    enclosure_name: data?.enclosure_name || "",
+    audit_date: data?.audit_date || today,
+    auditor_name: data?.auditor_name || auditorName || "",
+    checklist: data?.checklist || initChecklist,
+    action_items: data?.action_items || "",
+    follow_up_date: data?.follow_up_date || "",
   });
-  const [checklist, setChecklist] = useState(data?.checklist || initChecklist);
-  const [saving, setSaving] = useState(false);
-
-  const setScore = (aspect, score) => setChecklist(prev => prev.map(c => c.aspect === aspect ? { ...c, score } : c));
-  const setNotes = (aspect, notes) => setChecklist(prev => prev.map(c => c.aspect === aspect ? { ...c, notes } : c));
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const totalScore = checklist.reduce((s, c) => s + (c.score || 0), 0);
-  const maxScore = ASPECTS.length * 5;
-  const grade = calcGrade(totalScore, maxScore);
+  const setScore = (idx, score) => setForm(f => ({ ...f, checklist: f.checklist.map((c, i) => i === idx ? { ...c, score } : c) }));
+  const setNotes = (idx, notes) => setForm(f => ({ ...f, checklist: f.checklist.map((c, i) => i === idx ? { ...c, notes } : c) }));
+
+  const totalScore = form.checklist.reduce((s, c) => s + (c.score || 0), 0);
+  const grade = calcGrade(totalScore);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    const payload = { ...form, checklist, total_score: totalScore, grade };
+    const payload = { ...form, total_score: totalScore, grade };
     if (data?.id) await base44.entities.EnclosureAudit.update(data.id, payload);
     else await base44.entities.EnclosureAudit.create(payload);
     onSave();
-    setSaving(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Kandang *</Label>
+        <div className="col-span-2 sm:col-span-1">
+          <Label>Nama Kandang *</Label>
           {enclosures.length > 0 ? (
             <Select value={form.enclosure_name} onValueChange={v => set("enclosure_name", v)}>
-              <SelectTrigger><SelectValue placeholder="Pilih kandang" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Pilih kandang..." /></SelectTrigger>
               <SelectContent>{enclosures.map(e => <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>)}</SelectContent>
             </Select>
           ) : (
@@ -76,72 +69,61 @@ export default function EnclosureAuditForm({ data, enclosures, onSave, onClose, 
         </div>
         <div>
           <Label>Tanggal Audit *</Label>
-          <Input type="date" required value={form.audit_date} onChange={e => set("audit_date", e.target.value)} />
+          <Input required type="date" value={form.audit_date} onChange={e => set("audit_date", e.target.value)} />
         </div>
-      </div>
-      <div>
-        <Label>Nama Auditor *</Label>
-        <Input required value={form.auditor_name} onChange={e => set("auditor_name", e.target.value)} />
-      </div>
-
-      {/* Scoring */}
-      <div>
-        <Label className="text-base font-semibold">Penilaian Per Aspek</Label>
-        <div className="mt-3 space-y-4">
-          {checklist.map(item => (
-            <div key={item.aspect} className="p-3 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">{ASPECT_LABELS[item.aspect] || item.aspect}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{SCORE_LABELS[item.score]}</span>
-                  <span className="text-sm font-bold text-primary w-4 text-right">{item.score}</span>
-                </div>
-              </div>
-              <div className="flex gap-1 mb-2">
-                {[1,2,3,4,5].map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setScore(item.aspect, s)}
-                    className={`flex-1 h-8 rounded text-xs font-semibold transition-colors ${item.score >= s ? "bg-green-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"}`}
-                  >{s}</button>
-                ))}
-              </div>
-              <Input
-                value={item.notes}
-                onChange={e => setNotes(item.aspect, e.target.value)}
-                placeholder="Catatan (opsional)"
-                className="h-7 text-xs"
-              />
-            </div>
-          ))}
+        <div className="col-span-2 sm:col-span-1">
+          <Label>Nama Auditor *</Label>
+          <Input required value={form.auditor_name} onChange={e => set("auditor_name", e.target.value)} />
         </div>
       </div>
 
-      {/* Score Summary */}
-      <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl">
+      {/* Score summary */}
+      <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl">
+        <div className="text-2xl font-bold">{grade}</div>
         <div>
-          <div className="text-sm text-muted-foreground">Total Skor</div>
-          <div className="text-2xl font-bold">{totalScore}<span className="text-sm text-muted-foreground">/{maxScore}</span></div>
+          <div className="text-sm font-medium">Total Skor: {totalScore}/{ASPECTS.length * 5}</div>
+          <div className="text-xs text-muted-foreground">A≥85% · B≥70% · C≥55% · D&lt;55%</div>
         </div>
-        <div className="text-center">
-          <div className="text-sm text-muted-foreground">Grade</div>
-          <div className={`text-3xl font-bold ${grade === "A" ? "text-green-600" : grade === "B" ? "text-blue-600" : grade === "C" ? "text-yellow-600" : "text-red-600"}`}>{grade}</div>
-        </div>
+      </div>
+
+      {/* Checklist */}
+      <div className="space-y-3">
+        {form.checklist.map((item, i) => (
+          <div key={i} className="border rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{ASPECT_LABELS[item.aspect] || item.aspect}</span>
+              <span className="text-sm font-bold text-primary">{item.score}/5</span>
+            </div>
+            <div className="flex gap-1">
+              {[1,2,3,4,5].map(s => (
+                <button key={s} type="button" onClick={() => setScore(i, s)}
+                  className={`flex-1 h-8 rounded-md text-xs font-semibold transition-all ${item.score >= s ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted-foreground/20"}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+            <Input
+              value={item.notes || ""}
+              onChange={e => setNotes(i, e.target.value)}
+              placeholder="Catatan (opsional)..."
+              className="h-7 text-xs"
+            />
+          </div>
+        ))}
       </div>
 
       <div>
         <Label>Tindakan Perbaikan</Label>
-        <Textarea value={form.action_items || ""} onChange={e => set("action_items", e.target.value)} rows={3} placeholder="Tulis tindakan yang perlu dilakukan..." />
+        <Textarea value={form.action_items || ""} onChange={e => set("action_items", e.target.value)} rows={2} placeholder="Apa yang perlu diperbaiki..." />
       </div>
       <div>
         <Label>Tanggal Follow Up</Label>
         <Input type="date" value={form.follow_up_date || ""} onChange={e => set("follow_up_date", e.target.value)} />
       </div>
 
-      <div className="flex justify-end gap-2 pt-2 border-t">
+      <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-        <Button type="submit" disabled={saving || !form.enclosure_name}>{saving ? "Menyimpan..." : "Simpan Audit"}</Button>
+        <Button type="submit">Simpan Audit</Button>
       </div>
     </form>
   );
