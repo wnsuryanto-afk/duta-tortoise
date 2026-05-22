@@ -14,6 +14,7 @@ import { canAccess, getPerms } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import IncompleteBadge from "@/components/common/IncompleteBadge";
 import { getMissingFields } from "@/lib/incompleteChecks";
+import PageTooltip from "@/components/tutorial/PageTooltip";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -51,7 +52,10 @@ export default function BreedingList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-bold">Induk Bertelur</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-heading font-bold">Induk Bertelur</h1>
+            <PageTooltip page="breeding" />
+          </div>
           <p className="text-muted-foreground mt-1">Kelola data breeding & induk yang sudah bertelur</p>
         </div>
         {perms.canCreate && (

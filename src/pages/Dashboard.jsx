@@ -18,6 +18,8 @@ import HatchReminderAlert from "@/components/dashboard/HatchReminderAlert";
 import OwnerSummaryWidget from "@/components/dashboard/OwnerSummaryWidget";
 import ExpiredItemAlert from "@/components/dashboard/ExpiredItemAlert";
 import IncompleteDataWidget from "@/components/dashboard/IncompleteDataWidget";
+import GettingStartedChecklist from "@/components/tutorial/GettingStartedChecklist";
+import PageTooltip from "@/components/tutorial/PageTooltip";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -52,12 +54,18 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
+          <PageTooltip page="dashboard" />
+        </div>
         <p className="text-muted-foreground text-sm mt-1">Ringkasan peternakan sulcata tortoise</p>
       </div>
 
       {/* Ringkasan Owner */}
       <OwnerSummaryWidget />
+
+      {/* Getting Started Checklist */}
+      <GettingStartedChecklist />
 
       {/* Data Tidak Lengkap */}
       <IncompleteDataWidget />

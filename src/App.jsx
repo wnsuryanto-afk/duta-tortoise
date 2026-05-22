@@ -6,13 +6,13 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { ViewAsProvider } from '@/lib/ViewAsContext';
+import { TourProvider } from '@/lib/tourContext';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
-import TortoiseList from '@/pages/TortoiseList';
+import TortoiseList from '@/pages/TortoiseList.jsx';
 import BreedingList from '@/pages/BreedingList';
-import HealthList from '@/pages/HealthList';
-
+import HealthList from '@/pages/HealthList.jsx';
 import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
 import SOPPage from '@/pages/SOPPage';
@@ -29,6 +29,7 @@ import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
 import FamilyTreePage from '@/pages/FamilyTreePage';
 import MonthlySalaryPage from '@/pages/MonthlySalaryPage';
+import EnclosurePage from '@/pages/EnclosurePage';
 import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
@@ -37,7 +38,9 @@ import MarketplacePage from '@/pages/MarketplacePage';
 import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
 import SOPLibraryPage from '@/pages/SOPLibraryPage';
 import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
+import EnclosureAuditPage from '@/pages/EnclosureAuditPage';
 import CRMPage from '@/pages/CRMPage';
+import HelpCenterPage from '@/pages/HelpCenterPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -82,6 +85,7 @@ const AuthenticatedApp = () => {
         <Route path="/payroll-gaji" element={<PayrollPage />} />
         <Route path="/family-tree" element={<FamilyTreePage />} />
         <Route path="/salary" element={<MonthlySalaryPage />} />
+        <Route path="/enclosure" element={<EnclosurePage />} />
         <Route path="/sales-report" element={<SalesReportPage />} />
         <Route path="/hr" element={<HRPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
@@ -90,7 +94,9 @@ const AuthenticatedApp = () => {
         <Route path="/breeding-planner" element={<BreedingPlannerPage />} />
         <Route path="/sop-library" element={<SOPLibraryPage />} />
         <Route path="/task-template" element={<DailyTaskTemplatePage />} />
+        <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
         <Route path="/crm" element={<CRMPage />} />
+        <Route path="/help" element={<HelpCenterPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
@@ -102,10 +108,12 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <ViewAsProvider>
-          <Router>
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
+          <TourProvider>
+            <Router>
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+          </TourProvider>
         </ViewAsProvider>
       </QueryClientProvider>
     </AuthProvider>

@@ -11,6 +11,7 @@ import ViewAsSelector from "@/components/owner/ViewAsSelector";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import TourController from "@/components/tutorial/TourController";
 
 export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
@@ -60,6 +61,7 @@ export default function AppLayout() {
         </div>
       </main>
 
+      <TourController />
       {showSetup && <ProfileSetupModal open={true} user={user} />}
       {isOwner && (
         <ViewAsSelector

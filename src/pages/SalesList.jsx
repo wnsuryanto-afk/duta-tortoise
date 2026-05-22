@@ -13,6 +13,7 @@ import { canAccess, getPerms } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import IncompleteBadge from "@/components/common/IncompleteBadge";
 import { getMissingFields } from "@/lib/incompleteChecks";
+import PageTooltip from "@/components/tutorial/PageTooltip";
 
 const paymentColors = {
   lunas: "bg-primary/10 text-primary",
@@ -50,11 +51,15 @@ export default function SalesList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-bold">Penjualan</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-heading font-bold">Penjualan</h1>
+            <PageTooltip page="sales" />
+          </div>
           <p className="text-muted-foreground mt-1">
             Total: Rp {totalRevenue.toLocaleString("id-ID")} dari {sales.length} transaksi
           </p>
         </div>
+
         {perms.canCreate && (
           <Button onClick={() => { setEditData(null); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
