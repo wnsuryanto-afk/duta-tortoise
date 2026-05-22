@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Plus, Search, MessageCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
-import useCurrentUser from "@/lib/useCurrentUser";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import BuyerForm from "@/components/crm/BuyerForm";
 import BuyerDetail from "@/components/crm/BuyerDetail";
 import AccessDenied from "@/components/common/AccessDenied";
