@@ -319,6 +319,25 @@ export default function BreedingAndEggs() {
                           <p className="font-medium">{b.incubator_name}</p>
                         </div>
                       )}
+                      {b.status === "inkubasi" && daysToStart !== null && daysToStart > 0 && (
+                        <div className="col-span-2">
+                          <div className={`p-3 rounded-lg border-2 ${
+                            daysToStart <= 7 
+                              ? "bg-green-50 border-green-300" 
+                              : "bg-blue-50 border-blue-200"
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-green-600" : "text-blue-600"}`} />
+                                <span className="text-xs font-semibold">Menetas dalam</span>
+                              </div>
+                              <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-green-700" : "text-blue-700"}`}>
+                                {daysToStart} hari
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {b.status === "menetas" && b.hatched_count > 0 && (
                         <div>
                           <p className="text-muted-foreground">Menetas</p>
@@ -448,6 +467,25 @@ export default function BreedingAndEggs() {
                         </div>
                       )}
                       
+                      {/* Countdown hari menetas */}
+                      {b.status === "inkubasi" && daysToStart !== null && daysToStart > 0 && (
+                        <div className={`p-3 rounded-lg border-2 ${
+                          daysToStart <= 7 
+                            ? "bg-green-50 border-green-300" 
+                            : "bg-blue-50 border-blue-200"
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-green-600" : "text-blue-600"}`} />
+                              <span className="text-xs font-semibold">Menetas dalam</span>
+                            </div>
+                            <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-green-700" : "text-blue-700"}`}>
+                              {daysToStart} hari
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Progress Bar Inkubasi */}
                       {b.status === "inkubasi" && (
                         <div className="mt-2 space-y-1">
