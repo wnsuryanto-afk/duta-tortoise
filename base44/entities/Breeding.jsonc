@@ -18,6 +18,14 @@
       "type": "string",
       "description": "Nama tortoise betina"
     },
+    "clutch_number": {
+      "type": "number",
+      "description": "Urutan clutch dari pasangan ini di tahun ini"
+    },
+    "season_year": {
+      "type": "number",
+      "description": "Tahun musim kawin"
+    },
     "egg_laying_date": {
       "type": "string",
       "format": "date",
@@ -59,6 +67,10 @@
     "incubation_temp": {
       "type": "number",
       "description": "Suhu inkubasi (\u00b0C)"
+    },
+    "incubation_humidity": {
+      "type": "number",
+      "description": "Kelembapan inkubasi (%)"
     },
     "photos": {
       "type": "array",

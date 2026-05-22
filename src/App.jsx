@@ -25,6 +25,8 @@ import TreatmentPage from '@/pages/TreatmentPage';
 import FeedbackPage from '@/pages/FeedbackPage';
 import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
+import FamilyTreePage from '@/pages/FamilyTreePage';
+import MonthlySalaryPage from '@/pages/MonthlySalaryPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,6 +69,8 @@ const AuthenticatedApp = () => {
         <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/kasbon" element={<KasbonPage />} />
         <Route path="/payroll-gaji" element={<PayrollPage />} />
+        <Route path="/family-tree" element={<FamilyTreePage />} />
+        <Route path="/salary" element={<MonthlySalaryPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -35,6 +35,10 @@
       "type": "number",
       "description": "HPP / Modal (Rp)"
     },
+    "dp_amount": {
+      "type": "number",
+      "description": "Jumlah DP yang dibayar (Rp)"
+    },
     "payment_status": {
       "type": "string",
       "enum": [
@@ -54,6 +58,14 @@
       ],
       "default": "ambil_sendiri",
       "description": "Metode pengiriman"
+    },
+    "certificate_number": {
+      "type": "string",
+      "description": "Nomor surat jual beli"
+    },
+    "certificate_url": {
+      "type": "string",
+      "description": "URL scan surat jual beli"
     },
     "notes": {
       "type": "string",

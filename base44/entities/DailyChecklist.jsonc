@@ -40,6 +40,21 @@
       },
       "description": "Daftar task yang diselesaikan"
     },
+    "photo_proofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "photo_url": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Bukti foto penyelesaian task"
+    },
     "total_points_claimed": {
       "type": "number",
       "default": 0,

@@ -27,9 +27,15 @@
       "type": "string",
       "description": "Waktu check-out (HH:mm)"
     },
-    "notes": {
-      "type": "string",
-      "description": "Catatan"
+    "late_minutes": {
+      "type": "number",
+      "default": 0,
+      "description": "Menit keterlambatan"
+    },
+    "overtime_hours": {
+      "type": "number",
+      "default": 0,
+      "description": "Jam lembur langsung dari absensi"
     },
     "status": {
       "type": "string",
@@ -40,6 +46,10 @@
       ],
       "default": "hadir",
       "description": "Status kehadiran"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
     }
   },
   "required": [

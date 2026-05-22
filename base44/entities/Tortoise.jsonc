@@ -30,10 +30,25 @@
         "ivory",
         "albino",
         "wc",
-        "cb"
+        "cb",
+        "piebald",
+        "genetic_stripe",
+        "high_yellow",
+        "dark",
+        "paradox"
       ],
       "default": "normal",
       "description": "Jenis/morph kura-kura"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "hasil_sendiri",
+        "beli_lokal",
+        "import"
+      ],
+      "default": "hasil_sendiri",
+      "description": "Asal kura-kura"
     },
     "is_proven": {
       "type": "boolean",
@@ -49,6 +64,14 @@
       "type": "string",
       "format": "date",
       "description": "Tanggal pembelian"
+    },
+    "purchase_price": {
+      "type": "number",
+      "description": "Harga beli / HPP (Rp)"
+    },
+    "microchip_id": {
+      "type": "string",
+      "description": "Nomor microchip (jika ada)"
     },
     "weight_grams": {
       "type": "number",

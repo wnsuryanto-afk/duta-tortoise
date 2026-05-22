@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
-  Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet
+  Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -22,7 +22,8 @@ const NAV_GROUPS = [
     label: "Pengelolaan",
     items: [
       { path: "/tortoise",        section: "tortoise",        label: "Tortoise",        icon: Shell },
-      { path: "/breeding",        section: "breeding",        label: "Torto Bertelor",  icon: Baby },
+      { path: "/breeding",        section: "breeding",        label: "Breeding & Telur", icon: Baby },
+      { path: "/family-tree",     section: "family-tree",     label: "Silsilah",         icon: GitBranch },
       { path: "/health",          section: "health",          label: "Catatan Sakit",   icon: Heart },
       { path: "/treatment",       section: "treatment",       label: "Treatment & Pengingat", icon: Stethoscope },
       { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
@@ -42,8 +43,8 @@ const NAV_GROUPS = [
     items: [
       { path: "/sop",             section: "sop",             label: "SOP & KPI",        icon: ClipboardList },
       { path: "/payroll",         section: "payroll",         label: "Laporan KPI",      icon: FileSpreadsheet },
-      { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Penggajian",       icon: Wallet },
-      { path: "/payroll-gaji?tab=kasbon", section: "kasbon", label: "Kasbon Keeper", icon: CreditCard },
+      { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Penggajian & Kasbon", icon: Wallet },
+      { path: "/salary",          section: "salary",          label: "Gaji Bulanan",     icon: Calculator },
     ],
   },
   {

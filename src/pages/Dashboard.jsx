@@ -15,6 +15,7 @@ import FinanceSummaryWidget from "@/components/dashboard/FinanceSummaryWidget";
 import AttendanceDashboardBanner from "@/components/dashboard/AttendanceDashboardBanner";
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 import HatchReminderAlert from "@/components/dashboard/HatchReminderAlert";
+import OwnerSummaryWidget from "@/components/dashboard/OwnerSummaryWidget";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -52,6 +53,9 @@ export default function Dashboard() {
         <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">Ringkasan peternakan sulcata tortoise</p>
       </div>
+
+      {/* Ringkasan Owner */}
+      <OwnerSummaryWidget />
 
       {/* Target Tahunan */}
       <AnnualGoalWidget breedings={breedings} />

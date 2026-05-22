@@ -50,6 +50,19 @@
       "default": 0,
       "description": "Kebutuhan harian ideal (dalam satuan)"
     },
+    "supplier": {
+      "type": "string",
+      "description": "Nama supplier / toko pakan"
+    },
+    "last_restocked_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir restock"
+    },
+    "last_restocked_qty": {
+      "type": "number",
+      "description": "Jumlah terakhir restock"
+    },
     "notes": {
       "type": "string",
       "description": "Catatan"

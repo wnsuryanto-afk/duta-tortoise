@@ -36,6 +36,10 @@
       "type": "number",
       "description": "Panjang cangkang (cm)"
     },
+    "temperature_C": {
+      "type": "number",
+      "description": "Suhu tubuh kura-kura saat pemeriksaan (\u00b0C)"
+    },
     "description": {
       "type": "string",
       "description": "Deskripsi kondisi/tindakan"
@@ -47,6 +51,18 @@
     "vet_name": {
       "type": "string",
       "description": "Nama dokter hewan"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Foto kondisi kesehatan"
+    },
+    "follow_up_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kontrol berikutnya"
     }
   },
   "required": [
