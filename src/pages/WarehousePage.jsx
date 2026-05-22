@@ -74,15 +74,6 @@ export default function WarehousePage() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showLabelPrinter, setShowLabelPrinter] = useState(false);
 
-  const toggleSelect = (id) => setSelectedIds(prev => {
-    const s = new Set(prev);
-    s.has(id) ? s.delete(id) : s.add(id);
-    return s;
-  });
-  const selectAll = () => setSelectedIds(new Set(filtered.map(i => i.id)));
-  const clearSelection = () => setSelectedIds(new Set());
-  const selectedItems = filtered.filter(i => selectedIds.has(i.id));
-
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
     qc.invalidateQueries({ queryKey: ["warehouse-transactions"] });
@@ -97,6 +88,15 @@ export default function WarehousePage() {
   });
 
   const lowItems = items.filter((i) => i.current_stock <= i.minimum_stock);
+
+  const toggleSelect = (id) => setSelectedIds(prev => {
+    const s = new Set(prev);
+    s.has(id) ? s.delete(id) : s.add(id);
+    return s;
+  });
+  const selectAll = () => setSelectedIds(new Set(filtered.map(i => i.id)));
+  const clearSelection = () => setSelectedIds(new Set());
+  const selectedItems = filtered.filter(i => selectedIds.has(i.id));
 
   const handleDelete = async (item) => {
     if (confirm(`Hapus ${item.name}?`)) {
