@@ -14,6 +14,7 @@ import {
   QrCode, ArrowUpCircle, ArrowDownCircle, History, Printer
 } from "lucide-react";
 import BarcodeModal from "@/components/warehouse/BarcodeModal";
+import PrintAllLabelsDialog from "@/components/warehouse/PrintAllLabelsDialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -67,6 +68,8 @@ export default function WarehousePage() {
   const [showScanner, setShowScanner] = useState(false);
   const [savingTx, setSavingTx] = useState(false);
   const [barcodeItem, setBarcodeItem] = useState(null);
+  const [showPrintAll, setShowPrintAll] = useState(false);
+  const [printAfterSave, setPrintAfterSave] = useState(null); // item to print after save
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
@@ -158,9 +161,12 @@ export default function WarehousePage() {
           <h1 className="text-2xl font-heading font-bold">Gudang Gazebo</h1>
           <p className="text-muted-foreground text-sm">Stok obat, vitamin, pakan & alat kerja</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setShowScanner(true)} className="gap-2">
             <QrCode className="w-4 h-4" /> Scan Barcode
+          </Button>
+          <Button variant="outline" onClick={() => setShowPrintAll(true)} className="gap-2">
+            <Printer className="w-4 h-4" /> Print Semua Label
           </Button>
           {canEdit && (
             <Button onClick={() => { setEditItem(null); setShowForm(true); }} className="gap-2">
@@ -395,8 +401,24 @@ export default function WarehousePage() {
       </Dialog>
 
       {showScanner && <QRScanner onResult={handleScanResult} onClose={() => setShowScanner(false)} />}
-      {showForm && <WarehouseItemForm open={showForm} editData={editItem} onClose={() => setShowForm(false)} onBarcode={setBarcodeItem} />}
+      {showForm && (
+        <WarehouseItemForm
+          open={showForm}
+          editData={editItem}
+          onClose={(savedItem) => {
+            setShowForm(false);
+            // Jika barang baru disimpan, tawarkan cetak label
+            if (savedItem && !editItem?.id) {
+              if (confirm(`Barang "${savedItem.name}" berhasil ditambahkan.\n\nCetak label barcode sekarang?`)) {
+                setBarcodeItem(savedItem);
+              }
+            }
+          }}
+          onBarcode={setBarcodeItem}
+        />
+      )}
       {barcodeItem && <BarcodeModal open={!!barcodeItem} item={barcodeItem} onClose={() => setBarcodeItem(null)} />}
+      {showPrintAll && <PrintAllLabelsDialog open={showPrintAll} items={filtered} onClose={() => setShowPrintAll(false)} />}
     </div>
   );
 }

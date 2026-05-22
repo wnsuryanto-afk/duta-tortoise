@@ -11,14 +11,32 @@ import { Loader2, AlertTriangle, Video } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
 
 const MORPHS = [
-  { value: "normal",      label: "Normal" },
-  { value: "over_scute",  label: "Over Scute" },
-  { value: "less_scute",  label: "Less Scute" },
-  { value: "het_albino",  label: "Het Albino" },
-  { value: "ivory",       label: "Ivory" },
-  { value: "albino",      label: "Albino" },
-  { value: "wc",          label: "WC (Wild Caught)" },
-  { value: "cb",          label: "CB (Captive Bred)" },
+  { value: "normal",         label: "Normal" },
+  { value: "albino",         label: "Albino" },
+  { value: "ivory",          label: "Ivory" },
+  { value: "caramel_albino", label: "Caramel Albino" },
+  { value: "hypo",           label: "Hypo" },
+  { value: "golden_greek",   label: "Golden Greek" },
+  { value: "piebald",        label: "Piebald" },
+  { value: "genetic_stripe", label: "Genetic Stripe" },
+  { value: "high_yellow",    label: "High Yellow" },
+  { value: "dark",           label: "Dark" },
+  { value: "paradox",        label: "Paradox" },
+  { value: "anerythristic",  label: "Anerythristic" },
+  { value: "axanthic",       label: "Axanthic" },
+  { value: "melanistic",     label: "Melanistic" },
+  { value: "mix",            label: "Mix (persilangan)" },
+  { value: "unknown",        label: "Unknown (belum diketahui)" },
+];
+
+const SHELL_TYPES = [
+  { value: "normal",      label: "Normal (standar)" },
+  { value: "less_scute",  label: "Less Scute (kekurangan sisik)" },
+  { value: "over_scute",  label: "Over Scute (kelebihan sisik)" },
+  { value: "pyramiding",  label: "Pyramiding (mengerucut)" },
+  { value: "smooth",      label: "Smooth (mulus)" },
+  { value: "wavy",        label: "Wavy (bergelombang)" },
+  { value: "irregular",   label: "Irregular (tidak beraturan)" },
 ];
 
 // Migrasi: jika editData hanya punya photo_url (string lama), ubah ke array
@@ -187,10 +205,10 @@ export default function TortoiseForm({ open, onClose, editData }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Jenis / Morph</Label>
+              <Label>Morph / Warna</Label>
               <Select value={form.morph || "normal"} onValueChange={(v) => set("morph", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60">
                   {MORPHS.map((m) => (
                     <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                   ))}
@@ -200,6 +218,17 @@ export default function TortoiseForm({ open, onClose, editData }) {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Bentuk Tempurung</Label>
+              <Select value={form.shell_type || "normal"} onValueChange={(v) => set("shell_type", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SHELL_TYPES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(v) => set("status", v)}>
@@ -213,6 +242,9 @@ export default function TortoiseForm({ open, onClose, editData }) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Kandang</Label>
               <Input value={form.enclosure} onChange={(e) => set("enclosure", e.target.value)} placeholder="Kandang A" />

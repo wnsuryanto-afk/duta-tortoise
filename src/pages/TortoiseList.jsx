@@ -26,6 +26,7 @@ export default function TortoiseList() {
   const [statusFilter, setStatusFilter] = useState("semua");
   const [genderFilter, setGenderFilter] = useState("semua");
   const [morphFilter, setMorphFilter] = useState("semua");
+  const [shellTypeFilter, setShellTypeFilter] = useState("semua");
   const [provenFilter, setProvenFilter] = useState("semua"); // "semua" | "proven" | "belum"
   const [enclosureFilter, setEnclosureFilter] = useState(null); // null = tampil semua
   const [viewMode, setViewMode] = useState("kandang"); // "kandang" | "semua"
@@ -91,9 +92,10 @@ export default function TortoiseList() {
     const matchStatus = statusFilter === "semua" || t.status === statusFilter;
     const matchGender = genderFilter === "semua" || t.gender === genderFilter;
     const matchMorph = morphFilter === "semua" || (t.morph || "normal") === morphFilter;
+    const matchShell = shellTypeFilter === "semua" || (t.shell_type || "normal") === shellTypeFilter;
     const matchEnclosure = !enclosureFilter || (t.enclosure || "Tidak Ada Kandang") === enclosureFilter;
     const matchProven = provenFilter === "semua" || (provenFilter === "proven" ? !!t.is_proven : !t.is_proven);
-    return matchSearch && matchStatus && matchGender && matchMorph && matchEnclosure && matchProven;
+    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven;
   });
 
   // Group by enclosure
@@ -190,16 +192,39 @@ export default function TortoiseList() {
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Morph" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-60">
             <SelectItem value="semua">Semua Morph</SelectItem>
             <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="over_scute">Over Scute</SelectItem>
-            <SelectItem value="less_scute">Less Scute</SelectItem>
-            <SelectItem value="het_albino">Het Albino</SelectItem>
-            <SelectItem value="ivory">Ivory</SelectItem>
             <SelectItem value="albino">Albino</SelectItem>
-            <SelectItem value="wc">WC (Wild Caught)</SelectItem>
-            <SelectItem value="cb">CB (Captive Bred)</SelectItem>
+            <SelectItem value="ivory">Ivory</SelectItem>
+            <SelectItem value="caramel_albino">Caramel Albino</SelectItem>
+            <SelectItem value="hypo">Hypo</SelectItem>
+            <SelectItem value="golden_greek">Golden Greek</SelectItem>
+            <SelectItem value="piebald">Piebald</SelectItem>
+            <SelectItem value="genetic_stripe">Genetic Stripe</SelectItem>
+            <SelectItem value="high_yellow">High Yellow</SelectItem>
+            <SelectItem value="dark">Dark</SelectItem>
+            <SelectItem value="paradox">Paradox</SelectItem>
+            <SelectItem value="anerythristic">Anerythristic</SelectItem>
+            <SelectItem value="axanthic">Axanthic</SelectItem>
+            <SelectItem value="melanistic">Melanistic</SelectItem>
+            <SelectItem value="mix">Mix</SelectItem>
+            <SelectItem value="unknown">Unknown</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={shellTypeFilter} onValueChange={setShellTypeFilter}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Tempurung" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="semua">Semua Tempurung</SelectItem>
+            <SelectItem value="normal">Normal</SelectItem>
+            <SelectItem value="less_scute">Less Scute 🔵</SelectItem>
+            <SelectItem value="over_scute">Over Scute 🔵</SelectItem>
+            <SelectItem value="pyramiding">Pyramiding 🔴</SelectItem>
+            <SelectItem value="smooth">Smooth 🟢</SelectItem>
+            <SelectItem value="wavy">Wavy</SelectItem>
+            <SelectItem value="irregular">Irregular</SelectItem>
           </SelectContent>
         </Select>
         <Select value={provenFilter} onValueChange={setProvenFilter}>

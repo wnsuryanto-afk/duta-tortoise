@@ -85,10 +85,13 @@ function NavItem({ item, isActive, onClick }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ viewAsRole = null }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const { user, role } = useCurrentUser();
+  const { user, role: realRole } = useCurrentUser();
+
+  // If viewAs is active, use that role for nav rendering
+  const role = viewAsRole || realRole;
 
   const close = () => setOpen(false);
 

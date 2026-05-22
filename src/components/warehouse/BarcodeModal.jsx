@@ -3,80 +3,93 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 
-// Simple barcode renderer using canvas (Code128-like visual)
-function BarcodeCanvas({ value }) {
+function BarcodeCanvas({ value, id }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     if (!canvasRef.current || !value) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    const W = 300, H = 80;
+    const W = 280, H = 60;
     canvas.width = W;
     canvas.height = H;
 
-    // Simple pattern: alternate bar widths based on char codes
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#000000";
 
     const chars = value.split("");
     const totalBars = chars.length * 8 + 20;
-    const barWidth = Math.floor((W - 20) / totalBars);
+    const barWidth = Math.max(1, Math.floor((W - 20) / totalBars));
     let x = 10;
 
-    // Start bars
     for (let i = 0; i < 3; i++) {
-      if (i % 2 === 0) ctx.fillRect(x, 0, barWidth, H - 16);
+      if (i % 2 === 0) ctx.fillRect(x, 0, barWidth, H - 14);
       x += barWidth;
     }
-
-    // Data bars
     chars.forEach((c) => {
       const code = c.charCodeAt(0);
       for (let bit = 7; bit >= 0; bit--) {
-        if ((code >> bit) & 1) ctx.fillRect(x, 0, barWidth, H - 16);
+        if ((code >> bit) & 1) ctx.fillRect(x, 0, barWidth, H - 14);
         x += barWidth;
       }
     });
-
-    // Stop bars
     for (let i = 0; i < 3; i++) {
-      if (i % 2 === 0) ctx.fillRect(x, 0, barWidth, H - 16);
+      if (i % 2 === 0) ctx.fillRect(x, 0, barWidth, H - 14);
       x += barWidth;
     }
 
-    // Text
     ctx.fillStyle = "#000";
-    ctx.font = "11px monospace";
+    ctx.font = "10px monospace";
     ctx.textAlign = "center";
-    ctx.fillText(value, W / 2, H - 3);
+    ctx.fillText(value, W / 2, H - 2);
   }, [value]);
 
-  return <canvas ref={canvasRef} className="mx-auto block" style={{ imageRendering: "pixelated" }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      id={id}
+      className="mx-auto block"
+      style={{ imageRendering: "pixelated" }}
+    />
+  );
 }
 
 export default function BarcodeModal({ open, onClose, item }) {
   const handlePrint = () => {
-    const canvas = document.getElementById("barcode-canvas-print");
+    const canvas = document.getElementById("barcode-main-canvas");
     if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/png");
     const win = window.open("", "_blank");
     win.document.write(`
-      <html><head><title>Barcode - ${item?.name}</title>
-      <style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;}
-      .box{border:1px solid #ccc;padding:16px;text-align:center;width:320px;}
-      h2{font-size:14px;margin:0 0 8px;}
-      p{font-size:11px;color:#666;margin:4px 0;}
-      </style></head>
+      <html>
+      <head>
+        <title>Label - ${item?.name}</title>
+        <style>
+          @page { size: 50mm 30mm; margin: 0; }
+          body { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
+          .label {
+            width: 50mm; height: 30mm; border: 0.5px solid #ccc;
+            padding: 2mm; box-sizing: border-box;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+          }
+          .name { font-size: 8pt; font-weight: bold; text-align: center; margin: 0 0 1mm; }
+          .code { font-size: 6pt; color: #555; margin: 0; font-family: monospace; text-align: center; }
+          .info { font-size: 5.5pt; color: #333; margin: 0.5mm 0 0; text-align: center; }
+          .exp { color: #c00; font-weight: bold; }
+          img { width: 46mm; height: auto; margin: 1mm 0; }
+        </style>
+      </head>
       <body onload="window.print();window.close()">
-      <div class="box">
-        <h2>${item?.name || ""}</h2>
-        ${item?.category ? `<p>${item.category}${item?.unit ? " · " + item.unit : ""}</p>` : ""}
-        <img src="${dataUrl}" style="width:300px;height:80px;" />
-        ${item?.supplier ? `<p>Supplier: ${item.supplier}</p>` : ""}
-      </div>
-      </body></html>
+        <div class="label">
+          <p class="name">${item?.name || ""}</p>
+          <img src="${dataUrl}" />
+          <p class="code">${item?.code || item?.name || ""}</p>
+          <p class="info">Stok: ${item?.current_stock ?? ""} ${item?.unit || ""}</p>
+          ${item?.expired_date ? `<p class="info exp">Exp: ${item.expired_date}</p>` : ""}
+        </div>
+      </body>
+      </html>
     `);
     win.document.close();
   };
@@ -88,24 +101,27 @@ export default function BarcodeModal({ open, onClose, item }) {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Printer className="w-4 h-4" /> Cetak Barcode
+            <Printer className="w-4 h-4" /> Cetak Label Barcode
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <div className="border rounded-xl p-4 bg-white">
-            <p className="text-sm font-semibold text-center mb-1">{item.name}</p>
-            {item.category && (
-              <p className="text-xs text-muted-foreground text-center mb-3">
-                {item.category}{item.unit ? ` · ${item.unit}` : ""}
+          {/* Preview label 5×3cm */}
+          <div className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-4 bg-white mx-auto" style={{ width: "200px" }}>
+            <p className="text-xs font-bold text-center mb-1 truncate">{item.name}</p>
+            <BarcodeCanvas value={item.code || item.name} id="barcode-main-canvas" />
+            <p className="text-[10px] font-mono text-center text-muted-foreground mt-1">
+              {item.code || item.name}
+            </p>
+            <p className="text-[10px] text-center text-muted-foreground">
+              Stok: <strong>{item.current_stock}</strong> {item.unit}
+            </p>
+            {item.expired_date && (
+              <p className="text-[10px] text-center text-red-600 font-medium">
+                Exp: {item.expired_date}
               </p>
             )}
-            <div id="barcode-canvas-print">
-              <BarcodeCanvas value={item.code || item.name} />
-            </div>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Kode: <span className="font-mono font-bold">{item.code || item.name}</span>
-            </p>
           </div>
+          <p className="text-xs text-muted-foreground text-center">Preview label ukuran 5cm × 3cm</p>
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={onClose}>Tutup</Button>
             <Button className="flex-1 gap-2" onClick={handlePrint}>

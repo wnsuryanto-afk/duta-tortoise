@@ -44,15 +44,48 @@ function getCardBg(tortoise) {
 }
 
 const morphLabels = {
-  normal: "Normal", over_scute: "Over Scute", less_scute: "Less Scute",
-  het_albino: "Het Albino", ivory: "Ivory", albino: "Albino",
+  normal: "Normal", albino: "Albino", ivory: "Ivory",
+  caramel_albino: "Caramel Albino", hypo: "Hypo", golden_greek: "Golden Greek",
+  piebald: "Piebald", genetic_stripe: "Genetic Stripe", high_yellow: "High Yellow",
+  dark: "Dark", paradox: "Paradox", anerythristic: "Anerythristic",
+  axanthic: "Axanthic", melanistic: "Melanistic", mix: "Mix", unknown: "Unknown",
+  // legacy
+  over_scute: "Over Scute", less_scute: "Less Scute", het_albino: "Het Albino",
   wc: "WC", cb: "CB",
 };
 const morphColors = {
-  normal: "bg-muted text-muted-foreground", over_scute: "bg-blue-100 text-blue-700",
-  less_scute: "bg-purple-100 text-purple-700", het_albino: "bg-orange-100 text-orange-700",
-  ivory: "bg-yellow-100 text-yellow-700", albino: "bg-pink-100 text-pink-700",
-  wc: "bg-amber-100 text-amber-800", cb: "bg-teal-100 text-teal-700",
+  normal: "bg-muted text-muted-foreground",
+  albino: "bg-pink-100 text-pink-700",
+  ivory: "bg-yellow-100 text-yellow-700",
+  caramel_albino: "bg-amber-100 text-amber-700",
+  hypo: "bg-lime-100 text-lime-700",
+  golden_greek: "bg-yellow-200 text-yellow-800",
+  piebald: "bg-purple-100 text-purple-700",
+  genetic_stripe: "bg-teal-100 text-teal-700",
+  high_yellow: "bg-orange-100 text-orange-700",
+  dark: "bg-slate-200 text-slate-700",
+  paradox: "bg-indigo-100 text-indigo-700",
+  anerythristic: "bg-gray-200 text-gray-700",
+  axanthic: "bg-blue-100 text-blue-700",
+  melanistic: "bg-gray-900 text-gray-100",
+  mix: "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700",
+  unknown: "bg-muted text-muted-foreground",
+  // legacy
+  over_scute: "bg-blue-100 text-blue-700",
+  less_scute: "bg-purple-100 text-purple-700",
+  het_albino: "bg-orange-100 text-orange-700",
+  wc: "bg-amber-100 text-amber-800",
+  cb: "bg-teal-100 text-teal-700",
+};
+
+const shellTypeConfig = {
+  normal:      { label: "Normal",      color: "bg-green-100 text-green-700" },
+  smooth:      { label: "Smooth",      color: "bg-green-100 text-green-700" },
+  less_scute:  { label: "Less Scute",  color: "bg-blue-100 text-blue-700" },
+  over_scute:  { label: "Over Scute",  color: "bg-blue-100 text-blue-700" },
+  pyramiding:  { label: "Pyramiding",  color: "bg-red-100 text-red-700" },
+  wavy:        { label: "Wavy",        color: "bg-muted text-muted-foreground" },
+  irregular:   { label: "Irregular",   color: "bg-orange-100 text-orange-700" },
 };
 const genderLabels = {
   jantan: "♂ Jantan", betina: "♀ Betina", belum_diketahui: "? Belum Diketahui",
@@ -157,6 +190,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             {tortoise.source && sourceLabel[tortoise.source] && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-bold ${sourceLabel[tortoise.source].color}`}>
                 {sourceLabel[tortoise.source].text}
+              </span>
+            )}
+            {tortoise.shell_type && tortoise.shell_type !== "normal" && shellTypeConfig[tortoise.shell_type] && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${shellTypeConfig[tortoise.shell_type].color}`}>
+                🐚 {shellTypeConfig[tortoise.shell_type].label}
               </span>
             )}
             <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${health.badge}`}>

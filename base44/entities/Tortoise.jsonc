@@ -23,20 +23,37 @@
       "type": "string",
       "enum": [
         "normal",
-        "over_scute",
-        "less_scute",
-        "het_albino",
-        "ivory",
         "albino",
-        "wc",
-        "cb",
+        "ivory",
+        "caramel_albino",
+        "hypo",
+        "golden_greek",
         "piebald",
         "genetic_stripe",
         "high_yellow",
         "dark",
-        "paradox"
+        "paradox",
+        "anerythristic",
+        "axanthic",
+        "melanistic",
+        "mix",
+        "unknown"
       ],
       "default": "normal"
+    },
+    "shell_type": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "less_scute",
+        "over_scute",
+        "pyramiding",
+        "smooth",
+        "wavy",
+        "irregular"
+      ],
+      "default": "normal",
+      "description": "Bentuk/kondisi tempurung"
     },
     "source": {
       "type": "string",
