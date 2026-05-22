@@ -11,10 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus, Pencil, Trash2, PackageOpen, AlertTriangle, CheckCircle2,
-  QrCode, ArrowUpCircle, ArrowDownCircle, History, Printer
+  QrCode, ArrowUpCircle, ArrowDownCircle, History, Printer, X, CheckSquare, Square
 } from "lucide-react";
 import BarcodeModal from "@/components/warehouse/BarcodeModal";
 import PrintAllLabelsDialog from "@/components/warehouse/PrintAllLabelsDialog";
+import LabelPrinterModal from "@/components/warehouse/LabelPrinterModal";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -70,6 +71,17 @@ export default function WarehousePage() {
   const [barcodeItem, setBarcodeItem] = useState(null);
   const [showPrintAll, setShowPrintAll] = useState(false);
   const [printAfterSave, setPrintAfterSave] = useState(null); // item to print after save
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showLabelPrinter, setShowLabelPrinter] = useState(false);
+
+  const toggleSelect = (id) => setSelectedIds(prev => {
+    const s = new Set(prev);
+    s.has(id) ? s.delete(id) : s.add(id);
+    return s;
+  });
+  const selectAll = () => setSelectedIds(new Set(filtered.map(i => i.id)));
+  const clearSelection = () => setSelectedIds(new Set());
+  const selectedItems = filtered.filter(i => selectedIds.has(i.id));
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
@@ -165,7 +177,7 @@ export default function WarehousePage() {
           <Button variant="outline" onClick={() => setShowScanner(true)} className="gap-2">
             <QrCode className="w-4 h-4" /> Scan Barcode
           </Button>
-          <Button variant="outline" onClick={() => setShowPrintAll(true)} className="gap-2">
+          <Button variant="outline" onClick={() => { selectAll(); setShowLabelPrinter(true); }} className="gap-2">
             <Printer className="w-4 h-4" /> Print Semua Label
           </Button>
           {canEdit && (

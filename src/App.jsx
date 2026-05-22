@@ -32,6 +32,9 @@ import EnclosurePage from '@/pages/EnclosurePage';
 import WaitingListPage from '@/pages/WaitingListPage';
 import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
+import NotificationsPage from '@/pages/NotificationsPage';
+import CCTVPage from '@/pages/CCTVPage';
+import MarketplacePage from '@/pages/MarketplacePage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -80,6 +83,9 @@ const AuthenticatedApp = () => {
         <Route path="/waiting-list" element={<WaitingListPage />} />
         <Route path="/sales-report" element={<SalesReportPage />} />
         <Route path="/hr" element={<HRPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/cctv" element={<CCTVPage />} />
+        <Route path="/marketplace" element={<MarketplacePage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

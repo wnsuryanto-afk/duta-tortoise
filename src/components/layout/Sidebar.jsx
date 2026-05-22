@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
-  Grid3x3, ListOrdered, PieChart, UserCheck
+  Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -57,11 +57,14 @@ const NAV_GROUPS = [
     items: [
       { path: "/info",            section: "info",            label: "Pusat Informasi",  icon: BookOpen },
       { path: "/feedback",        section: "feedback",        label: "Kritik & Saran",   icon: MessageSquare },
+      { path: "/notifications",   section: "notifications",   label: "Notifikasi",       icon: Bell },
     ],
   },
   {
     label: "Pengaturan",
     items: [
+      { path: "/cctv",            section: "cctv",            label: "Monitoring CCTV",  icon: Video },
+      { path: "/marketplace",     section: "marketplace",     label: "Marketplace",      icon: ShoppingBag },
       { path: "/users",           section: "users",           label: "Manajemen User",  icon: Users },
     ],
   },

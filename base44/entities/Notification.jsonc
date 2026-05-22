@@ -1,0 +1,72 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "recipient_email": {
+      "type": "string",
+      "description": "Email penerima notifikasi"
+    },
+    "recipient_role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "admin",
+        "manajer",
+        "keeper",
+        "semua"
+      ],
+      "description": "Role penerima"
+    },
+    "title": {
+      "type": "string",
+      "description": "Judul notifikasi"
+    },
+    "message": {
+      "type": "string",
+      "description": "Isi pesan notifikasi"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "alert",
+        "success"
+      ],
+      "default": "info"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "stok",
+        "kesehatan",
+        "breeding",
+        "keuangan",
+        "absensi",
+        "sistem",
+        "lainnya"
+      ]
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "read_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "action_url": {
+      "type": "string",
+      "description": "Link halaman terkait"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "recipient_email",
+    "title",
+    "message"
+  ]
+}

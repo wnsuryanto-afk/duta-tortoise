@@ -1,0 +1,47 @@
+{
+  "name": "MarketplaceConfig",
+  "type": "object",
+  "properties": {
+    "platform": {
+      "type": "string",
+      "enum": [
+        "tokopedia",
+        "shopee"
+      ],
+      "description": "Platform marketplace"
+    },
+    "shop_name": {
+      "type": "string",
+      "description": "Nama toko di platform"
+    },
+    "shop_id": {
+      "type": "string",
+      "description": "ID toko di platform"
+    },
+    "api_key": {
+      "type": "string",
+      "description": "API Key dari platform"
+    },
+    "api_secret": {
+      "type": "string",
+      "description": "API Secret"
+    },
+    "access_token": {
+      "type": "string"
+    },
+    "is_connected": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_sync": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "platform"
+  ]
+}

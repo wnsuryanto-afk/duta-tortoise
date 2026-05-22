@@ -19,10 +19,10 @@ export const ROLE_COLORS = {
 };
 
 export const NAV_ACCESS = {
-  owner:    ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "users", "sop", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
-  admin:    ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "users", "sop", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
-  manajer:  ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "sop", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon"],
-  keeper:   ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "sop", "reminders", "feed-stock", "warehouse", "info", "treatment", "tutorial", "feedback", "kasbon"],
+  owner:    ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "users", "sop", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications", "cctv", "marketplace"],
+  admin:    ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "users", "sop", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications", "cctv", "marketplace"],
+  manajer:  ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "sop", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications", "cctv"],
+  keeper:   ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "sop", "reminders", "feed-stock", "warehouse", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications"],
   investor: ["dashboard", "tortoise", "breeding", "family-tree", "health", "finance", "breeding-report", "sales-report", "info"],
 };
 

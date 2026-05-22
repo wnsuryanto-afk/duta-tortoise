@@ -10,6 +10,7 @@ import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
@@ -39,9 +40,12 @@ export default function AppLayout() {
 
       <main className={`lg:ml-64 min-h-screen ${isViewingAs ? "mt-10" : ""}`}>
         <div className="p-4 pt-16 lg:pt-6 lg:p-8 max-w-7xl mx-auto">
-          {/* Owner "Lihat Sebagai" quick button */}
-          {isOwner && !isViewingAs && (
-            <div className="flex justify-end mb-4">
+          {/* Top bar: bell + owner view-as button */}
+          <div className="flex justify-end items-center gap-2 mb-4">
+            <div className="flex items-center gap-1.5 bg-sidebar rounded-xl px-2 py-1 shadow-sm">
+              <NotificationBell />
+            </div>
+            {isOwner && !isViewingAs && (
               <Button
                 variant="outline"
                 size="sm"
@@ -50,8 +54,8 @@ export default function AppLayout() {
               >
                 <Eye className="w-3.5 h-3.5" /> Lihat Sebagai...
               </Button>
-            </div>
-          )}
+            )}
+          </div>
           <Outlet />
         </div>
       </main>
