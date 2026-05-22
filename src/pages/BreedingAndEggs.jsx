@@ -199,6 +199,10 @@ export default function BreedingAndEggs() {
                   return daysSinceStart + 1;
                 };
 
+                // Progress bar calculation (0-105 days incubation)
+                const incubationDay = b.egg_laying_date ? differenceInDays(today, new Date(b.egg_laying_date)) : 0;
+                const incubationProgress = Math.min(100, Math.max(0, (incubationDay / 105) * 100));
+
                 const isMenetas = b.status === "menetas";
                 const isGagal = b.status === "gagal";
                 const isOverdue = active && daysToEnd !== null && daysToEnd < 0;
@@ -340,6 +344,37 @@ export default function BreedingAndEggs() {
                         </div>
                       )}
                     </div>
+                    {/* Progress Bar Inkubasi */}
+                    {b.status === "inkubasi" && b.egg_laying_date && (
+                      <div className="mt-4 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Hari ke-{incubationDay} dari 105 hari</span>
+                          <span className="font-semibold">{Math.round(incubationProgress)}%</span>
+                        </div>
+                        <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                          {/* Gradient background */}
+                          <div 
+                            className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${incubationProgress}%`,
+                              background: incubationDay < 80 
+                                ? 'linear-gradient(90deg, #22c55e 0%, #84cc16 100%)' 
+                                : incubationDay < 95
+                                ? 'linear-gradient(90deg, #eab308 0%, #f59e0b 100%)'
+                                : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                            }}
+                          />
+                          {/* Marker range menetas (80-105 hari) */}
+                          <div className="absolute top-0 right-[19%] h-full w-0.5 bg-red-600 opacity-50" title="Mulai range menetas (hari 80)" />
+                          <div className="absolute top-0 right-0 h-full w-0.5 bg-red-600 opacity-50" title="Akhir range menetas (hari 105)" />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>Bertelur</span>
+                          <span className="text-red-600 font-semibold">Menetas 80-105hr</span>
+                        </div>
+                      </div>
+                    )}
+
                     {b.notes && <p className="text-xs text-muted-foreground mt-3 line-clamp-2">{b.notes}</p>}
                   </Card>
                 );
@@ -368,6 +403,10 @@ export default function BreedingAndEggs() {
                 const daysToEnd = endDate ? differenceInDays(endDate, today) : null;
                 const inHatchRange = daysToStart !== null && daysToEnd !== null && daysToStart <= 0 && daysToEnd >= 0;
                 const dayInRange = inHatchRange ? differenceInDays(today, startDate) + 1 : null;
+
+                // Progress bar calculation (0-105 days incubation)
+                const incubationDay = b.egg_laying_date ? differenceInDays(today, new Date(b.egg_laying_date)) : 0;
+                const incubationProgress = Math.min(100, Math.max(0, (incubationDay / 105) * 100));
 
                 return (
                   <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow ${
@@ -408,14 +447,45 @@ export default function BreedingAndEggs() {
                           </span>
                         </div>
                       )}
-                      {inHatchRange && dayInRange && (
-                        <div className="p-2 rounded-lg bg-red-50 border border-red-200">
-                          <p className="text-red-700 font-bold">🔴 Hari ke-{dayInRange} dari masa penetasan</p>
+                      
+                      {/* Progress Bar Inkubasi */}
+                      {b.status === "inkubasi" && (
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Hari ke-{incubationDay}</span>
+                            <span className="font-semibold">{Math.round(incubationProgress)}%</span>
+                          </div>
+                          <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${incubationProgress}%`,
+                                background: incubationDay < 80 
+                                  ? 'linear-gradient(90deg, #22c55e 0%, #84cc16 100%)' 
+                                  : incubationDay < 95
+                                  ? 'linear-gradient(90deg, #eab308 0%, #f59e0b 100%)'
+                                  : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                              }}
+                            />
+                            {/* Marker range menetas */}
+                            <div className="absolute top-0 right-[19%] h-full w-0.5 bg-red-600 opacity-50" />
+                            <div className="absolute top-0 right-0 h-full w-0.5 bg-red-600 opacity-50" />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>Start</span>
+                            <span className="text-red-600 font-semibold">Menetas 80-105hr</span>
+                          </div>
                         </div>
                       )}
-                      {daysToStart !== null && daysToStart > 0 && (
-                        <div className="p-2 rounded-lg bg-green-50 border border-green-200">
-                          <p className="text-green-700 font-semibold">🥚 {daysToStart} hari lagi mulai menetas</p>
+
+                      {inHatchRange && dayInRange && (
+                        <div className="p-2 rounded-lg bg-red-50 border border-red-200 animate-pulse">
+                          <p className="text-red-700 font-bold">🔴 DALAM MASA PENETASAN! Hari ke-{dayInRange}</p>
+                        </div>
+                      )}
+                      {daysToStart !== null && daysToStart > 0 && daysToStart <= 7 && (
+                        <div className="p-2 rounded-lg bg-yellow-50 border border-yellow-200">
+                          <p className="text-yellow-700 font-semibold">⏳ {daysToStart} hari lagi masuk range menetas</p>
                         </div>
                       )}
                       {daysToEnd !== null && daysToEnd < 0 && (

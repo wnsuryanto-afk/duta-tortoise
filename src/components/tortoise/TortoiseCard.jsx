@@ -31,9 +31,10 @@ const statusColors = {
 };
 
 const sourceLabel = {
-  hasil_sendiri: { text: "CBB", color: "bg-green-100 text-green-800 border-green-300" },
-  import:        { text: "CB",  color: "bg-blue-100 text-blue-800 border-blue-300" },
-  beli_lokal:    { text: "LB",  color: "bg-amber-100 text-amber-800 border-amber-300" },
+  hasil_sendiri: { text: "🐣 CBB", color: "bg-green-100 text-green-800 border-green-300", title: "Captive Bred & Born" },
+  import:        { text: "📦 CB",  color: "bg-blue-100 text-blue-800 border-blue-300", title: "Captive Born (Import)" },
+  beli_lokal:    { text: "🌍 WC",  color: "bg-amber-100 text-amber-800 border-amber-300", title: "Wild Caught / Lokal" },
+  tidak_diketahui: { text: "❓ Unknown", color: "bg-gray-100 text-gray-700 border-gray-300", title: "Asal Tidak Diketahui" },
 };
 
 // Background warna untuk card berdasarkan kondisi
@@ -152,23 +153,30 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
     <>
     <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border} ${cardBg}`}>
       <div className="flex items-start gap-3">
-        {/* Foto Thumbnail */}
+        {/* Foto Thumbnail - DIPERBESAR */}
         <button
-          className="w-24 h-24 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border hover:opacity-80 transition-opacity relative"
+          className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-primary/10 hover:shadow-lg hover:scale-105 transition-all duration-200 relative group"
           onClick={() => photos.length > 0 && setLightboxIdx(0)}
           type="button"
         >
           {thumbnailUrl ? (
             <>
-              <img src={thumbnailUrl} alt={tortoise.name} className="w-24 h-24 object-cover" />
+              <img src={thumbnailUrl} alt={tortoise.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" loading="lazy" />
               {photos.length > 1 && (
-                <span className="absolute bottom-0 right-0 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded-tl-md">
+                <span className="absolute bottom-0 right-0 bg-black/60 text-white text-xs px-2 py-1 rounded-tl-md font-semibold">
                   +{photos.length - 1}
                 </span>
               )}
             </>
           ) : (
-            <Shell className="w-8 h-8 text-primary/40" />
+            <div className={`w-full h-full flex items-center justify-center ${
+              tortoise.morph && morphColors[tortoise.morph] ? morphColors[tortoise.morph] : "bg-primary/10"
+            }`}>
+              <div className="text-center">
+                <Shell className="w-16 h-16 text-primary/60 mx-auto mb-1" />
+                <span className="text-xs font-medium text-primary/80">{tortoise.name?.charAt(0)}</span>
+              </div>
+            </div>
           )}
         </button>
 
@@ -193,7 +201,10 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
               </span>
             )}
             {tortoise.source && sourceLabel[tortoise.source] && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-bold ${sourceLabel[tortoise.source].color}`}>
+              <span 
+                title={sourceLabel[tortoise.source].title}
+                className={`text-[10px] px-2 py-1 rounded-full border font-bold ${sourceLabel[tortoise.source].color}`}
+              >
                 {sourceLabel[tortoise.source].text}
               </span>
             )}

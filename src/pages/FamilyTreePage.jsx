@@ -7,16 +7,52 @@ import { Badge } from "@/components/ui/badge";
 import { Shell, Search, GitBranch, ChevronDown, ChevronRight, Baby, AlertCircle } from "lucide-react";
 
 const SOURCE_LABEL = {
-  hasil_sendiri: { text: "CBB", title: "Captive Bred & Born", color: "bg-green-100 text-green-800 border-green-300" },
-  import: { text: "CB", title: "Captive Born (Import)", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  beli_lokal: { text: "WC/LB", title: "Lokal / Tidak Jelas", color: "bg-amber-100 text-amber-800 border-amber-300" },
-  tidak_diketahui: { text: "?", title: "Tidak Diketahui", color: "bg-gray-100 text-gray-700 border-gray-300" },
+  hasil_sendiri: { text: "🐣 CBB", title: "Captive Bred & Born", color: "bg-green-100 text-green-800 border-green-300" },
+  import: { text: "📦 CB", title: "Captive Born (Import)", color: "bg-blue-100 text-blue-800 border-blue-300" },
+  beli_lokal: { text: "🌍 WC", title: "Wild Caught / Lokal", color: "bg-amber-100 text-amber-800 border-amber-300" },
+  tidak_diketahui: { text: "❓ Unknown", title: "Tidak Diketahui", color: "bg-gray-100 text-gray-700 border-gray-300" },
 };
+
+// Fungsi untuk cek apakah tortoise punya silsilah lengkap
+function hasCompletePedigree(tortoise, tortoiseMap) {
+  if (tortoise.source !== "hasil_sendiri") return false;
+  if (!tortoise.parent_male || !tortoise.parent_female) return false;
+  // Cek apakah parent ada di database (bukan hanya nama bebas)
+  const father = tortoiseMap[tortoise.parent_male];
+  const mother = tortoiseMap[tortoise.parent_female];
+  return !!(father && mother);
+}
+
+// Fungsi untuk mendapatkan badge silsilah
+function getPedigreeBadge(tortoise, tortoiseMap) {
+  if (tortoise.source === "hasil_sendiri") {
+    if (hasCompletePedigree(tortoise, tortoiseMap)) {
+      return { text: "🐣 CBB", color: "bg-green-600 text-white border-green-700", title: "Captive Bred & Born - Silsilah Lengkap" };
+    } else {
+      return { text: "🌱 CB", color: "bg-yellow-500 text-white border-yellow-600", title: "Captive Born - Parent Tidak Lengkap" };
+    }
+  } else if (tortoise.source === "beli_lokal") {
+    return { text: "🌍 WC", color: "bg-orange-500 text-white border-orange-600", title: "Wild Caught" };
+  } else if (tortoise.source === "import") {
+    return { text: "📦 Import", color: "bg-blue-500 text-white border-blue-600", title: "Import" };
+  } else {
+    return { text: "❓ Unknown", color: "bg-gray-400 text-white border-gray-500", title: "Asal Tidak Diketahui" };
+  }
+}
 
 function SourceBadge({ source }) {
   const s = SOURCE_LABEL[source] || SOURCE_LABEL.tidak_diketahui;
   return (
     <span title={s.title} className={`text-[10px] px-1.5 py-0.5 rounded-md border font-bold ${s.color}`}>{s.text}</span>
+  );
+}
+
+function PedigreeBadge({ tortoise, tortoiseMap }) {
+  const badge = getPedigreeBadge(tortoise, tortoiseMap);
+  return (
+    <span title={badge.title} className={`text-[10px] px-2 py-1 rounded-full border font-bold ${badge.color}`}>
+      {badge.text}
+    </span>
   );
 }
 
@@ -33,6 +69,25 @@ const GENDER_COLOR = {
   belum_diketahui: "bg-gray-100 text-gray-700",
 };
 const GENDER_LABEL = { jantan: "♂", betina: "♀", belum_diketahui: "?" };
+
+const morphColors = {
+  normal: "bg-muted text-muted-foreground",
+  albino: "bg-pink-100 text-pink-700",
+  ivory: "bg-yellow-100 text-yellow-700",
+  caramel_albino: "bg-amber-100 text-amber-700",
+  hypo: "bg-lime-100 text-lime-700",
+  golden_greek: "bg-yellow-200 text-yellow-800",
+  piebald: "bg-purple-100 text-purple-700",
+  genetic_stripe: "bg-teal-100 text-teal-700",
+  high_yellow: "bg-orange-100 text-orange-700",
+  dark: "bg-slate-200 text-slate-700",
+  paradox: "bg-indigo-100 text-indigo-700",
+  anerythristic: "bg-gray-200 text-gray-700",
+  axanthic: "bg-blue-100 text-blue-700",
+  melanistic: "bg-gray-900 text-gray-100",
+  mix: "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700",
+  unknown: "bg-muted text-muted-foreground",
+};
 
 function TortoiseNode({ tortoise, tortoiseMap, depth = 0, maxDepth = 3, onSelect }) {
   const [expanded, setExpanded] = useState(depth < 2);
@@ -132,20 +187,18 @@ export default function FamilyTreePage() {
     return ids;
   }, [tortoises]);
 
-  // Hanya tampilkan kura-kura CBB (hasil_sendiri) di panel kiri
-  const cbbTortoises = useMemo(() =>
-    tortoises.filter(t => t.source === "hasil_sendiri"),
-  [tortoises]);
+  // Tampilkan semua kura-kura di panel kiri, tapi tandai yang punya silsilah
+  const allTortoises = tortoises;
 
   const filteredList = useMemo(() => {
     const q = search.toLowerCase();
-    return cbbTortoises
+    return allTortoises
       .filter((t) => t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q))
-      .slice(0, 60);
-  }, [cbbTortoises, search]);
+      .slice(0, 80);
+  }, [allTortoises, search]);
 
-  // Untuk panel kiri: tampilkan semua tortoise tapi tandai CBB
   const selectedTortoise = selected ? tortoiseMap[selected] : null;
+  const hasPedigree = selectedTortoise ? hasCompletePedigree(selectedTortoise, tortoiseMap) : false;
 
   const children = useMemo(() =>
     selected ? tortoises.filter((t) => t.parent_male === selected || t.parent_female === selected) : []
@@ -157,12 +210,11 @@ export default function FamilyTreePage() {
         <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
           <GitBranch className="w-6 h-6 text-primary" /> Silsilah Kura-Kura
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Pohon keturunan CBB (Captive Bred & Born) — hanya tersedia untuk kura-kura hasil sendiri</p>
-        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-          <span className="bg-green-100 text-green-800 border border-green-300 px-1.5 py-0.5 rounded font-bold">CBB</span> Hasil Sendiri (Captive Bred & Born)
-          <span className="bg-blue-100 text-blue-800 border border-blue-300 px-1.5 py-0.5 rounded font-bold ml-2">CB</span> Import (Captive Born)
-          <span className="bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded font-bold ml-2">WC/LB</span> Beli Lokal
-        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          🐣 <strong>CBB</strong> (Captive Bred & Born) = hasil_sendiri + parent lengkap → silsilah 3 generasi<br/>
+          🌱 <strong>CB</strong> (Captive Born) = hasil_sendiri tapi parent tidak lengkap<br/>
+          🌍 <strong>WC</strong> (Wild Caught) = beli_lokal | 📦 <strong>Import</strong> | ❓ <strong>Unknown</strong>
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -185,10 +237,12 @@ export default function FamilyTreePage() {
                   className={`w-full text-left p-2.5 rounded-lg border transition-all flex items-center gap-2.5 ${selected === t.id ? "bg-primary/10 border-primary/30" : "hover:bg-muted/50"}`}
                 >
                   {t.photo_url ? (
-                    <img src={t.photo_url} alt={t.name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                    <img src={t.photo_url} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-primary/20" />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <Shell className="w-4 h-4 text-muted-foreground" />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      t.morph && morphColors[t.morph] ? morphColors[t.morph] : "bg-muted"
+                    }`}>
+                      <Shell className="w-5 h-5 text-muted-foreground" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
@@ -197,11 +251,9 @@ export default function FamilyTreePage() {
                       <span className={`text-[10px] px-1.5 rounded-md ${GENDER_COLOR[t.gender] || GENDER_COLOR.belum_diketahui}`}>
                         {GENDER_LABEL[t.gender]}
                       </span>
+                      <PedigreeBadge tortoise={t} tortoiseMap={tortoiseMap} />
                       {parentIds.has(t.id) && (
                         <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 rounded-md">Induk</span>
-                      )}
-                      {(t.parent_male || t.parent_female) && (
-                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 rounded-md">Ada Ortu</span>
                       )}
                     </div>
                   </div>
@@ -217,17 +269,37 @@ export default function FamilyTreePage() {
         {/* Pohon silsilah */}
         <div className="lg:col-span-2">
           {selectedTortoise ? (
-            selectedTortoise.source !== "hasil_sendiri" ? (
+            !hasPedigree ? (
               <Card className="p-8 flex flex-col items-center justify-center text-center gap-4">
                 <AlertCircle className="w-12 h-12 text-amber-400" />
                 <div>
-                  <h3 className="font-semibold text-base mb-1">Silsilah Tidak Tersedia</h3>
-                  <p className="text-sm text-muted-foreground">
-                    <strong>{selectedTortoise.name}</strong> bukan kura-kura CBB (Captive Bred & Born).
-                    Silsilah hanya tersedia untuk kura-kura dengan asal <strong>Hasil Sendiri</strong>.
+                  <h3 className="font-semibold text-base mb-2">ℹ️ Silsilah Belum Tersedia</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    <strong>{selectedTortoise.name}</strong> belum memiliki silsilah lengkap.
                   </p>
-                  <div className="mt-3 flex justify-center">
-                    <SourceBadge source={selectedTortoise.source} />
+                  {selectedTortoise.source === "hasil_sendiri" && (
+                    <p className="text-xs text-muted-foreground bg-yellow-50 border border-yellow-200 p-2 rounded">
+                      🌱 Kura-kura ini hasil penangkaran sendiri, tapi data induk belum lengkap. 
+                      Silakan update data parent_male dan parent_female di profil kura-kura.
+                    </p>
+                  )}
+                  {selectedTortoise.source === "beli_lokal" && (
+                    <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 p-2 rounded">
+                      🌍 Silsilah tidak tersedia. Kura-kura ini bukan hasil penangkaran sendiri (Beli Lokal).
+                    </p>
+                  )}
+                  {selectedTortoise.source === "import" && (
+                    <p className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 p-2 rounded">
+                      📦 Silsilah tidak tersedia. Kura-kura ini hasil import.
+                    </p>
+                  )}
+                  {selectedTortoise.source === "tidak_diketahui" && (
+                    <p className="text-xs text-muted-foreground bg-gray-50 border border-gray-200 p-2 rounded">
+                      ❓ Silsilah tidak tersedia. Asal usul tidak diketahui.
+                    </p>
+                  )}
+                  <div className="mt-3 flex justify-center gap-2">
+                    <PedigreeBadge tortoise={selectedTortoise} tortoiseMap={tortoiseMap} />
                   </div>
                 </div>
               </Card>
@@ -236,7 +308,7 @@ export default function FamilyTreePage() {
               <div className="flex items-center gap-2 mb-4">
                 <GitBranch className="w-5 h-5 text-primary" />
                 <h2 className="font-semibold">Silsilah: {selectedTortoise.name}</h2>
-                <SourceBadge source={selectedTortoise.source} />
+                <PedigreeBadge tortoise={selectedTortoise} tortoiseMap={tortoiseMap} />
               </div>
               <TortoiseNode
                 tortoise={selectedTortoise}
@@ -279,8 +351,8 @@ export default function FamilyTreePage() {
           ) : (
             <Card className="h-64 flex flex-col items-center justify-center text-muted-foreground gap-3">
               <GitBranch className="w-12 h-12 opacity-20" />
-              <p className="text-sm">Pilih kura-kura CBB dari daftar untuk melihat silsilahnya</p>
-              <p className="text-xs opacity-60">Hanya kura-kura hasil sendiri (CBB) yang memiliki silsilah</p>
+              <p className="text-sm">Pilih kura-kura dari daftar untuk melihat silsilahnya</p>
+              <p className="text-xs opacity-60">🐣 CBB = hasil_sendiri + parent lengkap (kedua induk diketahui)</p>
             </Card>
           )}
         </div>
