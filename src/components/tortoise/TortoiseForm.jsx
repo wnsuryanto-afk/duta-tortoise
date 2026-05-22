@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, AlertTriangle, Video } from "lucide-react";
+import { Loader2, AlertTriangle, Video, Skull } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
 import IncompleteBanner from "@/components/common/IncompleteBanner";
 import { getMissingFields } from "@/lib/incompleteChecks";
+import DeathRecordDialog from "./DeathRecordDialog";
 
 const MORPHS = [
   { value: "normal",         label: "Normal" },
@@ -59,6 +60,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [videoError, setVideoError] = useState("");
   const [enclosureOptions, setEnclosureOptions] = useState([]);
+  const [showDeathDialog, setShowDeathDialog] = useState(false);
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "belum_diketahui", morph: "normal",
     source: "tidak_diketahui",
@@ -291,16 +293,30 @@ export default function TortoiseForm({ open, onClose, editData }) {
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aktif">Aktif</SelectItem>
-                  <SelectItem value="baby">🐣 Baby (&lt;10cm)</SelectItem>
-                  <SelectItem value="sakit">Sakit</SelectItem>
-                  <SelectItem value="terjual">Terjual</SelectItem>
-                  <SelectItem value="mati">Mati</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={form.status} onValueChange={(v) => set("status", v)} className="flex-1">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="aktif">Aktif</SelectItem>
+                    <SelectItem value="baby">🐣 Baby (&lt;10cm)</SelectItem>
+                    <SelectItem value="sakit">Sakit</SelectItem>
+                    <SelectItem value="terjual">Terjual</SelectItem>
+                    <SelectItem value="mati">Mati</SelectItem>
+                  </SelectContent>
+                </Select>
+                {editData?.id && form.status !== "mati" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowDeathDialog(true)}
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                    title="Catat Kematian"
+                  >
+                    <Skull className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -422,6 +438,11 @@ export default function TortoiseForm({ open, onClose, editData }) {
           </div>
         </form>
       </DialogContent>
+      <DeathRecordDialog
+        tortoise={editData}
+        open={showDeathDialog}
+        onOpenChange={setShowDeathDialog}
+      />
     </Dialog>
   );
 }

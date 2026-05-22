@@ -4,7 +4,7 @@ import {
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
   Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag,
-  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle
+  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle, Skull
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -65,6 +65,7 @@ const NAV_GROUPS = [
     label: "Audit",
     items: [
       { path: "/enclosure-audit", section: "enclosure-audit", label: "Audit Kandang",    icon: ClipboardCheck },
+      { path: "/death-records", section: "death-records", label: "Catatan Kematian", icon: Skull },
     ],
   },
   {

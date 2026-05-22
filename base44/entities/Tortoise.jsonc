@@ -139,6 +139,11 @@
     },
     "parent_female": {
       "type": "string"
+    },
+    "is_archived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah data sudah diarsipkan"
     }
   },
   "required": [

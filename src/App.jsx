@@ -44,6 +44,7 @@ import HelpCenterPage from '@/pages/HelpCenterPage';
 import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
 import EditProfilePage from '@/pages/EditProfilePage.jsx';
 import IncompleteDataPage from '@/pages/IncompleteDataPage';
+import DeathRecordsPage from '@/pages/DeathRecordsPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -100,6 +101,7 @@ const AuthenticatedApp = () => {
         <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
         <Route path="/crm" element={<CRMPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
+        <Route path="/death-records" element={<DeathRecordsPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

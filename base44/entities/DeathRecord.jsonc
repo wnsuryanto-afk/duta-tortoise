@@ -1,0 +1,75 @@
+{
+  "name": "DeathRecord",
+  "type": "object",
+  "properties": {
+    "tortoise_id": {
+      "type": "string",
+      "description": "ID tortoise yang mati"
+    },
+    "tortoise_name": {
+      "type": "string",
+      "description": "Nama tortoise"
+    },
+    "death_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kematian"
+    },
+    "cause_of_death": {
+      "type": "string",
+      "enum": [
+        "sakit",
+        "tua",
+        "kecelakaan",
+        "predator",
+        "tidak_diketahui",
+        "lainnya"
+      ],
+      "default": "tidak_diketahui",
+      "description": "Penyebab kematian"
+    },
+    "cause_detail": {
+      "type": "string",
+      "description": "Deskripsi detail penyebab kematian"
+    },
+    "last_health_status": {
+      "type": "string",
+      "description": "Kondisi kesehatan sebelum mati"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto sebelum/saat mati"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "Video opsional"
+    },
+    "buried_location": {
+      "type": "string",
+      "description": "Lokasi pemakaman"
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Siapa yang mencatat"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "necropsy_done": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah dibedah/autopsi"
+    },
+    "necropsy_findings": {
+      "type": "string",
+      "description": "Hasil autopsi jika ada"
+    }
+  },
+  "required": [
+    "tortoise_id",
+    "tortoise_name",
+    "death_date",
+    "cause_of_death",
+    "recorded_by"
+  ]
+}
