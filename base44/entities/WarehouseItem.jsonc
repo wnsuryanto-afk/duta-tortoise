@@ -3,12 +3,10 @@
   "type": "object",
   "properties": {
     "name": {
-      "type": "string",
-      "description": "Nama barang"
+      "type": "string"
     },
     "code": {
-      "type": "string",
-      "description": "Kode barang / barcode"
+      "type": "string"
     },
     "category": {
       "type": "string",
@@ -19,8 +17,7 @@
         "alat_kerja",
         "lainnya"
       ],
-      "default": "lainnya",
-      "description": "Kategori barang"
+      "default": "lainnya"
     },
     "unit": {
       "type": "string",
@@ -37,55 +34,47 @@
         "lusin",
         "box"
       ],
-      "default": "pcs",
-      "description": "Satuan"
+      "default": "pcs"
     },
     "current_stock": {
       "type": "number",
-      "default": 0,
-      "description": "Stok saat ini"
+      "default": 0
     },
     "minimum_stock": {
       "type": "number",
-      "default": 1,
-      "description": "Stok minimum"
+      "default": 1
     },
     "purchase_price": {
       "type": "number",
-      "default": 0,
-      "description": "Harga beli per satuan (Rp)"
+      "default": 0
     },
     "supplier": {
-      "type": "string",
-      "description": "Nama supplier/toko"
+      "type": "string"
     },
     "location": {
-      "type": "string",
-      "description": "Lokasi penyimpanan di gudang"
+      "type": "string"
     },
     "expired_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal kadaluarsa (penting untuk obat/vitamin)"
+      "format": "date"
     },
     "batch_number": {
-      "type": "string",
-      "description": "Nomor batch produk"
+      "type": "string"
     },
     "restock_reminder_days": {
       "type": "number",
-      "default": 7,
-      "description": "Ingatkan sekian hari sebelum stok habis"
+      "default": 7
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan"
+      "type": "string"
     }
   },
   "required": [
     "name",
     "unit",
     "current_stock",
-    "minimum_stock"
+    "minimum_stock",
+    "category",
+    "purchase_price"
   ]
 }

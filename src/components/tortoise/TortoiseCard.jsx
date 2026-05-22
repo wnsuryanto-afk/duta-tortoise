@@ -11,6 +11,9 @@ import EggHistoryPanel from "./EggHistoryPanel";
 import SizeHistoryPanel from "./SizeHistoryPanel";
 import GrowthTimeline from "./GrowthTimeline";
 import TortoiseQRCode from "./TortoiseQRCode";
+import IncompleteBadge from "@/components/common/IncompleteBadge";
+import { getMissingFields } from "@/lib/incompleteChecks";
+import TortoiseCompletenessPanel from "./TortoiseCompletenessPanel";
 
 const healthConfig = {
   critical: { border: "border-l-4 border-l-red-500",    dot: "bg-red-500",    label: "Butuh Perawatan",  badge: "bg-red-100 text-red-700" },
@@ -143,6 +146,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
   };
 
   const cardBg = getCardBg(tortoise);
+  const missingFields = getMissingFields("tortoise", tortoise);
 
   return (
     <>
@@ -175,6 +179,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             </h3>
             {tortoise.code && <span className="text-xs text-muted-foreground">({tortoise.code})</span>}
             {tortoise.is_proven && <ProvenBadge gender={tortoise.gender} />}
+            <IncompleteBadge missingFields={missingFields} onEdit={onEdit ? () => onEdit(tortoise) : undefined} />
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -257,6 +262,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
           </div>
         )}
       </div>
+
+      {/* Completeness Panel */}
+      {missingFields.length > 0 && (
+        <TortoiseCompletenessPanel tortoise={tortoise} onEdit={onEdit ? () => onEdit(tortoise) : undefined} />
+      )}
     </Card>
 
     {/* Lightbox multi-foto */}

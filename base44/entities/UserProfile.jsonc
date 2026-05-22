@@ -3,62 +3,52 @@
   "type": "object",
   "properties": {
     "user_id": {
-      "type": "string",
-      "description": "ID user (dari base44 auth)"
+      "type": "string"
     },
     "user_email": {
-      "type": "string",
-      "description": "Email user"
+      "type": "string"
     },
     "full_name": {
-      "type": "string",
-      "description": "Nama lengkap"
+      "type": "string"
     },
     "phone": {
-      "type": "string",
-      "description": "Nomor telepon"
+      "type": "string"
     },
     "address": {
-      "type": "string",
-      "description": "Alamat"
+      "type": "string"
     },
     "photo_url": {
-      "type": "string",
-      "description": "URL foto profil"
+      "type": "string"
     },
     "id_number": {
-      "type": "string",
-      "description": "Nomor KTP"
+      "type": "string"
     },
     "join_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal mulai bergabung"
+      "format": "date"
     },
     "emergency_contact": {
-      "type": "string",
-      "description": "Kontak darurat"
+      "type": "string"
     },
     "bank_name": {
-      "type": "string",
-      "description": "Nama bank untuk transfer gaji"
+      "type": "string"
     },
     "bank_account_number": {
-      "type": "string",
-      "description": "Nomor rekening bank"
+      "type": "string"
     },
     "bank_account_name": {
-      "type": "string",
-      "description": "Nama pemilik rekening"
+      "type": "string"
     },
     "is_complete": {
       "type": "boolean",
-      "default": false,
-      "description": "Data pribadi sudah diisi"
+      "default": false
     }
   },
   "required": [
     "user_id",
-    "user_email"
+    "user_email",
+    "full_name",
+    "phone",
+    "join_date"
   ]
 }

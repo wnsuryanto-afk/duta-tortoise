@@ -3,41 +3,32 @@
   "type": "object",
   "properties": {
     "tortoise_id": {
-      "type": "string",
-      "description": "ID tortoise yang dijual"
+      "type": "string"
     },
     "tortoise_name": {
-      "type": "string",
-      "description": "Nama/kode tortoise"
+      "type": "string"
     },
     "buyer_name": {
-      "type": "string",
-      "description": "Nama pembeli"
+      "type": "string"
     },
     "buyer_phone": {
-      "type": "string",
-      "description": "Nomor telepon pembeli"
+      "type": "string"
     },
     "buyer_address": {
-      "type": "string",
-      "description": "Alamat pembeli"
+      "type": "string"
     },
     "sale_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal penjualan"
+      "format": "date"
     },
     "price": {
-      "type": "number",
-      "description": "Harga jual (Rp)"
+      "type": "number"
     },
     "hpp": {
-      "type": "number",
-      "description": "HPP / Modal (Rp)"
+      "type": "number"
     },
     "dp_amount": {
-      "type": "number",
-      "description": "Jumlah DP yang dibayar (Rp)"
+      "type": "number"
     },
     "payment_status": {
       "type": "string",
@@ -46,8 +37,7 @@
         "dp",
         "belum_bayar"
       ],
-      "default": "lunas",
-      "description": "Status pembayaran"
+      "default": "lunas"
     },
     "shipping_method": {
       "type": "string",
@@ -59,21 +49,17 @@
       "default": "ambil_sendiri"
     },
     "certificate_number": {
-      "type": "string",
-      "description": "Nomor surat jual beli"
+      "type": "string"
     },
     "certificate_url": {
-      "type": "string",
-      "description": "URL scan surat jual beli"
+      "type": "string"
     },
     "platform": {
-      "type": "string",
-      "description": "Platform/channel penjualan (Instagram, Tokopedia, WhatsApp, Langsung, dll)"
+      "type": "string"
     },
     "is_repeat_buyer": {
       "type": "boolean",
-      "default": false,
-      "description": "Pembeli lama / repeat buyer"
+      "default": false
     },
     "after_sale_status": {
       "type": "string",
@@ -81,22 +67,22 @@
         "puas",
         "komplain",
         "no_response"
-      ],
-      "description": "Status after sales"
+      ]
     },
     "complaint_detail": {
-      "type": "string",
-      "description": "Detail komplain jika ada"
+      "type": "string"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan"
+      "type": "string"
     }
   },
   "required": [
     "tortoise_name",
     "buyer_name",
     "price",
-    "sale_date"
+    "sale_date",
+    "buyer_phone",
+    "payment_status",
+    "shipping_method"
   ]
 }

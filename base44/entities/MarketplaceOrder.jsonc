@@ -3,8 +3,7 @@
   "type": "object",
   "properties": {
     "order_id": {
-      "type": "string",
-      "description": "ID pesanan dari platform"
+      "type": "string"
     },
     "platform": {
       "type": "string",
@@ -14,24 +13,19 @@
       ]
     },
     "buyer_name": {
-      "type": "string",
-      "description": "Nama pembeli"
+      "type": "string"
     },
     "buyer_phone": {
-      "type": "string",
-      "description": "Nomor telepon pembeli"
+      "type": "string"
     },
     "product_name": {
-      "type": "string",
-      "description": "Nama produk yang dibeli"
+      "type": "string"
     },
     "quantity": {
-      "type": "number",
-      "description": "Jumlah item"
+      "type": "number"
     },
     "total_price": {
-      "type": "number",
-      "description": "Total harga (Rp)"
+      "type": "number"
     },
     "status": {
       "type": "string",
@@ -55,6 +49,9 @@
   "required": [
     "platform",
     "buyer_name",
-    "product_name"
+    "product_name",
+    "total_price",
+    "order_date",
+    "quantity"
   ]
 }

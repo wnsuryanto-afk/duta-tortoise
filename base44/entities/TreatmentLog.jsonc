@@ -3,29 +3,23 @@
   "type": "object",
   "properties": {
     "schedule_id": {
-      "type": "string",
-      "description": "ID jadwal treatment"
+      "type": "string"
     },
     "schedule_title": {
-      "type": "string",
-      "description": "Nama treatment"
+      "type": "string"
     },
     "tortoise_id": {
-      "type": "string",
-      "description": "ID kura-kura"
+      "type": "string"
     },
     "tortoise_name": {
-      "type": "string",
-      "description": "Nama kura-kura"
+      "type": "string"
     },
     "done_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal selesai"
+      "format": "date"
     },
     "done_by": {
-      "type": "string",
-      "description": "Dikerjakan oleh"
+      "type": "string"
     },
     "notes": {
       "type": "string"
@@ -34,6 +28,7 @@
   "required": [
     "schedule_title",
     "tortoise_name",
-    "done_date"
+    "done_date",
+    "done_by"
   ]
 }

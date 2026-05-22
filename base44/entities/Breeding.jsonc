@@ -3,64 +3,50 @@
   "type": "object",
   "properties": {
     "male_id": {
-      "type": "string",
-      "description": "ID tortoise jantan"
+      "type": "string"
     },
     "female_id": {
-      "type": "string",
-      "description": "ID tortoise betina"
+      "type": "string"
     },
     "male_name": {
-      "type": "string",
-      "description": "Nama tortoise jantan"
+      "type": "string"
     },
     "female_name": {
-      "type": "string",
-      "description": "Nama tortoise betina"
+      "type": "string"
     },
     "clutch_number": {
-      "type": "number",
-      "description": "Urutan clutch dari pasangan ini di tahun ini"
+      "type": "number"
     },
     "season_year": {
-      "type": "number",
-      "description": "Tahun musim kawin"
+      "type": "number"
     },
     "mating_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal kawin"
+      "format": "date"
     },
     "egg_laying_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal bertelur"
+      "format": "date"
     },
     "egg_count": {
-      "type": "number",
-      "description": "Jumlah telur"
+      "type": "number"
     },
     "egg_weight_grams": {
-      "type": "number",
-      "description": "Berat telur rata-rata (gram)"
+      "type": "number"
     },
     "estimated_hatch_date": {
       "type": "string",
-      "format": "date",
-      "description": "Perkiraan tanggal menetas (~105 hari)"
+      "format": "date"
     },
     "hatch_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal aktual menetas"
+      "format": "date"
     },
     "hatched_count": {
-      "type": "number",
-      "description": "Jumlah yang berhasil menetas"
+      "type": "number"
     },
     "failed_count": {
-      "type": "number",
-      "description": "Jumlah telur yang gagal menetas"
+      "type": "number"
     },
     "status": {
       "type": "string",
@@ -73,12 +59,10 @@
       "default": "bertelur"
     },
     "incubation_temp": {
-      "type": "number",
-      "description": "Suhu inkubasi (\u00b0C)"
+      "type": "number"
     },
     "incubation_humidity": {
-      "type": "number",
-      "description": "Kelembapan inkubasi (%)"
+      "type": "number"
     },
     "candling_notes": {
       "type": "array",
@@ -101,8 +85,7 @@
             "type": "string"
           }
         }
-      },
-      "description": "Catatan candling berkala"
+      }
     },
     "photos": {
       "type": "array",
@@ -113,8 +96,7 @@
             "type": "string"
           }
         }
-      },
-      "description": "Foto dokumentasi telur / breeding"
+      }
     },
     "notes": {
       "type": "string"
@@ -122,6 +104,10 @@
   },
   "required": [
     "male_name",
-    "female_name"
+    "female_name",
+    "egg_laying_date",
+    "egg_count",
+    "status",
+    "season_year"
   ]
 }

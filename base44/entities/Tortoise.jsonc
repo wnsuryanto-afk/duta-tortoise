@@ -52,8 +52,7 @@
         "wavy",
         "irregular"
       ],
-      "default": "normal",
-      "description": "Bentuk/kondisi tempurung"
+      "default": "normal"
     },
     "source": {
       "type": "string",
@@ -63,8 +62,7 @@
         "import",
         "tidak_diketahui"
       ],
-      "default": "tidak_diketahui",
-      "description": "Asal kura-kura: hasil_sendiri = CBB, beli_lokal = lokal, import = import, tidak_diketahui = tidak jelas"
+      "default": "tidak_diketahui"
     },
     "is_proven": {
       "type": "boolean",
@@ -79,12 +77,10 @@
       "format": "date"
     },
     "purchase_price": {
-      "type": "number",
-      "description": "Harga beli / HPP (Rp)"
+      "type": "number"
     },
     "microchip_id": {
-      "type": "string",
-      "description": "Nomor microchip (jika ada)"
+      "type": "string"
     },
     "weight_grams": {
       "type": "number"
@@ -104,8 +100,7 @@
       "default": "aktif"
     },
     "enclosure": {
-      "type": "string",
-      "description": "Nama/nomor kandang"
+      "type": "string"
     },
     "photo_url": {
       "type": "string"
@@ -128,30 +123,29 @@
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Label bebas (favorit, indukan terbaik, dll)"
+      }
     },
     "qr_code_url": {
-      "type": "string",
-      "description": "URL QR code unik kura-kura"
+      "type": "string"
     },
     "sale_channel": {
-      "type": "string",
-      "description": "Dari mana kura-kura ini dibeli"
+      "type": "string"
     },
     "notes": {
       "type": "string"
     },
     "parent_male": {
-      "type": "string",
-      "description": "ID induk jantan"
+      "type": "string"
     },
     "parent_female": {
-      "type": "string",
-      "description": "ID induk betina"
+      "type": "string"
     }
   },
   "required": [
-    "name"
+    "name",
+    "gender",
+    "morph",
+    "source",
+    "status"
   ]
 }

@@ -9,6 +9,8 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, AlertTriangle, Video } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
+import IncompleteBanner from "@/components/common/IncompleteBanner";
+import { getMissingFields } from "@/lib/incompleteChecks";
 
 const MORPHS = [
   { value: "normal",         label: "Normal" },
@@ -50,6 +52,7 @@ function initPhotos(editData) {
 export default function TortoiseForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   const [photos, setPhotos] = useState(initPhotos(editData));
   const [thumbnailUrl, setThumbnailUrl] = useState(editData?.photo_url || (initPhotos(editData)[0]?.url || ""));
   const [deathVideoUrl, setDeathVideoUrl] = useState(editData?.death_video_url || "");
@@ -62,7 +65,18 @@ export default function TortoiseForm({ open, onClose, editData }) {
     status: "aktif", enclosure: "", notes: "",
   });
 
-  const set = (field, value) => setForm((p) => ({ ...p, [field]: value }));
+  const set = (field, value) => { setForm((p) => ({ ...p, [field]: value })); setErrors(e => ({ ...e, [field]: "" })); };
+
+  const validate = () => {
+    const e = {};
+    if (!form.name?.trim()) e.name = "Nama tortoise wajib diisi";
+    if (!form.gender) e.gender = "Jenis kelamin wajib dipilih";
+    if (!form.morph) e.morph = "Morph wajib dipilih";
+    if (!form.source) e.source = "Asal kura-kura wajib dipilih";
+    if (!form.status) e.status = "Status wajib dipilih";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const handlePhotosChange = (newPhotos, newThumb) => {
     setPhotos(newPhotos);
@@ -83,6 +97,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
     // Validasi wajib video saat status mati
     if (isMati) {
       if (!deathVideoUrl) {
@@ -169,6 +184,8 @@ export default function TortoiseForm({ open, onClose, editData }) {
           <DialogTitle className="font-heading">{editData?.id ? "Edit Tortoise" : "Tambah Tortoise"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          {/* Banner reminder jika data tidak lengkap saat edit */}
+          {editData?.id && <IncompleteBanner missingFields={getMissingFields("tortoise", form)} />}
 
           {/* Foto Gallery */}
           <div className="space-y-1.5">

@@ -3,8 +3,7 @@
   "type": "object",
   "properties": {
     "name": {
-      "type": "string",
-      "description": "Nama/nomor kandang"
+      "type": "string"
     },
     "type": {
       "type": "string",
@@ -16,37 +15,29 @@
       "default": "indoor"
     },
     "size_m2": {
-      "type": "number",
-      "description": "Luas kandang (m\u00b2)"
+      "type": "number"
     },
     "max_capacity": {
-      "type": "number",
-      "description": "Kapasitas maksimal kura-kura"
+      "type": "number"
     },
     "current_count": {
       "type": "number",
-      "default": 0,
-      "description": "Jumlah kura-kura saat ini"
+      "default": 0
     },
     "ideal_temp_min": {
-      "type": "number",
-      "description": "Suhu minimum ideal (\u00b0C)"
+      "type": "number"
     },
     "ideal_temp_max": {
-      "type": "number",
-      "description": "Suhu maksimum ideal (\u00b0C)"
+      "type": "number"
     },
     "ideal_humidity": {
-      "type": "number",
-      "description": "Kelembapan ideal (%)"
+      "type": "number"
     },
     "location": {
-      "type": "string",
-      "description": "Lokasi di area peternakan"
+      "type": "string"
     },
     "photo_url": {
-      "type": "string",
-      "description": "URL foto kandang"
+      "type": "string"
     },
     "is_active": {
       "type": "boolean",
@@ -57,6 +48,8 @@
     }
   },
   "required": [
-    "name"
+    "name",
+    "type",
+    "max_capacity"
   ]
 }

@@ -6,29 +6,23 @@
       "type": "string"
     },
     "employee_name": {
-      "type": "string",
-      "description": "Nama karyawan"
+      "type": "string"
     },
     "employee_email": {
-      "type": "string",
-      "description": "Email karyawan"
+      "type": "string"
     },
     "training_title": {
-      "type": "string",
-      "description": "Judul pelatihan"
+      "type": "string"
     },
     "training_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal pelatihan"
+      "format": "date"
     },
     "duration_hours": {
-      "type": "number",
-      "description": "Durasi (jam)"
+      "type": "number"
     },
     "trainer": {
-      "type": "string",
-      "description": "Nama trainer/instruktur"
+      "type": "string"
     },
     "category": {
       "type": "string",
@@ -51,8 +45,7 @@
       "default": "dalam_proses"
     },
     "certificate_url": {
-      "type": "string",
-      "description": "URL sertifikat"
+      "type": "string"
     },
     "notes": {
       "type": "string"
@@ -62,6 +55,7 @@
     "employee_name",
     "employee_email",
     "training_title",
-    "training_date"
+    "training_date",
+    "category"
   ]
 }

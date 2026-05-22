@@ -3,8 +3,7 @@
   "type": "object",
   "properties": {
     "name": {
-      "type": "string",
-      "description": "Nama pakan (cth: Kubis, Wortel, Rumput)"
+      "type": "string"
     },
     "category": {
       "type": "string",
@@ -15,8 +14,7 @@
         "suplemen",
         "lainnya"
       ],
-      "default": "sayuran",
-      "description": "Kategori pakan"
+      "default": "sayuran"
     },
     "unit": {
       "type": "string",
@@ -27,51 +25,44 @@
         "buah",
         "liter"
       ],
-      "default": "kg",
-      "description": "Satuan"
+      "default": "kg"
     },
     "current_stock": {
       "type": "number",
-      "default": 0,
-      "description": "Stok saat ini"
+      "default": 0
     },
     "minimum_stock": {
       "type": "number",
-      "default": 1,
-      "description": "Batas minimum stok (notifikasi akan muncul di bawah angka ini)"
+      "default": 1
     },
     "price_per_unit": {
       "type": "number",
-      "default": 0,
-      "description": "Harga per satuan (Rp)"
+      "default": 0
     },
     "daily_ideal": {
       "type": "number",
-      "default": 0,
-      "description": "Kebutuhan harian ideal (dalam satuan)"
+      "default": 0
     },
     "supplier": {
-      "type": "string",
-      "description": "Nama supplier / toko pakan"
+      "type": "string"
     },
     "last_restocked_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir restock"
+      "format": "date"
     },
     "last_restocked_qty": {
-      "type": "number",
-      "description": "Jumlah terakhir restock"
+      "type": "number"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan"
+      "type": "string"
     }
   },
   "required": [
     "name",
     "unit",
     "current_stock",
-    "minimum_stock"
+    "minimum_stock",
+    "category",
+    "price_per_unit"
   ]
 }

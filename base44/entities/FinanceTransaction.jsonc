@@ -7,8 +7,7 @@
       "enum": [
         "pemasukan",
         "pengeluaran"
-      ],
-      "description": "Jenis transaksi"
+      ]
     },
     "category": {
       "type": "string",
@@ -18,35 +17,30 @@
         "gaji_karyawan",
         "operasional",
         "lainnya"
-      ],
-      "description": "Kategori"
+      ]
     },
     "amount": {
-      "type": "number",
-      "description": "Nominal (Rp)"
+      "type": "number"
     },
     "date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal"
+      "format": "date"
     },
     "description": {
-      "type": "string",
-      "description": "Keterangan"
+      "type": "string"
     },
     "reference_id": {
-      "type": "string",
-      "description": "ID referensi (sale_id / warehouse_tx_id dll)"
+      "type": "string"
     },
     "created_by_name": {
-      "type": "string",
-      "description": "Dicatat oleh"
+      "type": "string"
     }
   },
   "required": [
     "type",
     "category",
     "amount",
-    "date"
+    "date",
+    "description"
   ]
 }

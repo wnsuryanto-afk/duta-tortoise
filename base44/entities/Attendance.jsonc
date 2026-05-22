@@ -3,39 +3,31 @@
   "type": "object",
   "properties": {
     "employee_id": {
-      "type": "string",
-      "description": "ID karyawan"
+      "type": "string"
     },
     "employee_name": {
-      "type": "string",
-      "description": "Nama karyawan"
+      "type": "string"
     },
     "employee_email": {
-      "type": "string",
-      "description": "Email karyawan"
+      "type": "string"
     },
     "date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal absensi"
+      "format": "date"
     },
     "check_in": {
-      "type": "string",
-      "description": "Waktu check-in (HH:mm)"
+      "type": "string"
     },
     "check_out": {
-      "type": "string",
-      "description": "Waktu check-out (HH:mm)"
+      "type": "string"
     },
     "late_minutes": {
       "type": "number",
-      "default": 0,
-      "description": "Menit keterlambatan"
+      "default": 0
     },
     "overtime_hours": {
       "type": "number",
-      "default": 0,
-      "description": "Jam lembur langsung dari absensi"
+      "default": 0
     },
     "status": {
       "type": "string",
@@ -44,18 +36,17 @@
         "izin",
         "sakit"
       ],
-      "default": "hadir",
-      "description": "Status kehadiran"
+      "default": "hadir"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan"
+      "type": "string"
     }
   },
   "required": [
     "employee_name",
     "employee_email",
     "date",
-    "check_in"
+    "check_in",
+    "status"
   ]
 }

@@ -4,7 +4,7 @@ import {
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
   Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag,
-  CalendarHeart, Library, ListTodo, ClipboardCheck
+  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -23,11 +23,10 @@ const NAV_GROUPS = [
   {
     label: "Pengelolaan",
     items: [
-      { path: "/tortoise",        section: "tortoise",        label: "Tortoise",        icon: Shell },
+      { path: "/tortoise",        section: "tortoise",        label: "Tortoise & Kandang", icon: Shell },
       { path: "/breeding",        section: "breeding",        label: "Breeding & Telur", icon: Baby },
       { path: "/family-tree",     section: "family-tree",     label: "Silsilah",         icon: GitBranch },
-      { path: "/enclosure",       section: "enclosure",       label: "Kandang",          icon: Grid3x3 },
-      { path: "/health",          section: "health",          label: "Catatan Sakit",   icon: Heart },
+      { path: "/health",          section: "health",          label: "Catatan Sakit",    icon: Heart },
       { path: "/treatment",       section: "treatment",       label: "Treatment & Pengingat", icon: Stethoscope },
       { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
     ],
@@ -38,7 +37,7 @@ const NAV_GROUPS = [
       { path: "/finance",         section: "finance",         label: "Laporan Keuangan", icon: TrendingUp },
       { path: "/sales",           section: "sales",           label: "Penjualan",        icon: DollarSign },
       { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",   icon: PieChart },
-      { path: "/waiting-list",    section: "waiting-list",    label: "Waiting List",     icon: ListOrdered },
+
       { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",    icon: BarChart2 },
       { path: "/warehouse",       section: "warehouse",       label: "Gudang Gazebo",    icon: Warehouse },
     ],
@@ -54,7 +53,7 @@ const NAV_GROUPS = [
     items: [
       { path: "/sop",             section: "sop",             label: "SOP & KPI",        icon: ClipboardList },
       { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP", icon: Library },
-      { path: "/onboarding",      section: "onboarding",      label: "Onboarding",       icon: UserCheck },
+
       { path: "/task-template",   section: "task-template",   label: "Template Task",    icon: ListTodo },
       { path: "/payroll",         section: "payroll",         label: "Laporan KPI",      icon: FileSpreadsheet },
       { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Penggajian & Kasbon", icon: Wallet },
@@ -79,6 +78,7 @@ const NAV_GROUPS = [
   {
     label: "Pengaturan",
     items: [
+      { path: "/incomplete-data", section: "incomplete-data", label: "Data Tidak Lengkap", icon: AlertTriangle },
       { path: "/cctv",            section: "cctv",            label: "Monitoring CCTV",  icon: Video },
       { path: "/marketplace",     section: "marketplace",     label: "Marketplace",      icon: ShoppingBag },
       { path: "/users",           section: "users",           label: "Manajemen User",  icon: Users },

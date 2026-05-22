@@ -12,6 +12,8 @@ import HatchDialog from "@/components/breeding/HatchDialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import IncompleteBadge from "@/components/common/IncompleteBadge";
+import { getMissingFields } from "@/lib/incompleteChecks";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -92,7 +94,10 @@ export default function BreedingList() {
                 )}
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold text-sm">{b.male_name} × {b.female_name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-sm">{b.male_name} × {b.female_name}</h3>
+                      <IncompleteBadge missingFields={getMissingFields("breeding", b)} onEdit={perms.canEdit ? () => { setEditData(b); setShowForm(true); } : undefined} />
+                    </div>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <Badge variant="outline" className={`text-[11px] capitalize ${statusColors[b.status] || ""}`}>
                         {b.status}

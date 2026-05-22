@@ -3,8 +3,7 @@
   "type": "object",
   "properties": {
     "title": {
-      "type": "string",
-      "description": "Judul SOP"
+      "type": "string"
     },
     "category": {
       "type": "string",
@@ -20,8 +19,7 @@
       "default": "lainnya"
     },
     "content": {
-      "type": "string",
-      "description": "Isi SOP dalam format markdown"
+      "type": "string"
     },
     "photo_urls": {
       "type": "array",
@@ -33,8 +31,7 @@
       "type": "string"
     },
     "version": {
-      "type": "string",
-      "description": "Versi dokumen, contoh: v1.2"
+      "type": "string"
     },
     "created_by": {
       "type": "string"
@@ -49,6 +46,8 @@
     }
   },
   "required": [
-    "title"
+    "title",
+    "category",
+    "content"
   ]
 }

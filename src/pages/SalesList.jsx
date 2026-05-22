@@ -11,6 +11,8 @@ import SaleForm from "@/components/sales/SaleForm";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import IncompleteBadge from "@/components/common/IncompleteBadge";
+import { getMissingFields } from "@/lib/incompleteChecks";
 
 const paymentColors = {
   lunas: "bg-primary/10 text-primary",
@@ -86,6 +88,7 @@ export default function SalesList() {
                       <Badge className={`text-[11px] ${paymentColors[s.payment_status] || ""}`}>
                         {paymentLabels[s.payment_status] || s.payment_status}
                       </Badge>
+                      <IncompleteBadge missingFields={getMissingFields("sale", s)} onEdit={perms.canEdit ? () => { setEditData(s); setShowForm(true); } : undefined} />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {s.buyer_name} {s.buyer_phone ? `• ${s.buyer_phone}` : ""}

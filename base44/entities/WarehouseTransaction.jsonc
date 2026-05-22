@@ -3,61 +3,52 @@
   "type": "object",
   "properties": {
     "item_id": {
-      "type": "string",
-      "description": "ID barang"
+      "type": "string"
     },
     "item_name": {
-      "type": "string",
-      "description": "Nama barang"
+      "type": "string"
     },
     "item_code": {
-      "type": "string",
-      "description": "Kode barang"
+      "type": "string"
     },
     "type": {
       "type": "string",
       "enum": [
         "masuk",
         "keluar"
-      ],
-      "description": "Jenis transaksi"
+      ]
     },
     "quantity": {
-      "type": "number",
-      "description": "Jumlah"
+      "type": "number"
     },
     "unit": {
-      "type": "string",
-      "description": "Satuan"
+      "type": "string"
     },
     "unit_price": {
       "type": "number",
-      "default": 0,
-      "description": "Harga per satuan saat transaksi"
+      "default": 0
     },
     "total_price": {
       "type": "number",
-      "default": 0,
-      "description": "Total harga (qty x unit_price)"
+      "default": 0
     },
     "date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal transaksi"
+      "format": "date"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan / keperluan"
+      "type": "string"
     },
     "created_by_name": {
-      "type": "string",
-      "description": "Nama pencatat"
+      "type": "string"
     }
   },
   "required": [
     "item_name",
     "type",
     "quantity",
-    "date"
+    "date",
+    "unit",
+    "created_by_name"
   ]
 }

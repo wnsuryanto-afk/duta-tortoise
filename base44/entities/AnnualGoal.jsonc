@@ -3,28 +3,25 @@
   "type": "object",
   "properties": {
     "year": {
-      "type": "number",
-      "description": "Tahun target"
+      "type": "number"
     },
     "egg_production_target": {
-      "type": "number",
-      "description": "Target produksi telur"
+      "type": "number"
     },
     "revenue_target": {
-      "type": "number",
-      "description": "Target pendapatan (Rp)"
+      "type": "number"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan dari owner/manajer"
+      "type": "string"
     },
     "set_by": {
-      "type": "string",
-      "description": "Disetel oleh"
+      "type": "string"
     }
   },
   "required": [
     "year",
-    "egg_production_target"
+    "egg_production_target",
+    "revenue_target",
+    "set_by"
   ]
 }

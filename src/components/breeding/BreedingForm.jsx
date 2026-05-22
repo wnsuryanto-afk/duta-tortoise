@@ -13,6 +13,7 @@ import { addDays, format } from "date-fns";
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -44,7 +45,18 @@ export default function BreedingForm({ open, onClose, editData }) {
     setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== idx) }));
   };
 
-  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => { setForm((prev) => ({ ...prev, [field]: value })); setErrors(e => ({ ...e, [field]: "" })); };
+
+  const validate = () => {
+    const e = {};
+    if (!form.male_name?.trim()) e.male_name = "Tortoise jantan wajib dipilih";
+    if (!form.female_name?.trim()) e.female_name = "Tortoise betina wajib dipilih";
+    if (!form.egg_laying_date) e.egg_laying_date = "Tanggal bertelur wajib diisi";
+    if (!form.egg_count) e.egg_count = "Jumlah telur wajib diisi";
+    if (!form.status) e.status = "Status wajib dipilih";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const handleMaleSelect = (id) => {
     const male = tortoises.find((t) => t.id === id);
@@ -81,6 +93,7 @@ export default function BreedingForm({ open, onClose, editData }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
     setSaving(true);
     const data = {
       ...form,
@@ -106,10 +119,10 @@ export default function BreedingForm({ open, onClose, editData }) {
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Jantan *</Label>
+              <Label>Jantan <span className="text-red-500">*</span></Label>
               {males.length > 0 ? (
                 <Select value={form.male_id} onValueChange={handleMaleSelect}>
-                  <SelectTrigger><SelectValue placeholder="Pilih jantan" /></SelectTrigger>
+                  <SelectTrigger className={errors.male_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih jantan" /></SelectTrigger>
                   <SelectContent>
                     {males.map((m) => (
                       <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
@@ -117,14 +130,15 @@ export default function BreedingForm({ open, onClose, editData }) {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input value={form.male_name} onChange={(e) => handleChange("male_name", e.target.value)} placeholder="Nama jantan" required />
+                <Input value={form.male_name} onChange={(e) => handleChange("male_name", e.target.value)} placeholder="Nama jantan" className={errors.male_name ? "border-red-500" : ""} />
               )}
+              {errors.male_name && <p className="text-xs text-red-500">{errors.male_name}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Betina *</Label>
+              <Label>Betina <span className="text-red-500">*</span></Label>
               {females.length > 0 ? (
                 <Select value={form.female_id} onValueChange={handleFemaleSelect}>
-                  <SelectTrigger><SelectValue placeholder="Pilih betina" /></SelectTrigger>
+                  <SelectTrigger className={errors.female_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih betina" /></SelectTrigger>
                   <SelectContent>
                     {females.map((f) => (
                       <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
@@ -132,14 +146,15 @@ export default function BreedingForm({ open, onClose, editData }) {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input value={form.female_name} onChange={(e) => handleChange("female_name", e.target.value)} placeholder="Nama betina" required />
+                <Input value={form.female_name} onChange={(e) => handleChange("female_name", e.target.value)} placeholder="Nama betina" className={errors.female_name ? "border-red-500" : ""} />
               )}
+              {errors.female_name && <p className="text-xs text-red-500">{errors.female_name}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>Status <span className="text-red-500">*</span></Label>
               <Select value={form.status} onValueChange={(v) => handleChange("status", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -158,12 +173,14 @@ export default function BreedingForm({ open, onClose, editData }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Tanggal Bertelur</Label>
-              <Input type="date" value={form.egg_laying_date} onChange={(e) => handleEggLayingDate(e.target.value)} />
+              <Label>Tanggal Bertelur <span className="text-red-500">*</span></Label>
+              <Input type="date" value={form.egg_laying_date} onChange={(e) => handleEggLayingDate(e.target.value)} className={errors.egg_laying_date ? "border-red-500" : ""} />
+              {errors.egg_laying_date && <p className="text-xs text-red-500">{errors.egg_laying_date}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Jumlah Telur</Label>
-              <Input type="number" value={form.egg_count} onChange={(e) => handleChange("egg_count", e.target.value)} />
+              <Label>Jumlah Telur <span className="text-red-500">*</span></Label>
+              <Input type="number" value={form.egg_count} onChange={(e) => handleChange("egg_count", e.target.value)} className={errors.egg_count ? "border-red-500" : ""} />
+              {errors.egg_count && <p className="text-xs text-red-500">{errors.egg_count}</p>}
             </div>
           </div>
 
@@ -216,7 +233,7 @@ export default function BreedingForm({ open, onClose, editData }) {
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || !form.male_name?.trim() || !form.female_name?.trim() || !form.egg_laying_date || !form.egg_count || !form.status}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editData?.id ? "Simpan" : "Tambah"}
             </Button>

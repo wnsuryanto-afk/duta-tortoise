@@ -8,40 +8,34 @@
         "keeper",
         "admin",
         "manajer"
-      ],
-      "description": "Role karyawan"
+      ]
     },
     "base_salary": {
       "type": "number",
-      "default": 0,
-      "description": "Gaji pokok per bulan (Rp)"
+      "default": 0
     },
     "overtime_rate_per_hour": {
       "type": "number",
-      "default": 0,
-      "description": "Tarif lembur per jam (Rp)"
+      "default": 0
     },
     "vegetable_rate_per_trip": {
       "type": "number",
-      "default": 0,
-      "description": "Tunjangan per pengambilan sayur (Rp)"
+      "default": 0
     },
     "point_value": {
       "type": "number",
-      "default": 0,
-      "description": "Nilai per poin KPI (Rp)"
+      "default": 0
     },
     "absent_deduction": {
       "type": "number",
-      "default": 0,
-      "description": "Potongan per hari tidak hadir (Rp)"
+      "default": 0
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan"
+      "type": "string"
     }
   },
   "required": [
-    "role"
+    "role",
+    "base_salary"
   ]
 }

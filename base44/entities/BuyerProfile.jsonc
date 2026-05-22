@@ -3,23 +3,19 @@
   "type": "object",
   "properties": {
     "name": {
-      "type": "string",
-      "description": "Nama pembeli"
+      "type": "string"
     },
     "phone": {
-      "type": "string",
-      "description": "Nomor telepon"
+      "type": "string"
     },
     "whatsapp": {
-      "type": "string",
-      "description": "Nomor WhatsApp"
+      "type": "string"
     },
     "email": {
       "type": "string"
     },
     "city": {
-      "type": "string",
-      "description": "Kota"
+      "type": "string"
     },
     "platform_asal": {
       "type": "string",
@@ -43,13 +39,11 @@
     },
     "total_purchases": {
       "type": "number",
-      "default": 0,
-      "description": "Jumlah transaksi"
+      "default": 0
     },
     "total_spent": {
       "type": "number",
-      "default": 0,
-      "description": "Total nilai belanja (Rp)"
+      "default": 0
     },
     "favorite_morph": {
       "type": "string"
@@ -83,6 +77,7 @@
   },
   "required": [
     "name",
-    "phone"
+    "phone",
+    "platform_asal"
   ]
 }

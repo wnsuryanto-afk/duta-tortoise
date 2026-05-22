@@ -12,6 +12,7 @@ import { Loader2, TrendingUp } from "lucide-react";
 export default function SaleForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],
@@ -26,7 +27,18 @@ export default function SaleForm({ open, onClose, editData }) {
     price: "", hpp: "", payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
   });
 
-  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => { setForm((prev) => ({ ...prev, [field]: value })); setErrors(e => ({ ...e, [field]: "" })); };
+
+  const validate = () => {
+    const e = {};
+    if (!form.tortoise_name?.trim()) e.tortoise_name = "Nama tortoise wajib diisi";
+    if (!form.buyer_name?.trim()) e.buyer_name = "Nama pembeli wajib diisi";
+    if (!form.buyer_phone?.trim()) e.buyer_phone = "Nomor telepon pembeli wajib diisi";
+    if (!form.price) e.price = "Harga jual wajib diisi";
+    if (!form.sale_date) e.sale_date = "Tanggal jual wajib diisi";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const handleTortoiseSelect = (id) => {
     const t = tortoises.find((t) => t.id === id);
@@ -37,6 +49,7 @@ export default function SaleForm({ open, onClose, editData }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
     setSaving(true);
     const data = {
       ...form,
@@ -70,10 +83,10 @@ export default function SaleForm({ open, onClose, editData }) {
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Tortoise *</Label>
+              <Label>Tortoise <span className="text-red-500">*</span></Label>
               {available.length > 0 && !editData?.id ? (
                 <Select value={form.tortoise_id} onValueChange={handleTortoiseSelect}>
-                  <SelectTrigger><SelectValue placeholder="Pilih tortoise" /></SelectTrigger>
+                  <SelectTrigger className={errors.tortoise_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih tortoise" /></SelectTrigger>
                   <SelectContent>
                     {available.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
@@ -83,22 +96,26 @@ export default function SaleForm({ open, onClose, editData }) {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input value={form.tortoise_name} onChange={(e) => handleChange("tortoise_name", e.target.value)} required />
+                <Input value={form.tortoise_name} onChange={(e) => handleChange("tortoise_name", e.target.value)} className={errors.tortoise_name ? "border-red-500" : ""} />
               )}
+              {errors.tortoise_name && <p className="text-xs text-red-500">{errors.tortoise_name}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Tanggal Jual *</Label>
-              <Input type="date" value={form.sale_date} onChange={(e) => handleChange("sale_date", e.target.value)} required />
+              <Label>Tanggal Jual <span className="text-red-500">*</span></Label>
+              <Input type="date" value={form.sale_date} onChange={(e) => handleChange("sale_date", e.target.value)} className={errors.sale_date ? "border-red-500" : ""} />
+              {errors.sale_date && <p className="text-xs text-red-500">{errors.sale_date}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Nama Pembeli *</Label>
-              <Input value={form.buyer_name} onChange={(e) => handleChange("buyer_name", e.target.value)} required />
+              <Label>Nama Pembeli <span className="text-red-500">*</span></Label>
+              <Input value={form.buyer_name} onChange={(e) => handleChange("buyer_name", e.target.value)} className={errors.buyer_name ? "border-red-500" : ""} />
+              {errors.buyer_name && <p className="text-xs text-red-500">{errors.buyer_name}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>No. Telepon</Label>
-              <Input value={form.buyer_phone} onChange={(e) => handleChange("buyer_phone", e.target.value)} />
+              <Label>No. Telepon <span className="text-red-500">*</span></Label>
+              <Input value={form.buyer_phone} onChange={(e) => handleChange("buyer_phone", e.target.value)} className={errors.buyer_phone ? "border-red-500" : ""} />
+              {errors.buyer_phone && <p className="text-xs text-red-500">{errors.buyer_phone}</p>}
             </div>
           </div>
           <div className="space-y-1.5">
@@ -107,8 +124,9 @@ export default function SaleForm({ open, onClose, editData }) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Harga Jual (Rp) *</Label>
-              <Input type="number" value={form.price} onChange={(e) => handleChange("price", e.target.value)} required />
+              <Label>Harga Jual (Rp) <span className="text-red-500">*</span></Label>
+              <Input type="number" value={form.price} onChange={(e) => handleChange("price", e.target.value)} className={errors.price ? "border-red-500" : ""} />
+              {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>HPP / Modal (Rp)</Label>
@@ -131,7 +149,7 @@ export default function SaleForm({ open, onClose, editData }) {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Pembayaran</Label>
+              <Label>Pembayaran <span className="text-red-500">*</span></Label>
               <Select value={form.payment_status} onValueChange={(v) => handleChange("payment_status", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -142,7 +160,7 @@ export default function SaleForm({ open, onClose, editData }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Pengiriman</Label>
+              <Label>Pengiriman <span className="text-red-500">*</span></Label>
               <Select value={form.shipping_method} onValueChange={(v) => handleChange("shipping_method", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -164,7 +182,7 @@ export default function SaleForm({ open, onClose, editData }) {
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || !form.tortoise_name?.trim() || !form.buyer_name?.trim() || !form.buyer_phone?.trim() || !form.price || !form.sale_date}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editData?.id ? "Simpan" : "Tambah"}
             </Button>

@@ -3,39 +3,34 @@
   "type": "object",
   "properties": {
     "tortoise_id": {
-      "type": "string",
-      "description": "ID kura-kura"
+      "type": "string"
     },
     "tortoise_name": {
-      "type": "string",
-      "description": "Nama kura-kura"
+      "type": "string"
     },
     "from_enclosure": {
-      "type": "string",
-      "description": "Kandang asal"
+      "type": "string"
     },
     "to_enclosure": {
-      "type": "string",
-      "description": "Kandang tujuan"
+      "type": "string"
     },
     "moved_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal perpindahan"
+      "format": "date"
     },
     "reason": {
-      "type": "string",
-      "description": "Alasan perpindahan"
+      "type": "string"
     },
     "moved_by": {
-      "type": "string",
-      "description": "Nama/email yang memindahkan"
+      "type": "string"
     }
   },
   "required": [
     "tortoise_id",
     "tortoise_name",
     "to_enclosure",
-    "moved_date"
+    "moved_date",
+    "reason",
+    "moved_by"
   ]
 }

@@ -17,6 +17,7 @@ import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 import HatchReminderAlert from "@/components/dashboard/HatchReminderAlert";
 import OwnerSummaryWidget from "@/components/dashboard/OwnerSummaryWidget";
 import ExpiredItemAlert from "@/components/dashboard/ExpiredItemAlert";
+import IncompleteDataWidget from "@/components/dashboard/IncompleteDataWidget";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -57,6 +58,9 @@ export default function Dashboard() {
 
       {/* Ringkasan Owner */}
       <OwnerSummaryWidget />
+
+      {/* Data Tidak Lengkap */}
+      <IncompleteDataWidget />
 
       {/* Target Tahunan */}
       <AnnualGoalWidget breedings={breedings} />

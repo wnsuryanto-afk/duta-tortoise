@@ -3,39 +3,33 @@
   "type": "object",
   "properties": {
     "employee_id": {
-      "type": "string",
-      "description": "ID karyawan"
+      "type": "string"
     },
     "employee_name": {
-      "type": "string",
-      "description": "Nama karyawan"
+      "type": "string"
     },
     "employee_email": {
-      "type": "string",
-      "description": "Email karyawan"
+      "type": "string"
     },
     "date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal lembur"
+      "format": "date"
     },
     "hours": {
-      "type": "number",
-      "description": "Jumlah jam lembur"
+      "type": "number"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan / alasan lembur"
+      "type": "string"
     },
     "approved_by": {
-      "type": "string",
-      "description": "Disetujui oleh"
+      "type": "string"
     }
   },
   "required": [
     "employee_name",
     "employee_email",
     "date",
-    "hours"
+    "hours",
+    "notes"
   ]
 }

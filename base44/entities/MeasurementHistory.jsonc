@@ -3,38 +3,32 @@
   "type": "object",
   "properties": {
     "tortoise_id": {
-      "type": "string",
-      "description": "ID kura-kura"
+      "type": "string"
     },
     "tortoise_name": {
-      "type": "string",
-      "description": "Nama kura-kura"
+      "type": "string"
     },
     "date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal pengukuran"
+      "format": "date"
     },
     "weight_grams": {
-      "type": "number",
-      "description": "Berat (gram)"
+      "type": "number"
     },
     "shell_length_cm": {
-      "type": "number",
-      "description": "Panjang cangkang (cm)"
+      "type": "number"
     },
     "measured_by": {
-      "type": "string",
-      "description": "Nama pengukur"
+      "type": "string"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan"
+      "type": "string"
     }
   },
   "required": [
     "tortoise_id",
     "tortoise_name",
-    "date"
+    "date",
+    "weight_grams"
   ]
 }

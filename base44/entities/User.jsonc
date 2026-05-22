@@ -13,5 +13,8 @@
       "default": "keeper",
       "description": "Peran pengguna dalam peternakan"
     }
-  }
+  },
+  "required": [
+    "role"
+  ]
 }
