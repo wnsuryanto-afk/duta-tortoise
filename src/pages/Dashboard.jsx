@@ -16,6 +16,7 @@ import AttendanceDashboardBanner from "@/components/dashboard/AttendanceDashboar
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 import HatchReminderAlert from "@/components/dashboard/HatchReminderAlert";
 import OwnerSummaryWidget from "@/components/dashboard/OwnerSummaryWidget";
+import ExpiredItemAlert from "@/components/dashboard/ExpiredItemAlert";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -67,6 +68,7 @@ export default function Dashboard() {
       <HealthReminderAlert />
       <HatchReminderAlert />
       <FeedStockAlert />
+      <ExpiredItemAlert />
 
       <div className="grid grid-cols-3 gap-4">
         {stats.map((stat) => (

@@ -3,12 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
 import EggHistoryPanel from "./EggHistoryPanel";
 import SizeHistoryPanel from "./SizeHistoryPanel";
+import GrowthTimeline from "./GrowthTimeline";
 
 const healthConfig = {
   critical: { border: "border-l-4 border-l-red-500",    dot: "bg-red-500",    label: "Butuh Perawatan",  badge: "bg-red-100 text-red-700" },
@@ -72,6 +73,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
   const [showHistory, setShowHistory] = useState(false);
   const [showEggHistory, setShowEggHistory] = useState(false);
   const [showSizeHistory, setShowSizeHistory] = useState(false);
+  const [showGrowth, setShowGrowth] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
   const showActions = onEdit || onDelete || onMove;
@@ -157,6 +159,16 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             {tortoise.birth_date && <span>🐣 {format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: id })}</span>}
             {tortoise.purchase_date && <span>🛒 {format(new Date(tortoise.purchase_date), "d MMM yyyy", { locale: id })}</span>}
           </div>
+          {/* Tags */}
+          {Array.isArray(tortoise.tags) && tortoise.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {tortoise.tags.map(tag => (
+                <span key={tag} className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 font-medium">
+                  <Tag className="w-2.5 h-2.5" />{tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {showActions && (
@@ -169,6 +181,9 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 text-chart-4" title="Riwayat Ukuran" onClick={() => setShowSizeHistory(true)}>
               <Ruler className="w-3 h-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-accent" title="Foto Perkembangan" onClick={() => setShowGrowth(true)}>
+              <Camera className="w-3 h-3" />
             </Button>
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(tortoise)}>
@@ -276,6 +291,21 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         </DialogHeader>
         <div className="py-2">
           <SizeHistoryPanel tortoiseId={tortoise.id} tortoiseName={tortoise.name} />
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Foto Perkembangan */}
+    <Dialog open={showGrowth} onOpenChange={setShowGrowth}>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Camera className="w-4 h-4 text-accent" />
+            Perkembangan — {tortoise.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          <GrowthTimeline tortoise={tortoise} />
         </div>
       </DialogContent>
     </Dialog>

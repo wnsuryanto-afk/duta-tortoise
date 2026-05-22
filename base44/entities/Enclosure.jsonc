@@ -1,0 +1,62 @@
+{
+  "name": "Enclosure",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama/nomor kandang"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "indoor",
+        "outdoor",
+        "greenhouse"
+      ],
+      "default": "indoor"
+    },
+    "size_m2": {
+      "type": "number",
+      "description": "Luas kandang (m\u00b2)"
+    },
+    "max_capacity": {
+      "type": "number",
+      "description": "Kapasitas maksimal kura-kura"
+    },
+    "current_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah kura-kura saat ini"
+    },
+    "ideal_temp_min": {
+      "type": "number",
+      "description": "Suhu minimum ideal (\u00b0C)"
+    },
+    "ideal_temp_max": {
+      "type": "number",
+      "description": "Suhu maksimum ideal (\u00b0C)"
+    },
+    "ideal_humidity": {
+      "type": "number",
+      "description": "Kelembapan ideal (%)"
+    },
+    "location": {
+      "type": "string",
+      "description": "Lokasi di area peternakan"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL foto kandang"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

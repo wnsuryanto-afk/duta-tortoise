@@ -1,0 +1,58 @@
+{
+  "name": "WarningLetter",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal surat"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "SP1",
+        "SP2",
+        "SP3"
+      ],
+      "description": "Tingkat SP"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Alasan singkat"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi lengkap"
+    },
+    "issued_by": {
+      "type": "string",
+      "description": "Diterbitkan oleh"
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sudah ditandatangani karyawan"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "date",
+    "level",
+    "reason"
+  ]
+}

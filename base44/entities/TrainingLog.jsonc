@@ -1,0 +1,67 @@
+{
+  "name": "TrainingLog",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "training_title": {
+      "type": "string",
+      "description": "Judul pelatihan"
+    },
+    "training_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pelatihan"
+    },
+    "duration_hours": {
+      "type": "number",
+      "description": "Durasi (jam)"
+    },
+    "trainer": {
+      "type": "string",
+      "description": "Nama trainer/instruktur"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "perawatan",
+        "breeding",
+        "kesehatan",
+        "administrasi",
+        "lainnya"
+      ],
+      "default": "lainnya"
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "lulus",
+        "tidak_lulus",
+        "dalam_proses"
+      ],
+      "default": "dalam_proses"
+    },
+    "certificate_url": {
+      "type": "string",
+      "description": "URL sertifikat"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "employee_name",
+    "employee_email",
+    "training_title",
+    "training_date"
+  ]
+}

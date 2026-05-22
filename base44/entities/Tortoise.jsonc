@@ -17,8 +17,7 @@
         "betina",
         "belum_diketahui"
       ],
-      "default": "belum_diketahui",
-      "description": "Jenis kelamin"
+      "default": "belum_diketahui"
     },
     "morph": {
       "type": "string",
@@ -37,8 +36,7 @@
         "dark",
         "paradox"
       ],
-      "default": "normal",
-      "description": "Jenis/morph kura-kura"
+      "default": "normal"
     },
     "source": {
       "type": "string",
@@ -47,23 +45,19 @@
         "beli_lokal",
         "import"
       ],
-      "default": "hasil_sendiri",
-      "description": "Asal kura-kura"
+      "default": "hasil_sendiri"
     },
     "is_proven": {
       "type": "boolean",
-      "default": false,
-      "description": "Sudah proven"
+      "default": false
     },
     "birth_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal lahir / menetas"
+      "format": "date"
     },
     "purchase_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal pembelian"
+      "format": "date"
     },
     "purchase_price": {
       "type": "number",
@@ -74,12 +68,10 @@
       "description": "Nomor microchip (jika ada)"
     },
     "weight_grams": {
-      "type": "number",
-      "description": "Berat dalam gram"
+      "type": "number"
     },
     "shell_length_cm": {
-      "type": "number",
-      "description": "Panjang cangkang (cm)"
+      "type": "number"
     },
     "status": {
       "type": "string",
@@ -90,16 +82,14 @@
         "terjual",
         "mati"
       ],
-      "default": "aktif",
-      "description": "Status tortoise"
+      "default": "aktif"
     },
     "enclosure": {
       "type": "string",
       "description": "Nama/nomor kandang"
     },
     "photo_url": {
-      "type": "string",
-      "description": "URL foto thumbnail utama"
+      "type": "string"
     },
     "photos": {
       "type": "array",
@@ -110,16 +100,28 @@
             "type": "string"
           }
         }
-      },
-      "description": "Daftar foto tortoise"
+      }
     },
     "death_video_url": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Label bebas (favorit, indukan terbaik, dll)"
+    },
+    "qr_code_url": {
       "type": "string",
-      "description": "URL video dokumentasi kematian"
+      "description": "URL QR code unik kura-kura"
+    },
+    "sale_channel": {
+      "type": "string",
+      "description": "Dari mana kura-kura ini dibeli"
     },
     "notes": {
-      "type": "string",
-      "description": "Catatan tambahan"
+      "type": "string"
     },
     "parent_male": {
       "type": "string",

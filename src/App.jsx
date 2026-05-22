@@ -27,6 +27,10 @@ import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
 import FamilyTreePage from '@/pages/FamilyTreePage';
 import MonthlySalaryPage from '@/pages/MonthlySalaryPage';
+import EnclosurePage from '@/pages/EnclosurePage';
+import WaitingListPage from '@/pages/WaitingListPage';
+import SalesReportPage from '@/pages/SalesReportPage';
+import HRPage from '@/pages/HRPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -71,6 +75,10 @@ const AuthenticatedApp = () => {
         <Route path="/payroll-gaji" element={<PayrollPage />} />
         <Route path="/family-tree" element={<FamilyTreePage />} />
         <Route path="/salary" element={<MonthlySalaryPage />} />
+        <Route path="/enclosure" element={<EnclosurePage />} />
+        <Route path="/waiting-list" element={<WaitingListPage />} />
+        <Route path="/sales-report" element={<SalesReportPage />} />
+        <Route path="/hr" element={<HRPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
