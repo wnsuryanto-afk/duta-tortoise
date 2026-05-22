@@ -12,6 +12,7 @@ import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import TourController from "@/components/tutorial/TourController";
+import IncompleteProfileBanner from "@/components/profile/IncompleteProfileBanner";
 
 export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
@@ -57,6 +58,7 @@ export default function AppLayout() {
               </Button>
             )}
           </div>
+          <IncompleteProfileBanner user={user} profile={profiles[0]} />
           <Outlet />
         </div>
       </main>

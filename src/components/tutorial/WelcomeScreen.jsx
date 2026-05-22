@@ -11,8 +11,9 @@ export default function WelcomeScreen({ user, profile }) {
 
   const handleSkip = async () => {
     dismissWelcome();
+    // Set both tour_skipped AND tour_completed so it won't show again
     if (profile?.id) {
-      await base44.entities.UserProfile.update(profile.id, { tour_skipped: true });
+      await base44.entities.UserProfile.update(profile.id, { tour_skipped: true, tour_completed: true });
     } else if (user?.email) {
       await base44.entities.UserProfile.create({
         user_id: user.id || user.email,
@@ -21,6 +22,7 @@ export default function WelcomeScreen({ user, profile }) {
         phone: "-",
         join_date: new Date().toISOString().split("T")[0],
         tour_skipped: true,
+        tour_completed: true,
       });
     }
     qc.invalidateQueries(["user-profile"]);

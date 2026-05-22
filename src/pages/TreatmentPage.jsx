@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, CheckCircle2, Circle, CalendarClock, Pencil, Trash2, Bell, Clock, Pill, Stethoscope, Syringe, Weight } from "lucide-react";
+import SearchableDropdownFilter from "@/components/tutorial/TortoiseDropdownFilter";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -66,6 +67,10 @@ export default function TreatmentPage() {
   });
 
   const enclosures = [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort();
+
+  // Items for dropdown filters
+  const tortoiseFilterItems = tortoises.map(t => ({ id: t.id, label: t.name }));
+  const enclosureFilterItems = enclosures.map(e => ({ id: e, label: `📍 ${e}` }));
 
   const [tab, setTab] = useState("jadwal");
   const [freqFilter, setFreqFilter] = useState("semua");
@@ -232,7 +237,7 @@ export default function TreatmentPage() {
   const filtered = schedules.filter(s => {
     const matchFreq = freqFilter === "semua" || s.frequency === freqFilter;
     let matchTortoise = true;
-    if (tortoiseFilter !== "semua") {
+    if (tortoiseFilter && tortoiseFilter !== "semua") {
       if (filterMode === "kura") {
         matchTortoise = getTargetTortoises(s).some(t => t.id === tortoiseFilter);
       } else {
@@ -282,37 +287,22 @@ export default function TreatmentPage() {
                 </button>
               ))}
             </div>
-            {/* Filter per Kura / Kandang */}
-            <div className="space-y-1.5">
-              <div className="flex gap-1.5 items-center">
-                <span className="text-xs text-muted-foreground font-medium mr-1">Filter:</span>
-                {[["kura","Per Kura"],["kandang","Per Kandang"]].map(([m,l]) => (
-                  <button key={m} onClick={() => { setFilterMode(m); setTortoiseFilter("semua"); }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${filterMode === m ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <button onClick={() => setTortoiseFilter("semua")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === "semua" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                  Semua
-                </button>
-                {filterMode === "kura"
-                  ? tortoises.map(t => (
-                      <button key={t.id} onClick={() => setTortoiseFilter(t.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === t.id ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                        {t.name}
-                      </button>
-                    ))
-                  : enclosures.map(enc => (
-                      <button key={enc} onClick={() => setTortoiseFilter(enc)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tortoiseFilter === enc ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
-                        📍 {enc}
-                      </button>
-                    ))
-                }
-              </div>
+            {/* Filter per Kura / Kandang — dropdown searchable */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <SearchableDropdownFilter
+                items={tortoiseFilterItems}
+                selected={filterMode === "kura" ? tortoiseFilter : null}
+                onSelect={id => { setFilterMode("kura"); setTortoiseFilter(id || "semua"); }}
+                placeholder="Cari nama kura-kura..."
+                allLabel="Semua Kura-kura"
+              />
+              <SearchableDropdownFilter
+                items={enclosureFilterItems}
+                selected={filterMode === "kandang" ? tortoiseFilter : null}
+                onSelect={id => { setFilterMode("kandang"); setTortoiseFilter(id || "semua"); }}
+                placeholder="Cari kandang..."
+                allLabel="Semua Kandang"
+              />
             </div>
           </div>
 
