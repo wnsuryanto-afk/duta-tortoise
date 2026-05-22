@@ -45,6 +45,8 @@ import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
 import EditProfilePage from '@/pages/EditProfilePage.jsx';
 import IncompleteDataPage from '@/pages/IncompleteDataPage';
 import DeathRecordsPage from '@/pages/DeathRecordsPage';
+import ActivityLogPage from '@/pages/ActivityLogPage';
+import SystemMaintenancePage from '@/pages/SystemMaintenancePage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -102,6 +104,8 @@ const AuthenticatedApp = () => {
         <Route path="/crm" element={<CRMPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/death-records" element={<DeathRecordsPage />} />
+        <Route path="/activity-log" element={<ActivityLogPage />} />
+        <Route path="/system-maintenance" element={<SystemMaintenancePage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

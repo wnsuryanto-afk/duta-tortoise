@@ -94,8 +94,11 @@
         "aktif",
         "baby",
         "sakit",
+        "breeding",
+        "karantina",
+        "mati",
         "terjual",
-        "mati"
+        "diarsipkan"
       ],
       "default": "aktif"
     },

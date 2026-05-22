@@ -11,14 +11,13 @@ Deno.serve(async (req) => {
 
     // Recalculate semua enclosure
     const enclosures = await base44.asServiceRole.entities.Enclosure.list();
+    const tortoises = await base44.asServiceRole.entities.Tortoise.list();
     const activeStatuses = ['aktif', 'baby', 'sakit', 'breeding', 'karantina'];
     
     for (const enclosure of enclosures) {
-      const tortoises = await base44.asServiceRole.entities.Tortoise.filter({
-        enclosure: enclosure.id
-      });
-      
-      const count = tortoises.filter(t => activeStatuses.includes(t.status)).length;
+      const count = tortoises.filter(t => 
+        t.enclosure === enclosure.name && activeStatuses.includes(t.status)
+      ).length;
       
       if (count !== enclosure.current_count) {
         await base44.asServiceRole.entities.Enclosure.update(enclosure.id, {

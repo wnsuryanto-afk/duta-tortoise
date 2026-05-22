@@ -4,7 +4,8 @@ import {
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
   Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag,
-  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle, Skull
+  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle, Skull,
+  Activity, Settings
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -81,6 +82,8 @@ const NAV_GROUPS = [
     label: "Pengaturan",
     items: [
       { path: "/incomplete-data", section: "incomplete-data", label: "Data Tidak Lengkap", icon: AlertTriangle },
+      { path: "/activity-log",    section: "incomplete-data", label: "Riwayat Aktivitas",  icon: Activity },
+      { path: "/system-maintenance", section: "incomplete-data", label: "Pemeliharaan Sistem", icon: Settings },
       { path: "/cctv",            section: "cctv",            label: "Monitoring CCTV",  icon: Video },
       { path: "/marketplace",     section: "marketplace",     label: "Marketplace",      icon: ShoppingBag },
       { path: "/users",           section: "users",           label: "Manajemen User",  icon: Users },

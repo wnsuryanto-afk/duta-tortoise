@@ -12,6 +12,7 @@ import TortoisePhotoGallery from "./TortoisePhotoGallery";
 import IncompleteBanner from "@/components/common/IncompleteBanner";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import DeathRecordDialog from "./DeathRecordDialog";
+import { logActivity } from "@/lib/logActivity";
 
 const MORPHS = [
   { value: "normal",         label: "Normal" },
@@ -151,11 +152,27 @@ export default function TortoiseForm({ open, onClose, editData }) {
     let tortoiseId = editData?.id;
     const oldEnclosure = editData?.enclosure || "";
     const newEnclosureName = data.enclosure || "";
+    const oldData = editData ? { ...editData } : null;
     if (editData?.id) {
       await base44.entities.Tortoise.update(editData.id, data);
+      await logActivity({
+        action: "update",
+        entity_type: "Tortoise",
+        entity_id: editData.id,
+        entity_name: form.name,
+        changes: { before: oldData, after: data },
+        notes: `Status: ${oldData?.status} → ${data.status}`,
+      });
     } else {
       const created = await base44.entities.Tortoise.create(data);
       tortoiseId = created.id;
+      await logActivity({
+        action: "create",
+        entity_type: "Tortoise",
+        entity_id: created.id,
+        entity_name: form.name,
+        notes: "Tortoise baru ditambahkan",
+      });
     }
 
     // Sync Enclosure current_count jika kandang berubah
@@ -300,8 +317,11 @@ export default function TortoiseForm({ open, onClose, editData }) {
                     <SelectItem value="aktif">Aktif</SelectItem>
                     <SelectItem value="baby">🐣 Baby (&lt;10cm)</SelectItem>
                     <SelectItem value="sakit">Sakit</SelectItem>
-                    <SelectItem value="terjual">Terjual</SelectItem>
+                    <SelectItem value="breeding">Breeding</SelectItem>
+                    <SelectItem value="karantina">Karantina</SelectItem>
                     <SelectItem value="mati">Mati</SelectItem>
+                    <SelectItem value="terjual">Terjual</SelectItem>
+                    <SelectItem value="diarsipkan">Diarsipkan</SelectItem>
                   </SelectContent>
                 </Select>
                 {editData?.id && form.status !== "mati" && (

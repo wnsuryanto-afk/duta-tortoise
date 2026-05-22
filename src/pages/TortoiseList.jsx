@@ -16,6 +16,8 @@ import MoveEnclosureDialog from "@/components/tortoise/MoveEnclosureDialog";
 import RenameEnclosureDialog from "@/components/tortoise/RenameEnclosureDialog";
 import EnclosureForm from "@/components/enclosure/EnclosureForm";
 import EnclosureAuditForm from "@/components/enclosure/EnclosureAuditForm";
+import EmptyState from "@/components/common/EmptyState";
+import { CardSkeleton } from "@/components/common/Skeleton";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms } from "@/lib/permissions";
 import { differenceInDays, parseISO } from "date-fns";
@@ -248,8 +250,11 @@ export default function TortoiseList() {
                 <SelectItem value="aktif">Aktif</SelectItem>
                 <SelectItem value="baby">🐣 Baby</SelectItem>
                 <SelectItem value="sakit">Sakit</SelectItem>
+                <SelectItem value="breeding">Breeding</SelectItem>
+                <SelectItem value="karantina">Karantina</SelectItem>
                 <SelectItem value="terjual">Terjual</SelectItem>
                 <SelectItem value="mati">Mati</SelectItem>
+                <SelectItem value="diarsipkan">Diarsipkan</SelectItem>
               </SelectContent>
             </Select>
             <Select value={genderFilter} onValueChange={setGenderFilter}>
@@ -325,12 +330,15 @@ export default function TortoiseList() {
           )}
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>
+            <CardSkeleton count={6} />
           ) : filtered.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground"><Shell className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Belum ada tortoise</p></div>
+            <EmptyState
+              type="tortoise"
+              onAction={perms.canCreate ? () => { setEditData(null); setShowForm(true); } : null}
+            />
           ) : viewMode === "semua" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 }[b.status] ?? 0)).map((t) => (
+              {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, karantina: 4, mati: 5, terjual: 6, diarsipkan: 7 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, karantina: 4, mati: 5, terjual: 6, diarsipkan: 7 }[b.status] ?? 0)).map((t) => (
                 <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={perms.canDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
               ))}
             </div>
@@ -351,6 +359,11 @@ export default function TortoiseList() {
                           <span>♂ {items.filter(t => t.gender === "jantan").length}</span>
                           <span>·</span>
                           <span>♀ {items.filter(t => t.gender === "betina").length}</span>
+                        </div>
+                        <div className="flex gap-1 text-xs">
+                          <span className="text-green-600">{items.filter(t => t.status === "aktif").length}</span>
+                          <span className="text-blue-600">·{items.filter(t => t.status === "baby").length}</span>
+                          <span className="text-yellow-600">·{items.filter(t => t.status === "sakit").length}</span>
                         </div>
                       </div>
                       {canEditEnclosure && (
@@ -400,7 +413,13 @@ export default function TortoiseList() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {enclosures.length === 0 ? (
+            <EmptyState
+              type="enclosure"
+              onAction={canEditEnclosure ? () => { setEditingEnclosure(null); setShowEnclosureForm(true); } : null}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {enclosures.map(enc => {
               const status = getEnclosureStatus(enc);
               const Icon = typeIcon[enc.type] || Home;
@@ -438,7 +457,8 @@ export default function TortoiseList() {
                 </Card>
               );
             })}
-          </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* ══════════ TAB AUDIT ══════════ */}
@@ -477,10 +497,13 @@ export default function TortoiseList() {
               {auditsLoading ? (
                 <div className="text-center py-16 text-muted-foreground">Memuat...</div>
               ) : filteredAudits.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-xl">
-                  <ClipboardCheck className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p className="font-medium">Belum ada data audit</p>
-                </div>
+                <EmptyState
+                  type="sop"
+                  customTitle="Belum ada audit kandang"
+                  customDescription="Lakukan audit pertama untuk mulai monitoring kualitas kandang."
+                  customButtonText="+ Audit Pertama"
+                  onAction={canAudit ? () => { setEditAudit(null); setShowAuditForm(true); } : null}
+                />
               ) : (
                 <div className="space-y-6">
                   {Object.entries(chartData).map(([name, data]) => data.length > 1 && (
