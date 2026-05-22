@@ -23,6 +23,11 @@ export default function OwnerSummaryWidget() {
     queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
   });
 
+  const { data: incubators = [] } = useQuery({
+    queryKey: ["incubators-owner-summary"],
+    queryFn: () => base44.entities.Incubator.list(),
+  });
+
   const { data: breedings = [] } = useQuery({
     queryKey: ["breedings-owner-summary"],
     queryFn: () => base44.entities.Breeding.filter({ status: "inkubasi" }),
@@ -59,7 +64,8 @@ export default function OwnerSummaryWidget() {
   });
 
   const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "baby").length;
-  const incubatingEggs = breedings.reduce((s, b) => s + (b.egg_count || 0), 0);
+  // Total telur dari SUM current_eggs semua inkubator
+  const incubatingEggs = incubators.reduce((sum, inc) => sum + (inc.current_eggs || 0), 0);
   const periodTx = transactions.filter((t) => t.date?.startsWith(currentPeriod));
   const omzet = periodTx.filter((t) => t.type === "pemasukan").reduce((s, t) => s + (t.amount || 0), 0);
   const pengeluaran = periodTx.filter((t) => t.type === "pengeluaran").reduce((s, t) => s + (t.amount || 0), 0);
@@ -109,11 +115,22 @@ export default function OwnerSummaryWidget() {
     },
     {
       label: "Telur Inkubasi",
-      value: incubatingEggs,
+      value: (
+        <div className="text-left">
+          <div className="font-bold text-lg">{incubatingEggs}</div>
+          <div className="text-[10px] leading-tight space-y-0.5">
+            {incubators.map(inc => (
+              <div key={inc.id} className="text-amber-700/80">
+                • {inc.name}: {inc.current_eggs || 0} ({inc.capacity_eggs || "∞"})
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
       icon: Egg,
       color: "text-amber-600",
       bg: "bg-amber-100",
-      link: "/breeding",
+      link: "/incubator",
     },
     {
       label: "Omzet Bulan Ini",

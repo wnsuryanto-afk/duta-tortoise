@@ -23,24 +23,40 @@ export default function AppLayout() {
   const isOwner = user?.role === "owner";
   const isViewingAs = !!viewAsRole;
 
-  const { data: profiles = [], isLoading: profileLoading } = useQuery({
+  const { data: profiles = [], isLoading: profileLoading, refetch: refetchProfile } = useQuery({
     queryKey: ["user-profile", user?.email],
-    queryFn: () => base44.entities.UserProfile.filter({ user_email: user.email }),
+    queryFn: async () => {
+      const data = await base44.entities.UserProfile.filter({ user_email: user.email });
+      console.log("UserProfile check:", { email: user.email, count: data.length, hasData: data.length > 0, fields: data[0] });
+      return data;
+    },
     enabled: !!user?.email,
   });
 
-  const profileComplete = profiles.length > 0 && profiles[0]?.is_complete === true;
+  // Check if profile needs completion
+  const needsProfileCompletion = () => {
+    if (!user || !profiles || profiles.length === 0) return true;
+    const p = profiles[0];
+    const requiredFields = ["full_name", "phone", "join_date", "id_number", "bank_name", "bank_account_number"];
+    const missing = requiredFields.some(f => !p[f] || p[f]?.toString().trim() === "");
+    console.log("Profile check:", { missing, fields: requiredFields.map(f => ({ [f]: p[f] })) });
+    return missing;
+  };
+
+  const profileComplete = profiles.length > 0 && profiles[0]?.is_complete === true && !needsProfileCompletion();
   const isProfileLoaded = !isLoading && !profileLoading && !!user;
 
   // Non-owner: force complete profile (fullscreen, no skip)
   const showForce = isProfileLoaded && !isOwner && !profileComplete;
 
-  const handleProfileComplete = () => {
-    // Refresh profile data setelah user melengkapi profil
+  const handleProfileComplete = async () => {
+    console.log("Profile completed, refetching...");
+    await refetchProfile();
     window.location.reload();
   };
 
   if (showForce) {
+    console.log("Showing ForceProfileSetupModal");
     return <ForceProfileSetupModal user={user} onComplete={handleProfileComplete} />;
   }
 

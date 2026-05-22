@@ -210,6 +210,17 @@ export default function HatchDialog({ open, onClose, breeding }) {
       }
     }
 
+    // Kurangi current_eggs di inkubator jika breeding punya incubator_name
+    if (breeding.incubator_name && breeding.egg_count) {
+      const allIncubators = await base44.entities.Incubator.list();
+      const inc = allIncubators.find(i => i.name === breeding.incubator_name);
+      if (inc) {
+        const newTotal = Math.max(0, (inc.current_eggs || 0) - (breeding.egg_count || 0));
+        await base44.entities.Incubator.update(inc.id, { current_eggs: newTotal });
+        qc.invalidateQueries({ queryKey: ["incubators"] });
+      }
+    }
+
     qc.invalidateQueries({ queryKey: ["breedings"] });
     qc.invalidateQueries({ queryKey: ["tortoises"] });
     qc.invalidateQueries({ queryKey: ["enclosures"] });
