@@ -91,7 +91,6 @@ const AuthenticatedApp = () => {
         <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path="/breeding-planner" element={<BreedingPlannerPage />} />
         <Route path="/sop-library" element={<SOPLibraryPage />} />
-        <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/task-template" element={<DailyTaskTemplatePage />} />
         <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
         <Route path="/crm" element={<CRMPage />} />
