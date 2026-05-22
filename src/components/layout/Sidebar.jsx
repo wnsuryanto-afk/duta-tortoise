@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
-  Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag
+  Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag,
+  CalendarHeart, Library, ListTodo, ClipboardCheck
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -43,13 +44,28 @@ const NAV_GROUPS = [
     ],
   },
   {
+    label: "Breeding",
+    items: [
+      { path: "/breeding-planner", section: "breeding-planner", label: "Breeding Planner", icon: CalendarHeart },
+    ],
+  },
+  {
     label: "SDM & KPI",
     items: [
       { path: "/sop",             section: "sop",             label: "SOP & KPI",        icon: ClipboardList },
+      { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP", icon: Library },
+      { path: "/onboarding",      section: "onboarding",      label: "Onboarding",       icon: UserCheck },
+      { path: "/task-template",   section: "task-template",   label: "Template Task",    icon: ListTodo },
       { path: "/payroll",         section: "payroll",         label: "Laporan KPI",      icon: FileSpreadsheet },
       { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Penggajian & Kasbon", icon: Wallet },
       { path: "/salary",          section: "salary",          label: "Gaji Bulanan",     icon: Calculator },
-      { path: "/hr",              section: "hr",              label: "Manajemen SDM",    icon: UserCheck },
+      { path: "/hr",              section: "hr",              label: "Manajemen SDM",    icon: Users },
+    ],
+  },
+  {
+    label: "Audit",
+    items: [
+      { path: "/enclosure-audit", section: "enclosure-audit", label: "Audit Kandang",    icon: ClipboardCheck },
     ],
   },
   {

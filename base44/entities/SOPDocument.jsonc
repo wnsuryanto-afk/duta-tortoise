@@ -1,0 +1,54 @@
+{
+  "name": "SOPDocument",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul SOP"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "perawatan_harian",
+        "penanganan_sakit",
+        "breeding",
+        "karantina",
+        "penjualan",
+        "administrasi",
+        "lainnya"
+      ],
+      "default": "lainnya"
+    },
+    "content": {
+      "type": "string",
+      "description": "Isi SOP dalam format markdown"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "description": "Versi dokumen, contoh: v1.2"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

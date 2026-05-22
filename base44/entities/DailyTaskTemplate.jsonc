@@ -1,0 +1,46 @@
+{
+  "name": "DailyTaskTemplate",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "keeper",
+        "admin",
+        "manajer"
+      ],
+      "description": "Role yang mendapatkan task ini"
+    },
+    "task_title": {
+      "type": "string",
+      "description": "Judul task"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi detail task"
+    },
+    "time_of_day": {
+      "type": "string",
+      "enum": [
+        "pagi",
+        "siang",
+        "sore",
+        "malam"
+      ],
+      "default": "pagi"
+    },
+    "points": {
+      "type": "number",
+      "default": 10,
+      "description": "Poin yang didapatkan saat task selesai"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "role",
+    "task_title"
+  ]
+}

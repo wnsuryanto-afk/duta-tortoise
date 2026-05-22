@@ -35,6 +35,11 @@ import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import CCTVPage from '@/pages/CCTVPage';
 import MarketplacePage from '@/pages/MarketplacePage';
+import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
+import SOPLibraryPage from '@/pages/SOPLibraryPage';
+import OnboardingPage from '@/pages/OnboardingPage';
+import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
+import EnclosureAuditPage from '@/pages/EnclosureAuditPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -86,6 +91,11 @@ const AuthenticatedApp = () => {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/cctv" element={<CCTVPage />} />
         <Route path="/marketplace" element={<MarketplacePage />} />
+        <Route path="/breeding-planner" element={<BreedingPlannerPage />} />
+        <Route path="/sop-library" element={<SOPLibraryPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/task-template" element={<DailyTaskTemplatePage />} />
+        <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
