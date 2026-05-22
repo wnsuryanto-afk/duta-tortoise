@@ -9,6 +9,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Egg, Loader2, Baby, CheckCircle2, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
 
 function generateBreedingCode(maleN, femaleN, date) {
@@ -16,6 +17,12 @@ function generateBreedingCode(maleN, femaleN, date) {
   const f = (femaleN || "BT").substring(0, 3).toUpperCase().replace(/\s/g, "");
   const d = date ? date.replace(/-/g, "").substring(2, 8) : format(new Date(), "yyMMdd");
   return `${m}${f}-${d}`;
+}
+
+// Generate baby name dengan format: Baby-YYMMDD-NN
+function generateBabyName(hatchDate, index) {
+  const dateStr = hatchDate ? hatchDate.replace(/-/g, "").substring(2, 8) : format(new Date(), "yyMMdd");
+  return `Baby-${dateStr}-${String(index + 1).padStart(2, "0")}`;
 }
 
 const SHELL_TYPES = [
@@ -149,23 +156,35 @@ export default function HatchDialog({ open, onClose, breeding }) {
 
   const selectedEnclosure = babyEnclosures.find(e => e.name === babyEnclosure);
 
-  const initBabies = (count, encName) => {
-    const code = generateBreedingCode(breeding?.male_name, breeding?.female_name, hatchDate);
-    return Array.from({ length: count }, (_, i) => ({
-      name: `${code}-Baby-${String(i + 1).padStart(2, "0")}`,
-      shell_type: "normal",
-      gender: "belum_diketahui",
-      weight_grams: "",
-      shell_length_cm: "",
-      photo_url: "",
-      notes: "",
-      enclosure: encName,
-    }));
+  const initBabies = async (count, encName) => {
+    // Generate nama baby dengan format Baby-YYMMDD-NN
+    // Cek juga baby yang sudah menetas di tanggal yang sama untuk nomor urut
+    const dateStr = hatchDate.replace(/-/g, "").substring(2, 8);
+    const existingBabies = await base44.entities.Tortoise.filter({
+      birth_date: hatchDate,
+    });
+    const startIdx = existingBabies.length;
+    
+    return Array.from({ length: count }, (_, i) => {
+      const babyNum = startIdx + i + 1;
+      const autoName = generateBabyName(hatchDate, babyNum - 1);
+      return {
+        name: autoName,
+        shell_type: "normal",
+        gender: "belum_diketahui",
+        weight_grams: "",
+        shell_length_cm: "",
+        photo_url: "",
+        notes: `Anak dari ${breeding.male_name} × ${breeding.female_name}. Menetas pada ${format(new Date(hatchDate), "d MMMM yyyy", { locale: id })}`,
+        enclosure: encName,
+      };
+    });
   };
 
-  const handleNextToBabyData = () => {
+  const handleNextToBabyData = async () => {
     if (hatchedCount <= 0) return;
-    setBabies(initBabies(hatchedCount, babyEnclosure));
+    const newBabies = await initBabies(hatchedCount, babyEnclosure);
+    setBabies(newBabies);
     setCurrentBabyIdx(0);
     setStep("baby-data");
   };
@@ -210,16 +229,8 @@ export default function HatchDialog({ open, onClose, breeding }) {
       }
     }
 
-    // Kurangi current_eggs di inkubator jika breeding punya incubator_name
-    if (breeding.incubator_name && breeding.egg_count) {
-      const allIncubators = await base44.entities.Incubator.list();
-      const inc = allIncubators.find(i => i.name === breeding.incubator_name);
-      if (inc) {
-        const newTotal = Math.max(0, (inc.current_eggs || 0) - (breeding.egg_count || 0));
-        await base44.entities.Incubator.update(inc.id, { current_eggs: newTotal });
-        qc.invalidateQueries({ queryKey: ["incubators"] });
-      }
-    }
+    // TIDAK PERLU UPDATE current_eggs lagi - dihitung otomatis dari Breeding
+    // Status breeding berubah jadi "menetas" akan otomatis mengurangi telur inkubator
 
     qc.invalidateQueries({ queryKey: ["breedings"] });
     qc.invalidateQueries({ queryKey: ["tortoises"] });

@@ -55,11 +55,24 @@ export default function ProfileSetupPage() {
   // Save profile mutation
   const saveProfileMutation = useMutation({
     mutationFn: async (profileData) => {
+      // Auto-set is_complete jika field-field penting sudah terisi
+      const isComplete = !!(
+        profileData.full_name && 
+        profileData.phone && 
+        profileData.join_date && 
+        profileData.bank_account_number
+      );
+      
+      const dataToSave = {
+        ...profileData,
+        is_complete: isComplete,
+      };
+      
       if (profiles && profiles.length > 0) {
-        return await base44.entities.UserProfile.update(profiles[0].id, profileData);
+        return await base44.entities.UserProfile.update(profiles[0].id, dataToSave);
       } else {
         return await base44.entities.UserProfile.create({
-          ...profileData,
+          ...dataToSave,
           user_id: user.id,
           user_email: user.email,
         });
@@ -75,6 +88,7 @@ export default function ProfileSetupPage() {
       queryClient.invalidateQueries({ queryKey: ["user-profile-setup"] });
       
       toast.success("Profil berhasil disimpan!");
+      // Redirect IMMEDIATE ke dashboard tanpa menunggu refetch
       navigate("/");
     },
     onError: (err) => {

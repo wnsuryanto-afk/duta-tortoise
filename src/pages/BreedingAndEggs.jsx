@@ -20,6 +20,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
+import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -42,6 +43,8 @@ function IncubatorForm({ incubator, onClose, onSaved }) {
     notes: incubator?.notes || "",
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // NOTE: current_eggs TIDAK ADA DI FORM - dihitung otomatis dari Breeding
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -137,15 +140,8 @@ export default function BreedingAndEggs() {
 
   const today = new Date();
 
-  // KALKULASI TELUR INKUBATOR DARI BREEDING DATA
-  const calculateIncubatorEggs = (incubatorName) => {
-    return breedings
-      .filter(b => b.incubator_name === incubatorName && (b.status === "bertelur" || b.status === "inkubasi"))
-      .reduce((sum, b) => sum + (b.egg_count || 0), 0);
-  };
-
-  const getClutchesInIncubator = (incName) =>
-    breedings.filter(b => b.incubator_name === incName && (b.status === "inkubasi" || b.status === "bertelur"));
+  // KALKULASI TELUR INKUBATOR MENGGUNAKAN HELPER (SUMBER KEBENARAN TUNGGAL)
+  // Fungsi calculateIncubatorEggs dan getClutchesInIncubator sekarang di-import dari breedingUtils
 
   const activeBreedings = breedings.filter(b => b.status !== "menetas" && b.status !== "gagal");
   const historyBreedings = breedings.filter(b => b.status === "menetas" || b.status === "gagal");
@@ -451,13 +447,14 @@ export default function BreedingAndEggs() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {incubators.map(inc => {
                 // KALKULASI REAL-TIME DARI BREEDING
-                const calculatedEggs = calculateIncubatorEggs(inc.name);
+                // MENGGUNAKAN HELPER FUNCTIONS DARI breedingUtils
+                const calculatedEggs = calculateIncubatorEggs(inc.name, breedings);
+                const clutches = getClutchesInIncubator(inc.name, breedings);
+                const isFull = isIncubatorFull(inc.name, inc.capacity_eggs, breedings);
+                const isNearFull = isIncubatorNearFull(inc.name, inc.capacity_eggs, breedings);
                 const pct = inc.capacity_eggs && inc.capacity_eggs > 0 
                   ? Math.min(100, Math.round((calculatedEggs / inc.capacity_eggs) * 100)) 
                   : 0;
-                const isFull = inc.capacity_eggs && calculatedEggs >= inc.capacity_eggs;
-                const isNearFull = !isFull && pct >= 80;
-                const clutches = getClutchesInIncubator(inc.name);
 
                 return (
                   <Card key={inc.id} className={`border-2 ${isFull ? "border-red-300 bg-red-50/30" : isNearFull ? "border-amber-300 bg-amber-50/30" : "border-border"}`}>

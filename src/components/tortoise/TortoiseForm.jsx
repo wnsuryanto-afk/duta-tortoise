@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, AlertTriangle, Video } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
 import IncompleteBanner from "@/components/common/IncompleteBanner";
@@ -58,6 +58,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [deathVideoUrl, setDeathVideoUrl] = useState(editData?.death_video_url || "");
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [videoError, setVideoError] = useState("");
+  const [enclosureOptions, setEnclosureOptions] = useState([]);
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "belum_diketahui", morph: "normal",
     source: "tidak_diketahui",
@@ -66,6 +67,16 @@ export default function TortoiseForm({ open, onClose, editData }) {
   });
 
   const set = (field, value) => { setForm((p) => ({ ...p, [field]: value })); setErrors(e => ({ ...e, [field]: "" })); };
+
+  // Load enclosure options from entity
+  const { data: enclosures = [] } = useQuery({
+    queryKey: ["enclosures-for-dropdown"],
+    queryFn: () => base44.entities.Enclosure.list(),
+  });
+
+  useEffect(() => {
+    setEnclosureOptions(enclosures.map(e => e.name).filter(Boolean));
+  }, [enclosures]);
 
   const validate = () => {
     const e = {};
@@ -77,6 +88,9 @@ export default function TortoiseForm({ open, onClose, editData }) {
     setErrors(e);
     return Object.keys(e).length === 0;
   };
+
+  // Validasi strict hanya untuk CREATE, untuk EDIT data lama lebih lenient
+  const isOldData = !!editData?.id;
 
   const handlePhotosChange = (newPhotos, newThumb) => {
     setPhotos(newPhotos);
@@ -97,7 +111,21 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    // Validasi STRICT hanya untuk CREATE, untuk EDIT data lama lebih lenient
+    if (!isOldData && !validate()) return;
+    
+    // Untuk EDIT data lama, validasi hanya field-field dasar
+    if (isOldData) {
+      const basicErrors = {};
+      if (!form.name?.trim()) basicErrors.name = "Nama wajib diisi";
+      if (!form.gender) basicErrors.gender = "Jenis kelamin wajib dipilih";
+      if (!form.status) basicErrors.status = "Status wajib dipilih";
+      if (Object.keys(basicErrors).length > 0) {
+        setErrors(basicErrors);
+        return;
+      }
+    }
+    
     // Validasi wajib video saat status mati
     if (isMati) {
       if (!deathVideoUrl) {
@@ -185,7 +213,22 @@ export default function TortoiseForm({ open, onClose, editData }) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           {/* Banner reminder jika data tidak lengkap saat edit */}
-          {editData?.id && <IncompleteBanner missingFields={getMissingFields("tortoise", form)} />}
+          {editData?.id && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-medium text-amber-800">
+                  ⚠️ Data ini dibuat sebelum aturan baru
+                </p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Mohon lengkapi field berikut: {getMissingFields("tortoise", form).join(", ") || "Sudah lengkap"}
+                </p>
+                <p className="text-xs text-amber-600 mt-2">
+                  ✓ Anda tetap bisa menyimpan meskipun ada field kosong
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Foto Gallery */}
           <div className="space-y-1.5">
@@ -264,7 +307,18 @@ export default function TortoiseForm({ open, onClose, editData }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Kandang</Label>
-              <Input value={form.enclosure} onChange={(e) => set("enclosure", e.target.value)} placeholder="Kandang A" />
+              <Select value={form.enclosure || ""} onValueChange={(v) => set("enclosure", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih kandang..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Tidak ada kandang</SelectItem>
+                  {enclosureOptions.map((encName) => (
+                    <SelectItem key={encName} value={encName}>{encName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {enclosureOptions.length === 0 && (
+                <p className="text-xs text-muted-foreground">Belum ada kandang. Tambahkan di halaman Tortoise & Kandang.</p>
+              )}
             </div>
           </div>
 

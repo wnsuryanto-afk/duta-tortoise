@@ -29,6 +29,11 @@ export default function BreedingForm({ open, onClose, editData }) {
     queryFn: () => base44.entities.Incubator.list(),
   });
 
+  const { data: breedings = [] } = useQuery({
+    queryKey: ["breedings"],
+    queryFn: () => base44.entities.Breeding.list("-created_date", 200),
+  });
+
   const males = tortoises.filter((t) => t.gender === "jantan" && (t.status === "aktif" || t.status === "breeding"));
   const females = tortoises.filter((t) => t.gender === "betina" && (t.status === "aktif" || t.status === "breeding"));
 
@@ -110,6 +115,14 @@ export default function BreedingForm({ open, onClose, editData }) {
   const handleManualEstimateChange = (field, value) => {
     // Field estimasi sekarang read-only, tapi tetap handle untuk safety
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // KALKULASI REAL-TIME telur di inkubator dari Breeding
+  const calculateIncubatorEggs = (incubatorName) => {
+    // Ambil semua breeding yang sedang aktif (bertelur/inkubasi) di inkubator ini
+    return breedings
+      .filter(b => b.incubator_name === incubatorName && (b.status === "bertelur" || b.status === "inkubasi"))
+      .reduce((sum, b) => sum + (b.egg_count || 0), 0);
   };
 
   const handleSubmit = async (e) => {
@@ -239,7 +252,7 @@ export default function BreedingForm({ open, onClose, editData }) {
             </div>
           </div>
 
-          {/* Lokasi Inkubator */}
+          {/* Lokasi Inkubator - dengan kalkulasi real-time */}
           <div className="space-y-1.5">
             <Label>Lokasi Inkubator</Label>
             <Select value={form.incubator_name || ""} onValueChange={v => handleChange("incubator_name", v || "")}>
@@ -247,10 +260,12 @@ export default function BreedingForm({ open, onClose, editData }) {
               <SelectContent>
                 <SelectItem value={null}>Belum ditentukan</SelectItem>
                 {incubators.filter(i => i.is_active !== false).map(inc => {
-                  const isFull = inc.capacity_eggs && inc.current_eggs >= inc.capacity_eggs;
+                  // KALKULASI REAL-TIME dari Breeding
+                  const calculatedEggs = calculateIncubatorEggs(inc.name);
+                  const isFull = inc.capacity_eggs && calculatedEggs >= inc.capacity_eggs;
                   return (
                     <SelectItem key={inc.id} value={inc.name} disabled={isFull}>
-                      {inc.name} (terisi: {inc.current_eggs || 0}/{inc.capacity_eggs || "∞"}) {isFull ? "— PENUH" : ""}
+                      {inc.name} (terisi: {calculatedEggs}/{inc.capacity_eggs || "∞"}) {isFull ? "— PENUH" : ""}
                     </SelectItem>
                   );
                 })}
@@ -258,7 +273,8 @@ export default function BreedingForm({ open, onClose, editData }) {
             </Select>
             {form.incubator_name && (() => {
               const inc = incubators.find(i => i.name === form.incubator_name);
-              if (inc && inc.capacity_eggs && inc.current_eggs >= inc.capacity_eggs) {
+              const calculatedEggs = calculateIncubatorEggs(form.incubator_name);
+              if (inc && inc.capacity_eggs && calculatedEggs >= inc.capacity_eggs) {
                 return (
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
                     <AlertTriangle className="w-3.5 h-3.5" />
