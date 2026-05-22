@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Loader2, Camera, X, ImagePlus } from "lucide-react";
+import { Loader2, Camera, X, ImagePlus, AlertTriangle } from "lucide-react";
 import { addDays, format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -23,13 +24,21 @@ export default function BreedingForm({ open, onClose, editData }) {
     queryFn: () => base44.entities.Tortoise.list("-created_date", 200),
   });
 
+  const { data: incubators = [] } = useQuery({
+    queryKey: ["incubators"],
+    queryFn: () => base44.entities.Incubator.list(),
+  });
+
   const males = tortoises.filter((t) => t.gender === "jantan" && (t.status === "aktif" || t.status === "breeding"));
   const females = tortoises.filter((t) => t.gender === "betina" && (t.status === "aktif" || t.status === "breeding"));
 
   const [form, setForm] = useState(editData || {
     male_name: "", female_name: "", male_id: "", female_id: "",
     egg_laying_date: "", egg_count: "",
+    estimated_hatch_date_start: "",
+    estimated_hatch_date_end: "",
     estimated_hatch_date: "",
+    incubator_name: "",
     status: "bertelur", incubation_temp: "", notes: "", photos: [],
   });
 
@@ -83,12 +92,19 @@ export default function BreedingForm({ open, onClose, editData }) {
   };
 
   const handleEggLayingDate = (value) => {
-    // Auto-hitung perkiraan menetas: 105 hari (tengah antara 90-120)
-    let estimated = "";
+    let start = "";
+    let end = "";
     if (value) {
-      estimated = format(addDays(new Date(value), 105), "yyyy-MM-dd");
+      start = format(addDays(new Date(value), 80), "yyyy-MM-dd");
+      end = format(addDays(new Date(value), 105), "yyyy-MM-dd");
     }
-    setForm((prev) => ({ ...prev, egg_laying_date: value, estimated_hatch_date: estimated }));
+    setForm((prev) => ({
+      ...prev,
+      egg_laying_date: value,
+      estimated_hatch_date_start: start,
+      estimated_hatch_date_end: end,
+      estimated_hatch_date: end, // keep for backward compat
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -105,6 +121,18 @@ export default function BreedingForm({ open, onClose, editData }) {
     } else {
       await base44.entities.Breeding.create(data);
     }
+
+    // Update current_eggs di inkubator jika dipilih
+    if (form.incubator_name && form.egg_count) {
+      const inc = incubators.find(i => i.name === form.incubator_name);
+      if (inc) {
+        const prevEggs = editData?.incubator_name === form.incubator_name ? (editData?.egg_count || 0) : 0;
+        const newTotal = (inc.current_eggs || 0) - prevEggs + Number(form.egg_count);
+        await base44.entities.Incubator.update(inc.id, { current_eggs: Math.max(0, newTotal) });
+        queryClient.invalidateQueries({ queryKey: ["incubators"] });
+      }
+    }
+
     queryClient.invalidateQueries({ queryKey: ["breedings"] });
     setSaving(false);
     onClose();
@@ -184,12 +212,57 @@ export default function BreedingForm({ open, onClose, editData }) {
             </div>
           </div>
 
+          {/* Perkiraan menetas range 80-105 hari */}
+          {(form.estimated_hatch_date_start || form.estimated_hatch_date_end) && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <p className="text-xs font-medium text-amber-800 mb-1">🥚 Perkiraan masa penetasan (80–105 hari):</p>
+              <p className="text-sm font-bold text-amber-900">
+                {form.estimated_hatch_date_start && format(new Date(form.estimated_hatch_date_start), "d MMM yyyy", { locale: idLocale })}
+                {" s/d "}
+                {form.estimated_hatch_date_end && format(new Date(form.estimated_hatch_date_end), "d MMM yyyy", { locale: idLocale })}
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Estimasi Menetas Awal <span className="text-muted-foreground font-normal">(+80 hari)</span></Label>
+              <Input type="date" value={form.estimated_hatch_date_start} onChange={(e) => handleChange("estimated_hatch_date_start", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Estimasi Menetas Akhir <span className="text-muted-foreground font-normal">(+105 hari)</span></Label>
+              <Input type="date" value={form.estimated_hatch_date_end} onChange={(e) => { handleChange("estimated_hatch_date_end", e.target.value); handleChange("estimated_hatch_date", e.target.value); }} />
+            </div>
+          </div>
+
+          {/* Lokasi Inkubator */}
           <div className="space-y-1.5">
-            <Label>
-              Perkiraan Tgl Menetas
-              <span className="ml-1 text-[11px] text-muted-foreground font-normal">(otomatis ~105 hari dari bertelur, bisa diedit)</span>
-            </Label>
-            <Input type="date" value={form.estimated_hatch_date} onChange={(e) => handleChange("estimated_hatch_date", e.target.value)} />
+            <Label>Lokasi Inkubator</Label>
+            <Select value={form.incubator_name || ""} onValueChange={v => handleChange("incubator_name", v || "")}>
+              <SelectTrigger><SelectValue placeholder="Pilih inkubator..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={null}>Belum ditentukan</SelectItem>
+                {incubators.filter(i => i.is_active !== false).map(inc => {
+                  const isFull = inc.capacity_eggs && inc.current_eggs >= inc.capacity_eggs;
+                  return (
+                    <SelectItem key={inc.id} value={inc.name} disabled={isFull}>
+                      {inc.name} (terisi: {inc.current_eggs || 0}/{inc.capacity_eggs || "∞"}) {isFull ? "— PENUH" : ""}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            {form.incubator_name && (() => {
+              const inc = incubators.find(i => i.name === form.incubator_name);
+              if (inc && inc.capacity_eggs && inc.current_eggs >= inc.capacity_eggs) {
+                return (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    ⚠️ Inkubator sudah penuh. Pilih inkubator lain.
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
 
           {/* Foto Dokumentasi */}

@@ -41,6 +41,7 @@ import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
 import EnclosureAuditPage from '@/pages/EnclosureAuditPage';
 import CRMPage from '@/pages/CRMPage';
 import HelpCenterPage from '@/pages/HelpCenterPage';
+import IncubatorPage from '@/pages/IncubatorPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
         <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
         <Route path="/crm" element={<CRMPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
+        <Route path="/incubator" element={<IncubatorPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

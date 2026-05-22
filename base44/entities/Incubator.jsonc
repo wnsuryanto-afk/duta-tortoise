@@ -1,0 +1,41 @@
+{
+  "name": "Incubator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama inkubator, contoh: Inkubator 1"
+    },
+    "capacity_eggs": {
+      "type": "number",
+      "description": "Kapasitas maksimal telur"
+    },
+    "current_eggs": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah telur saat ini"
+    },
+    "temp_setting": {
+      "type": "number",
+      "description": "Suhu setting \u00b0C"
+    },
+    "humidity_setting": {
+      "type": "number",
+      "description": "Kelembapan setting %"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Merk inkubator"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

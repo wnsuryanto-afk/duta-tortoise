@@ -282,11 +282,32 @@ export default function TortoiseList() {
               </SelectContent>
             </Select>
             <Select value={enclosureFilter || "semua"} onValueChange={v => setEnclosureFilter(v === "semua" ? null : v)}>
-              <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Kandang" /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Pilih Kandang..." /></SelectTrigger>
+              <SelectContent className="max-h-72">
                 <SelectItem value="semua">Semua Kandang</SelectItem>
-                {[...new Set(tortoises.map(t => t.enclosure || "Tidak Ada Kandang"))].sort().map(enc => (
-                  <SelectItem key={enc} value={enc}>Kandang {enc}</SelectItem>
+                {[
+                  { label: "Barat", prefix: "W" },
+                  { label: "Utara", prefix: "N" },
+                  { label: "Timur", prefix: "E" },
+                  { label: "Lainnya", prefix: "L" },
+                  { label: "Kandang Baby", prefix: "Baby" },
+                ].map(group => {
+                  const groupEncs = enclosures.filter(e => e.name.startsWith(group.prefix)).sort((a,b) => a.name.localeCompare(b.name));
+                  if (groupEncs.length === 0) return null;
+                  return (
+                    <div key={group.label}>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{group.label}</div>
+                      {groupEncs.map(enc => (
+                        <SelectItem key={enc.id} value={enc.name}>
+                          {enc.name} {enc.current_count != null ? `(${enc.current_count})` : ""}
+                        </SelectItem>
+                      ))}
+                    </div>
+                  );
+                })}
+                {/* enclosures not in any group */}
+                {enclosures.filter(e => !["W","N","E","L","B"].some(p => e.name.startsWith(p)) && !e.name.startsWith("Baby")).map(enc => (
+                  <SelectItem key={enc.id} value={enc.name}>{enc.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

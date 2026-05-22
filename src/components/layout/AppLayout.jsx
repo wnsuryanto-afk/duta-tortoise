@@ -5,6 +5,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import ProfileSetupModal from "@/components/profile/ProfileSetupModal";
+import ForceProfileSetupModal from "@/components/profile/ForceProfileSetupModal";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
@@ -29,7 +30,16 @@ export default function AppLayout() {
   });
 
   const profileComplete = profiles.length > 0 && profiles[0]?.is_complete === true;
-  const showSetup = !isLoading && !profileLoading && user && !profileComplete;
+  const isProfileLoaded = !isLoading && !profileLoading && !!user;
+
+  // Non-owner: force complete profile (fullscreen, no skip)
+  const showForce = isProfileLoaded && !isOwner && !profileComplete;
+  // Owner: legacy modal (closeable) — actually we just show banner, no modal needed
+  // But keep old modal for first-time owner as informational (optional)
+
+  if (showForce) {
+    return <ForceProfileSetupModal user={user} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,13 +68,13 @@ export default function AppLayout() {
               </Button>
             )}
           </div>
-          <IncompleteProfileBanner user={user} profile={profiles[0]} />
+          {/* Owner gets reminder banner only */}
+          {isOwner && <IncompleteProfileBanner user={user} profile={profiles[0]} />}
           <Outlet />
         </div>
       </main>
 
       <TourController />
-      {showSetup && <ProfileSetupModal open={true} user={user} />}
       {isOwner && (
         <ViewAsSelector
           open={showViewAsSelector}
