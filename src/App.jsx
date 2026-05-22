@@ -11,7 +11,7 @@ import { TourProvider } from '@/lib/tourContext';
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import TortoiseList from '@/pages/TortoiseList.jsx';
-import BreedingList from '@/pages/BreedingList';
+import BreedingAndEggs from '@/pages/BreedingAndEggs.jsx';
 import HealthList from '@/pages/HealthList.jsx';
 import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
@@ -41,7 +41,6 @@ import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
 import EnclosureAuditPage from '@/pages/EnclosureAuditPage';
 import CRMPage from '@/pages/CRMPage';
 import HelpCenterPage from '@/pages/HelpCenterPage';
-import IncubatorPage from '@/pages/IncubatorPage';
 import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
 import EditProfilePage from '@/pages/EditProfilePage.jsx';
 import IncompleteDataPage from '@/pages/IncompleteDataPage';
@@ -71,7 +70,7 @@ const AuthenticatedApp = () => {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/tortoise" element={<TortoiseList />} />
-        <Route path="/breeding" element={<BreedingList />} />
+        <Route path="/breeding" element={<BreedingAndEggs />} />
         <Route path="/health" element={<HealthList />} />
         <Route path="/sales" element={<SalesList />} />
         <Route path="/users" element={<UserManagement />} />
@@ -101,7 +100,7 @@ const AuthenticatedApp = () => {
         <Route path="/enclosure-audit" element={<EnclosureAuditPage />} />
         <Route path="/crm" element={<CRMPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
-        <Route path="/incubator" element={<IncubatorPage />} />
+
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />
         <Route path="/incomplete-data" element={<IncompleteDataPage />} />

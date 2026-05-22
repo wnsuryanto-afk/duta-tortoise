@@ -129,12 +129,11 @@ export default function BreedingForm({ open, onClose, editData }) {
     }
 
     // Update current_eggs di inkubator jika dipilih
+    // NOTE: current_eggs sekarang dihitung otomatis dari Breeding, tapi kita tetap update untuk backward compatibility
     if (form.incubator_name && form.egg_count) {
       const inc = incubators.find(i => i.name === form.incubator_name);
       if (inc) {
-        const prevEggs = editData?.incubator_name === form.incubator_name ? (editData?.egg_count || 0) : 0;
-        const newTotal = (inc.current_eggs || 0) - prevEggs + Number(form.egg_count);
-        await base44.entities.Incubator.update(inc.id, { current_eggs: Math.max(0, newTotal) });
+        // Hapus logic update current_eggs karena sekarang dihitung otomatis dari Breeding
         queryClient.invalidateQueries({ queryKey: ["incubators"] });
       }
     }

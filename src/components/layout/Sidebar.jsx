@@ -4,7 +4,7 @@ import {
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, MessageSquare, CreditCard, Wallet, GitBranch, Calculator,
   Grid3x3, ListOrdered, PieChart, UserCheck, Bell, Video, ShoppingBag,
-  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle, Egg
+  CalendarHeart, Library, ListTodo, ClipboardCheck, AlertTriangle, HelpCircle
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -46,7 +46,6 @@ const NAV_GROUPS = [
     label: "Breeding",
     items: [
       { path: "/breeding-planner", section: "breeding-planner", label: "Breeding Planner", icon: CalendarHeart },
-      { path: "/incubator", section: "breeding", label: "Inkubator Telur", icon: Egg },
     ],
   },
   {
