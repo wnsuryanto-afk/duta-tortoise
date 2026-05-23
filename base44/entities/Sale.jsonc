@@ -39,6 +39,36 @@
       ],
       "default": "lunas"
     },
+    "payment_proofs": {
+      "type": "array",
+      "description": "Bukti pembayaran (foto transfer, dsb)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "photo_url": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_paid": {
+      "type": "number",
+      "description": "Total sudah dibayar (auto-sum dari payment_proofs)"
+    },
+    "remaining_balance": {
+      "type": "number",
+      "description": "Sisa pembayaran (price - total_paid)"
+    },
     "shipping_method": {
       "type": "string",
       "enum": [

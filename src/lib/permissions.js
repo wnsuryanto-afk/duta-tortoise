@@ -38,6 +38,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "activity-log", "system-maintenance", "vet-contacts", "maintenance",
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
+    "operational-costs",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -47,7 +48,7 @@ export const NAV_ACCESS = {
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "printer-config",
-    "activity-log", "help", "supplier", "pellet-recipe",
+    "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -57,7 +58,7 @@ export const NAV_ACCESS = {
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "activity-log",
-    "help", "petty-cash", "supplier", "pellet-recipe",
+    "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
   ],
   kepala_feeder: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -80,6 +81,7 @@ export const NAV_ACCESS = {
   viewer: [
     "dashboard", "tortoise", "breeding", "family-tree",
     "health", "breeding-report", "info", "breeding-planner",
+    "enclosure", "sop-library", "vet-contacts", "death-records", "help",
   ],
 };
 
@@ -198,7 +200,7 @@ export function isManagerLevel(role) {
 
 // Helper: apakah bisa lihat ActivityLog
 export function canViewActivityLog(role) {
-  return ["owner", "admin", "manajer"].includes(role);
+  return ["owner", "admin", "manajer", "kepala_feeder", "keeper"].includes(role);
 }
 
 // Helper: apakah bisa akses Kas Kecil

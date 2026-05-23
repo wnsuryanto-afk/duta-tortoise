@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
-  PieChart, Bell, Printer, Package,
+  PieChart, Bell, Printer, Package, Zap,
   CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
   Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical
 } from "lucide-react";
@@ -73,9 +73,10 @@ const NAV_GROUPS = [
   {
     label: "Laporan",
     items: [
-      { path: "/finance",         section: "finance",         label: "Laporan Keuangan",    icon: TrendingUp },
-      { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",      icon: PieChart },
-      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",       icon: BarChart2 },
+      { path: "/finance",            section: "finance",            label: "Laporan Keuangan",    icon: TrendingUp },
+      { path: "/operational-costs", section: "operational-costs", label: "Biaya Operasional",   icon: Zap },
+      { path: "/sales-report",      section: "sales-report",      label: "Lap. Penjualan",      icon: PieChart },
+      { path: "/breeding-report",   section: "breeding-report",   label: "Lap. Breeding",       icon: BarChart2 },
     ],
   },
   {

@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import ExportButton from "@/components/common/ExportButton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, DollarSign } from "lucide-react";
+import { Plus, Pencil, Trash2, DollarSign, Printer, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import SaleForm from "@/components/sales/SaleForm";
+import SalePrintModal from "@/components/sales/SalePrintModal";
+import PaymentProofsSection from "@/components/sales/PaymentProofsSection";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms, canDelete as canDeleteGlobal } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
@@ -32,10 +35,17 @@ export default function SalesList() {
   const ownerCanDelete = canDeleteGlobal(role);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [printSale, setPrintSale] = useState(null);
+  const [proofSale, setProofSale] = useState(null);
 
   const { data: sales = [], isLoading } = useQuery({
     queryKey: ["sales"],
     queryFn: () => base44.entities.Sale.list("-sale_date", 200),
+  });
+
+  const { data: tortoises = [] } = useQuery({
+    queryKey: ["tortoises-for-sale"],
+    queryFn: () => base44.entities.Tortoise.list("name", 500),
   });
 
   if (!canAccess(role, "sales")) return <AccessDenied />;
@@ -113,6 +123,25 @@ export default function SalesList() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {s.buyer_name} {s.buyer_phone ? `• ${s.buyer_phone}` : ""}
                     </p>
+                    {/* DP progress bar */}
+                    {s.payment_status === "dp" && s.price > 0 && (
+                      <div className="mt-2">
+                        {(() => {
+                          const paid = s.total_paid || s.dp_amount || 0;
+                          const pct = Math.min(100, Math.round((paid / s.price) * 100));
+                          return (
+                            <div>
+                              <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+                                <span>{pct}% lunas (Rp {paid.toLocaleString("id-ID")} dari Rp {s.price.toLocaleString("id-ID")})</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-accent rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                     <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
                       <span>{shippingLabels[s.shipping_method] || s.shipping_method}</span>
                       {s.buyer_address && <span className="truncate max-w-[200px]">📍 {s.buyer_address}</span>}
@@ -127,20 +156,26 @@ export default function SalesList() {
                     )}
                   </div>
                 </div>
-                {(perms.canEdit || ownerCanDelete) && (
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    {perms.canEdit && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(s); setShowForm(true); }}>
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-                    {ownerCanDelete && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(s)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                )}
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  {perms.canEdit && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Bukti Bayar" onClick={() => setProofSale(s)}>
+                      <CreditCard className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Cetak" onClick={() => setPrintSale(s)}>
+                    <Printer className="w-3.5 h-3.5" />
+                  </Button>
+                  {perms.canEdit && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(s); setShowForm(true); }}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  {ownerCanDelete && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(s)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </Card>
           ))}
@@ -150,6 +185,33 @@ export default function SalesList() {
       {showForm && (
         <SaleForm open={showForm} onClose={() => setShowForm(false)} editData={editData} />
       )}
+
+      <SalePrintModal
+        open={!!printSale}
+        onClose={() => setPrintSale(null)}
+        sale={printSale}
+        tortoise={tortoises.find(t => t.id === printSale?.tortoise_id)}
+      />
+
+      {/* Payment proofs dialog */}
+      <Dialog open={!!proofSale} onOpenChange={o => !o && setProofSale(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" /> Bukti Pembayaran — {proofSale?.tortoise_name}
+            </DialogTitle>
+          </DialogHeader>
+          {proofSale && (
+            <PaymentProofsSection
+              sale={sales.find(s => s.id === proofSale.id) || proofSale}
+              onUpdated={() => {
+                queryClient.invalidateQueries({ queryKey: ["sales"] });
+                setProofSale(prev => sales.find(s => s.id === prev?.id) || prev);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

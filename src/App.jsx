@@ -13,6 +13,7 @@ import StockPredictionPage from '@/pages/StockPredictionPage';
 import PettyCashPage from '@/pages/PettyCashPage';
 import SupplierPage from '@/pages/SupplierPage';
 import PelletRecipePage from '@/pages/PelletRecipePage';
+import OperationalCostsPage from '@/pages/OperationalCostsPage';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -117,6 +118,7 @@ const AuthenticatedApp = () => {
         <Route path="/petty-cash" element={<PettyCashPage />} />
         <Route path="/supplier" element={<SupplierPage />} />
         <Route path="/pellet-recipe" element={<PelletRecipePage />} />
+        <Route path="/operational-costs" element={<OperationalCostsPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

@@ -17,11 +17,16 @@ import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 
 const CATEGORIES = {
-  penjualan_tortoise: { label: "Penjualan Tortoise", color: "bg-green-100 text-green-700", type: "pemasukan" },
-  pembelian_barang:   { label: "Pembelian Barang Gudang", color: "bg-red-100 text-red-700", type: "pengeluaran" },
-  gaji_karyawan:      { label: "Gaji Karyawan", color: "bg-orange-100 text-orange-700", type: "pengeluaran" },
-  operasional:        { label: "Operasional", color: "bg-yellow-100 text-yellow-700", type: "pengeluaran" },
-  lainnya:            { label: "Lainnya", color: "bg-gray-100 text-gray-700", type: "pemasukan" },
+  penjualan_tortoise: { label: "Penjualan Tortoise",     color: "bg-green-100 text-green-700",   type: "pemasukan"    },
+  pembelian_barang:   { label: "Pembelian Barang Gudang",color: "bg-red-100 text-red-700",       type: "pengeluaran"  },
+  gaji_karyawan:      { label: "Gaji Karyawan",          color: "bg-orange-100 text-orange-700", type: "pengeluaran"  },
+  operasional:        { label: "Operasional",            color: "bg-yellow-100 text-yellow-700", type: "pengeluaran"  },
+  listrik:            { label: "Listrik",                color: "bg-yellow-100 text-yellow-700", type: "pengeluaran"  },
+  air:                { label: "Air",                    color: "bg-blue-100 text-blue-700",     type: "pengeluaran"  },
+  internet:           { label: "Internet",               color: "bg-purple-100 text-purple-700", type: "pengeluaran"  },
+  sewa:               { label: "Sewa",                   color: "bg-orange-100 text-orange-700", type: "pengeluaran"  },
+  perawatan_kandang:  { label: "Perawatan Kandang",      color: "bg-green-100 text-green-700",   type: "pengeluaran"  },
+  lainnya:            { label: "Lainnya",                color: "bg-gray-100 text-gray-700",     type: "pemasukan"    },
 };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({
