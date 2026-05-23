@@ -84,6 +84,7 @@ const NAV_GROUPS = [
       { path: "/activity-log",       section: "activity-log",     label: "Riwayat Aktivitas",    icon: Activity },
       { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem", icon: Settings },
       { path: "/users",              section: "users",            label: "Manajemen User",       icon: Users },
+      { path: "/users",              section: "users-readonly",   label: "Direktori User",        icon: Users },
     ],
   },
   {
@@ -122,11 +123,17 @@ export default function Sidebar({ viewAsRole = null }) {
 
   const close = () => setOpen(false);
 
-  // Filter items per group berdasarkan akses
+  // Filter items per group berdasarkan akses, deduplicate by path
+  const seenPaths = new Set();
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => canAccess(role, item.section)),
+      items: group.items.filter((item) => {
+        if (!canAccess(role, item.section)) return false;
+        if (seenPaths.has(item.path)) return false;
+        seenPaths.add(item.path);
+        return true;
+      }),
     }))
     .filter((group) => group.items.length > 0);
 

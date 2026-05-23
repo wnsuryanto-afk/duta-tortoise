@@ -40,25 +40,23 @@ export const NAV_ACCESS = {
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
-    "health", "warehouse", "finance", "sop", "sop-library",
+    "health", "warehouse", "finance", "users-readonly", "sop", "sop-library",
     "task-template", "payroll", "payroll-gaji", "salary", "hr",
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance",
     "help",
-    // admin & manajer TIDAK bisa akses activity-log (owner only) dan system-maintenance
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
-    "health", "warehouse", "finance", "sop", "sop-library",
+    "health", "warehouse", "finance", "users", "sop", "sop-library",
     "task-template", "payroll", "payroll-gaji", "salary", "hr",
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance",
     "help",
-    // manajer TIDAK bisa akses activity-log dan system-maintenance
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -182,8 +180,23 @@ export function canViewAs(role) {
   return role === "owner";
 }
 
-// Helper: apakah bisa akses manajemen user
+// Helper: apakah bisa akses halaman user (owner/manajer/admin)
+export function canViewUsers(role) {
+  return ["owner", "admin", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa akses manajemen user (owner full, manajer bisa tambah, admin read-only)
 export function canManageUsers(role) {
+  return ["owner", "admin", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa tambah user baru
+export function canInviteUser(role) {
+  return ["owner", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa edit/ubah role/nonaktifkan user
+export function canEditUsers(role) {
   return role === "owner";
 }
 
