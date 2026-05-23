@@ -1,31 +1,15 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useTour } from "@/lib/tourContext";
-import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
-import { Shell, Clock, X } from "lucide-react";
+import { useTour, markTutorialCompletedLocally, markTutorialCompletedInDB } from "@/lib/tourContext";
+import { Shell, Clock } from "lucide-react";
 
 export default function WelcomeScreen({ user, profile }) {
   const { showWelcome, startTour, dismissWelcome } = useTour();
-  const qc = useQueryClient();
 
   const handleSkip = async () => {
     dismissWelcome();
-    // Set both tour_skipped AND tour_completed so it won't show again
-    if (profile?.id) {
-      await base44.entities.UserProfile.update(profile.id, { tour_skipped: true, tour_completed: true });
-    } else if (user?.email) {
-      await base44.entities.UserProfile.create({
-        user_id: user.id || user.email,
-        user_email: user.email,
-        full_name: user.full_name || "",
-        phone: "-",
-        join_date: new Date().toISOString().split("T")[0],
-        tour_skipped: true,
-        tour_completed: true,
-      });
-    }
-    qc.invalidateQueries(["user-profile"]);
+    markTutorialCompletedLocally();
+    await markTutorialCompletedInDB(user?.email);
   };
 
   return (
@@ -37,10 +21,8 @@ export default function WelcomeScreen({ user, profile }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-          {/* Card */}
           <motion.div
             className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center z-10"
             initial={{ scale: 0.85, y: 30, opacity: 0 }}
@@ -48,7 +30,6 @@ export default function WelcomeScreen({ user, profile }) {
             exit={{ scale: 0.85, y: 30, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            {/* Logo */}
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5">
               <Shell className="w-10 h-10 text-primary" />
             </div>

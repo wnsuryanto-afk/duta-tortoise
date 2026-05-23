@@ -9,11 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Plus, Phone, MessageCircle, Mail, Star, MapPin, Clock, 
-  AlertCircle, Search, Filter, Calendar
+  AlertCircle, Search, Calendar, Edit2
 } from "lucide-react";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatDateIndonesian, formatCurrency } from "@/lib/formatIndonesian";
 import EmptyState from "@/components/common/EmptyState";
 import { toast } from "sonner";
+
+const WA_TEMPLATE = (name) =>
+  `Halo dr. ${name}, saya dari peternakan Duta Tortoise. Ingin konsultasi tentang kura-kura sulcata kami...`;
+
+const isReptilSpec = (spec) =>
+  spec && /reptil|eksotik|exotic/i.test(spec);
 
 export default function VetContactPage() {
   const [showForm, setShowForm] = useState(false);
@@ -22,6 +29,8 @@ export default function VetContactPage() {
   const [filterSpecialization, setFilterSpecialization] = useState("");
   const [filterEmergency, setFilterEmergency] = useState(false);
 
+  const { user } = useCurrentUser();
+  const canEdit = ["owner", "manajer", "admin"].includes(user?.role);
   const queryClient = useQueryClient();
 
   const { data: vets, isLoading } = useQuery({
@@ -110,6 +119,7 @@ export default function VetContactPage() {
           <h1 className="text-3xl font-bold text-foreground">Dokter Hewan</h1>
           <p className="text-muted-foreground">Kontak dokter hewan dan klinik rekanan</p>
         </div>
+        {canEdit && (
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogTrigger asChild>
             <Button className="gap-2">
@@ -213,6 +223,7 @@ export default function VetContactPage() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="flex gap-4 mb-6 flex-wrap">
@@ -272,9 +283,14 @@ export default function VetContactPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                {vet.specialization && (
-                  <Badge variant="outline">{vet.specialization}</Badge>
-                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {vet.specialization && (
+                    <Badge variant="outline">{vet.specialization}</Badge>
+                  )}
+                  {isReptilSpec(vet.specialization) && (
+                    <Badge className="bg-green-100 text-green-800 border-green-300 text-[10px]">🦎 Cocok Reptil</Badge>
+                  )}
+                </div>
                 {vet.rating > 0 && (
                   <div className="flex items-center gap-1 text-sm">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -282,9 +298,19 @@ export default function VetContactPage() {
                   </div>
                 )}
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p className="flex items-center gap-2">
+                  <a href={`tel:${vet.phone}`} className="flex items-center gap-2 hover:text-primary transition-colors" onClick={e => e.stopPropagation()}>
                     <Phone className="w-3 h-3" /> {vet.phone}
-                  </p>
+                  </a>
+                  {vet.whatsapp && (
+                    <a
+                      href={`https://wa.me/${vet.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(WA_TEMPLATE(vet.name))}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <MessageCircle className="w-3 h-3" /> Chat WA
+                    </a>
+                  )}
                   {vet.total_consultations > 0 && (
                     <p className="flex items-center gap-2">
                       <Calendar className="w-3 h-3" />
@@ -326,8 +352,12 @@ export default function VetContactPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">WhatsApp</p>
                   {selectedVet.whatsapp ? (
-                    <a href={`https://wa.me/${selectedVet.whatsapp}`} target="_blank" className="text-primary hover:underline flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4" /> Chat
+                    <a
+                      href={`https://wa.me/${selectedVet.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(WA_TEMPLATE(selectedVet.name))}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="text-green-600 hover:underline flex items-center gap-2"
+                    >
+                      <MessageCircle className="w-4 h-4" /> Chat WA
                     </a>
                   ) : "-"}
                 </div>

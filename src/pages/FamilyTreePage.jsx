@@ -187,21 +187,29 @@ export default function FamilyTreePage() {
     return ids;
   }, [tortoises]);
 
-  // Tampilkan semua kura-kura di panel kiri, tapi tandai yang punya silsilah
-  const allTortoises = tortoises;
-
+  // Hanya tampilkan kura-kura hasil_sendiri di panel kiri (silsilah hanya untuk farm sendiri)
   const filteredList = useMemo(() => {
     const q = search.toLowerCase();
-    return allTortoises
-      .filter((t) => t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q))
+    return tortoises
+      .filter((t) =>
+        t.source === "hasil_sendiri" &&
+        (t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q))
+      )
       .slice(0, 80);
-  }, [allTortoises, search]);
+  }, [tortoises, search]);
 
   const selectedTortoise = selected ? tortoiseMap[selected] : null;
   const hasPedigree = selectedTortoise ? hasCompletePedigree(selectedTortoise, tortoiseMap) : false;
 
+  // Keturunan: hanya yang source hasil_sendiri DAN referensi parent ke kura-kura ini
   const children = useMemo(() =>
-    selected ? tortoises.filter((t) => t.parent_male === selected || t.parent_female === selected) : []
+    selected
+      ? tortoises.filter(
+          (t) =>
+            t.source === "hasil_sendiri" &&
+            (t.parent_male === selected || t.parent_female === selected)
+        )
+      : []
   , [selected, tortoises]);
 
   return (
@@ -211,9 +219,9 @@ export default function FamilyTreePage() {
           <GitBranch className="w-6 h-6 text-primary" /> Silsilah Kura-Kura
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          🐣 <strong>CBB</strong> (Captive Bred & Born) = hasil_sendiri + parent lengkap → silsilah 3 generasi<br/>
-          🌱 <strong>CB</strong> (Captive Born) = hasil_sendiri tapi parent tidak lengkap<br/>
-          🌍 <strong>WC</strong> (Wild Caught) = beli_lokal | 📦 <strong>Import</strong> | ❓ <strong>Unknown</strong>
+          Hanya menampilkan kura-kura hasil penetasan farm Duta Tortoise (<strong>hasil_sendiri</strong>).<br/>
+          🐣 <strong>CBB</strong> = hasil_sendiri + parent lengkap (silsilah 3 generasi) &nbsp;|&nbsp;
+          🌱 <strong>CB</strong> = hasil_sendiri, parent belum lengkap
         </p>
       </div>
 
@@ -352,7 +360,7 @@ export default function FamilyTreePage() {
             <Card className="h-64 flex flex-col items-center justify-center text-muted-foreground gap-3">
               <GitBranch className="w-12 h-12 opacity-20" />
               <p className="text-sm">Pilih kura-kura dari daftar untuk melihat silsilahnya</p>
-              <p className="text-xs opacity-60">🐣 CBB = hasil_sendiri + parent lengkap (kedua induk diketahui)</p>
+              <p className="text-xs opacity-60">Hanya kura-kura hasil penangkaran farm (hasil_sendiri) yang tampil</p>
             </Card>
           )}
         </div>

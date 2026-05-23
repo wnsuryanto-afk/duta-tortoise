@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
 
 const TourContext = createContext(null);
 
@@ -69,6 +70,34 @@ export const TOUR_STEPS = [
   },
 ];
 
+// Cek apakah tutorial sudah selesai (localStorage cepat, DB untuk cross-device)
+export function isTutorialCompleted() {
+  return localStorage.getItem("tutorial_completed") === "true";
+}
+
+// Simpan flag tutorial selesai ke localStorage
+export function markTutorialCompletedLocally() {
+  localStorage.setItem("tutorial_completed", "true");
+}
+
+// Simpan flag tutorial selesai ke DB (UserProfile)
+export async function markTutorialCompletedInDB(userEmail) {
+  if (!userEmail) return;
+  try {
+    const profiles = await base44.entities.UserProfile.filter({ user_email: userEmail });
+    if (profiles.length > 0) {
+      await base44.entities.UserProfile.update(profiles[0].id, { tutorial_completed: true });
+    }
+  } catch (_) {
+    // Gagal DB tidak blokir
+  }
+}
+
+// Reset tutorial (dari Help Center)
+export function resetTutorialLocally() {
+  localStorage.removeItem("tutorial_completed");
+}
+
 export function TourProvider({ children }) {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -92,9 +121,14 @@ export function TourProvider({ children }) {
     }
   }, [currentStep]);
 
-  const endTour = useCallback(() => {
+  // endTour: simpan flag completed ke localStorage + DB
+  const endTour = useCallback(async (userEmail) => {
     setIsActive(false);
     setCurrentStep(0);
+    markTutorialCompletedLocally();
+    if (userEmail) {
+      markTutorialCompletedInDB(userEmail);
+    }
   }, []);
 
   const triggerWelcome = useCallback(() => {

@@ -2,48 +2,34 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useTour, TOUR_STEPS } from "@/lib/tourContext";
-import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useTour, TOUR_STEPS, markTutorialCompletedLocally, markTutorialCompletedInDB } from "@/lib/tourContext";
 import { ChevronLeft, ChevronRight, X, CheckCircle2, Shell } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function TourOverlay({ user, profile }) {
   const { isActive, currentStep, nextStep, prevStep, endTour, totalSteps, currentStepData } = useTour();
   const navigate = useNavigate();
-  const qc = useQueryClient();
 
-  // Navigate to target page when step changes
   useEffect(() => {
     if (isActive && currentStepData?.path) {
       navigate(currentStepData.path);
     }
   }, [isActive, currentStep, currentStepData?.path]);
 
+  const saveTutorialCompleted = async () => {
+    markTutorialCompletedLocally();
+    await markTutorialCompletedInDB(user?.email);
+  };
+
   const handleFinish = async () => {
-    endTour();
-    if (profile?.id) {
-      await base44.entities.UserProfile.update(profile.id, { tour_completed: true });
-    } else if (user?.email) {
-      await base44.entities.UserProfile.create({
-        user_id: user.id || user.email,
-        user_email: user.email,
-        full_name: user.full_name || "",
-        phone: "-",
-        join_date: new Date().toISOString().split("T")[0],
-        tour_completed: true,
-      });
-    }
-    qc.invalidateQueries(["user-profile"]);
+    await saveTutorialCompleted();
+    endTour(user?.email);
     navigate("/tortoise");
   };
 
   const handleSkip = async () => {
-    endTour();
-    if (profile?.id) {
-      await base44.entities.UserProfile.update(profile.id, { tour_skipped: true });
-    }
-    qc.invalidateQueries(["user-profile"]);
+    await saveTutorialCompleted();
+    endTour(user?.email);
   };
 
   const isFinal = currentStepData?.isFinal;
@@ -58,10 +44,8 @@ export default function TourOverlay({ user, profile }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Dark overlay */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
 
-          {/* Tour Card — bottom sheet on mobile, bottom-right on desktop */}
           <motion.div
             className="absolute bottom-0 left-0 right-0 lg:bottom-6 lg:right-6 lg:left-auto lg:max-w-sm z-10"
             initial={{ y: 60, opacity: 0 }}
@@ -71,7 +55,6 @@ export default function TourOverlay({ user, profile }) {
             key={currentStep}
           >
             <div className="bg-[#1a3a2a] text-white rounded-t-2xl lg:rounded-2xl shadow-2xl overflow-hidden">
-              {/* Progress bar */}
               <div className="h-1 bg-white/20">
                 <motion.div
                   className="h-full bg-[#7ec8a0]"
@@ -82,7 +65,6 @@ export default function TourOverlay({ user, profile }) {
               </div>
 
               <div className="p-5">
-                {/* Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-[#7ec8a0]/20 flex items-center justify-center flex-shrink-0">
@@ -109,7 +91,6 @@ export default function TourOverlay({ user, profile }) {
                   {currentStepData?.description}
                 </p>
 
-                {/* Progress dots */}
                 <div className="flex gap-1.5 justify-center mb-5">
                   {TOUR_STEPS.map((_, i) => (
                     <div
@@ -125,7 +106,6 @@ export default function TourOverlay({ user, profile }) {
                   ))}
                 </div>
 
-                {/* Buttons */}
                 {isFinal ? (
                   <div className="space-y-2">
                     <Button
@@ -139,7 +119,7 @@ export default function TourOverlay({ user, profile }) {
                       </Link>
                     </Button>
                     <button
-                      onClick={endTour}
+                      onClick={handleSkip}
                       className="w-full text-center text-white/50 hover:text-white/70 text-xs py-1 transition-colors"
                     >
                       Tutup Tur

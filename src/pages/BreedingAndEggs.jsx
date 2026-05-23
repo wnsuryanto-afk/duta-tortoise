@@ -194,13 +194,6 @@ export default function BreedingAndEggs() {
                 const daysToStart = startDate && active ? differenceInDays(startDate, today) : null;
                 const daysToEnd = endDate && active ? differenceInDays(endDate, today) : null;
 
-                const dayInRange = (inRange, start, end) => {
-                  if (!inRange || !start || !end) return null;
-                  const totalDays = differenceInDays(end, start);
-                  const daysSinceStart = differenceInDays(today, start);
-                  return daysSinceStart + 1;
-                };
-
                 // Progress bar calculation (0-105 days incubation)
                 const incubationDay = b.egg_laying_date ? differenceInDays(today, new Date(b.egg_laying_date)) : 0;
                 const incubationProgress = Math.min(100, Math.max(0, (incubationDay / 105) * 100));
@@ -210,15 +203,23 @@ export default function BreedingAndEggs() {
                 const isOverdue = active && daysToEnd !== null && daysToEnd < 0;
                 const inHatchRange = active && daysToStart !== null && daysToEnd !== null && daysToStart <= 0 && daysToEnd >= 0;
                 const beforeRange = active && daysToStart !== null && daysToStart > 0;
-                
-                const dayInHatchRange = dayInRange(inHatchRange, startDate, endDate);
+                const isH7 = active && beforeRange && daysToStart <= 7;
+                const isH30 = active && beforeRange && daysToStart > 7 && daysToStart <= 30;
+                const dayInHatchRange = inHatchRange && startDate ? differenceInDays(today, startDate) + 1 : null;
+
+                // Card color berdasarkan kondisi
+                const cardClass = isOverdue
+                  ? "border-gray-700 bg-gray-900 text-white"
+                  : inHatchRange
+                  ? "border-red-600 bg-red-600 text-white animate-pulse"
+                  : isH7
+                  ? "border-red-400 bg-red-100"
+                  : isH30
+                  ? "border-yellow-400 bg-yellow-50"
+                  : "border-border";
 
                 return (
-                  <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow group ${
-                    isOverdue ? "border-red-400 bg-red-50" : 
-                    inHatchRange ? "border-red-500 bg-red-100" : 
-                    ""
-                  }`}>
+                  <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow group ${cardClass}`}>
                     {b.photos?.length > 0 && (
                       <div className="flex gap-1.5 mb-3 overflow-x-auto">
                         {b.photos.slice(0, 4).map((p, i) => (
@@ -237,34 +238,39 @@ export default function BreedingAndEggs() {
                           </Badge>
                           
                           {isMenetas && (
-                            <Badge className="text-[11px] bg-gray-200 text-gray-700 border-gray-300 font-semibold">
+                            <Badge className="text-[11px] bg-green-600 text-white border-green-700 font-semibold">
                               ✅ Sudah menetas
                             </Badge>
                           )}
                           {isGagal && (
-                            <Badge className="text-[11px] bg-gray-800 text-white border-gray-900 font-semibold">
+                            <Badge className="text-[11px] bg-gray-500 text-white border-gray-600 font-semibold">
                               ❌ Gagal menetas
                             </Badge>
                           )}
-                          {active && inHatchRange && dayInHatchRange && (
-                            <Badge className="text-[11px] bg-red-600 text-white border-red-700 font-bold animate-pulse px-3 py-1">
-                              🔴 DALAM MASA PENETASAN! Hari ke-{dayInHatchRange}
-                            </Badge>
-                          )}
                           {active && isOverdue && (
-                            <Badge className="text-[11px] bg-red-800 text-white border-red-900 font-bold px-3 py-1">
-                              ⚠️ Melewati estimasi! Segera cek telur.
+                            <Badge className="text-[11px] bg-gray-800 text-white border-gray-900 font-bold px-3 py-1">
+                              ⚠️ MELEWATI ESTIMASI - CEK SEKARANG
                             </Badge>
                           )}
-                          {active && beforeRange && daysToStart !== null && daysToStart <= 7 && (
-                            <Badge className="text-[11px] bg-green-600 text-white border-green-700 font-semibold px-3 py-1">
-                              🥚 Mulai menetas dalam {daysToStart} hari
+                          {active && inHatchRange && dayInHatchRange && (
+                            <Badge className="text-[11px] bg-white text-red-700 border-red-200 font-bold px-3 py-1">
+                              🚨 DALAM MASA PENETASAN! Hari ke-{dayInHatchRange} — Siapkan kandang baby!
                             </Badge>
                           )}
-                          {active && beforeRange && daysToStart !== null && daysToStart > 7 && (
-                            <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                              ⏳ {daysToStart} hari lagi
-                            </span>
+                          {active && isH7 && (
+                            <Badge className="text-[11px] bg-red-600 text-white border-red-700 font-bold px-3 py-1 animate-pulse">
+                              🔴 H-{daysToStart} HARI LAGI! Persiapkan kandang baby
+                            </Badge>
+                          )}
+                          {active && isH30 && !isH7 && (
+                            <Badge className="text-[11px] bg-yellow-500 text-white border-yellow-600 font-semibold px-3 py-1">
+                              ⏰ {daysToStart} hari lagi
+                            </Badge>
+                          )}
+                          {active && beforeRange && daysToStart > 30 && (
+                            <Badge className="text-[11px] bg-green-100 text-green-800 border-green-300 font-medium px-3 py-1">
+                              🥚 {daysToStart} hari lagi
+                            </Badge>
                           )}
                         </div>
                       </div>

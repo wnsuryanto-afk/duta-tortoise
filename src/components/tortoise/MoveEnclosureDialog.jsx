@@ -1,30 +1,95 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Search, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
-const ENCLOSURES = ["W1","W2","W3","W4","W5","N1","N2","E1","E2","E3","E4","E5","L2"];
+const ENCLOSURE_GROUPS = [
+  { label: "🏠 Kandang Barat", prefix: "W" },
+  { label: "🏠 Kandang Utara", prefix: "N" },
+  { label: "🏠 Kandang Timur", prefix: "E" },
+  { label: "🏥 Karantina", prefix: "L1" },
+  { label: "🏠 Lainnya", prefix: "L2" },
+  { label: "🐣 Kandang Baby", prefix: "Baby" },
+];
+
+function groupEnclosures(enclosures) {
+  const groups = [];
+  const used = new Set();
+
+  for (const group of ENCLOSURE_GROUPS) {
+    const members = enclosures.filter(e => {
+      if (group.prefix === "L1") return e.name === "L1";
+      if (group.prefix === "L2") return e.name === "L2";
+      return e.name?.startsWith(group.prefix) && e.name !== "L1" && e.name !== "L2";
+    });
+    if (members.length > 0) {
+      groups.push({ label: group.label, items: members });
+      members.forEach(m => used.add(m.id));
+    }
+  }
+
+  // Sisa yang tidak masuk grup manapun
+  const others = enclosures.filter(e => !used.has(e.id));
+  if (others.length > 0) {
+    groups.push({ label: "📦 Lainnya", items: others });
+  }
+
+  return groups;
+}
 
 export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }) {
   const [newEnclosure, setNewEnclosure] = useState("");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [confirmFull, setConfirmFull] = useState(false);
+
+  const { data: enclosures = [] } = useQuery({
+    queryKey: ["enclosures-all"],
+    queryFn: () => base44.entities.Enclosure.list(),
+    enabled: open,
+  });
+
+  const filteredEnclosures = useMemo(() => {
+    const q = search.toLowerCase();
+    return enclosures.filter(e =>
+      e.name !== tortoise?.enclosure &&
+      (!q || e.name?.toLowerCase().includes(q))
+    );
+  }, [enclosures, tortoise?.enclosure, search]);
+
+  const grouped = useMemo(() => groupEnclosures(filteredEnclosures), [filteredEnclosures]);
+
+  const selectedEnc = enclosures.find(e => e.name === newEnclosure);
+  const isFull = selectedEnc?.capacity > 0 && selectedEnc?.current_count >= selectedEnc?.capacity;
+  const isNearFull = selectedEnc?.capacity > 0 && selectedEnc?.current_count >= selectedEnc?.capacity * 0.8;
+
+  const getCapacityLabel = (enc) => {
+    if (!enc.capacity || enc.capacity === 0) return enc.name;
+    const pct = Math.round((enc.current_count || 0) / enc.capacity * 100);
+    if (pct >= 100) return `${enc.name} (${enc.current_count}/${enc.capacity}) 🔴`;
+    if (pct >= 80) return `${enc.name} (${enc.current_count}/${enc.capacity}) 🟡`;
+    return `${enc.name} (${enc.current_count || 0}/${enc.capacity}) ✅`;
+  };
 
   const handleSave = async () => {
     if (!newEnclosure.trim()) return;
+    if (isFull && !confirmFull) {
+      setConfirmFull(true);
+      return;
+    }
     setSaving(true);
-    const target = newEnclosure.trim().toUpperCase();
+    const target = newEnclosure.trim();
     const oldEnclosure = tortoise.enclosure || "";
 
-    // Update tortoise enclosure
     await base44.entities.Tortoise.update(tortoise.id, { enclosure: target });
 
-    // Log history
     await base44.entities.EnclosureHistory.create({
       tortoise_id: tortoise.id,
       tortoise_name: tortoise.name,
@@ -34,13 +99,11 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
       reason: reason.trim() || null,
     });
 
-    // Sync current_count di entity Enclosure
     try {
       const allEnclosures = await base44.entities.Enclosure.list();
       const allTortoises = await base44.entities.Tortoise.list("-created_date", 500);
       const activeTortoises = allTortoises.filter(t => t.status !== "terjual" && t.status !== "mati");
 
-      // Update count kandang lama
       if (oldEnclosure) {
         const fromEnc = allEnclosures.find(e => e.name === oldEnclosure);
         if (fromEnc) {
@@ -48,75 +111,143 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
           await base44.entities.Enclosure.update(fromEnc.id, { current_count: newCount });
         }
       }
-      // Update count kandang baru
       const toEnc = allEnclosures.find(e => e.name === target);
       if (toEnc) {
         const newCount = activeTortoises.filter(t => t.enclosure === target && t.id !== tortoise.id).length + 1;
         await base44.entities.Enclosure.update(toEnc.id, { current_count: newCount });
       }
-    } catch (_) {
-      // Sync enclosure gagal, tidak perlu blokir
-    }
+    } catch (_) {}
 
     onMoved();
     onClose();
     setSaving(false);
+    setConfirmFull(false);
+    setNewEnclosure("");
+    setSearch("");
+    setReason("");
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
+    <Dialog open={open} onOpenChange={() => { onClose(); setConfirmFull(false); setNewEnclosure(""); setSearch(""); }}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Pindah Kandang</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="flex items-center gap-3 text-sm">
-            <div className="px-3 py-1.5 rounded bg-muted font-medium">{tortoise?.enclosure || "-"}</div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground" />
-            <div className="px-3 py-1.5 rounded bg-primary/10 text-primary font-medium min-w-12 text-center">
-              {newEnclosure || "?"}
+
+        {/* Confirm penuh */}
+        {confirmFull ? (
+          <div className="space-y-4 py-2">
+            <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-center space-y-2">
+              <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
+              <p className="font-semibold text-red-700">Kandang {newEnclosure} Penuh!</p>
+              <p className="text-sm text-red-600">
+                Kapasitas kandang sudah tercapai. Yakin tetap memindahkan kura-kura ke sini?
+              </p>
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmFull(false)}>Batal</Button>
+              <Button variant="destructive" onClick={handleSave} disabled={saving}>
+                {saving ? "Memindahkan..." : "Ya, Pindahkan"}
+              </Button>
+            </DialogFooter>
           </div>
-          <div>
-            <Label className="mb-1.5 block text-xs">Kandang Tujuan</Label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {ENCLOSURES.filter(e => e !== tortoise?.enclosure).map(e => (
-                <button
-                  key={e}
-                  onClick={() => setNewEnclosure(e)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                    newEnclosure === e
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted/50 border-border hover:bg-muted"
-                  }`}
-                >
-                  {e}
-                </button>
-              ))}
+        ) : (
+          <div className="space-y-4 py-2">
+            {/* From → To preview */}
+            <div className="flex items-center gap-3 text-sm">
+              <div className="px-3 py-1.5 rounded bg-muted font-medium">{tortoise?.enclosure || "-"}</div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              <div className="px-3 py-1.5 rounded bg-primary/10 text-primary font-medium min-w-12 text-center">
+                {newEnclosure || "?"}
+              </div>
             </div>
-            <Input
-              placeholder="Atau ketik manual..."
-              value={newEnclosure}
-              onChange={(e) => setNewEnclosure(e.target.value)}
-              className="text-sm"
-            />
+
+            {/* Kapasitas info */}
+            {selectedEnc && (
+              <div className={`text-xs px-3 py-2 rounded-lg border ${
+                isFull ? "bg-red-50 border-red-200 text-red-700" :
+                isNearFull ? "bg-amber-50 border-amber-200 text-amber-700" :
+                "bg-green-50 border-green-200 text-green-700"
+              }`}>
+                {isFull ? `🔴 Kandang penuh! (${selectedEnc.current_count}/${selectedEnc.capacity})` :
+                 isNearFull ? `🟡 Hampir penuh: ${selectedEnc.current_count}/${selectedEnc.capacity}` :
+                 `✅ Tersedia: ${selectedEnc.current_count || 0}/${selectedEnc.capacity || "∞"}`}
+              </div>
+            )}
+
+            {/* Search */}
+            <div>
+              <Label className="mb-1.5 block text-xs">Kandang Tujuan</Label>
+              <div className="relative mb-2">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Cari nama kandang..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-8 text-sm"
+                />
+              </div>
+
+              {/* Grouped buttons */}
+              <div className="max-h-52 overflow-y-auto space-y-3 pr-1">
+                {grouped.map((group) => (
+                  <div key={group.label}>
+                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-1.5">{group.label}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.items.map(enc => {
+                        const full = enc.capacity > 0 && enc.current_count >= enc.capacity;
+                        const near = enc.capacity > 0 && enc.current_count >= enc.capacity * 0.8;
+                        return (
+                          <button
+                            key={enc.id}
+                            onClick={() => setNewEnclosure(enc.name)}
+                            title={getCapacityLabel(enc)}
+                            className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                              newEnclosure === enc.name
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : full
+                                ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                                : near
+                                ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                                : "bg-muted/50 border-border hover:bg-muted"
+                            }`}
+                          >
+                            {enc.name}
+                            {enc.capacity > 0 && (
+                              <span className="ml-1 opacity-70">
+                                {full ? "🔴" : near ? "🟡" : "✅"}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {grouped.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-2">Tidak ada kandang ditemukan</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-1.5 block text-xs">Alasan (opsional)</Label>
+              <Textarea
+                placeholder="cth: Pemisahan breeding, kandang penuh..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="text-sm resize-none h-16"
+              />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>Batal</Button>
+              <Button onClick={handleSave} disabled={!newEnclosure.trim() || saving}>
+                {saving ? "Memindahkan..." : "Pindahkan"}
+              </Button>
+            </DialogFooter>
           </div>
-          <div>
-            <Label className="mb-1.5 block text-xs">Alasan (opsional)</Label>
-            <Textarea
-              placeholder="cth: Pemisahan breeding, kandang penuh..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="text-sm resize-none h-16"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={handleSave} disabled={!newEnclosure.trim() || saving}>
-            {saving ? "Memindahkan..." : "Pindahkan"}
-          </Button>
-        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -3,7 +3,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useTour } from "@/lib/tourContext";
+import { useTour, resetTutorialLocally, markTutorialCompletedInDB } from "@/lib/tourContext";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -57,7 +57,7 @@ const FAQS = [
 ];
 
 export default function HelpCenterPage() {
-  const { triggerWelcome } = useTour();
+  const { triggerWelcome, startTour } = useTour();
   const { user } = useCurrentUser();
   const qc = useQueryClient();
   const isOwner = user?.role === "owner" || user?.role === "admin";
@@ -100,7 +100,21 @@ export default function HelpCenterPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
-          onClick={triggerWelcome}
+          onClick={() => {
+            // Reset flag tutorial lalu tampilkan welcome
+            resetTutorialLocally();
+            // Reset DB flag
+            if (user?.email) {
+              import("@/api/base44Client").then(({ base44 }) => {
+                base44.entities.UserProfile.filter({ user_email: user.email }).then(profiles => {
+                  if (profiles[0]) {
+                    base44.entities.UserProfile.update(profiles[0].id, { tutorial_completed: false, tour_completed: false, tour_skipped: false });
+                  }
+                });
+              });
+            }
+            triggerWelcome();
+          }}
           className="flex items-center gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left group"
         >
           <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
