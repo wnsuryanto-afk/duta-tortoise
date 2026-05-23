@@ -34,6 +34,28 @@
     "egg_weight_grams": {
       "type": "number"
     },
+    "incubator_name": {
+      "type": "string",
+      "enum": [
+        "Inkubator 1",
+        "Inkubator 2"
+      ],
+      "description": "Lokasi Inkubator"
+    },
+    "tray_number": {
+      "type": "number",
+      "description": "Nomor Tray (opsional)"
+    },
+    "estimated_hatch_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Estimasi mulai menetas (egg_laying_date + 80 hari, auto-calculated)"
+    },
+    "estimated_hatch_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Estimasi selesai menetas (egg_laying_date + 105 hari, auto-calculated)"
+    },
     "estimated_hatch_date": {
       "type": "string",
       "format": "date"
@@ -113,6 +135,7 @@
     "egg_laying_date",
     "egg_count",
     "status",
-    "season_year"
+    "season_year",
+    "incubator_name"
   ]
 }

@@ -13,8 +13,10 @@
       "enum": [
         "obat",
         "vitamin",
+        "suplemen",
         "pakan",
         "alat_kerja",
+        "peralatan",
         "lainnya"
       ],
       "default": "lainnya"
@@ -32,7 +34,8 @@
         "ikat",
         "buah",
         "lusin",
-        "box"
+        "box",
+        "strip"
       ],
       "default": "pcs"
     },

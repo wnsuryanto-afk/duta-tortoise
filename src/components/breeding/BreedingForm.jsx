@@ -42,8 +42,11 @@ export default function BreedingForm({ open, onClose, editData }) {
     egg_laying_date: "", egg_count: "",
     estimated_hatch_date_start: "",
     estimated_hatch_date_end: "",
+    estimated_hatch_start: "",
+    estimated_hatch_end: "",
     estimated_hatch_date: "",
     incubator_name: "",
+    tray_number: "",
     status: "bertelur", incubation_temp: "", notes: "", photos: [],
   });
 
@@ -68,6 +71,7 @@ export default function BreedingForm({ open, onClose, editData }) {
     if (!form.egg_laying_date) e.egg_laying_date = "Tanggal bertelur wajib diisi";
     if (!form.egg_count) e.egg_count = "Jumlah telur wajib diisi";
     if (!form.status) e.status = "Status wajib dipilih";
+    if (!form.incubator_name) e.incubator_name = "Lokasi inkubator wajib dipilih";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -108,6 +112,8 @@ export default function BreedingForm({ open, onClose, editData }) {
       egg_laying_date: value,
       estimated_hatch_date_start: start,
       estimated_hatch_date_end: end,
+      estimated_hatch_start: start,
+      estimated_hatch_end: end,
       estimated_hatch_date: end,
     }));
   };
@@ -133,7 +139,10 @@ export default function BreedingForm({ open, onClose, editData }) {
       ...form,
       egg_count: form.egg_count ? Number(form.egg_count) : undefined,
       incubation_temp: form.incubation_temp ? Number(form.incubation_temp) : undefined,
+      tray_number: form.tray_number ? Number(form.tray_number) : undefined,
       season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
+      estimated_hatch_start: form.estimated_hatch_start || form.estimated_hatch_date_start || undefined,
+      estimated_hatch_end: form.estimated_hatch_end || form.estimated_hatch_date_end || undefined,
     };
     if (editData?.id) {
       await base44.entities.Breeding.update(editData.id, data);
@@ -252,38 +261,36 @@ export default function BreedingForm({ open, onClose, editData }) {
             </div>
           </div>
 
-          {/* Lokasi Inkubator - dengan kalkulasi real-time */}
-          <div className="space-y-1.5">
-            <Label>Lokasi Inkubator</Label>
-            <Select value={form.incubator_name || ""} onValueChange={v => handleChange("incubator_name", v || "")}>
-              <SelectTrigger><SelectValue placeholder="Pilih inkubator..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>Belum ditentukan</SelectItem>
-                {incubators.filter(i => i.is_active !== false).map(inc => {
-                  // KALKULASI REAL-TIME dari Breeding
-                  const calculatedEggs = calculateIncubatorEggs(inc.name);
-                  const isFull = inc.capacity_eggs && calculatedEggs >= inc.capacity_eggs;
+          {/* Lokasi Inkubator - WAJIB */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Lokasi Inkubator <span className="text-red-500">*</span></Label>
+              <Select value={form.incubator_name || ""} onValueChange={v => { handleChange("incubator_name", v); }}>
+                <SelectTrigger className={errors.incubator_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih inkubator..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Inkubator 1">Inkubator 1{(() => { const calculatedEggs = calculateIncubatorEggs("Inkubator 1"); const inc = incubators.find(i => i.name === "Inkubator 1"); return ` (${calculatedEggs}/${inc?.capacity_eggs || "∞"})`; })()}</SelectItem>
+                  <SelectItem value="Inkubator 2">Inkubator 2{(() => { const calculatedEggs = calculateIncubatorEggs("Inkubator 2"); const inc = incubators.find(i => i.name === "Inkubator 2"); return ` (${calculatedEggs}/${inc?.capacity_eggs || "∞"})`; })()}</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.incubator_name && <p className="text-xs text-red-500">{errors.incubator_name}</p>}
+              {form.incubator_name && (() => {
+                const inc = incubators.find(i => i.name === form.incubator_name);
+                const calculatedEggs = calculateIncubatorEggs(form.incubator_name);
+                if (inc && inc.capacity_eggs && calculatedEggs >= inc.capacity_eggs) {
                   return (
-                    <SelectItem key={inc.id} value={inc.name} disabled={isFull}>
-                      {inc.name} (terisi: {calculatedEggs}/{inc.capacity_eggs || "∞"}) {isFull ? "— PENUH" : ""}
-                    </SelectItem>
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      ⚠️ Inkubator penuh. Pilih lain.
+                    </div>
                   );
-                })}
-              </SelectContent>
-            </Select>
-            {form.incubator_name && (() => {
-              const inc = incubators.find(i => i.name === form.incubator_name);
-              const calculatedEggs = calculateIncubatorEggs(form.incubator_name);
-              if (inc && inc.capacity_eggs && calculatedEggs >= inc.capacity_eggs) {
-                return (
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    ⚠️ Inkubator sudah penuh. Pilih inkubator lain.
-                  </div>
-                );
-              }
-              return null;
-            })()}
+                }
+                return null;
+              })()}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nomor Tray <span className="text-muted-foreground font-normal text-xs">(opsional)</span></Label>
+              <Input type="number" min="1" value={form.tray_number} onChange={(e) => handleChange("tray_number", e.target.value)} placeholder="cth: 1" />
+            </div>
           </div>
 
           {/* Foto Dokumentasi */}
@@ -327,7 +334,7 @@ export default function BreedingForm({ open, onClose, editData }) {
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <Button type="submit" disabled={saving || !form.male_name?.trim() || !form.female_name?.trim() || !form.egg_laying_date || !form.egg_count || !form.status}>
+            <Button type="submit" disabled={saving || !form.male_name?.trim() || !form.female_name?.trim() || !form.egg_laying_date || !form.egg_count || !form.status || !form.incubator_name}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editData?.id ? "Simpan" : "Tambah"}
             </Button>

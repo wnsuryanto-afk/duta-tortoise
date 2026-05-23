@@ -69,8 +69,9 @@ export default function EditProfilePage() {
     setIsDirty(true);
   };
 
+  const IS_COMPLETE_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
+
   const handleSave = () => {
-    // Validate required fields
     const required = ["full_name", "phone", "join_date"];
     const missing = required.filter(f => !formData[f] || formData[f].toString().trim() === "");
     
@@ -79,7 +80,8 @@ export default function EditProfilePage() {
       return;
     }
 
-    updateMutation.mutate(formData);
+    const isComplete = IS_COMPLETE_FIELDS.every(f => formData[f] && formData[f].toString().trim() !== "");
+    updateMutation.mutate({ ...formData, is_complete: isComplete });
   };
 
   const handleCancel = () => {

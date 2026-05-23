@@ -9,7 +9,8 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-const REQUIRED_FIELDS = ["full_name", "phone", "join_date", "id_number", "bank_name", "bank_account_number"];
+const REQUIRED_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
+const IS_COMPLETE_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
 
 export default function ProfileSetupPage() {
   const navigate = useNavigate();
@@ -59,13 +60,8 @@ export default function ProfileSetupPage() {
   // Save profile mutation
   const saveProfileMutation = useMutation({
     mutationFn: async (profileData) => {
-      // Auto-set is_complete jika field-field penting sudah terisi
-      const isComplete = !!(
-        profileData.full_name && 
-        profileData.phone && 
-        profileData.join_date && 
-        profileData.bank_account_number
-      );
+      // is_complete = true HANYA jika semua field esensial terisi
+      const isComplete = IS_COMPLETE_FIELDS.every(f => profileData[f] && profileData[f].toString().trim() !== "");
       
       const dataToSave = {
         ...profileData,
@@ -176,7 +172,7 @@ export default function ProfileSetupPage() {
               { id: "full_name", label: "Nama Lengkap", placeholder: "Nama lengkap Anda", required: true },
               { id: "phone", label: "Nomor Telepon", placeholder: "08123456789", required: true },
               { id: "join_date", label: "Tanggal Bergabung", type: "date", required: true },
-              { id: "id_number", label: "Nomor KTP", placeholder: "Nomor KTP 16 digit", required: true },
+              { id: "id_number", label: "Nomor KTP", placeholder: "Nomor KTP 16 digit", required: false },
             ].map(({ id, label, placeholder, type, required }) => (
               <div key={id} className="space-y-1.5">
                 <Label htmlFor={id}>{label} {required && <span className="text-red-500">*</span>}</Label>
