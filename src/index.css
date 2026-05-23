@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,77 +6,118 @@
 
 @layer base {
   :root {
-    --font-heading: 'Playfair Display', serif;
-    --font-body: 'DM Sans', sans-serif;
+    /* ── FONTS ── */
+    --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-body:    'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
-    --background: 40 20% 97%;
-    --foreground: 30 10% 12%;
-    --card: 40 25% 99%;
-    --card-foreground: 30 10% 12%;
-    --popover: 40 25% 99%;
-    --popover-foreground: 30 10% 12%;
-    --primary: 145 30% 32%;
-    --primary-foreground: 40 20% 97%;
-    --secondary: 35 30% 91%;
-    --secondary-foreground: 30 10% 20%;
-    --muted: 35 20% 93%;
-    --muted-foreground: 30 8% 46%;
-    --accent: 28 60% 52%;
-    --accent-foreground: 40 20% 97%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 35 20% 87%;
-    --input: 35 20% 87%;
-    --ring: 145 30% 32%;
-    --chart-1: 145 30% 32%;
-    --chart-2: 28 60% 52%;
-    --chart-3: 35 40% 62%;
-    --chart-4: 170 30% 40%;
-    --chart-5: 15 50% 55%;
+    /*
+      COLOR MAPPING TO HSL:
+      #2D5016 (Hijau Tua)    → hsl(96, 56%, 20%)
+      #6B9B37 (Hijau Muda)   → hsl(88, 48%, 41%)
+      #8B5E3C (Coklat Tanah) → hsl(25, 42%, 39%)
+      #C19A6B (Coklat Muda)  → hsl(30, 38%, 58%)
+      #F5F1E8 (Cream)        → hsl(42, 32%, 93%)
+      #FAFAF7 (Off-white bg) → hsl(60, 13%, 98%)
+      #FFFFFF (White card)   → hsl(0, 0%, 100%)
+      #E5E1D8 (Border)       → hsl(40, 17%, 86%)
+      #2C3E2D (Teks utama)   → hsl(124, 16%, 21%)
+      #6B7568 (Teks sekunder)→ hsl(108, 5%, 43%)
+      #A8B0A5 (Teks disabled)→ hsl(108, 4%, 67%)
+    */
+
+    /* ── PRIMARY: Hijau Daun Tua #2D5016 ── */
+    --primary:            96 56% 20%;
+    --primary-foreground: 60 13% 98%;
+
+    /* ── ACCENT: Hijau Daun Muda #6B9B37 ── */
+    --accent:             88 48% 41%;
+    --accent-foreground:  60 13% 98%;
+
+    /* ── SECONDARY: Cream warm ── */
+    --secondary:          42 32% 90%;
+    --secondary-foreground: 124 16% 21%;
+
+    /* ── BACKGROUND: #FAFAF7 ── */
+    --background:         60 13% 98%;
+
+    /* ── FOREGROUND: #2C3E2D ── */
+    --foreground:         124 16% 21%;
+
+    /* ── CARD: White #FFFFFF ── */
+    --card:               0 0% 100%;
+    --card-foreground:    124 16% 21%;
+    --popover:            0 0% 100%;
+    --popover-foreground: 124 16% 21%;
+
+    /* ── MUTED ── */
+    --muted:              42 20% 95%;
+    --muted-foreground:   108 5% 43%;
+
+    /* ── BORDER: #E5E1D8 ── */
+    --border:             40 17% 86%;
+    --input:              40 17% 86%;
+
+    /* ── RING: Primary green ── */
+    --ring:               96 56% 20%;
+
+    /* ── DESTRUCTIVE ── */
+    --destructive:        4 79% 56%;
+    --destructive-foreground: 0 0% 99%;
+
+    /* ── RADIUS ── */
     --radius: 0.75rem;
-    --sidebar-background: 30 15% 14%;
-    --sidebar-foreground: 35 20% 90%;
-    --sidebar-primary: 145 35% 45%;
-    --sidebar-primary-foreground: 40 20% 97%;
-    --sidebar-accent: 30 12% 20%;
-    --sidebar-accent-foreground: 35 20% 90%;
-    --sidebar-border: 30 10% 22%;
-    --sidebar-ring: 145 30% 32%;
+
+    /* ── CHARTS ── */
+    --chart-1: 96 56% 20%;
+    --chart-2: 25 42% 39%;
+    --chart-3: 88 48% 41%;
+    --chart-4: 170 38% 36%;
+    --chart-5: 35 65% 52%;
+
+    /* ── SIDEBAR (Hijau Tua gelap) ── */
+    --sidebar-background:           100 55% 12%;
+    --sidebar-foreground:           80 20% 88%;
+    --sidebar-primary:              88 48% 46%;
+    --sidebar-primary-foreground:   60 13% 98%;
+    --sidebar-accent:               100 45% 17%;
+    --sidebar-accent-foreground:    80 20% 88%;
+    --sidebar-border:               100 35% 18%;
+    --sidebar-ring:                 88 48% 46%;
   }
 
   .dark {
-    --background: 30 10% 8%;
-    --foreground: 35 20% 93%;
-    --card: 30 10% 11%;
-    --card-foreground: 35 20% 93%;
-    --popover: 30 10% 11%;
-    --popover-foreground: 35 20% 93%;
-    --primary: 145 35% 45%;
-    --primary-foreground: 30 10% 8%;
-    --secondary: 30 10% 16%;
-    --secondary-foreground: 35 20% 93%;
-    --muted: 30 10% 16%;
-    --muted-foreground: 35 15% 55%;
-    --accent: 28 60% 52%;
-    --accent-foreground: 40 20% 97%;
-    --destructive: 0 62.8% 30.6%;
+    --background:         100 14% 8%;
+    --foreground:         60 15% 92%;
+    --card:               100 12% 11%;
+    --card-foreground:    60 15% 92%;
+    --popover:            100 12% 11%;
+    --popover-foreground: 60 15% 92%;
+    --primary:            88 48% 48%;
+    --primary-foreground: 100 14% 8%;
+    --secondary:          100 12% 18%;
+    --secondary-foreground: 60 15% 92%;
+    --muted:              100 12% 18%;
+    --muted-foreground:   70 10% 55%;
+    --accent:             88 48% 48%;
+    --accent-foreground:  100 14% 8%;
+    --destructive:        4 65% 40%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 10% 20%;
-    --input: 30 10% 20%;
-    --ring: 145 35% 45%;
-    --chart-1: 145 35% 45%;
-    --chart-2: 28 60% 52%;
-    --chart-3: 35 40% 62%;
-    --chart-4: 170 30% 40%;
-    --chart-5: 15 50% 55%;
-    --sidebar-background: 30 12% 6%;
-    --sidebar-foreground: 35 20% 90%;
-    --sidebar-primary: 145 35% 45%;
-    --sidebar-primary-foreground: 40 20% 97%;
-    --sidebar-accent: 30 10% 12%;
-    --sidebar-accent-foreground: 35 20% 90%;
-    --sidebar-border: 30 10% 14%;
-    --sidebar-ring: 145 35% 45%;
+    --border:             100 12% 22%;
+    --input:              100 12% 22%;
+    --ring:               88 48% 48%;
+    --chart-1: 88 48% 48%;
+    --chart-2: 25 55% 52%;
+    --chart-3: 170 38% 44%;
+    --chart-4: 35 65% 52%;
+    --chart-5: 96 57% 32%;
+    --sidebar-background: 100 18% 6%;
+    --sidebar-foreground: 70 25% 88%;
+    --sidebar-primary:    88 48% 48%;
+    --sidebar-primary-foreground: 60 30% 96%;
+    --sidebar-accent:     100 14% 13%;
+    --sidebar-accent-foreground: 70 25% 88%;
+    --sidebar-border:     100 12% 16%;
+    --sidebar-ring:       88 48% 48%;
   }
 }
 
@@ -85,7 +126,94 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground font-body;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ── GLOBAL COMPONENT POLISH ── */
+@layer components {
+
+  /* Cards */
+  .card-base {
+    @apply bg-card rounded-xl border border-border;
+    box-shadow: 0 2px 8px rgba(45, 80, 22, 0.07);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-base:hover {
+    box-shadow: 0 4px 16px rgba(45, 80, 22, 0.12);
+  }
+
+  /* Stat number */
+  .stat-number {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    @apply font-heading;
+  }
+
+  /* Smooth interactive */
+  .interactive {
+    transition: all 0.2s ease;
+  }
+
+  /* Badge pill base */
+  .badge-pill {
+    @apply inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold;
+  }
+}
+
+/* ── SCROLLBAR STYLING ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(40, 17%, 80%);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(88, 30%, 60%);
+}
+
+/* ── FOCUS RING ── */
+*:focus-visible {
+  outline: 2px solid hsl(96, 56%, 20%);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.animate-skeleton {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
 }

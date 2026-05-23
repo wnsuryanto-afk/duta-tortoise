@@ -5,7 +5,7 @@ import {
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
   PieChart, Bell,
   CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
-  Activity, Settings, Clock, Calendar
+  Activity, Settings, Clock, Calendar, ChevronRight
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, ROLE_LABELS, ROLE_COLORS, canViewAs } from "@/lib/permissions";
 
-// Navigasi dikelompokkan
 const NAV_GROUPS = [
   {
     label: null,
@@ -33,64 +32,64 @@ const NAV_GROUPS = [
   {
     label: "Kesehatan",
     items: [
-      { path: "/health",          section: "health",          label: "Rekam Medis",    icon: Heart },
-      { path: "/vet-contacts",    section: "health",          label: "Dokter Hewan",     icon: Users },
-      { path: "/treatment",       section: "treatment",       label: "Jadwal Treatment", icon: Stethoscope },
+      { path: "/health",          section: "health",          label: "Rekam Medis",         icon: Heart },
+      { path: "/vet-contacts",    section: "health",          label: "Dokter Hewan",        icon: Users },
+      { path: "/treatment",       section: "treatment",       label: "Jadwal Treatment",    icon: Stethoscope },
     ],
   },
   {
     label: "Perawatan",
     items: [
       { path: "/maintenance-schedule", section: "maintenance", label: "Jadwal Perawatan Kandang", icon: Calendar },
-      { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",      icon: Wheat },
+      { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",          icon: Wheat },
     ],
   },
   {
     label: "Gudang & Penjualan",
     items: [
-      { path: "/warehouse",       section: "warehouse",       label: "Gudang",           icon: Warehouse },
-      { path: "/sales",           section: "sales",           label: "Penjualan",        icon: DollarSign },
-      { path: "/crm",             section: "crm",             label: "CRM Pembeli",      icon: Users },
+      { path: "/warehouse",       section: "warehouse",       label: "Gudang",              icon: Warehouse },
+      { path: "/sales",           section: "sales",           label: "Penjualan",           icon: DollarSign },
+      { path: "/crm",             section: "crm",             label: "CRM Pembeli",         icon: Users },
     ],
   },
   {
     label: "SDM",
     items: [
-      { path: "/hr",              section: "hr",              label: "Manajemen SDM",    icon: Users },
-      { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Gaji & Kasbon", icon: Wallet },
-      { path: "/salary",          section: "salary",          label: "Gaji Bulanan",     icon: Calculator },
+      { path: "/hr",              section: "hr",              label: "Manajemen SDM",       icon: Users },
+      { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Gaji & Kasbon",       icon: Wallet },
+      { path: "/salary",          section: "salary",          label: "Gaji Bulanan",        icon: Calculator },
     ],
   },
   {
     label: "SOP & Tugas",
     items: [
-      { path: "/sop",             section: "sop",             label: "SOP & Tugas Harian",        icon: ClipboardList },
-      { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP", icon: Library },
-      { path: "/task-template",   section: "task-template",   label: "Template Task",    icon: ListTodo },
+      { path: "/sop",             section: "sop",             label: "SOP & Tugas Harian",  icon: ClipboardList },
+      { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP",    icon: Library },
+      { path: "/task-template",   section: "task-template",   label: "Template Task",       icon: ListTodo },
     ],
   },
   {
     label: "Laporan",
     items: [
-      { path: "/finance",         section: "finance",         label: "Laporan Keuangan", icon: TrendingUp },
-      { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",   icon: PieChart },
-      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",    icon: BarChart2 },
+      { path: "/finance",         section: "finance",         label: "Laporan Keuangan",    icon: TrendingUp },
+      { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",      icon: PieChart },
+      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",       icon: BarChart2 },
     ],
   },
   {
     label: "Pengaturan",
     items: [
-      { path: "/notifications",      section: "notifications",    label: "Notifikasi",           icon: Bell },
-      { path: "/activity-log",       section: "activity-log",     label: "Riwayat Aktivitas",    icon: Activity },
-      { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem", icon: Settings },
-      { path: "/users",              section: "users",            label: "Manajemen User",       icon: Users },
-      { path: "/users",              section: "users-readonly",   label: "Direktori User",        icon: Users },
+      { path: "/notifications",      section: "notifications",      label: "Notifikasi",           icon: Bell },
+      { path: "/activity-log",       section: "activity-log",       label: "Riwayat Aktivitas",    icon: Activity },
+      { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem",  icon: Settings },
+      { path: "/users",              section: "users",              label: "Manajemen User",       icon: Users },
+      { path: "/users",              section: "users-readonly",     label: "Direktori User",       icon: Users },
     ],
   },
   {
     label: null,
     items: [
-      { path: "/help",            section: "dashboard",       label: "Bantuan", icon: HelpCircle },
+      { path: "/help", section: "dashboard", label: "Bantuan", icon: HelpCircle },
     ],
   },
 ];
@@ -101,14 +100,18 @@ function NavItem({ item, isActive, onClick }) {
       to={item.path}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+        "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 group",
         isActive
-          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       )}
     >
-      <item.icon className="w-[17px] h-[17px] flex-shrink-0" />
-      {item.label}
+      <item.icon className={cn(
+        "w-4 h-4 flex-shrink-0 transition-all",
+        isActive ? "opacity-100" : "opacity-55 group-hover:opacity-80"
+      )} />
+      <span className="flex-1 leading-none">{item.label}</span>
+      {isActive && <div className="w-1.5 h-1.5 rounded-full bg-sidebar-primary-foreground/70 flex-shrink-0" />}
     </Link>
   );
 }
@@ -117,13 +120,10 @@ export default function Sidebar({ viewAsRole = null }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const { user, role: realRole } = useCurrentUser();
-
-  // If viewAs is active, use that role for nav rendering
   const role = viewAsRole || realRole;
-
   const close = () => setOpen(false);
 
-  // Filter items per group berdasarkan akses, deduplicate by path
+  // Filter + deduplicate by path
   const seenPaths = new Set();
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
@@ -142,49 +142,58 @@ export default function Sidebar({ viewAsRole = null }) {
       {/* Mobile toggle */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-sidebar text-sidebar-foreground shadow-lg"
+        className="fixed top-4 left-4 z-50 lg:hidden p-2.5 rounded-xl bg-sidebar text-sidebar-foreground shadow-lg border border-sidebar-border"
       >
-        <Menu className="w-5 h-5" />
+        <Menu className="w-4 h-4" />
       </button>
 
       {/* Overlay */}
-      {open && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={close} />}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+          onClick={close}
+        />
+      )}
 
-      {/* Sidebar */}
+      {/* Sidebar panel */}
       <aside className={cn(
-        "fixed top-0 left-0 h-full w-60 bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-transform duration-300",
+        "fixed top-0 left-0 h-full w-64 bg-sidebar text-sidebar-foreground z-50 flex flex-col transition-transform duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.15)]",
         "lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full"
       )}>
-        {/* Logo */}
+
+        {/* ── Logo area ── */}
         <div className="px-4 py-5 flex items-center justify-between border-b border-sidebar-border">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-sidebar-primary/20 flex items-center justify-center">
-              <Shell className="w-4 h-4 text-sidebar-primary" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
+              <Shell className="w-[18px] h-[18px] text-sidebar-primary" />
             </div>
             <div>
-              <h1 className="font-heading text-base font-semibold leading-tight">Sulcata Farm</h1>
-              <p className="text-[11px] text-sidebar-foreground/45 leading-tight">Manager</p>
+              <p className="font-heading text-[15px] font-bold leading-tight text-sidebar-foreground">Duta Tortoise</p>
+              <p className="text-[10px] text-sidebar-foreground/40 leading-tight tracking-wide uppercase">Farm Manager</p>
             </div>
           </div>
-          <button onClick={close} className="lg:hidden p-1 rounded-lg hover:bg-sidebar-accent">
+          <button
+            onClick={close}
+            className="lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+        {/* ── Navigation ── */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
           {visibleGroups.map((group, gi) => (
             <div key={gi}>
               {group.label && (
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/35 px-3 mb-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-sidebar-foreground/30 px-3 mb-1.5">
                   {group.label}
                 </p>
               )}
               <div className="space-y-0.5">
                 {group.items.map((item) => (
                   <NavItem
-                    key={item.path}
+                    key={item.section + item.path}
                     item={item}
                     isActive={location.pathname === item.path}
                     onClick={close}
@@ -195,19 +204,24 @@ export default function Sidebar({ viewAsRole = null }) {
           ))}
         </nav>
 
-        {/* User info + logout */}
-        <div className="px-3 py-4 border-t border-sidebar-border space-y-2">
+        {/* ── User footer ── */}
+        <div className="px-3 py-3 border-t border-sidebar-border space-y-1">
           {user && (
-            <div className="px-3 py-2.5 rounded-xl bg-sidebar-accent">
+            <div className="px-3 py-2.5 rounded-xl bg-sidebar-accent/70 border border-sidebar-border">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-sidebar-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-sidebar-primary">
+                <div className="w-8 h-8 rounded-full bg-sidebar-primary/25 flex items-center justify-center flex-shrink-0 border border-sidebar-primary/30">
+                  <span className="text-[11px] font-bold text-sidebar-primary">
                     {(user.full_name || user.email || "?")[0].toUpperCase()}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium truncate leading-tight">{user.full_name || user.email}</p>
-                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium inline-block mt-0.5", ROLE_COLORS[role])}>
+                  <p className="text-[12px] font-semibold truncate leading-tight text-sidebar-foreground">
+                    {user.full_name || user.email}
+                  </p>
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded-full border font-semibold inline-block mt-0.5",
+                    ROLE_COLORS[role]
+                  )}>
                     {ROLE_LABELS[role] || role}
                   </span>
                 </div>
@@ -216,10 +230,10 @@ export default function Sidebar({ viewAsRole = null }) {
           )}
           <button
             onClick={() => base44.auth.logout()}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all w-full"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] text-sidebar-foreground/45 hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
           >
             <LogOut className="w-3.5 h-3.5" />
-            Keluar
+            Keluar dari Akun
           </button>
         </div>
       </aside>
