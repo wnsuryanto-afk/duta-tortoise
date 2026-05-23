@@ -215,8 +215,6 @@ export default function BreederRankingPage() {
     }).sort((a, b) => b.score - a.score);
   };
 
-  if (!canAccess(role, "breeding")) return <AccessDenied />;
-
   const allPairs = computePairs(filtered);
   const malePairs = useMemo(() => {
     const maleMap = {};
@@ -257,6 +255,8 @@ export default function BreederRankingPage() {
       return { maleName: "—", femaleName: name, totalClutch: clutches.length, totalEggs, totalHatched, hatchRate, clutchesThisYear: 0, score };
     }).sort((a,b)=>b.score-a.score);
   }, [filtered]);
+
+  if (!canAccess(role, "breeding")) return <AccessDenied />;
 
   return (
     <div className="space-y-6">

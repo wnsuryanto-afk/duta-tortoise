@@ -1,0 +1,86 @@
+{
+  "name": "ItemUsage",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "type": "string",
+      "description": "ID WarehouseItem"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Nama item"
+    },
+    "borrower_email": {
+      "type": "string",
+      "description": "Email peminjam"
+    },
+    "borrower_name": {
+      "type": "string",
+      "description": "Nama peminjam"
+    },
+    "borrow_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Tanggal pinjam"
+    },
+    "return_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Tanggal kembali"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Jumlah dipinjam"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Keperluan"
+    },
+    "return_condition": {
+      "type": "string",
+      "enum": [
+        "baik",
+        "rusak",
+        "hilang"
+      ],
+      "description": "Kondisi saat kembali"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "dipinjam",
+        "dikembalikan",
+        "lapor_rusak",
+        "lapor_hilang"
+      ],
+      "default": "dipinjam"
+    },
+    "approval_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "approved"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "photo_proof": {
+      "type": "string",
+      "description": "Foto bukti rusak/hilang"
+    }
+  },
+  "required": [
+    "item_id",
+    "item_name",
+    "borrower_email",
+    "borrower_name",
+    "borrow_date",
+    "quantity"
+  ]
+}

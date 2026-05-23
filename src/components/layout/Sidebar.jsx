@@ -3,9 +3,9 @@ import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
-  PieChart, Bell, Printer,
+  PieChart, Bell, Printer, Package,
   CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
-  Activity, Settings, Clock, Calendar, ChevronRight, Trophy
+  Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -76,6 +76,14 @@ const NAV_GROUPS = [
       { path: "/finance",         section: "finance",         label: "Laporan Keuangan",    icon: TrendingUp },
       { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",      icon: PieChart },
       { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",       icon: BarChart2 },
+    ],
+  },
+  {
+    label: "Gudang Lanjutan",
+    items: [
+      { path: "/petty-cash",    section: "petty-cash",    label: "Kas Kecil",       icon: Wallet },
+      { path: "/supplier",      section: "supplier",      label: "Supplier",         icon: Package },
+      { path: "/pellet-recipe", section: "pellet-recipe", label: "Resep Pelet",      icon: FlaskConical },
     ],
   },
   {

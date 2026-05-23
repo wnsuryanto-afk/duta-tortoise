@@ -1,0 +1,44 @@
+{
+  "name": "SupplierItem",
+  "type": "object",
+  "properties": {
+    "supplier_id": {
+      "type": "string"
+    },
+    "supplier_name": {
+      "type": "string"
+    },
+    "item_name": {
+      "type": "string"
+    },
+    "item_category": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "marketplace_link": {
+      "type": "string",
+      "description": "Link Tokopedia/Shopee/dll"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "supplier_id",
+    "item_name",
+    "price"
+  ]
+}

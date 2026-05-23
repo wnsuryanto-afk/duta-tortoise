@@ -34,11 +34,13 @@ const entityIcons = {
 };
 
 export default function ActivityLogPage() {
-  const { role } = useCurrentUser();
+  const { role, user } = useCurrentUser();
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("semua");
   const [entityFilter, setEntityFilter] = useState("semua");
   const [selectedLog, setSelectedLog] = useState(null);
+
+  const isKeeperLevel = !["owner", "admin", "manajer"].includes(role);
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["activity-logs"],
@@ -48,6 +50,8 @@ export default function ActivityLogPage() {
   const entityTypes = [...new Set(logs.map(l => l.entity_type))].filter(Boolean);
 
   const filtered = logs.filter(log => {
+    // Keeper/kepala_feeder hanya lihat aktivitas sendiri
+    if (isKeeperLevel && log.user_email !== user?.email) return false;
     const matchSearch = !search || 
       log.entity_name?.toLowerCase().includes(search.toLowerCase()) ||
       log.user_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,19 +62,17 @@ export default function ActivityLogPage() {
   });
 
   const stats = {
-    total: logs.length,
-    create: logs.filter(l => l.action === "create").length,
-    update: logs.filter(l => l.action === "update").length,
-    delete: logs.filter(l => l.action === "delete").length,
+    total: filtered.length,
+    create: filtered.filter(l => l.action === "create").length,
+    update: filtered.filter(l => l.action === "update").length,
+    delete: filtered.filter(l => l.action === "delete").length,
   };
 
-  if (role !== "owner") {
+  if (!["owner", "admin", "manajer", "keeper", "kepala_feeder"].includes(role)) {
     return (
       <div className="text-center py-20 text-muted-foreground">
         <Activity className="w-12 h-12 mx-auto mb-3 opacity-20" />
         <p className="text-lg font-medium">🔒 Akses Terbatas</p>
-        <p className="text-sm mt-1">Halaman ini hanya dapat diakses oleh Owner</p>
-        <p className="text-xs mt-2 text-muted-foreground/60">Hubungi Owner jika Anda memerlukan akses</p>
       </div>
     );
   }

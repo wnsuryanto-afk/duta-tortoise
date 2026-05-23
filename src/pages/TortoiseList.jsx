@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, Eye, TrendingUp, CalendarX, Skull } from "lucide-react";
+import ExportButton from "@/components/common/ExportButton";
 import TortoiseCard from "@/components/tortoise/TortoiseCard";
 import TortoiseForm from "@/components/tortoise/TortoiseForm";
 import MoveEnclosureDialog from "@/components/tortoise/MoveEnclosureDialog";
@@ -119,6 +120,20 @@ export default function TortoiseList() {
     return "ok";
   };
 
+  // Kura-kura dengan HealthRecord sakit aktif (belum ada follow_up atau follow_up di masa depan)
+  const sickTortoiseIds = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const sickSet = new Set();
+    healthRecords.forEach(r => {
+      if (r.type === "sakit" && r.tortoise_id) {
+        if (!r.follow_up_date || r.follow_up_date >= today) {
+          sickSet.add(r.tortoise_id);
+        }
+      }
+    });
+    return sickSet;
+  }, [healthRecords]);
+
   const filtered = tortoises.filter((t) => {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "semua" || t.status === statusFilter;
@@ -209,11 +224,24 @@ export default function TortoiseList() {
         <TabsContent value="kura" className="mt-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">{filtered.length} dari {tortoises.length} tortoise</p>
-            {perms.canCreate && (
-              <Button onClick={() => { setEditData(null); setShowForm(true); }} className="bg-primary gap-2">
-                <Plus className="w-4 h-4" /> Tambah Tortoise
-              </Button>
-            )}
+            <div className="flex gap-2 flex-wrap">
+              <ExportButton
+                data={filtered}
+                filename={`tortoise-${new Date().toISOString().split("T")[0]}`}
+                title="Data Kura-kura"
+                columns={[
+                  {key:"name",label:"Nama"},{key:"code",label:"Kode"},{key:"gender",label:"Gender"},
+                  {key:"morph",label:"Morph"},{key:"status",label:"Status"},{key:"enclosure",label:"Kandang"},
+                  {key:"weight_grams",label:"Berat (g)"},{key:"shell_length_cm",label:"Panjang (cm)"},
+                  {key:"birth_date",label:"Tgl Lahir"},{key:"source",label:"Sumber"},
+                ]}
+              />
+              {perms.canCreate && (
+                <Button onClick={() => { setEditData(null); setShowForm(true); }} className="bg-primary gap-2">
+                  <Plus className="w-4 h-4" /> Tambah Tortoise
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="relative">
@@ -316,7 +344,7 @@ export default function TortoiseList() {
           ) : viewMode === "semua" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[b.status] ?? 0)).map((t) => (
-                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
+                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
               ))}
             </div>
           ) : (
@@ -352,7 +380,7 @@ export default function TortoiseList() {
                     {!collapsed && (
                       <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         {items.map((t) => (
-                           <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
+                           <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
                         ))}
                       </div>
                     )}

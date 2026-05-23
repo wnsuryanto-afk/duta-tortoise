@@ -1,0 +1,44 @@
+{
+  "name": "Supplier",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "contact_person": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "whatsapp": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "specialty": {
+      "type": "string",
+      "description": "e.g. Pakan & Vitamin, Alat Kerja"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_preferred": {
+      "type": "boolean",
+      "default": false
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ]
+}

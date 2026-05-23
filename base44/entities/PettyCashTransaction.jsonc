@@ -1,0 +1,54 @@
+{
+  "name": "PettyCashTransaction",
+  "type": "object",
+  "properties": {
+    "petty_cash_id": {
+      "type": "string"
+    },
+    "holder_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "pemasukan",
+        "pengeluaran"
+      ]
+    },
+    "amount": {
+      "type": "number"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "pakan",
+        "obat",
+        "peralatan",
+        "operasional",
+        "transport",
+        "lainnya"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "receipt_photo": {
+      "type": "string",
+      "description": "Foto struk/nota"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "petty_cash_id",
+    "type",
+    "amount",
+    "description",
+    "date"
+  ]
+}

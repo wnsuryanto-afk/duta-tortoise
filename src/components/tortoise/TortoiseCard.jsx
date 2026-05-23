@@ -123,7 +123,7 @@ function ProvenBadge({ gender }) {
   );
 }
 
-export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth, parentIndicator }) {
+export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth, parentIndicator, isSick = false }) {
   const { role } = useCurrentUser();
   const showPrice = canViewPrice(role);
   const [showHistory, setShowHistory] = useState(false);
@@ -160,10 +160,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
 
   const cardBg = getCardBg(tortoise);
   const missingFields = getMissingFields("tortoise", tortoise);
+  const activelySick = isSick || healthStatus === "critical";
 
   return (
     <>
-    <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border} ${cardBg}`}>
+    <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border} ${cardBg} ${activelySick ? "border-orange-400 border-2" : ""}`}>
       <div className="flex items-start gap-3">
         {/* Foto Thumbnail - DIPERBESAR */}
         <button
@@ -199,6 +200,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             </h3>
             {tortoise.code && <span className="text-xs text-muted-foreground">({tortoise.code})</span>}
             {tortoise.is_proven && <ProvenBadge gender={tortoise.gender} />}
+            {activelySick && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-600 text-white animate-pulse">
+                🏥 SAKIT
+              </span>
+            )}
             <IncompleteBadge missingFields={missingFields} onEdit={onEdit ? () => onEdit(tortoise) : undefined} />
           </div>
 

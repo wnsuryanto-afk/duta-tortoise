@@ -8,7 +8,10 @@
         "owner",
         "admin",
         "manajer",
-        "keeper"
+        "kepala_feeder",
+        "keeper",
+        "investor",
+        "viewer"
       ],
       "default": "keeper",
       "description": "Peran pengguna dalam peternakan"

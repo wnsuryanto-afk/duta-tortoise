@@ -1,0 +1,61 @@
+{
+  "name": "PettyCashRequest",
+  "type": "object",
+  "properties": {
+    "requester_email": {
+      "type": "string"
+    },
+    "requester_name": {
+      "type": "string"
+    },
+    "amount_requested": {
+      "type": "number"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "urgency": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "mendesak"
+      ],
+      "default": "normal"
+    },
+    "request_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "disbursed"
+      ],
+      "default": "pending"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "disbursement_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "requester_email",
+    "requester_name",
+    "amount_requested",
+    "reason",
+    "request_date"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "name": "PelletRecipe",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama resep pelet"
+    },
+    "yield_kg": {
+      "type": "number",
+      "description": "Hasil pelet per resep (kg)"
+    },
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "type": "string"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "quantity_kg": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "preparation_steps": {
+      "type": "string"
+    },
+    "preparation_time_minutes": {
+      "type": "number"
+    },
+    "shelf_life_days": {
+      "type": "number",
+      "description": "Daya tahan (hari)"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "yield_kg"
+  ]
+}

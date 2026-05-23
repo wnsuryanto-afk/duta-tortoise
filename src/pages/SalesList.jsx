@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import ExportButton from "@/components/common/ExportButton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, DollarSign } from "lucide-react";
@@ -61,12 +62,25 @@ export default function SalesList() {
           </p>
         </div>
 
-        {perms.canCreate && (
-          <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah Penjualan
-          </Button>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          <ExportButton
+            data={sales}
+            filename={`penjualan-${new Date().toISOString().split("T")[0]}`}
+            title="Data Penjualan"
+            columns={[
+              {key:"sale_date",label:"Tgl"},{key:"tortoise_name",label:"Kura-kura"},
+              {key:"buyer_name",label:"Pembeli"},{key:"buyer_phone",label:"Telp"},
+              {key:"price",label:"Harga"},{key:"payment_status",label:"Pembayaran"},
+              {key:"shipping_method",label:"Pengiriman"},{key:"platform",label:"Platform"},
+            ]}
+          />
+          {perms.canCreate && (
+            <Button onClick={() => { setEditData(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Tambah Penjualan
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

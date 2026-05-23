@@ -17,11 +17,12 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 const ROLE_DESCRIPTIONS = {
-  keeper:   "Kelola kura-kura & kesehatan. Tidak bisa akses penjualan & keuangan.",
-  manajer:  "Akses penuh operasional termasuk penjualan & keuangan. Tidak bisa kelola user.",
-  admin:    "Akses penuh seperti Manajer. Tidak bisa hapus data permanen.",
-  owner:    "Akses penuh semua fitur & pengaturan sistem.",
-  viewer:   "Read-only. Hanya bisa lihat dashboard, kura-kura, breeding, dan statistik. Tidak bisa edit/hapus apapun.",
+  keeper:         "Kelola kura-kura & kesehatan. Tidak bisa akses penjualan & keuangan.",
+  kepala_feeder:  "Semua akses Keeper + pegang kas kecil, input formulasi pelet, ambil bahan baku tanpa approval.",
+  manajer:        "Akses penuh operasional termasuk penjualan & keuangan. Tidak bisa kelola user.",
+  admin:          "Akses penuh seperti Manajer. Tidak bisa hapus data permanen.",
+  owner:          "Akses penuh semua fitur & pengaturan sistem.",
+  viewer:         "Read-only. Hanya bisa lihat dashboard, kura-kura, breeding, dan statistik.",
 };
 
 // ── Invite Dialog ─────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ function InviteUserDialog({ open, onClose, canInviteAsOwner }) {
                 <SelectContent>
                   <SelectItem value="viewer">👁️ Viewer</SelectItem>
                   <SelectItem value="keeper">🐢 Keeper</SelectItem>
+                  <SelectItem value="kepala_feeder">🌿 Kepala Feeder</SelectItem>
                   <SelectItem value="admin">🛡️ Admin</SelectItem>
                   {canInviteAsOwner && <SelectItem value="manajer">👔 Manajer</SelectItem>}
                   {canInviteAsOwner && <SelectItem value="owner">👑 Owner</SelectItem>}
@@ -149,13 +151,14 @@ export default function UserManagement() {
       </div>
 
       {/* Role summary cards */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {[
-          { r: "owner",   emoji: "👑", desc: "Owner" },
-          { r: "manajer", emoji: "👔", desc: "Manajer" },
-          { r: "admin",   emoji: "🛡️", desc: "Admin" },
-          { r: "keeper",  emoji: "🐢", desc: "Keeper" },
-          { r: "viewer",  emoji: "👁️", desc: "Viewer" },
+          { r: "owner",          emoji: "👑", desc: "Owner" },
+          { r: "manajer",        emoji: "👔", desc: "Manajer" },
+          { r: "admin",          emoji: "🛡️", desc: "Admin" },
+          { r: "kepala_feeder",  emoji: "🌿", desc: "Kep. Feeder" },
+          { r: "keeper",         emoji: "🐢", desc: "Keeper" },
+          { r: "viewer",         emoji: "👁️", desc: "Viewer" },
         ].map(({ r, emoji, desc }) => (
           <Card key={r} className="p-3 text-center cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setRoleFilter(roleFilter === r ? "semua" : r)}>
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -181,6 +184,7 @@ export default function UserManagement() {
               <SelectItem value="owner">👑 Owner</SelectItem>
               <SelectItem value="manajer">👔 Manajer</SelectItem>
               <SelectItem value="admin">🛡️ Admin</SelectItem>
+              <SelectItem value="kepala_feeder">🌿 Kepala Feeder</SelectItem>
               <SelectItem value="keeper">🐢 Keeper</SelectItem>
               <SelectItem value="viewer">👁️ Viewer</SelectItem>
             </SelectContent>

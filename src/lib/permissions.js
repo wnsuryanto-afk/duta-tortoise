@@ -7,28 +7,27 @@
  */
 
 export const ROLE_LABELS = {
-  owner:    "Owner",
-  admin:    "Admin",
-  manajer:  "Manajer",
-  keeper:   "Keeper",
-  investor: "Investor",
-  viewer:   "Viewer",
+  owner:          "Owner",
+  admin:          "Admin",
+  manajer:        "Manajer",
+  keeper:         "Keeper",
+  kepala_feeder:  "Kepala Feeder",
+  investor:       "Investor",
+  viewer:         "Viewer",
 };
 
 export const ROLE_COLORS = {
-  owner:    "bg-purple-100 text-purple-800 border-purple-300",
-  admin:    "bg-green-100 text-green-800 border-green-300",
-  manajer:  "bg-blue-100 text-blue-800 border-blue-300",
-  keeper:   "bg-orange-100 text-orange-800 border-orange-300",
-  investor: "bg-slate-100 text-slate-700 border-slate-300",
-  viewer:   "bg-gray-100 text-gray-600 border-gray-300",
-  kicked:   "bg-red-100 text-red-600 border-red-300",
+  owner:          "bg-purple-100 text-purple-800 border-purple-300",
+  admin:          "bg-green-100 text-green-800 border-green-300",
+  manajer:        "bg-blue-100 text-blue-800 border-blue-300",
+  keeper:         "bg-orange-100 text-orange-800 border-orange-300",
+  kepala_feeder:  "bg-teal-100 text-teal-800 border-teal-300",
+  investor:       "bg-slate-100 text-slate-700 border-slate-300",
+  viewer:         "bg-gray-100 text-gray-600 border-gray-300",
+  kicked:         "bg-red-100 text-red-600 border-red-300",
 };
 
 // Menu yang bisa diakses per role
-// OWNER: semua
-// MANAJER/ADMIN: semua kecuali users, system-maintenance, activity-log (owner-only)
-// KEEPER: terbatas
 export const NAV_ACCESS = {
   owner: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -38,7 +37,7 @@ export const NAV_ACCESS = {
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
     "activity-log", "system-maintenance", "vet-contacts", "maintenance",
-    "printer-config", "help",
+    "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -48,7 +47,7 @@ export const NAV_ACCESS = {
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "printer-config",
-    "help",
+    "activity-log", "help", "supplier", "pellet-recipe",
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -57,15 +56,22 @@ export const NAV_ACCESS = {
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
-    "vet-contacts", "maintenance",
-    "help",
+    "vet-contacts", "maintenance", "activity-log",
+    "help", "petty-cash", "supplier", "pellet-recipe",
+  ],
+  kepala_feeder: [
+    "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
+    "health", "sop", "sop-library", "feed-stock",
+    "info", "treatment", "feedback", "kasbon", "notifications",
+    "breeding-planner", "death-records", "vet-contacts", "maintenance",
+    "help", "petty-cash", "pellet-recipe", "warehouse", "activity-log",
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "sop", "sop-library", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "death-records", "vet-contacts", "maintenance",
-    "help",
+    "help", "activity-log",
   ],
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",
@@ -110,6 +116,19 @@ export const PAGE_PERMISSIONS = {
     warehouse: { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
     sales:     { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
     payroll:   { canCreate: true,  canEdit: true,  canDelete: false, canViewAll: false },
+  },
+  kepala_feeder: {
+    tortoise:  { canCreate: false, canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    users:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    feedstock: { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    warehouse: { canCreate: false, canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    sales:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    payroll:   { canCreate: false, canEdit: false, canDelete: false, canViewAll: false },
+    petty_cash: { canCreate: true,  canEdit: true,  canDelete: false, canViewAll: true },
+    pellet:    { canCreate: true,  canEdit: true,  canDelete: false },
   },
   keeper: {
     tortoise:  { canCreate: false, canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
@@ -175,6 +194,16 @@ export function isOwner(role) {
 // Helper: apakah role ini manager level (owner, admin, manajer)
 export function isManagerLevel(role) {
   return ["owner", "admin", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa lihat ActivityLog
+export function canViewActivityLog(role) {
+  return ["owner", "admin", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa akses Kas Kecil
+export function canAccessPettyCash(role) {
+  return ["owner", "manajer", "kepala_feeder"].includes(role);
 }
 
 // Helper: apakah bisa hapus (hanya owner)

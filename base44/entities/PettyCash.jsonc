@@ -1,0 +1,41 @@
+{
+  "name": "PettyCash",
+  "type": "object",
+  "properties": {
+    "holder_email": {
+      "type": "string",
+      "description": "Email pemegang kas"
+    },
+    "holder_name": {
+      "type": "string",
+      "description": "Nama pemegang kas"
+    },
+    "current_balance": {
+      "type": "number",
+      "default": 0
+    },
+    "initial_balance": {
+      "type": "number",
+      "description": "Saldo awal"
+    },
+    "max_balance": {
+      "type": "number",
+      "description": "Plafon maksimal"
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_email",
+    "holder_name"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "PelletProduction",
+  "type": "object",
+  "properties": {
+    "recipe_id": {
+      "type": "string",
+      "description": "ID resep"
+    },
+    "recipe_name": {
+      "type": "string"
+    },
+    "production_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "produced_quantity_kg": {
+      "type": "number"
+    },
+    "produced_by": {
+      "type": "string"
+    },
+    "batch_number": {
+      "type": "string"
+    },
+    "ingredients_used": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "type": "string"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "quantity_used": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_cost": {
+      "type": "number"
+    },
+    "cost_per_kg": {
+      "type": "number"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "storage_location": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "recipe_id",
+    "recipe_name",
+    "production_date",
+    "produced_quantity_kg",
+    "produced_by"
+  ]
+}
