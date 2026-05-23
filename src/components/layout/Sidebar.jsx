@@ -11,7 +11,7 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccess, ROLE_LABELS, ROLE_COLORS } from "@/lib/permissions";
+import { canAccess, ROLE_LABELS, ROLE_COLORS, canViewAs } from "@/lib/permissions";
 
 // Navigasi dikelompokkan
 const NAV_GROUPS = [
@@ -25,9 +25,9 @@ const NAV_GROUPS = [
     label: "Kura-kura & Kandang",
     items: [
       { path: "/tortoise",        section: "tortoise",        label: "Kura-kura & Kandang", icon: Shell },
-      { path: "/breeding",        section: "breeding",        label: "Breeding & Telur", icon: Baby },
-      { path: "/family-tree",     section: "family-tree",     label: "Silsilah",         icon: GitBranch },
-      { path: "/death-records",   section: "death-records",   label: "Catatan Kematian", icon: Skull },
+      { path: "/breeding",        section: "breeding",        label: "Breeding & Telur",    icon: Baby },
+      { path: "/family-tree",     section: "family-tree",     label: "Silsilah",            icon: GitBranch },
+      { path: "/death-records",   section: "death-records",   label: "Catatan Kematian",    icon: Skull },
     ],
   },
   {
@@ -48,9 +48,9 @@ const NAV_GROUPS = [
   {
     label: "Gudang & Penjualan",
     items: [
-      { path: "/warehouse",       section: "warehouse",       label: "Gudang",    icon: Warehouse },
+      { path: "/warehouse",       section: "warehouse",       label: "Gudang",           icon: Warehouse },
       { path: "/sales",           section: "sales",           label: "Penjualan",        icon: DollarSign },
-      { path: "/crm",             section: "crm",             label: "CRM",        icon: Users },
+      { path: "/crm",             section: "crm",             label: "CRM Pembeli",      icon: Users },
     ],
   },
   {
@@ -80,10 +80,10 @@ const NAV_GROUPS = [
   {
     label: "Pengaturan",
     items: [
-      { path: "/notifications",   section: "notifications",   label: "Notifikasi",       icon: Bell },
-      { path: "/activity-log",    section: "incomplete-data", label: "Riwayat Aktivitas",  icon: Activity },
-      { path: "/system-maintenance", section: "incomplete-data", label: "Pemeliharaan Sistem", icon: Settings },
-      { path: "/users",           section: "users",           label: "Manajemen User",  icon: Users },
+      { path: "/notifications",      section: "notifications",    label: "Notifikasi",           icon: Bell },
+      { path: "/activity-log",       section: "activity-log",     label: "Riwayat Aktivitas",    icon: Activity },
+      { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem", icon: Settings },
+      { path: "/users",              section: "users",            label: "Manajemen User",       icon: Users },
     ],
   },
   {

@@ -13,12 +13,13 @@ export default function SystemMaintenancePage() {
   const [loading, setLoading] = useState({});
   const [results, setResults] = useState({});
 
-  if (role !== "owner" && role !== "admin") {
+  if (role !== "owner") {
     return (
       <div className="text-center py-20 text-muted-foreground">
         <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-20" />
-        <p className="text-lg font-medium">Akses Ditolak</p>
-        <p className="text-sm">Halaman ini hanya untuk Owner dan Admin</p>
+        <p className="text-lg font-medium">🔒 Akses Terbatas</p>
+        <p className="text-sm mt-1">Halaman ini hanya dapat diakses oleh Owner</p>
+        <p className="text-xs mt-2 text-muted-foreground/60">Hubungi Owner jika Anda memerlukan akses</p>
       </div>
     );
   }

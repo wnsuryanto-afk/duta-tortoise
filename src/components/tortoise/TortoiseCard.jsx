@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag, QrCode } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag, QrCode, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
@@ -14,6 +14,16 @@ import TortoiseQRCode from "./TortoiseQRCode";
 import IncompleteBadge from "@/components/common/IncompleteBadge";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import TortoiseCompletenessPanel from "./TortoiseCompletenessPanel";
+import { canViewPrice } from "@/lib/permissions";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+
+function PriceField({ label, value }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+      <Lock className="w-2.5 h-2.5" /> {label}: 🔒
+    </span>
+  );
+}
 
 const healthConfig = {
   critical: { border: "border-l-4 border-l-red-500",    dot: "bg-red-500",    label: "Butuh Perawatan",  badge: "bg-red-100 text-red-700" },
@@ -114,6 +124,8 @@ function ProvenBadge({ gender }) {
 }
 
 export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healthStatus = "none", latestHealth, parentIndicator }) {
+  const { role } = useCurrentUser();
+  const showPrice = canViewPrice(role);
   const [showHistory, setShowHistory] = useState(false);
   const [showEggHistory, setShowEggHistory] = useState(false);
   const [showSizeHistory, setShowSizeHistory] = useState(false);
@@ -226,6 +238,21 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             {tortoise.birth_date && <span>🐣 {format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: id })}</span>}
             {tortoise.purchase_date && <span>🛒 {format(new Date(tortoise.purchase_date), "d MMM yyyy", { locale: id })}</span>}
           </div>
+          {/* Harga - hanya untuk owner/admin/manajer */}
+          {(tortoise.purchase_price || tortoise.hpp) && (
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {tortoise.purchase_price && (
+                showPrice
+                  ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Beli: Rp {tortoise.purchase_price.toLocaleString("id-ID")}</span>
+                  : <PriceField label="Harga Beli" />
+              )}
+              {tortoise.hpp && (
+                showPrice
+                  ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">HPP: Rp {tortoise.hpp.toLocaleString("id-ID")}</span>
+                  : <PriceField label="HPP" />
+              )}
+            </div>
+          )}
           {/* Tags */}
           {Array.isArray(tortoise.tags) && tortoise.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1.5">

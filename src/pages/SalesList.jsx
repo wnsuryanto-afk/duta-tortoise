@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import SaleForm from "@/components/sales/SaleForm";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccess, getPerms } from "@/lib/permissions";
+import { canAccess, getPerms, canDelete as canDeleteGlobal } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import IncompleteBadge from "@/components/common/IncompleteBadge";
 import { getMissingFields } from "@/lib/incompleteChecks";
@@ -28,6 +28,7 @@ export default function SalesList() {
   const queryClient = useQueryClient();
   const { role } = useCurrentUser();
   const perms = getPerms(role, "sales");
+  const ownerCanDelete = canDeleteGlobal(role);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
 
@@ -112,14 +113,14 @@ export default function SalesList() {
                     )}
                   </div>
                 </div>
-                {(perms.canEdit || perms.canDelete) && (
+                {(perms.canEdit || ownerCanDelete) && (
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     {perms.canEdit && (
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(s); setShowForm(true); }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
                     )}
-                    {perms.canDelete && (
+                    {ownerCanDelete && (
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(s)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>

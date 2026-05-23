@@ -18,7 +18,7 @@ import EnclosureForm from "@/components/enclosure/EnclosureForm";
 import EmptyState from "@/components/common/EmptyState";
 import CardSkeleton from "@/components/common/Skeleton";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { getPerms } from "@/lib/permissions";
+import { getPerms, canDelete as canDeleteGlobal, isManagerLevel } from "@/lib/permissions";
 
 function getEnclosureStatus(enc) {
   if (!enc.max_capacity) return "normal";
@@ -31,7 +31,9 @@ export default function TortoiseList() {
   const queryClient = useQueryClient();
   const { role, user } = useCurrentUser();
   const perms = getPerms(role, "tortoise");
-  const canEditEnclosure = ["admin", "owner", "manajer"].includes(role);
+  const canEditEnclosure = isManagerLevel(role);
+  // Hapus permanen hanya untuk owner
+  const ownerCanDelete = canDeleteGlobal(role);
   const [mainTab, setMainTab] = useState("kura");
 
   // Tortoise state
@@ -314,7 +316,7 @@ export default function TortoiseList() {
           ) : viewMode === "semua" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[b.status] ?? 0)).map((t) => (
-                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={perms.canDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
+                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
               ))}
             </div>
           ) : (
@@ -350,7 +352,7 @@ export default function TortoiseList() {
                     {!collapsed && (
                       <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         {items.map((t) => (
-                          <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={perms.canDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
+                           <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
                         ))}
                       </div>
                     )}

@@ -1,5 +1,9 @@
 /**
- * Hak Akses per Role
+ * Hak Akses per Role - Duta Tortoise
+ * 
+ * LEVEL 1 — OWNER (Full Access)
+ * LEVEL 2 — MANAJER & ADMIN (Akses sama, di bawah owner)
+ * LEVEL 3 — KEEPER (Field worker, akses terbatas)
  */
 
 export const ROLE_LABELS = {
@@ -11,66 +15,119 @@ export const ROLE_LABELS = {
 };
 
 export const ROLE_COLORS = {
-  owner:    "bg-amber-100 text-amber-800 border-amber-200",
-  admin:    "bg-primary/10 text-primary border-primary/20",
-  manajer:  "bg-chart-4/10 text-chart-4 border-chart-4/20",
-  keeper:   "bg-muted text-muted-foreground border-border",
-  investor: "bg-blue-100 text-blue-800 border-blue-200",
+  owner:    "bg-purple-100 text-purple-800 border-purple-300",
+  admin:    "bg-green-100 text-green-800 border-green-300",
+  manajer:  "bg-blue-100 text-blue-800 border-blue-300",
+  keeper:   "bg-orange-100 text-orange-800 border-orange-300",
+  investor: "bg-slate-100 text-slate-700 border-slate-300",
+  kicked:   "bg-red-100 text-red-600 border-red-300",
 };
 
+// Menu yang bisa diakses per role
+// OWNER: semua
+// MANAJER/ADMIN: semua kecuali users, system-maintenance, activity-log (owner-only)
+// KEEPER: terbatas
 export const NAV_ACCESS = {
-  owner:    ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "users", "sop", "sop-library", "onboarding", "task-template", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications", "cctv", "marketplace", "breeding-planner", "enclosure-audit"],
-  admin:    ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "users", "sop", "sop-library", "onboarding", "task-template", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications", "cctv", "marketplace", "breeding-planner", "enclosure-audit"],
-  manajer:  ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "warehouse", "finance", "sop", "sop-library", "onboarding", "task-template", "payroll", "payroll-gaji", "salary", "hr", "reminders", "breeding-report", "sales-report", "waiting-list", "feed-stock", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications", "cctv", "breeding-planner", "enclosure-audit"],
-  keeper:   ["dashboard", "tortoise", "breeding", "family-tree", "enclosure", "health", "sop", "sop-library", "onboarding", "reminders", "feed-stock", "warehouse", "info", "treatment", "tutorial", "feedback", "kasbon", "notifications", "breeding-planner"],
-  investor: ["dashboard", "tortoise", "breeding", "family-tree", "health", "finance", "breeding-report", "sales-report", "info", "breeding-planner"],
+  owner: [
+    "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
+    "health", "warehouse", "finance", "users", "sop", "sop-library",
+    "task-template", "payroll", "payroll-gaji", "salary", "hr",
+    "reminders", "breeding-report", "sales-report", "feed-stock",
+    "info", "treatment", "feedback", "kasbon", "notifications",
+    "breeding-planner", "crm", "sales", "death-records",
+    "activity-log", "system-maintenance", "vet-contacts", "maintenance",
+    "help",
+  ],
+  admin: [
+    "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
+    "health", "warehouse", "finance", "sop", "sop-library",
+    "task-template", "payroll", "payroll-gaji", "salary", "hr",
+    "reminders", "breeding-report", "sales-report", "feed-stock",
+    "info", "treatment", "feedback", "kasbon", "notifications",
+    "breeding-planner", "crm", "sales", "death-records",
+    "vet-contacts", "maintenance",
+    "help",
+    // admin & manajer TIDAK bisa akses activity-log (owner only) dan system-maintenance
+  ],
+  manajer: [
+    "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
+    "health", "warehouse", "finance", "sop", "sop-library",
+    "task-template", "payroll", "payroll-gaji", "salary", "hr",
+    "reminders", "breeding-report", "sales-report", "feed-stock",
+    "info", "treatment", "feedback", "kasbon", "notifications",
+    "breeding-planner", "crm", "sales", "death-records",
+    "vet-contacts", "maintenance",
+    "help",
+    // manajer TIDAK bisa akses activity-log dan system-maintenance
+  ],
+  keeper: [
+    "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
+    "health", "sop", "sop-library", "feed-stock",
+    "info", "treatment", "feedback", "kasbon", "notifications",
+    "breeding-planner", "death-records", "vet-contacts", "maintenance",
+    "help",
+  ],
+  investor: [
+    "dashboard", "tortoise", "breeding", "family-tree",
+    "health", "finance", "breeding-report", "sales-report", "info", "breeding-planner",
+  ],
 };
 
 export const PAGE_PERMISSIONS = {
   owner: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true },
-    breeding:  { canCreate: true,  canEdit: true,  canDelete: true },
-    health:    { canCreate: true,  canEdit: true,  canDelete: true },
-    finance:   { canCreate: true,  canEdit: true,  canDelete: true },
-    users:     { canCreate: true,  canEdit: true,  canDelete: true },
-    feedstock: { canCreate: true,  canEdit: true,  canDelete: true },
-    warehouse: { canCreate: true,  canEdit: true,  canDelete: true },
+    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    breeding:  { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    health:    { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    finance:   { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    users:     { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    feedstock: { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    warehouse: { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    sales:     { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    payroll:   { canCreate: true,  canEdit: true,  canDelete: true,  canViewAll: true },
   },
   admin: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true },
-    breeding:  { canCreate: true,  canEdit: true,  canDelete: true },
-    health:    { canCreate: true,  canEdit: true,  canDelete: true },
-    finance:   { canCreate: true,  canEdit: true,  canDelete: true },
-    users:     { canCreate: true,  canEdit: true,  canDelete: true },
-    feedstock: { canCreate: true,  canEdit: true,  canDelete: true },
-    warehouse: { canCreate: true,  canEdit: true,  canDelete: true },
+    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    finance:   { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    users:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: true,  canViewSales: true  },
+    feedstock: { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    warehouse: { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    sales:     { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    payroll:   { canCreate: true,  canEdit: true,  canDelete: false, canViewAll: false },
   },
   manajer: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true },
-    breeding:  { canCreate: true,  canEdit: true,  canDelete: true },
-    health:    { canCreate: true,  canEdit: true,  canDelete: true },
-    finance:   { canCreate: false, canEdit: false, canDelete: false },
-    users:     { canCreate: false, canEdit: false, canDelete: false },
-    feedstock: { canCreate: true,  canEdit: true,  canDelete: false },
-    warehouse: { canCreate: true,  canEdit: true,  canDelete: false },
+    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    finance:   { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    users:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    feedstock: { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    warehouse: { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    sales:     { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    payroll:   { canCreate: true,  canEdit: true,  canDelete: false, canViewAll: false },
   },
   keeper: {
-    tortoise:  { canCreate: false, canEdit: false, canDelete: false },
-    breeding:  { canCreate: false, canEdit: false, canDelete: false },
-    health:    { canCreate: true,  canEdit: true,  canDelete: false },
-    finance:   { canCreate: false, canEdit: false, canDelete: false },
-    users:     { canCreate: false, canEdit: false, canDelete: false },
-    feedstock: { canCreate: false, canEdit: true,  canDelete: false },
-    warehouse: { canCreate: false, canEdit: true,  canDelete: false },
+    tortoise:  { canCreate: false, canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    users:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    feedstock: { canCreate: false, canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    warehouse: { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    sales:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    payroll:   { canCreate: false, canEdit: false, canDelete: false, canViewAll: false },
   },
   investor: {
-    tortoise:  { canCreate: false, canEdit: false, canDelete: false },
-    breeding:  { canCreate: false, canEdit: false, canDelete: false },
-    health:    { canCreate: false, canEdit: false, canDelete: false },
-    finance:   { canCreate: false, canEdit: false, canDelete: false },
-    users:     { canCreate: false, canEdit: false, canDelete: false },
-    feedstock: { canCreate: false, canEdit: false, canDelete: false },
-    warehouse: { canCreate: false, canEdit: false, canDelete: false },
+    tortoise:  { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    breeding:  { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    health:    { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: true,  canViewSales: true  },
+    users:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    feedstock: { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    warehouse: { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    sales:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    payroll:   { canCreate: false, canEdit: false, canDelete: false, canViewAll: false },
   },
 };
 
@@ -79,13 +136,58 @@ export function canAccess(role, section) {
 }
 
 export function getPerms(role, section) {
-  return PAGE_PERMISSIONS[role]?.[section] ?? { canCreate: false, canEdit: false, canDelete: false };
+  return PAGE_PERMISSIONS[role]?.[section] ?? {
+    canCreate: false, canEdit: false, canDelete: false,
+    canViewPrice: false, canViewSales: false,
+  };
 }
 
 export function canPerformAction(role, section, action) {
   const perms = getPerms(role, section);
-  if (action === "create") return perms.canCreate;
-  if (action === "edit")   return perms.canEdit;
-  if (action === "delete") return perms.canDelete;
+  if (action === "create")     return perms.canCreate;
+  if (action === "edit")       return perms.canEdit;
+  if (action === "delete")     return perms.canDelete;
+  if (action === "viewPrice")  return perms.canViewPrice;
+  if (action === "viewSales")  return perms.canViewSales;
   return false;
+}
+
+// Helper: apakah role ini owner
+export function isOwner(role) {
+  return role === "owner";
+}
+
+// Helper: apakah role ini manager level (owner, admin, manajer)
+export function isManagerLevel(role) {
+  return ["owner", "admin", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa hapus (hanya owner)
+export function canDelete(role) {
+  return role === "owner";
+}
+
+// Helper: apakah bisa approve (owner, admin, manajer)
+export function canApprove(role) {
+  return ["owner", "admin", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa lihat harga
+export function canViewPrice(role) {
+  return ["owner", "admin", "manajer"].includes(role);
+}
+
+// Helper: apakah bisa pakai View As
+export function canViewAs(role) {
+  return role === "owner";
+}
+
+// Helper: apakah bisa akses manajemen user
+export function canManageUsers(role) {
+  return role === "owner";
+}
+
+// Helper: apakah bisa lihat gaji semua karyawan
+export function canViewAllPayroll(role) {
+  return role === "owner";
 }
