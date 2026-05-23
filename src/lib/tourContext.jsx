@@ -70,13 +70,20 @@ export const TOUR_STEPS = [
   },
 ];
 
-// Cek apakah tutorial sudah selesai (localStorage cepat, DB untuk cross-device)
-export function isTutorialCompleted() {
-  return localStorage.getItem("tutorial_completed") === "true";
+// Key localStorage per-user agar tidak clash antar akun
+function tourKey(email) {
+  return `tour_done_${email || "guest"}`;
 }
 
-// Simpan flag tutorial selesai ke localStorage
-export function markTutorialCompletedLocally() {
+// Cek apakah tutorial sudah selesai (localStorage per-user)
+export function isTutorialCompleted(email) {
+  return localStorage.getItem(tourKey(email)) === "true";
+}
+
+// Simpan flag tutorial selesai ke localStorage (per-user)
+export function markTutorialCompletedLocally(email) {
+  localStorage.setItem(tourKey(email), "true");
+  // backward compat
   localStorage.setItem("tutorial_completed", "true");
 }
 
@@ -86,15 +93,14 @@ export async function markTutorialCompletedInDB(userEmail) {
   try {
     const profiles = await base44.entities.UserProfile.filter({ user_email: userEmail });
     if (profiles.length > 0) {
-      await base44.entities.UserProfile.update(profiles[0].id, { tutorial_completed: true });
+      await base44.entities.UserProfile.update(profiles[0].id, { tutorial_completed: true, tour_completed: true });
     }
-  } catch (_) {
-    // Gagal DB tidak blokir
-  }
+  } catch (_) {}
 }
 
-// Reset tutorial (dari Help Center)
-export function resetTutorialLocally() {
+// Reset tutorial (dari Help Center) — per-user
+export function resetTutorialLocally(email) {
+  localStorage.removeItem(tourKey(email));
   localStorage.removeItem("tutorial_completed");
 }
 
@@ -121,11 +127,11 @@ export function TourProvider({ children }) {
     }
   }, [currentStep]);
 
-  // endTour: simpan flag completed ke localStorage + DB
+  // endTour: simpan flag completed ke localStorage (per-user) + DB
   const endTour = useCallback(async (userEmail) => {
     setIsActive(false);
     setCurrentStep(0);
-    markTutorialCompletedLocally();
+    markTutorialCompletedLocally(userEmail);
     if (userEmail) {
       markTutorialCompletedInDB(userEmail);
     }

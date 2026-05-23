@@ -2,17 +2,146 @@ import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye, User, Bell, HelpCircle, LogOut } from "lucide-react";
+import { Eye, User, Bell, HelpCircle, LogOut, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import TourController from "@/components/tutorial/TourController";
 import IncompleteProfileBanner from "@/components/profile/IncompleteProfileBanner";
+import { toast } from "sonner";
+
+// ── Fullscreen profile setup — ditampilkan saat profil belum lengkap (non-owner) ──
+function ProfileSetupScreen({ user, onComplete }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    full_name: user?.full_name || "",
+    phone: "",
+    join_date: "",
+    bank_name: "",
+    bank_account_number: "",
+    bank_account_name: "",
+    id_number: "",
+    emergency_contact: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  // Pre-fill dari profil yang sudah ada
+  useEffect(() => {
+    base44.entities.UserProfile.filter({ user_email: user?.email }).then(profiles => {
+      if (profiles?.[0]) {
+        const p = profiles[0];
+        setForm(prev => ({
+          ...prev,
+          full_name: p.full_name || prev.full_name,
+          phone: p.phone || "",
+          join_date: p.join_date || "",
+          bank_name: p.bank_name || "",
+          bank_account_number: p.bank_account_number || "",
+          bank_account_name: p.bank_account_name || "",
+          id_number: p.id_number || "",
+          emergency_contact: p.emergency_contact || "",
+        }));
+      }
+    }).catch(() => {});
+  }, [user?.email]);
+
+  const REQUIRED = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
+  const isValid = REQUIRED.every(f => form[f]?.toString().trim() !== "");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const newErrors = {};
+    REQUIRED.forEach(f => { if (!form[f]?.toString().trim()) newErrors[f] = true; });
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+
+    setSaving(true);
+    const isComplete = REQUIRED.every(f => form[f]?.toString().trim() !== "");
+    const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
+    const data = { ...form, is_complete: isComplete, user_id: user.id, user_email: user.email };
+
+    if (profiles?.[0]) {
+      await base44.entities.UserProfile.update(profiles[0].id, data);
+    } else {
+      await base44.entities.UserProfile.create(data);
+    }
+
+    if (form.full_name && user.full_name !== form.full_name) {
+      await base44.auth.updateMe({ full_name: form.full_name });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    toast.success("Profil berhasil disimpan!");
+    setSaving(false);
+    onComplete();
+  };
+
+  const handleChange = (f, v) => {
+    setForm(p => ({ ...p, [f]: v }));
+    setErrors(p => ({ ...p, [f]: false }));
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-amber-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8">
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-2">🐢</div>
+          <h1 className="text-xl font-bold text-green-900 font-heading">Duta Tortoise</h1>
+          <h2 className="text-lg font-semibold text-green-800 mt-2">Lengkapi Profil Anda</h2>
+          <p className="text-sm text-muted-foreground mt-1">Data ini diperlukan untuk penggajian. Harap lengkapi sebelum menggunakan app.</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {[
+            { id: "full_name", label: "Nama Lengkap *", placeholder: "Nama lengkap Anda" },
+            { id: "phone", label: "Nomor Telepon *", placeholder: "08123456789" },
+            { id: "join_date", label: "Tanggal Bergabung *", type: "date" },
+            { id: "id_number", label: "Nomor KTP", placeholder: "16 digit" },
+          ].map(({ id, label, placeholder, type }) => (
+            <div key={id} className="space-y-1">
+              <Label htmlFor={id}>{label}</Label>
+              <Input id={id} type={type || "text"} value={form[id]} onChange={e => handleChange(id, e.target.value)}
+                placeholder={placeholder} className={errors[id] ? "border-red-500 bg-red-50" : ""} />
+              {errors[id] && <p className="text-xs text-red-500">Wajib diisi</p>}
+            </div>
+          ))}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Nama Bank *</Label>
+              <Input value={form.bank_name} onChange={e => handleChange("bank_name", e.target.value)}
+                placeholder="cth: BCA" className={errors.bank_name ? "border-red-500 bg-red-50" : ""} />
+              {errors.bank_name && <p className="text-xs text-red-500">Wajib diisi</p>}
+            </div>
+            <div className="space-y-1">
+              <Label>Nama Pemilik Rekening</Label>
+              <Input value={form.bank_account_name} onChange={e => handleChange("bank_account_name", e.target.value)} placeholder="Sesuai buku tabungan" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Nomor Rekening *</Label>
+            <Input value={form.bank_account_number} onChange={e => handleChange("bank_account_number", e.target.value)}
+              placeholder="Nomor rekening" className={errors.bank_account_number ? "border-red-500 bg-red-50" : ""} />
+            {errors.bank_account_number && <p className="text-xs text-red-500">Wajib diisi</p>}
+          </div>
+          <div className="space-y-1">
+            <Label>Kontak Darurat</Label>
+            <Input value={form.emergency_contact} onChange={e => handleChange("emergency_contact", e.target.value)} placeholder="Nama & nomor telepon" />
+          </div>
+          <Button type="submit" disabled={saving || !isValid}
+            className={`w-full font-semibold py-3 mt-2 ${isValid ? "bg-green-700 hover:bg-green-800" : "bg-gray-200 text-gray-400"}`}>
+            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</> : "Simpan & Lanjutkan →"}
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
@@ -43,27 +172,23 @@ export default function AppLayout() {
     enabled: !!user?.email,
   });
 
-  // Check if profile needs completion
-  const needsProfileCompletion = () => {
-    if (!user || !profiles || profiles.length === 0) return true;
-    const p = profiles[0];
-    const requiredFields = ["full_name", "phone", "join_date", "id_number", "bank_name", "bank_account_number"];
-    const missing = requiredFields.some(f => !p[f] || p[f]?.toString().trim() === "");
-    console.log("Profile check:", { missing, fields: requiredFields.map(f => ({ [f]: p[f] })) });
-    return missing;
+  // is_complete = true HANYA jika 5 field esensial semua terisi
+  const checkProfileComplete = (p) => {
+    if (!p) return false;
+    const fields = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
+    return fields.every(f => p[f] && p[f].toString().trim() !== "");
   };
 
-  const profileComplete = profiles.length > 0 && profiles[0]?.is_complete === true && !needsProfileCompletion();
   const isProfileLoaded = !isLoading && !profileLoading && !!user;
+  const profile = profiles[0];
+  const profileComplete = checkProfileComplete(profile);
   const navigate = useNavigate();
 
-  // Non-owner: redirect to profile setup page if profile incomplete
-  useEffect(() => {
-    if (isProfileLoaded && !isOwner && !profileComplete) {
-      console.log("Redirecting to /lengkapi-profil");
-      navigate("/lengkapi-profil", { replace: true });
-    }
-  }, [isProfileLoaded, isOwner, profileComplete, navigate]);
+  // Non-owner + profil belum lengkap → tampilkan fullscreen setup form
+  // Owner → tetap masuk app (ada banner kuning saja)
+  if (isProfileLoaded && !isOwner && !profileComplete) {
+    return <ProfileSetupScreen user={user} onComplete={() => refetchProfile()} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,11 +202,8 @@ export default function AppLayout() {
         {/* ── Top bar ── */}
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex justify-between items-center px-4 lg:px-8 py-3 max-w-7xl mx-auto">
-            {/* Mobile spacer for hamburger */}
             <div className="w-8 lg:hidden" />
-
             <div className="flex-1" />
-
             <div className="flex items-center gap-2">
               {isOwner && !isViewingAs && (
                 <Button
@@ -161,7 +283,7 @@ export default function AppLayout() {
         </div>
 
         <div className="p-4 lg:p-8 max-w-7xl mx-auto">
-          {isOwner && <IncompleteProfileBanner user={user} profile={profiles[0]} />}
+          {isOwner && <IncompleteProfileBanner user={user} profile={profile} />}
           <Outlet />
         </div>
       </main>

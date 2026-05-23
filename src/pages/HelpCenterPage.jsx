@@ -101,17 +101,15 @@ export default function HelpCenterPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={() => {
-            // Reset flag tutorial lalu tampilkan welcome
-            resetTutorialLocally();
+            // Reset flag tutorial per-user
+            resetTutorialLocally(user?.email);
             // Reset DB flag
             if (user?.email) {
-              import("@/api/base44Client").then(({ base44 }) => {
-                base44.entities.UserProfile.filter({ user_email: user.email }).then(profiles => {
-                  if (profiles[0]) {
-                    base44.entities.UserProfile.update(profiles[0].id, { tutorial_completed: false, tour_completed: false, tour_skipped: false });
-                  }
-                });
-              });
+              base44.entities.UserProfile.filter({ user_email: user.email }).then(profiles => {
+                if (profiles[0]) {
+                  base44.entities.UserProfile.update(profiles[0].id, { tutorial_completed: false, tour_completed: false, tour_skipped: false });
+                }
+              }).catch(() => {});
             }
             triggerWelcome();
           }}

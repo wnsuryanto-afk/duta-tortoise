@@ -19,22 +19,16 @@ export default function TourController() {
   const profile = profiles[0];
 
   useEffect(() => {
-    if (isLoading || !user) return;
+    if (isLoading || !user?.email) return;
 
-    // Cek localStorage dulu (cepat, tidak perlu DB call)
-    if (isTutorialCompleted()) return;
+    // Cek localStorage per-user dulu (cepat)
+    if (isTutorialCompleted(user.email)) return;
 
-    // Cek DB flag (untuk cross-device)
-    const dbCompleted = profile?.tutorial_completed === true;
+    // Cek DB flag (untuk cross-device sync)
+    const dbCompleted = profile?.tutorial_completed === true || profile?.tour_completed === true || profile?.tour_skipped === true;
     if (dbCompleted) {
-      // Sync ke localStorage supaya tidak perlu DB lagi
-      localStorage.setItem("tutorial_completed", "true");
-      return;
-    }
-
-    // Backward compat: tour_completed / tour_skipped lama
-    if (profile?.tour_completed || profile?.tour_skipped) {
-      localStorage.setItem("tutorial_completed", "true");
+      // Sync ke localStorage per-user
+      localStorage.setItem(`tour_done_${user.email}`, "true");
       return;
     }
 

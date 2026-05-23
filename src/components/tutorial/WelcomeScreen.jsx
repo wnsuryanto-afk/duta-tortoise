@@ -8,7 +8,7 @@ export default function WelcomeScreen({ user, profile }) {
 
   const handleSkip = async () => {
     dismissWelcome();
-    markTutorialCompletedLocally();
+    markTutorialCompletedLocally(user?.email);
     await markTutorialCompletedInDB(user?.email);
   };
 

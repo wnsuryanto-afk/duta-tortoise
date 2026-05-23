@@ -17,7 +17,7 @@ export default function TourOverlay({ user, profile }) {
   }, [isActive, currentStep, currentStepData?.path]);
 
   const saveTutorialCompleted = async () => {
-    markTutorialCompletedLocally();
+    markTutorialCompletedLocally(user?.email);
     await markTutorialCompletedInDB(user?.email);
   };
 
