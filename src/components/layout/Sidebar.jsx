@@ -5,7 +5,7 @@ import {
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
   PieChart, Bell, Printer,
   CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
-  Activity, Settings, Clock, Calendar, ChevronRight
+  Activity, Settings, Clock, Calendar, ChevronRight, Trophy
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -25,6 +25,7 @@ const NAV_GROUPS = [
     items: [
       { path: "/tortoise",        section: "tortoise",        label: "Kura-kura & Kandang", icon: Shell },
       { path: "/breeding",        section: "breeding",        label: "Breeding & Telur",    icon: Baby },
+      { path: "/breeder-ranking", section: "breeding",        label: "Ranking Indukan",     icon: Trophy },
       { path: "/family-tree",     section: "family-tree",     label: "Silsilah",            icon: GitBranch },
       { path: "/death-records",   section: "death-records",   label: "Catatan Kematian",    icon: Skull },
     ],
@@ -47,6 +48,7 @@ const NAV_GROUPS = [
   {
     label: "Gudang & Penjualan",
     items: [
+      { path: "/stock-prediction", section: "warehouse",       label: "Prediksi Stok",       icon: BarChart2 },
       { path: "/warehouse",       section: "warehouse",       label: "Gudang",              icon: Warehouse },
       { path: "/sales",           section: "sales",           label: "Penjualan",           icon: DollarSign },
       { path: "/crm",             section: "crm",             label: "CRM Pembeli",         icon: Users },

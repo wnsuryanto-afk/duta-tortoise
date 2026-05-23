@@ -21,6 +21,7 @@ import { canAccess, getPerms } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
+import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -165,11 +166,12 @@ export default function BreedingAndEggs() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="pembiakan">Pembiakan</TabsTrigger>
           <TabsTrigger value="telur">Telur & Inkubasi</TabsTrigger>
           <TabsTrigger value="inkubator">Inkubator</TabsTrigger>
           <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
+          <TabsTrigger value="statistik">Statistik</TabsTrigger>
         </TabsList>
 
         {/* TAB 1: PEMBIAKAN */}
@@ -729,6 +731,11 @@ export default function BreedingAndEggs() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* TAB 5: STATISTIK */}
+        <TabsContent value="statistik" className="space-y-4">
+          <BreedingStatsSection breedings={breedings} />
         </TabsContent>
       </Tabs>
 

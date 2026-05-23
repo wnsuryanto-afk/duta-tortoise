@@ -21,6 +21,7 @@ const ROLE_DESCRIPTIONS = {
   manajer:  "Akses penuh operasional termasuk penjualan & keuangan. Tidak bisa kelola user.",
   admin:    "Akses penuh seperti Manajer. Tidak bisa hapus data permanen.",
   owner:    "Akses penuh semua fitur & pengaturan sistem.",
+  viewer:   "Read-only. Hanya bisa lihat dashboard, kura-kura, breeding, dan statistik. Tidak bisa edit/hapus apapun.",
 };
 
 // ── Invite Dialog ─────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ function InviteUserDialog({ open, onClose, canInviteAsOwner }) {
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="viewer">👁️ Viewer</SelectItem>
                   <SelectItem value="keeper">🐢 Keeper</SelectItem>
                   <SelectItem value="admin">🛡️ Admin</SelectItem>
                   {canInviteAsOwner && <SelectItem value="manajer">👔 Manajer</SelectItem>}
@@ -147,12 +149,13 @@ export default function UserManagement() {
       </div>
 
       {/* Role summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
         {[
           { r: "owner",   emoji: "👑", desc: "Owner" },
           { r: "manajer", emoji: "👔", desc: "Manajer" },
           { r: "admin",   emoji: "🛡️", desc: "Admin" },
           { r: "keeper",  emoji: "🐢", desc: "Keeper" },
+          { r: "viewer",  emoji: "👁️", desc: "Viewer" },
         ].map(({ r, emoji, desc }) => (
           <Card key={r} className="p-3 text-center cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setRoleFilter(roleFilter === r ? "semua" : r)}>
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -179,6 +182,7 @@ export default function UserManagement() {
               <SelectItem value="manajer">👔 Manajer</SelectItem>
               <SelectItem value="admin">🛡️ Admin</SelectItem>
               <SelectItem value="keeper">🐢 Keeper</SelectItem>
+              <SelectItem value="viewer">👁️ Viewer</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>

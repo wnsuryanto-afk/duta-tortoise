@@ -7,6 +7,9 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { ViewAsProvider } from '@/lib/ViewAsContext';
 import { TourProvider } from '@/lib/tourContext';
+import { ThemeProvider } from '@/lib/ThemeContext';
+import BreederRankingPage from '@/pages/BreederRankingPage';
+import StockPredictionPage from '@/pages/StockPredictionPage';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -106,6 +109,8 @@ const AuthenticatedApp = () => {
         <Route path="/vet-contacts" element={<VetContactPage />} />
         <Route path="/maintenance-schedule" element={<MaintenanceSchedulePage />} />
         <Route path="/printer-config" element={<PrinterConfigPage />} />
+        <Route path="/breeder-ranking" element={<BreederRankingPage />} />
+        <Route path="/stock-prediction" element={<StockPredictionPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />
@@ -120,6 +125,7 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
+        <ThemeProvider>
         <ViewAsProvider>
           <TourProvider>
             <Router>
@@ -128,6 +134,7 @@ function App() {
             <Toaster />
           </TourProvider>
         </ViewAsProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </AuthProvider>
   )

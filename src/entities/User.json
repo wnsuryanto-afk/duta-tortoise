@@ -1,0 +1,12 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": ["owner", "admin", "manajer", "keeper", "investor", "viewer", "kicked"],
+      "default": "keeper",
+      "description": "Role pengguna dalam sistem"
+    }
+  }
+}

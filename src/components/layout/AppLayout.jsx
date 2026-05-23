@@ -7,7 +7,8 @@ import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye, User, Bell, HelpCircle, LogOut, Settings } from "lucide-react";
+import { Eye, User, Bell, HelpCircle, LogOut } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import TourController from "@/components/tutorial/TourController";
@@ -141,6 +142,7 @@ export default function AppLayout() {
                           Lihat Sebagai...
                         </button>
                       )}
+                      <ThemeToggle compact />
                     </div>
                     <div className="py-1.5 border-t border-border">
                       <button
