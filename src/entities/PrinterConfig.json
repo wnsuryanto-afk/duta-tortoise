@@ -8,8 +8,9 @@
     },
     "model": {
       "type": "string",
-      "default": "XP-4208",
-      "description": "Model printer"
+      "enum": ["XP-420B", "XP-460B", "XP-470B", "XP-480B", "XP-365B", "XP-350B", "XP-58IIH", "Lainnya"],
+      "default": "XP-420B",
+      "description": "Model printer XPrinter"
     },
     "connection_type": {
       "type": "string",

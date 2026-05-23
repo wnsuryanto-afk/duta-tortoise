@@ -47,8 +47,19 @@ const CONN_TYPES = {
 
 const PAPER_SIZES = ["40x30mm", "50x30mm", "100x100mm", "100x150mm", "108x80mm"];
 
+const XPRINTER_MODELS = [
+  "XP-420B",
+  "XP-460B",
+  "XP-470B",
+  "XP-480B",
+  "XP-365B",
+  "XP-350B",
+  "XP-58IIH",
+  "Lainnya",
+];
+
 const EMPTY_FORM = {
-  name: "", model: "XP-4208", connection_type: "usb_dialog",
+  name: "", model: "XP-420B", connection_type: "usb_dialog",
   ip_address: "", port: 9100, paper_size: "100x150mm",
   print_density: 8, print_speed: 4, location: "", is_active: true,
   is_default: false, notes: "",
@@ -126,7 +137,7 @@ function PrinterCard({ printer, onEdit, onDelete, onSetDefault, onTestPrint }) {
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{printer.model || "XP-4208"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{printer.model || "XP-420B"}</p>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${cfg.badgeClass}`}>
                 {cfg.badge}
@@ -234,7 +245,7 @@ function PrinterFormDialog({ open, onClose, editPrinter }) {
         {/* Step 1: Choose connection type */}
         {step === 1 && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Pilih cara menghubungkan printer XP-4208:</p>
+            <p className="text-sm text-muted-foreground">Pilih cara menghubungkan printer XP-420B:</p>
             {Object.keys(CONN_TYPES).map(type => (
               <ConnTypeCard
                 key={type}
@@ -275,7 +286,16 @@ function PrinterFormDialog({ open, onClose, editPrinter }) {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Model</Label>
-                <Input value={form.model} onChange={e => set("model", e.target.value)} />
+                <Select value={form.model} onValueChange={v => set("model", v)}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {XPRINTER_MODELS.map(m => (
+                      <SelectItem key={m} value={m}>{m}{m === "XP-420B" ? " — 4\" (default)" : m === "XP-365B" ? " — 3\"" : m === "XP-58IIH" ? " — 2\"" : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Lokasi</Label>
@@ -408,7 +428,7 @@ function TestPrintModal({ printer, onClose }) {
           <p class="big">TES CETAK</p>
           <div class="border">
             <p class="small">Printer: ${printer.name}</p>
-            <p class="small">Model: ${printer.model || "XP-4208"}</p>
+            <p class="small">Model: ${printer.model || "XP-420B"}</p>
             <p class="small">Kertas: ${printer.paper_size || "100x150mm"}</p>
             <p class="small">Tanggal: ${new Date().toLocaleDateString("id-ID")}</p>
           </div>
@@ -437,7 +457,7 @@ function TestPrintModal({ printer, onClose }) {
           </p>
           {printer?.connection_type === "usb_dialog" && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
-              Dialog print browser akan terbuka. Pilih printer XP-4208 lalu klik Print.
+              Dialog print browser akan terbuka. Pilih printer XP-420B lalu klik Print.
             </div>
           )}
           {(printer?.connection_type === "lan" || printer?.connection_type === "wifi") && (
@@ -499,7 +519,7 @@ export default function PrinterConfigPage() {
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
             <Printer className="w-6 h-6 text-primary" /> Konfigurasi Printer
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Kelola printer label XP-4208 untuk semua keperluan cetak</p>
+          <p className="text-muted-foreground text-sm mt-1">Kelola printer label XPrinter (XP-420B, XP-480B, dll) untuk semua keperluan cetak</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="gap-2">
           <Plus className="w-4 h-4" /> Tambah Printer
@@ -513,7 +533,7 @@ export default function PrinterConfigPage() {
           <div>
             <p className="text-sm font-semibold text-blue-800">ℹ️ Info Penting Tentang Printing</p>
             <p className="text-xs text-blue-700 mt-1 leading-relaxed">
-              XP-4208 secara default datang dengan USB. Versi LAN/WiFi tersedia sebagai opsi (perlu cek spesifikasi printer Anda).
+              XP-420B secara default datang dengan USB. Versi LAN/WiFi tersedia sebagai opsi tambahan saat beli (perlu cek spesifikasi printer Anda).
             </p>
             <p className="text-xs text-blue-700 mt-1.5 leading-relaxed">
               <strong>Web browser tidak bisa langsung kirim print ke printer jaringan.</strong> Solusi:
@@ -547,7 +567,7 @@ export default function PrinterConfigPage() {
         <div className="text-center py-16 border-2 border-dashed border-border rounded-xl">
           <Printer className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
           <p className="font-semibold text-muted-foreground">Belum ada printer dikonfigurasi</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">Tambah printer XP-4208 untuk mulai mencetak label</p>
+          <p className="text-sm text-muted-foreground/70 mt-1">Tambah printer XP-420B atau model XPrinter lainnya untuk mulai mencetak label</p>
           <Button onClick={() => setShowAddDialog(true)} className="mt-4 gap-2">
             <Plus className="w-4 h-4" /> Tambah Printer Pertama
           </Button>

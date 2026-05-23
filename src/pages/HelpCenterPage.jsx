@@ -180,14 +180,37 @@ export default function HelpCenterPage() {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Printer className="w-5 h-5 text-primary" />
-          <h2 className="font-heading font-bold text-lg">Setup XPrinter XP-4208</h2>
+          <h2 className="font-heading font-bold text-lg">Setup XPrinter XP-420B</h2>
+        </div>
+
+        {/* Specs box */}
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
+          <p className="font-semibold text-sm text-primary mb-2">📋 Spesifikasi XP-420B / XP-480B</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-foreground/70">
+            {[
+              ["Resolusi", "203 DPI"],
+              ["Print Width", "max 108mm (4 inch)"],
+              ["Print Speed", "127mm/s"],
+              ["Interface Standard", "USB"],
+              ["Interface Opsional", "LAN (Ethernet), Bluetooth, WiFi"],
+              ["Paper Type", "Thermal direct (label roll)"],
+            ].map(([k, v]) => (
+              <div key={k} className="flex gap-1.5">
+                <span className="font-medium text-foreground/60 flex-shrink-0">{k}:</span>
+                <span>{v}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mt-2">
+            ⚠️ Varian standard XP-420B hanya USB. LAN/WiFi/Bluetooth adalah opsi tambahan saat pembelian — cek spesifikasi unit Anda.
+          </p>
         </div>
 
         {/* Identify port */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
           <p className="font-semibold text-sm text-amber-800 mb-2">🔍 Langkah 1: Identifikasi Port Printer</p>
           <p className="text-xs text-amber-700 leading-relaxed mb-2">
-            Lihat bagian belakang printer XP-4208. Cek port yang ada:
+            Lihat bagian belakang printer XP-420B. Cek port yang ada:
           </p>
           <ul className="space-y-1.5 text-xs text-amber-700">
             <li className="flex items-center gap-2"><Usb className="w-3.5 h-3.5 flex-shrink-0" /> <strong>Hanya USB</strong> → ikuti Mode USB (paling mudah)</li>
@@ -204,7 +227,7 @@ export default function HelpCenterPage() {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 space-y-2">
                 <ol className="space-y-2 list-decimal ml-4">
-                  <li>Download driver XP-4208 dari <strong>xprinter.net</strong></li>
+                  <li>Download driver <strong>XP-420B / XP-480B</strong> dari <strong>xprinter.net</strong> (cari "XP-420B driver")</li>
                   <li>Install driver di komputer (Windows/Mac)</li>
                   <li>Hubungkan printer via kabel USB ke komputer</li>
                   <li>Test print dari Windows: <em>Control Panel → Devices and Printers → klik kanan → Print Test Page</em></li>
@@ -225,7 +248,7 @@ export default function HelpCenterPage() {
               <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 space-y-2">
                 <ol className="space-y-2 list-decimal ml-4">
                   <li>Hubungkan printer ke router via kabel ethernet (RJ45)</li>
-                  <li>Download <strong>XPrinter Diagnostic Tool</strong> dari xprinter.net</li>
+                  <li>Download <strong>XPrinter Diagnostic Tool</strong> dari xprinter.net (cari "XP-420B diagnostic")</li>
                   <li>Set IP statis di printer (contoh: 192.168.1.200)</li>
                   <li>Install <strong>Print Bridge</strong> di komputer yang selalu menyala di jaringan yang sama</li>
                   <li>Rekomendasi bridge: <em>PrintNode, RawBT, atau custom Node.js bridge</em></li>
