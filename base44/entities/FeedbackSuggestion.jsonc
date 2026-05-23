@@ -1,0 +1,58 @@
+{
+  "name": "FeedbackSuggestion",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul singkat"
+    },
+    "content": {
+      "type": "string",
+      "description": "Isi kritik/saran"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "kritik",
+        "saran"
+      ],
+      "description": "Tipe masukan"
+    },
+    "submitted_by_email": {
+      "type": "string"
+    },
+    "submitted_by_name": {
+      "type": "string"
+    },
+    "submit_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "baru",
+        "dibaca",
+        "ditindaklanjuti",
+        "ditutup"
+      ],
+      "default": "baru"
+    },
+    "response": {
+      "type": "string",
+      "description": "Balasan dari owner/manajer"
+    },
+    "responded_by": {
+      "type": "string"
+    },
+    "responded_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "content",
+    "type",
+    "submitted_by_email"
+  ]
+}

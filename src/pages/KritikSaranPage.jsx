@@ -2,331 +2,402 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccess } from "@/lib/permissions";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import AccessDenied from "@/components/common/AccessDenied";
-import { Lightbulb, Send, ThumbsUp, Filter, Star, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MessageSquare, Send, Loader2, Clock, Eye, CheckCircle, XCircle, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
 
-const TYPE_LABELS = { kritik: "Kritik", saran: "Saran", ide_inovasi: "Ide Inovasi", keluhan: "Keluhan" };
-const TYPE_COLORS = { kritik: "bg-red-100 text-red-700", saran: "bg-blue-100 text-blue-700", ide_inovasi: "bg-purple-100 text-purple-700", keluhan: "bg-orange-100 text-orange-700" };
-const CAT_LABELS = { operasional: "Operasional", fasilitas: "Fasilitas", manajemen: "Manajemen", kesehatan_hewan: "Kesehatan Hewan", keuangan: "Keuangan", sdm: "SDM", teknologi: "Teknologi", kebersihan: "Kebersihan", keamanan: "Keamanan", lainnya: "Lainnya" };
 const STATUS_CONFIG = {
-  pending: { label: "Menunggu", color: "bg-yellow-100 text-yellow-700", icon: Clock },
-  dipertimbangkan: { label: "Dipertimbangkan", color: "bg-blue-100 text-blue-700", icon: Loader2 },
-  diterima: { label: "Diterima", color: "bg-green-100 text-green-700", icon: CheckCircle },
-  ditolak: { label: "Ditolak", color: "bg-red-100 text-red-700", icon: XCircle },
-  sudah_diimplementasi: { label: "Terimplementasi", color: "bg-emerald-100 text-emerald-700", icon: Star },
-  ditunda: { label: "Ditunda", color: "bg-gray-100 text-gray-600", icon: Clock },
+  baru:             { label: "Baru",            color: "bg-yellow-100 text-yellow-700" },
+  dibaca:           { label: "Dibaca",           color: "bg-blue-100 text-blue-700" },
+  ditindaklanjuti:  { label: "Ditindaklanjuti",  color: "bg-green-100 text-green-700" },
+  ditutup:          { label: "Ditutup",          color: "bg-gray-100 text-gray-600" },
 };
-const PRIO_COLORS = { rendah: "text-green-600", sedang: "text-yellow-600", tinggi: "text-orange-600", mendesak: "text-red-600 font-bold" };
+
+const TYPE_CONFIG = {
+  kritik: { label: "Kritik", color: "bg-red-100 text-red-700" },
+  saran:  { label: "Saran",  color: "bg-blue-100 text-blue-700" },
+};
 
 function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
-  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>{cfg.label}</span>;
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.baru;
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>{cfg.label}</span>;
 }
 
-function SaranCard({ item, currentEmail, onUpvote, canUpvote, showFull }) {
-  const isOwn = item.submitted_by_email === currentEmail;
-  const hasUpvoted = (item.upvoted_by || []).includes(currentEmail);
-  const displayName = item.is_anonymous && !isOwn ? "Anonim" : item.submitted_by_name;
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border rounded-xl p-4 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-1.5 mb-1">
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[item.type]}`}>{TYPE_LABELS[item.type]}</span>
-            <span className="px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">{CAT_LABELS[item.category] || item.category}</span>
-            {item.priority === "mendesak" && <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-bold">🔥 Mendesak</span>}
-          </div>
-          <p className="font-semibold text-foreground">{item.title}</p>
-        </div>
-        <StatusBadge status={item.status} />
-      </div>
-      {showFull && <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>}
-      <div className="flex items-center justify-between pt-1">
-        <span className="text-xs text-muted-foreground">
-          {displayName} · {item.submit_date ? format(new Date(item.submit_date), "d MMM yyyy", { locale: id }) : "-"}
-        </span>
-        <div className="flex items-center gap-3">
-          {item.points_awarded > 0 && (
-            <span className="text-xs font-semibold text-amber-600">+{item.points_awarded} poin</span>
-          )}
-          {canUpvote && !isOwn && (
-            <button
-              onClick={() => onUpvote(item)}
-              className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-all ${hasUpvoted ? "bg-primary/10 text-primary font-semibold" : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
-            >
-              <ThumbsUp className="w-3 h-3" />
-              {item.upvotes || 0}
-            </button>
-          )}
-          {!canUpvote && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <ThumbsUp className="w-3 h-3" /> {item.upvotes || 0}
-            </span>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-const EMPTY_FORM = { title: "", description: "", type: "saran", category: "lainnya", priority: "sedang", is_anonymous: false };
+const EMPTY_FORM = { title: "", content: "", type: "saran" };
 
 export default function KritikSaranPage() {
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const [form, setForm] = useState(EMPTY_FORM);
-  const [filterCat, setFilterCat] = useState("semua");
-  const [filterStatus, setFilterStatus] = useState("semua");
   const [submitting, setSubmitting] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("semua");
+  const [filterType, setFilterType] = useState("semua");
+  const [responseText, setResponseText] = useState("");
+  const [responding, setResponding] = useState(false);
 
-  const { data: allSaran = [], isLoading } = useQuery({
-    queryKey: ["kritik-saran"],
-    queryFn: () => base44.entities.KritikSaran.list("-submit_date", 200),
+  const canReview = ["owner", "manajer"].includes(role);
+  const canSubmit = ["owner", "manajer", "admin", "kepala_feeder", "keeper"].includes(role);
+
+  const { data: allItems = [], isLoading } = useQuery({
+    queryKey: ["feedback-suggestions"],
+    queryFn: () => base44.entities.FeedbackSuggestion.list("-submit_date", 200),
   });
 
-  const canView = canAccess(role, "employees") || ["owner", "manajer", "admin", "kepala_feeder", "keeper"].includes(role);
-  if (!canView) return <AccessDenied />;
+  const myItems = allItems.filter(s => s.submitted_by_email === user?.email);
 
-  const mySaran = allSaran.filter(s => s.submitted_by_email === user?.email);
-  const teamSaran = allSaran.filter(s =>
-    (s.status !== "pending" && s.status !== "ditolak") || s.submitted_by_email === user?.email
-  );
-
-  const filteredTeam = teamSaran.filter(s => {
-    const catOk = filterCat === "semua" || s.category === filterCat;
+  const reviewItems = allItems.filter(s => {
     const statusOk = filterStatus === "semua" || s.status === filterStatus;
-    return catOk && statusOk;
+    const typeOk = filterType === "semua" || s.type === filterType;
+    return statusOk && typeOk;
   });
 
-  const myPoints = mySaran.reduce((acc, s) => acc + (s.points_awarded || 0), 0);
-  const myAccepted = mySaran.filter(s => ["diterima", "sudah_diimplementasi"].includes(s.status)).length;
+  const newCount = allItems.filter(s => s.status === "baru").length;
 
   const handleSubmit = async () => {
-    if (!form.title.trim() || !form.description.trim()) {
-      toast.error("Judul dan deskripsi wajib diisi");
+    if (!form.content.trim()) {
+      toast.error("Isi kritik/saran wajib diisi");
       return;
     }
     setSubmitting(true);
     try {
-      const payload = {
+      await base44.entities.FeedbackSuggestion.create({
         ...form,
-        submitted_by_email: form.is_anonymous ? "anonymous" : user.email,
-        submitted_by_name: form.is_anonymous ? "Anonim" : user.full_name,
-        submitted_by_role: role,
+        submitted_by_email: user.email,
+        submitted_by_name: user.full_name,
         submit_date: new Date().toISOString(),
-        status: "pending",
-        upvotes: 0,
-        upvoted_by: [],
-        points_awarded: 0,
-      };
-      if (form.is_anonymous) {
-        payload._real_submitter = user.email;
-      }
-      await base44.entities.KritikSaran.create(payload);
-      // Notifikasi ke owner/manajer
+        status: "baru",
+      });
+      // Notif ke owner & manajer
       await base44.entities.Notification.create({
         recipient_role: "owner",
-        title: form.priority === "mendesak" ? "🔥 Saran MENDESAK Masuk!" : "💡 Saran Baru Masuk",
-        message: `"${form.title}" oleh ${form.is_anonymous ? "Anonim" : user.full_name}`,
-        type: form.priority === "mendesak" ? "alert" : "info",
+        title: `💬 ${TYPE_CONFIG[form.type]?.label} Baru Masuk`,
+        message: `${form.title || form.content.slice(0, 60)} — oleh ${user.full_name}`,
+        type: "info",
         category: "lainnya",
         is_read: false,
-        action_url: "/review-saran",
+        action_url: "/kritik-saran",
       });
-      qc.invalidateQueries({ queryKey: ["kritik-saran"] });
+      qc.invalidateQueries({ queryKey: ["feedback-suggestions"] });
       setForm(EMPTY_FORM);
-      toast.success("✅ Saran berhasil dikirim! Terima kasih kontribusimu.");
-    } catch (e) {
-      toast.error("Gagal mengirim saran");
+      toast.success("Terima kasih! Masukan kamu sudah dikirim.");
+    } catch {
+      toast.error("Gagal mengirim masukan");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleUpvote = async (item) => {
-    if (!user) return;
-    const hasVoted = (item.upvoted_by || []).includes(user.email);
-    if (hasVoted) return;
-    const newBy = [...(item.upvoted_by || []), user.email];
-    await base44.entities.KritikSaran.update(item.id, { upvotes: (item.upvotes || 0) + 1, upvoted_by: newBy });
-    qc.invalidateQueries({ queryKey: ["kritik-saran"] });
+  const handleStatusChange = async (item, newStatus) => {
+    await base44.entities.FeedbackSuggestion.update(item.id, { status: newStatus });
+    qc.invalidateQueries({ queryKey: ["feedback-suggestions"] });
+    if (selected?.id === item.id) setSelected(prev => ({ ...prev, status: newStatus }));
+    toast.success("Status diperbarui");
   };
 
-  const pendingCount = allSaran.filter(s => s.status === "pending").length;
+  const handleRespond = async () => {
+    if (!responseText.trim()) return;
+    setResponding(true);
+    try {
+      await base44.entities.FeedbackSuggestion.update(selected.id, {
+        response: responseText,
+        responded_by: user.full_name,
+        responded_date: new Date().toISOString().split("T")[0],
+        status: "ditindaklanjuti",
+      });
+      // Notif ke submitter
+      await base44.entities.Notification.create({
+        recipient_email: selected.submitted_by_email,
+        title: "✅ Masukan Anda Direspons",
+        message: `${selected.title || selected.content.slice(0, 50)} telah direspons oleh ${user.full_name}`,
+        type: "success",
+        category: "lainnya",
+        is_read: false,
+      });
+      qc.invalidateQueries({ queryKey: ["feedback-suggestions"] });
+      setSelected(null);
+      setResponseText("");
+      toast.success("Balasan berhasil dikirim");
+    } catch {
+      toast.error("Gagal mengirim balasan");
+    } finally {
+      setResponding(false);
+    }
+  };
+
+  if (!canSubmit && !canReview) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        <MessageSquare className="w-12 h-12 mx-auto opacity-30 mb-3" />
+        <p>Anda tidak memiliki akses ke halaman ini.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Lightbulb className="w-5 h-5 text-primary" />
+          <MessageSquare className="w-5 h-5 text-primary" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-foreground">Kritik & Saran</h1>
-          <p className="text-sm text-muted-foreground">Suarakan idemu untuk kemajuan bersama</p>
+          <p className="text-sm text-muted-foreground">Sampaikan masukan untuk kemajuan bersama</p>
         </div>
-        {["owner","manajer"].includes(role) && pendingCount > 0 && (
-          <Badge className="ml-auto bg-red-500 text-white">{pendingCount} pending</Badge>
+        {canReview && newCount > 0 && (
+          <Badge className="ml-auto bg-red-500 text-white">{newCount} baru</Badge>
         )}
       </div>
 
-      {/* Stats mini untuk karyawan */}
-      {!["owner","manajer"].includes(role) && (
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{mySaran.length}</p>
-            <p className="text-xs text-muted-foreground">Total Saran</p>
-          </Card>
-          <Card className="p-3 text-center">
-            <p className="text-2xl font-bold text-green-600">{myAccepted}</p>
-            <p className="text-xs text-muted-foreground">Diterima</p>
-          </Card>
-          <Card className="p-3 text-center">
-            <p className="text-2xl font-bold text-amber-600">{myPoints}</p>
-            <p className="text-xs text-muted-foreground">Total Poin</p>
-          </Card>
+      {/* Form Submit */}
+      {canSubmit && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Kirim Masukan</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1 block">Tipe *</Label>
+                <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="saran">💡 Saran</SelectItem>
+                    <SelectItem value="kritik">⚠️ Kritik</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Judul (opsional)</Label>
+                <Input
+                  placeholder="Judul singkat..."
+                  value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">Isi Masukan *</Label>
+              <Textarea
+                placeholder="Tuliskan kritik atau saranmu di sini..."
+                className="min-h-[100px]"
+                value={form.content}
+                onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+              />
+            </div>
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
+              {submitting
+                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Mengirim...</>
+                : <><Send className="w-4 h-4 mr-2" />Kirim</>
+              }
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* My submissions (non-reviewer) */}
+      {!canReview && (
+        <div className="space-y-3">
+          <h2 className="font-semibold text-sm text-muted-foreground">Masukan Saya ({myItems.length})</h2>
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">Memuat...</div>
+          ) : myItems.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              <MessageSquare className="w-10 h-10 mx-auto opacity-20 mb-2" />
+              Belum ada masukan yang dikirim
+            </div>
+          ) : (
+            myItems.map(item => (
+              <Card key={item.id} className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap gap-1.5 mb-1">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_CONFIG[item.type]?.color}`}>
+                        {TYPE_CONFIG[item.type]?.label}
+                      </span>
+                      <StatusBadge status={item.status} />
+                    </div>
+                    {item.title && <p className="font-medium text-sm">{item.title}</p>}
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{item.content}</p>
+                    {item.response && (
+                      <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
+                        <p className="text-xs font-medium text-green-700 mb-0.5">Balasan dari {item.responded_by}:</p>
+                        <p className="text-xs text-green-800">{item.response}</p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground whitespace-nowrap">
+                    {item.submit_date ? format(new Date(item.submit_date), "d MMM yy", { locale: id }) : "-"}
+                  </p>
+                </div>
+              </Card>
+            ))
+          )}
         </div>
       )}
 
-      <Tabs defaultValue="baru">
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="saya">Saran Saya</TabsTrigger>
-          <TabsTrigger value="baru">Buat Baru</TabsTrigger>
-          <TabsTrigger value="tim">Saran Tim</TabsTrigger>
-        </TabsList>
-
-        {/* Tab Saran Saya */}
-        <TabsContent value="saya" className="space-y-3 mt-4">
-          {isLoading ? (
-            <div className="text-center py-10 text-muted-foreground">Memuat...</div>
-          ) : mySaran.length === 0 ? (
-            <div className="text-center py-16 space-y-2">
-              <Lightbulb className="w-12 h-12 text-muted-foreground mx-auto opacity-30" />
-              <p className="text-muted-foreground">Kamu belum pernah mengirim saran</p>
-              <p className="text-xs text-muted-foreground">Yuk, sampaikan idemu!</p>
-            </div>
-          ) : (
-            mySaran.map(item => (
-              <SaranCard key={item.id} item={item} currentEmail={user?.email} onUpvote={handleUpvote} canUpvote={false} showFull={true} />
-            ))
-          )}
-        </TabsContent>
-
-        {/* Tab Buat Baru */}
-        <TabsContent value="baru" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Sampaikan Idemu 💡</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Judul Singkat *</Label>
-                <Input placeholder="Contoh: Tambah tempat minum otomatis di kandang A" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <Label>Tipe *</Label>
-                  <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(TYPE_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Kategori</Label>
-                  <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(CAT_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Prioritas</Label>
-                  <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="rendah">Rendah</SelectItem>
-                      <SelectItem value="sedang">Sedang</SelectItem>
-                      <SelectItem value="tinggi">Tinggi</SelectItem>
-                      <SelectItem value="mendesak">🔥 Mendesak</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label>Deskripsi Detail *</Label>
-                <Textarea
-                  placeholder="Jelaskan secara detail masukan kamu, termasuk masalah yang dihadapi dan solusi yang kamu usulkan..."
-                  className="min-h-[120px]"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="anon"
-                  checked={form.is_anonymous}
-                  onChange={e => setForm(f => ({ ...f, is_anonymous: e.target.checked }))}
-                  className="rounded"
-                />
-                <label htmlFor="anon" className="text-sm text-muted-foreground cursor-pointer">
-                  Submit sebagai anonim (nama tidak ditampilkan ke sesama karyawan)
-                </label>
-              </div>
-              <Button onClick={handleSubmit} disabled={submitting} className="w-full">
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Mengirim...</> : <><Send className="w-4 h-4 mr-2" />Kirim Saran</>}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab Saran Tim */}
-        <TabsContent value="tim" className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Select value={filterCat} onValueChange={setFilterCat}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Kategori" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="semua">Semua Kategori</SelectItem>
-                {Object.entries(CAT_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
+      {/* Review Panel (owner/manajer) */}
+      {canReview && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className="w-36 h-8 text-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua Status</SelectItem>
-                {Object.keys(STATUS_CONFIG).map(s => <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>)}
+                {Object.entries(STATUS_CONFIG).map(([v, c]) => (
+                  <SelectItem key={v} value={v}>{c.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-32 h-8 text-xs">
+                <SelectValue placeholder="Tipe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semua">Semua Tipe</SelectItem>
+                <SelectItem value="saran">Saran</SelectItem>
+                <SelectItem value="kritik">Kritik</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground ml-auto">{reviewItems.length} masukan</span>
           </div>
 
-          {filteredTeam.length === 0 ? (
-            <div className="text-center py-16 space-y-2">
-              <Lightbulb className="w-12 h-12 text-muted-foreground mx-auto opacity-30" />
-              <p className="text-muted-foreground">Belum ada saran tim</p>
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">Memuat...</div>
+          ) : reviewItems.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <MessageSquare className="w-10 h-10 mx-auto opacity-20 mb-2" />
+              <p className="text-sm">Tidak ada masukan</p>
             </div>
           ) : (
-            <AnimatePresence>
-              {filteredTeam.map(item => (
-                <SaranCard key={item.id} item={item} currentEmail={user?.email} onUpvote={handleUpvote} canUpvote={true} showFull={false} />
+            <div className="space-y-3">
+              {reviewItems.map(item => (
+                <Card
+                  key={item.id}
+                  className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => { setSelected(item); setResponseText(item.response || ""); }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap gap-1.5 mb-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_CONFIG[item.type]?.color}`}>
+                          {TYPE_CONFIG[item.type]?.label}
+                        </span>
+                        <StatusBadge status={item.status} />
+                      </div>
+                      {item.title && <p className="font-medium text-sm">{item.title}</p>}
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{item.content}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs text-muted-foreground">
+                        {item.submit_date ? format(new Date(item.submit_date), "d MMM yy", { locale: id }) : "-"}
+                      </p>
+                      <p className="text-xs font-medium mt-0.5">{item.submitted_by_name}</p>
+                    </div>
+                  </div>
+                </Card>
               ))}
-            </AnimatePresence>
+            </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
+
+      {/* Detail/Review Dialog */}
+      <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {selected?.title || TYPE_CONFIG[selected?.type]?.label}
+            </DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_CONFIG[selected.type]?.color}`}>
+                  {TYPE_CONFIG[selected.type]?.label}
+                </span>
+                <StatusBadge status={selected.status} />
+              </div>
+
+              <div className="bg-muted/40 rounded-lg p-3 text-sm leading-relaxed">{selected.content}</div>
+
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <p>Dari: <span className="font-medium text-foreground">{selected.submitted_by_name}</span></p>
+                <p>Tanggal: {selected.submit_date ? format(new Date(selected.submit_date), "d MMMM yyyy, HH:mm", { locale: id }) : "-"}</p>
+              </div>
+
+              {selected.response && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-xs font-medium text-green-700 mb-1">Balasan dari {selected.responded_by}:</p>
+                  <p className="text-sm text-green-800">{selected.response}</p>
+                </div>
+              )}
+
+              {canReview && (
+                <>
+                  {/* Status buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm" variant="outline"
+                      onClick={() => handleStatusChange(selected, "dibaca")}
+                      disabled={selected.status === "dibaca"}
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1.5" /> Tandai Dibaca
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleStatusChange(selected, "ditindaklanjuti")}
+                      disabled={selected.status === "ditindaklanjuti"}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Tindak Lanjuti
+                    </Button>
+                    <Button
+                      size="sm" variant="outline"
+                      onClick={() => handleStatusChange(selected, "ditutup")}
+                      disabled={selected.status === "ditutup"}
+                    >
+                      <XCircle className="w-3.5 h-3.5 mr-1.5" /> Tutup
+                    </Button>
+                  </div>
+
+                  {/* Response form */}
+                  <div className="space-y-2 border-t pt-3">
+                    <Label className="text-sm">Balasan (opsional)</Label>
+                    <Textarea
+                      placeholder="Tuliskan balasan atau tindak lanjut..."
+                      className="min-h-[80px]"
+                      value={responseText}
+                      onChange={e => setResponseText(e.target.value)}
+                    />
+                    <Button onClick={handleRespond} disabled={responding || !responseText.trim()} size="sm">
+                      {responding
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />Mengirim...</>
+                        : <><Send className="w-3.5 h-3.5 mr-1.5" />Kirim Balasan</>
+                      }
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

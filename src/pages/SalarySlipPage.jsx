@@ -60,12 +60,6 @@ export default function SalarySlipPage() {
     });
   }, [slips, filterEmployee, filterPeriod]);
 
-  // Stats
-  const totalPaid = filtered.filter(s => s.status === "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
-  const totalPending = filtered.filter(s => s.status !== "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
-
-  if (!canAccess(role, "payroll")) return <AccessDenied />;
-
   // Group by period for monthly stats
   const byPeriod = useMemo(() => {
     const map = {};
@@ -75,6 +69,12 @@ export default function SalarySlipPage() {
     });
     return Object.entries(map).sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
   }, [filtered]);
+
+  // Stats
+  const totalPaid = filtered.filter(s => s.status === "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
+  const totalPending = filtered.filter(s => s.status !== "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
+
+  if (!canAccess(role, "payroll")) return <AccessDenied />;
 
   return (
     <div className="space-y-6">

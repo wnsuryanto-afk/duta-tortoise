@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
-  PieChart, Bell, Printer, Package, Zap, Thermometer, FileText, Lightbulb,
+  PieChart, Bell, Printer, Package, Zap, Thermometer, FileText, MessageSquare,
   CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
   Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical
 } from "lucide-react";
@@ -70,8 +70,7 @@ const NAV_GROUPS = [
       { path: "/sop",             section: "sop",             label: "SOP & Tugas Harian",  icon: ClipboardList },
       { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP",    icon: Library },
       { path: "/task-template",   section: "task-template",   label: "Template Task",       icon: ListTodo },
-      { path: "/kritik-saran",    section: "employees",       label: "💡 Kritik & Saran",   icon: Lightbulb },
-      { path: "/review-saran",    section: "payroll",         label: "📋 Review Saran",     icon: ClipboardList },
+      { path: "/kritik-saran",    section: "kritik-saran",    label: "Kritik & Saran",      icon: MessageSquare },
     ],
   },
   {
