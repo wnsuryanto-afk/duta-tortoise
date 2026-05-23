@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
-  PieChart, Bell,
+  PieChart, Bell, Printer,
   CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
   Activity, Settings, Clock, Calendar, ChevronRight
 } from "lucide-react";
@@ -84,6 +84,7 @@ const NAV_GROUPS = [
       { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem",  icon: Settings },
       { path: "/users",              section: "users",              label: "Manajemen User",       icon: Users },
       { path: "/users",              section: "users-readonly",     label: "Direktori User",       icon: Users },
+      { path: "/printer-config",     section: "printer-config",     label: "Konfigurasi Printer",  icon: Printer },
     ],
   },
   {

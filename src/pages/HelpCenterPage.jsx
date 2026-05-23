@@ -10,7 +10,8 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import {
   PlayCircle, HelpCircle, MessageSquare, Phone, Mail,
-  RefreshCw, ClipboardList, Bot, ChevronRight, Save
+  RefreshCw, ClipboardList, Bot, ChevronRight, Save, Printer,
+  Usb, Network, Wifi, AlertTriangle, CheckCircle2
 } from "lucide-react";
 import PageTooltip from "@/components/tutorial/PageTooltip";
 import { toast } from "sonner";
@@ -171,6 +172,113 @@ export default function HelpCenterPage() {
                 </AccordionContent>
               </AccordionItem>
             ))}
+          </Accordion>
+        </div>
+      </div>
+
+      {/* Section: XPrinter XP-4208 Setup */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Printer className="w-5 h-5 text-primary" />
+          <h2 className="font-heading font-bold text-lg">Setup XPrinter XP-4208</h2>
+        </div>
+
+        {/* Identify port */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+          <p className="font-semibold text-sm text-amber-800 mb-2">🔍 Langkah 1: Identifikasi Port Printer</p>
+          <p className="text-xs text-amber-700 leading-relaxed mb-2">
+            Lihat bagian belakang printer XP-4208. Cek port yang ada:
+          </p>
+          <ul className="space-y-1.5 text-xs text-amber-700">
+            <li className="flex items-center gap-2"><Usb className="w-3.5 h-3.5 flex-shrink-0" /> <strong>Hanya USB</strong> → ikuti Mode USB (paling mudah)</li>
+            <li className="flex items-center gap-2"><Network className="w-3.5 h-3.5 flex-shrink-0" /> <strong>Ada port RJ45</strong> (kotak besar, seperti kabel internet) → bisa pakai Mode LAN</li>
+            <li className="flex items-center gap-2"><Wifi className="w-3.5 h-3.5 flex-shrink-0" /> <strong>Ada antena/lampu WiFi</strong> → bisa pakai Mode WiFi</li>
+          </ul>
+        </div>
+
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <Accordion type="single" collapsible className="divide-y">
+            <AccordionItem value="usb-setup" className="px-5">
+              <AccordionTrigger className="text-sm font-medium text-left py-4 hover:no-underline">
+                <span className="flex items-center gap-2"><Usb className="w-4 h-4 text-blue-600" /> 🔌 Setup Mode USB (Paling Mudah)</span>
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 space-y-2">
+                <ol className="space-y-2 list-decimal ml-4">
+                  <li>Download driver XP-4208 dari <strong>xprinter.net</strong></li>
+                  <li>Install driver di komputer (Windows/Mac)</li>
+                  <li>Hubungkan printer via kabel USB ke komputer</li>
+                  <li>Test print dari Windows: <em>Control Panel → Devices and Printers → klik kanan → Print Test Page</em></li>
+                  <li>Di app: buka <strong>Pengaturan → Konfigurasi Printer → Tambah Printer → Mode USB</strong></li>
+                  <li>Set sebagai Default, selesai!</li>
+                </ol>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-700 flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  Saat mencetak dari app, dialog print browser akan terbuka. Pilih printer XP-4208 dan klik Print.
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="lan-setup" className="px-5">
+              <AccordionTrigger className="text-sm font-medium text-left py-4 hover:no-underline">
+                <span className="flex items-center gap-2"><Network className="w-4 h-4 text-green-600" /> 🔗 Setup Mode LAN (Kabel Ethernet)</span>
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 space-y-2">
+                <ol className="space-y-2 list-decimal ml-4">
+                  <li>Hubungkan printer ke router via kabel ethernet (RJ45)</li>
+                  <li>Download <strong>XPrinter Diagnostic Tool</strong> dari xprinter.net</li>
+                  <li>Set IP statis di printer (contoh: 192.168.1.200)</li>
+                  <li>Install <strong>Print Bridge</strong> di komputer yang selalu menyala di jaringan yang sama</li>
+                  <li>Rekomendasi bridge: <em>PrintNode, RawBT, atau custom Node.js bridge</em></li>
+                  <li>Di app: buka <strong>Pengaturan → Konfigurasi Printer → Mode LAN</strong></li>
+                  <li>Masukkan IP address dan port 9100, lalu Tes Koneksi</li>
+                </ol>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700 flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  Browser tidak bisa langsung mengirim data ke port TCP. Print Bridge diperlukan sebagai perantara.
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="wifi-setup" className="px-5">
+              <AccordionTrigger className="text-sm font-medium text-left py-4 hover:no-underline">
+                <span className="flex items-center gap-2"><Wifi className="w-4 h-4 text-purple-600" /> 📶 Setup Mode WiFi (Nirkabel)</span>
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 space-y-2">
+                <ol className="space-y-2 list-decimal ml-4">
+                  <li>Aktifkan WiFi di printer (lihat manual printer)</li>
+                  <li>Connect printer ke WiFi rumah via <strong>XPrinter mobile app</strong></li>
+                  <li>Catat IP yang diberikan router (atau set IP statis di pengaturan DHCP router)</li>
+                  <li>Lanjut seperti Setup Mode LAN dari langkah 4 ke atas</li>
+                </ol>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-700 flex items-start gap-2">
+                  <Wifi className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  Pastikan komputer yang menjalankan Print Bridge terhubung ke WiFi yang sama dengan printer.
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="troubleshoot" className="px-5">
+              <AccordionTrigger className="text-sm font-medium text-left py-4 hover:no-underline">
+                <span className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-500" /> ⚠️ Troubleshooting Umum</span>
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+                <div className="space-y-2">
+                  {[
+                    ["Print kosong / putih", "Cek thermal paper tidak terbalik (sisi glossy menghadap ke bawah/head)"],
+                    ["Tidak terdeteksi di komputer", "Restart printer dan router, coba kabel USB lain"],
+                    ["Hasil print buram", "Naikkan print density di Konfigurasi Printer (setting 10–13)"],
+                    ["Print miring / label tidak sejajar", "Kalibrasi label: tahan tombol FEED saat menyalakan printer"],
+                    ["IP berubah setiap restart", "Set IP statis di pengaturan DHCP reservation di router"],
+                    ["Print Bridge error", "Pastikan firewall komputer mengizinkan port 9100"],
+                  ].map(([problem, solution], i) => (
+                    <div key={i} className="flex gap-2 text-xs">
+                      <span className="font-semibold text-foreground/80 flex-shrink-0 w-44">• {problem}</span>
+                      <span className="text-muted-foreground">→ {solution}</span>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
       </div>

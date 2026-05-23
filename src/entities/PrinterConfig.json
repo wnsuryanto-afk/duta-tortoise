@@ -1,0 +1,67 @@
+{
+  "name": "PrinterConfig",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama printer, contoh: XPrinter Gudang"
+    },
+    "model": {
+      "type": "string",
+      "default": "XP-4208",
+      "description": "Model printer"
+    },
+    "connection_type": {
+      "type": "string",
+      "enum": ["usb_dialog", "lan", "wifi"],
+      "default": "usb_dialog",
+      "description": "Mode koneksi printer"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address printer (untuk mode LAN/WiFi)"
+    },
+    "port": {
+      "type": "number",
+      "default": 9100,
+      "description": "Port printer (default 9100)"
+    },
+    "paper_size": {
+      "type": "string",
+      "enum": ["40x30mm", "50x30mm", "100x100mm", "100x150mm", "108x80mm"],
+      "default": "100x150mm",
+      "description": "Ukuran kertas label"
+    },
+    "print_density": {
+      "type": "number",
+      "default": 8,
+      "description": "Densitas cetak (1-15)"
+    },
+    "print_speed": {
+      "type": "number",
+      "default": 4,
+      "description": "Kecepatan cetak (1-6)"
+    },
+    "location": {
+      "type": "string",
+      "description": "Lokasi fisik printer"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Printer default"
+    },
+    "last_used": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": ["name", "connection_type"]
+}

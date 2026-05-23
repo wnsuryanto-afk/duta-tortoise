@@ -46,6 +46,7 @@ import ActivityLogPage from '@/pages/ActivityLogPage';
 import SystemMaintenancePage from '@/pages/SystemMaintenancePage';
 import VetContactPage from '@/pages/VetContactPage.jsx';
 import MaintenanceSchedulePage from '@/pages/MaintenanceSchedulePage.jsx';
+import PrinterConfigPage from '@/pages/PrinterConfigPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -104,6 +105,7 @@ const AuthenticatedApp = () => {
         <Route path="/system-maintenance" element={<SystemMaintenancePage />} />
         <Route path="/vet-contacts" element={<VetContactPage />} />
         <Route path="/maintenance-schedule" element={<MaintenanceSchedulePage />} />
+        <Route path="/printer-config" element={<PrinterConfigPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

@@ -36,7 +36,7 @@ export const NAV_ACCESS = {
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
     "activity-log", "system-maintenance", "vet-contacts", "maintenance",
-    "help",
+    "printer-config", "help",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -45,7 +45,7 @@ export const NAV_ACCESS = {
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
-    "vet-contacts", "maintenance",
+    "vet-contacts", "maintenance", "printer-config",
     "help",
   ],
   manajer: [
