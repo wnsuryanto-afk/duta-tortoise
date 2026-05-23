@@ -10,9 +10,11 @@
       "type": "string",
       "enum": [
         "owner",
-        "admin",
         "manajer",
+        "admin",
+        "kepala_feeder",
         "keeper",
+        "viewer",
         "semua"
       ],
       "description": "Role penerima"

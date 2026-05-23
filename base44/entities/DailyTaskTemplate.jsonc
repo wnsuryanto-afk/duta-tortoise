@@ -5,9 +5,10 @@
     "role": {
       "type": "string",
       "enum": [
-        "keeper",
+        "manajer",
         "admin",
-        "manajer"
+        "kepala_feeder",
+        "keeper"
       ],
       "description": "Role yang mendapatkan task ini"
     },

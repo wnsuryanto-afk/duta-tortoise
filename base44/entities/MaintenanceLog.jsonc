@@ -40,7 +40,7 @@
       "type": "number",
       "description": "Durasi (menit)"
     },
-    "photos": {
+    "photo_urls": {
       "type": "array",
       "items": {
         "type": "string"

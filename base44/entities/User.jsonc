@@ -6,15 +6,28 @@
       "type": "string",
       "enum": [
         "owner",
-        "admin",
         "manajer",
+        "admin",
         "kepala_feeder",
         "keeper",
-        "investor",
         "viewer"
       ],
       "default": "keeper",
-      "description": "Peran pengguna dalam peternakan"
+      "description": "Role pengguna dalam sistem"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Apakah akun aktif"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto profil"
+    },
+    "last_login": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Terakhir login"
     }
   },
   "required": [

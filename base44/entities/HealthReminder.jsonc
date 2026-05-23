@@ -53,6 +53,16 @@
     "enclosure": {
       "type": "string",
       "description": "Kandang (opsional, untuk filter per area)"
+    },
+    "notif_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flag notifikasi sudah dikirim agar tidak duplikat"
+    },
+    "notif_sent_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal notifikasi terakhir dikirim"
     }
   },
   "required": [

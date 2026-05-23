@@ -33,6 +33,26 @@
     },
     "notes": {
       "type": "string"
+    },
+    "temp_min_alarm": {
+      "type": "number",
+      "default": 28,
+      "description": "Alarm suhu minimum \u00b0C"
+    },
+    "temp_max_alarm": {
+      "type": "number",
+      "default": 33,
+      "description": "Alarm suhu maksimum \u00b0C"
+    },
+    "humidity_min_alarm": {
+      "type": "number",
+      "default": 70,
+      "description": "Alarm kelembapan minimum %"
+    },
+    "humidity_max_alarm": {
+      "type": "number",
+      "default": 90,
+      "description": "Alarm kelembapan maksimum %"
     }
   },
   "required": [

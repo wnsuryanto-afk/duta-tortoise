@@ -70,8 +70,11 @@
     "notes": {
       "type": "string"
     },
-    "photo_proof": {
-      "type": "string",
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
       "description": "Foto bukti rusak/hilang"
     }
   },

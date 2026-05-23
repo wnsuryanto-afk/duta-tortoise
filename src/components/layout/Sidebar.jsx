@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
-  PieChart, Bell, Printer, Package, Zap,
+  PieChart, Bell, Printer, Package, Zap, Thermometer, FileText,
   CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
   Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical
 } from "lucide-react";
@@ -24,10 +24,11 @@ const NAV_GROUPS = [
     label: "Kura-kura & Kandang",
     items: [
       { path: "/tortoise",        section: "tortoise",        label: "Kura-kura & Kandang", icon: Shell },
-      { path: "/breeding",        section: "breeding",        label: "Breeding & Telur",    icon: Baby },
-      { path: "/breeder-ranking", section: "breeding",        label: "Ranking Indukan",     icon: Trophy },
-      { path: "/family-tree",     section: "family-tree",     label: "Silsilah",            icon: GitBranch },
-      { path: "/death-records",   section: "death-records",   label: "Catatan Kematian",    icon: Skull },
+      { path: "/breeding",           section: "breeding",        label: "Breeding & Telur",    icon: Baby },
+      { path: "/breeder-ranking",   section: "breeding",        label: "Ranking Indukan",     icon: Trophy },
+      { path: "/incubator-readings",section: "breeding",        label: "Monitor Inkubator",   icon: Thermometer },
+      { path: "/family-tree",       section: "family-tree",     label: "Silsilah",            icon: GitBranch },
+      { path: "/death-records",     section: "death-records",   label: "Catatan Kematian",    icon: Skull },
     ],
   },
   {
@@ -60,6 +61,7 @@ const NAV_GROUPS = [
       { path: "/hr",              section: "hr",              label: "Manajemen SDM",       icon: Users },
       { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Gaji & Kasbon",       icon: Wallet },
       { path: "/salary",          section: "salary",          label: "Gaji Bulanan",        icon: Calculator },
+      { path: "/salary-slip",     section: "payroll-gaji",    label: "Riwayat Slip Gaji",   icon: FileText },
     ],
   },
   {

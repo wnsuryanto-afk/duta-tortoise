@@ -17,6 +17,10 @@
     "buyer_address": {
       "type": "string"
     },
+    "buyer_profile_id": {
+      "type": "string",
+      "description": "Link ke BuyerProfile (auto-sync via buyer_phone)"
+    },
     "sale_date": {
       "type": "string",
       "format": "date"
@@ -68,6 +72,22 @@
     "remaining_balance": {
       "type": "number",
       "description": "Sisa pembayaran (price - total_paid)"
+    },
+    "certificate_number": {
+      "type": "string",
+      "description": "Nomor sertifikat, format: DT/[bln_romawi]/[tahun]/[urut]"
+    },
+    "certificate_url": {
+      "type": "string",
+      "description": "Link PDF sertifikat yang sudah dicetak"
+    },
+    "invoice_number": {
+      "type": "string",
+      "description": "Nomor invoice/kwitansi"
+    },
+    "invoice_url": {
+      "type": "string",
+      "description": "Link PDF invoice yang sudah dicetak"
     },
     "shipping_method": {
       "type": "string",

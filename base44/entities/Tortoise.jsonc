@@ -101,6 +101,20 @@
       ],
       "default": "aktif"
     },
+    "previous_status": {
+      "type": "string",
+      "description": "Status sebelumnya (disimpan saat berubah ke 'sakit' untuk restore nanti)"
+    },
+    "is_currently_sick": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flag visual badge SAKIT"
+    },
+    "last_status_change": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir status berubah"
+    },
     "enclosure": {
       "type": "string"
     },

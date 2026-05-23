@@ -1,0 +1,82 @@
+{
+  "name": "PrinterConfig",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama printer, contoh: XPrinter Gudang"
+    },
+    "model": {
+      "type": "string",
+      "default": "XP-420B",
+      "description": "Model printer"
+    },
+    "connection_type": {
+      "type": "string",
+      "enum": [
+        "usb_dialog",
+        "lan",
+        "wifi"
+      ],
+      "default": "usb_dialog",
+      "description": "Jenis koneksi"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "Alamat IP (untuk LAN/WiFi)"
+    },
+    "port": {
+      "type": "number",
+      "default": 9100,
+      "description": "Port koneksi"
+    },
+    "paper_size": {
+      "type": "string",
+      "enum": [
+        "40x30mm",
+        "50x30mm",
+        "100x100mm",
+        "100x150mm",
+        "108x80mm"
+      ],
+      "default": "100x150mm",
+      "description": "Ukuran kertas"
+    },
+    "print_density": {
+      "type": "number",
+      "default": 8,
+      "description": "Kepadatan cetak (1-15)"
+    },
+    "print_speed": {
+      "type": "number",
+      "default": 4,
+      "description": "Kecepatan cetak (1-5)"
+    },
+    "location": {
+      "type": "string",
+      "description": "Lokasi printer"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Printer default untuk cetak"
+    },
+    "last_used": {
+      "type": "string",
+      "format": "date",
+      "description": "Terakhir digunakan"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "connection_type",
+    "paper_size"
+  ]
+}

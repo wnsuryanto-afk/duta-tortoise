@@ -235,9 +235,11 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
 }
 
 const ROLE_OPTIONS = [
-  { value: "keeper", label: "Keeper" },
-  { value: "admin", label: "Admin" },
+  { value: "owner", label: "Owner" },
   { value: "manajer", label: "Manajer" },
+  { value: "admin", label: "Admin" },
+  { value: "kepala_feeder", label: "Kepala Feeder" },
+  { value: "keeper", label: "Keeper" },
 ];
 
 function SalaryConfigDialog({ open, onClose, editData }) {
@@ -456,7 +458,7 @@ export default function PayrollPage() {
     queryFn: () => base44.entities.BonusReward.list("-period", 50),
   });
 
-  const employees = users.filter(u => ["keeper", "admin", "manajer"].includes(u.role));
+  const employees = users.filter(u => ["owner", "manajer", "admin", "kepala_feeder", "keeper"].includes(u.role));
 
   const monthAttendances = attendances.filter(a => a.date >= monthStart && a.date <= monthEnd);
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);

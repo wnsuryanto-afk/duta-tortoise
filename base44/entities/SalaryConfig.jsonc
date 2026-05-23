@@ -5,9 +5,11 @@
     "role": {
       "type": "string",
       "enum": [
-        "keeper",
+        "owner",
+        "manajer",
         "admin",
-        "manajer"
+        "kepala_feeder",
+        "keeper"
       ]
     },
     "base_salary": {

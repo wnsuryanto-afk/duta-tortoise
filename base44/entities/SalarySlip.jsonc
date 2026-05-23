@@ -1,0 +1,87 @@
+{
+  "name": "SalarySlip",
+  "type": "object",
+  "properties": {
+    "employee_email": {
+      "type": "string",
+      "description": "Email karyawan"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama karyawan"
+    },
+    "period": {
+      "type": "string",
+      "description": "Periode gaji format YYYY-MM"
+    },
+    "base_salary": {
+      "type": "number",
+      "default": 0,
+      "description": "Gaji pokok"
+    },
+    "kpi_bonus": {
+      "type": "number",
+      "default": 0,
+      "description": "Bonus KPI"
+    },
+    "overtime_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Total lembur"
+    },
+    "vegetable_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Total sayuran/perjalanan"
+    },
+    "absent_deduction": {
+      "type": "number",
+      "default": 0,
+      "description": "Potongan absensi"
+    },
+    "kasbon_deduction": {
+      "type": "number",
+      "default": 0,
+      "description": "Potongan kasbon"
+    },
+    "gross_total": {
+      "type": "number",
+      "description": "Total bruto (sebelum potongan)"
+    },
+    "net_total": {
+      "type": "number",
+      "description": "Total neto / take home pay"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "paid"
+      ],
+      "default": "draft"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal dibayarkan"
+    },
+    "paid_by": {
+      "type": "string",
+      "description": "Dibayarkan oleh"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "Link PDF slip gaji yang dicetak"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "employee_email",
+    "employee_name",
+    "period",
+    "net_total"
+  ]
+}

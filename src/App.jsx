@@ -14,6 +14,8 @@ import PettyCashPage from '@/pages/PettyCashPage';
 import SupplierPage from '@/pages/SupplierPage';
 import PelletRecipePage from '@/pages/PelletRecipePage';
 import OperationalCostsPage from '@/pages/OperationalCostsPage';
+import SalarySlipPage from '@/pages/SalarySlipPage';
+import IncubatorReadingPage from '@/pages/IncubatorReadingPage';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -119,6 +121,8 @@ const AuthenticatedApp = () => {
         <Route path="/supplier" element={<SupplierPage />} />
         <Route path="/pellet-recipe" element={<PelletRecipePage />} />
         <Route path="/operational-costs" element={<OperationalCostsPage />} />
+        <Route path="/salary-slip" element={<SalarySlipPage />} />
+        <Route path="/incubator-readings" element={<IncubatorReadingPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

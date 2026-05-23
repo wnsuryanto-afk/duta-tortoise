@@ -28,7 +28,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "description": "Daftar bahan (minimal 1 bahan wajib)"
     },
     "preparation_steps": {
       "type": "string"
@@ -53,6 +54,7 @@
   },
   "required": [
     "name",
-    "yield_kg"
+    "yield_kg",
+    "ingredients"
   ]
 }

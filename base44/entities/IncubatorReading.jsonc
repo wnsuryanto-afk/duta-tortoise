@@ -1,0 +1,58 @@
+{
+  "name": "IncubatorReading",
+  "type": "object",
+  "properties": {
+    "incubator_id": {
+      "type": "string",
+      "description": "ID inkubator"
+    },
+    "incubator_name": {
+      "type": "string",
+      "description": "Nama inkubator"
+    },
+    "date_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu pencatatan"
+    },
+    "temperature_actual": {
+      "type": "number",
+      "description": "Suhu aktual \u00b0C"
+    },
+    "humidity_actual": {
+      "type": "number",
+      "description": "Kelembapan aktual %"
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Dicatat oleh"
+    },
+    "alarm_triggered": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah ada alarm terpicu"
+    },
+    "alarm_type": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "suhu_tinggi",
+        "suhu_rendah",
+        "humidity_tinggi",
+        "humidity_rendah"
+      ],
+      "default": "normal",
+      "description": "Jenis alarm"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "incubator_name",
+    "date_time",
+    "temperature_actual",
+    "humidity_actual",
+    "recorded_by"
+  ]
+}
