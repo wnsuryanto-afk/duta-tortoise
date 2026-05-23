@@ -40,8 +40,6 @@ export default function SalarySlipPage() {
 
   const employees = users.filter(u => ["keeper", "admin", "manajer", "kepala_feeder"].includes(u.role));
 
-  if (!canAccess(role, "payroll")) return <AccessDenied />;
-
   const markPaidMutation = useMutation({
     mutationFn: (slip) => base44.entities.SalarySlip.update(slip.id, {
       status: "paid",
@@ -65,6 +63,8 @@ export default function SalarySlipPage() {
   // Stats
   const totalPaid = filtered.filter(s => s.status === "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
   const totalPending = filtered.filter(s => s.status !== "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
+
+  if (!canAccess(role, "payroll")) return <AccessDenied />;
 
   // Group by period for monthly stats
   const byPeriod = useMemo(() => {
