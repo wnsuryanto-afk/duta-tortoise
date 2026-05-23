@@ -501,7 +501,9 @@ export default function PayrollPage() {
 
   const fmt = (n) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
-  if (!canAccess(role, "payroll")) return <AccessDenied />;
+  // Keeper hanya bisa akses tab kasbon
+  const isKeeper = role === "keeper";
+  if (!canAccess(role, "payroll") && !isKeeper) return <AccessDenied />;
 
   const urlParams = new URLSearchParams(window.location.search);
   const defaultTab = urlParams.get("tab") || "payroll";
@@ -528,13 +530,13 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      <Tabs defaultValue={defaultTab}>
+      <Tabs defaultValue={isKeeper ? "kasbon" : defaultTab}>
         <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="payroll"><Calculator className="w-4 h-4 mr-1.5" />Rekap Gaji</TabsTrigger>
+          {!isKeeper && <TabsTrigger value="payroll"><Calculator className="w-4 h-4 mr-1.5" />Rekap Gaji</TabsTrigger>}
           <TabsTrigger value="kasbon"><CreditCard className="w-4 h-4 mr-1.5" />Kasbon</TabsTrigger>
-          <TabsTrigger value="config"><Settings className="w-4 h-4 mr-1.5" />Konfigurasi Gaji</TabsTrigger>
-          <TabsTrigger value="overtime"><Clock className="w-4 h-4 mr-1.5" />Log Lembur</TabsTrigger>
-          <TabsTrigger value="vegetable"><Leaf className="w-4 h-4 mr-1.5" />Log Sayur</TabsTrigger>
+          {!isKeeper && <TabsTrigger value="config"><Settings className="w-4 h-4 mr-1.5" />Konfigurasi Gaji</TabsTrigger>}
+          {!isKeeper && <TabsTrigger value="overtime"><Clock className="w-4 h-4 mr-1.5" />Log Lembur</TabsTrigger>}
+          {!isKeeper && <TabsTrigger value="vegetable"><Leaf className="w-4 h-4 mr-1.5" />Log Sayur</TabsTrigger>}
         </TabsList>
 
         {/* TAB: Rekap Gaji */}
