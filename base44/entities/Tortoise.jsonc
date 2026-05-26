@@ -57,16 +57,26 @@
     "source": {
       "type": "string",
       "enum": [
+        "cb",
+        "wc",
+        "f1",
+        "f2",
+        "ltc",
         "hasil_sendiri",
         "beli_lokal",
         "import",
         "tidak_diketahui"
       ],
-      "default": "tidak_diketahui"
+      "default": "tidak_diketahui",
+      "description": "Asal usul kura-kura: CB, WC, F1, F2, LTC, dsb"
     },
     "is_proven": {
       "type": "boolean",
       "default": false
+    },
+    "proven_year": {
+      "type": "number",
+      "description": "Tahun pertama kali proven"
     },
     "birth_date": {
       "type": "string",
@@ -103,30 +113,26 @@
     },
     "previous_status": {
       "type": "string",
-      "description": "Status sebelumnya (disimpan saat berubah ke 'sakit' untuk restore nanti)"
+      "description": "Status sebelumnya"
     },
     "is_currently_sick": {
       "type": "boolean",
-      "default": false,
-      "description": "Flag visual badge SAKIT"
+      "default": false
     },
     "last_status_change": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir status berubah"
+      "format": "date"
     },
     "enclosure": {
       "type": "string"
     },
     "in_quarantine": {
       "type": "boolean",
-      "default": false,
-      "description": "Apakah sedang dikarantina"
+      "default": false
     },
     "quarantine_start_date": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal mulai karantina"
+      "format": "date"
     },
     "quarantine_reason": {
       "type": "string",
@@ -137,12 +143,10 @@
         "observasi",
         "sebelum_dijual",
         "lainnya"
-      ],
-      "description": "Alasan karantina"
+      ]
     },
     "quarantine_notes": {
-      "type": "string",
-      "description": "Catatan karantina"
+      "type": "string"
     },
     "photos": {
       "type": "array",
@@ -166,8 +170,7 @@
             "type": "string"
           }
         }
-      },
-      "description": "Foto pertumbuhan dengan data biometrik"
+      }
     },
     "death_video_url": {
       "type": "string"
@@ -176,8 +179,7 @@
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Preset tags: Indukan Premium, Akan Dijual, Perlu Treatment, Favorit Owner, Tidak Untuk Dijual, Pendatang Baru, Juara Kontes"
+      }
     },
     "qr_code_url": {
       "type": "string"
@@ -206,8 +208,7 @@
     },
     "is_archived": {
       "type": "boolean",
-      "default": false,
-      "description": "Apakah data sudah diarsipkan"
+      "default": false
     }
   },
   "required": [

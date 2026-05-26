@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye, User, Bell, HelpCircle, LogOut, Loader2 } from "lucide-react";
+import { Eye, User, Bell, HelpCircle, LogOut, Loader2, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,6 +151,7 @@ export default function AppLayout() {
   const userMenuRef = useRef(null);
 
   const isOwner = user?.role === "owner";
+  const isInvestor = (viewAsRole || user?.role) === "investor";
   const isViewingAs = !!viewAsRole;
 
   // Close user menu on outside click
@@ -214,6 +215,12 @@ export default function AppLayout() {
                 >
                   <Eye className="w-3.5 h-3.5" /> Lihat Sebagai
                 </Button>
+              )}
+
+              {isInvestor && (
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-300">
+                  👁 Mode Investor
+                </span>
               )}
 
               <NotificationBell />

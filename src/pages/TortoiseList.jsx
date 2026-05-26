@@ -49,6 +49,7 @@ export default function TortoiseList() {
   const [shellTypeFilter, setShellTypeFilter] = useState("semua");
   const [provenFilter, setProvenFilter] = useState("semua");
   const [enclosureFilter, setEnclosureFilter] = useState(null);
+  const [incompleteFilter, setIncompleteFilter] = useState(false);
   const [viewMode, setViewMode] = useState("kandang");
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -134,6 +135,10 @@ export default function TortoiseList() {
     return sickSet;
   }, [healthRecords]);
 
+  const isIncomplete = (t) => {
+    return !t.weight_grams || !t.shell_length_cm || !t.birth_date || !t.gender || t.gender === "belum_diketahui" || (!t.photo_url && !(Array.isArray(t.photos) && t.photos.length > 0));
+  };
+
   const filtered = tortoises.filter((t) => {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "semua" || t.status === statusFilter;
@@ -143,12 +148,17 @@ export default function TortoiseList() {
     const matchEnclosure = !enclosureFilter || (t.enclosure || "Tidak Ada Kandang") === enclosureFilter;
     const matchProven = provenFilter === "semua" || (provenFilter === "proven" ? !!t.is_proven : !t.is_proven);
     const matchQuarantine = quarantineFilter === "all" || (quarantineFilter === "yes" ? t.in_quarantine : !t.in_quarantine);
-    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchQuarantine;
+    const matchIncomplete = !incompleteFilter || isIncomplete(t);
+    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchQuarantine && matchIncomplete;
   });
 
   const grouped = useMemo(() => {
     const map = {};
-    filtered.forEach((t) => {
+    // Di view kandang, kura mati & terjual tidak ditampilkan (kecuali filter eksplisit status mati/terjual)
+    const forGrouped = (statusFilter === "mati" || statusFilter === "terjual")
+      ? filtered
+      : filtered.filter(t => t.status !== "mati" && t.status !== "terjual");
+    forGrouped.forEach((t) => {
       const key = t.enclosure || "Tidak Ada Kandang";
       if (!map[key]) map[key] = [];
       map[key].push(t);
@@ -325,6 +335,13 @@ export default function TortoiseList() {
               <button onClick={() => setViewMode("kandang")} className={`px-3 text-xs font-medium transition-colors ${viewMode === "kandang" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>Per Kandang</button>
               <button onClick={() => setViewMode("semua")} className={`px-3 text-xs font-medium transition-colors ${viewMode === "semua" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>Semua</button>
             </div>
+            <button
+              onClick={() => setIncompleteFilter(v => !v)}
+              className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${incompleteFilter ? "bg-amber-100 border-amber-400 text-amber-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
+            >
+              ⚠️ Data Belum Lengkap
+              {incompleteFilter && <span className="ml-1 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{tortoises.filter(isIncomplete).length}</span>}
+            </button>
           </div>
 
           {enclosureFilter && (

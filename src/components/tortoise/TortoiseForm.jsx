@@ -63,9 +63,9 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [enclosureOptions, setEnclosureOptions] = useState([]);
   const [showDeathDialog, setShowDeathDialog] = useState(false);
   const [form, setForm] = useState(editData || {
-    name: "", code: "", gender: "belum_diketahui", morph: "normal",
-    source: "tidak_diketahui",
-    is_proven: false, birth_date: "", purchase_date: "", weight_grams: "", shell_length_cm: "",
+    name: "", code: "", gender: "", morph: "normal",
+    source: "",
+    is_proven: false, proven_year: "", birth_date: "", purchase_date: "", weight_grams: "", shell_length_cm: "",
     status: "aktif", enclosure: "", notes: "",
   });
 
@@ -84,10 +84,15 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const validate = () => {
     const e = {};
     if (!form.name?.trim()) e.name = "Nama tortoise wajib diisi";
-    if (!form.gender) e.gender = "Jenis kelamin wajib dipilih";
+    if (!form.code?.trim()) e.code = "Kode identifikasi wajib diisi";
+    if (!form.gender || form.gender === "belum_diketahui") e.gender = "Jenis kelamin wajib dipilih";
     if (!form.morph) e.morph = "Morph wajib dipilih";
-    if (!form.source) e.source = "Asal kura-kura wajib dipilih";
+    if (!form.source || form.source === "tidak_diketahui") e.source = "Asal kura-kura wajib dipilih";
     if (!form.status) e.status = "Status wajib dipilih";
+    if (!form.enclosure) e.enclosure = "Kandang wajib dipilih";
+    if (!form.weight_grams) e.weight_grams = "Berat wajib diisi";
+    if (!form.shell_length_cm) e.shell_length_cm = "Panjang cangkang wajib diisi";
+    if (!form.purchase_date && !form.birth_date) e.purchase_date = "Tanggal masuk/lahir wajib diisi";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -262,26 +267,40 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Nama *</Label>
-              <Input value={form.name} onChange={(e) => set("name", e.target.value)} required />
+              <Label>Nama <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                className={errors.name ? "border-red-500 ring-1 ring-red-400" : ""}
+              />
+              {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Kode</Label>
-              <Input value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="ST-001" />
+              <Label>Kode <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.code}
+                onChange={(e) => set("code", e.target.value)}
+                placeholder="ST-001"
+                className={errors.code ? "border-red-500 ring-1 ring-red-400" : ""}
+              />
+              {errors.code && <p className="text-xs text-red-600">{errors.code}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Jenis Kelamin</Label>
+              <Label>Jenis Kelamin <span className="text-red-500">*</span></Label>
               <Select value={form.gender} onValueChange={(v) => set("gender", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className={errors.gender ? "border-red-500 ring-1 ring-red-400" : ""}>
+                  <SelectValue placeholder="Pilih..." />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="jantan">♂ Jantan</SelectItem>
                   <SelectItem value="betina">♀ Betina</SelectItem>
                   <SelectItem value="belum_diketahui">? Belum Diketahui</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.gender && <p className="text-xs text-red-600">{errors.gender}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Morph / Warna</Label>
@@ -342,16 +361,19 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Kandang</Label>
+              <Label>Kandang <span className="text-red-500">*</span></Label>
               <Select value={form.enclosure || ""} onValueChange={(v) => set("enclosure", v)}>
-                <SelectTrigger><SelectValue placeholder="Pilih kandang..." /></SelectTrigger>
+                <SelectTrigger className={errors.enclosure ? "border-red-500 ring-1 ring-red-400" : ""}>
+                  <SelectValue placeholder="Pilih kandang..." />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Tidak ada kandang</SelectItem>
+                  <SelectItem value={null}>— Tidak ada kandang —</SelectItem>
                   {enclosureOptions.map((encName) => (
                     <SelectItem key={encName} value={encName}>{encName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {errors.enclosure && <p className="text-xs text-red-600">{errors.enclosure}</p>}
               {enclosureOptions.length === 0 && (
                 <p className="text-xs text-muted-foreground">Belum ada kandang. Tambahkan di halaman Tortoise & Kandang.</p>
               )}
@@ -359,16 +381,24 @@ export default function TortoiseForm({ open, onClose, editData }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Asal Kura-Kura (Source)</Label>
-            <Select value={form.source || "tidak_diketahui"} onValueChange={(v) => set("source", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Label>Asal Kura-Kura <span className="text-red-500">*</span></Label>
+            <Select value={form.source || ""} onValueChange={(v) => set("source", v)}>
+              <SelectTrigger className={errors.source ? "border-red-500 ring-1 ring-red-400" : ""}>
+                <SelectValue placeholder="Pilih asal usul..." />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="hasil_sendiri">🐣 Hasil Sendiri (CBB — Captive Bred & Born)</SelectItem>
-                <SelectItem value="beli_lokal">🛒 Beli Lokal</SelectItem>
-                <SelectItem value="import">✈️ Import (CB — Captive Born)</SelectItem>
+                <SelectItem value="hasil_sendiri">🐣 Hasil Tetas Duta Tortoise (CBB)</SelectItem>
+                <SelectItem value="cb">🏠 Captive Bred (CB)</SelectItem>
+                <SelectItem value="wc">🌿 Wild Caught (WC)</SelectItem>
+                <SelectItem value="f1">🔬 F1 (Generasi pertama dari WC)</SelectItem>
+                <SelectItem value="f2">🔬 F2 (Generasi kedua)</SelectItem>
+                <SelectItem value="ltc">⏳ LTC (Long Term Captive)</SelectItem>
+                <SelectItem value="beli_lokal">🛒 Beli Lokal (tidak diketahui asal)</SelectItem>
+                <SelectItem value="import">✈️ Import</SelectItem>
                 <SelectItem value="tidak_diketahui">❓ Tidak Diketahui</SelectItem>
               </SelectContent>
             </Select>
+            {errors.source && <p className="text-xs text-red-600">{errors.source}</p>}
             {form.source === "hasil_sendiri" && (
               <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1">
                 ✓ Silsilah akan tersedia — pastikan data induk terisi di breeding record
@@ -376,18 +406,34 @@ export default function TortoiseForm({ open, onClose, editData }) {
             )}
           </div>
 
-          {/* Proven checkbox */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-200">
-            <input
-              type="checkbox"
-              id="is_proven"
-              checked={!!form.is_proven}
-              onChange={(e) => set("is_proven", e.target.checked)}
-              className="w-4 h-4 accent-green-600"
-            />
-            <label htmlFor="is_proven" className="text-sm font-medium text-green-800 cursor-pointer">
-              ✅ Proven — sudah terbukti kawin / bertelur
-            </label>
+          {/* Proven */}
+          <div className="p-3 rounded-xl bg-green-50 border border-green-200 space-y-2">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="is_proven"
+                checked={!!form.is_proven}
+                onChange={(e) => set("is_proven", e.target.checked)}
+                className="w-4 h-4 accent-green-600"
+              />
+              <label htmlFor="is_proven" className="text-sm font-medium text-green-800 cursor-pointer">
+                ✅ Proven — sudah terbukti kawin / bertelur
+              </label>
+            </div>
+            {form.is_proven && (
+              <div className="space-y-1">
+                <Label className="text-xs text-green-700">Tahun Proven</Label>
+                <Input
+                  type="number"
+                  placeholder="Contoh: 2023"
+                  min="2000"
+                  max={new Date().getFullYear()}
+                  value={form.proven_year || ""}
+                  onChange={(e) => set("proven_year", e.target.value ? Number(e.target.value) : "")}
+                  className="h-8 text-sm bg-white"
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -396,18 +442,37 @@ export default function TortoiseForm({ open, onClose, editData }) {
               <Input type="date" value={form.birth_date} onChange={(e) => set("birth_date", e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Tanggal Pembelian</Label>
-              <Input type="date" value={form.purchase_date || ""} onChange={(e) => set("purchase_date", e.target.value)} />
+              <Label>Tanggal Masuk <span className="text-red-500">*</span></Label>
+              <Input
+                type="date"
+                value={form.purchase_date || ""}
+                onChange={(e) => set("purchase_date", e.target.value)}
+                className={errors.purchase_date ? "border-red-500 ring-1 ring-red-400" : ""}
+              />
+              {errors.purchase_date && <p className="text-xs text-red-600">{errors.purchase_date}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Berat (gram)</Label>
-              <Input type="number" value={form.weight_grams} onChange={(e) => set("weight_grams", e.target.value)} />
+              <Label>Berat (gram) <span className="text-red-500">*</span></Label>
+              <Input
+                type="number"
+                value={form.weight_grams}
+                onChange={(e) => set("weight_grams", e.target.value)}
+                className={errors.weight_grams ? "border-red-500 ring-1 ring-red-400" : ""}
+              />
+              {errors.weight_grams && <p className="text-xs text-red-600">{errors.weight_grams}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Panjang Cangkang (cm)</Label>
-              <Input type="number" step="0.1" value={form.shell_length_cm} onChange={(e) => set("shell_length_cm", e.target.value)} />
+              <Label>Panjang Cangkang (cm) <span className="text-red-500">*</span></Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={form.shell_length_cm}
+                onChange={(e) => set("shell_length_cm", e.target.value)}
+                className={errors.shell_length_cm ? "border-red-500 ring-1 ring-red-400" : ""}
+              />
+              {errors.shell_length_cm && <p className="text-xs text-red-600">{errors.shell_length_cm}</p>}
             </div>
           </div>
           <div className="space-y-1.5">

@@ -41,10 +41,15 @@ const statusColors = {
 };
 
 const sourceLabel = {
-  hasil_sendiri: { text: "🐣 CBB", color: "bg-green-100 text-green-800 border-green-300", title: "Captive Bred & Born" },
-  import:        { text: "📦 CB",  color: "bg-blue-100 text-blue-800 border-blue-300", title: "Captive Born (Import)" },
-  beli_lokal:    { text: "🌍 WC",  color: "bg-amber-100 text-amber-800 border-amber-300", title: "Wild Caught / Lokal" },
-  tidak_diketahui: { text: "❓ Unknown", color: "bg-gray-100 text-gray-700 border-gray-300", title: "Asal Tidak Diketahui" },
+  hasil_sendiri:  { text: "🐣 CBB",  color: "bg-green-100 text-green-800 border-green-300",  title: "Captive Bred & Born (Duta Tortoise)" },
+  cb:             { text: "🏠 CB",   color: "bg-blue-100 text-blue-800 border-blue-300",      title: "Captive Bred" },
+  wc:             { text: "🌿 WC",   color: "bg-amber-100 text-amber-800 border-amber-300",   title: "Wild Caught" },
+  f1:             { text: "🔬 F1",   color: "bg-purple-100 text-purple-800 border-purple-300",title: "F1 – Generasi pertama dari WC" },
+  f2:             { text: "🔬 F2",   color: "bg-indigo-100 text-indigo-800 border-indigo-300",title: "F2 – Generasi kedua" },
+  ltc:            { text: "⏳ LTC",  color: "bg-orange-100 text-orange-800 border-orange-300",title: "Long Term Captive" },
+  import:         { text: "✈️ Import", color: "bg-blue-100 text-blue-800 border-blue-300",   title: "Import" },
+  beli_lokal:     { text: "🛒 Lokal", color: "bg-teal-100 text-teal-800 border-teal-300",    title: "Beli Lokal" },
+  tidak_diketahui:{ text: "❓ Unknown", color: "bg-gray-100 text-gray-700 border-gray-300",  title: "Asal Tidak Diketahui" },
 };
 
 // Background warna untuk card berdasarkan kondisi
@@ -105,20 +110,21 @@ const genderLabels = {
   jantan: "♂ Jantan", betina: "♀ Betina", belum_diketahui: "? Belum Diketahui",
 };
 
-function ProvenBadge({ gender }) {
+function ProvenBadge({ gender, provenYear }) {
+  const year = provenYear ? ` ${provenYear}` : "";
   if (gender === "jantan") return (
     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-600 text-white shadow-sm">
-      ♂ ✓ Proven
+      ♂ ✓ PROVEN{year}
     </span>
   );
   if (gender === "betina") return (
     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-pink-500 text-white shadow-sm">
-      ♀ ✓ Proven
+      ♀ ✓ PROVEN{year}
     </span>
   );
   return (
     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-green-500 text-white shadow-sm">
-      ✓ Proven
+      ✓ PROVEN{year}
     </span>
   );
 }
@@ -182,13 +188,17 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
               )}
             </>
           ) : (
-            <div className={`w-full h-full flex items-center justify-center ${
-              tortoise.morph && morphColors[tortoise.morph] ? morphColors[tortoise.morph] : "bg-primary/10"
+            <div className={`w-full h-full flex flex-col items-center justify-center gap-1 ${
+              tortoise.gender === "jantan" ? "bg-green-50" :
+              tortoise.gender === "betina" ? "bg-orange-50" :
+              "bg-slate-100"
             }`}>
-              <div className="text-center">
-                <Shell className="w-16 h-16 text-primary/60 mx-auto mb-1" />
-                <span className="text-xs font-medium text-primary/80">{tortoise.name?.charAt(0)}</span>
-              </div>
+              <Shell className={`w-12 h-12 ${
+                tortoise.gender === "jantan" ? "text-green-500" :
+                tortoise.gender === "betina" ? "text-orange-400" :
+                "text-slate-400"
+              }`} />
+              <span className="text-[10px] font-medium text-slate-500">Upload Foto</span>
             </div>
           )}
         </button>
@@ -199,7 +209,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
               {tortoise.name}
             </h3>
             {tortoise.code && <span className="text-xs text-muted-foreground">({tortoise.code})</span>}
-            {tortoise.is_proven && <ProvenBadge gender={tortoise.gender} />}
+            {tortoise.is_proven && <ProvenBadge gender={tortoise.gender} provenYear={tortoise.proven_year} />}
             {activelySick && (
               <span className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-600 text-white animate-pulse">
                 🏥 SAKIT
