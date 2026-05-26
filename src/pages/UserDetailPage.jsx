@@ -22,7 +22,7 @@ import { format, differenceInMonths, differenceInYears, parseISO, startOfMonth, 
 import { id as idLocale } from "date-fns/locale";
 
 // ── helpers ──────────────────────────────────────────────────────────
-const ROLE_EMOJIS = { owner: "👑", manajer: "👔", admin: "🛡️", keeper: "🐢", investor: "💰", kicked: "🚫" };
+const ROLE_EMOJIS = { owner: "👑", manajer: "👔", admin: "🛡️", kepala_feeder: "🧑‍🌾", keeper: "🐢", investor: "👁️", viewer: "👁️", kicked: "🚫" };
 
 function maskIdNumber(val) {
   if (!val || val.length < 6) return val || "—";
@@ -121,11 +121,25 @@ function ChangeRoleDialog({ open, onClose, targetUser, onSaved }) {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="keeper">🐢 Keeper</SelectItem>
+              <SelectItem value="kepala_feeder">🧑‍🌾 Kepala Feeder</SelectItem>
               <SelectItem value="manajer">👔 Manajer</SelectItem>
               <SelectItem value="admin">🛡️ Admin</SelectItem>
               <SelectItem value="owner">👑 Owner</SelectItem>
+              <SelectItem value="investor">👁️ Investor</SelectItem>
             </SelectContent>
           </Select>
+          {role && (
+            <p className="text-xs text-muted-foreground p-2 bg-muted rounded-lg">
+              {{
+                keeper: "Kelola kura-kura & kesehatan. Tidak bisa akses penjualan & keuangan.",
+                kepala_feeder: "Semua akses Keeper + request kas kecil, stok pakan, formulasi pelet.",
+                manajer: "Akses operasional & keuangan penuh. Tidak bisa kelola user.",
+                admin: "Akses penuh seperti Manajer + approve kas kecil. Tidak bisa hapus permanen.",
+                owner: "Akses penuh semua fitur & pengaturan sistem.",
+                investor: "Read-only semua modul. Tidak bisa edit/hapus data apapun.",
+              }[role] || ""}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
             <Button className="flex-1" onClick={handleSave} disabled={saving}>

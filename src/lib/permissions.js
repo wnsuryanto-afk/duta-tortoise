@@ -208,7 +208,7 @@ export function canViewActivityLog(role) {
 
 // Helper: apakah bisa akses Kas Kecil
 export function canAccessPettyCash(role) {
-  return ["owner", "manajer", "kepala_feeder"].includes(role);
+  return ["owner", "admin", "manajer", "kepala_feeder", "investor"].includes(role);
 }
 
 // Helper: apakah bisa hapus (hanya owner)

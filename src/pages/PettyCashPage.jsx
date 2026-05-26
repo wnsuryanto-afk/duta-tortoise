@@ -145,7 +145,9 @@ export default function PettyCashPage() {
   const qc = useQueryClient();
   const { role, user } = useCurrentUser();
 
-  const isOwnerOrManajer = ["owner", "manajer"].includes(role);
+  const isOwnerOrManajer = ["owner", "admin", "manajer"].includes(role);
+  const isInvestor = role === "investor";
+  const isReadOnly = isInvestor;
 
   const { data: pettyCashes = [], isLoading: pcLoading } = useQuery({
     queryKey: ["petty-cash"],
@@ -336,7 +338,7 @@ export default function PettyCashPage() {
                       <p className="text-sm text-muted-foreground mt-1">{req.reason}</p>
                       <p className="text-xs text-muted-foreground mt-1">{req.request_date && format(new Date(req.request_date), "d MMM yyyy", { locale: id })}</p>
                     </div>
-                    {isOwnerOrManajer && (
+                    {isOwnerOrManajer && !isReadOnly && (
                       <div className="flex flex-col gap-1.5">
                         {req.status === "pending" && (
                           <>
