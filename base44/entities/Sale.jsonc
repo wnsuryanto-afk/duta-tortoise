@@ -29,7 +29,13 @@
       "type": "number"
     },
     "hpp": {
-      "type": "number"
+      "type": "number",
+      "description": "HPP = harga modal + shipping_cost"
+    },
+    "shipping_cost": {
+      "type": "number",
+      "default": 0,
+      "description": "Ongkos kirim"
     },
     "dp_amount": {
       "type": "number"
@@ -45,7 +51,7 @@
     },
     "payment_proofs": {
       "type": "array",
-      "description": "Bukti pembayaran (foto transfer, dsb)",
+      "description": "Bukti pembayaran",
       "items": {
         "type": "object",
         "properties": {
@@ -66,28 +72,22 @@
       }
     },
     "total_paid": {
-      "type": "number",
-      "description": "Total sudah dibayar (auto-sum dari payment_proofs)"
+      "type": "number"
     },
     "remaining_balance": {
-      "type": "number",
-      "description": "Sisa pembayaran (price - total_paid)"
+      "type": "number"
     },
     "certificate_number": {
-      "type": "string",
-      "description": "Nomor sertifikat, format: DT/[bln_romawi]/[tahun]/[urut]"
+      "type": "string"
     },
     "certificate_url": {
-      "type": "string",
-      "description": "Link PDF sertifikat yang sudah dicetak"
+      "type": "string"
     },
     "invoice_number": {
-      "type": "string",
-      "description": "Nomor invoice/kwitansi"
+      "type": "string"
     },
     "invoice_url": {
-      "type": "string",
-      "description": "Link PDF invoice yang sudah dicetak"
+      "type": "string"
     },
     "shipping_method": {
       "type": "string",

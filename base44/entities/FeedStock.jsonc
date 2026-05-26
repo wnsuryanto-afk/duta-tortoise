@@ -53,6 +53,24 @@
     "last_restocked_qty": {
       "type": "number"
     },
+    "is_mandatory": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah pakan ini wajib tersedia"
+    },
+    "storage_location": {
+      "type": "string",
+      "enum": [
+        "gudang",
+        "gazebo"
+      ],
+      "default": "gudang",
+      "description": "Lokasi penyimpanan"
+    },
+    "conversion_notes": {
+      "type": "string",
+      "description": "Catatan konversi, cth: 4 keranjang sayur rempes = 1 rokok"
+    },
     "notes": {
       "type": "string"
     }

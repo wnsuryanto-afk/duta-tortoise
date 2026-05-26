@@ -24,7 +24,7 @@ export default function SaleForm({ open, onClose, editData }) {
   const [form, setForm] = useState(editData || {
     tortoise_name: "", tortoise_id: "", buyer_name: "", buyer_phone: "",
     buyer_address: "", sale_date: new Date().toISOString().split("T")[0],
-    price: "", hpp: "", payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
+    price: "", hpp: "", shipping_cost: 0, payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
   });
 
   const handleChange = (field, value) => { setForm((prev) => ({ ...prev, [field]: value })); setErrors(e => ({ ...e, [field]: "" })); };
@@ -45,7 +45,9 @@ export default function SaleForm({ open, onClose, editData }) {
     setForm((prev) => ({ ...prev, tortoise_id: id, tortoise_name: t?.name || "" }));
   };
 
-  const profit = (Number(form.price) || 0) - (Number(form.hpp) || 0);
+  // HPP = modal + shipping_cost
+  const totalHpp = (Number(form.hpp) || 0) + (Number(form.shipping_cost) || 0);
+  const profit = (Number(form.price) || 0) - totalHpp;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,7 +56,8 @@ export default function SaleForm({ open, onClose, editData }) {
     const data = {
       ...form,
       price: form.price ? Number(form.price) : 0,
-      hpp: form.hpp ? Number(form.hpp) : 0,
+      shipping_cost: Number(form.shipping_cost) || 0,
+      hpp: (Number(form.hpp) || 0) + (Number(form.shipping_cost) || 0),
     };
     if (editData?.id) {
       await base44.entities.Sale.update(editData.id, data);
@@ -122,15 +125,19 @@ export default function SaleForm({ open, onClose, editData }) {
             <Label>Alamat Pembeli</Label>
             <Textarea value={form.buyer_address} onChange={(e) => handleChange("buyer_address", e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label>Harga Jual (Rp) <span className="text-red-500">*</span></Label>
-              <Input type="number" value={form.price} onChange={(e) => handleChange("price", e.target.value)} className={errors.price ? "border-red-500" : ""} />
+              <Input type="number" min="0" value={form.price} onChange={(e) => handleChange("price", e.target.value)} className={errors.price ? "border-red-500" : ""} />
               {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>HPP / Modal (Rp)</Label>
-              <Input type="number" value={form.hpp} onChange={(e) => handleChange("hpp", e.target.value)} placeholder="0" />
+              <Input type="number" min="0" value={form.hpp} onChange={(e) => handleChange("hpp", e.target.value)} placeholder="0" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Ongkos Kirim (Rp)</Label>
+              <Input type="number" min="0" value={form.shipping_cost} onChange={(e) => handleChange("shipping_cost", e.target.value)} placeholder="0" />
             </div>
           </div>
           {/* Profit preview */}
@@ -138,10 +145,10 @@ export default function SaleForm({ open, onClose, editData }) {
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${profit >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
               <TrendingUp className="w-4 h-4 flex-shrink-0" />
               <span>
-                <strong>Profit: Rp {profit.toLocaleString("id-ID")}</strong>
-                {Number(form.hpp) > 0 && Number(form.price) > 0 && (
+                <strong>Margin: Rp {profit.toLocaleString("id-ID")}</strong>
+                {totalHpp > 0 && Number(form.price) > 0 && (
                   <span className="ml-2 text-xs opacity-80">
-                    ({Math.round((profit / Number(form.price)) * 100)}% margin)
+                    ({Math.round((profit / Number(form.price)) * 100)}% · HPP total Rp {totalHpp.toLocaleString("id-ID")})
                   </span>
                 )}
               </span>

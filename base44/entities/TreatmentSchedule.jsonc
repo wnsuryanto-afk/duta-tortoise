@@ -4,7 +4,19 @@
   "properties": {
     "title": {
       "type": "string",
-      "description": "Nama treatment (cth: Mandi, Timbang, Obat Cacing)"
+      "description": "Nama treatment"
+    },
+    "mod_type": {
+      "type": "string",
+      "enum": [
+        "obat",
+        "vitamin",
+        "perawatan_luka",
+        "mandi",
+        "lainnya"
+      ],
+      "default": "lainnya",
+      "description": "Jenis mod treatment"
     },
     "frequency": {
       "type": "string",
@@ -14,22 +26,21 @@
         "bulanan",
         "tahunan"
       ],
-      "default": "mingguan",
-      "description": "Frekuensi treatment"
+      "default": "mingguan"
     },
     "weekly_days": {
       "type": "array",
       "items": {
         "type": "number"
       },
-      "description": "Hari dalam seminggu untuk mingguan (0=Minggu,1=Senin,...6=Sabtu)"
+      "description": "Hari dalam seminggu (0=Minggu)"
     },
     "monthly_dates": {
       "type": "array",
       "items": {
         "type": "number"
       },
-      "description": "Tanggal-tanggal dalam bulan untuk bulanan (1-31)"
+      "description": "Tanggal dalam bulan (1-31)"
     },
     "gender_filter": {
       "type": "string",
@@ -38,27 +49,23 @@
         "jantan",
         "betina"
       ],
-      "default": "semua",
-      "description": "Filter berdasarkan jenis kelamin"
+      "default": "semua"
     },
     "tortoise_ids": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "ID kura-kura yang dijadwalkan (kosong = semua)"
+      }
     },
     "tortoise_names": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Nama kura-kura"
+      }
     },
     "apply_to_all": {
       "type": "boolean",
-      "default": false,
-      "description": "Berlaku untuk semua kura-kura"
+      "default": false
     },
     "is_active": {
       "type": "boolean",
@@ -68,8 +75,7 @@
       "type": "string"
     },
     "sop_task_title": {
-      "type": "string",
-      "description": "Judul SOP task yang terhubung (auto-insert)"
+      "type": "string"
     }
   },
   "required": [

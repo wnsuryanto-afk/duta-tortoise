@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Thermometer, Droplets, Plus, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Thermometer, Droplets, Plus, AlertTriangle, CheckCircle2, Settings, Wifi, WifiOff } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -42,10 +42,10 @@ function ReadingForm({ incubators, user, onClose }) {
     const temp = Number(form.temperature_actual);
     const hum = Number(form.humidity_actual);
     if (!selectedInc || !temp || !hum) return "normal";
-    if (temp > (selectedInc.temp_max_alarm || 33)) return "suhu_tinggi";
-    if (temp < (selectedInc.temp_min_alarm || 28)) return "suhu_rendah";
-    if (hum > (selectedInc.humidity_max_alarm || 90)) return "humidity_tinggi";
-    if (hum < (selectedInc.humidity_min_alarm || 70)) return "humidity_rendah";
+    if (temp > (selectedInc.temp_max_alarm ?? 32)) return "suhu_tinggi";
+    if (temp < (selectedInc.temp_min_alarm ?? 31)) return "suhu_rendah";
+    if (hum > (selectedInc.humidity_max_alarm ?? 90)) return "humidity_tinggi";
+    if (hum < (selectedInc.humidity_min_alarm ?? 70)) return "humidity_rendah";
     return "normal";
   };
 
@@ -92,7 +92,7 @@ function ReadingForm({ incubators, user, onClose }) {
       {selectedInc && (
         <div className="p-3 bg-muted/30 rounded-xl text-xs text-muted-foreground">
           Target: Suhu {selectedInc.temp_setting || "—"}°C · Kelembapan {selectedInc.humidity_setting || "—"}%
-          &nbsp;|&nbsp; Alarm: {selectedInc.temp_min_alarm || 28}–{selectedInc.temp_max_alarm || 33}°C, {selectedInc.humidity_min_alarm || 70}–{selectedInc.humidity_max_alarm || 90}%
+          &nbsp;|&nbsp; Alarm: {selectedInc.temp_min_alarm ?? 31}–{selectedInc.temp_max_alarm ?? 32}°C, {selectedInc.humidity_min_alarm ?? 70}–{selectedInc.humidity_max_alarm ?? 90}%
         </div>
       )}
 

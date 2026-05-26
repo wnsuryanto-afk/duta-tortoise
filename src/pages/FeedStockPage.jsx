@@ -65,6 +65,9 @@ const EMPTY_FORM = {
   minimum_stock: 1,
   price_per_unit: 0,
   daily_ideal: 0,
+  is_mandatory: false,
+  storage_location: "gudang",
+  conversion_notes: "",
   notes: "",
 };
 
@@ -96,6 +99,8 @@ export default function FeedStockPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [mandatoryFilter, setMandatoryFilter] = useState("semua"); // "semua" | "wajib" | "biasa"
+  const [locationFilter, setLocationFilter] = useState("semua"); // "semua" | "gudang" | "gazebo"
   const [adjustDialog, setAdjustDialog] = useState(null);
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustType, setAdjustType] = useState("add");
@@ -192,8 +197,15 @@ export default function FeedStockPage() {
     setSeeding(false);
   };
 
-  const lowCount = stocks.filter((s) => s.current_stock <= s.minimum_stock).length;
-  const totalValue = stocks.reduce((sum, s) => sum + ((s.price_per_unit || 0) * (s.current_stock || 0)), 0);
+  const displayStocks = stocks.filter(s => {
+    const matchMandatory = mandatoryFilter === "semua" || (mandatoryFilter === "wajib" ? s.is_mandatory : !s.is_mandatory);
+    const matchLocation = locationFilter === "semua" || (s.storage_location || "gudang") === locationFilter;
+    return matchMandatory && matchLocation;
+  });
+
+  const mandatoryCritical = stocks.filter(s => s.is_mandatory && s.current_stock <= s.minimum_stock).length;
+  const lowCount = displayStocks.filter((s) => s.current_stock <= s.minimum_stock).length;
+  const totalValue = displayStocks.reduce((sum, s) => sum + ((s.price_per_unit || 0) * (s.current_stock || 0)), 0);
 
   return (
     <div className="space-y-6">
@@ -214,6 +226,32 @@ export default function FeedStockPage() {
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex rounded-lg border overflow-hidden h-9 text-xs">
+          {[["semua","Semua"],["wajib","⚠️ Wajib"],["biasa","Biasa"]].map(([v,l]) => (
+            <button key={v} onClick={() => setMandatoryFilter(v)}
+              className={`px-3 font-medium transition-colors ${mandatoryFilter===v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+        <div className="flex rounded-lg border overflow-hidden h-9 text-xs">
+          {[["semua","Semua Lokasi"],["gudang","🏪 Gudang"],["gazebo","⛺ Gazebo"]].map(([v,l]) => (
+            <button key={v} onClick={() => setLocationFilter(v)}
+              className={`px-3 font-medium transition-colors ${locationFilter===v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+        {mandatoryCritical > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium border border-red-300">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {mandatoryCritical} pakan WAJIB stok kritis!
+          </div>
+        )}
       </div>
 
       {/* Summary */}
@@ -271,17 +309,25 @@ export default function FeedStockPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {stocks.map((s) => {
+          {displayStocks.map((s) => {
             const isLow = s.current_stock <= s.minimum_stock;
+            const isMandatoryCritical = s.is_mandatory && isLow;
             const stockValue = (s.price_per_unit || 0) * (s.current_stock || 0);
             return (
-              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow ${isLow ? "border-orange-300 bg-orange-50/30" : ""}`}>
+              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow ${isMandatoryCritical ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-semibold text-sm">{s.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {CATEGORIES.find((c) => c.value === s.category)?.label || s.category}
-                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      <span className="text-xs text-muted-foreground">{CATEGORIES.find((c) => c.value === s.category)?.label || s.category}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${(s.storage_location||"gudang")==="gudang" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>
+                        {(s.storage_location||"gudang")==="gudang" ? "🏪 Gudang" : "⛺ Gazebo"}
+                      </span>
+                      {s.is_mandatory && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠️ Wajib</span>
+                      )}
+                    </div>
+                    {s.conversion_notes && <p className="text-[10px] text-primary italic mt-0.5">{s.conversion_notes}</p>}
                   </div>
                   <StockStatusBadge stock={s} />
                 </div>
@@ -429,8 +475,31 @@ export default function FeedStockPage() {
                   placeholder="0" />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1 block">Lokasi Simpan</Label>
+                <Select value={form.storage_location || "gudang"} onValueChange={(v) => setForm({ ...form, storage_location: v })}>
+                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gudang">🏪 Gudang</SelectItem>
+                    <SelectItem value="gazebo">⛺ Gazebo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 pt-5">
+                <input type="checkbox" id="is_mandatory" checked={!!form.is_mandatory}
+                  onChange={(e) => setForm({ ...form, is_mandatory: e.target.checked })}
+                  className="w-4 h-4 accent-primary" />
+                <Label htmlFor="is_mandatory" className="text-xs cursor-pointer">⚠️ Pakan Wajib</Label>
+              </div>
+            </div>
             <div>
-              <Label className="text-xs mb-1 block">Catatan (opsional)</Label>
+              <Label className="text-xs mb-1 block">Catatan Konversi</Label>
+              <Input value={form.conversion_notes} onChange={(e) => setForm({ ...form, conversion_notes: e.target.value })}
+                placeholder="cth: 4 keranjang sayur = 1 rokok" />
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">Catatan Lainnya</Label>
               <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 placeholder="cth: beli dari Pak Budi" />
             </div>

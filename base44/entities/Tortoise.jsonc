@@ -67,16 +67,14 @@
         "import",
         "tidak_diketahui"
       ],
-      "default": "tidak_diketahui",
-      "description": "Asal usul kura-kura: CB, WC, F1, F2, LTC, dsb"
+      "default": "tidak_diketahui"
     },
     "is_proven": {
       "type": "boolean",
       "default": false
     },
     "proven_year": {
-      "type": "number",
-      "description": "Tahun pertama kali proven"
+      "type": "number"
     },
     "birth_date": {
       "type": "string",
@@ -98,6 +96,24 @@
     "shell_length_cm": {
       "type": "number"
     },
+    "age_category": {
+      "type": "string",
+      "enum": [
+        "baby",
+        "juvenile",
+        "dewasa"
+      ],
+      "description": "Kategori umur: baby (0-12 bln), juvenile (1-3 thn), dewasa (>3 thn). Auto-calculated dari birth_date."
+    },
+    "last_weighed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir ditimbang"
+    },
+    "weighing_interval_days": {
+      "type": "number",
+      "description": "Interval timbang: baby=14, juvenile=30, dewasa=90"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -112,8 +128,7 @@
       "default": "aktif"
     },
     "previous_status": {
-      "type": "string",
-      "description": "Status sebelumnya"
+      "type": "string"
     },
     "is_currently_sick": {
       "type": "boolean",

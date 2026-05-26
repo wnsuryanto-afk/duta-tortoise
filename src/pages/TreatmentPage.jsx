@@ -74,6 +74,9 @@ export default function TreatmentPage() {
 
   const [tab, setTab] = useState("jadwal");
   const [freqFilter, setFreqFilter] = useState("semua");
+  const [modFilter, setModFilter] = useState("semua");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [tortoiseFilter, setTortoiseFilter] = useState("semua");
   const [filterMode, setFilterMode] = useState("kura"); // "kura" | "kandang"
   const [showForm, setShowForm] = useState(false);
@@ -90,7 +93,7 @@ export default function TreatmentPage() {
   });
 
   const EMPTY_FORM = {
-    title: "", frequency: "mingguan", apply_to_all: true,
+    title: "", frequency: "mingguan", mod_type: "lainnya", apply_to_all: true,
     gender_filter: "semua", tortoise_ids: [], tortoise_names: [],
     weekly_days: [], monthly_dates: [], deadline_time: "", notes: "",
   };
@@ -99,7 +102,7 @@ export default function TreatmentPage() {
   const openForm = (s = null) => {
     setEditData(s);
     setForm(s ? {
-      title: s.title, frequency: s.frequency,
+      title: s.title, frequency: s.frequency, mod_type: s.mod_type || "lainnya",
       apply_to_all: s.apply_to_all ?? true,
       gender_filter: s.gender_filter || "semua",
       tortoise_ids: s.tortoise_ids || [],
@@ -236,6 +239,7 @@ export default function TreatmentPage() {
 
   const filtered = schedules.filter(s => {
     const matchFreq = freqFilter === "semua" || s.frequency === freqFilter;
+    const matchMod = modFilter === "semua" || (s.mod_type || "lainnya") === modFilter;
     let matchTortoise = true;
     if (tortoiseFilter && tortoiseFilter !== "semua") {
       if (filterMode === "kura") {
@@ -244,7 +248,15 @@ export default function TreatmentPage() {
         matchTortoise = getTargetTortoises(s).some(t => t.enclosure === tortoiseFilter);
       }
     }
-    return matchFreq && matchTortoise;
+    return matchFreq && matchMod && matchTortoise;
+  });
+
+  const filteredLogs = logs.filter(l => {
+    if (!dateFrom && !dateTo) return true;
+    const d = l.done_date || "";
+    if (dateFrom && d < dateFrom) return false;
+    if (dateTo && d > dateTo) return false;
+    return true;
   });
   const formTortoises = form.gender_filter !== "semua" ? tortoises.filter(t => t.gender === form.gender_filter) : tortoises;
   const pendingRemindersCount = reminders.filter(r => !r.is_done).length;
@@ -284,6 +296,15 @@ export default function TreatmentPage() {
                 <button key={f} onClick={() => setFreqFilter(f)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${freqFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
                   {f === "semua" ? "Semua Frekuensi" : FREQ_LABELS[f]}
+                </button>
+              ))}
+            </div>
+            {/* Filter Jenis Mod */}
+            <div className="flex flex-wrap gap-1.5">
+              {[["semua","Semua Mod"],["obat","💊 Obat"],["vitamin","🌿 Vitamin"],["perawatan_luka","🩹 Perawatan Luka"],["mandi","🛁 Mandi"],["lainnya","Lainnya"]].map(([v,l]) => (
+                <button key={v} onClick={() => setModFilter(v)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${modFilter === v ? "bg-accent text-accent-foreground border-accent" : "bg-background border-border hover:bg-muted"}`}>
+                  {l}
                 </button>
               ))}
             </div>
@@ -467,11 +488,20 @@ export default function TreatmentPage() {
         </TabsContent>
 
         {/* ── Tab Log Treatment ── */}
-        <TabsContent value="log" className="mt-4 space-y-2">
-          {logs.length === 0 ? (
+        <TabsContent value="log" className="mt-4 space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Label className="text-xs text-muted-foreground">Pilih Hari:</Label>
+            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-8 text-xs" />
+            <span className="text-xs text-muted-foreground">s/d</span>
+            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-8 text-xs" />
+            {(dateFrom || dateTo) && (
+              <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-xs text-muted-foreground hover:text-foreground underline">Reset</button>
+            )}
+          </div>
+          {filteredLogs.length === 0 ? (
             <p className="text-center py-10 text-muted-foreground text-sm">Belum ada log treatment</p>
           ) : (
-            logs.slice(0, 100).map(l => (
+            filteredLogs.slice(0, 100).map(l => (
               <Card key={l.id} className="p-3 flex items-center gap-3">
                 <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -493,6 +523,19 @@ export default function TreatmentPage() {
             <div>
               <Label className="text-xs">Nama Treatment *</Label>
               <Input value={form.title} onChange={e => setForm(p=>({...p,title:e.target.value}))} placeholder="cth: Mandi rutin, Obat cacing, Timbang" required className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Jenis Mod</Label>
+              <Select value={form.mod_type || "lainnya"} onValueChange={v => setForm(p=>({...p,mod_type:v}))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="obat">💊 Obat</SelectItem>
+                  <SelectItem value="vitamin">🌿 Vitamin</SelectItem>
+                  <SelectItem value="perawatan_luka">🩹 Perawatan Luka</SelectItem>
+                  <SelectItem value="mandi">🛁 Mandi</SelectItem>
+                  <SelectItem value="lainnya">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="text-xs">Frekuensi</Label>

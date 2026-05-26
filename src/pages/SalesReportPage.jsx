@@ -74,6 +74,7 @@ export default function SalesReportPage() {
   const totalOmzet = filtered.reduce((s,i) => s + (i.price||0), 0);
   const totalProfit = filtered.reduce((s,i) => s + ((i.price||0)-(i.hpp||0)), 0);
   const totalHPP = filtered.reduce((s,i) => s + (i.hpp||0), 0);
+  const totalOngkir = filtered.reduce((s,i) => s + (i.shipping_cost||0), 0);
 
   const years = Array.from({length:5},(_,i)=>String(currentYear-i));
 
@@ -100,12 +101,13 @@ export default function SalesReportPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Total Penjualan", val: filtered.length, icon: Package, color: "text-primary", sub: "transaksi" },
           { label: "Total Omzet", val: `Rp ${fmt(totalOmzet)}`, icon: DollarSign, color: "text-primary" },
-          { label: "Total Modal", val: `Rp ${fmt(totalHPP)}`, icon: TrendingUp, color: "text-amber-600" },
-          { label: "Total Profit", val: `Rp ${fmt(totalProfit)}`, icon: TrendingUp, color: totalProfit>=0?"text-green-600":"text-red-600" },
+          { label: "Total HPP+Ongkir", val: `Rp ${fmt(totalHPP)}`, icon: TrendingUp, color: "text-amber-600" },
+          { label: "Ongkir", val: `Rp ${fmt(totalOngkir)}`, icon: TrendingUp, color: "text-blue-600" },
+          { label: "Margin Bersih", val: `Rp ${fmt(totalProfit)}`, icon: TrendingUp, color: totalProfit>=0?"text-green-600":"text-red-600" },
         ].map(item => (
           <Card key={item.label}>
             <CardContent className="p-4">
@@ -199,23 +201,30 @@ export default function SalesReportPage() {
                 <th className="text-left py-2 pr-3">Tortoise</th>
                 <th className="text-left py-2 pr-3">Pembeli</th>
                 <th className="text-left py-2 pr-3">Platform</th>
-                <th className="text-right py-2 pr-3">Harga</th>
-                <th className="text-right py-2">Profit</th>
+                <th className="text-right py-2 pr-3">Harga Jual</th>
+                <th className="text-right py-2 pr-3">Ongkir</th>
+                <th className="text-right py-2 pr-3">HPP</th>
+                <th className="text-right py-2">Margin Bersih</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(s => (
+              {filtered.map(s => {
+                const margin = (s.price||0) - (s.hpp||0);
+                return (
                 <tr key={s.id} className="border-b hover:bg-muted/30">
                   <td className="py-2 pr-3 whitespace-nowrap">{s.sale_date ? format(new Date(s.sale_date),"d MMM yy",{locale:id}) : "-"}</td>
                   <td className="py-2 pr-3 font-medium">{s.tortoise_name}</td>
                   <td className="py-2 pr-3">{s.buyer_name}</td>
                   <td className="py-2 pr-3"><Badge variant="outline" className="text-xs">{s.platform||"-"}</Badge></td>
                   <td className="py-2 pr-3 text-right">Rp {(s.price||0).toLocaleString("id-ID")}</td>
-                  <td className={`py-2 text-right font-medium ${((s.price||0)-(s.hpp||0))>=0?"text-green-600":"text-red-600"}`}>
-                    Rp {((s.price||0)-(s.hpp||0)).toLocaleString("id-ID")}
+                  <td className="py-2 pr-3 text-right text-muted-foreground">{s.shipping_cost ? `Rp ${(s.shipping_cost).toLocaleString("id-ID")}` : "-"}</td>
+                  <td className="py-2 pr-3 text-right text-amber-700">{s.hpp ? `Rp ${(s.hpp).toLocaleString("id-ID")}` : "-"}</td>
+                  <td className={`py-2 text-right font-medium ${margin>=0?"text-green-600":"text-red-600"}`}>
+                    Rp {margin.toLocaleString("id-ID")}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">Tidak ada transaksi</p>}

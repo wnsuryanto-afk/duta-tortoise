@@ -28,6 +28,25 @@
       "type": "string",
       "format": "date-time",
       "description": "Terakhir login"
+    },
+    "salary_type": {
+      "type": "string",
+      "enum": [
+        "mingguan",
+        "bulanan"
+      ],
+      "default": "bulanan",
+      "description": "Tipe pembayaran gaji"
+    },
+    "theme_preference": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light",
+        "auto"
+      ],
+      "default": "auto",
+      "description": "Preferensi tema tampilan"
     }
   },
   "required": [
