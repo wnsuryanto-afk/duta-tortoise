@@ -183,28 +183,43 @@ export default function DeathRecordsPage() {
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Memuat data...</div>
           ) : deathRecords.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Belum ada catatan kematian</div>
+            <div className="text-center py-8 text-muted-foreground">
+              <Skull className="w-10 h-10 mx-auto mb-3 opacity-20" />
+              <p>Belum ada catatan kematian tortoise</p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {deathRecords.map((record) => (
-                <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-black/10 flex items-center justify-center">
-                      <Skull className="w-6 h-6 text-black/50" />
-                    </div>
-                    <div>
-                      <div className="font-semibold">{record.tortoise_name}</div>
+              {deathRecords.map((record) => {
+                const tort = tortoises.find(t => t.id === record.tortoise_id);
+                const lastPhoto = tort?.photos?.slice(-1)[0]?.url || record.photo_urls?.[0];
+                return (
+                <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 gap-4">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    {lastPhoto ? (
+                      <img src={lastPhoto} alt={record.tortoise_name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
+                        <Skull className="w-7 h-7 text-black/40" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">{record.tortoise_name}</span>
+                        {tort?.code && <span className="text-xs text-muted-foreground">({tort.code})</span>}
+                        <Badge variant="destructive" className="text-xs">Mati</Badge>
+                        {record.necropsy_done && <Badge variant="outline" className="text-xs">Autopsi</Badge>}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {format(new Date(record.death_date), "dd MMMM yyyy", { locale: id })}
-                        {" • "}{causeLabels[record.cause_of_death]}
-                        {record.necropsy_done && <Badge className="ml-2">Autopsi</Badge>}
+                        {" · "}{causeLabels[record.cause_of_death] || record.cause_of_death}
                       </div>
+                      {tort?.enclosure && <div className="text-xs text-muted-foreground">Kandang terakhir: {tort.enclosure}</div>}
                       {record.cause_detail && (
-                        <div className="text-xs text-muted-foreground mt-1">{record.cause_detail}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{record.cause_detail}</div>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -214,8 +229,10 @@ export default function DeathRecordsPage() {
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
+          </div>
           )}
         </CardContent>
       </Card>

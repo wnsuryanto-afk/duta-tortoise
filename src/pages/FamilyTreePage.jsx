@@ -187,12 +187,14 @@ export default function FamilyTreePage() {
     return ids;
   }, [tortoises]);
 
-  // Hanya tampilkan kura-kura hasil_sendiri di panel kiri (silsilah hanya untuk farm sendiri)
+  // FILTER KETAT: hanya kura CBB (hasil_sendiri + KEDUANYA parent_male DAN parent_female terisi)
   const filteredList = useMemo(() => {
     const q = search.toLowerCase();
     return tortoises
       .filter((t) =>
         t.source === "hasil_sendiri" &&
+        t.parent_male && t.parent_male.trim() !== "" &&
+        t.parent_female && t.parent_female.trim() !== "" &&
         (t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q))
       )
       .slice(0, 80);
@@ -219,9 +221,7 @@ export default function FamilyTreePage() {
           <GitBranch className="w-6 h-6 text-primary" /> Silsilah Kura-Kura
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Hanya menampilkan kura-kura hasil penetasan farm Duta Tortoise (<strong>hasil_sendiri</strong>).<br/>
-          🐣 <strong>CBB</strong> = hasil_sendiri + parent lengkap (silsilah 3 generasi) &nbsp;|&nbsp;
-          🌱 <strong>CB</strong> = hasil_sendiri, parent belum lengkap
+          Menampilkan kura hasil penangkaran Duta Tortoise dengan data silsilah lengkap
         </p>
       </div>
 
@@ -256,19 +256,25 @@ export default function FamilyTreePage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{t.name}</p>
                     <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                      <span className={`text-[10px] px-1.5 rounded-md ${GENDER_COLOR[t.gender] || GENDER_COLOR.belum_diketahui}`}>
-                        {GENDER_LABEL[t.gender]}
-                      </span>
-                      <PedigreeBadge tortoise={t} tortoiseMap={tortoiseMap} />
-                      {parentIds.has(t.id) && (
-                        <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 rounded-md">Induk</span>
-                      )}
+                    <span className={`text-[10px] px-1.5 rounded-md ${GENDER_COLOR[t.gender] || GENDER_COLOR.belum_diketahui}`}>
+                      {GENDER_LABEL[t.gender]}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-bold bg-amber-100 text-amber-800 border-amber-300">🐣 CBB</span>
+                    {parentIds.has(t.id) && (
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 rounded-md">Induk</span>
+                    )}
                     </div>
                   </div>
                 </button>
               ))}
               {filteredList.length === 0 && (
-                <p className="text-center text-sm text-muted-foreground py-8">Tidak ditemukan</p>
+                <div className="text-center py-8 px-3">
+                  {search ? (
+                    <p className="text-sm text-muted-foreground">Tidak ditemukan</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Belum ada kura CBB. Silsilah akan muncul otomatis setelah anakan hasil breeding memiliki data induk lengkap.</p>
+                  )}
+                </div>
               )}
             </div>
           )}

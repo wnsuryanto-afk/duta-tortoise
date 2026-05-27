@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical } from "lucide-react";
+import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
 import { format, differenceInDays, parseISO, addDays } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
@@ -218,182 +219,152 @@ export default function BreedingAndEggs() {
                   ? "border-yellow-400 bg-yellow-50"
                   : "border-border";
 
+                // Countdown display logic
+                const countdownDays = active && daysToStart !== null ? daysToStart : null;
+                const countdownColor = countdownDays === null ? "" :
+                  isOverdue || inHatchRange ? "text-red-600" :
+                  isH7 ? "text-red-600" :
+                  isH30 ? "text-orange-500" : "text-green-600";
+                const countdownAnimate = (isH7 || inHatchRange) && active ? "animate-pulse" : "";
+
                 return (
-                  <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow group ${cardClass}`}>
-                    {b.photos?.length > 0 && (
-                      <div className="flex gap-1.5 mb-3 overflow-x-auto">
-                        {b.photos.slice(0, 4).map((p, i) => (
-                          <img key={i} src={p.url} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0 border" />
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-sm">{b.male_name} × {b.female_name}</h3>
+                  <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow ${cardClass}`}>
+                    {/* Baris 1: Foto | Nama pasangan | Badge status | ⋮ */}
+                    <div className="flex items-start gap-3">
+                      {b.photos?.length > 0 && (
+                        <img src={b.photos[0].url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h3 className="font-semibold text-sm">{b.male_name} × {b.female_name}</h3>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <Badge variant="outline" className={`text-[11px] capitalize ${statusColors[b.status] || ""}`}>
+                                {b.status}
+                              </Badge>
+                              {isMenetas && <Badge className="text-[11px] bg-green-600 text-white">✅ Menetas</Badge>}
+                              {isGagal && <Badge className="text-[11px] bg-gray-500 text-white">❌ Gagal</Badge>}
+                              {active && isOverdue && <Badge className="text-[11px] bg-gray-800 text-white animate-pulse">⚠️ CEK SEKARANG</Badge>}
+                              {active && inHatchRange && <Badge className="text-[11px] bg-red-600 text-white animate-pulse">🚨 MASA PENETASAN</Badge>}
+                            </div>
+                          </div>
+                          <BreedingCardMenu
+                            canEdit={perms.canEdit}
+                            canDelete={perms.canDelete}
+                            onEdit={() => { setEditData(b); setShowForm(true); }}
+                            onDelete={() => handleDelete(b)}
+                            onHatch={() => setHatchBreeding(b)}
+                          />
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <Badge variant="outline" className={`text-[11px] capitalize ${statusColors[b.status] || ""}`}>
-                            {b.status}
-                          </Badge>
-                          
-                          {isMenetas && (
-                            <Badge className="text-[11px] bg-green-600 text-white border-green-700 font-semibold">
-                              ✅ Sudah menetas
-                            </Badge>
-                          )}
-                          {isGagal && (
-                            <Badge className="text-[11px] bg-gray-500 text-white border-gray-600 font-semibold">
-                              ❌ Gagal menetas
-                            </Badge>
-                          )}
-                          {active && isOverdue && (
-                            <Badge className="text-[11px] bg-gray-800 text-white border-gray-900 font-bold px-3 py-1">
-                              ⚠️ MELEWATI ESTIMASI - CEK SEKARANG
-                            </Badge>
-                          )}
-                          {active && inHatchRange && dayInHatchRange && (
-                            <Badge className="text-[11px] bg-white text-red-700 border-red-200 font-bold px-3 py-1">
-                              🚨 DALAM MASA PENETASAN! Hari ke-{dayInHatchRange} — Siapkan kandang baby!
-                            </Badge>
-                          )}
-                          {active && isH7 && (
-                            <Badge className="text-[11px] bg-red-600 text-white border-red-700 font-bold px-3 py-1 animate-pulse">
-                              🔴 H-{daysToStart} HARI LAGI! Persiapkan kandang baby
-                            </Badge>
-                          )}
-                          {active && isH30 && !isH7 && (
-                            <Badge className="text-[11px] bg-yellow-500 text-white border-yellow-600 font-semibold px-3 py-1">
-                              ⏰ {daysToStart} hari lagi
-                            </Badge>
-                          )}
-                          {active && beforeRange && daysToStart > 30 && (
-                            <Badge className="text-[11px] bg-green-100 text-green-800 border-green-300 font-medium px-3 py-1">
-                              🥚 {daysToStart} hari lagi
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {perms.canEdit && b.status !== "menetas" && b.status !== "gagal" && (
-                          <Button
-                            variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                            title="Tandai Menetas"
-                            onClick={() => setHatchBreeding(b)}
-                          >
-                            <Egg className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {perms.canEdit && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(b); setShowForm(true); }}>
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {perms.canDelete && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(b)}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-xs">
-                      {b.egg_laying_date && (
-                        <div>
-                          <p className="text-muted-foreground">Bertelur</p>
-                          <p className="font-medium">{format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</p>
-                        </div>
-                      )}
-                      {b.egg_count > 0 && (
-                        <div>
-                          <p className="text-muted-foreground">Telur</p>
-                          <p className="font-medium">{b.egg_count} butir</p>
-                        </div>
-                      )}
-                      {(b.estimated_hatch_date_start || b.estimated_hatch_date_end || b.estimated_hatch_date) && (
-                        <div className="col-span-2">
-                          <p className="text-muted-foreground">Perkiraan Menetas</p>
-                          <p className={`font-medium text-xs ${inHatchRange ? "text-green-700" : ""}`}>
-                            {b.estimated_hatch_date_start
-                              ? `${format(new Date(b.estimated_hatch_date_start), "d MMM", { locale: id })} s/d ${b.estimated_hatch_date_end ? format(new Date(b.estimated_hatch_date_end), "d MMM yyyy", { locale: id }) : "-"}`
-                              : b.estimated_hatch_date ? format(new Date(b.estimated_hatch_date), "d MMM yyyy", { locale: id }) : "-"
-                            }
-                          </p>
-                        </div>
-                      )}
-                      {b.incubator_name && (
-                        <div>
-                          <p className="text-muted-foreground">Inkubator</p>
-                          <p className="font-medium">{b.incubator_name}</p>
-                        </div>
-                      )}
-                      {b.status === "inkubasi" && daysToStart !== null && daysToStart > 0 && (
-                        <div className="col-span-2">
-                          <div className={`p-3 rounded-lg border-2 ${
-                            daysToStart <= 7 
-                              ? "bg-red-50 border-red-300" 
-                              : "bg-blue-50 border-blue-200"
-                          }`}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-red-600" : "text-blue-600"}`} />
-                                <span className="text-xs font-semibold">Menetas dalam</span>
-                              </div>
-                              <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-red-700" : "text-blue-700"}`}>
-                                {daysToStart} hari
-                              </span>
-                            </div>
+                    {/* Baris 2+3: Detail + COUNTDOWN BESAR */}
+                    <div className="flex gap-4 mt-4">
+                      {/* Info kiri */}
+                      <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                        {b.egg_laying_date && (
+                          <div>
+                            <p className="text-muted-foreground">Bertelur</p>
+                            <p className="font-medium">{format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</p>
                           </div>
-                        </div>
-                      )}
-                      {b.status === "menetas" && b.hatched_count > 0 && (
-                        <div>
-                          <p className="text-muted-foreground">Menetas</p>
-                          <p className="font-medium text-primary">{b.hatched_count} ekor 🐢</p>
-                        </div>
-                      )}
-                      {b.status === "menetas" && b.failed_count > 0 && (
-                        <div>
-                          <p className="text-muted-foreground">Gagal</p>
-                          <p className="font-medium text-destructive">{b.failed_count} butir ❌</p>
-                        </div>
-                      )}
-                      {b.incubation_temp > 0 && (
-                        <div>
-                          <p className="text-muted-foreground">Suhu</p>
-                          <p className="font-medium">{b.incubation_temp}°C</p>
-                        </div>
-                      )}
-                      {b.hatch_date && b.status === "menetas" && (
-                        <div>
-                          <p className="text-muted-foreground">Tgl Menetas</p>
-                          <p className="font-medium">{format(new Date(b.hatch_date), "d MMM yyyy", { locale: id })}</p>
+                        )}
+                        {b.egg_count > 0 && (
+                          <div>
+                            <p className="text-muted-foreground">Telur</p>
+                            <p className="font-medium">{b.egg_count} butir</p>
+                          </div>
+                        )}
+                        {(b.estimated_hatch_date_start || b.estimated_hatch_date_end || b.estimated_hatch_date) && (
+                          <div className="col-span-2">
+                            <p className="text-muted-foreground">Perkiraan Menetas</p>
+                            <p className={`font-medium ${inHatchRange ? "text-green-700" : ""}`}>
+                              {b.estimated_hatch_date_start
+                                ? `${format(new Date(b.estimated_hatch_date_start), "d MMM", { locale: id })} – ${b.estimated_hatch_date_end ? format(new Date(b.estimated_hatch_date_end), "d MMM yyyy", { locale: id }) : "-"}`
+                                : b.estimated_hatch_date ? format(new Date(b.estimated_hatch_date), "d MMM yyyy", { locale: id }) : "-"
+                              }
+                            </p>
+                          </div>
+                        )}
+                        {b.incubator_name && (
+                          <div>
+                            <p className="text-muted-foreground">Inkubator</p>
+                            <p className="font-medium">{b.incubator_name}</p>
+                          </div>
+                        )}
+                        {b.incubation_temp > 0 && (
+                          <div>
+                            <p className="text-muted-foreground">Suhu</p>
+                            <p className="font-medium">{b.incubation_temp}°C</p>
+                          </div>
+                        )}
+                        {b.status === "menetas" && b.hatched_count > 0 && (
+                          <div>
+                            <p className="text-muted-foreground">Menetas</p>
+                            <p className="font-medium text-primary">{b.hatched_count} ekor 🐢</p>
+                          </div>
+                        )}
+                        {b.status === "menetas" && b.failed_count > 0 && (
+                          <div>
+                            <p className="text-muted-foreground">Gagal</p>
+                            <p className="font-medium text-destructive">{b.failed_count} butir ❌</p>
+                          </div>
+                        )}
+                        {b.hatch_date && b.status === "menetas" && (
+                          <div>
+                            <p className="text-muted-foreground">Tgl Menetas</p>
+                            <p className="font-medium">{format(new Date(b.hatch_date), "d MMM yyyy", { locale: id })}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* COUNTDOWN BESAR (kanan) */}
+                      {active && (
+                        <div className="flex-shrink-0 flex flex-col items-center justify-center text-center min-w-[80px]">
+                          {isOverdue ? (
+                            <div className="text-red-600 animate-pulse text-center">
+                              <div className="text-xs font-semibold">Segera</div>
+                              <div className="text-2xl font-black">Cek!</div>
+                            </div>
+                          ) : inHatchRange ? (
+                            <div className="text-red-600 animate-pulse text-center">
+                              <div className="text-[28px] font-black leading-none">🚨</div>
+                              <div className="text-xs font-bold mt-0.5">Menetas!</div>
+                            </div>
+                          ) : countdownDays !== null ? (
+                            <div className={`text-center ${countdownAnimate}`}>
+                              <div className={`font-black leading-none ${countdownColor}`} style={{ fontSize: "2.2rem" }}>
+                                {countdownDays}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground font-medium mt-0.5 leading-tight">hari menuju<br/>menetas</div>
+                            </div>
+                          ) : (
+                            <div className="text-center text-muted-foreground text-xs">—</div>
+                          )}
                         </div>
                       )}
                     </div>
                     {/* Progress Bar Inkubasi */}
                     {b.status === "inkubasi" && b.egg_laying_date && (
-                      <div className="mt-4 space-y-1">
+                      <div className="mt-3 space-y-1">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">Hari ke-{incubationDay} dari 105 hari</span>
                           <span className="font-semibold">{Math.round(incubationProgress)}%</span>
                         </div>
-                        <div className="relative h-3 bg-muted rounded-full overflow-hidden">
-                          {/* Gradient background */}
-                          <div 
+                        <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                          <div
                             className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
                             style={{
                               width: `${incubationProgress}%`,
-                              background: incubationDay < 80 
-                                ? 'linear-gradient(90deg, #22c55e 0%, #84cc16 100%)' 
+                              background: incubationDay < 80
+                                ? 'linear-gradient(90deg, #22c55e 0%, #84cc16 100%)'
                                 : incubationDay < 95
                                 ? 'linear-gradient(90deg, #eab308 0%, #f59e0b 100%)'
                                 : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
                             }}
                           />
-                          {/* Marker range menetas (80-105 hari) */}
-                          <div className="absolute top-0 right-[19%] h-full w-0.5 bg-red-600 opacity-50" title="Mulai range menetas (hari 80)" />
-                          <div className="absolute top-0 right-0 h-full w-0.5 bg-red-600 opacity-50" title="Akhir range menetas (hari 105)" />
+                          <div className="absolute top-0 right-[19%] h-full w-0.5 bg-red-600 opacity-50" />
+                          <div className="absolute top-0 right-0 h-full w-0.5 bg-red-600 opacity-50" />
                         </div>
                         <div className="flex justify-between text-[10px] text-muted-foreground">
                           <span>Bertelur</span>
@@ -401,8 +372,7 @@ export default function BreedingAndEggs() {
                         </div>
                       </div>
                     )}
-
-                    {b.notes && <p className="text-xs text-muted-foreground mt-3 line-clamp-2">{b.notes}</p>}
+                    {b.notes && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{b.notes}</p>}
                   </Card>
                 );
               })}
