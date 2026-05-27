@@ -19,6 +19,52 @@
       ],
       "default": "belum_diketahui"
     },
+    "species": {
+      "type": "string",
+      "enum": [
+        "sulcata",
+        "red_foot",
+        "leopard",
+        "aldabra",
+        "russian",
+        "hermann",
+        "greek",
+        "indian_star",
+        "lainnya"
+      ],
+      "default": "sulcata",
+      "description": "Spesies kura-kura"
+    },
+    "species_params": {
+      "type": "object",
+      "description": "Parameter ideal berdasarkan spesies (auto-fill)",
+      "properties": {
+        "basking_temp_min": {
+          "type": "number"
+        },
+        "basking_temp_max": {
+          "type": "number"
+        },
+        "ambient_temp_min": {
+          "type": "number"
+        },
+        "ambient_temp_max": {
+          "type": "number"
+        },
+        "humidity_min": {
+          "type": "number"
+        },
+        "humidity_max": {
+          "type": "number"
+        },
+        "adult_size_cm": {
+          "type": "number"
+        },
+        "weighing_interval_adult_days": {
+          "type": "number"
+        }
+      }
+    },
     "morph": {
       "type": "string",
       "enum": [

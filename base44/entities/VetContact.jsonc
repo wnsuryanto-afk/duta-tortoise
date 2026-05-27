@@ -10,13 +10,9 @@
       "type": "string",
       "description": "Nama klinik/RS hewan"
     },
-    "phone": {
+    "hp_whatsapp": {
       "type": "string",
-      "description": "Nomor telepon"
-    },
-    "whatsapp": {
-      "type": "string",
-      "description": "Nomor WhatsApp"
+      "description": "Nomor HP/WhatsApp"
     },
     "email": {
       "type": "string",
@@ -71,6 +67,6 @@
   },
   "required": [
     "name",
-    "phone"
+    "hp_whatsapp"
   ]
 }

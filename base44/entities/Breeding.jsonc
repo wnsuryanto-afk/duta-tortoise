@@ -49,12 +49,12 @@
     "estimated_hatch_start": {
       "type": "string",
       "format": "date",
-      "description": "Estimasi mulai menetas (egg_laying_date + 80 hari, auto-calculated)"
+      "description": "Estimasi mulai menetas (egg_laying_date + 80 hari)"
     },
     "estimated_hatch_end": {
       "type": "string",
       "format": "date",
-      "description": "Estimasi selesai menetas (egg_laying_date + 105 hari, auto-calculated)"
+      "description": "Estimasi selesai menetas (egg_laying_date + 105 hari)"
     },
     "estimated_hatch_date": {
       "type": "string",
@@ -85,6 +85,47 @@
     },
     "incubation_humidity": {
       "type": "number"
+    },
+    "egg_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "egg_number": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "belum_dicek",
+              "fertile",
+              "infertil",
+              "menetas",
+              "gagal"
+            ]
+          },
+          "check_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "hatch_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Status tracking per butir telur"
+    },
+    "candling_day_30_done": {
+      "type": "boolean",
+      "default": false
+    },
+    "candling_day_30_date": {
+      "type": "string",
+      "format": "date"
     },
     "candling_notes": {
       "type": "array",

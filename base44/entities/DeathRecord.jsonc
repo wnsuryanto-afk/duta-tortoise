@@ -43,7 +43,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Foto dokumentasi kematian (minimal 1, maksimal 5)"
+      "description": "Foto dokumentasi kematian"
     },
     "photos_count": {
       "type": "number",
@@ -51,7 +51,7 @@
     },
     "video_url": {
       "type": "string",
-      "description": "Video dokumentasi kematian (wajib)"
+      "description": "Video dokumentasi kematian (opsional)"
     },
     "buried_location": {
       "type": "string",
@@ -79,8 +79,6 @@
     "tortoise_name",
     "death_date",
     "cause_of_death",
-    "recorded_by",
-    "photo_urls",
-    "video_url"
+    "recorded_by"
   ]
 }

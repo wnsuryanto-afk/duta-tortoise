@@ -8,11 +8,9 @@
     "contact_person": {
       "type": "string"
     },
-    "phone": {
-      "type": "string"
-    },
-    "whatsapp": {
-      "type": "string"
+    "hp_whatsapp": {
+      "type": "string",
+      "description": "Nomor HP/WhatsApp"
     },
     "address": {
       "type": "string"
@@ -39,6 +37,6 @@
   },
   "required": [
     "name",
-    "phone"
+    "hp_whatsapp"
   ]
 }

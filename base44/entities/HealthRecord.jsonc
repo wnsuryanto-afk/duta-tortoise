@@ -28,13 +28,60 @@
       "default": "checkup",
       "description": "Jenis catatan"
     },
-    "weight_grams": {
-      "type": "number",
-      "description": "Berat saat pemeriksaan (gram)"
+    "diagnosis": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "infeksi_saluran_pernapasan",
+          "rns",
+          "pneumonia",
+          "shell_rot",
+          "pyramiding",
+          "retak_cangkang",
+          "infeksi_jamur_cangkang",
+          "mbd",
+          "hipovitaminosis_a",
+          "gout",
+          "batu_kandung_kemih",
+          "sembelit",
+          "diare",
+          "anorexia",
+          "cacingan",
+          "protozoa",
+          "tungau_kutu",
+          "luka_gigitan",
+          "abses",
+          "infeksi_jamur_kulit",
+          "infeksi_mata",
+          "stomatitis",
+          "abses_telinga",
+          "prolaps",
+          "prolaps_penis",
+          "egg_binding",
+          "edema",
+          "dehidrasi",
+          "heat_stroke",
+          "stres",
+          "checkup_rutin",
+          "lainnya"
+        ]
+      },
+      "description": "Daftar diagnosis (multi-pilih)"
     },
-    "shell_length_cm": {
-      "type": "number",
-      "description": "Panjang cangkang (cm)"
+    "severity": {
+      "type": "string",
+      "enum": [
+        "ringan",
+        "sedang",
+        "berat",
+        "kritis"
+      ],
+      "description": "Tingkat keparahan"
+    },
+    "diagnosis_notes": {
+      "type": "string",
+      "description": "Catatan tambahan per diagnosis"
     },
     "temperature_C": {
       "type": "number",
@@ -58,6 +105,13 @@
         "type": "string"
       },
       "description": "Foto kondisi kesehatan"
+    },
+    "photo_docs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Foto dokumentasi diagnosis"
     },
     "follow_up_date": {
       "type": "string",

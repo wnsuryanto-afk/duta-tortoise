@@ -14,6 +14,27 @@
     "reason": {
       "type": "string"
     },
+    "category": {
+      "type": "string",
+      "enum": [
+        "obat",
+        "vitamin",
+        "pakan",
+        "peralatan_kandang",
+        "transportasi",
+        "lainnya"
+      ],
+      "default": "lainnya"
+    },
+    "need_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal dibutuhkan"
+    },
+    "proof_photo": {
+      "type": "string",
+      "description": "URL foto bukti/nota"
+    },
     "urgency": {
       "type": "string",
       "enum": [

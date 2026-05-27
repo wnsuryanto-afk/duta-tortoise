@@ -5,11 +5,9 @@
     "name": {
       "type": "string"
     },
-    "phone": {
-      "type": "string"
-    },
-    "whatsapp": {
-      "type": "string"
+    "hp_whatsapp": {
+      "type": "string",
+      "description": "Nomor HP/WhatsApp (format 08xxx atau 628xxx)"
     },
     "email": {
       "type": "string"
@@ -77,7 +75,7 @@
   },
   "required": [
     "name",
-    "phone",
+    "hp_whatsapp",
     "platform_asal"
   ]
 }

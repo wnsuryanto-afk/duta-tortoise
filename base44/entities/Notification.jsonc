@@ -14,7 +14,7 @@
         "admin",
         "kepala_feeder",
         "keeper",
-        "viewer",
+        "investor",
         "semua"
       ],
       "description": "Role penerima"

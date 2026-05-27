@@ -13,16 +13,17 @@
       "type": "string",
       "enum": [
         "penjualan_tortoise",
-        "pembelian_barang",
         "gaji_karyawan",
-        "operasional",
-        "listrik",
-        "air",
-        "internet",
-        "sewa",
-        "perawatan_kandang",
+        "obat_perawatan",
+        "vitamin_suplemen",
+        "pakan",
+        "kas_kecil",
         "lainnya"
       ]
+    },
+    "sub_category": {
+      "type": "string",
+      "description": "Detail sub-kategori"
     },
     "amount": {
       "type": "number"

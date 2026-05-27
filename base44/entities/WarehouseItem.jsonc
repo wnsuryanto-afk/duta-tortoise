@@ -51,11 +51,25 @@
       "type": "number",
       "default": 0
     },
+    "is_mandatory": {
+      "type": "boolean",
+      "default": false,
+      "description": "Barang wajib tersedia, ada alert jika stok < minimum"
+    },
     "supplier": {
       "type": "string"
     },
     "location": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "gudang_utama",
+        "gazebo",
+        "lemari_obat",
+        "kulkas",
+        "rak_vitamin",
+        "gudang_alat"
+      ],
+      "default": "gudang_utama"
     },
     "expired_date": {
       "type": "string",
