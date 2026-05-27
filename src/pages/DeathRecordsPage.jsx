@@ -232,7 +232,6 @@ export default function DeathRecordsPage() {
                 );
               })}
             </div>
-          </div>
           )}
         </CardContent>
       </Card>
