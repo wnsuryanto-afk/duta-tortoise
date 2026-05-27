@@ -36,8 +36,14 @@ function StockBadge({ item }) {
   if (item.current_stock === 0)
     return <Badge variant="destructive" className="text-xs">Habis</Badge>;
   if (item.current_stock <= item.minimum_stock)
-    return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Stok Rendah</Badge>;
+    return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Hampir Habis</Badge>;
   return <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Aman</Badge>;
+}
+
+function MandatoryBadge({ item }) {
+  if (item.is_mandatory)
+    return <Badge className="text-xs bg-red-500 text-white">WAJIB</Badge>;
+  return <Badge variant="outline" className="text-xs text-gray-500">Opsional</Badge>;
 }
 
 export default function WarehousePage() {
@@ -274,7 +280,10 @@ export default function WarehousePage() {
                           )}
                         </div>
                       </div>
-                      <StockBadge item={item} />
+                      <div className="flex flex-col items-end gap-1">
+                        <StockBadge item={item} />
+                        <MandatoryBadge item={item} />
+                      </div>
                     </div>
 
                     <div className="flex items-end justify-between mt-3">

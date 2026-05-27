@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function BuyerForm({ data, onSave, onClose }) {
   const [form, setForm] = useState(data || {
-    name: "", phone: "", whatsapp: "", email: "", city: "",
+    name: "", phone: "", email: "", city: "",
     platform_asal: "", favorite_morph: "", budget_range: "", notes: "",
     total_purchases: 0, total_spent: 0,
   });
@@ -42,14 +42,10 @@ export default function BuyerForm({ data, onSave, onClose }) {
           <Input value={form.name} onChange={e => set("name", e.target.value)} className={errors.name ? "border-red-500" : ""} />
           {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
         </div>
-        <div>
-          <Label>Telepon <span className="text-red-500">*</span></Label>
-          <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="08xxx" className={errors.phone ? "border-red-500" : ""} />
+        <div className="col-span-2">
+          <Label>No. HP / WhatsApp <span className="text-red-500">*</span></Label>
+          <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="08xxx atau 628xxx" className={errors.phone ? "border-red-500" : ""} />
           {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
-        </div>
-        <div>
-          <Label>WhatsApp</Label>
-          <Input value={form.whatsapp || ""} onChange={e => set("whatsapp", e.target.value)} placeholder="628xxx" />
         </div>
         <div>
           <Label>Email</Label>

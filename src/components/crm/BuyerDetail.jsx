@@ -40,7 +40,7 @@ export default function BuyerDetail({ buyer, calcTier, onClose, onUpdate, canEdi
     setGenLoading(false);
   };
 
-  const waNumber = (buyer.whatsapp || buyer.phone || "").replace(/\D/g, "").replace(/^0/, "62");
+  const waNumber = (buyer.phone || "").replace(/\D/g, "").replace(/^0/, "62");
 
   if (editing) return (
     <Dialog open onOpenChange={() => setEditing(false)}>
@@ -62,8 +62,17 @@ export default function BuyerDetail({ buyer, calcTier, onClose, onUpdate, canEdi
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="flex gap-2 mb-2">
+            {waNumber && (
+              <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer">
+                <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700">
+                  💬 WhatsApp
+                </Button>
+              </a>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-muted-foreground">Telepon: </span>{buyer.phone}</div>
+            <div><span className="text-muted-foreground">No. HP/WA: </span>{buyer.phone}</div>
             {buyer.city && <div><span className="text-muted-foreground">Kota: </span>{buyer.city}</div>}
             {buyer.platform_asal && <div><span className="text-muted-foreground">Dari: </span>{buyer.platform_asal}</div>}
             {buyer.favorite_morph && <div><span className="text-muted-foreground">Favorit: </span>{buyer.favorite_morph}</div>}
