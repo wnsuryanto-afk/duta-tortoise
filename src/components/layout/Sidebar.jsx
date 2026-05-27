@@ -4,7 +4,7 @@ import {
   LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
   PieChart, Bell, Printer, Package, Zap, Thermometer, FileText, MessageSquare,
-  CalendarHeart, Library, ListTodo, AlertTriangle, HelpCircle, Skull,
+  CalendarHeart, Library, ListTodo, AlertTriangle, Skull,
   Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical
 } from "lucide-react";
 import { useState } from "react";
@@ -99,12 +99,6 @@ const NAV_GROUPS = [
       { path: "/users",              section: "users",              label: "Manajemen User",       icon: Users },
       { path: "/users",              section: "users-readonly",     label: "Direktori User",       icon: Users },
       { path: "/printer-config",     section: "printer-config",     label: "Konfigurasi Printer",  icon: Printer },
-    ],
-  },
-  {
-    label: null,
-    items: [
-      { path: "/help", section: "dashboard", label: "Bantuan", icon: HelpCircle },
     ],
   },
 ];

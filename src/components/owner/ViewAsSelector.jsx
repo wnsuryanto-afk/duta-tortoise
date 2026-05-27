@@ -71,10 +71,12 @@ export default function ViewAsSelector({ open, onClose }) {
                   <SelectValue placeholder="Pilih role..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="keeper">🐢 Keeper</SelectItem>
+                  <SelectItem value="kepala_feeder">🧑‍🌾 Kepala Feeder</SelectItem>
                   <SelectItem value="manajer">👔 Manajer</SelectItem>
                   <SelectItem value="admin">🛡️ Admin</SelectItem>
-                  <SelectItem value="keeper">🐢 Keeper</SelectItem>
-                  <SelectItem value="investor">💰 Investor</SelectItem>
+                  <SelectItem value="owner">👑 Owner</SelectItem>
+                  <SelectItem value="investor">👁 Investor</SelectItem>
                 </SelectContent>
               </Select>
             </div>

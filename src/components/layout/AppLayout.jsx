@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye, User, Bell, HelpCircle, LogOut, Loader2, EyeOff } from "lucide-react";
+import { Eye, User, Bell, LogOut, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -251,7 +251,6 @@ export default function AppLayout() {
                       {[
                         { label: "Edit Profil", icon: User, path: "/edit-profil" },
                         { label: "Notifikasi", icon: Bell, path: "/notifications" },
-                        { label: "Bantuan & Tutorial", icon: HelpCircle, path: "/help" },
                       ].map(({ label, icon: Icon, path }) => (
                         <button
                           key={path}

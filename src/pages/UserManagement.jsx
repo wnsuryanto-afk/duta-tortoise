@@ -67,12 +67,12 @@ function InviteUserDialog({ open, onClose, canInviteAsOwner }) {
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">👁️ Viewer</SelectItem>
                   <SelectItem value="keeper">🐢 Keeper</SelectItem>
-                  <SelectItem value="kepala_feeder">🌿 Kepala Feeder</SelectItem>
+                  <SelectItem value="kepala_feeder">🧑‍🌾 Kepala Feeder</SelectItem>
+                  <SelectItem value="manajer">👔 Manajer</SelectItem>
                   <SelectItem value="admin">🛡️ Admin</SelectItem>
-                  {canInviteAsOwner && <SelectItem value="manajer">👔 Manajer</SelectItem>}
                   {canInviteAsOwner && <SelectItem value="owner">👑 Owner</SelectItem>}
+                  <SelectItem value="investor">👁 Investor</SelectItem>
                 </SelectContent>
               </Select>
               {role && ROLE_DESCRIPTIONS[role] && (
