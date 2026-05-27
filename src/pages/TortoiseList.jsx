@@ -48,6 +48,7 @@ export default function TortoiseList() {
   const [morphFilter, setMorphFilter] = useState("semua");
   const [shellTypeFilter, setShellTypeFilter] = useState("semua");
   const [provenFilter, setProvenFilter] = useState("semua");
+  const [speciesFilter, setSpeciesFilter] = useState("semua");
   const [enclosureFilter, setEnclosureFilter] = useState(null);
   const [incompleteFilter, setIncompleteFilter] = useState(false);
   const [viewMode, setViewMode] = useState("kandang");
@@ -147,9 +148,10 @@ export default function TortoiseList() {
     const matchShell = shellTypeFilter === "semua" || (t.shell_type || "normal") === shellTypeFilter;
     const matchEnclosure = !enclosureFilter || (t.enclosure || "Tidak Ada Kandang") === enclosureFilter;
     const matchProven = provenFilter === "semua" || (provenFilter === "proven" ? !!t.is_proven : !t.is_proven);
+    const matchSpecies = speciesFilter === "semua" || (t.species || "sulcata") === speciesFilter;
     const matchQuarantine = quarantineFilter === "all" || (quarantineFilter === "yes" ? t.in_quarantine : !t.in_quarantine);
     const matchIncomplete = !incompleteFilter || isIncomplete(t);
-    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchQuarantine && matchIncomplete;
+    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchSpecies && matchQuarantine && matchIncomplete;
   });
 
   const grouped = useMemo(() => {
@@ -335,6 +337,21 @@ export default function TortoiseList() {
               <button onClick={() => setViewMode("kandang")} className={`px-3 text-xs font-medium transition-colors ${viewMode === "kandang" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>Per Kandang</button>
               <button onClick={() => setViewMode("semua")} className={`px-3 text-xs font-medium transition-colors ${viewMode === "semua" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>Semua</button>
             </div>
+            <Select value={speciesFilter} onValueChange={setSpeciesFilter}>
+              <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Spesies" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semua">Semua Spesies</SelectItem>
+                <SelectItem value="sulcata">Sulcata</SelectItem>
+                <SelectItem value="red_foot">Red Foot</SelectItem>
+                <SelectItem value="leopard">Leopard</SelectItem>
+                <SelectItem value="aldabra">Aldabra</SelectItem>
+                <SelectItem value="russian">Russian</SelectItem>
+                <SelectItem value="hermann">Hermann</SelectItem>
+                <SelectItem value="greek">Greek</SelectItem>
+                <SelectItem value="indian_star">Indian Star</SelectItem>
+                <SelectItem value="lainnya">Lainnya</SelectItem>
+              </SelectContent>
+            </Select>
             <button
               onClick={() => setIncompleteFilter(v => !v)}
               className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${incompleteFilter ? "bg-amber-100 border-amber-400 text-amber-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}

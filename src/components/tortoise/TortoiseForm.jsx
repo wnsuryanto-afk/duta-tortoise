@@ -14,6 +14,25 @@ import { getMissingFields } from "@/lib/incompleteChecks";
 import DeathRecordDialog from "./DeathRecordDialog";
 import { logActivity } from "@/lib/logActivity";
 
+const SPECIES_LIST = [
+  { value: "sulcata",     label: "Sulcata (African Spurred)" },
+  { value: "red_foot",    label: "Red Foot" },
+  { value: "leopard",     label: "Leopard" },
+  { value: "aldabra",     label: "Aldabra" },
+  { value: "russian",     label: "Russian (Horsfield)" },
+  { value: "hermann",     label: "Hermann" },
+  { value: "greek",       label: "Greek (Spur-thighed)" },
+  { value: "indian_star", label: "Indian Star" },
+  { value: "lainnya",     label: "Lainnya" },
+];
+
+const SPECIES_PARAMS = {
+  sulcata:     { basking_temp_min: 40, basking_temp_max: 45, ambient_temp_min: 28, ambient_temp_max: 32, humidity_min: 40, humidity_max: 60, adult_size_cm: 70, weighing_interval_adult_days: 90 },
+  red_foot:    { basking_temp_min: 35, basking_temp_max: 38, ambient_temp_min: 25, ambient_temp_max: 30, humidity_min: 70, humidity_max: 80, adult_size_cm: 32, weighing_interval_adult_days: 90 },
+  leopard:     { basking_temp_min: 38, basking_temp_max: 42, ambient_temp_min: 25, ambient_temp_max: 30, humidity_min: 40, humidity_max: 60, adult_size_cm: 55, weighing_interval_adult_days: 90 },
+  aldabra:     { basking_temp_min: 35, basking_temp_max: 40, ambient_temp_min: 28, ambient_temp_max: 32, humidity_min: 60, humidity_max: 80, adult_size_cm: 100, weighing_interval_adult_days: 180 },
+};
+
 const MORPHS = [
   { value: "normal",         label: "Normal" },
   { value: "albino",         label: "Albino" },
@@ -64,12 +83,17 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [showDeathDialog, setShowDeathDialog] = useState(false);
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "", morph: "normal",
+    species: "sulcata", species_params: SPECIES_PARAMS["sulcata"],
     source: "",
     is_proven: false, proven_year: "", birth_date: "", purchase_date: "", weight_grams: "", shell_length_cm: "",
     status: "aktif", enclosure: "", notes: "",
   });
 
   const set = (field, value) => { setForm((p) => ({ ...p, [field]: value })); setErrors(e => ({ ...e, [field]: "" })); };
+  const setSpecies = (sp) => {
+    const params = SPECIES_PARAMS[sp] || null;
+    setForm(p => ({ ...p, species: sp, species_params: params }));
+  };
 
   // Load enclosure options from entity
   const { data: enclosures = [] } = useQuery({
@@ -312,6 +336,30 @@ export default function TortoiseForm({ open, onClose, editData }) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Species */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Spesies</Label>
+              <Select value={form.species || "sulcata"} onValueChange={setSpecies}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {SPECIES_LIST.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 col-span-1">
+              {form.species_params && (
+                <div className="mt-5 p-2 rounded-lg bg-green-50 border border-green-200 text-xs text-green-800 space-y-0.5">
+                  <p className="font-semibold mb-1">📊 Parameter Ideal</p>
+                  <p>🌡 Basking: {form.species_params.basking_temp_min}–{form.species_params.basking_temp_max}°C</p>
+                  <p>🌿 Ambient: {form.species_params.ambient_temp_min}–{form.species_params.ambient_temp_max}°C</p>
+                  <p>💧 Kelembapan: {form.species_params.humidity_min}–{form.species_params.humidity_max}%</p>
+                  <p>📏 Ukuran dewasa: ~{form.species_params.adult_size_cm} cm</p>
+                </div>
+              )}
             </div>
           </div>
 

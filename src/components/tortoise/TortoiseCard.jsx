@@ -97,6 +97,18 @@ const morphColors = {
   cb: "bg-teal-100 text-teal-700",
 };
 
+const speciesConfig = {
+  sulcata:     { label: "Sulcata",      color: "bg-earth-600 text-white" },
+  red_foot:    { label: "Red Foot",     color: "bg-red-600 text-white" },
+  leopard:     { label: "Leopard",      color: "bg-yellow-600 text-white" },
+  aldabra:     { label: "Aldabra",      color: "bg-emerald-700 text-white" },
+  russian:     { label: "Russian",      color: "bg-blue-700 text-white" },
+  hermann:     { label: "Hermann",      color: "bg-orange-600 text-white" },
+  greek:       { label: "Greek",        color: "bg-cyan-700 text-white" },
+  indian_star: { label: "Indian Star",  color: "bg-purple-700 text-white" },
+  lainnya:     { label: "Lainnya",      color: "bg-gray-500 text-white" },
+};
+
 const shellTypeConfig = {
   normal:      { label: "Normal",      color: "bg-green-100 text-green-700" },
   smooth:      { label: "Smooth",      color: "bg-green-100 text-green-700" },
@@ -226,6 +238,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             {morph !== "normal" && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${morphColors[morph]}`}>
                 {morphLabels[morph]}
+              </span>
+            )}
+            {tortoise.species && tortoise.species !== "sulcata" && speciesConfig[tortoise.species] && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${speciesConfig[tortoise.species].color}`}>
+                {speciesConfig[tortoise.species].label}
               </span>
             )}
             {tortoise.source && sourceLabel[tortoise.source] && (
