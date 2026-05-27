@@ -37,7 +37,8 @@ export default function KasbonPage() {
   const { user, role } = useCurrentUser();
   const queryClient = useQueryClient();
   const isAdmin = ["owner", "admin", "manajer"].includes(role);
-  const isKeeper = role === "keeper";
+  // Bagian 2: semua kecuali owner & investor bisa ajukan
+  const canApply = !["owner", "investor", "kicked"].includes(role);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ amount: "", reason: "" });
@@ -125,7 +126,7 @@ export default function KasbonPage() {
             Maksimal Rp {MAX_KASBON.toLocaleString("id-ID")} · Dipotong Rp {WEEKLY_DEDUCTION.toLocaleString("id-ID")}/minggu setiap Sabtu
           </p>
         </div>
-        {isKeeper && (
+        {canApply && (
           <Button onClick={() => setShowForm(true)} disabled={!!activeKasbon}>
             <Plus className="w-4 h-4 mr-2" />
             Ajukan Kasbon
@@ -133,8 +134,8 @@ export default function KasbonPage() {
         )}
       </div>
 
-      {/* Info box keeper */}
-      {isKeeper && (
+      {/* Info box karyawan */}
+      {canApply && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <div className="flex items-center gap-3">

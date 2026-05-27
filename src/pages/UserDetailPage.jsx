@@ -260,6 +260,11 @@ export default function UserDetailPage({ userId, onBack }) {
     queryFn: () => base44.entities.BonusReward.list("-period", 50),
     enabled: canView,
   });
+  const { data: warningLetters = [] } = useQuery({
+    queryKey: ["warning-letters-user", userId],
+    queryFn: () => base44.entities.WarningLetter.list("-date", 20),
+    enabled: !!userId && canView,
+  });
 
   // Keeper: block (after all hooks)
   if (!canView) return <AccessDenied message="Halaman ini hanya untuk Owner, Manajer, dan Admin." />;
@@ -294,6 +299,17 @@ export default function UserDetailPage({ userId, onBack }) {
   const salaryConfig = salaryConfigs.find(c => c.role === targetUser?.role);
   const isKicked = targetUser?.role === "kicked";
   const isMe = targetUser?.id === currentUser?.id;
+
+  // Warning Letters
+  const userWarningLetters = warningLetters.filter(l => l.employee_email === userEmail);
+  const now = new Date();
+  const activeWarnings = userWarningLetters.filter(l => {
+    if (!l.date) return false;
+    const sixMonthsLater = new Date(l.date);
+    sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+    return sixMonthsLater > now;
+  });
+  const latestActiveSP = activeWarnings.sort((a, b) => b.level > a.level ? 1 : -1)[0];
 
   // Completeness check
   const checks = [
@@ -365,6 +381,15 @@ export default function UserDetailPage({ userId, onBack }) {
                     {isKicked ? "⚫ Nonaktif" : "🟢 Aktif"}
                   </Badge>
                   {isMe && <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">Anda</Badge>}
+                  {latestActiveSP && (
+                    <Badge className={`text-xs border ${
+                      latestActiveSP.level === "SP3" ? "bg-red-100 text-red-700 border-red-300" :
+                      latestActiveSP.level === "SP2" ? "bg-orange-100 text-orange-700 border-orange-300" :
+                      "bg-amber-100 text-amber-700 border-amber-300"
+                    }`}>
+                      ⚠️ {latestActiveSP.level} Aktif
+                    </Badge>
+                  )}
                 </div>
                 {joinDate && (
                   <p className="text-xs text-muted-foreground mt-1">
@@ -548,6 +573,35 @@ export default function UserDetailPage({ userId, onBack }) {
           </TabsContent>
         </Tabs>
       </Section>
+
+      {/* ── SECTION 5b: RIWAYAT SP ── */}
+      {userWarningLetters.length > 0 && (
+        <Section title="⚠️ Riwayat Surat Peringatan" icon={null} defaultOpen={activeWarnings.length > 0}>
+          <div className="space-y-2">
+            {userWarningLetters.map(l => {
+              const expiry = l.date ? new Date(new Date(l.date).setMonth(new Date(l.date).getMonth() + 6)) : null;
+              const isStillActive = expiry && expiry > now;
+              return (
+                <div key={l.id} className={`flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg border ${isStillActive ? "bg-amber-50 border-amber-200" : "bg-muted/40"}`}>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                        l.level === "SP3" ? "bg-red-100 text-red-700" :
+                        l.level === "SP2" ? "bg-orange-100 text-orange-700" :
+                        "bg-amber-100 text-amber-700"
+                      }`}>{l.level}</span>
+                      {isStillActive && <span className="text-xs text-amber-600 font-medium">🔴 Masih Aktif</span>}
+                    </div>
+                    {l.letter_number && <p className="text-xs font-mono text-muted-foreground mt-0.5">{l.letter_number}</p>}
+                    <p className="text-xs text-muted-foreground">{l.date ? format(parseISO(l.date), "d MMM yyyy", { locale: idLocale }) : "—"}</p>
+                    {l.reasons?.slice(0, 2).map((r, i) => <p key={i} className="text-xs text-muted-foreground">• {r}</p>)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
 
       {/* ── SECTION 6: KELENGKAPAN DATA ── */}
       <Section title="📋 Kelengkapan Data" icon={null} defaultOpen={false}>

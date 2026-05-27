@@ -21,9 +21,11 @@ const MAX_KASBON = 1000000;
 
 function KasbonTab({ user, role, isOwnerOrManajer }) {
   const qc = useQueryClient();
-  const isKeeper = role === "keeper";
+  // Bagian 2: semua role kecuali owner & investor bisa ajukan kasbon
+  const canApply = !["owner", "investor", "kicked"].includes(role);
+  const isOwner = role === "owner";
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ amount: "", reason: "", deduction_type: "weekly", deduction_amount: "100000" });
+  const [form, setForm] = useState({ amount: "", reason_category: "kebutuhan_mendesak", reason: "", installment_plan: "1x" });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -39,31 +41,45 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
 
   const activeKasbon = myKasbons.find(k => k.employee_email === user?.email && k.status === "approved");
 
+  // Hitung total kasbon aktif (pending + approved)
+  const totalAktif = myKasbons
+    .filter(k => k.employee_email === user?.email && ["approved", "pending"].includes(k.status))
+    .reduce((s, k) => s + ((k.amount || 0) - (k.total_paid || 0)), 0);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
     const amt = Number(form.amount);
-    const ded = Number(form.deduction_amount);
     if (!amt || amt <= 0) { setFormError("Nominal kasbon harus diisi."); return; }
     if (amt > MAX_KASBON) { setFormError(`Maksimal kasbon Rp ${MAX_KASBON.toLocaleString("id-ID")}`); return; }
-    if (!ded || ded <= 0) { setFormError("Jumlah potongan harus diisi."); return; }
-    if (activeKasbon) { setFormError("Anda masih memiliki kasbon aktif."); return; }
+    if (totalAktif + amt > MAX_KASBON) {
+      setFormError(`Sisa kasbon aktif Rp ${totalAktif.toLocaleString("id-ID")}. Total akan melebihi maksimal Rp ${MAX_KASBON.toLocaleString("id-ID")}.`);
+      return;
+    }
+    const planMap = { "1x": 1, "2x": 2, "4x": 4 };
+    const totalCicilan = planMap[form.installment_plan] || 1;
+    const perCicilan = Math.ceil(amt / totalCicilan);
     setSaving(true);
     await base44.entities.Kasbon.create({
       employee_name: user.full_name || user.email,
       employee_email: user.email,
+      employee_role: role,
       amount: amt,
+      reason_category: form.reason_category,
       reason: form.reason,
+      installment_plan: form.installment_plan,
+      installment_amount: perCicilan,
+      installments_total: totalCicilan,
+      installments_paid: 0,
       request_date: format(new Date(), "yyyy-MM-dd"),
-      weekly_deduction: form.deduction_type === "weekly" ? ded : 0,
+      weekly_deduction: perCicilan,
       total_paid: 0,
       status: "pending",
-      notes: `Potongan ${form.deduction_type === "weekly" ? "mingguan" : "bulanan"}: Rp ${ded.toLocaleString("id-ID")}`,
     });
     qc.invalidateQueries({ queryKey: ["kasbons"] });
     setSaving(false);
     setShowForm(false);
-    setForm({ amount: "", reason: "", deduction_type: "weekly", deduction_amount: "100000" });
+    setForm({ amount: "", reason_category: "kebutuhan_mendesak", reason: "", installment_plan: "1x" });
   };
 
   const handleApprove = async (kasbon) => {
@@ -76,18 +92,24 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
   };
 
   const handleReject = async (kasbon) => {
-    if (!confirm("Tolak pengajuan kasbon ini?")) return;
-    await base44.entities.Kasbon.update(kasbon.id, { status: "rejected" });
+    const alasan = prompt("Alasan penolakan kasbon:");
+    if (alasan === null) return;
+    await base44.entities.Kasbon.update(kasbon.id, { status: "rejected", reject_reason: alasan });
     qc.invalidateQueries({ queryKey: ["kasbons"] });
   };
 
   const handlePotong = async (kasbon) => {
-    const dedAmount = kasbon.weekly_deduction || 100000;
+    const perCicilan = kasbon.installment_amount || kasbon.weekly_deduction || 100000;
     const sisa = (kasbon.amount || 0) - (kasbon.total_paid || 0);
-    const potongan = Math.min(dedAmount, sisa);
+    const potongan = Math.min(perCicilan, sisa);
     const newPaid = (kasbon.total_paid || 0) + potongan;
+    const newInstallmentsPaid = (kasbon.installments_paid || 0) + 1;
     const lunas = newPaid >= kasbon.amount;
-    await base44.entities.Kasbon.update(kasbon.id, { total_paid: newPaid, status: lunas ? "lunas" : "approved" });
+    await base44.entities.Kasbon.update(kasbon.id, {
+      total_paid: newPaid,
+      installments_paid: newInstallmentsPaid,
+      status: lunas ? "lunas" : "approved",
+    });
     qc.invalidateQueries({ queryKey: ["kasbons"] });
   };
 
@@ -98,19 +120,22 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
     lunas:    { label: "Lunas",     color: "bg-muted text-muted-foreground" },
   };
 
-  const dedType = form.deduction_type;
-  const dedAmt = Number(form.deduction_amount) || 0;
-  const totalAmt = Number(form.amount) || 0;
-  const periods = dedAmt > 0 && totalAmt > 0 ? Math.ceil(totalAmt / dedAmt) : 0;
+  const REASON_LABELS = {
+    kebutuhan_mendesak: "Kebutuhan Mendesak",
+    biaya_kesehatan: "Biaya Kesehatan",
+    kebutuhan_keluarga: "Kebutuhan Keluarga",
+    transportasi: "Transportasi",
+    lainnya: "Lainnya",
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Maksimal Rp {MAX_KASBON.toLocaleString("id-ID")} · Potongan bisa per minggu atau bulan
+          Maksimal Rp {MAX_KASBON.toLocaleString("id-ID")} · Dipotong sesuai rencana cicilan
         </p>
-        {isKeeper && (
-          <Button size="sm" onClick={() => setShowForm(true)} disabled={!!activeKasbon}>
+        {canApply && (
+          <Button size="sm" onClick={() => setShowForm(true)}>
             <Plus className="w-4 h-4 mr-1.5" /> Ajukan Kasbon
           </Button>
         )}
@@ -133,7 +158,6 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
               const sisa = (k.amount || 0) - (k.total_paid || 0);
               const pct = k.amount ? Math.round(((k.total_paid || 0) / k.amount) * 100) : 0;
               const conf = statusConfig[k.status] || statusConfig.pending;
-              const dedLabel = k.notes?.includes("bulanan") ? "bulanan" : "mingguan";
               return (
                 <div key={k.id} className="p-4 hover:bg-muted/20 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -141,15 +165,23 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="font-semibold text-sm">{k.employee_name}</span>
                         <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
-                        <Badge variant="outline" className="text-[11px]">potong {dedLabel}</Badge>
+                        {k.installment_plan && (
+                          <Badge variant="outline" className="text-[11px]">
+                            Cicil {k.installment_plan} ({k.installments_paid || 0}/{k.installments_total || 1}x)
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-lg font-bold text-primary">Rp {(k.amount || 0).toLocaleString("id-ID")}</p>
-                      {k.reason && <p className="text-xs text-muted-foreground mt-0.5">"{k.reason}"</p>}
+                      {k.reason_category && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {REASON_LABELS[k.reason_category] || k.reason_category}{k.reason ? ` — "${k.reason}"` : ""}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Diajukan: {k.request_date ? format(new Date(k.request_date), "d MMM yyyy", { locale: id }) : "—"}
                         {k.approved_date && ` · Disetujui: ${format(new Date(k.approved_date), "d MMM yyyy", { locale: id })}`}
                       </p>
-                      {k.weekly_deduction > 0 && <p className="text-xs text-muted-foreground">Potongan: Rp {k.weekly_deduction.toLocaleString("id-ID")}/{dedLabel}</p>}
+                      {k.installment_plan && <p className="text-xs text-muted-foreground">Cicilan: {k.installment_plan} · Rp {(k.installment_amount || k.weekly_deduction || 0).toLocaleString("id-ID")}/periode</p>}
                       {k.status === "approved" && (
                         <div className="mt-2">
                           <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -163,16 +195,16 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
                       )}
                     </div>
                     {isOwnerOrManajer && (
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-2 flex-shrink-0 flex-col">
                         {k.status === "pending" && (
                           <>
-                            <Button size="sm" onClick={() => handleApprove(k)} className="gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Setujui</Button>
-                            <Button size="sm" variant="outline" onClick={() => handleReject(k)} className="gap-1 text-destructive border-destructive hover:bg-destructive/10"><XCircle className="w-3.5 h-3.5" /> Tolak</Button>
+                            <Button size="sm" onClick={() => handleApprove(k)} className="gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> ✅ Setujui</Button>
+                            <Button size="sm" variant="outline" onClick={() => handleReject(k)} className="gap-1 text-destructive border-destructive hover:bg-destructive/10"><XCircle className="w-3.5 h-3.5" /> ❌ Tolak</Button>
                           </>
                         )}
                         {k.status === "approved" && sisa > 0 && (
                           <Button size="sm" variant="outline" onClick={() => handlePotong(k)} className="gap-1">
-                            <Minus className="w-3.5 h-3.5" /> Potong Sekarang
+                            <Minus className="w-3.5 h-3.5" /> Potong Cicilan
                           </Button>
                         )}
                       </div>
@@ -191,36 +223,56 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
               <p>• Maksimal kasbon: <strong>Rp {MAX_KASBON.toLocaleString("id-ID")}</strong></p>
-              <p>• Potongan dapat diatur per minggu atau bulan</p>
+              <p>• Disetujui oleh Owner dan akan dipotong dari gaji</p>
             </div>
             <div className="space-y-1.5">
               <Label>Nominal Kasbon (Rp) *</Label>
               <Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="500000" max={MAX_KASBON} required />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Jenis Potongan</Label>
-                <Select value={form.deduction_type} onValueChange={v => setForm(p => ({ ...p, deduction_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="weekly">Per Minggu</SelectItem>
-                    <SelectItem value="monthly">Per Bulan</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Jumlah Potongan (Rp)</Label>
-                <Input type="number" value={form.deduction_amount} onChange={e => setForm(p => ({ ...p, deduction_amount: e.target.value }))} placeholder="100000" />
-              </div>
-            </div>
-            {periods > 0 && (
-              <p className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
-                Lunas dalam <strong>{periods} {dedType === "weekly" ? "minggu" : "bulan"}</strong>
-              </p>
-            )}
             <div className="space-y-1.5">
-              <Label>Keperluan / Alasan</Label>
-              <Textarea value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))} placeholder="Jelaskan keperluan..." rows={3} />
+              <Label>Alasan Pengajuan *</Label>
+              <Select value={form.reason_category} onValueChange={v => setForm(p => ({ ...p, reason_category: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="kebutuhan_mendesak">Kebutuhan Mendesak</SelectItem>
+                  <SelectItem value="biaya_kesehatan">Biaya Kesehatan</SelectItem>
+                  <SelectItem value="kebutuhan_keluarga">Kebutuhan Keluarga</SelectItem>
+                  <SelectItem value="transportasi">Transportasi</SelectItem>
+                  <SelectItem value="lainnya">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.reason_category === "lainnya" && (
+                <Textarea value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))} placeholder="Jelaskan keperluan..." rows={2} />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Rencana Cicilan *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { val: "1x", label: "Potong 1x", desc: "Gaji berikutnya" },
+                  { val: "2x", label: "Cicil 2x", desc: "2 periode" },
+                  { val: "4x", label: "Cicil 4x", desc: "4 periode" },
+                ].map(opt => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, installment_plan: opt.val }))}
+                    className={`py-2 px-2 rounded-lg border-2 text-xs text-center transition-all ${
+                      form.installment_plan === opt.val
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-muted bg-muted/30 text-muted-foreground"
+                    }`}
+                  >
+                    <div className="font-semibold">{opt.label}</div>
+                    <div className="text-[10px] opacity-70">{opt.desc}</div>
+                    {form.amount && (
+                      <div className="font-bold mt-1">
+                        Rp {Math.ceil(Number(form.amount) / parseInt(opt.val)).toLocaleString("id-ID")}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
             {formError && <p className="text-xs text-destructive font-medium">{formError}</p>}
             <div className="flex justify-end gap-3 pt-2">
@@ -234,22 +286,28 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
   );
 }
 
+// Bagian 4: Exclude owner & investor dari konfigurasi gaji
 const ROLE_OPTIONS = [
-  { value: "owner", label: "Owner" },
   { value: "manajer", label: "Manajer" },
   { value: "admin", label: "Admin" },
   { value: "kepala_feeder", label: "Kepala Feeder" },
   { value: "keeper", label: "Keeper" },
 ];
 
+// Roles yang dikecualikan dari laporan gaji
+const EXCLUDED_ROLES = ["owner", "investor"];
+
 function SalaryConfigDialog({ open, onClose, editData }) {
   const qc = useQueryClient();
   const [form, setForm] = useState(editData || {
-    role: "keeper", base_salary: "", overtime_rate_per_hour: "",
+    role: "keeper", salary_type: "bulanan", payment_period: "bulanan",
+    base_salary: "", overtime_rate_per_hour: "",
     vegetable_rate_per_trip: "", point_value: "", absent_deduction: "", notes: "",
   });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const isHarian = form.salary_type === "harian";
 
   const handleSave = async () => {
     setSaving(true);
@@ -259,7 +317,7 @@ function SalaryConfigDialog({ open, onClose, editData }) {
       overtime_rate_per_hour: Number(form.overtime_rate_per_hour) || 0,
       vegetable_rate_per_trip: Number(form.vegetable_rate_per_trip) || 0,
       point_value: Number(form.point_value) || 0,
-      absent_deduction: Number(form.absent_deduction) || 0,
+      absent_deduction: isHarian ? 0 : (Number(form.absent_deduction) || 0),
     };
     if (editData?.id) await base44.entities.SalaryConfig.update(editData.id, data);
     else await base44.entities.SalaryConfig.create(data);
@@ -284,10 +342,54 @@ function SalaryConfigDialog({ open, onClose, editData }) {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Bagian 3: Tipe Gaji */}
+          <div>
+            <Label>Tipe Gaji *</Label>
+            <div className="flex gap-2 mt-1.5">
+              {[
+                { val: "bulanan", label: "📅 Bulanan (Rp/bulan)" },
+                { val: "harian", label: "📆 Harian (Rp/hari)" },
+              ].map(opt => (
+                <button
+                  key={opt.val}
+                  type="button"
+                  onClick={() => set("salary_type", opt.val)}
+                  className={`flex-1 py-2 px-2 rounded-lg border-2 font-medium text-xs transition-all ${
+                    form.salary_type === opt.val
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-muted bg-muted/30 text-muted-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {isHarian && (
+              <div className="mt-2">
+                <Label className="text-xs">Dibayar Setiap</Label>
+                <div className="flex gap-2 mt-1">
+                  {["mingguan", "bulanan"].map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => set("payment_period", p)}
+                      className={`flex-1 py-1.5 px-2 rounded-lg border text-xs transition-all ${
+                        form.payment_period === p ? "border-primary bg-primary/5 text-primary" : "border-muted bg-muted/30"
+                      }`}
+                    >
+                      {p === "mingguan" ? "Minggu" : "Bulan"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Gaji Pokok (Rp/bulan)</Label>
-              <Input type="number" value={form.base_salary} onChange={e => set("base_salary", e.target.value)} placeholder="3000000" />
+            <div className="col-span-2">
+              <Label>{isHarian ? "Gaji Pokok (Rp/hari)" : "Gaji Pokok (Rp/bulan)"}</Label>
+              <Input type="number" value={form.base_salary} onChange={e => set("base_salary", e.target.value)} placeholder={isHarian ? "100000" : "3000000"} />
             </div>
             <div>
               <Label>Tarif Lembur (Rp/jam)</Label>
@@ -301,10 +403,18 @@ function SalaryConfigDialog({ open, onClose, editData }) {
               <Label>Nilai Poin KPI (Rp/poin)</Label>
               <Input type="number" value={form.point_value} onChange={e => set("point_value", e.target.value)} placeholder="500" />
             </div>
-            <div>
-              <Label>Potongan Absen (Rp/hari)</Label>
-              <Input type="number" value={form.absent_deduction} onChange={e => set("absent_deduction", e.target.value)} placeholder="100000" />
-            </div>
+            {!isHarian ? (
+              <div>
+                <Label>Potongan Absen (Rp/hari)</Label>
+                <Input type="number" value={form.absent_deduction} onChange={e => set("absent_deduction", e.target.value)} placeholder="100000" />
+              </div>
+            ) : (
+              <div className="flex items-end">
+                <p className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg px-2 py-1.5">
+                  💡 Gaji harian: hari masuk × Rp/hari (absen tidak dibayar)
+                </p>
+              </div>
+            )}
           </div>
           <div>
             <Label>Catatan</Label>
@@ -458,7 +568,8 @@ export default function PayrollPage() {
     queryFn: () => base44.entities.BonusReward.list("-period", 50),
   });
 
-  const employees = users.filter(u => ["owner", "manajer", "admin", "kepala_feeder", "keeper"].includes(u.role));
+  // Bagian 4: Exclude owner & investor dari rekap gaji
+  const employees = users.filter(u => !EXCLUDED_ROLES.includes(u.role) && u.role !== "kicked" && u.role !== "investor");
 
   const monthAttendances = attendances.filter(a => a.date >= monthStart && a.date <= monthEnd);
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);
@@ -467,6 +578,7 @@ export default function PayrollPage() {
   const payrollData = useMemo(() => {
     return employees.map(emp => {
       const config = salaryConfigs.find(c => c.role === emp.role);
+      const salaryType = config?.salary_type || "bulanan";
       const baseSalary = config?.base_salary || 0;
       const overtimeRate = config?.overtime_rate_per_hour || 0;
       const vegRate = config?.vegetable_rate_per_trip || 0;
@@ -490,13 +602,23 @@ export default function PayrollPage() {
       const overtimePay = totalOvertimeHours * overtimeRate;
       const vegPay = totalVegTrips * vegRate;
       const pointPay = totalPoints * pointValue;
-      const deduction = absenDays * absentDeduction;
-      const totalSalary = baseSalary + overtimePay + vegPay + pointPay - deduction;
+
+      // Bagian 3: Logika sesuai tipe gaji
+      let effectiveBaseSalary = baseSalary;
+      let deduction = 0;
+      if (salaryType === "harian") {
+        effectiveBaseSalary = hadirDays * baseSalary; // hari masuk × Rp/hari
+        deduction = 0; // tidak ada potongan absen di mode harian
+      } else {
+        deduction = absenDays * absentDeduction;
+      }
+
+      const totalSalary = effectiveBaseSalary + overtimePay + vegPay + pointPay - deduction;
 
       return {
-        emp, config, baseSalary, hadirDays, absenDays,
-        totalOvertimeHours, overtimePay, totalVegTrips, vegPay,
-        totalPoints, pointPay, deduction, totalSalary,
+        emp, config, salaryType, baseSalary, effectiveBaseSalary,
+        hadirDays, absenDays, totalOvertimeHours, overtimePay,
+        totalVegTrips, vegPay, totalPoints, pointPay, deduction, totalSalary,
       };
     });
   }, [employees, salaryConfigs, monthAttendances, monthOvertime, monthVegetable, bonusRewards, selectedMonth]);
@@ -553,7 +675,7 @@ export default function PayrollPage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {payrollData.map(({ emp, config, baseSalary, hadirDays, absenDays, totalOvertimeHours, overtimePay, totalVegTrips, vegPay, totalPoints, pointPay, deduction, totalSalary }) => (
+              {payrollData.map(({ emp, config, salaryType, baseSalary, effectiveBaseSalary, hadirDays, absenDays, totalOvertimeHours, overtimePay, totalVegTrips, vegPay, totalPoints, pointPay, deduction, totalSalary }) => (
                 <Card key={emp.id} className="p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -562,27 +684,42 @@ export default function PayrollPage() {
                       </div>
                       <div>
                         <p className="font-semibold">{emp.full_name || emp.email}</p>
-                        <Badge variant="outline" className="text-xs mt-0.5">{emp.role}</Badge>
+                        <div className="flex gap-1 mt-0.5">
+                          <Badge variant="outline" className="text-xs">{emp.role}</Badge>
+                          {config && <Badge variant="outline" className="text-xs bg-muted">{salaryType}</Badge>}
+                        </div>
                         {!config && <p className="text-xs text-orange-600 mt-0.5">⚠ Belum ada konfigurasi gaji</p>}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Total Gaji</p>
+                      <p className="text-xs text-muted-foreground">Total Bersih</p>
                       <p className="text-xl font-bold text-primary">{fmt(totalSalary)}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                    <div className="p-3 rounded-xl bg-muted/40">
-                      <p className="text-xs text-muted-foreground">Gaji Pokok</p>
-                      <p className="font-semibold">{fmt(baseSalary)}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-green-50">
-                      <p className="text-xs text-muted-foreground">Hadir</p>
-                      <p className="font-semibold text-green-700">{hadirDays} hari</p>
-                    </div>
+                    {salaryType === "harian" ? (
+                      <>
+                        <div className="p-3 rounded-xl bg-green-50 col-span-2 sm:col-span-1">
+                          <p className="text-xs text-muted-foreground">Hari Masuk</p>
+                          <p className="font-semibold text-green-700">{hadirDays} hari × {fmt(baseSalary)}</p>
+                          <p className="font-bold text-green-800">{fmt(effectiveBaseSalary)}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="p-3 rounded-xl bg-muted/40">
+                          <p className="text-xs text-muted-foreground">Gaji Pokok</p>
+                          <p className="font-semibold">{fmt(baseSalary)}</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-green-50">
+                          <p className="text-xs text-muted-foreground">Hadir</p>
+                          <p className="font-semibold text-green-700">{hadirDays} hari</p>
+                        </div>
+                      </>
+                    )}
                     <div className="p-3 rounded-xl bg-blue-50">
                       <p className="text-xs text-muted-foreground">Lembur</p>
-                      <p className="font-semibold text-blue-700">{totalOvertimeHours} jam → {fmt(overtimePay)}</p>
+                      <p className="font-semibold text-blue-700">{totalOvertimeHours}j → {fmt(overtimePay)}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-lime-50">
                       <p className="text-xs text-muted-foreground">Sayur</p>
@@ -595,7 +732,7 @@ export default function PayrollPage() {
                     {deduction > 0 && (
                       <div className="p-3 rounded-xl bg-red-50">
                         <p className="text-xs text-muted-foreground">Potongan Absen</p>
-                        <p className="font-semibold text-red-600">-{fmt(deduction)} ({absenDays} hari)</p>
+                        <p className="font-semibold text-red-600">-{fmt(deduction)} ({absenDays}h)</p>
                       </div>
                     )}
                   </div>
@@ -634,11 +771,20 @@ export default function PayrollPage() {
                       )}
                     </div>
                     <div className="space-y-1.5 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Gaji Pokok</span><span className="font-medium">{fmt(cfg.base_salary)}</span></div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Tipe Gaji</span>
+                        <Badge variant="outline" className="text-xs">{cfg.salary_type === "harian" ? "📆 Harian" : "📅 Bulanan"}</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Gaji {cfg.salary_type === "harian" ? "Harian" : "Pokok"}</span>
+                        <span className="font-medium">{fmt(cfg.base_salary)}/{cfg.salary_type === "harian" ? "hari" : "bln"}</span>
+                      </div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Tarif Lembur</span><span className="font-medium">{fmt(cfg.overtime_rate_per_hour)}/jam</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Tunjangan Sayur</span><span className="font-medium">{fmt(cfg.vegetable_rate_per_trip)}/trip</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Nilai Poin KPI</span><span className="font-medium">{fmt(cfg.point_value)}/poin</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Potongan Absen</span><span className="font-medium text-red-600">-{fmt(cfg.absent_deduction)}/hari</span></div>
+                      {cfg.salary_type !== "harian" && (
+                        <div className="flex justify-between"><span className="text-muted-foreground">Potongan Absen</span><span className="font-medium text-red-600">-{fmt(cfg.absent_deduction)}/hari</span></div>
+                      )}
                     </div>
                   </Card>
                 ))}
