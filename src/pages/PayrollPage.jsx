@@ -567,6 +567,10 @@ export default function PayrollPage() {
     queryKey: ["bonus-rewards"],
     queryFn: () => base44.entities.BonusReward.list("-period", 50),
   });
+  const { data: kasbons = [] } = useQuery({
+    queryKey: ["kasbons"],
+    queryFn: () => base44.entities.Kasbon.list("-request_date", 200),
+  });
 
   // Bagian 4: Exclude owner & investor dari rekap gaji
   const employees = users.filter(u => !EXCLUDED_ROLES.includes(u.role) && u.role !== "kicked" && u.role !== "investor");
@@ -607,21 +611,25 @@ export default function PayrollPage() {
       let effectiveBaseSalary = baseSalary;
       let deduction = 0;
       if (salaryType === "harian") {
-        effectiveBaseSalary = hadirDays * baseSalary; // hari masuk × Rp/hari
-        deduction = 0; // tidak ada potongan absen di mode harian
+        effectiveBaseSalary = hadirDays * baseSalary;
+        deduction = 0;
       } else {
         deduction = absenDays * absentDeduction;
       }
 
-      const totalSalary = effectiveBaseSalary + overtimePay + vegPay + pointPay - deduction;
+      // Potongan kasbon aktif karyawan ini
+      const empKasbons = kasbons.filter(k => k.employee_email === emp.email && k.status === "approved");
+      const kasbonDeduction = empKasbons.reduce((s, k) => s + (k.installment_amount || k.weekly_deduction || 0), 0);
+
+      const totalSalary = effectiveBaseSalary + overtimePay + vegPay + pointPay - deduction - kasbonDeduction;
 
       return {
         emp, config, salaryType, baseSalary, effectiveBaseSalary,
         hadirDays, absenDays, totalOvertimeHours, overtimePay,
-        totalVegTrips, vegPay, totalPoints, pointPay, deduction, totalSalary,
+        totalVegTrips, vegPay, totalPoints, pointPay, deduction, kasbonDeduction, totalSalary,
       };
     });
-  }, [employees, salaryConfigs, monthAttendances, monthOvertime, monthVegetable, bonusRewards, selectedMonth]);
+  }, [employees, salaryConfigs, monthAttendances, monthOvertime, monthVegetable, bonusRewards, kasbons, selectedMonth]);
 
   const fmt = (n) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
@@ -675,7 +683,7 @@ export default function PayrollPage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {payrollData.map(({ emp, config, salaryType, baseSalary, effectiveBaseSalary, hadirDays, absenDays, totalOvertimeHours, overtimePay, totalVegTrips, vegPay, totalPoints, pointPay, deduction, totalSalary }) => (
+              {payrollData.map(({ emp, config, salaryType, baseSalary, effectiveBaseSalary, hadirDays, absenDays, totalOvertimeHours, overtimePay, totalVegTrips, vegPay, totalPoints, pointPay, deduction, kasbonDeduction, totalSalary }) => (
                 <Card key={emp.id} className="p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -733,6 +741,12 @@ export default function PayrollPage() {
                       <div className="p-3 rounded-xl bg-red-50">
                         <p className="text-xs text-muted-foreground">Potongan Absen</p>
                         <p className="font-semibold text-red-600">-{fmt(deduction)} ({absenDays}h)</p>
+                      </div>
+                    )}
+                    {kasbonDeduction > 0 && (
+                      <div className="p-3 rounded-xl bg-orange-50">
+                        <p className="text-xs text-muted-foreground">Potongan Kasbon</p>
+                        <p className="font-semibold text-orange-600">-{fmt(kasbonDeduction)}</p>
                       </div>
                     )}
                   </div>

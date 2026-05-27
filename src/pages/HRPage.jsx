@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, AlertTriangle, GraduationCap, Clock, Carrot, CreditCard, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, AlertTriangle, GraduationCap, Clock, Carrot, CreditCard, Calendar, Building2, Save } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -241,6 +241,109 @@ function AttendanceSummaryTab() {
   );
 }
 
+// ─── KOP Surat / Company Settings Tab ────────────────────────────────────────
+function CompanySettingsTab() {
+  const qc = useQueryClient();
+  const { data: settings = [] } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: () => base44.entities.CompanySettings.list(),
+  });
+  const existing = settings[0];
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // Sync form dengan data yang sudah ada
+  if (!form && existing) {
+    setTimeout(() => setForm({
+      company_name: existing.company_name || "",
+      company_address: existing.company_address || "",
+      company_city: existing.company_city || "",
+      company_phone: existing.company_phone || "",
+      company_email: existing.company_email || "",
+      company_logo_url: existing.company_logo_url || "",
+      director_name: existing.director_name || "",
+      director_title: existing.director_title || "Pimpinan",
+    }), 0);
+  }
+
+  const defaultForm = {
+    company_name: "Duta Tortoise Farm",
+    company_address: "",
+    company_city: "",
+    company_phone: "",
+    company_email: "",
+    company_logo_url: "",
+    director_name: "",
+    director_title: "Pimpinan",
+  };
+
+  const currentForm = form || defaultForm;
+  const set = (k, v) => setForm(p => ({ ...(p || defaultForm), [k]: v }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    if (existing?.id) {
+      await base44.entities.CompanySettings.update(existing.id, currentForm);
+    } else {
+      await base44.entities.CompanySettings.create({ ...currentForm, setting_key: "main" });
+    }
+    qc.invalidateQueries({ queryKey: ["company-settings"] });
+    setSaving(false);
+  };
+
+  return (
+    <div className="max-w-xl space-y-5">
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
+        <p className="font-medium">📄 KOP Surat Peringatan</p>
+        <p className="mt-0.5 text-xs">Informasi ini akan otomatis muncul di header surat peringatan (SP) yang dicetak.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2 space-y-1.5">
+          <Label>Nama Perusahaan *</Label>
+          <Input value={currentForm.company_name} onChange={e => set("company_name", e.target.value)} placeholder="Duta Tortoise Farm" />
+        </div>
+        <div className="col-span-2 space-y-1.5">
+          <Label>Alamat</Label>
+          <Textarea value={currentForm.company_address} onChange={e => set("company_address", e.target.value)} placeholder="Jl. Contoh No. 1, Kel. ABC" rows={2} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Kota</Label>
+          <Input value={currentForm.company_city} onChange={e => set("company_city", e.target.value)} placeholder="Yogyakarta" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Telepon</Label>
+          <Input value={currentForm.company_phone} onChange={e => set("company_phone", e.target.value)} placeholder="0812-xxxx-xxxx" />
+        </div>
+        <div className="col-span-2 space-y-1.5">
+          <Label>Email</Label>
+          <Input type="email" value={currentForm.company_email} onChange={e => set("company_email", e.target.value)} placeholder="info@dutatortoice.com" />
+        </div>
+        <div className="col-span-2 space-y-1.5">
+          <Label>URL Logo (opsional)</Label>
+          <Input value={currentForm.company_logo_url} onChange={e => set("company_logo_url", e.target.value)} placeholder="https://..." />
+          {currentForm.company_logo_url && (
+            <img src={currentForm.company_logo_url} alt="Logo" className="h-12 mt-1 rounded object-contain border p-1" />
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <Label>Nama Pimpinan (penanda tangan)</Label>
+          <Input value={currentForm.director_name} onChange={e => set("director_name", e.target.value)} placeholder="Nama pimpinan" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Jabatan Pimpinan</Label>
+          <Input value={currentForm.director_title} onChange={e => set("director_title", e.target.value)} placeholder="Pimpinan / Direktur" />
+        </div>
+      </div>
+
+      <Button onClick={handleSave} disabled={saving} className="gap-2">
+        <Save className="w-4 h-4" />
+        {saving ? "Menyimpan..." : "Simpan Pengaturan"}
+      </Button>
+    </div>
+  );
+}
+
 // ─── Main HR Page ─────────────────────────────────────────────────────────────
 export default function HRPage() {
   return (
@@ -254,10 +357,12 @@ export default function HRPage() {
           <TabsTrigger value="attendance" className="gap-1.5"><Calendar className="w-3.5 h-3.5" />Absensi</TabsTrigger>
           <TabsTrigger value="warning" className="gap-1.5"><AlertTriangle className="w-3.5 h-3.5" />Surat Peringatan</TabsTrigger>
           <TabsTrigger value="training" className="gap-1.5"><GraduationCap className="w-3.5 h-3.5" />Training</TabsTrigger>
+          <TabsTrigger value="settings" className="gap-1.5"><Building2 className="w-3.5 h-3.5" />KOP Surat</TabsTrigger>
         </TabsList>
         <TabsContent value="attendance" className="mt-4"><AttendanceSummaryTab /></TabsContent>
         <TabsContent value="warning" className="mt-4"><WarningLetterTab /></TabsContent>
         <TabsContent value="training" className="mt-4"><TrainingTab /></TabsContent>
+        <TabsContent value="settings" className="mt-4"><CompanySettingsTab /></TabsContent>
       </Tabs>
     </div>
   );

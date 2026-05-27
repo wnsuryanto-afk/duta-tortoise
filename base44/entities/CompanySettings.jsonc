@@ -1,0 +1,47 @@
+{
+  "name": "CompanySettings",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "description": "Nama perusahaan untuk KOP surat"
+    },
+    "company_address": {
+      "type": "string",
+      "description": "Alamat perusahaan"
+    },
+    "company_city": {
+      "type": "string",
+      "description": "Kota"
+    },
+    "company_phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "company_email": {
+      "type": "string",
+      "description": "Email perusahaan"
+    },
+    "company_logo_url": {
+      "type": "string",
+      "description": "URL logo perusahaan"
+    },
+    "director_name": {
+      "type": "string",
+      "description": "Nama direktur / pimpinan untuk tanda tangan"
+    },
+    "director_title": {
+      "type": "string",
+      "description": "Jabatan direktur / pimpinan",
+      "default": "Pimpinan"
+    },
+    "setting_key": {
+      "type": "string",
+      "default": "main",
+      "description": "Key unik (selalu 'main') untuk single-record pattern"
+    }
+  },
+  "required": [
+    "company_name"
+  ]
+}
