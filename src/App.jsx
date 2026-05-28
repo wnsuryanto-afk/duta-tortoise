@@ -56,6 +56,7 @@ import VetContactPage from '@/pages/VetContactPage.jsx';
 import MaintenanceSchedulePage from '@/pages/MaintenanceSchedulePage.jsx';
 import PrinterConfigPage from '@/pages/PrinterConfigPage';
 import KritikSaranPage from '@/pages/KritikSaranPage';
+import StockGudangPage from '@/pages/StockGudangPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -123,6 +124,7 @@ const AuthenticatedApp = () => {
         <Route path="/salary-slip" element={<SalarySlipPage />} />
         <Route path="/incubator-readings" element={<IncubatorReadingPage />} />
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
+        <Route path="/stock-gudang" element={<StockGudangPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

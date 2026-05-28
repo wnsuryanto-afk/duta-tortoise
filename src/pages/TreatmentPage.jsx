@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, CheckCircle2, Circle, CalendarClock, Pencil, Trash2, Bell, Clock, Pill, Stethoscope, Syringe, Weight } from "lucide-react";
+import { Plus, CheckCircle2, Circle, CalendarClock, Pencil, Trash2, Bell, Clock, Pill, Stethoscope, Syringe, Weight, ClipboardList } from "lucide-react";
+import DailyChecklistTab from "@/components/treatment/DailyChecklistTab";
 import SearchableDropdownFilter from "@/components/tutorial/TortoiseDropdownFilter";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
@@ -72,7 +73,7 @@ export default function TreatmentPage() {
   const tortoiseFilterItems = tortoises.map(t => ({ id: t.id, label: t.name }));
   const enclosureFilterItems = enclosures.map(e => ({ id: e, label: `📍 ${e}` }));
 
-  const [tab, setTab] = useState("jadwal");
+  const [tab, setTab] = useState("checklist");
   const [freqFilter, setFreqFilter] = useState("semua");
   const [modFilter, setModFilter] = useState("semua");
   const [dateFrom, setDateFrom] = useState("");
@@ -276,7 +277,10 @@ export default function TreatmentPage() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="checklist" className="gap-1.5">
+            <ClipboardList className="w-3.5 h-3.5" /> Checklist Harian
+          </TabsTrigger>
           <TabsTrigger value="jadwal">Jadwal Treatment</TabsTrigger>
           <TabsTrigger value="pengingat" className="relative">
             Pengingat Kesehatan
@@ -286,6 +290,11 @@ export default function TreatmentPage() {
           </TabsTrigger>
           <TabsTrigger value="log">Log Treatment</TabsTrigger>
         </TabsList>
+
+        {/* ── Tab Checklist Harian ── */}
+        <TabsContent value="checklist" className="mt-4">
+          <DailyChecklistTab />
+        </TabsContent>
 
         {/* ── Tab Jadwal Treatment ── */}
         <TabsContent value="jadwal" className="mt-4 space-y-4">

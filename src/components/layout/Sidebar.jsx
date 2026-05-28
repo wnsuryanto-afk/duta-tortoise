@@ -42,15 +42,14 @@ const NAV_GROUPS = [
   {
     label: "Perawatan",
     items: [
-      { path: "/maintenance-schedule", section: "maintenance", label: "Jadwal Perawatan Kandang", icon: Calendar },
-      { path: "/feed-stock",      section: "feed-stock",      label: "Stok Pakan",          icon: Wheat },
+      { path: "/maintenance-schedule", section: "maintenance", label: "Kebersihan Kandang",  icon: Calendar },
+      { path: "/stock-gudang",    section: "feed-stock",      label: "Stok & Gudang",       icon: Warehouse },
     ],
   },
   {
-    label: "Gudang & Penjualan",
+    label: "Penjualan",
     items: [
       { path: "/stock-prediction", section: "warehouse",       label: "Prediksi Stok",       icon: BarChart2 },
-      { path: "/warehouse",       section: "warehouse",       label: "Gudang",              icon: Warehouse },
       { path: "/sales",           section: "sales",           label: "Penjualan",           icon: DollarSign },
       { path: "/crm",             section: "crm",             label: "CRM Pembeli",         icon: Users },
     ],

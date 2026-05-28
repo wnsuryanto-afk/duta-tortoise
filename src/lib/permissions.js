@@ -37,7 +37,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "activity-log", "system-maintenance", "vet-contacts", "maintenance",
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
-    "operational-costs", "kritik-saran",
+    "operational-costs", "kritik-saran", "stock-gudang",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -48,7 +48,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "printer-config",
     "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran",
+    "kritik-saran", "stock-gudang",
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -59,7 +59,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "activity-log",
     "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran",
+    "kritik-saran", "stock-gudang",
   ],
   kepala_feeder: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -67,14 +67,14 @@ export const NAV_ACCESS = {
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "death-records", "vet-contacts", "maintenance",
     "help", "petty-cash", "pellet-recipe", "warehouse", "activity-log",
-    "kritik-saran",
+    "kritik-saran", "stock-gudang",
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "sop", "sop-library", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "death-records", "vet-contacts", "maintenance",
-    "help", "activity-log", "kritik-saran",
+    "help", "activity-log", "kritik-saran", "stock-gudang",
   ],
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",

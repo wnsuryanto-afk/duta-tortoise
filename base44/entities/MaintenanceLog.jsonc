@@ -2,59 +2,76 @@
   "name": "MaintenanceLog",
   "type": "object",
   "properties": {
-    "schedule_id": {
+    "check_key": {
       "type": "string",
-      "description": "ID jadwal perawatan"
+      "description": "Unique key: enclosure_id__freq__item_id__period_key"
+    },
+    "enclosure_id": {
+      "type": "string",
+      "description": "ID kandang"
     },
     "enclosure_name": {
       "type": "string",
       "description": "Nama kandang"
     },
-    "task_type": {
+    "freq": {
       "type": "string",
       "enum": [
-        "pakan",
-        "kebersihan_harian",
-        "kebersihan_mingguan",
-        "kebersihan_bulanan"
+        "harian",
+        "mingguan",
+        "bulanan"
       ],
-      "description": "Jenis perawatan"
+      "description": "Frekuensi checklist"
     },
-    "done_date": {
+    "item_id": {
       "type": "string",
-      "format": "date",
-      "description": "Tanggal pelaksanaan"
+      "description": "ID item checklist (d1, d2, w1, m1, etc.)"
+    },
+    "item_label": {
+      "type": "string",
+      "description": "Label item checklist"
+    },
+    "period_key": {
+      "type": "string",
+      "description": "Kunci periode (YYYY-MM-DD untuk harian, YYYY-MM-Wn untuk mingguan, YYYY-MM untuk bulanan)"
+    },
+    "is_done": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sudah dicentang oleh keeper"
+    },
+    "done_at": {
+      "type": "string",
+      "description": "Jam selesai (HH:mm)"
     },
     "done_by": {
       "type": "string",
-      "description": "Dilakukan oleh"
+      "description": "Nama keeper yang mencentang"
     },
-    "tasks_completed": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Tugas yang diselesaikan"
+    "is_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sudah diverifikasi oleh kepala feeder"
     },
-    "duration_minutes": {
-      "type": "number",
-      "description": "Durasi (menit)"
+    "verified_by": {
+      "type": "string",
+      "description": "Nama kepala feeder yang verifikasi"
     },
-    "photo_urls": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Foto dokumentasi"
+    "verified_at": {
+      "type": "string",
+      "description": "Jam verifikasi (HH:mm)"
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "description": "Catatan tambahan"
     }
   },
   "required": [
+    "check_key",
+    "enclosure_id",
     "enclosure_name",
-    "task_type",
-    "done_date",
-    "done_by"
+    "freq",
+    "item_id",
+    "period_key"
   ]
 }

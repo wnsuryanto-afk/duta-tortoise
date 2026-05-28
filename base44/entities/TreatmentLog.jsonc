@@ -2,6 +2,10 @@
   "name": "TreatmentLog",
   "type": "object",
   "properties": {
+    "treat_log_key": {
+      "type": "string",
+      "description": "Unique key: tortoise_id__treat_id__date (untuk daily checklist)"
+    },
     "schedule_id": {
       "type": "string"
     },
@@ -20,6 +24,11 @@
     },
     "done_by": {
       "type": "string"
+    },
+    "is_done": {
+      "type": "boolean",
+      "default": true,
+      "description": "Status selesai (bisa di-uncheck)"
     },
     "notes": {
       "type": "string"
