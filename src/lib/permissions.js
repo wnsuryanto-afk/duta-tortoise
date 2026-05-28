@@ -13,7 +13,6 @@ export const ROLE_LABELS = {
   keeper:         "Keeper",
   kepala_feeder:  "Kepala Feeder",
   investor:       "Investor",
-  viewer:         "Viewer",
 };
 
 export const ROLE_COLORS = {
@@ -23,7 +22,7 @@ export const ROLE_COLORS = {
   keeper:         "bg-orange-100 text-orange-800 border-orange-300",
   kepala_feeder:  "bg-teal-100 text-teal-800 border-teal-300",
   investor:       "bg-slate-100 text-slate-700 border-slate-300",
-  viewer:         "bg-gray-100 text-gray-600 border-gray-300",
+
   kicked:         "bg-red-100 text-red-600 border-red-300",
 };
 
@@ -80,11 +79,6 @@ export const NAV_ACCESS = {
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",
     "health", "finance", "breeding-report", "sales-report", "info", "breeding-planner",
-  ],
-  viewer: [
-    "dashboard", "tortoise", "breeding", "family-tree",
-    "health", "breeding-report", "info", "breeding-planner",
-    "enclosure", "sop-library", "vet-contacts", "death-records", "help",
   ],
 };
 
@@ -151,17 +145,6 @@ export const PAGE_PERMISSIONS = {
     breeding:  { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
     health:    { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
     finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: true,  canViewSales: true  },
-    users:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
-    feedstock: { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
-    warehouse: { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
-    sales:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
-    payroll:   { canCreate: false, canEdit: false, canDelete: false, canViewAll: false },
-  },
-  viewer: {
-    tortoise:  { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
-    breeding:  { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
-    health:    { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
-    finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
     users:     { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
     feedstock: { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
     warehouse: { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },

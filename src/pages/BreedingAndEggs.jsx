@@ -23,6 +23,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
 import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
+import EggGrid from "@/components/breeding/EggGrid";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",

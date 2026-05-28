@@ -84,8 +84,7 @@ export default function VetContactPage() {
     createVetMutation.mutate({
       name: formData.get('name'),
       clinic_name: formData.get('clinic_name'),
-      phone: formData.get('phone'),
-      whatsapp: formData.get('whatsapp'),
+      hp_whatsapp: formData.get('hp_whatsapp'),
       email: formData.get('email'),
       address: formData.get('address'),
       specialization: formData.get('specialization'),
@@ -143,15 +142,9 @@ export default function VetContactPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Telepon *</Label>
-                  <Input name="phone" required />
-                </div>
-                <div>
-                  <Label>WhatsApp</Label>
-                  <Input name="whatsapp" />
-                </div>
+              <div>
+                <Label>No. HP / WhatsApp *</Label>
+                <Input name="hp_whatsapp" required placeholder="cth: 08123456789" />
               </div>
 
               <div>
@@ -298,12 +291,14 @@ export default function VetContactPage() {
                   </div>
                 )}
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <a href={`tel:${vet.phone}`} className="flex items-center gap-2 hover:text-primary transition-colors" onClick={e => e.stopPropagation()}>
-                    <Phone className="w-3 h-3" /> {vet.phone}
-                  </a>
-                  {vet.whatsapp && (
+                  {vet.hp_whatsapp && (
+                    <a href={`tel:${vet.hp_whatsapp}`} className="flex items-center gap-2 hover:text-primary transition-colors" onClick={e => e.stopPropagation()}>
+                      <Phone className="w-3 h-3" /> {vet.hp_whatsapp}
+                    </a>
+                  )}
+                  {vet.hp_whatsapp && (
                     <a
-                      href={`https://wa.me/${vet.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(WA_TEMPLATE(vet.name))}`}
+                      href={`https://wa.me/${vet.hp_whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(WA_TEMPLATE(vet.name))}`}
                       target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors"
                       onClick={e => e.stopPropagation()}
@@ -344,23 +339,22 @@ export default function VetContactPage() {
                   <p>{selectedVet.specialization || "Umum"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Telepon</p>
-                  <a href={`tel:${selectedVet.phone}`} className="text-primary hover:underline flex items-center gap-2">
-                    <Phone className="w-4 h-4" /> {selectedVet.phone}
-                  </a>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">WhatsApp</p>
-                  {selectedVet.whatsapp ? (
-                    <a
-                      href={`https://wa.me/${selectedVet.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(WA_TEMPLATE(selectedVet.name))}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="text-green-600 hover:underline flex items-center gap-2"
-                    >
-                      <MessageCircle className="w-4 h-4" /> Chat WA
-                    </a>
-                  ) : "-"}
-                </div>
+                   <p className="text-sm text-muted-foreground">No. HP / WhatsApp</p>
+                   {selectedVet.hp_whatsapp ? (
+                     <div className="flex items-center gap-2 flex-wrap">
+                       <a href={`tel:${selectedVet.hp_whatsapp}`} className="text-primary hover:underline flex items-center gap-1">
+                         <Phone className="w-4 h-4" /> {selectedVet.hp_whatsapp}
+                       </a>
+                       <a
+                         href={`https://wa.me/${selectedVet.hp_whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(WA_TEMPLATE(selectedVet.name))}`}
+                         target="_blank" rel="noopener noreferrer"
+                         className="text-green-600 hover:underline flex items-center gap-1"
+                       >
+                         <MessageCircle className="w-4 h-4" /> Chat WA
+                       </a>
+                     </div>
+                   ) : "-"}
+                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
                   {selectedVet.email ? (

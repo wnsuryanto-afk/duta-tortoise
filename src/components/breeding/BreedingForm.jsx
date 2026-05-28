@@ -135,9 +135,18 @@ export default function BreedingForm({ open, onClose, editData }) {
     e.preventDefault();
     if (!validate()) return;
     setSaving(true);
+    const eggCount = form.egg_count ? Number(form.egg_count) : 0;
+    // Auto-generate egg_records jika belum ada
+    const existingRecords = form.egg_records || [];
+    const egg_records = existingRecords.length > 0 ? existingRecords :
+      eggCount > 0 ? Array.from({ length: eggCount }, (_, i) => ({
+        egg_number: i + 1, status: "belum_dicek", check_date: null, hatch_date: null, notes: ""
+      })) : [];
+
     const data = {
       ...form,
-      egg_count: form.egg_count ? Number(form.egg_count) : undefined,
+      egg_count: eggCount || undefined,
+      egg_records,
       incubation_temp: form.incubation_temp ? Number(form.incubation_temp) : undefined,
       tray_number: form.tray_number ? Number(form.tray_number) : undefined,
       season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
@@ -261,15 +270,21 @@ export default function BreedingForm({ open, onClose, editData }) {
             </div>
           </div>
 
-          {/* Lokasi Inkubator - WAJIB */}
+          {/* Lokasi Inkubator - WAJIB - DINAMIS dari entity Incubator */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Lokasi Inkubator <span className="text-red-500">*</span></Label>
               <Select value={form.incubator_name || ""} onValueChange={v => { handleChange("incubator_name", v); }}>
                 <SelectTrigger className={errors.incubator_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih inkubator..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Inkubator 1">Inkubator 1{(() => { const calculatedEggs = calculateIncubatorEggs("Inkubator 1"); const inc = incubators.find(i => i.name === "Inkubator 1"); return ` (${calculatedEggs}/${inc?.capacity_eggs || "∞"})`; })()}</SelectItem>
-                  <SelectItem value="Inkubator 2">Inkubator 2{(() => { const calculatedEggs = calculateIncubatorEggs("Inkubator 2"); const inc = incubators.find(i => i.name === "Inkubator 2"); return ` (${calculatedEggs}/${inc?.capacity_eggs || "∞"})`; })()}</SelectItem>
+                  {incubators.filter(i => i.is_active !== false).map(inc => {
+                    const eggs = calculateIncubatorEggs(inc.name);
+                    return (
+                      <SelectItem key={inc.id} value={inc.name}>
+                        {inc.name} ({eggs}/{inc.capacity_eggs || "∞"})
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               {errors.incubator_name && <p className="text-xs text-red-500">{errors.incubator_name}</p>}

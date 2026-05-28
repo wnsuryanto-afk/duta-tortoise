@@ -22,7 +22,7 @@ const ROLE_DESCRIPTIONS = {
   manajer:        "Akses penuh operasional termasuk penjualan & keuangan. Tidak bisa kelola user.",
   admin:          "Akses penuh seperti Manajer. Tidak bisa hapus data permanen.",
   owner:          "Akses penuh semua fitur & pengaturan sistem.",
-  viewer:         "Read-only. Hanya bisa lihat dashboard, kura-kura, breeding, dan statistik.",
+  investor:       "Read-only. Hanya bisa lihat dashboard, kura-kura, breeding, keuangan, dan statistik.",
 };
 
 // ── Invite Dialog ─────────────────────────────────────────────────────
@@ -158,7 +158,7 @@ export default function UserManagement() {
           { r: "admin",          emoji: "🛡️", desc: "Admin" },
           { r: "kepala_feeder",  emoji: "🌿", desc: "Kep. Feeder" },
           { r: "keeper",         emoji: "🐢", desc: "Keeper" },
-          { r: "viewer",         emoji: "👁️", desc: "Viewer" },
+          { r: "investor",       emoji: "👁", desc: "Investor" },
         ].map(({ r, emoji, desc }) => (
           <Card key={r} className="p-3 text-center cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setRoleFilter(roleFilter === r ? "semua" : r)}>
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -186,7 +186,7 @@ export default function UserManagement() {
               <SelectItem value="admin">🛡️ Admin</SelectItem>
               <SelectItem value="kepala_feeder">🌿 Kepala Feeder</SelectItem>
               <SelectItem value="keeper">🐢 Keeper</SelectItem>
-              <SelectItem value="viewer">👁️ Viewer</SelectItem>
+              <SelectItem value="investor">👁 Investor</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>

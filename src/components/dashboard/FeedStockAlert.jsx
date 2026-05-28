@@ -11,7 +11,7 @@ export default function FeedStockAlert() {
   });
 
   const lowStocks = stocks.filter(
-    (s) => s.current_stock <= s.minimum_stock
+    (s) => s.is_mandatory && s.current_stock <= s.minimum_stock
   );
 
   if (lowStocks.length === 0) return null;

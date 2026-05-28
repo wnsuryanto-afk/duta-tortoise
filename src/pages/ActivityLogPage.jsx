@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Activity, Search, Filter, Eye, Calendar, User } from "lucide-react";
+import { Activity, Search, Filter, Eye, Calendar, User, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
@@ -38,6 +38,8 @@ export default function ActivityLogPage() {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("semua");
   const [entityFilter, setEntityFilter] = useState("semua");
+  const [userFilter, setUserFilter] = useState("semua");
+  const [dateFilter, setDateFilter] = useState("");
   const [selectedLog, setSelectedLog] = useState(null);
 
   const isKeeperLevel = !["owner", "admin", "manajer"].includes(role);
@@ -48,9 +50,9 @@ export default function ActivityLogPage() {
   });
 
   const entityTypes = [...new Set(logs.map(l => l.entity_type))].filter(Boolean);
+  const userEmails = [...new Set(logs.map(l => l.user_email))].filter(Boolean);
 
   const filtered = logs.filter(log => {
-    // Keeper/kepala_feeder hanya lihat aktivitas sendiri
     if (isKeeperLevel && log.user_email !== user?.email) return false;
     const matchSearch = !search || 
       log.entity_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,7 +60,9 @@ export default function ActivityLogPage() {
       log.user_email?.toLowerCase().includes(search.toLowerCase());
     const matchAction = actionFilter === "semua" || log.action === actionFilter;
     const matchEntity = entityFilter === "semua" || log.entity_type === entityFilter;
-    return matchSearch && matchAction && matchEntity;
+    const matchUser = userFilter === "semua" || log.user_email === userFilter;
+    const matchDate = !dateFilter || (log.timestamp && log.timestamp.startsWith(dateFilter));
+    return matchSearch && matchAction && matchEntity && matchUser && matchDate;
   });
 
   const stats = {
@@ -149,6 +153,26 @@ export default function ActivityLogPage() {
             ))}
           </SelectContent>
         </Select>
+        {!isKeeperLevel && (
+          <Select value={userFilter} onValueChange={setUserFilter}>
+            <SelectTrigger className="w-40 h-9">
+              <SelectValue placeholder="User" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="semua">Semua User</SelectItem>
+              {userEmails.map(email => (
+                <SelectItem key={email} value={email}>{email}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Input
+          type="date"
+          value={dateFilter}
+          onChange={e => setDateFilter(e.target.value)}
+          className="h-9 w-40"
+          placeholder="Filter tanggal"
+        />
       </div>
 
       {/* Activity Timeline */}
@@ -193,6 +217,16 @@ export default function ActivityLogPage() {
                         <Calendar className="w-3 h-3" />
                         {log.timestamp ? format(new Date(log.timestamp), "dd MMM yyyy, HH:mm") : "-"}
                       </p>
+                      {log.changes_summary && (
+                        <div className="mt-2 space-y-0.5">
+                          {log.changes_summary.split(" | ").map((line, i) => (
+                            <p key={i} className="text-xs text-foreground/70">• {line}</p>
+                          ))}
+                        </div>
+                      )}
+                      {log.action === "update" && !log.changes_summary && (
+                        <p className="text-xs text-muted-foreground/50 mt-1 italic">Detail perubahan tidak tersedia</p>
+                      )}
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" className="shrink-0">
