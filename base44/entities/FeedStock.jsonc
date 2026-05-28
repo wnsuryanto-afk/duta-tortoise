@@ -12,6 +12,8 @@
         "buah",
         "rumput",
         "suplemen",
+        "pelet",
+        "hay",
         "lainnya"
       ],
       "default": "sayuran"
@@ -23,7 +25,8 @@
         "gram",
         "ikat",
         "buah",
-        "liter"
+        "liter",
+        "keranjang"
       ],
       "default": "kg"
     },
@@ -69,7 +72,7 @@
     },
     "conversion_notes": {
       "type": "string",
-      "description": "Catatan konversi, cth: 4 keranjang sayur rempes = 1 rokok"
+      "description": "Catatan konversi"
     },
     "notes": {
       "type": "string"

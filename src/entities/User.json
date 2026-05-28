@@ -4,7 +4,7 @@
   "properties": {
     "role": {
       "type": "string",
-      "enum": ["owner", "admin", "manajer", "keeper", "investor", "viewer", "kicked"],
+      "enum": ["owner", "manajer", "admin", "kepala_feeder", "keeper", "investor"],
       "default": "keeper",
       "description": "Role pengguna dalam sistem"
     }
