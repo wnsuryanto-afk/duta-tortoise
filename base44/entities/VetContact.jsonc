@@ -22,9 +22,32 @@
       "type": "string",
       "description": "Alamat klinik"
     },
+    "area": {
+      "type": "string",
+      "enum": [
+        "kraksaan",
+        "probolinggo_kota",
+        "dringu",
+        "paiton",
+        "besuk",
+        "gending",
+        "pajarakan",
+        "tongas",
+        "lumbang",
+        "surabaya",
+        "malang",
+        "pasuruan",
+        "situbondo",
+        "jember",
+        "banyuwangi",
+        "lainnya"
+      ],
+      "default": "probolinggo_kota",
+      "description": "Wilayah/area klinik"
+    },
     "specialization": {
       "type": "string",
-      "description": "Spesialisasi (Reptil, Eksotik, Umum)"
+      "description": "Spesialisasi (Reptil, Eksotik, Umum, Bedah, Lainnya)"
     },
     "availability": {
       "type": "string",

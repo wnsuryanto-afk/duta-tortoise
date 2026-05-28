@@ -136,8 +136,17 @@ export default function TortoiseList() {
     return sickSet;
   }, [healthRecords]);
 
+  // Gunakan incompleteChecks.js sebagai sumber kebenaran tunggal
   const isIncomplete = (t) => {
-    return !t.weight_grams || !t.shell_length_cm || !t.birth_date || !t.gender || t.gender === "belum_diketahui" || (!t.photo_url && !(Array.isArray(t.photos) && t.photos.length > 0));
+    if (!t.weight_grams || t.weight_grams === 0) return true;
+    if (!t.shell_length_cm || t.shell_length_cm === 0) return true;
+    if (!t.birth_date) return true;
+    if (!t.gender || t.gender === "belum_diketahui") return true;
+    if (!t.enclosure) return true;
+    if (!t.species) return true;
+    const hasPhoto = (Array.isArray(t.photos) && t.photos.length > 0) || t.photo_url;
+    if (!hasPhoto) return true;
+    return false;
   };
 
   const filtered = tortoises.filter((t) => {
@@ -235,7 +244,17 @@ export default function TortoiseList() {
         {/* ══════════ TAB KURA-KURA ══════════ */}
         <TabsContent value="kura" className="mt-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">{filtered.length} dari {tortoises.length} tortoise</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-sm text-muted-foreground">{filtered.length} dari {tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length} kura aktif</p>
+              {(() => {
+                const activeCount = tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length;
+                const visibleActive = filtered.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length;
+                const hidden = activeCount - visibleActive;
+                return (statusFilter === "semua" && !incompleteFilter && !enclosureFilter && !search && hidden > 0) ? (
+                  <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">⚠️ {hidden} kura tidak tampil</span>
+                ) : null;
+              })()}
+            </div>
             <div className="flex gap-2 flex-wrap">
               <ExportButton
                 data={filtered}
@@ -357,7 +376,7 @@ export default function TortoiseList() {
               className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${incompleteFilter ? "bg-amber-100 border-amber-400 text-amber-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
             >
               ⚠️ Data Belum Lengkap
-              {incompleteFilter && <span className="ml-1 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{tortoises.filter(isIncomplete).length}</span>}
+              <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${incompleteFilter ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").filter(isIncomplete).length}</span>
             </button>
           </div>
 

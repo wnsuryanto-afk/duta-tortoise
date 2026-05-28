@@ -393,122 +393,88 @@ export default function BreedingAndEggs() {
               <p className="text-lg">Tidak ada telur aktif dalam inkubasi</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="space-y-6">
               {activeBreedings.map((b) => {
                 const startDate = b.estimated_hatch_date_start ? parseISO(b.estimated_hatch_date_start) : null;
                 const endDate = b.estimated_hatch_date_end ? parseISO(b.estimated_hatch_date_end) : null;
-                const daysToStart = startDate ? differenceInDays(startDate, today) : null;
+                const hatchDate = b.estimated_hatch_date ? new Date(b.estimated_hatch_date) : null;
+                const daysToStart = startDate ? differenceInDays(startDate, today) : (hatchDate ? differenceInDays(hatchDate, today) : null);
                 const daysToEnd = endDate ? differenceInDays(endDate, today) : null;
                 const inHatchRange = daysToStart !== null && daysToEnd !== null && daysToStart <= 0 && daysToEnd >= 0;
-                const dayInRange = inHatchRange ? differenceInDays(today, startDate) + 1 : null;
-
-                // Progress bar calculation (0-105 days incubation)
                 const incubationDay = b.egg_laying_date ? differenceInDays(today, new Date(b.egg_laying_date)) : 0;
                 const incubationProgress = Math.min(100, Math.max(0, (incubationDay / 105) * 100));
 
+                const countdownDays = daysToStart;
+                const countdownColor = countdownDays === null ? "text-muted-foreground" :
+                  (daysToEnd !== null && daysToEnd < 0) || inHatchRange ? "text-red-600" :
+                  countdownDays <= 7 ? "text-red-600" :
+                  countdownDays <= 30 ? "text-orange-500" : "text-green-600";
+
                 return (
-                  <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow ${
-                    daysToEnd !== null && daysToEnd < 0 ? "border-red-400 bg-red-50" : 
-                    inHatchRange ? "border-red-500 bg-red-100" : 
-                    ""
+                  <Card key={b.id} className={`overflow-hidden ${
+                    daysToEnd !== null && daysToEnd < 0 ? "border-red-400" :
+                    inHatchRange ? "border-red-500 animate-pulse" : ""
                   }`}>
-                    <div className="flex items-start justify-between">
+                    {/* Header */}
+                    <div className={`p-4 flex items-center justify-between gap-3 ${inHatchRange ? "bg-red-600 text-white" : "bg-muted/40"}`}>
                       <div>
-                        <h3 className="font-semibold text-sm">{b.male_name} × {b.female_name}</h3>
-                        <Badge variant="outline" className={`text-[11px] capitalize mt-2 ${statusColors[b.status] || ""}`}>
-                          {b.status}
-                        </Badge>
+                        <h3 className="font-bold text-sm">{b.male_name} × {b.female_name}</h3>
+                        <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
+                          <Badge variant="outline" className={`text-[11px] capitalize ${inHatchRange ? "border-white text-white" : statusColors[b.status] || ""}`}>
+                            {b.status}
+                          </Badge>
+                          {b.incubator_name && <span className={inHatchRange ? "text-red-100" : "text-muted-foreground"}>📦 {b.incubator_name}</span>}
+                          {b.egg_laying_date && <span className={inHatchRange ? "text-red-100" : "text-muted-foreground"}>🗓 {format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</span>}
+                        </div>
                       </div>
-                      <Badge className="bg-chart-3/10 text-chart-3 border-chart-3/20">
-                        {b.egg_count} butir
-                      </Badge>
+                      {/* COUNTDOWN BESAR */}
+                      <div className="flex-shrink-0 text-center min-w-[72px]">
+                        {inHatchRange ? (
+                          <div className="text-white text-center">
+                            <div className="text-2xl">🚨</div>
+                            <div className="text-xs font-bold">Menetas!</div>
+                          </div>
+                        ) : daysToEnd !== null && daysToEnd < 0 ? (
+                          <div className="text-red-600 font-black text-center">
+                            <div className="text-xs">⚠️ Segera</div>
+                            <div className="text-2xl">Cek!</div>
+                          </div>
+                        ) : countdownDays !== null ? (
+                          <div className="text-center">
+                            <div className={`font-black leading-none ${countdownColor}`} style={{ fontSize: "2rem" }}>{countdownDays}</div>
+                            <div className="text-[10px] text-muted-foreground font-medium leading-tight">hari lagi</div>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
 
-                    <div className="mt-4 space-y-2 text-xs">
-                      {b.egg_laying_date && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Tanggal Bertelur</span>
-                          <span className="font-medium">{format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</span>
+                    {/* Progress Inkubasi */}
+                    {b.egg_laying_date && (
+                      <div className="px-4 pt-3 space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Hari ke-{incubationDay} / 105</span>
+                          <span className="font-semibold">{Math.round(incubationProgress)}%</span>
                         </div>
-                      )}
-                      {b.incubator_name && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Inkubator</span>
-                          <span className="font-medium">{b.incubator_name}</span>
+                        <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                          <div className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${incubationProgress}%`,
+                              background: incubationDay < 80 ? 'linear-gradient(90deg, #22c55e, #84cc16)' : incubationDay < 95 ? 'linear-gradient(90deg, #eab308, #f59e0b)' : 'linear-gradient(90deg, #ef4444, #dc2626)'
+                            }}
+                          />
+                          <div className="absolute top-0 right-[19%] h-full w-0.5 bg-red-600 opacity-40" />
                         </div>
-                      )}
-                      {b.estimated_hatch_date_start && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Estimasi Menetas</span>
-                          <span className={`font-medium ${inHatchRange ? "text-red-600 font-bold" : ""}`}>
-                            {format(new Date(b.estimated_hatch_date_start), "d MMM")} - {b.estimated_hatch_date_end ? format(new Date(b.estimated_hatch_date_end), "d MMM yyyy", { locale: id }) : "-"}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Countdown hari menetas */}
-                      {b.status === "inkubasi" && daysToStart !== null && daysToStart > 0 && (
-                        <div className={`p-3 rounded-lg border-2 ${
-                          daysToStart <= 7 
-                            ? "bg-red-50 border-red-300" 
-                            : "bg-blue-50 border-blue-200"
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Egg className={`w-5 h-5 ${daysToStart <= 7 ? "text-red-600" : "text-blue-600"}`} />
-                              <span className="text-xs font-semibold">Menetas dalam</span>
-                            </div>
-                            <span className={`text-2xl font-bold ${daysToStart <= 7 ? "text-red-700" : "text-blue-700"}`}>
-                              {daysToStart} hari
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* Progress Bar Inkubasi */}
-                      {b.status === "inkubasi" && (
-                        <div className="mt-2 space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Hari ke-{incubationDay}</span>
-                            <span className="font-semibold">{Math.round(incubationProgress)}%</span>
-                          </div>
-                          <div className="relative h-3 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${incubationProgress}%`,
-                                background: incubationDay < 80 
-                                  ? 'linear-gradient(90deg, #22c55e 0%, #84cc16 100%)' 
-                                  : incubationDay < 95
-                                  ? 'linear-gradient(90deg, #eab308 0%, #f59e0b 100%)'
-                                  : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
-                              }}
-                            />
-                            {/* Marker range menetas */}
-                            <div className="absolute top-0 right-[19%] h-full w-0.5 bg-red-600 opacity-50" />
-                            <div className="absolute top-0 right-0 h-full w-0.5 bg-red-600 opacity-50" />
-                          </div>
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>Start</span>
-                            <span className="text-red-600 font-semibold">Menetas 80-105hr</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {inHatchRange && dayInRange && (
-                        <div className="p-2 rounded-lg bg-red-50 border border-red-200 animate-pulse">
-                          <p className="text-red-700 font-bold">🔴 DALAM MASA PENETASAN! Hari ke-{dayInRange}</p>
-                        </div>
-                      )}
-                      {daysToStart !== null && daysToStart > 0 && daysToStart <= 7 && (
-                        <div className="p-2 rounded-lg bg-yellow-50 border border-yellow-200">
-                          <p className="text-yellow-700 font-semibold">⏳ {daysToStart} hari lagi masuk range menetas</p>
-                        </div>
-                      )}
-                      {daysToEnd !== null && daysToEnd < 0 && (
-                        <div className="p-2 rounded-lg bg-red-50 border border-red-200">
-                          <p className="text-red-700 font-bold">⚠️ Melewati estimasi {Math.abs(daysToEnd)} hari!</p>
-                        </div>
+                    {/* Egg Grid */}
+                    <div className="p-4 pt-3">
+                      {b.egg_records && b.egg_records.length > 0 ? (
+                        <EggGrid breeding={b} />
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          Belum ada data per butir telur • {b.egg_count} butir total
+                        </p>
                       )}
                     </div>
                   </Card>

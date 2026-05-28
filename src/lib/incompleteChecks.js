@@ -4,11 +4,13 @@ export const INCOMPLETE_CHECKS = {
   tortoise: {
     label: "Kura-kura",
     fields: [
-      { key: "photo_url", label: "Foto", check: (d) => !!d.photo_url || (Array.isArray(d.photos) && d.photos.length > 0) },
-      { key: "weight_grams", label: "Berat (gram)", check: (d) => !!d.weight_grams },
-      { key: "shell_length_cm", label: "Panjang cangkang", check: (d) => !!d.shell_length_cm },
-      { key: "birth_or_purchase", label: "Tgl lahir / beli", check: (d) => !!d.birth_date || !!d.purchase_date },
-      { key: "enclosure", label: "Kandang", check: (d) => !!d.enclosure },
+      { key: "photo_url",      label: "Foto",           check: (d) => !!d.photo_url || (Array.isArray(d.photos) && d.photos.length > 0) },
+      { key: "weight_grams",   label: "Berat",          check: (d) => !!d.weight_grams && d.weight_grams > 0 },
+      { key: "shell_length_cm",label: "Panjang cangkang",check: (d) => !!d.shell_length_cm && d.shell_length_cm > 0 },
+      { key: "birth_date",     label: "Tgl lahir",      check: (d) => !!d.birth_date },
+      { key: "gender",         label: "Gender",         check: (d) => !!d.gender && d.gender !== "belum_diketahui" },
+      { key: "enclosure",      label: "Kandang",        check: (d) => !!d.enclosure },
+      { key: "species",        label: "Spesies",        check: (d) => !!d.species },
     ],
   },
   breeding: {
