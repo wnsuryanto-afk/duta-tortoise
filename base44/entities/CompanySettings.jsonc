@@ -35,6 +35,16 @@
       "description": "Jabatan direktur / pimpinan",
       "default": "Pimpinan"
     },
+    "min_poin_bulanan": {
+      "type": "number",
+      "default": 300,
+      "description": "Target minimum poin per bulan per karyawan"
+    },
+    "nilai_per_poin": {
+      "type": "number",
+      "default": 500,
+      "description": "Nilai rupiah per poin untuk bonus gaji"
+    },
     "setting_key": {
       "type": "string",
       "default": "main",

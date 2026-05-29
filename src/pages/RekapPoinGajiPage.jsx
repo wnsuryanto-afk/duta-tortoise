@@ -13,7 +13,6 @@ import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { toast } from "sonner";
 
-const TARGET_POIN = 300;
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function RekapPoinGajiPage() {
@@ -21,6 +20,14 @@ export default function RekapPoinGajiPage() {
   const qc = useQueryClient();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
   const [generating, setGenerating] = useState(null);
+
+  const { data: companySettings = [] } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: () => base44.entities.CompanySettings.list(),
+  });
+  const settings = companySettings[0] || {};
+  const TARGET_POIN_SETTING = settings.min_poin_bulanan || 300;
+  const NILAI_PER_POIN_SETTING = settings.nilai_per_poin || 500;
 
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
@@ -70,14 +77,12 @@ export default function RekapPoinGajiPage() {
   const monthStart = selectedMonth + "-01";
   const monthEnd = format(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1), "yyyy-MM") + "-01";
 
-  if (!canAccess(role, "payroll")) return <AccessDenied />;
-
   const employees = users.filter(u => ["keeper", "admin", "manajer", "kepala_feeder"].includes(u.role));
 
   const rekapData = useMemo(() => {
     return employees.map(emp => {
       const config = salaryConfigs.find(c => c.role === emp.role);
-      const pointValue = config?.point_value || 500;
+      const pointValue = NILAI_PER_POIN_SETTING;
       const baseSalary = config?.base_salary || 0;
       const salaryType = config?.salary_type || "bulanan";
       const absentDeduction = config?.absent_deduction || 0;
@@ -97,8 +102,8 @@ export default function RekapPoinGajiPage() {
       const checklistPoin = empChecklists.reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
 
       const totalPoin = bonusPoin + checklistPoin;
-      const targetTercapai = totalPoin >= TARGET_POIN;
-      const selisihPoin = Math.abs(totalPoin - TARGET_POIN);
+      const targetTercapai = totalPoin >= TARGET_POIN_SETTING;
+      const selisihPoin = Math.abs(totalPoin - TARGET_POIN_SETTING);
 
       const bonus = totalPoin * pointValue;
       const potonganPoin = targetTercapai ? 0 : selisihPoin * pointValue;
@@ -135,7 +140,9 @@ export default function RekapPoinGajiPage() {
         existingSlip, pointValue,
       };
     });
-  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegetablePickups, selectedMonth]);
+  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegetablePickups, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING]);
+
+  if (!canAccess(role, "payroll")) return <AccessDenied />;
 
   const handleGenerateSlip = async (row) => {
     setGenerating(row.emp.id);
@@ -154,7 +161,11 @@ export default function RekapPoinGajiPage() {
       net_total: row.netTotal,
       total_points: row.totalPoin,
       point_value: row.pointValue,
-      target_points: TARGET_POIN,
+      target_points: TARGET_POIN_SETTING,
+      total_poin: row.totalPoin,
+      poin_bonus: row.bonus,
+      poin_deduction: row.potonganPoin,
+      poin_status: row.targetTercapai ? "Tercapai" : `Kurang ${row.selisihPoin} poin`,
       status: "draft",
       generated_date: format(new Date(), "yyyy-MM-dd"),
     };
@@ -213,7 +224,7 @@ export default function RekapPoinGajiPage() {
             <FileText className="w-4 h-4 text-primary" />
             Rekap per Karyawan — {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })}
           </h2>
-          <p className="text-xs text-muted-foreground mt-1">Target minimum: {TARGET_POIN} poin/bulan</p>
+          <p className="text-xs text-muted-foreground mt-1">Target minimum: {TARGET_POIN_SETTING} poin/bulan · Nilai: {fmt(NILAI_PER_POIN_SETTING)}/poin</p>
         </div>
         <div className="divide-y">
           {rekapData.length === 0 ? (

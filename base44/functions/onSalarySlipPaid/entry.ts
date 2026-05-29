@@ -14,9 +14,20 @@ Deno.serve(async (req) => {
 
     const slip = data;
 
-    // Cek apakah sudah ada FinanceTransaction untuk slip ini
+    // Cek apakah sudah ada FinanceTransaction untuk slip ini (cek finance_tx_id ATAU reference_id)
     if (slip.finance_tx_id) {
-      return Response.json({ ok: true, skipped: "sudah ada FinanceTransaction" });
+      return Response.json({ ok: true, skipped: "sudah ada FinanceTransaction (finance_tx_id)" });
+    }
+
+    // Cek juga via reference_id di FinanceTransaction untuk cegah duplikat
+    if (slip.id) {
+      const existingTx = await base44.asServiceRole.entities.FinanceTransaction.filter({
+        reference_id: slip.id,
+        category: "gaji_karyawan",
+      });
+      if (existingTx && existingTx.length > 0) {
+        return Response.json({ ok: true, skipped: "sudah ada FinanceTransaction (reference_id)" });
+      }
     }
 
     // Buat FinanceTransaction untuk gaji yang sudah dibayar

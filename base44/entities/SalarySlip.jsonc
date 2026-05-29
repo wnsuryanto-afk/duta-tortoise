@@ -2,6 +2,10 @@
   "name": "SalarySlip",
   "type": "object",
   "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "ID user karyawan"
+    },
     "employee_email": {
       "type": "string",
       "description": "Email karyawan"
@@ -9,6 +13,10 @@
     "employee_name": {
       "type": "string",
       "description": "Nama karyawan"
+    },
+    "employee_role": {
+      "type": "string",
+      "description": "Role karyawan"
     },
     "period": {
       "type": "string",
@@ -24,12 +32,12 @@
       "default": 0,
       "description": "Bonus KPI"
     },
-    "overtime_amount": {
+    "overtime_pay": {
       "type": "number",
       "default": 0,
       "description": "Total lembur"
     },
-    "vegetable_amount": {
+    "vegetable_pay": {
       "type": "number",
       "default": 0,
       "description": "Total sayuran/perjalanan"
@@ -43,6 +51,25 @@
       "type": "number",
       "default": 0,
       "description": "Potongan kasbon"
+    },
+    "total_poin": {
+      "type": "number",
+      "default": 0,
+      "description": "Total poin karyawan periode ini"
+    },
+    "poin_bonus": {
+      "type": "number",
+      "default": 0,
+      "description": "Bonus dari poin (total_poin \u00d7 nilai_per_poin)"
+    },
+    "poin_deduction": {
+      "type": "number",
+      "default": 0,
+      "description": "Potongan jika di bawah target minimum"
+    },
+    "poin_status": {
+      "type": "string",
+      "description": "Tercapai / Kurang N poin"
     },
     "gross_total": {
       "type": "number",
@@ -69,6 +96,15 @@
     "paid_by": {
       "type": "string",
       "description": "Dibayarkan oleh"
+    },
+    "finance_tx_id": {
+      "type": "string",
+      "description": "ID FinanceTransaction otomatis saat paid"
+    },
+    "generated_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal slip dibuat"
     },
     "pdf_url": {
       "type": "string",

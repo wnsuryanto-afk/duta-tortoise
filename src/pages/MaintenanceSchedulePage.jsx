@@ -214,6 +214,15 @@ export default function MaintenanceSchedulePage() {
         is_verified: false,
         done_at: nowStr,
         done_by: user?.full_name || user?.email || "",
+        done_by_email: user?.email || "",
+        poin_earned: 5,
+      });
+    }
+    // Update juga jika existing sudah ada tapi is_done berubah ke true
+    if (existingLog && !existingLog.is_done) {
+      await base44.entities.MaintenanceLog.update(existingLog.id, {
+        done_by_email: user?.email || "",
+        poin_earned: existingLog.poin_earned || 5,
       });
     }
     qc.invalidateQueries({ queryKey: ["enclosure-clean-logs"] });

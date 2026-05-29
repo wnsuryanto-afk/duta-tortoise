@@ -252,20 +252,6 @@ function CompanySettingsTab() {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Sync form dengan data yang sudah ada
-  if (!form && existing) {
-    setTimeout(() => setForm({
-      company_name: existing.company_name || "",
-      company_address: existing.company_address || "",
-      company_city: existing.company_city || "",
-      company_phone: existing.company_phone || "",
-      company_email: existing.company_email || "",
-      company_logo_url: existing.company_logo_url || "",
-      director_name: existing.director_name || "",
-      director_title: existing.director_title || "Pimpinan",
-    }), 0);
-  }
-
   const defaultForm = {
     company_name: "Duta Tortoise Farm",
     company_address: "",
@@ -275,7 +261,26 @@ function CompanySettingsTab() {
     company_logo_url: "",
     director_name: "",
     director_title: "Pimpinan",
+    min_poin_bulanan: 300,
+    nilai_per_poin: 500,
   };
+
+  // Sync form dengan data yang sudah ada
+  if (!form && existing) {
+    setTimeout(() => setForm({
+      ...defaultForm,
+      company_name: existing.company_name || "",
+      company_address: existing.company_address || "",
+      company_city: existing.company_city || "",
+      company_phone: existing.company_phone || "",
+      company_email: existing.company_email || "",
+      company_logo_url: existing.company_logo_url || "",
+      director_name: existing.director_name || "",
+      director_title: existing.director_title || "Pimpinan",
+      min_poin_bulanan: existing.min_poin_bulanan ?? 300,
+      nilai_per_poin: existing.nilai_per_poin ?? 500,
+    }), 0);
+  }
 
   const currentForm = form || defaultForm;
   const set = (k, v) => setForm(p => ({ ...(p || defaultForm), [k]: v }));
@@ -333,6 +338,52 @@ function CompanySettingsTab() {
         <div className="space-y-1.5">
           <Label>Jabatan Pimpinan</Label>
           <Input value={currentForm.director_title} onChange={e => set("director_title", e.target.value)} placeholder="Pimpinan / Direktur" />
+        </div>
+      </div>
+
+      {/* Konfigurasi Poin & Gaji */}
+      <div className="border-t pt-5 space-y-4">
+        <div>
+          <h3 className="font-semibold text-sm flex items-center gap-2">⭐ Konfigurasi Poin & Gaji</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Digunakan untuk menghitung bonus/potongan di Rekap Poin & Gaji</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>Target Poin Minimum/Bulan</Label>
+            <Input
+              type="number"
+              min={0}
+              value={currentForm.min_poin_bulanan}
+              onChange={e => set("min_poin_bulanan", Number(e.target.value) || 0)}
+              placeholder="300"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Nilai per Poin (Rp)</Label>
+            <Input
+              type="number"
+              min={0}
+              value={currentForm.nilai_per_poin}
+              onChange={e => set("nilai_per_poin", Number(e.target.value) || 0)}
+              placeholder="500"
+            />
+          </div>
+        </div>
+        {/* Contoh perhitungan dinamis */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+          <p className="font-medium">📊 Contoh Perhitungan:</p>
+          {(() => {
+            const target = currentForm.min_poin_bulanan || 300;
+            const nilai = currentForm.nilai_per_poin || 500;
+            const contohPoin = target + 20;
+            return (
+              <>
+                <p>• {contohPoin} poin = bonus Rp {(contohPoin * nilai).toLocaleString("id-ID")} (tidak ada potongan, target ≥{target})</p>
+                <p>• {target - 30} poin = potongan Rp {(30 * nilai).toLocaleString("id-ID")} (kurang 30 poin dari target {target})</p>
+                <p>• Tepat {target} poin = bonus Rp {(target * nilai).toLocaleString("id-ID")}, tidak ada potongan</p>
+              </>
+            );
+          })()}
         </div>
       </div>
 

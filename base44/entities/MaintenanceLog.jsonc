@@ -48,6 +48,10 @@
       "type": "string",
       "description": "Nama keeper yang mencentang"
     },
+    "done_by_email": {
+      "type": "string",
+      "description": "Email keeper yang mencentang (untuk link ke DailyChecklist)"
+    },
     "is_verified": {
       "type": "boolean",
       "default": false,
@@ -60,6 +64,11 @@
     "verified_at": {
       "type": "string",
       "description": "Jam verifikasi (HH:mm)"
+    },
+    "poin_earned": {
+      "type": "number",
+      "default": 0,
+      "description": "Poin yang diperoleh dari task ini"
     },
     "notes": {
       "type": "string",
