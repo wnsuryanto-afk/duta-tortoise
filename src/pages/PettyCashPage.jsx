@@ -156,6 +156,10 @@ export default function PettyCashPage() {
   };
 
   const handleApprove = async (req, approved) => {
+    if (req.requester_email === user?.email) {
+      toast.error("Anda tidak bisa menyetujui pengajuan milik sendiri. Minta atasan atau admin untuk menyetujui.");
+      return;
+    }
     await base44.entities.PettyCashRequest.update(req.id, {
       status: approved ? "disetujui" : "ditolak",
       approved_by: user?.full_name || user?.email,

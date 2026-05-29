@@ -47,11 +47,7 @@ export default function EditProfilePage() {
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
-      if (formData.id) {
-        return await base44.entities.UserProfile.update(formData.id, data);
-      } else {
-        return await base44.entities.UserProfile.create({ ...data, user_id: user.id, user_email: user.email });
-      }
+      return await upsertUserProfile(user, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });

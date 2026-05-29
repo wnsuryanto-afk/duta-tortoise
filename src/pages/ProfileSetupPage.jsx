@@ -61,23 +61,7 @@ export default function ProfileSetupPage() {
   // Save profile mutation
   const saveProfileMutation = useMutation({
     mutationFn: async (profileData) => {
-      // is_complete = true HANYA jika semua field esensial terisi
-      const isComplete = IS_COMPLETE_FIELDS.every(f => profileData[f] && profileData[f].toString().trim() !== "");
-      
-      const dataToSave = {
-        ...profileData,
-        is_complete: isComplete,
-      };
-      
-      if (profiles && profiles.length > 0) {
-        return await base44.entities.UserProfile.update(profiles[0].id, dataToSave);
-      } else {
-        return await base44.entities.UserProfile.create({
-          ...dataToSave,
-          user_id: user.id,
-          user_email: user.email,
-        });
-      }
+      return await upsertUserProfile(user, profileData);
     },
     onSuccess: async () => {
       // Update user full_name if changed
