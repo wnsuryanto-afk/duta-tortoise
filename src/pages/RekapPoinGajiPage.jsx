@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, Star, TrendingUp, TrendingDown, FileText, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -183,6 +183,40 @@ export default function RekapPoinGajiPage() {
   const totalPoinTertinggi = Math.max(...rekapData.map(r => r.totalPoin), 0);
   const totalGaji = rekapData.reduce((s, r) => s + r.netTotal, 0);
 
+  const handleGenerateAll = async () => {
+    setGenerating("all");
+    for (const row of rekapData) {
+      const data = {
+        employee_id: row.emp.id,
+        employee_name: row.emp.full_name || row.emp.email,
+        employee_email: row.emp.email,
+        employee_role: row.emp.role,
+        period: selectedMonth,
+        base_salary: row.effectiveBase,
+        kpi_bonus: row.kpiBonus,
+        overtime_pay: row.overtimePay,
+        vegetable_pay: row.vegPay,
+        absent_deduction: row.deduction,
+        kasbon_deduction: row.kasbonDeduction,
+        net_total: row.netTotal,
+        total_poin: row.totalPoin,
+        poin_bonus: row.bonus,
+        poin_deduction: row.potonganPoin,
+        poin_status: row.targetTercapai ? "Tercapai" : `Kurang ${row.selisihPoin} poin`,
+        status: "draft",
+        generated_date: format(new Date(), "yyyy-MM-dd"),
+      };
+      if (row.existingSlip) {
+        await base44.entities.SalarySlip.update(row.existingSlip.id, data);
+      } else {
+        await base44.entities.SalarySlip.create(data);
+      }
+    }
+    qc.invalidateQueries({ queryKey: ["salary-slips"] });
+    toast.success(`${rekapData.length} slip gaji berhasil dibuat/diperbarui`);
+    setGenerating(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -190,7 +224,18 @@ export default function RekapPoinGajiPage() {
           <h1 className="text-2xl font-heading font-bold">Rekap Poin & Gaji</h1>
           <p className="text-muted-foreground text-sm">Ringkasan KPI, poin, dan kalkulasi gaji per karyawan</p>
         </div>
-        <Input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-40" />
+        <div className="flex gap-2 items-center flex-wrap">
+          <Input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-40" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateAll}
+            disabled={generating !== null || rekapData.length === 0}
+            className="gap-1.5"
+          >
+            {generating === "all" ? <><span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin inline-block" /> Generating...</> : <><FileText className="w-3.5 h-3.5" /> Generate Semua</>}
+          </Button>
+        </div>
       </div>
 
       {/* Summary cards */}

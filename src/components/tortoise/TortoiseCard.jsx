@@ -16,6 +16,7 @@ import { getMissingFields } from "@/lib/incompleteChecks";
 import TortoiseCompletenessPanel from "./TortoiseCompletenessPanel";
 import { canViewPrice } from "@/lib/permissions";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { AgeBadge } from "./AgeDisplay";
 
 function PriceField({ label, value }) {
   return (
@@ -270,6 +271,27 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             {tortoise.enclosure && <span>📍 {tortoise.enclosure}</span>}
             {tortoise.birth_date && <span>🐣 {format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: id })}</span>}
             {tortoise.purchase_date && <span>🛒 {format(new Date(tortoise.purchase_date), "d MMM yyyy", { locale: id })}</span>}
+          </div>
+          {/* Umur otomatis dari birth_date */}
+          <div className="mt-1.5">
+            <AgeBadge birthDate={tortoise.birth_date} />
+            {tortoise.last_weighed_date && (() => {
+              const lastWeighed = new Date(tortoise.last_weighed_date);
+              const today = new Date();
+              const diffDays = Math.floor((today - lastWeighed) / (1000 * 60 * 60 * 24));
+              const interval = tortoise.weighing_interval_days || 30;
+              const needsWeighing = diffDays > interval;
+              return (
+                <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border ml-1 ${needsWeighing ? "bg-red-100 text-red-700 border-red-200 font-semibold" : "bg-muted text-muted-foreground border-border"}`}>
+                  ⚖️ {needsWeighing ? `Perlu ditimbang! (${diffDays}h lalu)` : `Ditimbang ${diffDays}h lalu`}
+                </span>
+              );
+            })()}
+            {!tortoise.last_weighed_date && (
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border ml-1 bg-amber-50 text-amber-700 border-amber-200">
+                ⚖️ Belum pernah ditimbang
+              </span>
+            )}
           </div>
           {/* Harga - hanya untuk owner/admin/manajer */}
           {(tortoise.purchase_price || tortoise.hpp) && (

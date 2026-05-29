@@ -211,13 +211,22 @@ export default function SOPChecklist() {
                     </label>
                   </div>
                   {checked[task.id] && (
-                    <div className="space-y-2">
+                    <div className="ml-7 space-y-2">
+                      {(task.points || 0) >= 15 && (
+                        <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                          📷 Foto bukti disarankan untuk task bernilai tinggi ini
+                        </p>
+                      )}
                       <Textarea
-                        placeholder="Catatan (opsional)"
-                        className="ml-7 h-16 text-xs resize-none"
+                        placeholder="Catatan kondisi (opsional, contoh: ada kura lesu di sudut)"
+                        className="h-16 text-xs resize-none"
+                        maxLength={200}
                         value={taskNotes[task.id] || ""}
                         onChange={(e) => setTaskNotes((p) => ({ ...p, [task.id]: e.target.value }))}
                       />
+                      {taskNotes[task.id]?.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground text-right">{taskNotes[task.id].length}/200</p>
+                      )}
                       <PhotoUploadWithWatermark
                         taskTitle={task.title}
                         employeeName={user?.full_name || user?.email || "Karyawan"}

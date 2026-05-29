@@ -10,7 +10,8 @@ import SOPKPI from "@/components/sop/SOPKPI";
 
 export default function SOPPage() {
   const { role } = useCurrentUser();
-  const isAdmin = role === "owner" || role === "admin";
+  const isAdmin = ["owner", "admin", "manajer", "kepala_feeder"].includes(role);
+  const canManageSOP = role === "owner" || role === "admin";
 
   return (
     <div className="space-y-6">
@@ -24,7 +25,7 @@ export default function SOPPage() {
           <TabsTrigger value="checklist">Checklist Saya</TabsTrigger>
           {isAdmin && <TabsTrigger value="approval">Verifikasi</TabsTrigger>}
           <TabsTrigger value="kpi">KPI & Poin</TabsTrigger>
-          {isAdmin && <TabsTrigger value="tasks">Kelola SOP</TabsTrigger>}
+          {canManageSOP && <TabsTrigger value="tasks">Kelola SOP</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="checklist" className="mt-6">
@@ -38,7 +39,7 @@ export default function SOPPage() {
         <TabsContent value="kpi" className="mt-6">
           <SOPKPI />
         </TabsContent>
-        {isAdmin && (
+        {canManageSOP && (
           <TabsContent value="tasks" className="mt-6">
             <SOPTaskManager />
           </TabsContent>
