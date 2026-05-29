@@ -15,7 +15,9 @@
       "enum": [
         "create",
         "update",
-        "delete"
+        "delete",
+        "login",
+        "logout"
       ],
       "description": "Jenis aksi"
     },
@@ -33,7 +35,28 @@
     },
     "changes_summary": {
       "type": "string",
-      "description": "Ringkasan perubahan: 'field X: dari A ke B'"
+      "description": "Ringkasan perubahan yang ramah pengguna"
+    },
+    "changes_detail": {
+      "type": "array",
+      "description": "Detail field yang berubah",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "old_value": {
+            "type": "string"
+          },
+          "new_value": {
+            "type": "string"
+          }
+        }
+      }
     },
     "timestamp": {
       "type": "string",
