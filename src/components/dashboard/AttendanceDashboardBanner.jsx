@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
-import { Users, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Users, CheckCircle2, Clock, AlertCircle, LogOut } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -66,13 +67,25 @@ export default function AttendanceDashboardBanner() {
       {feederAttendances.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {feederAttendances.map((a) => (
-            <div key={a.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background border text-xs">
+            <div key={a.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-background border text-xs">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 a.status === "hadir" ? "bg-green-500" :
                 a.status === "izin" ? "bg-blue-500" : "bg-red-500"
               }`} />
               <span className="font-medium">{a.employee_name}</span>
               {a.check_in && <span className="text-muted-foreground">{a.check_in}</span>}
+              {a.check_out ? (
+                <span className="flex items-center gap-0.5 text-green-600 font-medium">
+                  <LogOut className="w-2.5 h-2.5" />{a.check_out}
+                </span>
+              ) : (
+                <span className="text-orange-500 italic">blm checkout</span>
+              )}
+              {a.overtime_hours > 0 && (
+                <Badge className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0 h-4">
+                  +{a.overtime_hours}j lembur
+                </Badge>
+              )}
             </div>
           ))}
           {belumAbsen.map((f) => (

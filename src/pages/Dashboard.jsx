@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Shell, Baby, Egg, AlertTriangle, ClipboardList, Syringe, Home, Users, Wallet, Package, Target } from "lucide-react";
+import { Shell, Baby, Egg, AlertTriangle, ClipboardList, Users, Package, Target } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import CheckInWidget from "@/components/attendance/CheckInWidget";
 import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
@@ -11,7 +11,6 @@ import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import EggHatchChart from "@/components/dashboard/EggHatchChart";
 import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
-import FinanceSummaryWidget from "@/components/dashboard/FinanceSummaryWidget";
 import AttendanceDashboardBanner from "@/components/dashboard/AttendanceDashboardBanner";
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 import HatchReminderAlert from "@/components/dashboard/HatchReminderAlert";
@@ -117,14 +116,9 @@ export default function Dashboard() {
         </div>
       </DashboardSection>
 
-      {/* SECTION 5: Ringkasan Operasional Bulan Ini */}
+      {/* SECTION 5: Ringkasan Bulan Ini - keuangan + KPI */}
       <DashboardSection title="Ringkasan Bulan Ini" icon={Target}>
         <OperationalSummaryWidget />
-      </DashboardSection>
-
-      {/* SECTION 6: Keuangan Bulan Ini */}
-      <DashboardSection title="Keuangan Bulan Ini" icon={Wallet}>
-        <FinanceSummaryWidget />
       </DashboardSection>
 
       {/* SECTION 7: Tim & SDM */}

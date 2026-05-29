@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   LogIn, LogOut, CheckCircle2, Clock, Bell,
-  ClipboardList, AlertTriangle, Star, ChevronRight
+  ClipboardList, AlertTriangle, Star, ChevronRight, MapPin
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 
 function getMinutesUntil(timeStr) {
   if (!timeStr) return null;
@@ -27,6 +28,8 @@ export default function KeeperDashboard() {
   const today = format(new Date(), "yyyy-MM-dd");
   const currentPeriod = format(new Date(), "yyyy-MM");
   const [checkLoading, setCheckLoading] = useState(false);
+  const [gpsError, setGpsError] = useState(null);
+  const [locationWarning, setLocationWarning] = useState(null);
 
   // ── Absensi ──
   const { data: todayAttendance } = useQuery({
@@ -55,6 +58,24 @@ export default function KeeperDashboard() {
     refetchInterval: 60000,
   });
 
+  // ── Company Settings (GPS) ──
+  const { data: settings } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: async () => {
+      const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
+      return res[0] || null;
+    },
+  });
+
+  const { data: salaryConfig } = useQuery({
+    queryKey: ["salary-config", user?.role],
+    queryFn: async () => {
+      const res = await base44.entities.SalaryConfig.filter({ role: user?.role });
+      return res[0] || null;
+    },
+    enabled: !!user?.role,
+  });
+
   // ── KPI bulan ini ──
   const { data: checklists = [] } = useQuery({
     queryKey: ["checklist-my-month", user?.email, currentPeriod],
@@ -72,17 +93,46 @@ export default function KeeperDashboard() {
   });
 
   // ── Handlers check-in / out ──
-  const now = () => format(new Date(), "HH:mm");
+  const nowStr = () => format(new Date(), "HH:mm");
+  const farmLat = settings?.farm_lat;
+  const farmLng = settings?.farm_lng;
+  const farmRadius = settings?.farm_location_radius || 200;
+  const farmConfigured = !!(farmLat && farmLng);
+
   const handleCheckIn = async () => {
     if (!user) return;
     setCheckLoading(true);
+    setGpsError(null);
+    setLocationWarning(null);
+
+    let lat = null, lng = null, verified = false;
+    try {
+      const pos = await getCurrentPosition();
+      lat = pos.lat; lng = pos.lng;
+      if (farmConfigured) {
+        const dist = Math.round(haversineDistance(lat, lng, farmLat, farmLng));
+        if (dist > farmRadius) {
+          setLocationWarning(`Anda berada ${dist}m dari lokasi kandang. Check in tetap tercatat tapi ditandai di luar lokasi.`);
+        } else {
+          verified = true;
+        }
+      }
+    } catch (err) {
+      setGpsError(err.message);
+    }
+
     await base44.entities.Attendance.create({
       employee_id: user.id,
       employee_name: user.full_name || user.email,
       employee_email: user.email,
       date: today,
-      check_in: now(),
+      check_in: nowStr(),
       status: "hadir",
+      check_in_lat: lat,
+      check_in_lng: lng,
+      location_verified: verified,
+      shift_start: salaryConfig?.shift_start || "08:00",
+      shift_end: salaryConfig?.shift_end || "16:00",
     });
     queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
     setCheckLoading(false);
@@ -91,14 +141,69 @@ export default function KeeperDashboard() {
   const handleCheckOut = async () => {
     if (!todayAttendance) return;
     setCheckLoading(true);
-    await base44.entities.Attendance.update(todayAttendance.id, { check_out: now() });
+    setGpsError(null);
+    setLocationWarning(null);
+
+    if (farmConfigured) {
+      let pos;
+      try {
+        pos = await getCurrentPosition();
+      } catch (err) {
+        setGpsError(err.message);
+        setCheckLoading(false);
+        return;
+      }
+      const dist = Math.round(haversineDistance(pos.lat, pos.lng, farmLat, farmLng));
+      if (dist > farmRadius) {
+        setGpsError(`Check out harus dilakukan di lokasi kandang. Anda saat ini berada ${dist}m dari kandang. Silakan menuju kandang untuk checkout.`);
+        setCheckLoading(false);
+        return;
+      }
+      const checkoutTime = nowStr();
+      const shiftEnd = todayAttendance.shift_end || salaryConfig?.shift_end || "16:00";
+      const overtimeHours = calcOvertimeHours(checkoutTime, shiftEnd);
+      await base44.entities.Attendance.update(todayAttendance.id, {
+        check_out: checkoutTime,
+        check_out_lat: pos.lat,
+        check_out_lng: pos.lng,
+        overtime_hours: overtimeHours,
+      });
+      if (overtimeHours > 0) {
+        await base44.entities.OvertimeLog.create({
+          employee_name: todayAttendance.employee_name,
+          employee_email: todayAttendance.employee_email,
+          date: today,
+          hours: overtimeHours,
+          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
+        });
+      }
+    } else {
+      const checkoutTime = nowStr();
+      const shiftEnd = todayAttendance.shift_end || salaryConfig?.shift_end || "16:00";
+      const overtimeHours = calcOvertimeHours(checkoutTime, shiftEnd);
+      await base44.entities.Attendance.update(todayAttendance.id, {
+        check_out: checkoutTime,
+        overtime_hours: overtimeHours,
+      });
+      if (overtimeHours > 0) {
+        await base44.entities.OvertimeLog.create({
+          employee_name: todayAttendance.employee_name,
+          employee_email: todayAttendance.employee_email,
+          date: today,
+          hours: overtimeHours,
+          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
+        });
+      }
+    }
     queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
+    queryClient.invalidateQueries({ queryKey: ["overtime-logs"] });
     setCheckLoading(false);
   };
 
   // ── Derived ──
   const hasCheckedIn = !!todayAttendance?.check_in;
   const hasCheckedOut = !!todayAttendance?.check_out;
+  const overtime = todayAttendance?.overtime_hours || 0;
 
   const completedTaskIds = new Set((todayChecklist?.completed_tasks || []).map((t) => t.task_id));
   const totalDailyTasks = tasks.filter((t) => t.frequency === "harian" && t.is_active).length;
@@ -139,7 +244,7 @@ export default function KeeperDashboard() {
 
       {/* ── 1. CHECK-IN ── */}
       <Card className={`p-5 border-2 ${hasCheckedOut ? "border-green-200 bg-green-50" : hasCheckedIn ? "border-primary/30 bg-primary/5" : "border-dashed border-muted-foreground/30"}`}>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className={`w-11 h-11 rounded-full flex items-center justify-center ${hasCheckedOut ? "bg-green-100" : "bg-primary/15"}`}>
               <Clock className={`w-5 h-5 ${hasCheckedOut ? "text-green-600" : "text-primary"}`} />
@@ -154,25 +259,62 @@ export default function KeeperDashboard() {
               ) : (
                 <p className="text-xs text-muted-foreground">Belum absen hari ini</p>
               )}
+              {farmConfigured && hasCheckedIn && (
+                <Badge variant="outline" className={`text-[10px] mt-1 gap-1 ${todayAttendance?.location_verified ? "border-green-300 text-green-700" : "border-yellow-300 text-yellow-700"}`}>
+                  <MapPin className="w-2.5 h-2.5" />
+                  {todayAttendance?.location_verified ? "Lokasi terverifikasi" : "Di luar area kandang"}
+                </Badge>
+              )}
             </div>
           </div>
-          {hasCheckedOut ? (
-            <Badge className="bg-green-100 text-green-700 border-green-200 gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Selesai
-            </Badge>
-          ) : hasCheckedIn ? (
-            <Button size="sm" variant="outline" onClick={handleCheckOut} disabled={checkLoading}
-              className="border-red-200 text-red-600 hover:bg-red-50 gap-1.5">
-              <LogOut className="w-4 h-4" />
-              {checkLoading ? "..." : "Check-out"}
-            </Button>
-          ) : (
-            <Button size="sm" onClick={handleCheckIn} disabled={checkLoading} className="gap-1.5">
-              <LogIn className="w-4 h-4" />
-              {checkLoading ? "..." : "Check-in"}
-            </Button>
-          )}
+          <div className="flex flex-col gap-2 items-end">
+            {hasCheckedOut ? (
+              <Badge className="bg-green-100 text-green-700 border-green-200 gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Selesai
+              </Badge>
+            ) : hasCheckedIn ? (
+              <Button size="default" variant="outline" onClick={handleCheckOut} disabled={checkLoading}
+                className="border-red-200 text-red-600 hover:bg-red-50 gap-1.5 min-w-[120px]">
+                <LogOut className="w-4 h-4" />
+                {checkLoading ? "Memproses..." : "Check-out"}
+              </Button>
+            ) : (
+              <Button size="default" onClick={handleCheckIn} disabled={checkLoading} className="gap-1.5 min-w-[120px]">
+                <LogIn className="w-4 h-4" />
+                {checkLoading ? "Memproses..." : "Check-in"}
+              </Button>
+            )}
+            {farmConfigured && !hasCheckedIn && (
+              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> GPS diperlukan
+              </p>
+            )}
+          </div>
         </div>
+
+        {/* Lembur info */}
+        {hasCheckedOut && overtime > 0 && (
+          <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Lembur: <strong>{overtime} jam</strong> — tercatat otomatis</span>
+          </div>
+        )}
+
+        {/* Warning lokasi */}
+        {locationWarning && (
+          <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-yellow-50 border border-yellow-200 text-xs text-yellow-700">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>{locationWarning}</span>
+          </div>
+        )}
+
+        {/* GPS Error */}
+        {gpsError && (
+          <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>{gpsError}</span>
+          </div>
+        )}
       </Card>
 
       {/* ── 2. TARGET SOP HARI INI ── */}

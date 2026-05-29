@@ -21,6 +21,27 @@
     "check_out": {
       "type": "string"
     },
+    "check_in_lat": {
+      "type": "number",
+      "description": "Latitude saat check in"
+    },
+    "check_in_lng": {
+      "type": "number",
+      "description": "Longitude saat check in"
+    },
+    "check_out_lat": {
+      "type": "number",
+      "description": "Latitude saat check out"
+    },
+    "check_out_lng": {
+      "type": "number",
+      "description": "Longitude saat check out"
+    },
+    "location_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah lokasi terverifikasi dalam radius kandang"
+    },
     "late_minutes": {
       "type": "number",
       "default": 0
@@ -28,6 +49,14 @@
     "overtime_hours": {
       "type": "number",
       "default": 0
+    },
+    "shift_start": {
+      "type": "string",
+      "description": "Jam mulai shift (HH:mm)"
+    },
+    "shift_end": {
+      "type": "string",
+      "description": "Jam selesai shift (HH:mm)"
     },
     "status": {
       "type": "string",

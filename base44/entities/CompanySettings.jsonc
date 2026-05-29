@@ -45,6 +45,19 @@
       "default": 500,
       "description": "Nilai rupiah per poin untuk bonus gaji"
     },
+    "farm_lat": {
+      "type": "number",
+      "description": "Latitude lokasi kandang"
+    },
+    "farm_lng": {
+      "type": "number",
+      "description": "Longitude lokasi kandang"
+    },
+    "farm_location_radius": {
+      "type": "number",
+      "default": 200,
+      "description": "Radius toleransi checkout dalam meter"
+    },
     "setting_key": {
       "type": "string",
       "default": "main",

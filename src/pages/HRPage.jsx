@@ -263,6 +263,9 @@ function CompanySettingsTab() {
     director_title: "Pimpinan",
     min_poin_bulanan: 300,
     nilai_per_poin: 500,
+    farm_lat: "",
+    farm_lng: "",
+    farm_location_radius: 200,
   };
 
   // Sync form dengan data yang sudah ada
@@ -279,6 +282,9 @@ function CompanySettingsTab() {
       director_title: existing.director_title || "Pimpinan",
       min_poin_bulanan: existing.min_poin_bulanan ?? 300,
       nilai_per_poin: existing.nilai_per_poin ?? 500,
+      farm_lat: existing.farm_lat ?? "",
+      farm_lng: existing.farm_lng ?? "",
+      farm_location_radius: existing.farm_location_radius ?? 200,
     }), 0);
   }
 
@@ -339,6 +345,65 @@ function CompanySettingsTab() {
           <Label>Jabatan Pimpinan</Label>
           <Input value={currentForm.director_title} onChange={e => set("director_title", e.target.value)} placeholder="Pimpinan / Direktur" />
         </div>
+      </div>
+
+      {/* Konfigurasi GPS Lokasi Kandang */}
+      <div className="border-t pt-5 space-y-4">
+        <div>
+          <h3 className="font-semibold text-sm flex items-center gap-2">📍 Lokasi Kandang (GPS Checkout)</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Karyawan hanya bisa checkout jika berada dalam radius ini dari koordinat kandang</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>Latitude Kandang</Label>
+            <Input
+              type="number"
+              step="0.000001"
+              value={currentForm.farm_lat}
+              onChange={e => set("farm_lat", e.target.value === "" ? "" : parseFloat(e.target.value))}
+              placeholder="-7.733925"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Longitude Kandang</Label>
+            <Input
+              type="number"
+              step="0.000001"
+              value={currentForm.farm_lng}
+              onChange={e => set("farm_lng", e.target.value === "" ? "" : parseFloat(e.target.value))}
+              placeholder="113.445944"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Radius Toleransi (meter)</Label>
+            <Input
+              type="number"
+              min={50}
+              max={2000}
+              value={currentForm.farm_location_radius}
+              onChange={e => set("farm_location_radius", Number(e.target.value) || 200)}
+              placeholder="200"
+            />
+          </div>
+        </div>
+        {currentForm.farm_lat && currentForm.farm_lng ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-800">
+            <p className="font-medium">✅ GPS Aktif</p>
+            <p className="mt-0.5">Kandang: {currentForm.farm_lat}, {currentForm.farm_lng} · Radius: {currentForm.farm_location_radius}m</p>
+            <a
+              href={`https://www.google.com/maps?q=${currentForm.farm_lat},${currentForm.farm_lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="underline mt-1 block"
+            >
+              Lihat di Google Maps →
+            </a>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-800">
+            <p>⚠️ Koordinat kandang belum diisi. Checkout GPS tidak aktif.</p>
+          </div>
+        )}
       </div>
 
       {/* Konfigurasi Poin & Gaji */}
