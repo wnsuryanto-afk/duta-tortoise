@@ -62,6 +62,8 @@ export default function TortoiseList() {
 
   // Karantina state
   const [quarantineFilter, setQuarantineFilter] = useState("all");
+  const [weightFilter, setWeightFilter] = useState("semua");
+  const [shellLengthFilter, setShellLengthFilter] = useState("semua");
 
   // ── Data Queries ──
   const { data: tortoises = [], isLoading } = useQuery({
@@ -160,7 +162,30 @@ export default function TortoiseList() {
     const matchSpecies = speciesFilter === "semua" || (t.species || "sulcata") === speciesFilter;
     const matchQuarantine = quarantineFilter === "all" || (quarantineFilter === "yes" ? t.in_quarantine : !t.in_quarantine);
     const matchIncomplete = !incompleteFilter || isIncomplete(t);
-    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchSpecies && matchQuarantine && matchIncomplete;
+
+    let matchWeight = true;
+    if (weightFilter !== "semua") {
+      const w = t.weight_grams;
+      if (!w || w === 0) return false;
+      if (weightFilter === "newborn") matchWeight = w < 100;
+      else if (weightFilter === "baby") matchWeight = w >= 100 && w <= 500;
+      else if (weightFilter === "juvenile") matchWeight = w > 500 && w <= 2000;
+      else if (weightFilter === "subadult") matchWeight = w > 2000 && w <= 8000;
+      else if (weightFilter === "adult") matchWeight = w > 8000;
+    }
+
+    let matchShellLength = true;
+    if (shellLengthFilter !== "semua") {
+      const sl = t.shell_length_cm;
+      if (!sl || sl === 0) return false;
+      if (shellLengthFilter === "xs") matchShellLength = sl < 8;
+      else if (shellLengthFilter === "s") matchShellLength = sl >= 8 && sl <= 15;
+      else if (shellLengthFilter === "m") matchShellLength = sl > 15 && sl <= 25;
+      else if (shellLengthFilter === "l") matchShellLength = sl > 25 && sl <= 35;
+      else if (shellLengthFilter === "xl") matchShellLength = sl > 35;
+    }
+
+    return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchSpecies && matchQuarantine && matchIncomplete && matchWeight && matchShellLength;
   });
 
   const grouped = useMemo(() => {
@@ -245,7 +270,7 @@ export default function TortoiseList() {
         <TabsContent value="kura" className="mt-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-sm text-muted-foreground">{filtered.length} dari {tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length} kura aktif</p>
+              <p className="text-sm text-muted-foreground">Menampilkan <span className="font-semibold text-foreground">{filtered.length}</span> kura dari {tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length} aktif</p>
               {(() => {
                 const activeCount = tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length;
                 const visibleActive = filtered.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length;
@@ -371,6 +396,37 @@ export default function TortoiseList() {
                 <SelectItem value="lainnya">Lainnya</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Filter Berat */}
+            <Select value={weightFilter} onValueChange={setWeightFilter}>
+              <SelectTrigger className={`w-36 h-9 text-xs ${weightFilter !== "semua" ? "border-primary bg-primary/5 text-primary font-semibold" : ""}`}>
+                <SelectValue placeholder="Berat" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semua">Semua Berat</SelectItem>
+                <SelectItem value="newborn">Newborn (&lt;100g)</SelectItem>
+                <SelectItem value="baby">Baby (100–500g)</SelectItem>
+                <SelectItem value="juvenile">Juvenile (500–2000g)</SelectItem>
+                <SelectItem value="subadult">Sub-Adult (2–8kg)</SelectItem>
+                <SelectItem value="adult">Adult (&gt;8kg)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filter Panjang Karapas */}
+            <Select value={shellLengthFilter} onValueChange={setShellLengthFilter}>
+              <SelectTrigger className={`w-40 h-9 text-xs ${shellLengthFilter !== "semua" ? "border-primary bg-primary/5 text-primary font-semibold" : ""}`}>
+                <SelectValue placeholder="Panjang Karapas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semua">Semua Ukuran</SelectItem>
+                <SelectItem value="xs">&lt; 8 cm</SelectItem>
+                <SelectItem value="s">8 – 15 cm</SelectItem>
+                <SelectItem value="m">15 – 25 cm</SelectItem>
+                <SelectItem value="l">25 – 35 cm</SelectItem>
+                <SelectItem value="xl">&gt; 35 cm</SelectItem>
+              </SelectContent>
+            </Select>
+
             <button
               onClick={() => setIncompleteFilter(v => !v)}
               className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${incompleteFilter ? "bg-amber-100 border-amber-400 text-amber-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
@@ -378,6 +434,20 @@ export default function TortoiseList() {
               ⚠️ Data Belum Lengkap
               <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${incompleteFilter ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").filter(isIncomplete).length}</span>
             </button>
+
+            {(search || statusFilter !== "semua" || genderFilter !== "semua" || morphFilter !== "semua" || shellTypeFilter !== "semua" || enclosureFilter || provenFilter !== "semua" || speciesFilter !== "semua" || weightFilter !== "semua" || shellLengthFilter !== "semua" || incompleteFilter) && (
+              <button
+                onClick={() => {
+                  setSearch(""); setStatusFilter("semua"); setGenderFilter("semua");
+                  setMorphFilter("semua"); setShellTypeFilter("semua"); setEnclosureFilter(null);
+                  setProvenFilter("semua"); setSpeciesFilter("semua");
+                  setWeightFilter("semua"); setShellLengthFilter("semua"); setIncompleteFilter(false);
+                }}
+                className="flex items-center gap-1.5 px-3 h-9 rounded-lg border border-destructive/40 bg-destructive/5 text-destructive text-xs font-medium hover:bg-destructive/10 transition-colors"
+              >
+                ✕ Reset Filter
+              </button>
+            )}
           </div>
 
           {enclosureFilter && (
