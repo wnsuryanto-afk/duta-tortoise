@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { upsertUserProfile } from "@/lib/userProfileUpsert";
 
 const REQUIRED_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
 const IS_COMPLETE_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];

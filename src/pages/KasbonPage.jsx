@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, CreditCard, CheckCircle2, XCircle, Clock, Wallet, Minus } from "lucide-react";
+import { toast } from "sonner";
 import { format, addWeeks, nextSaturday } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -88,7 +89,13 @@ export default function KasbonPage() {
     setForm({ amount: "", reason: "" });
   };
 
+  const canApprove = ["kepala_feeder", "manajer", "admin", "owner"].includes(role);
+
   const handleApprove = async (kasbon) => {
+    if (kasbon.employee_email === user?.email) {
+      toast.error("Anda tidak bisa menyetujui pengajuan milik sendiri. Minta atasan atau admin untuk menyetujui.");
+      return;
+    }
     await base44.entities.Kasbon.update(kasbon.id, {
       status: "approved",
       approved_by: user.full_name || user.email,
