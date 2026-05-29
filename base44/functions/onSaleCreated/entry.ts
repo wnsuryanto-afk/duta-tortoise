@@ -10,24 +10,70 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, skip: "no data" });
     }
 
-    // Cegah duplikat: cek apakah reference_id sudah ada
-    const existing = await base44.asServiceRole.entities.FinanceTransaction.filter({
-      reference_id: sale.id,
-    });
-    if (existing && existing.length > 0) {
-      return Response.json({ ok: true, skip: "duplicate reference_id" });
+    const db = base44.asServiceRole;
+
+    // ── A. Catat FinanceTransaction (cegah duplikat) ────────────────────
+    const existingTx = await db.entities.FinanceTransaction.filter({ reference_id: sale.id });
+    if (!existingTx || existingTx.length === 0) {
+      await db.entities.FinanceTransaction.create({
+        type: "pemasukan",
+        category: "penjualan_tortoise",
+        amount: sale.price || 0,
+        date: sale.sale_date || new Date().toISOString().split("T")[0],
+        description: `Penjualan ${sale.tortoise_name || "tortoise"} kepada ${sale.buyer_name || "-"}`,
+        reference_id: sale.id,
+        created_by_name: sale.created_by || "",
+      });
     }
 
-    // Catat ke laporan keuangan sebagai pemasukan penjualan tortoise
-    await base44.asServiceRole.entities.FinanceTransaction.create({
-      type: "pemasukan",
-      category: "penjualan_tortoise",
-      amount: sale.price || 0,
-      date: sale.sale_date || new Date().toISOString().split("T")[0],
-      description: `Penjualan ${sale.tortoise_name || "tortoise"} kepada ${sale.buyer_name || "-"}`,
-      reference_id: sale.id,
-      created_by_name: sale.created_by || "",
-    });
+    // ── B. Update status Tortoise → "terjual" ────────────────────────────
+    if (sale.tortoise_id) {
+      const tortoise = await db.entities.Tortoise.get(sale.tortoise_id);
+      if (tortoise && tortoise.status !== "terjual") {
+        await db.entities.Tortoise.update(sale.tortoise_id, {
+          status: "terjual",
+          previous_status: tortoise.status || "aktif",
+          last_status_change: sale.sale_date || new Date().toISOString().split("T")[0],
+        });
+
+        // Kurangi current_count kandang asal (jangan minus)
+        if (tortoise.enclosure) {
+          const enclosures = await db.entities.Enclosure.filter({ id: tortoise.enclosure });
+          const enclosure = enclosures && enclosures[0];
+          if (enclosure) {
+            await db.entities.Enclosure.update(enclosure.id, {
+              current_count: Math.max(0, (enclosure.current_count || 0) - 1),
+            });
+          }
+        }
+      }
+    }
+
+    // ── C. Upsert BuyerProfile ────────────────────────────────────────────
+    if (sale.buyer_phone) {
+      const existingBuyers = await db.entities.BuyerProfile.filter({ phone: sale.buyer_phone });
+      const saleDate = sale.sale_date || new Date().toISOString().split("T")[0];
+
+      if (existingBuyers && existingBuyers.length > 0) {
+        const buyer = existingBuyers[0];
+        await db.entities.BuyerProfile.update(buyer.id, {
+          total_purchases: (buyer.total_purchases || 0) + 1,
+          total_spent: (buyer.total_spent || 0) + (sale.price || 0),
+          last_purchase_date: saleDate,
+          name: buyer.name || sale.buyer_name,
+          address: buyer.address || sale.buyer_address,
+        });
+      } else {
+        await db.entities.BuyerProfile.create({
+          name: sale.buyer_name || "",
+          phone: sale.buyer_phone,
+          address: sale.buyer_address || "",
+          total_purchases: 1,
+          total_spent: sale.price || 0,
+          last_purchase_date: saleDate,
+        });
+      }
+    }
 
     return Response.json({ ok: true });
   } catch (error) {
