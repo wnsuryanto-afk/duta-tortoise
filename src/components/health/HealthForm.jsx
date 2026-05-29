@@ -45,6 +45,7 @@ export default function HealthForm({ open, onClose, editData }) {
     diagnoses: [],
     severity: "",
     description: "", treatment: "", vet_name: "",
+    biaya_obat: 0,
     photo_urls: [],
   });
 
@@ -79,13 +80,42 @@ export default function HealthForm({ open, onClose, editData }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const data = { ...form };
+    const data = { ...form, biaya_obat: Number(form.biaya_obat) || 0 };
+    let savedRecord;
     if (editData?.id) {
-      await base44.entities.HealthRecord.update(editData.id, data);
+      savedRecord = await base44.entities.HealthRecord.update(editData.id, data);
     } else {
-      await base44.entities.HealthRecord.create(data);
+      savedRecord = await base44.entities.HealthRecord.create(data);
+    }
+    // Auto-create FinanceTransaction jika ada biaya_obat dan type sakit/obat
+    if (data.biaya_obat > 0 && (data.type === "sakit" || data.type === "obat")) {
+      const diagDesc = (data.diagnoses || []).slice(0, 2).join(", ");
+      const txDesc = `Obat: ${data.tortoise_name}${diagDesc ? " - " + diagDesc : ""}`;
+      const existingTxId = editData?.finance_tx_id;
+      if (existingTxId) {
+        await base44.entities.FinanceTransaction.update(existingTxId, {
+          amount: data.biaya_obat,
+          date: data.date,
+          description: txDesc,
+        });
+      } else {
+        const tx = await base44.entities.FinanceTransaction.create({
+          type: "pengeluaran",
+          category: "obat_perawatan",
+          amount: data.biaya_obat,
+          date: data.date,
+          description: txDesc,
+          reference_id: savedRecord?.id || editData?.id || "",
+        });
+        if (tx?.id && savedRecord?.id) {
+          await base44.entities.HealthRecord.update(savedRecord.id, { finance_tx_id: tx.id });
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
     }
     queryClient.invalidateQueries({ queryKey: ["health"] });
+    queryClient.invalidateQueries({ queryKey: ["health-records"] });
+    queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
     setSaving(false);
     onClose();
   };
@@ -214,6 +244,22 @@ export default function HealthForm({ open, onClose, editData }) {
             <Label>Penanganan / Obat</Label>
             <Textarea value={form.treatment} onChange={(e) => handleChange("treatment", e.target.value)} rows={2} placeholder="Obat yang diberikan, dosis, frekuensi..." />
           </div>
+
+          {/* Biaya Obat — muncul hanya jika type sakit/obat */}
+          {(form.type === "sakit" || form.type === "obat") && (
+            <div className="space-y-1.5 p-3 bg-orange-50 border border-orange-200 rounded-xl">
+              <Label className="text-orange-800">Biaya Obat / Treatment (Rp)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.biaya_obat || ""}
+                onChange={(e) => handleChange("biaya_obat", e.target.value)}
+                placeholder="0"
+                className="bg-white"
+              />
+              <p className="text-xs text-orange-700">💡 Biaya ini akan otomatis masuk ke laporan keuangan (kategori: Obat & Perawatan)</p>
+            </div>
+          )}
 
           {/* Foto */}
           <div className="space-y-1.5">

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, FileText, TrendingUp, Users, Filter } from "lucide-react";
+import { Printer, FileText, TrendingUp, Users, Filter, Star, CheckCircle2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -203,6 +203,29 @@ export default function SalarySlipPage() {
                         <p className="font-bold text-primary">{fmt(slip.net_total)}</p>
                       </div>
                     </div>
+                    {/* Poin Info */}
+                    {slip.total_points !== undefined && (
+                      <div className="mt-2 p-2 rounded-lg bg-muted/40 flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <Star className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="text-xs font-medium">{slip.total_points || 0} poin</span>
+                        </div>
+                        {slip.total_points >= (slip.target_points || 300) ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span className="text-xs">Target tercapai</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-500">
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span className="text-xs">Kurang {(slip.target_points || 300) - (slip.total_points || 0)} poin dari target</span>
+                          </div>
+                        )}
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          Rp {(slip.point_value || 500).toLocaleString("id-ID")}/poin
+                        </span>
+                      </div>
+                    )}
                     {slip.paid_date && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Dibayar: {format(new Date(slip.paid_date), "d MMMM yyyy", { locale: id })}

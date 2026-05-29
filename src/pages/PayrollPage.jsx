@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Wallet, Settings, Plus, Calculator, Users, Clock, Leaf, Star, Pencil, CreditCard, CheckCircle2, XCircle, Minus } from "lucide-react";
+import { Wallet, Settings, Plus, Calculator, Users, Clock, Leaf, Star, Pencil, CreditCard, CheckCircle2, XCircle, Minus, BarChart3 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, addWeeks, nextSaturday } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -649,6 +650,11 @@ export default function PayrollPage() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-40" />
+          {isOwnerOrManajer && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/rekap-poin-gaji"><BarChart3 className="w-4 h-4 mr-1.5" /> Rekap Poin & Gaji</Link>
+            </Button>
+          )}
           {isOwnerOrManajer && (
             <>
               <Button variant="outline" size="sm" onClick={() => setShowOvertime(true)}>

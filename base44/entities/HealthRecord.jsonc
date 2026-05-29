@@ -95,6 +95,15 @@
       "type": "string",
       "description": "Penanganan/obat yang diberikan"
     },
+    "biaya_obat": {
+      "type": "number",
+      "default": 0,
+      "description": "Biaya obat/treatment (Rp) - akan otomatis masuk laporan keuangan"
+    },
+    "finance_tx_id": {
+      "type": "string",
+      "description": "ID FinanceTransaction yang dibuat otomatis dari record ini"
+    },
     "vet_name": {
       "type": "string",
       "description": "Nama dokter hewan"

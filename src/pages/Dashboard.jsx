@@ -26,6 +26,7 @@ import UrgentAlerts from "@/components/dashboard/UrgentAlerts";
 import OperationalToday from "@/components/dashboard/OperationalToday";
 import DashboardSection from "@/components/dashboard/DashboardSection";
 import HRMetrics from "@/components/dashboard/HRMetrics";
+import OperationalSummaryWidget from "@/components/dashboard/OperationalSummaryWidget";
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
@@ -116,17 +117,22 @@ export default function Dashboard() {
         </div>
       </DashboardSection>
 
-      {/* SECTION 5: Keuangan Bulan Ini */}
+      {/* SECTION 5: Ringkasan Operasional Bulan Ini */}
+      <DashboardSection title="Ringkasan Bulan Ini" icon={Target}>
+        <OperationalSummaryWidget />
+      </DashboardSection>
+
+      {/* SECTION 6: Keuangan Bulan Ini */}
       <DashboardSection title="Keuangan Bulan Ini" icon={Wallet}>
         <FinanceSummaryWidget />
       </DashboardSection>
 
-      {/* SECTION 6: Tim & SDM */}
+      {/* SECTION 7: Tim & SDM */}
       <DashboardSection title="Tim & SDM" icon={Users}>
         <HRMetrics />
       </DashboardSection>
 
-      {/* SECTION 7: Stok & Gudang */}
+      {/* SECTION 8: Stok & Gudang */}
       <DashboardSection title="Stok & Gudang" icon={Package}>
         <div className="space-y-4">
           <FeedStockAlert />
@@ -134,7 +140,7 @@ export default function Dashboard() {
         </div>
       </DashboardSection>
 
-      {/* SECTION 8: Data Tidak Lengkap (oranye, tidak urgent) */}
+      {/* SECTION 9: Data Tidak Lengkap (oranye, tidak urgent) */}
       <IncompleteDataWidget />
 
       {/* Health & Hatch reminders */}

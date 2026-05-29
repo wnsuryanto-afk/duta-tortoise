@@ -220,6 +220,7 @@ export default function HealthList() {
                       {r.treatment && <p className="text-xs text-blue-600 mt-0.5">💊 {r.treatment}</p>}
                       {r.vet_name && <p className="text-xs text-muted-foreground mt-0.5">👨‍⚕️ {r.vet_name}</p>}
                       {r.follow_up_date && <p className="text-xs text-orange-600 mt-0.5">📅 Follow up: {r.follow_up_date}</p>}
+                      {r.biaya_obat > 0 && <p className="text-xs text-emerald-700 mt-0.5">💰 Biaya: Rp {Number(r.biaya_obat).toLocaleString("id-ID")}</p>}
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
