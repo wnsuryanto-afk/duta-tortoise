@@ -237,8 +237,8 @@ export default function RekapPoinGajiPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Rekap Poin & Gaji</h1>
-          <p className="text-muted-foreground text-sm">Ringkasan KPI, poin, dan kalkulasi gaji per karyawan</p>
+          <h1 className="text-2xl font-heading font-bold">Rekap Poin & Generate Slip Gaji Rutin</h1>
+          <p className="text-muted-foreground text-sm">Kalkulasi KPI, poin, dan gaji rutin per karyawan · Generate slip untuk dicetak</p>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
           <Input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-40" />

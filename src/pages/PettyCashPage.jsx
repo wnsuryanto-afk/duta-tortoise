@@ -253,6 +253,11 @@ export default function PettyCashPage() {
             <Wallet className="w-6 h-6 text-primary" /> Kas Kecil
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Request & pencairan kas kecil operasional</p>
+          <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 max-w-lg">
+            <span className="font-semibold">ℹ️ Catatan:</span> Kas kecil direkap terpisah dari kas utama. Pengeluaran kas kecil
+            <span className="font-semibold"> hanya masuk ke Laba Rugi saat dicairkan</span> (bukan setiap transaksi kecil),
+            sehingga tidak terjadi pencatatan ganda dengan FinanceTransaction utama.
+          </div>
         </div>
         {(isOwnerOrManajer || isFeeder) && (
           <Button onClick={() => setShowRequestForm(true)} className="gap-2">

@@ -73,8 +73,12 @@ export default function SalarySlipPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-heading font-bold">Riwayat Slip Gaji</h1>
-        <p className="text-muted-foreground mt-1">Histori slip gaji karyawan · klik "Lihat" untuk detail &amp; cetak</p>
+        <h1 className="text-3xl font-heading font-bold">Slip Gaji Rutin</h1>
+        <p className="text-muted-foreground mt-1">Histori slip gaji bulanan/mingguan karyawan termasuk bonus poin KPI · klik "Lihat" untuk detail &amp; cetak</p>
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+          <span className="font-semibold">ℹ️ Slip Gaji Rutin</span> mencakup: gaji pokok, bonus poin KPI, lembur, tunjangan, dan potongan kasbon/absensi.
+          Untuk bonus non-rutin (hadiah, insentif event, reward pencapaian khusus), gunakan menu <span className="font-semibold">Bonus & Reward Khusus</span>.
+        </div>
       </div>
 
       {/* Stats */}

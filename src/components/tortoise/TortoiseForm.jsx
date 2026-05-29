@@ -384,19 +384,19 @@ export default function TortoiseForm({ open, onClose, editData }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>Status Kondisi</Label>
+              <p className="text-[11px] text-muted-foreground -mt-1">Kategori umur (baby/juvenile/dewasa) dihitung otomatis dari tanggal lahir</p>
               <div className="flex gap-2">
-                <Select value={form.status} onValueChange={(v) => set("status", v)} className="flex-1">
+                <Select value={form.status === "baby" ? "aktif" : form.status} onValueChange={(v) => set("status", v)} className="flex-1">
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="aktif">Aktif</SelectItem>
-                    <SelectItem value="baby">🐣 Baby (&lt;10cm)</SelectItem>
-                    <SelectItem value="sakit">Sakit</SelectItem>
-                    <SelectItem value="breeding">Breeding</SelectItem>
-                    <SelectItem value="karantina">Karantina</SelectItem>
-                    <SelectItem value="mati">Mati</SelectItem>
-                    <SelectItem value="terjual">Terjual</SelectItem>
-                    <SelectItem value="diarsipkan">Diarsipkan</SelectItem>
+                    <SelectItem value="aktif">✅ Aktif</SelectItem>
+                    <SelectItem value="sakit">🤒 Sakit</SelectItem>
+                    <SelectItem value="breeding">❤️ Breeding</SelectItem>
+                    <SelectItem value="karantina">🔒 Karantina</SelectItem>
+                    <SelectItem value="mati">💀 Mati</SelectItem>
+                    <SelectItem value="terjual">🛒 Terjual</SelectItem>
+                    <SelectItem value="diarsipkan">📁 Diarsipkan</SelectItem>
                   </SelectContent>
                 </Select>
                 {editData?.id && form.status !== "mati" && (

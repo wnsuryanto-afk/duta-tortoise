@@ -108,6 +108,10 @@ export default function DailyTaskTemplatePage() {
           <div>
             <h1 className="text-2xl font-bold">Template Task Harian</h1>
             <p className="text-sm text-muted-foreground">{templates.length} template terdaftar</p>
+            <div className="mt-2 p-2.5 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-800">
+              <span className="font-semibold">ℹ️ Fungsi halaman ini:</span> Template tugas <span className="font-semibold">rutin harian per role</span> (keeper, admin, manajer)
+              yang muncul otomatis di checklist setiap hari. Berbeda dengan <span className="font-semibold">SOP Task</span> yang merupakan tugas spesifik per kandang atau per kura-kura tertentu.
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

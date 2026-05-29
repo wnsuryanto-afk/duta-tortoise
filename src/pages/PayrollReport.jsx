@@ -183,8 +183,12 @@ export default function PayrollReport() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Laporan KPI & Penggajian</h1>
-          <p className="text-sm text-muted-foreground mt-1">Rekapitulasi poin dan bonus karyawan per bulan</p>
+          <h1 className="text-2xl font-heading font-bold">Bonus & Reward Khusus <span className="text-base font-normal text-muted-foreground">(di luar gaji rutin)</span></h1>
+          <p className="text-sm text-muted-foreground mt-1">Rekapitulasi poin dan bonus non-rutin per bulan</p>
+          <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+            <span className="font-semibold">ℹ️ Halaman ini</span> mencatat bonus <span className="font-semibold">non-rutin</span>: hadiah, insentif event, reward pencapaian khusus.
+            Untuk gaji rutin bulanan (termasuk bonus poin KPI), gunakan menu <span className="font-semibold">Slip Gaji Rutin</span>.
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>

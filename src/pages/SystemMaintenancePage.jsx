@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Database, Home, Egg, Users, CheckCircle2, AlertTriangle } from "lucide-react";
+import { RefreshCw, Database, Home, Users, CheckCircle2, AlertTriangle, Baby } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 
@@ -44,6 +44,7 @@ export default function SystemMaintenancePage() {
       enclosures: "Enclosure count berhasil disinkronkan",
       incubators: "Telur inkubator berhasil disinkronkan",
       buyers: "Buyer profile berhasil disinkronkan",
+      babyMigrate: "Migrasi status 'baby' berhasil",
       all: "Semua data berhasil disinkronkan",
     };
     return messages[type] || "Sinkronisasi berhasil";
@@ -136,6 +137,44 @@ export default function SystemMaintenancePage() {
               <div className="text-sm text-red-700 bg-red-50 p-2 rounded-lg">
                 ✗ {results.buyers.error}
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Migrasi Status Baby */}
+        <Card className="md:col-span-2 border border-amber-200 bg-amber-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-800">
+              <Baby className="w-5 h-5 text-amber-600" />
+              Migrasi Status "Baby" → "Aktif" (Sekali Pakai)
+            </CardTitle>
+            <CardDescription className="text-amber-700">
+              Mengubah semua kura-kura dengan status <code className="bg-amber-100 px-1 rounded">baby</code> menjadi <code className="bg-amber-100 px-1 rounded">aktif</code>, 
+              dengan mempertahankan <code className="bg-amber-100 px-1 rounded">age_category=baby</code>. 
+              Aman dijalankan berulang (idempotent).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              variant="outline"
+              onClick={() => handleRecalculate("babyMigrate", "migrateBabyStatus")}
+              disabled={loading.babyMigrate}
+              className="w-full gap-2 border-amber-300 text-amber-800 hover:bg-amber-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading.babyMigrate ? 'animate-spin' : ''}`} />
+              {loading.babyMigrate ? "Migrasi..." : "Jalankan Migrasi Status Baby"}
+            </Button>
+            {results.babyMigrate && !results.babyMigrate.error && (
+              <div className="text-sm text-amber-800 bg-amber-100 p-2 rounded-lg">
+                ✓ {results.babyMigrate.migrated} kura berhasil dimigrasi
+                {results.babyMigrate.names?.length > 0 && (
+                  <p className="text-xs mt-1 text-amber-700">Nama: {results.babyMigrate.names.join(", ")}</p>
+                )}
+                {results.babyMigrate.migrated === 0 && <p className="text-xs mt-1">Tidak ada kura dengan status "baby" yang perlu dimigrasi.</p>}
+              </div>
+            )}
+            {results.babyMigrate?.error && (
+              <div className="text-sm text-red-700 bg-red-50 p-2 rounded-lg">✗ {results.babyMigrate.error}</div>
             )}
           </CardContent>
         </Card>

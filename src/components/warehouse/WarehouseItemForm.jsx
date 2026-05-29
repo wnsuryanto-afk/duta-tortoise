@@ -131,6 +131,14 @@ export default function WarehouseItemForm({ open, editData, onClose, onBarcode }
                   {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {form.category === "pakan" && (
+                <div className="mt-1.5 flex items-start gap-1.5 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-amber-700">
+                    <span className="font-semibold">Perhatian:</span> Pakan harian (sayur, rumput, buah, pelet, hay) sebaiknya dikelola di menu <span className="font-semibold">Stok Pakan</span> agar tidak tercatat dobel di dua tempat.
+                  </p>
+                </div>
+              )}
             </div>
             <div>
               <Label className="text-xs">Satuan <span className="text-red-500">*</span></Label>

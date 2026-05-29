@@ -177,7 +177,8 @@ export default function WarehousePage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-heading font-bold">Gudang Gazebo</h1>
-          <p className="text-muted-foreground text-sm">Stok obat, vitamin, pakan & alat kerja</p>
+          <p className="text-muted-foreground text-sm">Stok <span className="font-medium">obat, vitamin, suplemen & alat kerja</span> — bukan pakan harian</p>
+          <p className="text-xs text-muted-foreground mt-0.5">💡 Untuk pakan harian (sayur, rumput, buah, hay), gunakan menu <span className="font-medium">Stok Pakan</span></p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setShowScanner(true)} className="gap-2">
