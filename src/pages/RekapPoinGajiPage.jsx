@@ -5,13 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2 } from "lucide-react";
+import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { toast } from "sonner";
+import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -20,6 +21,7 @@ export default function RekapPoinGajiPage() {
   const qc = useQueryClient();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
   const [generating, setGenerating] = useState(null);
+  const [viewSlip, setViewSlip] = useState(null);
 
   const { data: companySettings = [] } = useQuery({
     queryKey: ["company-settings"],
@@ -143,6 +145,20 @@ export default function RekapPoinGajiPage() {
   }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegetablePickups, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING]);
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
+
+  // Render SalarySlipDetail modal jika ada viewSlip
+  if (viewSlip) {
+    return (
+      <SalarySlipDetail
+        slip={viewSlip}
+        companySettings={settings}
+        onClose={() => {
+          setViewSlip(null);
+          qc.invalidateQueries({ queryKey: ["salary-slips"] });
+        }}
+      />
+    );
+  }
 
   const handleGenerateSlip = async (row) => {
     setGenerating(row.emp.id);
@@ -340,23 +356,34 @@ export default function RekapPoinGajiPage() {
                 </div>
 
                 {/* Action */}
-                <div className="flex-shrink-0">
-                  <Button
-                    size="sm"
-                    variant={row.existingSlip ? "outline" : "default"}
-                    onClick={() => handleGenerateSlip(row)}
-                    disabled={generating === row.emp.id}
-                    className="w-full lg:w-auto"
-                  >
-                    {generating === row.emp.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <FileText className="w-3.5 h-3.5 mr-1.5" />
+                <div className="flex-shrink-0 flex flex-col gap-1.5 items-end">
+                  <div className="flex gap-1.5">
+                    {row.existingSlip && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setViewSlip(row.existingSlip)}
+                        className="gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Lihat
+                      </Button>
                     )}
-                    {row.existingSlip ? "Update Slip" : "Generate Slip"}
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant={row.existingSlip ? "outline" : "default"}
+                      onClick={() => handleGenerateSlip(row)}
+                      disabled={generating === row.emp.id}
+                    >
+                      {generating === row.emp.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <FileText className="w-3.5 h-3.5 mr-1" />
+                      )}
+                      {row.existingSlip ? "Update" : "Generate"}
+                    </Button>
+                  </div>
                   {row.existingSlip && (
-                    <Badge className={`text-[10px] mt-1 w-full justify-center ${
+                    <Badge className={`text-[10px] ${
                       row.existingSlip.status === "paid" ? "bg-green-100 text-green-700" :
                       row.existingSlip.status === "approved" ? "bg-blue-100 text-blue-700" :
                       "bg-gray-100 text-gray-700"

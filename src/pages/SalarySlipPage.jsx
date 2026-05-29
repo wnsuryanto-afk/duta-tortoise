@@ -1,18 +1,18 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, FileText, TrendingUp, Users, Filter, Star, CheckCircle2, XCircle } from "lucide-react";
+import { Printer, FileText, TrendingUp, Users, Filter, Star, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import { toast } from "sonner";
+import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 
 const statusConfig = {
   draft:    { label: "Draft",     color: "bg-gray-100 text-gray-700" },
@@ -27,6 +27,7 @@ export default function SalarySlipPage() {
   const qc = useQueryClient();
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("");
+  const [selectedSlip, setSelectedSlip] = useState(null);
 
   const { data: slips = [], isLoading } = useQuery({
     queryKey: ["salary-slips"],
@@ -38,19 +39,13 @@ export default function SalarySlipPage() {
     queryFn: () => base44.entities.User.list(),
   });
 
-  const employees = users.filter(u => ["keeper", "admin", "manajer", "kepala_feeder"].includes(u.role));
-
-  const markPaidMutation = useMutation({
-    mutationFn: (slip) => base44.entities.SalarySlip.update(slip.id, {
-      status: "paid",
-      paid_date: format(new Date(), "yyyy-MM-dd"),
-      paid_by: user?.full_name || user?.email,
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["salary-slips"] });
-      toast.success("Slip gaji ditandai dibayar");
-    }
+  const { data: companySettings = [] } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: () => base44.entities.CompanySettings.list(),
   });
+  const settings = companySettings[0] || {};
+
+  const employees = users.filter(u => ["keeper", "admin", "manajer", "kepala_feeder"].includes(u.role));
 
   const filtered = useMemo(() => {
     return slips.filter(s => {
@@ -70,7 +65,6 @@ export default function SalarySlipPage() {
     return Object.entries(map).sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
   }, [filtered]);
 
-  // Stats
   const totalPaid = filtered.filter(s => s.status === "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
   const totalPending = filtered.filter(s => s.status !== "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
 
@@ -80,7 +74,7 @@ export default function SalarySlipPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-heading font-bold">Riwayat Slip Gaji</h1>
-        <p className="text-muted-foreground mt-1">Histori slip gaji karyawan yang sudah dicetak</p>
+        <p className="text-muted-foreground mt-1">Histori slip gaji karyawan · klik "Lihat" untuk detail &amp; cetak</p>
       </div>
 
       {/* Stats */}
@@ -121,10 +115,10 @@ export default function SalarySlipPage() {
             <TrendingUp className="w-4 h-4 text-primary" /> Total Gaji per Bulan
           </h3>
           <div className="space-y-2">
-            {byPeriod.map(([period, total]) => (
-              <div key={period} className="flex items-center justify-between text-sm">
+            {byPeriod.map(([per, total]) => (
+              <div key={per} className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {format(new Date(period + "-01"), "MMMM yyyy", { locale: id })}
+                  {format(new Date(per + "-01"), "MMMM yyyy", { locale: id })}
                 </span>
                 <span className="font-semibold">{fmt(total)}</span>
               </div>
@@ -168,7 +162,7 @@ export default function SalarySlipPage() {
         <Card className="p-12 text-center text-muted-foreground">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
           <p className="font-semibold">Belum ada slip gaji</p>
-          <p className="text-sm mt-1">Slip gaji dibuat dari halaman Rekap Gaji saat cetak slip</p>
+          <p className="text-sm mt-1">Slip gaji dibuat dari halaman Rekap Gaji</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -181,6 +175,7 @@ export default function SalarySlipPage() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-semibold">{slip.employee_name}</span>
                       <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
+                      <Badge variant="outline" className="text-[11px] capitalize">{slip.employee_role}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Periode: {slip.period ? format(new Date(slip.period + "-01"), "MMMM yyyy", { locale: id }) : slip.period}
@@ -192,7 +187,9 @@ export default function SalarySlipPage() {
                       </div>
                       <div>
                         <span className="text-muted-foreground">Bonus KPI:</span>
-                        <p className="font-medium text-green-600">+{fmt(slip.kpi_bonus)}</p>
+                        <p className={`font-medium ${(slip.kpi_bonus || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {(slip.kpi_bonus || 0) >= 0 ? "+" : ""}{fmt(slip.kpi_bonus)}
+                        </p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Potongan:</span>
@@ -204,13 +201,13 @@ export default function SalarySlipPage() {
                       </div>
                     </div>
                     {/* Poin Info */}
-                    {slip.total_points !== undefined && (
+                    {(slip.total_poin !== undefined || slip.total_points !== undefined) && (
                       <div className="mt-2 p-2 rounded-lg bg-muted/40 flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-1.5">
                           <Star className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-xs font-medium">{slip.total_points || 0} poin</span>
+                          <span className="text-xs font-medium">{slip.total_poin || slip.total_points || 0} poin</span>
                         </div>
-                        {slip.total_points >= (slip.target_points || 300) ? (
+                        {(slip.total_poin || 0) >= (settings.min_poin_bulanan || 300) ? (
                           <div className="flex items-center gap-1 text-green-600">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span className="text-xs">Target tercapai</span>
@@ -218,12 +215,9 @@ export default function SalarySlipPage() {
                         ) : (
                           <div className="flex items-center gap-1 text-red-500">
                             <XCircle className="w-3.5 h-3.5" />
-                            <span className="text-xs">Kurang {(slip.target_points || 300) - (slip.total_points || 0)} poin dari target</span>
+                            <span className="text-xs">{slip.poin_status || `Kurang ${(settings.min_poin_bulanan || 300) - (slip.total_poin || 0)} poin`}</span>
                           </div>
                         )}
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          Rp {(slip.point_value || 500).toLocaleString("id-ID")}/poin
-                        </span>
                       </div>
                     )}
                     {slip.paid_date && (
@@ -233,29 +227,33 @@ export default function SalarySlipPage() {
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    {slip.pdf_url && (
-                      <Button size="sm" variant="outline" asChild>
-                        <a href={slip.pdf_url} target="_blank" rel="noopener noreferrer">
-                          <Printer className="w-3.5 h-3.5 mr-1.5" /> Cetak Ulang
-                        </a>
-                      </Button>
-                    )}
-                    {slip.status !== "paid" && ["owner", "manajer", "admin"].includes(role) && (
-                      <Button
-                        size="sm"
-                        onClick={() => markPaidMutation.mutate(slip)}
-                        disabled={markPaidMutation.isPending}
-                      >
-                        Tandai Dibayar
-                      </Button>
-                    )}
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedSlip(slip)}
+                      className="gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Lihat Slip
+                    </Button>
                   </div>
                 </div>
               </Card>
             );
           })}
         </div>
+      )}
+
+      {/* Slip Detail Modal */}
+      {selectedSlip && (
+        <SalarySlipDetail
+          slip={selectedSlip}
+          companySettings={settings}
+          onClose={() => {
+            setSelectedSlip(null);
+            qc.invalidateQueries({ queryKey: ["salary-slips"] });
+          }}
+        />
       )}
     </div>
   );

@@ -10,6 +10,14 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, skip: "no data" });
     }
 
+    // Cegah duplikat: cek apakah reference_id sudah ada
+    const existing = await base44.asServiceRole.entities.FinanceTransaction.filter({
+      reference_id: sale.id,
+    });
+    if (existing && existing.length > 0) {
+      return Response.json({ ok: true, skip: "duplicate reference_id" });
+    }
+
     // Catat ke laporan keuangan sebagai pemasukan penjualan tortoise
     await base44.asServiceRole.entities.FinanceTransaction.create({
       type: "pemasukan",
