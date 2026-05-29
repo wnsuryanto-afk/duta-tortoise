@@ -39,7 +39,11 @@ export default function NotificationsPage() {
     return notifs
       .filter(n => filterRead === "semua" ? true : filterRead === "belum" ? !n.is_read : n.is_read)
       .filter(n => filterCategory === "semua" ? true : n.category === filterCategory)
-      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at || a.created_date || 0);
+        const dateB = new Date(b.created_at || b.created_date || 0);
+        return dateB - dateA;
+      });
   }, [notifs, filterRead, filterCategory]);
 
   const unreadCount = notifs.filter(n => !n.is_read).length;
@@ -47,14 +51,14 @@ export default function NotificationsPage() {
   const markAllRead = async () => {
     const unread = notifs.filter(n => !n.is_read);
     await Promise.all(unread.map(n =>
-      base44.entities.Notification.update(n.id, { is_read: true, read_at: new Date().toISOString().split("T")[0] })
+      base44.entities.Notification.update(n.id, { is_read: true, read_at: new Date().toISOString() })
     ));
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
   const markRead = async (notif) => {
     if (notif.is_read) return;
-    await base44.entities.Notification.update(notif.id, { is_read: true, read_at: new Date().toISOString().split("T")[0] });
+    await base44.entities.Notification.update(notif.id, { is_read: true, read_at: new Date().toISOString() });
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
     if (notif.action_url) window.location.href = notif.action_url;
   };
@@ -141,7 +145,9 @@ export default function NotificationsPage() {
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {!notif.is_read && <span className={`w-2 h-2 rounded-full ${cfg.dot} flex-shrink-0`} />}
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {notif.created_date ? format(new Date(notif.created_date), "d MMM", { locale: id }) : ""}
+                        {(notif.created_at || notif.created_date)
+                          ? format(new Date(notif.created_at || notif.created_date), "dd/MM/yyyy HH:mm", { locale: id })
+                          : ""}
                       </span>
                     </div>
                   </div>

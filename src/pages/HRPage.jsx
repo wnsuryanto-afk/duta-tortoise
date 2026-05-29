@@ -36,14 +36,20 @@ function WarningLetterTab() {
         </Button>
       </div>
       <div className="space-y-3">
-        {letters.map(l => (
-          <Card key={l.id}>
+        {letters.map(l => {
+          const daysSince = l.date ? Math.floor((Date.now() - new Date(l.date).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          const isActive = daysSince < 180;
+          return (
+          <Card key={l.id} className={!isActive ? "opacity-60" : ""}>
             <CardContent className="p-4 flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge className={`${SP_COLORS[l.level]} border-0`}>{l.level}</Badge>
                   <p className="font-semibold">{l.employee_name}</p>
                   {l.acknowledged && <Badge className="bg-green-100 text-green-700 border-0 text-xs">✓ Diakui</Badge>}
+                  {!isActive
+                    ? <Badge className="bg-gray-100 text-gray-500 border-0 text-xs">Kadaluarsa</Badge>
+                    : <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">Aktif</Badge>}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{fmt(l.date)} · {l.issued_by && `Oleh: ${l.issued_by}`}</p>
                 <p className="text-sm font-medium mt-1">{l.reason}</p>
@@ -55,7 +61,8 @@ function WarningLetterTab() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
         {letters.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Belum ada surat peringatan</CardContent></Card>}
       </div>
       {showForm && <WarnLetterForm data={editing} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); qc.invalidateQueries({ queryKey: ["warning-letters"] }); }} />}

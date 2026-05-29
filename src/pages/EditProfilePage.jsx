@@ -49,7 +49,15 @@ export default function EditProfilePage() {
     mutationFn: async (data) => {
       return await upsertUserProfile(user, data);
     },
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
+      // Sinkronisasi nama karyawan ke semua entitas jika nama berubah
+      const oldName = profiles[0]?.full_name;
+      if (oldName && variables.full_name && oldName !== variables.full_name && user?.email) {
+        base44.functions.invoke("syncEmployeeName", {
+          employee_email: user.email,
+          new_name: variables.full_name,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       queryClient.invalidateQueries({ queryKey: ["user-profile-edit"] });
       toast.success("Profil berhasil diperbarui ✅");

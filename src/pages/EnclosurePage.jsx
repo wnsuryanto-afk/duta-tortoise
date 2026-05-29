@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, Shell, AlertTriangle } from "lucide-react";
+import { Plus, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, Shell, AlertTriangle, RefreshCw } from "lucide-react";
 import EnclosureForm from "@/components/enclosure/EnclosureForm";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export default function EnclosurePage() {
   const qc = useQueryClient();
@@ -17,6 +19,8 @@ export default function EnclosurePage() {
   const [editing, setEditing] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [selectedEnclosure, setSelectedEnclosure] = useState(null);
+
+  const [syncing, setSyncing] = useState(false);
 
   const { data: enclosures = [] } = useQuery({
     queryKey: ["enclosures"],
@@ -33,13 +37,54 @@ export default function EnclosurePage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["enclosures"] }); setDeleteTarget(null); },
   });
 
+  // Hitung current_count dari data Tortoise aktual
+  const ACTIVE_STATUSES = ["aktif", "baby", "sakit", "breeding"];
+  const countByEnclosure = tortoises.reduce((acc, t) => {
+    if (t.enclosure && ACTIVE_STATUSES.includes(t.status)) {
+      acc[t.enclosure] = (acc[t.enclosure] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  // Gunakan live count dari tortoises (bukan field tersimpan)
+  const getCount = (enc) => countByEnclosure[enc.name] ?? (enc.current_count ?? 0);
+
+  // Sinkronkan semua current_count ke database
+  const handleSyncAll = async () => {
+    setSyncing(true);
+    let updated = 0;
+    for (const enc of enclosures) {
+      const liveCount = countByEnclosure[enc.name] ?? 0;
+      if ((enc.current_count ?? 0) !== liveCount) {
+        await base44.entities.Enclosure.update(enc.id, { current_count: liveCount });
+        updated++;
+      }
+    }
+    qc.invalidateQueries({ queryKey: ["enclosures"] });
+    setSyncing(false);
+    toast.success(updated > 0 ? `${updated} kandang berhasil disinkronkan` : "Semua kandang sudah sinkron");
+  };
+
+  // Auto-sinkron saat tortoises & enclosures sudah dimuat
+  useEffect(() => {
+    if (enclosures.length > 0 && tortoises.length > 0) {
+      for (const enc of enclosures) {
+        const liveCount = countByEnclosure[enc.name] ?? 0;
+        if ((enc.current_count ?? 0) !== liveCount) {
+          base44.entities.Enclosure.update(enc.id, { current_count: liveCount });
+        }
+      }
+    }
+  }, [enclosures.length, tortoises.length]);
+
   const typeLabel = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
   const typeIcon = { indoor: Home, outdoor: Trees, greenhouse: Thermometer };
 
   function getStatus(enc) {
+    const cnt = getCount(enc);
     if (!enc.max_capacity) return "normal";
-    if (enc.current_count > enc.max_capacity) return "overcrowded";
-    if (enc.current_count >= enc.max_capacity * 0.8) return "warning";
+    if (cnt > enc.max_capacity) return "overcrowded";
+    if (cnt >= enc.max_capacity * 0.8) return "warning";
     return "normal";
   }
 
@@ -66,9 +111,14 @@ export default function EnclosurePage() {
           <h1 className="text-2xl font-heading font-bold text-foreground">Kandang</h1>
           <p className="text-sm text-muted-foreground">{enclosures.length} kandang terdaftar</p>
         </div>
-        <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-primary gap-2">
-          <Plus className="w-4 h-4" /> Tambah Kandang
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleSyncAll} disabled={syncing} className="gap-2">
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} /> Sinkronkan Jumlah
+          </Button>
+          <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-primary gap-2">
+            <Plus className="w-4 h-4" /> Tambah Kandang
+          </Button>
+        </div>
       </div>
 
       {/* Summary */}
@@ -116,14 +166,14 @@ export default function EnclosurePage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Isi / Kapasitas</span>
-                  </div>
-                  <span className="font-semibold">
-                    {enc.current_count ?? 0}
-                    {enc.max_capacity ? ` / ${enc.max_capacity}` : ""}
-                  </span>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Isi / Kapasitas</span>
+                </div>
+                <span className={`font-semibold ${getStatus(enc) === "overcrowded" ? "text-red-600" : ""}`}>
+                  {getCount(enc)}
+                  {enc.max_capacity ? ` / ${enc.max_capacity}` : ""}
+                </span>
                 </div>
                 {status === "overcrowded" && (
                   <div className="flex items-center gap-1 text-red-600 text-xs font-medium">

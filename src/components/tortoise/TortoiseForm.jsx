@@ -182,8 +182,16 @@ export default function TortoiseForm({ open, onClose, editData }) {
     const oldEnclosure = editData?.enclosure || "";
     const newEnclosureName = data.enclosure || "";
     const oldData = editData ? { ...editData } : null;
+    const nameChanged = editData?.id && editData?.name && editData.name !== form.name;
     if (editData?.id) {
       await base44.entities.Tortoise.update(editData.id, data);
+      // Sinkronisasi nama ke semua entitas terkait jika nama berubah
+      if (nameChanged) {
+        base44.functions.invoke("syncTortoiseName", {
+          tortoise_id: editData.id,
+          new_name: form.name,
+        });
+      }
       await logActivity({
         action: "update",
         entity_type: "Tortoise",
