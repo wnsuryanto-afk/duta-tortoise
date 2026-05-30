@@ -273,6 +273,7 @@ function CompanySettingsTab() {
     farm_lat: "",
     farm_lng: "",
     farm_location_radius: 200,
+    stok_approval_threshold: 500000,
   };
 
   // Sync form dengan data yang sudah ada
@@ -292,6 +293,7 @@ function CompanySettingsTab() {
       farm_lat: existing.farm_lat ?? "",
       farm_lng: existing.farm_lng ?? "",
       farm_location_radius: existing.farm_location_radius ?? 200,
+      stok_approval_threshold: existing.stok_approval_threshold ?? 500000,
     }), 0);
   }
 
@@ -439,6 +441,20 @@ function CompanySettingsTab() {
               onChange={e => set("nilai_per_poin", Number(e.target.value) || 0)}
               placeholder="500"
             />
+          </div>
+        </div>
+        {/* Approval threshold stok */}
+        <div className="grid grid-cols-1 gap-4 mt-2">
+          <div className="space-y-1.5">
+            <Label>Batas Nilai Stok Keluar Perlu Approval (Rp)</Label>
+            <Input
+              type="number"
+              min={0}
+              value={currentForm.stok_approval_threshold ?? 500000}
+              onChange={e => set("stok_approval_threshold", Number(e.target.value) || 0)}
+              placeholder="500000"
+            />
+            <p className="text-xs text-muted-foreground">Jika nilai stok keluar melebihi batas ini, butuh persetujuan admin/owner terlebih dahulu.</p>
           </div>
         </div>
         {/* Contoh perhitungan dinamis */}

@@ -76,6 +76,23 @@
     },
     "notes": {
       "type": "string"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto barang"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Kode SKU unik, prefix PKN-XXXX"
+    },
+    "last_edited_by": {
+      "type": "string",
+      "description": "Email user terakhir edit"
+    },
+    "last_edited_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu terakhir edit"
     }
   },
   "required": [

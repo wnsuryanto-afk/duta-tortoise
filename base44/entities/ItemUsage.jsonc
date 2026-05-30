@@ -4,37 +4,104 @@
   "properties": {
     "item_id": {
       "type": "string",
-      "description": "ID WarehouseItem"
+      "description": "ID item (FeedStock atau WarehouseItem)"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "feedstock",
+        "warehouse"
+      ],
+      "description": "Jenis entitas"
     },
     "item_name": {
       "type": "string",
       "description": "Nama item"
     },
+    "item_sku": {
+      "type": "string",
+      "description": "SKU item"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "masuk",
+        "keluar"
+      ],
+      "description": "Jenis transaksi"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Jumlah"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "unit_price": {
+      "type": "number",
+      "default": 0
+    },
+    "total_value": {
+      "type": "number",
+      "default": 0,
+      "description": "Nilai total (qty x harga)"
+    },
+    "by_email": {
+      "type": "string",
+      "description": "Email user yang melakukan"
+    },
+    "by_name": {
+      "type": "string",
+      "description": "Nama user yang melakukan"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Keterangan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "selesai",
+        "menunggu_approval",
+        "disetujui",
+        "ditolak"
+      ],
+      "default": "selesai",
+      "description": "Status transaksi (approval untuk nilai besar)"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "rejected_reason": {
+      "type": "string"
+    },
     "borrower_email": {
       "type": "string",
-      "description": "Email peminjam"
+      "description": "Email peminjam (legacy)"
     },
     "borrower_name": {
       "type": "string",
-      "description": "Nama peminjam"
+      "description": "Nama peminjam (legacy)"
     },
     "borrow_date": {
       "type": "string",
       "format": "date-time",
-      "description": "Tanggal pinjam"
+      "description": "Tanggal pinjam (legacy)"
     },
     "return_date": {
       "type": "string",
-      "format": "date-time",
-      "description": "Tanggal kembali"
-    },
-    "quantity": {
-      "type": "number",
-      "description": "Jumlah dipinjam"
+      "format": "date-time"
     },
     "purpose": {
-      "type": "string",
-      "description": "Keperluan"
+      "type": "string"
     },
     "return_condition": {
       "type": "string",
@@ -42,18 +109,7 @@
         "baik",
         "rusak",
         "hilang"
-      ],
-      "description": "Kondisi saat kembali"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "dipinjam",
-        "dikembalikan",
-        "lapor_rusak",
-        "lapor_hilang"
-      ],
-      "default": "dipinjam"
+      ]
     },
     "approval_status": {
       "type": "string",
@@ -64,26 +120,22 @@
       ],
       "default": "approved"
     },
-    "approved_by": {
-      "type": "string"
-    },
-    "notes": {
+    "approved_by_legacy": {
       "type": "string"
     },
     "photo_urls": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Foto bukti rusak/hilang"
+      }
     }
   },
   "required": [
     "item_id",
     "item_name",
-    "borrower_email",
-    "borrower_name",
-    "borrow_date",
-    "quantity"
+    "quantity",
+    "type",
+    "by_email",
+    "date"
   ]
 }

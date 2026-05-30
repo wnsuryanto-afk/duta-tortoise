@@ -1,37 +1,20 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertTriangle,
-  PackageOpen,
-  Plus,
-  Pencil,
-  Trash2,
-  CheckCircle2,
-  MinusCircle,
-  PlusCircle,
-  Leaf,
-} from "lucide-react";
+import { AlertTriangle, PackageOpen, Plus, Pencil, Trash2, CheckCircle2, Leaf, QrCode, Printer } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canPerformAction } from "@/lib/permissions";
+import { formatRp } from "@/lib/skuUtils";
+import StockItemForm from "@/components/stock/StockItemForm";
+import StockTransactionDialog from "@/components/stock/StockTransactionDialog";
+import QRScannerDialog from "@/components/stock/QRScannerDialog";
+import NiimbotLabelGenerator from "@/components/stock/NiimbotLabelGenerator";
+import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
+import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 
 const CATEGORIES = [
@@ -39,249 +22,152 @@ const CATEGORIES = [
   { value: "buah", label: "🍎 Buah" },
   { value: "rumput", label: "🌿 Rumput" },
   { value: "suplemen", label: "💊 Suplemen" },
+  { value: "pelet", label: "🟤 Pelet" },
+  { value: "hay", label: "🌾 Hay" },
   { value: "lainnya", label: "📦 Lainnya" },
 ];
 
-const UNITS = ["kg", "gram", "ikat", "buah", "liter"];
-
 const SULCATA_IDEAL_FEEDS = [
   { name: "Rumput Sudan / Gajah", category: "rumput", unit: "kg", current_stock: 5, minimum_stock: 3, price_per_unit: 5000, daily_ideal: 1, notes: "Pakan utama harian sulcata" },
-  { name: "Daun Pepaya", category: "sayuran", unit: "ikat", current_stock: 3, minimum_stock: 2, price_per_unit: 3000, daily_ideal: 1, notes: "Bergizi tinggi, diberikan 2-3x seminggu" },
-  { name: "Kubis / Sawi", category: "sayuran", unit: "kg", current_stock: 2, minimum_stock: 1, price_per_unit: 8000, daily_ideal: 0.5, notes: "Hindari terlalu banyak, batasi 2x seminggu" },
-  { name: "Wortel", category: "sayuran", unit: "kg", current_stock: 1, minimum_stock: 0.5, price_per_unit: 10000, daily_ideal: 0.3, notes: "Kaya beta karoten, 2x seminggu" },
-  { name: "Labu Kuning", category: "sayuran", unit: "kg", current_stock: 1, minimum_stock: 0.5, price_per_unit: 6000, daily_ideal: 0.3, notes: "Bergizi, sesuai untuk semua ukuran" },
-  { name: "Daun Kelor", category: "sayuran", unit: "ikat", current_stock: 2, minimum_stock: 1, price_per_unit: 2000, daily_ideal: 0.5, notes: "Supergizi, bagus untuk pertumbuhan" },
-  { name: "Semangka (tanpa biji)", category: "buah", unit: "buah", current_stock: 2, minimum_stock: 1, price_per_unit: 15000, daily_ideal: 0.1, notes: "Hidrasi, 1-2x seminggu" },
-  { name: "Pisang", category: "buah", unit: "buah", current_stock: 5, minimum_stock: 3, price_per_unit: 2000, daily_ideal: 0.1, notes: "Sesekali saja, kandungan gula tinggi" },
-  { name: "Kalsium / Cuttlebone", category: "suplemen", unit: "buah", current_stock: 3, minimum_stock: 2, price_per_unit: 5000, daily_ideal: 0, notes: "Taruh di kandang, ad libitum" },
-  { name: "Vitamin Reptil", category: "suplemen", unit: "gram", current_stock: 50, minimum_stock: 20, price_per_unit: 500, daily_ideal: 0, notes: "Taburkan ke pakan 1x seminggu" },
+  { name: "Daun Pepaya", category: "sayuran", unit: "ikat", current_stock: 3, minimum_stock: 2, price_per_unit: 3000, daily_ideal: 1 },
+  { name: "Kubis / Sawi", category: "sayuran", unit: "kg", current_stock: 2, minimum_stock: 1, price_per_unit: 8000, daily_ideal: 0.5 },
+  { name: "Wortel", category: "sayuran", unit: "kg", current_stock: 1, minimum_stock: 0.5, price_per_unit: 10000, daily_ideal: 0.3 },
+  { name: "Labu Kuning", category: "sayuran", unit: "kg", current_stock: 1, minimum_stock: 0.5, price_per_unit: 6000, daily_ideal: 0.3 },
+  { name: "Daun Kelor", category: "sayuran", unit: "ikat", current_stock: 2, minimum_stock: 1, price_per_unit: 2000, daily_ideal: 0.5 },
+  { name: "Semangka (tanpa biji)", category: "buah", unit: "buah", current_stock: 2, minimum_stock: 1, price_per_unit: 15000, daily_ideal: 0.1 },
+  { name: "Pisang", category: "buah", unit: "buah", current_stock: 5, minimum_stock: 3, price_per_unit: 2000, daily_ideal: 0.1 },
+  { name: "Kalsium / Cuttlebone", category: "suplemen", unit: "buah", current_stock: 3, minimum_stock: 2, price_per_unit: 5000 },
+  { name: "Vitamin Reptil", category: "suplemen", unit: "gram", current_stock: 50, minimum_stock: 20, price_per_unit: 500 },
 ];
 
-const EMPTY_FORM = {
-  name: "",
-  category: "sayuran",
-  unit: "kg",
-  current_stock: 0,
-  minimum_stock: 1,
-  price_per_unit: 0,
-  daily_ideal: 0,
-  is_mandatory: false,
-  storage_location: "gudang",
-  conversion_notes: "",
-  notes: "",
-};
-
-function StockStatusBadge({ stock }) {
-  if (stock.current_stock === 0)
-    return <Badge variant="destructive" className="text-xs">Habis</Badge>;
-  if (stock.current_stock <= stock.minimum_stock)
-    return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Stok Rendah</Badge>;
+function StockStatusBadge({ s }) {
+  if (s.current_stock === 0) return <Badge variant="destructive" className="text-xs">Habis</Badge>;
+  if (s.current_stock <= s.minimum_stock) return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Stok Rendah</Badge>;
   return <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Aman</Badge>;
-}
-
-function formatRp(val) {
-  if (!val) return "Rp 0";
-  return "Rp " + Number(val).toLocaleString("id-ID");
 }
 
 export default function FeedStockPage() {
   const { user, role } = useCurrentUser();
-  const canEdit = canPerformAction(role, "feedstock", "edit");
-  const canCreate = canPerformAction(role, "feedstock", "create");
-  const canDelete = canPerformAction(role, "feedstock", "delete");
+  const isAdmin = ["admin", "owner", "manajer"].includes(role);
+  const isKeeperOnly = role === "keeper";
+  const canEdit = isAdmin;
+  const canCreate = isAdmin || role === "kepala_feeder";
+  const canDelete = isAdmin;
 
   const qc = useQueryClient();
   const { data: stocks = [], isLoading } = useQuery({
     queryKey: ["feedstocks"],
-    queryFn: () => base44.entities.FeedStock.list(),
+    queryFn: () => base44.entities.FeedStock.list("-created_date", 500),
   });
 
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [mandatoryFilter, setMandatoryFilter] = useState("semua"); // "semua" | "wajib" | "biasa"
-  const [locationFilter, setLocationFilter] = useState("semua"); // "semua" | "gudang" | "gazebo"
-  const [adjustDialog, setAdjustDialog] = useState(null);
-  const [adjustAmount, setAdjustAmount] = useState("");
-  const [adjustType, setAdjustType] = useState("add");
-  const [showSeedDialog, setShowSeedDialog] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-  const [editMinId, setEditMinId] = useState(null);
-  const [editMinVal, setEditMinVal] = useState("");
+  const { data: settings } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: async () => {
+      const list = await base44.entities.CompanySettings.filter({ setting_key: "main" });
+      return list[0] || {};
+    },
+  });
 
+  const threshold = settings?.stok_approval_threshold ?? 500000;
+
+  const [catFilter, setCatFilter] = useState("semua");
+  const [lowFilter, setLowFilter] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [txItem, setTxItem] = useState(null);
+  const [txInitialType, setTxInitialType] = useState("masuk");
+  const [detailItem, setDetailItem] = useState(null);
+  const [labelItems, setLabelItems] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [showSeed, setShowSeed] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+
+  const allSkus = stocks.map((s) => s.sku).filter(Boolean);
   const invalidate = () => qc.invalidateQueries({ queryKey: ["feedstocks"] });
 
-  const saveMutation = useMutation({
-    mutationFn: (data) =>
-      editing
-        ? base44.entities.FeedStock.update(editing.id, data)
-        : base44.entities.FeedStock.create(data),
-    onSuccess: () => {
-      invalidate();
-      setShowForm(false);
-      setEditing(null);
-      setForm(EMPTY_FORM);
-    },
+  const filtered = stocks.filter((s) => {
+    const matchCat = catFilter === "semua" || s.category === catFilter;
+    const matchLow = !lowFilter || s.current_stock <= s.minimum_stock;
+    const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || (s.sku || "").toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchLow && matchSearch;
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.FeedStock.delete(id),
-    onSuccess: invalidate,
-  });
+  const lowCount = stocks.filter((s) => s.current_stock <= s.minimum_stock).length;
+  const totalValue = stocks.reduce((sum, s) => sum + ((s.price_per_unit || 0) * (s.current_stock || 0)), 0);
 
-  const updateMinMutation = useMutation({
-    mutationFn: ({ id, minimum_stock }) =>
-      base44.entities.FeedStock.update(id, { minimum_stock: Number(minimum_stock) }),
-    onSuccess: invalidate,
-  });
-
-  const adjustMutation = useMutation({
-    mutationFn: async ({ id, newStock, delta, isAdd, stock }) => {
-      await base44.entities.FeedStock.update(id, { current_stock: newStock });
-      // Catat ke pengeluaran jika ada harga
-      const price = stock.price_per_unit || 0;
-      if (price > 0 && delta > 0) {
-        const totalCost = price * delta;
-        await base44.entities.FinanceTransaction.create({
-          type: isAdd ? "pengeluaran" : "pemasukan",
-          category: "operasional",
-          amount: totalCost,
-          date: format(new Date(), "yyyy-MM-dd"),
-          description: `${isAdd ? "Beli" : "Return"} pakan: ${stock.name} ${delta} ${stock.unit} @ ${formatRp(price)}`,
-          created_by_name: user?.full_name || user?.email || "",
-        });
-        qc.invalidateQueries({ queryKey: ["finance-transactions"] });
-      }
-    },
-    onSuccess: () => {
-      invalidate();
-      setAdjustDialog(null);
-      setAdjustAmount("");
-    },
-  });
-
-  const handleEdit = (stock) => {
-    setEditing(stock);
-    setForm({ ...EMPTY_FORM, ...stock });
-    setShowForm(true);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    saveMutation.mutate({
-      ...form,
-      current_stock: Number(form.current_stock),
-      minimum_stock: Number(form.minimum_stock),
-      price_per_unit: Number(form.price_per_unit || 0),
-      daily_ideal: Number(form.daily_ideal || 0),
-    });
-  };
-
-  const handleAdjust = (isAdd) => {
-    const delta = Number(adjustAmount);
-    if (!delta || delta <= 0) return;
-    const newStock = Math.max(
-      0,
-      adjustDialog.current_stock + (isAdd ? delta : -delta)
-    );
-    adjustMutation.mutate({ id: adjustDialog.id, newStock, delta, isAdd, stock: adjustDialog });
+  const handleScanResult = (sku) => {
+    const found = stocks.find((s) => (s.sku || "").toUpperCase() === sku.toUpperCase());
+    if (found) {
+      setScanResult(null);
+      setTxItem(found);
+      setTxInitialType("keluar");
+    } else {
+      setScanResult({ notFound: true, sku });
+    }
   };
 
   const handleSeedIdealFeeds = async () => {
     setSeeding(true);
     for (const feed of SULCATA_IDEAL_FEEDS) {
-      await base44.entities.FeedStock.create(feed);
+      await base44.entities.FeedStock.create({
+        ...feed,
+        last_edited_by: user?.email || "",
+        last_edited_at: new Date().toISOString(),
+      });
     }
     invalidate();
-    setShowSeedDialog(false);
+    setShowSeed(false);
     setSeeding(false);
   };
 
-  const displayStocks = stocks.filter(s => {
-    const matchMandatory = mandatoryFilter === "semua" || (mandatoryFilter === "wajib" ? s.is_mandatory : !s.is_mandatory);
-    const matchLocation = locationFilter === "semua" || (s.storage_location || "gudang") === locationFilter;
-    return matchMandatory && matchLocation;
-  });
-
-  const mandatoryCritical = stocks.filter(s => s.is_mandatory && s.current_stock <= s.minimum_stock).length;
-  const lowCount = displayStocks.filter((s) => s.current_stock <= s.minimum_stock).length;
-  const totalValue = displayStocks.reduce((sum, s) => sum + ((s.price_per_unit || 0) * (s.current_stock || 0)), 0);
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-heading font-bold">Stok Pakan</h1>
           <p className="text-muted-foreground mt-1">Kelola persediaan pakan kura-kura</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setShowScanner(true)} className="gap-2">
+            <QrCode className="w-4 h-4" /> Scan Barang
+          </Button>
+          {isAdmin && filtered.length > 0 && (
+            <Button variant="outline" onClick={() => setLabelItems(filtered)} className="gap-2">
+              <Printer className="w-4 h-4" /> Label Massal
+            </Button>
+          )}
           {canCreate && stocks.length === 0 && (
-            <Button variant="outline" onClick={() => setShowSeedDialog(true)}>
+            <Button variant="outline" onClick={() => setShowSeed(true)}>
               <Leaf className="w-4 h-4" /> Isi Pakan Ideal Sulcata
             </Button>
           )}
           {canCreate && (
-            <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
+            <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
               <Plus className="w-4 h-4" /> Tambah Pakan
             </Button>
           )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <div className="flex rounded-lg border overflow-hidden h-9 text-xs">
-          {[["semua","Semua"],["wajib","⚠️ Wajib"],["biasa","Biasa"]].map(([v,l]) => (
-            <button key={v} onClick={() => setMandatoryFilter(v)}
-              className={`px-3 font-medium transition-colors ${mandatoryFilter===v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
-        <div className="flex rounded-lg border overflow-hidden h-9 text-xs">
-          {[["semua","Semua Lokasi"],["gudang","🏪 Gudang"],["gazebo","⛺ Gazebo"]].map(([v,l]) => (
-            <button key={v} onClick={() => setLocationFilter(v)}
-              className={`px-3 font-medium transition-colors ${locationFilter===v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
-        {mandatoryCritical > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium border border-red-300">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            {mandatoryCritical} pakan WAJIB stok kritis!
-          </div>
-        )}
-      </div>
+      {/* Approval queue (admin only) */}
+      {isAdmin && <ApprovalQueueCard user={user} />}
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            <PackageOpen className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold">{stocks.length}</p>
-            <p className="text-xs text-muted-foreground">Total Item</p>
-          </div>
+          <div className="p-2.5 rounded-xl bg-primary/10"><PackageOpen className="w-5 h-5 text-primary" /></div>
+          <div><p className="text-2xl font-bold">{stocks.length}</p><p className="text-xs text-muted-foreground">Total Item</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-orange-100">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-orange-700">{lowCount}</p>
-            <p className="text-xs text-muted-foreground">Perlu Diisi</p>
-          </div>
+          <div className="p-2.5 rounded-xl bg-orange-100"><AlertTriangle className="w-5 h-5 text-orange-600" /></div>
+          <div><p className="text-2xl font-bold text-orange-700">{lowCount}</p><p className="text-xs text-muted-foreground">Perlu Diisi</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-green-100">
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-green-700">{stocks.length - lowCount}</p>
-            <p className="text-xs text-muted-foreground">Stok Aman</p>
-          </div>
+          <div className="p-2.5 rounded-xl bg-green-100"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
+          <div><p className="text-2xl font-bold text-green-700">{stocks.length - lowCount}</p><p className="text-xs text-muted-foreground">Stok Aman</p></div>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-muted-foreground mb-1">Nilai Total Stok</p>
@@ -289,7 +175,24 @@ export default function FeedStockPage() {
         </Card>
       </div>
 
-      {/* Stock List */}
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <Input placeholder="Cari nama / SKU…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-44 h-9" />
+        <div className="flex rounded-lg border overflow-hidden h-9 text-xs">
+          {[["semua", "Semua"], ...CATEGORIES.map(c => [c.value, c.label])].map(([v, l]) => (
+            <button key={v} onClick={() => setCatFilter(v)}
+              className={`px-3 font-medium transition-colors ${catFilter === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setLowFilter(!lowFilter)}
+          className={`px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${lowFilter ? "bg-orange-500 text-white border-orange-500" : "bg-background border-border hover:bg-muted"}`}>
+          ⚠️ Stok Menipis
+        </button>
+      </div>
+
+      {/* List */}
       {isLoading ? (
         <div className="text-center py-16 text-muted-foreground">Memuat...</div>
       ) : stocks.length === 0 ? (
@@ -298,115 +201,80 @@ export default function FeedStockPage() {
           <p>Belum ada data stok pakan</p>
           {canCreate && (
             <div className="flex gap-2 justify-center mt-4">
-              <Button variant="outline" onClick={() => setShowSeedDialog(true)}>
-                <Leaf className="w-4 h-4" /> Isi Pakan Ideal Sulcata
-              </Button>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4" /> Tambah Manual
-              </Button>
+              <Button variant="outline" onClick={() => setShowSeed(true)}><Leaf className="w-4 h-4" /> Isi Pakan Ideal</Button>
+              <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Tambah Manual</Button>
             </div>
           )}
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {displayStocks.map((s) => {
+          {filtered.map((s) => {
             const isLow = s.current_stock <= s.minimum_stock;
-            const isMandatoryCritical = s.is_mandatory && isLow;
-            const stockValue = (s.price_per_unit || 0) * (s.current_stock || 0);
             return (
-              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow ${isMandatoryCritical ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}>
+              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${isLow && s.is_mandatory ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
+                onClick={() => setDetailItem(s)}>
                 <div className="flex items-start justify-between mb-2">
-                  <div>
+                  <div className="flex-1 min-w-0 mr-2">
+                    {/* Photo thumbnail */}
+                    {s.photo_url && (
+                      <img src={s.photo_url} alt={s.name} className="w-12 h-12 rounded object-cover border mb-1.5" />
+                    )}
                     <p className="font-semibold text-sm">{s.name}</p>
                     <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                      <span className="text-xs text-muted-foreground">{CATEGORIES.find((c) => c.value === s.category)?.label || s.category}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${(s.storage_location||"gudang")==="gudang" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>
-                        {(s.storage_location||"gudang")==="gudang" ? "🏪 Gudang" : "⛺ Gazebo"}
-                      </span>
-                      {s.is_mandatory && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠️ Wajib</span>
-                      )}
+                      <span className="text-xs text-muted-foreground">{CATEGORIES.find(c => c.value === s.category)?.label}</span>
+                      {s.sku && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1 rounded">{s.sku}</span>}
+                      {s.is_mandatory && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠️ Wajib</span>}
                     </div>
-                    {s.conversion_notes && <p className="text-[10px] text-primary italic mt-0.5">{s.conversion_notes}</p>}
                   </div>
-                  <StockStatusBadge stock={s} />
+                  <StockStatusBadge s={s} />
                 </div>
 
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className={`text-3xl font-bold ${isLow ? "text-orange-700" : "text-foreground"}`}>
-                      {s.current_stock}
-                      <span className="text-sm font-normal text-muted-foreground ml-1">{s.unit}</span>
+                    <p className={`text-3xl font-bold ${isLow ? "text-orange-700" : ""}`}>
+                      {s.current_stock}<span className="text-sm font-normal text-muted-foreground ml-1">{s.unit}</span>
                     </p>
-                    {editMinId === s.id ? (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-xs text-muted-foreground">Min:</span>
-                        <input
-                          type="number" min={0} step="0.1"
-                          value={editMinVal}
-                          onChange={e => setEditMinVal(e.target.value)}
-                          className="w-16 h-6 text-xs border rounded px-1 bg-background"
-                          autoFocus
-                          onKeyDown={e => {
-                            if (e.key === "Enter") { updateMinMutation.mutate({ id: s.id, minimum_stock: editMinVal }); setEditMinId(null); }
-                            if (e.key === "Escape") setEditMinId(null);
-                          }}
-                        />
-                        <span className="text-xs text-muted-foreground">{s.unit}</span>
-                        <button onClick={() => { updateMinMutation.mutate({ id: s.id, minimum_stock: editMinVal }); setEditMinId(null); }}
-                          className="text-xs text-primary font-medium hover:underline">✓</button>
-                        <button onClick={() => setEditMinId(null)} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                        Min: {s.minimum_stock} {s.unit}
-                        <button onClick={() => { setEditMinId(s.id); setEditMinVal(String(s.minimum_stock)); }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary/80">
-                          <Pencil className="w-2.5 h-2.5" />
-                        </button>
-                      </p>
-                    )}
-                    {s.daily_ideal > 0 && (
-                      <p className="text-xs text-primary mt-0.5">Ideal harian: {s.daily_ideal} {s.unit}</p>
-                    )}
+                    <p className="text-xs text-muted-foreground">Min: {s.minimum_stock} {s.unit}</p>
                   </div>
                   <div className="text-right">
-                    {s.price_per_unit > 0 && (
-                      <>
-                        <p className="text-xs text-muted-foreground">{formatRp(s.price_per_unit)}/{s.unit}</p>
-                        <p className="text-xs font-medium text-primary">{formatRp(stockValue)}</p>
-                      </>
+                    {!isKeeperOnly && s.price_per_unit > 0 && (
+                      <p className="text-xs text-muted-foreground">{formatRp(s.price_per_unit)}/{s.unit}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="mt-3">
-                  <div className="w-full bg-muted rounded-full h-1.5">
-                    <div
-                      className={`h-1.5 rounded-full transition-all ${s.current_stock === 0 ? "bg-destructive" : isLow ? "bg-orange-400" : "bg-primary"}`}
-                      style={{ width: `${Math.min(100, (s.current_stock / (s.minimum_stock * 3 || 1)) * 100)}%` }}
-                    />
-                  </div>
+                <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${s.current_stock === 0 ? "bg-destructive" : isLow ? "bg-orange-400" : "bg-primary"}`}
+                    style={{ width: `${Math.min(100, (s.current_stock / (s.minimum_stock * 3 || 1)) * 100)}%` }} />
                 </div>
 
-                {s.notes && <p className="text-xs text-muted-foreground mt-2 italic">{s.notes}</p>}
-
-                <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {(canEdit || role === "keeper" || role === "manajer") && (
+                <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}>
+                  <Button variant="outline" size="sm" className="h-7 text-xs flex-1"
+                    onClick={() => { setTxItem(s); setTxInitialType("keluar"); }}>
+                    Ambil
+                  </Button>
+                  {canEdit && (
                     <Button variant="outline" size="sm" className="h-7 text-xs flex-1"
-                      onClick={() => { setAdjustDialog(s); setAdjustAmount(""); setAdjustType("add"); }}>
-                      Update Stok
+                      onClick={() => { setTxItem(s); setTxInitialType("masuk"); }}>
+                      Tambah Stok
+                    </Button>
+                  )}
+                  {s.sku && isAdmin && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Buat Label"
+                      onClick={() => setLabelItems([s])}>
+                      <Printer className="w-3.5 h-3.5" />
                     </Button>
                   )}
                   {canEdit && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(s)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                      onClick={() => { setEditItem(s); setShowForm(true); }}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
                   )}
                   {canDelete && (
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"
-                      onClick={() => deleteMutation.mutate(s.id)}>
+                      onClick={() => { if (confirm(`Hapus ${s.name}?`)) base44.entities.FeedStock.delete(s.id).then(invalidate); }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   )}
@@ -417,169 +285,59 @@ export default function FeedStockPage() {
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={showForm} onOpenChange={(o) => { if (!o) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit Pakan" : "Tambah Pakan"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-3 pt-2">
-            <div>
-              <Label className="text-xs mb-1 block">Nama Pakan *</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="cth: Kubis, Wortel, Rumput Sudan" required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs mb-1 block">Kategori</Label>
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs mb-1 block">Satuan</Label>
-                <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v })}>
-                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs mb-1 block">Stok Saat Ini</Label>
-                <Input type="number" min={0} step="0.1" value={form.current_stock}
-                  onChange={(e) => setForm({ ...form, current_stock: e.target.value })} required />
-              </div>
-              <div>
-                <Label className="text-xs mb-1 block">Stok Minimum</Label>
-                <Input type="number" min={0} step="0.1" value={form.minimum_stock}
-                  onChange={(e) => setForm({ ...form, minimum_stock: e.target.value })} required />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs mb-1 block">Harga/Satuan (Rp)</Label>
-                <Input type="number" min={0} value={form.price_per_unit}
-                  onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
-                  placeholder="0" />
-              </div>
-              <div>
-                <Label className="text-xs mb-1 block">Kebutuhan Harian Ideal</Label>
-                <Input type="number" min={0} step="0.1" value={form.daily_ideal}
-                  onChange={(e) => setForm({ ...form, daily_ideal: e.target.value })}
-                  placeholder="0" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs mb-1 block">Lokasi Simpan</Label>
-                <Select value={form.storage_location || "gudang"} onValueChange={(v) => setForm({ ...form, storage_location: v })}>
-                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gudang">🏪 Gudang</SelectItem>
-                    <SelectItem value="gazebo">⛺ Gazebo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2 pt-5">
-                <input type="checkbox" id="is_mandatory" checked={!!form.is_mandatory}
-                  onChange={(e) => setForm({ ...form, is_mandatory: e.target.checked })}
-                  className="w-4 h-4 accent-primary" />
-                <Label htmlFor="is_mandatory" className="text-xs cursor-pointer">⚠️ Pakan Wajib</Label>
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs mb-1 block">Catatan Konversi</Label>
-              <Input value={form.conversion_notes} onChange={(e) => setForm({ ...form, conversion_notes: e.target.value })}
-                placeholder="cth: 4 keranjang sayur = 1 rokok" />
-            </div>
-            <div>
-              <Label className="text-xs mb-1 block">Catatan Lainnya</Label>
-              <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="cth: beli dari Pak Budi" />
-            </div>
-            <div className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Batal</Button>
-              <Button type="submit" className="flex-1" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Forms & Dialogs */}
+      {showForm && (
+        <StockItemForm open={showForm} itemType="feedstock" editData={editItem} user={user}
+          allSkus={allSkus}
+          onSaved={() => { invalidate(); setShowForm(false); setEditItem(null); }}
+          onClose={() => { setShowForm(false); setEditItem(null); }} />
+      )}
 
-      {/* Adjust Stock Dialog */}
-      <Dialog open={!!adjustDialog} onOpenChange={(o) => { if (!o) setAdjustDialog(null); }}>
+      {txItem && (
+        <StockTransactionDialog item={txItem} itemType="feedstock" user={user} role={role}
+          threshold={threshold} initialType={txInitialType}
+          onClose={(refreshed) => { setTxItem(null); if (refreshed) invalidate(); }} />
+      )}
+
+      {detailItem && (
+        <ItemDetailDialog item={detailItem} itemType="feedstock" role={role} open={!!detailItem}
+          onClose={() => setDetailItem(null)}
+          onEdit={() => { setEditItem(detailItem); setDetailItem(null); setShowForm(true); }}
+          onTransaction={() => { setTxItem(detailItem); setTxInitialType("masuk"); setDetailItem(null); }}
+          onLabel={() => { setLabelItems([detailItem]); setDetailItem(null); }} />
+      )}
+
+      {labelItems && (
+        <NiimbotLabelGenerator open={!!labelItems} items={labelItems}
+          onClose={() => setLabelItems(null)} />
+      )}
+
+      <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />
+
+      {/* Not found dialog after scan */}
+      <Dialog open={!!scanResult?.notFound} onOpenChange={() => setScanResult(null)}>
         <DialogContent className="max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="text-base">Update Stok — {adjustDialog?.name}</DialogTitle>
-          </DialogHeader>
-          {adjustDialog && (
-            <div className="space-y-4 pt-2">
-              <p className="text-center text-3xl font-bold">
-                {adjustDialog.current_stock}
-                <span className="text-sm font-normal text-muted-foreground ml-1">{adjustDialog.unit}</span>
-              </p>
-              {adjustDialog.price_per_unit > 0 && (
-                <p className="text-center text-xs text-muted-foreground">
-                  Harga: {formatRp(adjustDialog.price_per_unit)}/{adjustDialog.unit}
-                </p>
-              )}
-              <div>
-                <Label className="text-xs mb-1 block">Jumlah</Label>
-                <Input type="number" min={0} step="0.1" value={adjustAmount}
-                  onChange={(e) => setAdjustAmount(e.target.value)}
-                  placeholder="0" className="text-center text-lg" />
-              </div>
-              {adjustDialog.price_per_unit > 0 && adjustAmount > 0 && (
-                <p className="text-center text-xs text-primary font-medium">
-                  Total: {formatRp(adjustDialog.price_per_unit * Number(adjustAmount))}
-                  {" "}→ otomatis dicatat ke keuangan
-                </p>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" className="text-destructive border-destructive/30"
-                  onClick={() => handleAdjust(false)} disabled={adjustMutation.isPending}>
-                  <MinusCircle className="w-4 h-4" /> Kurangi
-                </Button>
-                <Button onClick={() => handleAdjust(true)} disabled={adjustMutation.isPending}>
-                  <PlusCircle className="w-4 h-4" /> Tambah
-                </Button>
-              </div>
-            </div>
+          <DialogHeader><DialogTitle>Barang Tidak Ditemukan</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">SKU <span className="font-mono font-bold">{scanResult?.sku}</span> tidak ada di database pakan.</p>
+          {canCreate && (
+            <Button onClick={() => { setScanResult(null); setEditItem(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-1" /> Tambah Barang Baru
+            </Button>
           )}
+          <Button variant="outline" onClick={() => setScanResult(null)}>Tutup</Button>
         </DialogContent>
       </Dialog>
 
-      {/* Seed ideal feeds dialog */}
-      <Dialog open={showSeedDialog} onOpenChange={setShowSeedDialog}>
+      {/* Seed dialog */}
+      <Dialog open={showSeed} onOpenChange={setShowSeed}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>🌿 Isi Pakan Ideal Sulcata</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <p className="text-sm text-muted-foreground">
-              Sistem akan mengisi {SULCATA_IDEAL_FEEDS.length} jenis pakan yang direkomendasikan untuk sulcata, lengkap dengan stok awal, minimum stok, harga, dan kebutuhan harian.
-            </p>
-            <div className="max-h-48 overflow-y-auto space-y-1">
-              {SULCATA_IDEAL_FEEDS.map((f, i) => (
-                <div key={i} className="flex items-center justify-between text-xs bg-muted/40 rounded-lg px-3 py-1.5">
-                  <span>{f.name}</span>
-                  <span className="text-muted-foreground">{f.current_stock} {f.unit} · {formatRp(f.price_per_unit)}/{f.unit}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowSeedDialog(false)}>Batal</Button>
-              <Button className="flex-1" onClick={handleSeedIdealFeeds} disabled={seeding}>
-                {seeding ? "Mengisi..." : "Isi Sekarang"}
-              </Button>
-            </div>
+          <DialogHeader><DialogTitle>🌿 Isi Pakan Ideal Sulcata</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Mengisi {SULCATA_IDEAL_FEEDS.length} jenis pakan rekomendasi sulcata.</p>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setShowSeed(false)}>Batal</Button>
+            <Button className="flex-1" onClick={handleSeedIdealFeeds} disabled={seeding}>
+              {seeding ? "Mengisi..." : "Isi Sekarang"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

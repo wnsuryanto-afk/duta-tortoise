@@ -62,6 +62,11 @@
       "type": "string",
       "default": "main",
       "description": "Key unik (selalu 'main') untuk single-record pattern"
+    },
+    "stok_approval_threshold": {
+      "type": "number",
+      "default": 500000,
+      "description": "Nilai minimum stok keluar yang memerlukan approval (Rp)"
     }
   },
   "required": [
