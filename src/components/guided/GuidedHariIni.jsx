@@ -5,8 +5,8 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   MapPin, Home, Leaf, Heart, LogOut,
-  CheckCircle2, Circle, ChevronRight, AlertTriangle,
-  Smile, Users
+  CheckCircle2, Circle, AlertTriangle,
+  Smile, Users, Bell, X
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 
@@ -133,6 +133,24 @@ export default function GuidedHariIni({ user }) {
     queryFn: async () => base44.entities.MaintenanceLog.filter({ done_by_email: user.email, period_key: today }),
     enabled: !!user?.email,
   });
+
+  // Notif kritis untuk banner
+  const { data: kritisNotifs = [], refetch: refetchNotifs } = useQuery({
+    queryKey: ["notif-kritis", user?.email, today],
+    queryFn: async () => {
+      const all = await base44.entities.Notification.filter({ recipient_email: user.email });
+      return all.filter(n => n.priority === "tinggi" && !n.is_read && !n.is_dismissed
+        && (n.created_at || n.created_date || "").startsWith(today));
+    },
+    enabled: !!user?.email,
+  });
+
+  const dismissNotif = async (notifId) => {
+    await base44.entities.Notification.update(notifId, {
+      is_dismissed: true, is_read: true, read_at: new Date().toISOString()
+    });
+    refetchNotifs();
+  };
 
   // Derived from attendance
   const hasCheckedIn  = !!attendance?.check_in;
@@ -386,6 +404,32 @@ export default function GuidedHariIni({ user }) {
       <div className="bg-white px-4 py-3 border-b border-gray-100">
         <StepBar currentStep={effectiveStep} />
       </div>
+
+      {/* Banner notifikasi kritis */}
+      {kritisNotifs.length > 0 && (
+        <div className="mx-4 mt-3 space-y-2">
+          {kritisNotifs.slice(0, 3).map(notif => (
+            <div key={notif.id} className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3">
+              <Bell className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-800">{notif.title}</p>
+                {notif.message && <p className="text-xs text-amber-700 mt-0.5 line-clamp-2">{notif.message}</p>}
+                {notif.action_label && (
+                  <button
+                    onClick={() => dismissNotif(notif.id)}
+                    className="mt-1.5 text-xs font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-lg"
+                  >
+                    {notif.action_label}
+                  </button>
+                )}
+              </div>
+              <button onClick={() => dismissNotif(notif.id)} className="text-amber-400 hover:text-amber-700 flex-shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Feedback message */}
       {msg && (
