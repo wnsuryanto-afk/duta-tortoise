@@ -42,10 +42,8 @@ export default function Dashboard() {
     enabled: role !== "keeper",
   });
 
-  // Dashboard khusus Keeper
-  if (role === "keeper") {
-    return <KeeperDashboard />;
-  }
+  // Keeper/Kepala Feeder sudah ditangani oleh GuidedLayout di AppLayout
+  // Jika sampai sini berarti user memilih mode normal
 
   const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "baby");
   // KALKULASI TELUR DARI BREEDING AKTIF (bertelur + inkubasi) - SUMBER KEBENARAN TUNGGAL

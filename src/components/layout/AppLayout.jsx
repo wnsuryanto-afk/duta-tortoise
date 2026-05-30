@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import GuidedLayout from "@/components/guided/GuidedLayout";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -151,6 +152,8 @@ export default function AppLayout() {
   const userMenuRef = useRef(null);
 
   const isOwner = user?.role === "owner";
+  const isGuidedRole = ["keeper", "kepala_feeder"].includes(user?.role);
+  const [forceNormalMode, setForceNormalMode] = useState(false);
   const isInvestor = (viewAsRole || user?.role) === "investor";
   const isViewingAs = !!viewAsRole;
 
@@ -189,6 +192,16 @@ export default function AppLayout() {
   // Owner → tetap masuk app (ada banner kuning saja)
   if (isProfileLoaded && !isOwner && !profileComplete) {
     return <ProfileSetupScreen user={user} onComplete={() => refetchProfile()} />;
+  }
+
+  // Keeper / Kepala Feeder → Guided Mode (kecuali user minta normal)
+  if (isProfileLoaded && isGuidedRole && !forceNormalMode && !isViewingAs) {
+    return (
+      <GuidedLayout
+        user={user}
+        onSwitchToNormal={() => setForceNormalMode(true)}
+      />
+    );
   }
 
   return (
