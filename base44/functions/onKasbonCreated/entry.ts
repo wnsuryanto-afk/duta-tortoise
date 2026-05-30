@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
             ? `Kasbon Disetujui — Rp ${Number(kasbon.amount || 0).toLocaleString("id-ID")}`
             : "Kasbon Ditolak",
           message: newStatus === "approved"
-            ? `Kasbon kamu Rp ${Number(kasbon.amount || 0).toLocaleString("id-ID")} sudah disetujui.`
+            ? `Kasbon kamu Rp ${Number(kasbon.amount || 0).toLocaleString("id-ID")} sudah disetujui${kasbon.approved_by ? " oleh " + kasbon.approved_by : ""}.`
             : "Kasbon kamu ditolak. Hubungi admin untuk info lebih lanjut.",
           type: newStatus === "approved" ? "success" : "warning",
           priority: "sedang",

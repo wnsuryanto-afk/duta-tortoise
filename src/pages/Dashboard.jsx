@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Shell, Baby, Egg, AlertTriangle, ClipboardList, Users, Package, Target } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
@@ -29,6 +30,13 @@ import OperationalSummaryWidget from "@/components/dashboard/OperationalSummaryW
 
 export default function Dashboard() {
   const { role } = useCurrentUser();
+
+  // Trigger notif 7 (checklist reminder) dan 8 (checklist submitted → kepala_feeder) saat buka app
+  useEffect(() => {
+    if (role === "keeper" || role === "kepala_feeder") {
+      base44.functions.invoke("checkChecklistReminder", {}).catch(() => {});
+    }
+  }, [role]);
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],

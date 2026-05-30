@@ -131,25 +131,26 @@ Deno.serve(async (req) => {
     results.push(`not_weighed: ${notWeighed.length}`);
 
     // ══════════════════════════════════════════════════
-    // 3F. TELUR MAU MENETAS (3 hari ke depan)
+    // 12. TELUR MAU MENETAS (3 hari ke depan)
+    // Gunakan expected_hatch_start / estimated_hatch_date
     // ══════════════════════════════════════════════════
     const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const breedingRecords = await base44.asServiceRole.entities.Breeding.list();
-    const nearHatch = breedingRecords.filter(b =>
-      b.status === "inkubasi" &&
-      b.estimated_hatch_date &&
-      b.estimated_hatch_date >= today &&
-      b.estimated_hatch_date <= in3days
-    );
+    const nearHatch = breedingRecords.filter(b => {
+      if (b.status !== "inkubasi") return false;
+      const hatchDate = b.estimated_hatch_start || b.estimated_hatch_date;
+      return hatchDate && hatchDate >= today && hatchDate <= in3days;
+    });
     for (const b of nearHatch) {
       const ownerEmails = await getEmails(["owner", "manajer"]);
-      const daysLeft = Math.ceil((new Date(b.estimated_hatch_date) - now) / (1000 * 60 * 60 * 24));
+      const hatchDate = b.estimated_hatch_start || b.estimated_hatch_date;
+      const daysLeft = Math.ceil((new Date(hatchDate) - now) / (1000 * 60 * 60 * 24));
       for (const email of ownerEmails) {
         if (await isDuplicate(email, b.id, "breeding")) continue;
         await createNotif({
           recipient_email: email,
           title: `Telur Akan Menetas ${daysLeft} Hari Lagi!`,
-          message: `Breeding ${b.male_name} × ${b.female_name} di ${b.incubator_name} diperkirakan menetas ${b.estimated_hatch_date}. Siapkan kandang baby.`,
+          message: `Breeding ${b.male_name} × ${b.female_name} di ${b.incubator_name || "inkubator"} diperkirakan menetas ${hatchDate}. Siapkan kandang baby.`,
           type: "info",
           priority: "tinggi",
           category: "breeding",
@@ -162,6 +163,89 @@ Deno.serve(async (req) => {
       }
     }
     results.push(`near_hatch: ${nearHatch.length}`);
+
+    // ══════════════════════════════════════════════════
+    // 14. HAMPIR CAPAI TARGET POIN (250–299, 1x per bulan)
+    // ══════════════════════════════════════════════════
+    const monthKey = today.substring(0, 7); // YYYY-MM
+    const monthStart = monthKey + "-01";
+    const allChecklists = await base44.asServiceRole.entities.DailyChecklist.list("-date", 1000);
+    // Group by employee_email
+    const poinByEmployee = {};
+    for (const cl of allChecklists) {
+      if (!cl.employee_email || !cl.date || !cl.date.startsWith(monthKey)) continue;
+      if (!poinByEmployee[cl.employee_email]) poinByEmployee[cl.employee_email] = 0;
+      poinByEmployee[cl.employee_email] += (cl.approved_points || cl.total_points_claimed || 0);
+    }
+    for (const [email, totalPoin] of Object.entries(poinByEmployee)) {
+      if (totalPoin < 250 || totalPoin >= 300) continue;
+      // Anti-duplikat: 1x per bulan per karyawan (cek title mengandung bulan)
+      const existing14 = await base44.asServiceRole.entities.Notification.filter({
+        recipient_email: email,
+        category: "lainnya",
+      });
+      const alreadyNotif14 = existing14.some(n =>
+        n.title?.includes("Kurang") && n.title?.includes("Poin") &&
+        (n.created_at || n.created_date || "").startsWith(monthKey) &&
+        !n.is_dismissed
+      );
+      if (alreadyNotif14) continue;
+      const sisa = 300 - totalPoin;
+      await createNotif({
+        recipient_email: email,
+        title: `Kurang ${sisa} Poin Lagi untuk Bonus Penuh!`,
+        message: `Kamu sudah ${totalPoin} poin bulan ini. Tinggal ${sisa} poin lagi untuk capai target 300 poin.`,
+        type: "info",
+        priority: "rendah",
+        category: "lainnya",
+        action_label: "Lihat Poin Saya",
+        action_url: "/rekap-poin-gaji",
+        related_entity_id: `target_poin_${email}_${monthKey}`,
+        related_entity_type: "DailyChecklist",
+      });
+    }
+    results.push(`near_target_poin: checked`);
+
+    // ══════════════════════════════════════════════════
+    // 15. PENGINGAT BELANJA STOK PAKAN (< 7 hari tersisa)
+    // ══════════════════════════════════════════════════
+    const feedStocks = await base44.asServiceRole.entities.FeedStock.list();
+    const lowFeedItems = feedStocks.filter(f => {
+      if (f.current_stock <= 0) return false;
+      if (f.daily_ideal && f.daily_ideal > 0) {
+        return (f.current_stock / f.daily_ideal) <= 7;
+      }
+      // Fallback: stok <= min_stock * 3
+      return f.minimum_stock > 0 && f.current_stock <= f.minimum_stock * 3;
+    });
+
+    if (lowFeedItems.length > 0) {
+      const adminEmails = await getEmails(["admin", "owner"]);
+      const belanjaDupKey = `belanja_stok_pakan_${today}`;
+      for (const email of adminEmails) {
+        if (await isDuplicate(email, belanjaDupKey, "stok")) continue;
+        const itemList = lowFeedItems.map(f => {
+          const sisaHari = f.daily_ideal > 0
+            ? Math.floor(f.current_stock / f.daily_ideal)
+            : "-";
+          return `${f.name} (sisa ${sisaHari} hari)`;
+        }).join(", ");
+        await createNotif({
+          recipient_email: email,
+          title: `${lowFeedItems.length} Pakan Perlu Segera Dibeli`,
+          message: itemList,
+          type: "warning",
+          priority: "sedang",
+          category: "stok",
+          recipient_role: "admin",
+          action_label: "Lihat Stok Pakan",
+          action_url: "/feed-stock",
+          related_entity_id: belanjaDupKey,
+          related_entity_type: "FeedStock",
+        });
+      }
+    }
+    results.push(`low_feed_items: ${lowFeedItems.length}`);
 
     return Response.json({ success: true, results, timestamp: now.toISOString() });
   } catch (error) {

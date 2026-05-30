@@ -59,6 +59,49 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ══════════════════════════════════════════════════
+    // 13. POIN MILESTONE (300 / 500 / 750 / 1000)
+    // ══════════════════════════════════════════════════
+    if (log.done_by_email) {
+      const monthKey = taskDate.substring(0, 7);
+      const allThisMonth = await base44.asServiceRole.entities.DailyChecklist.filter({});
+      const monthlyTotal = allThisMonth
+        .filter(cl => cl.employee_email === log.done_by_email && (cl.date || "").startsWith(monthKey))
+        .reduce((sum, cl) => sum + (cl.approved_points || cl.total_points_claimed || 0), 0);
+
+      const milestones = [300, 500, 750, 1000];
+      for (const milestone of milestones) {
+        if (monthlyTotal >= milestone) {
+          // Cek apakah sudah ada notif milestone ini bulan ini
+          const existingMilestone = await base44.asServiceRole.entities.Notification.filter({
+            recipient_email: log.done_by_email,
+            category: "lainnya",
+          });
+          const alreadyHas = existingMilestone.some(n =>
+            n.title?.includes(`${milestone} Poin`) &&
+            (n.created_at || n.created_date || "").startsWith(monthKey) &&
+            !n.is_dismissed
+          );
+          if (!alreadyHas) {
+            await base44.asServiceRole.entities.Notification.create({
+              recipient_email: log.done_by_email,
+              title: `Selamat! Kamu Sudah ${milestone} Poin Bulan Ini!`,
+              message: `Poin kamu sudah ${monthlyTotal} dari target 300 poin. Terus semangat — makin banyak poin, makin besar bonus!`,
+              type: "success",
+              priority: "rendah",
+              category: "lainnya",
+              related_entity_id: `milestone_${log.done_by_email}_${milestone}_${monthKey}`,
+              related_entity_type: "DailyChecklist",
+              is_read: false,
+              is_dismissed: false,
+              created_at: new Date().toISOString(),
+            });
+          }
+          break; // hanya notif milestone tertinggi yang baru dicapai
+        }
+      }
+    }
+
     return Response.json({ ok: true, poin: poinEarned, date: taskDate });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
