@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfMonth } from "date-fns";
 import { id } from "date-fns/locale";
 import { Star, TrendingUp, CheckCircle2, Target } from "lucide-react";
 
@@ -9,16 +9,8 @@ function formatRp(val) {
 }
 
 export default function GuidedPoinSaya({ user }) {
+  const today = format(new Date(), "yyyy-MM-dd");
   const currentPeriod = format(new Date(), "yyyy-MM");
-
-  const { data: checklists = [] } = useQuery({
-    queryKey: ["checklist-my-month", user?.email, currentPeriod],
-    queryFn: async () => {
-      const all = await base44.entities.DailyChecklist.filter({ employee_email: user.email });
-      return all.filter(c => c.date?.startsWith(currentPeriod));
-    },
-    enabled: !!user?.email,
-  });
 
   const { data: settings } = useQuery({
     queryKey: ["company-settings"],
@@ -28,27 +20,34 @@ export default function GuidedPoinSaya({ user }) {
     },
   });
 
+  // Ambil MaintenanceLog bulan ini milik user ini
+  const { data: logs = [] } = useQuery({
+    queryKey: ["maintenance-my-month", user?.email, currentPeriod],
+    queryFn: async () => {
+      const all = await base44.entities.MaintenanceLog.filter({ done_by_email: user.email });
+      return all.filter(l => l.period_key?.startsWith(currentPeriod) && l.is_done);
+    },
+    enabled: !!user?.email,
+  });
+
   const TARGET = settings?.min_poin_bulanan || 300;
   const nilaiPerPoin = settings?.nilai_per_poin || 500;
 
-  const totalPoin = checklists
-    .filter(c => c.status === "approved")
-    .reduce((s, c) => s + (c.approved_points || 0), 0);
-
+  const totalPoin = logs.reduce((s, l) => s + (l.poin_earned || 0), 0);
   const pct = Math.min(100, Math.round((totalPoin / TARGET) * 100));
   const kurang = Math.max(0, TARGET - totalPoin);
   const estBonus = totalPoin >= TARGET ? (totalPoin - TARGET) * nilaiPerPoin : 0;
 
-  // Riwayat 7 hari terakhir
-  const today = format(new Date(), "yyyy-MM-dd");
+  // Riwayat 7 hari terakhir (aggregate poin per hari)
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = format(subDays(new Date(), 6 - i), "yyyy-MM-dd");
-    const c = checklists.find(x => x.date === d);
-    return { date: d, poin: c?.approved_points || 0, status: c?.status };
+    const dayLogs = logs.filter(l => l.period_key === d);
+    const poin = dayLogs.reduce((s, l) => s + (l.poin_earned || 0), 0);
+    return { date: d, poin, count: dayLogs.length };
   });
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 pb-6">
       {/* Header */}
       <div className="pt-6 text-center">
         <Star className="w-10 h-10 text-amber-400 fill-amber-300 mx-auto mb-2" />
@@ -108,23 +107,21 @@ export default function GuidedPoinSaya({ user }) {
         <div className="space-y-2">
           {last7.map(day => {
             const isToday = day.date === today;
-            const isApproved = day.status === "approved";
             return (
               <div key={day.date} className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${isToday ? "bg-green-50 border border-green-200" : "bg-gray-50"}`}>
                 <span className={`text-sm ${isToday ? "font-semibold text-green-700" : "text-gray-600"}`}>
-                  {isToday ? "Hari ini" : format(new Date(day.date), "EEE, d MMM", { locale: id })}
+                  {isToday ? "Hari ini" : format(new Date(day.date + "T00:00:00"), "EEE, d MMM", { locale: id })}
                 </span>
                 <div className="flex items-center gap-2">
-                  {day.poin > 0 && isApproved && (
+                  {day.poin > 0 ? (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">
                       +{day.poin} poin
                     </span>
-                  )}
-                  {!isApproved && day.status && (
-                    <span className="text-xs text-gray-400">menunggu</span>
-                  )}
-                  {!day.status && (
+                  ) : (
                     <span className="text-xs text-gray-300">—</span>
+                  )}
+                  {day.count > 0 && (
+                    <span className="text-xs text-gray-400">{day.count} tugas</span>
                   )}
                 </div>
               </div>
