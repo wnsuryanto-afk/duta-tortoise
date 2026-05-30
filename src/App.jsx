@@ -133,6 +133,8 @@ const AuthenticatedApp = () => {
         <Route path="/rekap-poin-gaji" element={<RekapPoinGajiPage />} />
         <Route path="/duplikat-stok" element={<DuplikatStokPage />} />
         <Route path="/migrasi-kategori" element={<MigrasiKategoriPage />} />
+        <Route path="/dashboard-stok" element={<DashboardStokPage />} />
+        <Route path="/migrasi-struktur" element={<MigrasiStrukturPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />
