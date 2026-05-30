@@ -212,20 +212,28 @@ export default function WarehousePage() {
               {filtered.map((item) => {
                 const isLow = item.current_stock <= item.minimum_stock;
                 const cat = CATEGORIES.find((c) => c.value === item.category) || CATEGORIES[5];
+                const incomplete = isItemIncomplete(item, "warehouse");
                 return (
-                  <Card key={item.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
+                  <Card key={item.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${incomplete ? "border-l-4 border-l-yellow-400" : ""} ${isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
                     onClick={() => setDetailItem(item)}>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0 mr-2">
-                        {item.photo_url && (
+                        {item.photo_url ? (
                           <img src={item.photo_url} alt={item.name} className="w-12 h-12 rounded object-cover border mb-1.5" />
-                        )}
+                        ) : isAdmin ? (
+                          <button onClick={e => { e.stopPropagation(); setEditItem(item); setShowForm(true); }}
+                            className="w-12 h-12 rounded border border-dashed border-yellow-400 bg-yellow-50 flex flex-col items-center justify-center mb-1.5 text-yellow-600 hover:bg-yellow-100 transition-colors">
+                            <span className="text-lg">📷</span>
+                            <span className="text-[8px] leading-tight">Tambah</span>
+                          </button>
+                        ) : null}
                         <p className="font-semibold text-sm">{item.name}</p>
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cat.color}`}>{cat.label}</span>
                           {item.sku && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1 rounded">{item.sku}</span>}
                           {item.is_mandatory && <Badge className="text-[10px] bg-red-500 text-white px-1 py-0">WAJIB</Badge>}
                         </div>
+                        {incomplete && <IncompleteBadges item={item} itemType="warehouse" />}
                       </div>
                       <StockBadge item={item} />
                     </div>
@@ -252,23 +260,29 @@ export default function WarehousePage() {
                           onClick={() => { setTxItem(item); setTxInitialType("keluar"); }}>
                           <ArrowDownCircle className="w-3.5 h-3.5 text-red-500" />
                         </Button>
+                        {isAdmin && incomplete && (
+                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1 border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+                            onClick={() => { setEditItem(item); setShowForm(true); }}>
+                            ✏️ Lengkapi
+                          </Button>
+                        )}
                         {item.sku && isAdmin && (
                           <Button variant="ghost" size="icon" className="h-8 w-8"
                             onClick={() => setLabelItems([item])}>
                             <Printer className="w-3.5 h-3.5" />
                           </Button>
                         )}
+                        {isAdmin && !incomplete && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => { setEditItem(item); setShowForm(true); }}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         {isAdmin && (
-                          <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"
-                              onClick={() => { setEditItem(item); setShowForm(true); }}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
-                              onClick={() => { if (confirm(`Hapus ${item.name}?`)) base44.entities.WarehouseItem.delete(item.id).then(invalidate); }}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
+                            onClick={() => { if (confirm(`Hapus ${item.name}?`)) base44.entities.WarehouseItem.delete(item.id).then(invalidate); }}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -317,7 +331,7 @@ export default function WarehousePage() {
       {/* Modals */}
       {showForm && (
         <StockItemForm open={showForm} itemType="warehouse" editData={editItem} user={user}
-          allSkus={allSkus}
+          allSkus={allSkus} allItems={items}
           onSaved={() => { invalidate(); setShowForm(false); setEditItem(null); }}
           onClose={() => { setShowForm(false); setEditItem(null); }} />
       )}

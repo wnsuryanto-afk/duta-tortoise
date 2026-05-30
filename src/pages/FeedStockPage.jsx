@@ -237,21 +237,29 @@ export default function FeedStockPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((s) => {
             const isLow = s.current_stock <= s.minimum_stock;
+            const incomplete = isItemIncomplete(s, "feedstock");
             return (
-              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${isLow && s.is_mandatory ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
+              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${incomplete ? "border-l-4 border-l-yellow-400" : ""} ${isLow && s.is_mandatory ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
                 onClick={() => setDetailItem(s)}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0 mr-2">
-                    {/* Photo thumbnail */}
-                    {s.photo_url && (
+                    {/* Photo thumbnail or placeholder */}
+                    {s.photo_url ? (
                       <img src={s.photo_url} alt={s.name} className="w-12 h-12 rounded object-cover border mb-1.5" />
-                    )}
+                    ) : canEdit ? (
+                      <button onClick={e => { e.stopPropagation(); setEditItem(s); setShowForm(true); }}
+                        className="w-12 h-12 rounded border border-dashed border-yellow-400 bg-yellow-50 flex flex-col items-center justify-center mb-1.5 text-yellow-600 hover:bg-yellow-100 transition-colors">
+                        <span className="text-lg">📷</span>
+                        <span className="text-[8px] leading-tight">Tambah</span>
+                      </button>
+                    ) : null}
                     <p className="font-semibold text-sm">{s.name}</p>
                     <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                       <span className="text-xs text-muted-foreground">{CATEGORIES.find(c => c.value === s.category)?.label}</span>
                       {s.sku && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1 rounded">{s.sku}</span>}
                       {s.is_mandatory && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠️ Wajib</span>}
                     </div>
+                    {incomplete && <IncompleteBadges item={s} itemType="feedstock" />}
                   </div>
                   <StockStatusBadge s={s} />
                 </div>
@@ -287,13 +295,19 @@ export default function FeedStockPage() {
                       Tambah Stok
                     </Button>
                   )}
+                  {canEdit && incomplete && (
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+                      onClick={() => { setEditItem(s); setShowForm(true); }}>
+                      ✏️ Lengkapi
+                    </Button>
+                  )}
                   {s.sku && isAdmin && (
                     <Button variant="ghost" size="icon" className="h-7 w-7" title="Buat Label"
                       onClick={() => setLabelItems([s])}>
                       <Printer className="w-3.5 h-3.5" />
                     </Button>
                   )}
-                  {canEdit && (
+                  {canEdit && !incomplete && (
                     <Button variant="ghost" size="icon" className="h-7 w-7"
                       onClick={() => { setEditItem(s); setShowForm(true); }}>
                       <Pencil className="w-3.5 h-3.5" />
@@ -315,7 +329,7 @@ export default function FeedStockPage() {
       {/* Forms & Dialogs */}
       {showForm && (
         <StockItemForm open={showForm} itemType="feedstock" editData={editItem} user={user}
-          allSkus={allSkus}
+          allSkus={allSkus} allItems={stocks}
           onSaved={() => { invalidate(); setShowForm(false); setEditItem(null); }}
           onClose={() => { setShowForm(false); setEditItem(null); }} />
       )}

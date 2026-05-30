@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { generateSKU, getPrefix } from "@/lib/skuUtils";
-import { Camera, RefreshCw, AlertTriangle } from "lucide-react";
-import { checkDuplicates, DuplicateNameWarning } from "@/components/stock/DuplicateNameWarning";
+import { Camera, RefreshCw } from "lucide-react";
 
 /**
  * Reusable form for FeedStock and WarehouseItem.
@@ -15,7 +14,6 @@ import { checkDuplicates, DuplicateNameWarning } from "@/components/stock/Duplic
  * editData: existing item or null
  * user: current user
  * allSkus: string[] of existing SKUs in the entity
- * allItems: full list of existing items (for duplicate name check)
  * onSaved(item): callback after save
  * onClose(): callback to close
  */
@@ -42,6 +40,9 @@ const WAREHOUSE_CATEGORIES = [
 const FEED_UNITS = ["kg", "gram", "ikat", "buah", "liter", "keranjang"];
 const WH_UNITS = ["pcs", "botol", "sachet", "kg", "gram", "liter", "ml", "ikat", "buah", "lusin", "box", "strip"];
 
+/**
+ * allItems: all existing items in same table (for duplicate name check)
+ */
 export default function StockItemForm({ open, itemType, editData, user, allSkus = [], allItems = [], onSaved, onClose }) {
   const isFeed = itemType === "feedstock";
   const categories = isFeed ? FEED_CATEGORIES : WAREHOUSE_CATEGORIES;
@@ -66,44 +67,59 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
+  const [dupWarning, setDupWarning] = useState(null); // "exact" | "similar" | null
+  const [dupItems, setDupItems] = useState([]);
+  const [pakanWarning, setPakanWarning] = useState(false);
   const [skuError, setSkuError] = useState("");
 
   useEffect(() => {
     if (editData) {
       setForm({ ...defaultForm, ...editData });
     } else {
+      // Auto-generate SKU on new
       const prefix = getPrefix(defaultForm.category);
       const sku = generateSKU(prefix, allSkus);
       setForm({ ...defaultForm, sku });
     }
-    setIgnoreDuplicate(false);
-    setSkuError("");
   }, [editData, open]);
 
-  // Cek duplikat nama (hanya saat buat baru atau nama berubah)
-  const { exact: dupExact, similar: dupSimilar } = useMemo(() => {
-    if (ignoreDuplicate || editData?.id) return { exact: null, similar: [] };
-    return checkDuplicates(form.name, allItems, editData?.id);
-  }, [form.name, allItems, ignoreDuplicate, editData]);
-
-  const set = (k, v) => {
-    if (k === "name") setIgnoreDuplicate(false);
-    if (k === "sku") {
-      // Cek SKU duplikat
-      const sku = v.toUpperCase().trim();
-      const existing = allItems.find(i => i.sku && i.sku === sku && i.id !== editData?.id);
-      setSkuError(existing ? `SKU ${sku} sudah dipakai oleh "${existing.name}"` : "");
+  const set = (k, v) => setForm((f) => {
+    const next = { ...f, [k]: v };
+    // Regenerate SKU if category changes and not editing
+    if (k === "category" && !editData) {
+      next.sku = generateSKU(getPrefix(v), allSkus);
     }
-    setForm((f) => {
-      const next = { ...f, [k]: v };
-      if (k === "category" && !editData) {
-        next.sku = generateSKU(getPrefix(v), allSkus);
-        setSkuError("");
+    // Check pakan warning on category change (warehouse only)
+    if (k === "category" && !isFeed) {
+      setPakanWarning(v === "pakan");
+    }
+    // Check name duplicate on name change
+    if (k === "name") {
+      const normInput = v.trim().toLowerCase();
+      if (!normInput) { setDupWarning(null); setDupItems([]); return next; }
+      const others = allItems.filter(i => i.id !== editData?.id);
+      const exact = others.filter(i => i.name.trim().toLowerCase() === normInput);
+      if (exact.length > 0) {
+        setDupWarning("exact");
+        setDupItems(exact);
+      } else {
+        // Simple similarity: shared words or substring
+        const similar = others.filter(i => {
+          const norm = i.name.trim().toLowerCase();
+          return norm.includes(normInput) || normInput.includes(norm);
+        });
+        if (similar.length > 0) { setDupWarning("similar"); setDupItems(similar); }
+        else { setDupWarning(null); setDupItems([]); }
       }
-      return next;
-    });
-  };
+    }
+    // Check SKU uniqueness
+    if (k === "sku") {
+      const normSku = v.trim().toUpperCase();
+      const existing = allItems.find(i => i.id !== editData?.id && (i.sku || "").toUpperCase() === normSku && normSku);
+      setSkuError(existing ? `SKU ${normSku} sudah dipakai oleh "${existing.name}"` : "");
+    }
+    return next;
+  });
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -121,8 +137,8 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (skuError) return; // blok jika SKU duplikat
-    if (dupExact && !ignoreDuplicate) return; // blok jika nama sama persis
+    if (skuError) return;
+    if (dupWarning === "exact") return; // blocked unless user confirms below
     setSaving(true);
 
     const now = new Date().toISOString();
@@ -184,16 +200,23 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
             <Label className="text-xs mb-1 block">Nama *</Label>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)}
               placeholder={isFeed ? "cth: Kubis, Wortel" : "cth: Betadine, Sarung Tangan"} required />
+            {dupWarning === "exact" && (
+              <div className="mt-1.5 p-2.5 rounded-lg bg-red-50 border border-red-300 text-xs space-y-1">
+                <p className="font-semibold text-red-700">⛔ Sudah ada barang bernama "{form.name}":</p>
+                {dupItems.map(d => <p key={d.id} className="text-red-600 pl-2">• {d.name} ({d.sku || "tanpa SKU"})</p>)}
+                <Button type="button" size="sm" variant="outline" className="text-xs h-7 mt-1 border-red-400 text-red-700"
+                  onClick={() => setDupWarning("override")}>
+                  Tetap simpan sebagai baru
+                </Button>
+              </div>
+            )}
+            {dupWarning === "similar" && (
+              <div className="mt-1.5 p-2 rounded-lg bg-yellow-50 border border-yellow-300 text-xs space-y-1">
+                <p className="font-medium text-yellow-800">⚠️ Nama mirip dengan item yang sudah ada:</p>
+                {dupItems.map(d => <p key={d.id} className="text-yellow-700 pl-2">• {d.name} ({d.sku || "tanpa SKU"})</p>)}
+              </div>
+            )}
           </div>
-
-          {/* Warning duplikat nama */}
-          {!editData?.id && (
-            <DuplicateNameWarning
-              exact={dupExact}
-              similar={dupSimilar}
-              onIgnore={() => setIgnoreDuplicate(true)}
-            />
-          )}
 
           {/* SKU */}
           <div>
@@ -207,8 +230,15 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
                 </Button>
               )}
             </div>
-            {skuError && <p className="text-xs text-red-600 mt-1">{skuError}</p>}
+            {skuError && <p className="text-xs text-red-600 mt-1">⛔ {skuError}</p>}
           </div>
+
+          {/* Warning pakan di warehouse */}
+          {pakanWarning && (
+            <div className="p-2.5 rounded-lg bg-orange-50 border border-orange-300 text-xs text-orange-800">
+              ⚠️ <span className="font-semibold">Pakan sebaiknya di menu "Stok Pakan"</span>, bukan di Gudang. Lanjut tetap simpan di sini?
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -230,17 +260,6 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
               </Select>
             </div>
           </div>
-
-          {/* Warning: WarehouseItem kategori pakan */}
-          {!isFeed && form.category === "pakan" && (
-            <div className="rounded-lg border border-orange-300 bg-orange-50 p-3 flex gap-2">
-              <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-orange-700">Pakan sebaiknya di menu Stok Pakan</p>
-                <p className="text-xs text-orange-600 mt-0.5">Item pakan seharusnya dikelola di halaman Stok Pakan (FeedStock), bukan di Gudang. Tetap simpan di Gudang?</p>
-              </div>
-            </div>
-          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -320,7 +339,7 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
 
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-            <Button type="submit" className="flex-1" disabled={saving || !!skuError || (!!dupExact && !ignoreDuplicate)}>
+            <Button type="submit" className="flex-1" disabled={saving || !!skuError || dupWarning === "exact"}>
               {saving ? "Menyimpan..." : "Simpan"}
             </Button>
           </div>
