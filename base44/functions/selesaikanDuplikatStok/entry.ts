@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Akses ditolak.' }, { status: 403 });
     }
 
-    const { action, idA, idB, entityName, namaBaruB } = await req.json();
+    const { action, idA, idB, entityName, namaBaruB, satuanBaruB } = await req.json();
     const Entity = entityName === "feedstock"
       ? base44.asServiceRole.entities.FeedStock
       : base44.asServiceRole.entities.WarehouseItem;
@@ -62,10 +62,12 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, message: `Digabung ke "${itemB.name}" (${itemB.unit}). Stok baru: ${newStock}. ItemUsage dipindah: ${itemUsagePindah}`, itemUsagePindah });
 
     } else if (action === "pisah") {
-      // Rename item B agar berbeda
+      // Rename (dan opsional ganti satuan) item B agar berbeda
       const newName = namaBaruB || `${itemB.name} (${itemB.unit})`;
-      await Entity.update(idB, { name: newName });
-      return Response.json({ success: true, message: `Item B diubah namanya menjadi "${newName}". Keduanya tetap terpisah.` });
+      const updatePayload = { name: newName };
+      if (satuanBaruB) updatePayload.unit = satuanBaruB;
+      await Entity.update(idB, updatePayload);
+      return Response.json({ success: true, message: `Item B diubah: nama "${newName}"${satuanBaruB ? `, satuan "${satuanBaruB}"` : ""}. Keduanya tetap terpisah.` });
 
     } else {
       return Response.json({ error: 'Action tidak valid.' }, { status: 400 });

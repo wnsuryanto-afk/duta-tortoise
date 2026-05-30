@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, CheckCircle2, Loader2, Merge, RefreshCw, ClipboardList } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+const ALL_UNITS = ["pcs", "botol", "sachet", "kg", "gram", "liter", "ml", "ikat", "buah", "lusin", "box", "strip", "keranjang"];
 
 function RingkasanCard({ icon: Icon, label, value, color }) {
   return (
@@ -29,6 +33,7 @@ export default function DuplikatStokPage() {
   const [actionLoading, setActionLoading] = useState(null); // id pasangan
   const [pisahDialog, setPisahDialog] = useState(null); // pasangan yang dipilih pisah
   const [namaBaruB, setNamaBaruB] = useState("");
+  const [satuanBaruB, setSatuanBaruB] = useState("");
 
   // Baca daftar duplikat satuan beda dari CompanySettings.notes
   const { data: settings, refetch: refetchSettings } = useQuery({
@@ -58,7 +63,7 @@ export default function DuplikatStokPage() {
     setRunning(false);
   };
 
-  const selesaikan = async (pasangan, action, namaB) => {
+  const selesaikan = async (pasangan, action, namaB, satuanB) => {
     const key = `${pasangan.itemA.id}-${pasangan.itemB.id}`;
     setActionLoading(key);
     const payload = {
@@ -67,6 +72,7 @@ export default function DuplikatStokPage() {
       idB: pasangan.itemB.id,
       entityName: pasangan.entityName,
       namaBaruB: namaB,
+      satuanBaruB: satuanB,
     };
     const res = await base44.functions.invoke("selesaikanDuplikatStok", payload);
     if (res.data?.success) {
@@ -186,7 +192,7 @@ export default function DuplikatStokPage() {
                       </Button>
                       <Button size="sm" variant="outline" disabled={isLoading}
                         className="text-xs gap-1"
-                        onClick={() => { setPisahDialog(d); setNamaBaruB(`${d.itemB.name} (${d.itemB.unit})`); }}>
+                        onClick={() => { setPisahDialog(d); setNamaBaruB(`${d.itemB.name} (${d.itemB.unit})`); setSatuanBaruB(d.itemB.unit); }}>
                         Tetap Pisah (rename B)
                       </Button>
                     </div>
@@ -219,19 +225,33 @@ export default function DuplikatStokPage() {
       </Dialog>
 
       {/* Pisah dialog */}
-      <Dialog open={!!pisahDialog} onOpenChange={() => { setPisahDialog(null); setNamaBaruB(""); }}>
+      <Dialog open={!!pisahDialog} onOpenChange={() => { setPisahDialog(null); setNamaBaruB(""); setSatuanBaruB(""); }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Rename Item B</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Masukkan nama baru untuk item B agar tidak conflik dengan item A.</p>
-          <div className="space-y-2">
-            <p className="text-xs font-medium">Item A (tidak berubah): <span className="font-semibold">{pisahDialog?.itemA?.name} ({pisahDialog?.itemA?.unit})</span></p>
-            <p className="text-xs font-medium">Nama baru Item B:</p>
-            <Input value={namaBaruB} onChange={e => setNamaBaruB(e.target.value)} placeholder="Nama baru..." />
+          <DialogHeader><DialogTitle>Pisahkan Item B</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Ubah nama dan/atau satuan item B agar tidak konflik dengan item A.</p>
+          <div className="space-y-3">
+            <div className="p-2.5 rounded-lg bg-muted/50 text-xs">
+              <p className="font-medium text-muted-foreground">Item A (tidak berubah):</p>
+              <p className="font-semibold mt-0.5">{pisahDialog?.itemA?.name} — <span className="text-primary">{pisahDialog?.itemA?.unit}</span></p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nama baru Item B</Label>
+              <Input value={namaBaruB} onChange={e => setNamaBaruB(e.target.value)} placeholder="Nama baru..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Satuan Item B</Label>
+              <Select value={satuanBaruB} onValueChange={setSatuanBaruB}>
+                <SelectTrigger className="text-sm"><SelectValue placeholder="Pilih satuan..." /></SelectTrigger>
+                <SelectContent>
+                  {ALL_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => { setPisahDialog(null); setNamaBaruB(""); }}>Batal</Button>
-            <Button className="flex-1" disabled={!namaBaruB.trim() || actionLoading}
-              onClick={() => selesaikan(pisahDialog, "pisah", namaBaruB.trim())}>
+            <Button variant="outline" className="flex-1" onClick={() => { setPisahDialog(null); setNamaBaruB(""); setSatuanBaruB(""); }}>Batal</Button>
+            <Button className="flex-1" disabled={!namaBaruB.trim() || !!actionLoading}
+              onClick={() => selesaikan(pisahDialog, "pisah", namaBaruB.trim(), satuanBaruB)}>
               {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simpan"}
             </Button>
           </div>
