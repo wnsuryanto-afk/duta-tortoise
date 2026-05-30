@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { generateSKU, getPrefix } from "@/lib/skuUtils";
-import { Camera, RefreshCw } from "lucide-react";
+import { Camera, RefreshCw, AlertTriangle } from "lucide-react";
+import { checkDuplicates, DuplicateNameWarning } from "@/components/stock/DuplicateNameWarning";
 
 /**
  * Reusable form for FeedStock and WarehouseItem.
@@ -14,6 +15,7 @@ import { Camera, RefreshCw } from "lucide-react";
  * editData: existing item or null
  * user: current user
  * allSkus: string[] of existing SKUs in the entity
+ * allItems: full list of existing items (for duplicate name check)
  * onSaved(item): callback after save
  * onClose(): callback to close
  */
@@ -40,7 +42,7 @@ const WAREHOUSE_CATEGORIES = [
 const FEED_UNITS = ["kg", "gram", "ikat", "buah", "liter", "keranjang"];
 const WH_UNITS = ["pcs", "botol", "sachet", "kg", "gram", "liter", "ml", "ikat", "buah", "lusin", "box", "strip"];
 
-export default function StockItemForm({ open, itemType, editData, user, allSkus = [], onSaved, onClose }) {
+export default function StockItemForm({ open, itemType, editData, user, allSkus = [], allItems = [], onSaved, onClose }) {
   const isFeed = itemType === "feedstock";
   const categories = isFeed ? FEED_CATEGORIES : WAREHOUSE_CATEGORIES;
   const units = isFeed ? FEED_UNITS : WH_UNITS;
@@ -64,26 +66,44 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
+  const [skuError, setSkuError] = useState("");
 
   useEffect(() => {
     if (editData) {
       setForm({ ...defaultForm, ...editData });
     } else {
-      // Auto-generate SKU on new
       const prefix = getPrefix(defaultForm.category);
       const sku = generateSKU(prefix, allSkus);
       setForm({ ...defaultForm, sku });
     }
+    setIgnoreDuplicate(false);
+    setSkuError("");
   }, [editData, open]);
 
-  const set = (k, v) => setForm((f) => {
-    const next = { ...f, [k]: v };
-    // Regenerate SKU if category changes and not editing
-    if (k === "category" && !editData) {
-      next.sku = generateSKU(getPrefix(v), allSkus);
+  // Cek duplikat nama (hanya saat buat baru atau nama berubah)
+  const { exact: dupExact, similar: dupSimilar } = useMemo(() => {
+    if (ignoreDuplicate || editData?.id) return { exact: null, similar: [] };
+    return checkDuplicates(form.name, allItems, editData?.id);
+  }, [form.name, allItems, ignoreDuplicate, editData]);
+
+  const set = (k, v) => {
+    if (k === "name") setIgnoreDuplicate(false);
+    if (k === "sku") {
+      // Cek SKU duplikat
+      const sku = v.toUpperCase().trim();
+      const existing = allItems.find(i => i.sku && i.sku === sku && i.id !== editData?.id);
+      setSkuError(existing ? `SKU ${sku} sudah dipakai oleh "${existing.name}"` : "");
     }
-    return next;
-  });
+    setForm((f) => {
+      const next = { ...f, [k]: v };
+      if (k === "category" && !editData) {
+        next.sku = generateSKU(getPrefix(v), allSkus);
+        setSkuError("");
+      }
+      return next;
+    });
+  };
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -101,6 +121,8 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (skuError) return; // blok jika SKU duplikat
+    if (dupExact && !ignoreDuplicate) return; // blok jika nama sama persis
     setSaving(true);
 
     const now = new Date().toISOString();
@@ -164,18 +186,28 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
               placeholder={isFeed ? "cth: Kubis, Wortel" : "cth: Betadine, Sarung Tangan"} required />
           </div>
 
+          {/* Warning duplikat nama */}
+          {!editData?.id && (
+            <DuplicateNameWarning
+              exact={dupExact}
+              similar={dupSimilar}
+              onIgnore={() => setIgnoreDuplicate(true)}
+            />
+          )}
+
           {/* SKU */}
           <div>
             <Label className="text-xs mb-1 block">SKU (auto-generate, bisa diedit)</Label>
             <div className="flex gap-2">
               <Input value={form.sku} onChange={(e) => set("sku", e.target.value.toUpperCase())}
-                placeholder="PKN-0001" className="font-mono" />
+                placeholder="PKN-0001" className={`font-mono ${skuError ? "border-red-400" : ""}`} />
               {!editData?.id && (
                 <Button type="button" variant="outline" size="icon" onClick={handleRegenerateSKU} title="Generate ulang">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
               )}
             </div>
+            {skuError && <p className="text-xs text-red-600 mt-1">{skuError}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -198,6 +230,17 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
               </Select>
             </div>
           </div>
+
+          {/* Warning: WarehouseItem kategori pakan */}
+          {!isFeed && form.category === "pakan" && (
+            <div className="rounded-lg border border-orange-300 bg-orange-50 p-3 flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-orange-700">Pakan sebaiknya di menu Stok Pakan</p>
+                <p className="text-xs text-orange-600 mt-0.5">Item pakan seharusnya dikelola di halaman Stok Pakan (FeedStock), bukan di Gudang. Tetap simpan di Gudang?</p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -277,7 +320,7 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
 
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-            <Button type="submit" className="flex-1" disabled={saving}>
+            <Button type="submit" className="flex-1" disabled={saving || !!skuError || (!!dupExact && !ignoreDuplicate)}>
               {saving ? "Menyimpan..." : "Simpan"}
             </Button>
           </div>

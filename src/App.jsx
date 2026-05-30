@@ -59,6 +59,7 @@ import KritikSaranPage from '@/pages/KritikSaranPage';
 import StockGudangPage from '@/pages/StockGudangPage';
 import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
 import DuplikatStokPage from '@/pages/DuplikatStokPage';
+import MigrasiKategoriPage from '@/pages/MigrasiKategoriPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -129,6 +130,7 @@ const AuthenticatedApp = () => {
         <Route path="/stock-gudang" element={<StockGudangPage />} />
         <Route path="/rekap-poin-gaji" element={<RekapPoinGajiPage />} />
         <Route path="/duplikat-stok" element={<DuplikatStokPage />} />
+        <Route path="/migrasi-kategori" element={<MigrasiKategoriPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

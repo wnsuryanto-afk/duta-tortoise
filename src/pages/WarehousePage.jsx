@@ -18,6 +18,8 @@ import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import NiimbotLabelGenerator from "@/components/stock/NiimbotLabelGenerator";
 import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
 import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
+import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
+import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
 
 const CATEGORIES = [
   { value: "obat", label: "💊 Obat", color: "bg-red-100 text-red-700" },
@@ -63,7 +65,9 @@ export default function WarehousePage() {
   const [tab, setTab] = useState("stok");
   const [catFilter, setCatFilter] = useState("semua");
   const [lowFilter, setLowFilter] = useState(false);
+  const [lengkapFilter, setLengkapFilter] = useState("semua");
   const [search, setSearch] = useState("");
+  const [generatingSKU, setGeneratingSKU] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [txItem, setTxItem] = useState(null);
@@ -80,11 +84,25 @@ export default function WarehousePage() {
     qc.invalidateQueries({ queryKey: ["warehouse-transactions"] });
   };
 
+  const handleGenerateSKU = async () => {
+    setGeneratingSKU(true);
+    await base44.functions.invoke("backfillSKU", {});
+    invalidate();
+    setGeneratingSKU(false);
+  };
+
   const filtered = items.filter((i) => {
     const matchCat = catFilter === "semua" || i.category === catFilter;
     const matchLow = !lowFilter || i.current_stock <= i.minimum_stock;
     const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || (i.sku || "").toLowerCase().includes(search.toLowerCase()) || (i.code || "").toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchLow && matchSearch;
+    const inc = isItemIncomplete(i, "warehouse");
+    const matchLengkap = lengkapFilter === "semua" || (lengkapFilter === "belum" ? inc : !inc);
+    return matchCat && matchLow && matchSearch && matchLengkap;
+  }).sort((a, b) => {
+    if (lengkapFilter !== "belum") return 0;
+    const scoreA = [!a.photo_url, !a.sku, !(a.purchase_price > 0), !a.unit].filter(Boolean).length;
+    const scoreB = [!b.photo_url, !b.sku, !(b.purchase_price > 0), !b.unit].filter(Boolean).length;
+    return scoreB - scoreA;
   });
 
   const lowItems = items.filter((i) => i.current_stock <= i.minimum_stock);
@@ -171,6 +189,15 @@ export default function WarehousePage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${lowFilter ? "bg-orange-500 text-white border-orange-500" : "bg-background border-border hover:bg-muted"}`}>
               ⚠️ Stok Menipis
             </button>
+            <DataLengkapFilter
+              items={items}
+              isIncomplete={(i) => isItemIncomplete(i, "warehouse")}
+              lengkapFilter={lengkapFilter}
+              onChangeLengkap={setLengkapFilter}
+              isAdmin={isAdmin}
+              onGenerateSKU={handleGenerateSKU}
+              generatingSKU={generatingSKU}
+            />
           </div>
 
           {isLoading ? (

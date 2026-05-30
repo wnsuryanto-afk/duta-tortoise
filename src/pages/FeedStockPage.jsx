@@ -14,6 +14,8 @@ import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import NiimbotLabelGenerator from "@/components/stock/NiimbotLabelGenerator";
 import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
 import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
+import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
+import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 
@@ -72,8 +74,10 @@ export default function FeedStockPage() {
 
   const [catFilter, setCatFilter] = useState("semua");
   const [lowFilter, setLowFilter] = useState(false);
+  const [lengkapFilter, setLengkapFilter] = useState("semua");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [generatingSKU, setGeneratingSKU] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [txItem, setTxItem] = useState(null);
   const [txInitialType, setTxInitialType] = useState("masuk");
@@ -87,11 +91,25 @@ export default function FeedStockPage() {
   const allSkus = stocks.map((s) => s.sku).filter(Boolean);
   const invalidate = () => qc.invalidateQueries({ queryKey: ["feedstocks"] });
 
+  const handleGenerateSKU = async () => {
+    setGeneratingSKU(true);
+    await base44.functions.invoke("backfillSKU", {});
+    invalidate();
+    setGeneratingSKU(false);
+  };
+
   const filtered = stocks.filter((s) => {
     const matchCat = catFilter === "semua" || s.category === catFilter;
     const matchLow = !lowFilter || s.current_stock <= s.minimum_stock;
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || (s.sku || "").toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchLow && matchSearch;
+    const inc = isItemIncomplete(s, "feedstock");
+    const matchLengkap = lengkapFilter === "semua" || (lengkapFilter === "belum" ? inc : !inc);
+    return matchCat && matchLow && matchSearch && matchLengkap;
+  }).sort((a, b) => {
+    if (lengkapFilter !== "belum") return 0;
+    const scoreA = [!a.photo_url, !a.sku, !(a.price_per_unit > 0), !a.unit].filter(Boolean).length;
+    const scoreB = [!b.photo_url, !b.sku, !(b.price_per_unit > 0), !b.unit].filter(Boolean).length;
+    return scoreB - scoreA;
   });
 
   const lowCount = stocks.filter((s) => s.current_stock <= s.minimum_stock).length;
@@ -181,7 +199,7 @@ export default function FeedStockPage() {
         <div className="flex rounded-lg border overflow-hidden h-9 text-xs">
           {[["semua", "Semua"], ...CATEGORIES.map(c => [c.value, c.label])].map(([v, l]) => (
             <button key={v} onClick={() => setCatFilter(v)}
-              className={`px-3 font-medium transition-colors ${catFilter === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
+              className={`px-3 font-medium transition-colors border-r last:border-r-0 ${catFilter === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
               {l}
             </button>
           ))}
@@ -190,6 +208,15 @@ export default function FeedStockPage() {
           className={`px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${lowFilter ? "bg-orange-500 text-white border-orange-500" : "bg-background border-border hover:bg-muted"}`}>
           ⚠️ Stok Menipis
         </button>
+        <DataLengkapFilter
+          items={stocks}
+          isIncomplete={(s) => isItemIncomplete(s, "feedstock")}
+          lengkapFilter={lengkapFilter}
+          onChangeLengkap={setLengkapFilter}
+          isAdmin={isAdmin}
+          onGenerateSKU={handleGenerateSKU}
+          generatingSKU={generatingSKU}
+        />
       </div>
 
       {/* List */}
