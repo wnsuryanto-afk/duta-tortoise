@@ -1,0 +1,106 @@
+{
+  "name": "StockMovement",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "type": "string",
+      "description": "ID item (FeedStock atau WarehouseItem)"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "feedstock",
+        "warehouse"
+      ],
+      "description": "Jenis entitas"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Nama item"
+    },
+    "item_sku": {
+      "type": "string",
+      "description": "SKU item"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "masuk",
+        "keluar"
+      ],
+      "description": "Jenis pergerakan stok"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Jumlah"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "unit_price": {
+      "type": "number",
+      "default": 0
+    },
+    "total_value": {
+      "type": "number",
+      "default": 0,
+      "description": "Nilai total (qty x harga)"
+    },
+    "by_email": {
+      "type": "string",
+      "description": "Email user yang melakukan"
+    },
+    "by_name": {
+      "type": "string",
+      "description": "Nama user yang melakukan"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Keterangan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "selesai",
+        "menunggu_approval",
+        "disetujui",
+        "ditolak"
+      ],
+      "default": "selesai",
+      "description": "Status transaksi"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "rejected_reason": {
+      "type": "string"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "migrated_from_item_usage": {
+      "type": "boolean",
+      "default": false,
+      "description": "Data dimigrasikan dari ItemUsage lama"
+    }
+  },
+  "required": [
+    "item_id",
+    "item_name",
+    "quantity",
+    "type",
+    "by_email",
+    "date"
+  ]
+}

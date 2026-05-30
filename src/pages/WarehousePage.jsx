@@ -47,9 +47,9 @@ export default function WarehousePage() {
     queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300),
   });
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ["warehouse-transactions"],
-    queryFn: () => base44.entities.WarehouseTransaction.list("-date", 200),
+  const { data: movements = [] } = useQuery({
+    queryKey: ["stock-movements"],
+    queryFn: () => base44.entities.StockMovement.list("-date", 200),
   });
 
   const { data: settings } = useQuery({
@@ -94,7 +94,7 @@ export default function WarehousePage() {
   const filtered = items.filter((i) => {
     const matchCat = catFilter === "semua" || i.category === catFilter;
     const matchLow = !lowFilter || i.current_stock <= i.minimum_stock;
-    const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || (i.sku || "").toLowerCase().includes(search.toLowerCase()) || (i.code || "").toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || (i.sku || "").toLowerCase().includes(search.toLowerCase());
     const inc = isItemIncomplete(i, "warehouse");
     const matchLengkap = lengkapFilter === "semua" || (lengkapFilter === "belum" ? inc : !inc);
     return matchCat && matchLow && matchSearch && matchLengkap;
@@ -108,7 +108,7 @@ export default function WarehousePage() {
   const lowItems = items.filter((i) => i.current_stock <= i.minimum_stock);
 
   const handleScanResult = (sku) => {
-    const found = items.find((i) => (i.sku || i.code || "").toUpperCase() === sku.toUpperCase());
+    const found = items.find((i) => (i.sku || "").toUpperCase() === sku.toUpperCase());
     if (found) {
       setScanResult(null);
       setTxItem(found);
@@ -162,7 +162,7 @@ export default function WarehousePage() {
           <p className="text-xs text-muted-foreground mt-0.5">Stok Aman</p>
         </Card>
         <Card className="p-4">
-          <p className="text-2xl font-bold">{transactions.filter(t => t.date === format(new Date(), "yyyy-MM-dd")).length}</p>
+          <p className="text-2xl font-bold">{movements.filter(t => t.date === format(new Date(), "yyyy-MM-dd")).length}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Transaksi Hari Ini</p>
         </Card>
       </div>
@@ -300,11 +300,11 @@ export default function WarehousePage() {
         </TabsContent>
 
         <TabsContent value="riwayat" className="mt-4 space-y-3">
-          {transactions.length === 0 ? (
+          {movements.length === 0 ? (
             <p className="text-center py-10 text-muted-foreground">Belum ada transaksi</p>
           ) : (
             <div className="space-y-2">
-              {transactions.slice(0, 100).map((tx) => (
+              {movements.slice(0, 100).map((tx) => (
                 <Card key={tx.id} className="p-3 flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tx.type === "masuk" ? "bg-green-100" : "bg-red-100"}`}>
                     {tx.type === "masuk" ? <ArrowUpCircle className="w-4 h-4 text-green-600" /> : <ArrowDownCircle className="w-4 h-4 text-red-500" />}
@@ -312,8 +312,10 @@ export default function WarehousePage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{tx.item_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {tx.quantity} {tx.unit}{tx.notes ? ` · ${tx.notes}` : ""}{tx.created_by_name ? ` · ${tx.created_by_name}` : ""}
+                      {tx.quantity} {tx.unit}{tx.notes ? ` · ${tx.notes}` : ""}{tx.by_name ? ` · ${tx.by_name}` : ""}
                     </p>
+                    {tx.status === "menunggu_approval" && <span className="text-[10px] text-orange-700 font-semibold">⏳ Menunggu Approval</span>}
+                    {tx.status === "ditolak" && <span className="text-[10px] text-red-600 font-semibold">❌ Ditolak</span>}
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className={`text-sm font-semibold ${tx.type === "masuk" ? "text-green-600" : "text-red-500"}`}>

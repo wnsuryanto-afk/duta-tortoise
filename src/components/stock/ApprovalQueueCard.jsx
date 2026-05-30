@@ -18,8 +18,8 @@ export default function ApprovalQueueCard({ user }) {
   const [processing, setProcessing] = useState(null);
 
   const { data: pending = [] } = useQuery({
-    queryKey: ["item-usage-pending"],
-    queryFn: () => base44.entities.ItemUsage.filter({ status: "menunggu_approval" }),
+    queryKey: ["stock-movement-pending"],
+    queryFn: () => base44.entities.StockMovement.filter({ status: "menunggu_approval" }),
     refetchInterval: 30000,
   });
 
@@ -37,12 +37,12 @@ export default function ApprovalQueueCard({ user }) {
       const newStock = Math.max(0, (itemList[0].current_stock || 0) - usage.quantity);
       await Entity.update(usage.item_id, { current_stock: newStock });
     }
-    await base44.entities.ItemUsage.update(usage.id, {
+    await base44.entities.StockMovement.update(usage.id, {
       status: "disetujui",
       approved_by: user?.email || "",
       approved_at: new Date().toISOString(),
     });
-    qc.invalidateQueries({ queryKey: ["item-usage-pending"] });
+    qc.invalidateQueries({ queryKey: ["stock-movement-pending"] });
     qc.invalidateQueries({ queryKey: ["feedstocks"] });
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
     setProcessing(null);
@@ -50,13 +50,13 @@ export default function ApprovalQueueCard({ user }) {
 
   const handleReject = async (usage, reason = "Ditolak oleh admin") => {
     setProcessing(usage.id);
-    await base44.entities.ItemUsage.update(usage.id, {
+    await base44.entities.StockMovement.update(usage.id, {
       status: "ditolak",
       approved_by: user?.email || "",
       approved_at: new Date().toISOString(),
       rejected_reason: reason,
     });
-    qc.invalidateQueries({ queryKey: ["item-usage-pending"] });
+    qc.invalidateQueries({ queryKey: ["stock-movement-pending"] });
     setProcessing(null);
   };
 

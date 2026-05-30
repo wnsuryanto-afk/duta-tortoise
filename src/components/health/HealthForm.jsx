@@ -8,8 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Loader2, X, Upload } from "lucide-react";
+import { Loader2, X, Upload, Pencil } from "lucide-react";
 import DiagnosisPanel, { DIAGNOSIS_CATEGORIES } from "./DiagnosisPanel";
+import TreatmentItemsPicker from "./TreatmentItemsPicker";
 
 const SEVERITY_OPTIONS = [
   { value: "ringan",  label: "🟢 Ringan" },
@@ -46,8 +47,11 @@ export default function HealthForm({ open, onClose, editData }) {
     severity: "",
     description: "", treatment: "", vet_name: "",
     biaya_obat: 0,
+    biaya_obat_manual: false,
+    treatment_items: [],
     photo_urls: [],
   });
+  const [editBiayaManual, setEditBiayaManual] = useState(editData?.biaya_obat_manual || false);
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -77,10 +81,36 @@ export default function HealthForm({ open, onClose, editData }) {
     setUploadingPhotos(false);
   };
 
+  const treatmentItems = form.treatment_items || [];
+  const autoTotalBiaya = treatmentItems.reduce((s, it) => s + (it.subtotal || 0), 0);
+  const hasOverStock = treatmentItems.some(it => it.quantity > (it._available_stock ?? 0));
+
+  const handleTreatmentItemsChange = (newItems) => {
+    setForm(prev => {
+      const total = newItems.reduce((s, it) => s + (it.subtotal || 0), 0);
+      return {
+        ...prev,
+        treatment_items: newItems,
+        // jika tidak manual override, update biaya_obat otomatis
+        biaya_obat: editBiayaManual ? prev.biaya_obat : total,
+        biaya_obat_manual: editBiayaManual,
+      };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (hasOverStock) return;
     setSaving(true);
-    const data = { ...form, biaya_obat: Number(form.biaya_obat) || 0 };
+    // Bersihkan _available_stock sebelum simpan
+    const cleanItems = (form.treatment_items || []).map(({ _available_stock, ...it }) => it);
+    const data = {
+      ...form,
+      treatment_items: cleanItems,
+      biaya_obat: Number(form.biaya_obat) || 0,
+      biaya_obat_manual: editBiayaManual,
+      last_edited_by: (await base44.auth.me().catch(() => null))?.email || "sistem",
+    };
     let savedRecord;
     if (editData?.id) {
       savedRecord = await base44.entities.HealthRecord.update(editData.id, data);
@@ -245,19 +275,50 @@ export default function HealthForm({ open, onClose, editData }) {
             <Textarea value={form.treatment} onChange={(e) => handleChange("treatment", e.target.value)} rows={2} placeholder="Obat yang diberikan, dosis, frekuensi..." />
           </div>
 
-          {/* Biaya Obat — muncul hanya jika type sakit/obat */}
+          {/* Section Obat & Perlengkapan — hanya untuk type sakit/obat */}
           {(form.type === "sakit" || form.type === "obat") && (
-            <div className="space-y-1.5 p-3 bg-orange-50 border border-orange-200 rounded-xl">
-              <Label className="text-orange-800">Biaya Obat / Treatment (Rp)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={form.biaya_obat || ""}
-                onChange={(e) => handleChange("biaya_obat", e.target.value)}
-                placeholder="0"
-                className="bg-white"
+            <div className="space-y-3 p-3 bg-orange-50 border border-orange-200 rounded-xl">
+              <p className="text-sm font-semibold text-orange-900">💊 Obat & Perlengkapan Dipakai</p>
+              <TreatmentItemsPicker
+                items={form.treatment_items || []}
+                warehouseItems={warehouseItems}
+                onChange={handleTreatmentItemsChange}
               />
-              <p className="text-xs text-orange-700">💡 Biaya ini akan otomatis masuk ke laporan keuangan (kategori: Obat & Perawatan)</p>
+              {hasOverStock && (
+                <p className="text-xs text-red-600 font-medium">⛔ Jumlah melebihi stok tersedia. Kurangi qty terlebih dahulu.</p>
+              )}
+
+              {/* Biaya Obat */}
+              <div className="space-y-1 pt-1 border-t border-orange-200">
+                <div className="flex items-center justify-between">
+                  <Label className="text-orange-800 text-sm">Total Biaya (Rp)</Label>
+                  {treatmentItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setEditBiayaManual(!editBiayaManual)}
+                      className="text-xs text-orange-600 underline flex items-center gap-1"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      {editBiayaManual ? "Gunakan otomatis" : "Edit manual"}
+                    </button>
+                  )}
+                </div>
+                {!editBiayaManual && treatmentItems.length > 0 ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-orange-200">
+                    <span className="font-semibold text-orange-900">Rp {autoTotalBiaya.toLocaleString("id-ID")}</span>
+                    <span className="text-xs text-muted-foreground">(otomatis dari item dipilih)</span>
+                  </div>
+                ) : (
+                  <Input
+                    type="number" min={0}
+                    value={form.biaya_obat || ""}
+                    onChange={(e) => handleChange("biaya_obat", e.target.value)}
+                    placeholder="0"
+                    className="bg-white"
+                  />
+                )}
+                <p className="text-xs text-orange-700">💡 Biaya ini otomatis masuk laporan keuangan (Obat & Perawatan)</p>
+              </div>
             </div>
           )}
 
@@ -296,7 +357,7 @@ export default function HealthForm({ open, onClose, editData }) {
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <Button type="submit" disabled={saving || uploadingPhotos}>
+            <Button type="submit" disabled={saving || uploadingPhotos || hasOverStock}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editData?.id ? "Simpan" : "Tambah"}
             </Button>

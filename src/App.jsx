@@ -60,6 +60,8 @@ import StockGudangPage from '@/pages/StockGudangPage';
 import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
 import DuplikatStokPage from '@/pages/DuplikatStokPage';
 import MigrasiKategoriPage from '@/pages/MigrasiKategoriPage';
+import DashboardStokPage from '@/pages/DashboardStokPage';
+import MigrasiStrukturPage from '@/pages/MigrasiStrukturPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();

@@ -93,16 +93,52 @@
     },
     "treatment": {
       "type": "string",
-      "description": "Penanganan/obat yang diberikan"
+      "description": "Catatan tindakan tambahan (rendam, dll)"
+    },
+    "treatment_items": {
+      "type": "array",
+      "description": "Obat & perlengkapan yang digunakan (terhubung ke stok gudang)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "description": "ID WarehouseItem"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "item_sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "subtotal": {
+            "type": "number"
+          }
+        }
+      }
     },
     "biaya_obat": {
       "type": "number",
       "default": 0,
-      "description": "Biaya obat/treatment (Rp) - akan otomatis masuk laporan keuangan"
+      "description": "Biaya obat/treatment (Rp) - dihitung otomatis dari treatment_items, atau manual jika treatment_items kosong"
+    },
+    "biaya_obat_manual": {
+      "type": "boolean",
+      "default": false,
+      "description": "true jika biaya_obat diisi manual (override otomatis)"
     },
     "finance_tx_id": {
       "type": "string",
-      "description": "ID FinanceTransaction yang dibuat otomatis dari record ini"
+      "description": "ID FinanceTransaction yang dibuat otomatis"
     },
     "vet_name": {
       "type": "string",

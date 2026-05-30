@@ -1,0 +1,76 @@
+{
+  "name": "FeedingLog",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pemberian pakan"
+    },
+    "enclosure_id": {
+      "type": "string",
+      "description": "ID kandang"
+    },
+    "enclosure_name": {
+      "type": "string",
+      "description": "Nama kandang"
+    },
+    "fed_by_email": {
+      "type": "string",
+      "description": "Email feeder"
+    },
+    "fed_by_name": {
+      "type": "string",
+      "description": "Nama feeder"
+    },
+    "feed_items": {
+      "type": "array",
+      "description": "Daftar pakan yang diberikan",
+      "items": {
+        "type": "object",
+        "properties": {
+          "feedstock_id": {
+            "type": "string"
+          },
+          "feedstock_name": {
+            "type": "string"
+          },
+          "feedstock_sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "subtotal": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "total_weight_grams": {
+      "type": "number",
+      "default": 0,
+      "description": "Total berat semua pakan (gram, otomatis)"
+    },
+    "total_cost": {
+      "type": "number",
+      "default": 0,
+      "description": "Total nilai pakan yang diberikan"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan"
+    }
+  },
+  "required": [
+    "date",
+    "enclosure_name",
+    "fed_by_email"
+  ]
+}

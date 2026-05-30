@@ -5,7 +5,8 @@ import {
   Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
   PieChart, Bell, Printer, Package, Zap, Thermometer, FileText, MessageSquare,
   CalendarHeart, Library, ListTodo, AlertTriangle, Skull,
-  Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical
+  Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical,
+  UtensilsCrossed, LayoutGrid
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -44,6 +45,8 @@ const NAV_GROUPS = [
     items: [
       { path: "/maintenance-schedule", section: "maintenance", label: "Kebersihan Kandang",  icon: Calendar },
       { path: "/stock-gudang",    section: "feed-stock",      label: "Stok & Gudang",       icon: Warehouse },
+      { path: "/dashboard-stok", section: "warehouse",        label: "Dashboard Stok",      icon: LayoutGrid },
+      { path: "/feeding-log",    section: "feed-stock",       label: "Pemberian Pakan",     icon: UtensilsCrossed },
     ],
   },
   {

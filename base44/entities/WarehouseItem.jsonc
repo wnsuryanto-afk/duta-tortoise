@@ -5,16 +5,12 @@
     "name": {
       "type": "string"
     },
-    "code": {
-      "type": "string"
-    },
     "category": {
       "type": "string",
       "enum": [
         "obat",
         "vitamin",
         "suplemen",
-        "pakan",
         "alat_kerja",
         "peralatan",
         "lainnya"

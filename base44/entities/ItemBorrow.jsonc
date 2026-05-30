@@ -1,0 +1,97 @@
+{
+  "name": "ItemBorrow",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "type": "string",
+      "description": "ID item (WarehouseItem)"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "feedstock",
+        "warehouse"
+      ],
+      "default": "warehouse",
+      "description": "Jenis entitas"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Nama item"
+    },
+    "item_sku": {
+      "type": "string",
+      "description": "SKU item"
+    },
+    "borrower_email": {
+      "type": "string",
+      "description": "Email peminjam"
+    },
+    "borrower_name": {
+      "type": "string",
+      "description": "Nama peminjam"
+    },
+    "borrow_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pinjam"
+    },
+    "expected_return_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Estimasi tanggal kembali"
+    },
+    "return_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal dikembalikan"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Keperluan peminjaman"
+    },
+    "return_condition": {
+      "type": "string",
+      "enum": [
+        "baik",
+        "rusak",
+        "hilang"
+      ],
+      "description": "Kondisi saat dikembalikan"
+    },
+    "approval_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Status persetujuan"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Email admin yang menyetujui"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "migrated_from_item_usage": {
+      "type": "boolean",
+      "default": false,
+      "description": "Data dimigrasikan dari ItemUsage lama"
+    }
+  },
+  "required": [
+    "item_id",
+    "item_name",
+    "borrower_email",
+    "borrow_date"
+  ]
+}

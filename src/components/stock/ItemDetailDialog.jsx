@@ -16,7 +16,7 @@ export default function ItemDetailDialog({ item, itemType, role, open, onClose, 
   const isAdminRole = ["admin", "owner", "manajer"].includes(role);
   const isKeeperOnly = role === "keeper";
   const price = item.price_per_unit || item.purchase_price || 0;
-  const sku = item.sku || item.code;
+  const sku = item.sku;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

@@ -45,12 +45,12 @@ export default function StockTransactionDialog({ item, itemType, user, role, thr
     const delta = Number(qty);
     const status = needsApproval ? "menunggu_approval" : "selesai";
 
-    // Record usage
-    await base44.entities.ItemUsage.create({
+    // Record ke StockMovement (entitas baru)
+    await base44.entities.StockMovement.create({
       item_id: item.id,
       item_type: itemType,
       item_name: item.name,
-      item_sku: item.sku || item.code || "",
+      item_sku: item.sku || "",
       type: txType,
       quantity: delta,
       unit: item.unit,
