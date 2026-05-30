@@ -1,132 +1,223 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
-  LogOut, ClipboardList, FileSpreadsheet, BarChart2, Wheat,
-  Warehouse, TrendingUp, BookOpen, Stethoscope, Wallet, GitBranch, Calculator,
-  PieChart, Bell, Printer, Package, Zap, Thermometer, FileText, MessageSquare,
-  CalendarHeart, Library, ListTodo, AlertTriangle, Skull,
-  Activity, Settings, Clock, Calendar, ChevronRight, Trophy, FlaskConical,
-  UtensilsCrossed, LayoutGrid
+  LogOut, ClipboardList, BarChart2, Warehouse, BookOpen, Stethoscope,
+  Wallet, Calculator, PieChart, Bell, Printer, Package, Thermometer,
+  FileText, MessageSquare, Library, ListTodo, Activity, Settings,
+  Calendar, ChevronDown, ChevronRight, Trophy, FlaskConical,
+  UtensilsCrossed, LayoutGrid, GitBranch, Skull, Home, Box,
+  TrendingUp, Target, Zap, AlertTriangle, Truck, ClipboardCheck,
+  Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccess, ROLE_LABELS, ROLE_COLORS, canViewAs } from "@/lib/permissions";
+import { canAccess, ROLE_LABELS, ROLE_COLORS } from "@/lib/permissions";
 
+// ─────────────────────────────────────────────
+// 9 GRUP NAVIGASI UTAMA
+// ─────────────────────────────────────────────
 const NAV_GROUPS = [
+  // ── 1. DASHBOARD ──────────────────────────
   {
-    label: null,
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    color: "text-slate-500",
     items: [
-      { path: "/",         section: "dashboard",       label: "Dashboard",       icon: LayoutDashboard },
+      { path: "/",               section: "dashboard",  label: "Ringkasan & Overview", icon: LayoutDashboard },
+      { path: "/dashboard-stok", section: "warehouse",  label: "Dashboard Stok",       icon: LayoutGrid },
     ],
   },
+
+  // ── 2. KURA ───────────────────────────────
   {
-    label: "Kura-kura & Kandang",
+    id: "kura",
+    label: "Kura",
+    icon: Shell,
+    color: "text-teal-500",
     items: [
-      { path: "/tortoise",        section: "tortoise",        label: "Kura-kura & Kandang", icon: Shell },
-      { path: "/breeding",           section: "breeding",        label: "Breeding & Telur",    icon: Baby },
-      { path: "/breeder-ranking",   section: "breeding",        label: "Ranking Indukan",     icon: Trophy },
-      { path: "/incubator-readings",section: "breeding",        label: "Monitor Inkubator",   icon: Thermometer },
-      { path: "/family-tree",       section: "family-tree",     label: "Silsilah",            icon: GitBranch },
-      { path: "/death-records",     section: "death-records",   label: "Catatan Kematian",    icon: Skull },
+      { path: "/tortoise",    section: "tortoise",   label: "Daftar Kura",        icon: Shell },
+      { path: "/health",      section: "health",     label: "Rekam Kesehatan",    icon: Heart },
+      { path: "/breeding",    section: "breeding",   label: "Breeding & Telur",   icon: Baby },
+      { path: "/family-tree", section: "family-tree",label: "Silsilah",           icon: GitBranch },
+      { path: "/treatment",   section: "treatment",  label: "Jadwal Treatment",   icon: Stethoscope },
+      { path: "/death-records",section:"death-records",label:"Catatan Kematian",  icon: Skull },
     ],
   },
+
+  // ── 3. KANDANG ────────────────────────────
   {
-    label: "Kesehatan",
+    id: "kandang",
+    label: "Kandang",
+    icon: Home,
+    color: "text-amber-500",
     items: [
-      { path: "/health",          section: "health",          label: "Rekam Medis",         icon: Heart },
-      { path: "/vet-contacts",    section: "health",          label: "Dokter Hewan",        icon: Users },
-      { path: "/treatment",       section: "treatment",       label: "Jadwal Treatment",    icon: Stethoscope },
+      { path: "/enclosure",           section: "enclosure",   label: "Daftar Kandang",       icon: Home },
+      { path: "/incubator-readings",  section: "breeding",    label: "Inkubator",            icon: Thermometer },
+      { path: "/maintenance-schedule",section: "maintenance", label: "Jadwal Pemeliharaan",  icon: Calendar },
+      { path: "/feeding-log",         section: "feed-stock",  label: "Pemberian Pakan",      icon: UtensilsCrossed },
     ],
   },
+
+  // ── 4. STOK & GUDANG ─────────────────────
   {
-    label: "Perawatan",
+    id: "stok",
+    label: "Stok & Gudang",
+    icon: Package,
+    color: "text-blue-500",
     items: [
-      { path: "/maintenance-schedule", section: "maintenance", label: "Kebersihan Kandang",  icon: Calendar },
-      { path: "/stock-gudang",    section: "feed-stock",      label: "Stok & Gudang",       icon: Warehouse },
-      { path: "/dashboard-stok", section: "warehouse",        label: "Dashboard Stok",      icon: LayoutGrid },
-      { path: "/feeding-log",    section: "feed-stock",       label: "Pemberian Pakan",     icon: UtensilsCrossed },
+      { path: "/feed-stock",    section: "feed-stock",  label: "Stok Pakan",           icon: Box },
+      { path: "/warehouse",     section: "warehouse",   label: "Gudang — Obat & Alat", icon: Warehouse },
+      { path: "/stock-gudang",  section: "stock-gudang",label: "Semua Stok (Unified)", icon: LayoutGrid },
+      { path: "/pellet-recipe", section: "pellet-recipe",label:"Resep & Produksi Pelet",icon: FlaskConical },
+      { path: "/supplier",      section: "supplier",    label: "Pemasok",              icon: Truck },
     ],
   },
+
+  // ── 5. KEUANGAN ───────────────────────────
   {
-    label: "Penjualan",
+    id: "keuangan",
+    label: "Keuangan",
+    icon: TrendingUp,
+    color: "text-rose-500",
     items: [
-      { path: "/stock-prediction", section: "warehouse",       label: "Prediksi Stok",       icon: BarChart2 },
-      { path: "/sales",           section: "sales",           label: "Penjualan",           icon: DollarSign },
-      { path: "/crm",             section: "crm",             label: "CRM Pembeli",         icon: Users },
+      { path: "/finance",            section: "finance",           label: "Transaksi Keuangan", icon: TrendingUp },
+      { path: "/sales",              section: "sales",             label: "Penjualan Kura",     icon: DollarSign },
+      { path: "/crm",                section: "crm",               label: "Data Pembeli",       icon: Users },
+      { path: "/petty-cash",         section: "petty-cash",        label: "Kas Kecil",          icon: Wallet },
+      { path: "/operational-costs",  section: "operational-costs", label: "Biaya Operasional",  icon: Zap },
     ],
   },
+
+  // ── 6. SDM & KARYAWAN ─────────────────────
   {
-    label: "SDM",
+    id: "sdm",
+    label: "SDM & Karyawan",
+    icon: Users,
+    color: "text-green-500",
     items: [
-      { path: "/hr",              section: "hr",              label: "Manajemen SDM",       icon: Users },
-      { path: "/payroll-gaji",    section: "payroll-gaji",    label: "Gaji & Kasbon",       icon: Wallet },
-      { path: "/salary",          section: "salary",          label: "Gaji Bulanan",        icon: Calculator },
-      { path: "/salary-slip",     section: "payroll-gaji",    label: "Riwayat Slip Gaji",   icon: FileText },
+      { path: "/hr",            section: "hr",           label: "Absensi & SDM",     icon: Users },
+      { path: "/sop",           section: "sop",          label: "Checklist Harian",  icon: ClipboardCheck },
+      { path: "/salary",        section: "salary",       label: "Gaji Bulanan",      icon: Calculator },
+      { path: "/salary-slip",   section: "payroll-gaji", label: "Slip Gaji",         icon: FileText },
+      { path: "/payroll-gaji",  section: "payroll-gaji", label: "Kasbon",            icon: Wallet },
+      { path: "/breeder-ranking",section:"breeding",     label: "Ranking & Bonus Khusus", icon: Trophy },
     ],
   },
+
+  // ── 7. SOP & TUGAS ────────────────────────
   {
+    id: "sop",
     label: "SOP & Tugas",
+    icon: ClipboardList,
+    color: "text-slate-400",
     items: [
-      { path: "/sop",             section: "sop",             label: "SOP & Tugas Harian",  icon: ClipboardList },
-      { path: "/sop-library",     section: "sop-library",     label: "Perpustakaan SOP",    icon: Library },
-      { path: "/task-template",   section: "task-template",   label: "Template Task",       icon: ListTodo },
-      { path: "/kritik-saran",    section: "kritik-saran",    label: "Kritik & Saran",      icon: MessageSquare },
+      { path: "/sop-library",   section: "sop-library",  label: "Perpustakaan SOP",  icon: Library },
+      { path: "/task-template", section: "task-template",label: "Template Tugas",    icon: ListTodo },
     ],
   },
+
+  // ── 8. LAPORAN & LOG ──────────────────────
   {
-    label: "Laporan",
+    id: "laporan",
+    label: "Laporan & Log",
+    icon: BarChart2,
+    color: "text-pink-500",
     items: [
-      { path: "/finance",            section: "finance",            label: "Laporan Keuangan",    icon: TrendingUp },
-      { path: "/operational-costs", section: "operational-costs", label: "Biaya Operasional",   icon: Zap },
-      { path: "/sales-report",      section: "sales-report",      label: "Lap. Penjualan",      icon: PieChart },
-      { path: "/breeding-report",   section: "breeding-report",   label: "Lap. Breeding",       icon: BarChart2 },
+      { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",    icon: PieChart },
+      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",     icon: BarChart2 },
+      { path: "/stock-prediction",section: "warehouse",       label: "Prediksi Stok",     icon: AlertTriangle },
+      { path: "/activity-log",    section: "activity-log",    label: "Activity Log",      icon: Activity },
+      { path: "/kritik-saran",    section: "kritik-saran",    label: "Kritik & Saran",    icon: MessageSquare },
     ],
   },
+
+  // ── 9. PENGATURAN ─────────────────────────
   {
-    label: "Gudang Lanjutan",
-    items: [
-      { path: "/petty-cash",    section: "petty-cash",    label: "Kas Kecil",       icon: Wallet },
-      { path: "/supplier",      section: "supplier",      label: "Supplier",         icon: Package },
-      { path: "/pellet-recipe", section: "pellet-recipe", label: "Resep Pelet",      icon: FlaskConical },
-    ],
-  },
-  {
+    id: "pengaturan",
     label: "Pengaturan",
+    icon: Settings,
+    color: "text-slate-400",
     items: [
-      { path: "/notifications",      section: "notifications",      label: "Notifikasi",           icon: Bell },
-      { path: "/activity-log",       section: "activity-log",       label: "Riwayat Aktivitas",    icon: Activity },
-      { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem",  icon: Settings },
-      { path: "/users",              section: "users",              label: "Manajemen User",       icon: Users },
-      { path: "/users",              section: "users-readonly",     label: "Direktori User",       icon: Users },
-      { path: "/printer-config",     section: "printer-config",     label: "Konfigurasi Printer",  icon: Printer },
+      { path: "/notifications",      section: "notifications",      label: "Notifikasi",          icon: Bell },
+      { path: "/vet-contacts",       section: "health",             label: "Kontak Dokter Hewan", icon: Stethoscope },
+      { path: "/printer-config",     section: "printer-config",     label: "Printer & Label",     icon: Printer },
+      { path: "/users",              section: "users",              label: "Manajemen User",      icon: Users },
+      { path: "/users",              section: "users-readonly",     label: "Direktori User",      icon: Users },
+      { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem", icon: Settings },
     ],
   },
 ];
 
+// ─────────────────────────────────────────────
+// Sub-item link
+// ─────────────────────────────────────────────
 function NavItem({ item, isActive, onClick }) {
   return (
     <Link
       to={item.path}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 group",
+        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-150 group ml-1",
         isActive
           ? "bg-sidebar-primary text-sidebar-primary-foreground"
-          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       )}
     >
       <item.icon className={cn(
-        "w-4 h-4 flex-shrink-0 transition-all",
-        isActive ? "opacity-100" : "opacity-55 group-hover:opacity-80"
+        "w-3.5 h-3.5 flex-shrink-0 transition-all",
+        isActive ? "opacity-100" : "opacity-50 group-hover:opacity-75"
       )} />
-      <span className="flex-1 leading-none">{item.label}</span>
-      {isActive && <div className="w-1.5 h-1.5 rounded-full bg-sidebar-primary-foreground/70 flex-shrink-0" />}
+      <span className="flex-1 leading-tight">{item.label}</span>
+      {isActive && <div className="w-1 h-1 rounded-full bg-sidebar-primary-foreground/70 flex-shrink-0" />}
     </Link>
   );
 }
 
+// ─────────────────────────────────────────────
+// Grup collapsible
+// ─────────────────────────────────────────────
+function NavGroup({ group, isExpanded, hasActive, onToggle, onNavClick }) {
+  const GroupIcon = group.icon;
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className={cn(
+          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-semibold transition-all duration-150",
+          hasActive
+            ? "text-sidebar-foreground bg-sidebar-accent/60"
+            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/40"
+        )}
+      >
+        <GroupIcon className={cn("w-4 h-4 flex-shrink-0", group.color)} />
+        <span className="flex-1 text-left">{group.label}</span>
+        {isExpanded
+          ? <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+          : <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+        }
+      </button>
+      {isExpanded && (
+        <div className="mt-0.5 space-y-0.5 pb-1">
+          {group.items.map((item) => (
+            <NavItem
+              key={item.section + item.path}
+              item={item}
+              isActive={false /* handled per item below */}
+              onClick={onNavClick}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MAIN SIDEBAR
+// ─────────────────────────────────────────────
 export default function Sidebar({ viewAsRole = null }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -134,19 +225,35 @@ export default function Sidebar({ viewAsRole = null }) {
   const role = viewAsRole || realRole;
   const close = () => setOpen(false);
 
-  // Filter + deduplicate by path
+  // Track which groups are expanded
+  const [expanded, setExpanded] = useState(() => {
+    // Default: expand the group containing the current path
+    const initial = {};
+    NAV_GROUPS.forEach(g => { initial[g.id] = false; });
+    return initial;
+  });
+
+  const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+
+  // Build visible groups: filter items by role, deduplicate paths
   const seenPaths = new Set();
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
         if (!canAccess(role, item.section)) return false;
-        if (seenPaths.has(item.path)) return false;
-        seenPaths.add(item.path);
+        if (seenPaths.has(item.path + item.section)) return false;
+        seenPaths.add(item.path + item.section);
         return true;
       }),
     }))
     .filter((group) => group.items.length > 0);
+
+  // Auto-expand group containing active path (on mount / navigation)
+  // We derive it inline for render
+  const activeGroupId = visibleGroups.find(g =>
+    g.items.some(i => i.path === location.pathname)
+  )?.id;
 
   return (
     <>
@@ -173,8 +280,8 @@ export default function Sidebar({ viewAsRole = null }) {
         open ? "translate-x-0" : "-translate-x-full"
       )}>
 
-        {/* ── Logo area ── */}
-        <div className="px-4 py-5 flex items-center justify-between border-b border-sidebar-border">
+        {/* ── Logo ── */}
+        <div className="px-4 py-4 flex items-center justify-between border-b border-sidebar-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
               <Shell className="w-[18px] h-[18px] text-sidebar-primary" />
@@ -193,26 +300,62 @@ export default function Sidebar({ viewAsRole = null }) {
         </div>
 
         {/* ── Navigation ── */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
-          {visibleGroups.map((group, gi) => (
-            <div key={gi}>
-              {group.label && (
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-sidebar-foreground/30 px-3 mb-1.5">
-                  {group.label}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {group.items.map((item) => (
-                  <NavItem
-                    key={item.section + item.path}
-                    item={item}
-                    isActive={location.pathname === item.path}
-                    onClick={close}
-                  />
-                ))}
+        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
+          {visibleGroups.map((group) => {
+            const isGrpActive = group.id === activeGroupId;
+            const isExp = expanded[group.id] ?? isGrpActive;
+
+            return (
+              <div key={group.id}>
+                {/* Group header */}
+                <button
+                  onClick={() => toggle(group.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-all duration-150",
+                    isGrpActive
+                      ? "text-sidebar-foreground"
+                      : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/40"
+                  )}
+                >
+                  <group.icon className={cn("w-4 h-4 flex-shrink-0", group.color)} />
+                  <span className="flex-1 text-left">{group.label}</span>
+                  {isExp
+                    ? <ChevronDown className="w-3 h-3 opacity-40" />
+                    : <ChevronRight className="w-3 h-3 opacity-30" />
+                  }
+                </button>
+
+                {/* Sub-items */}
+                {isExp && (
+                  <div className="mt-0.5 mb-1 space-y-0.5 pl-2">
+                    {group.items.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.section + item.path}
+                          to={item.path}
+                          onClick={close}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150 group",
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                              : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                          )}
+                        >
+                          <item.icon className={cn(
+                            "w-3.5 h-3.5 flex-shrink-0",
+                            isActive ? "opacity-100" : "opacity-50 group-hover:opacity-75"
+                          )} />
+                          <span className="flex-1 leading-tight">{item.label}</span>
+                          {isActive && <div className="w-1 h-1 rounded-full bg-sidebar-primary-foreground/70 flex-shrink-0" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
         {/* ── User footer ── */}
