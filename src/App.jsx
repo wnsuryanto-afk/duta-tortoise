@@ -58,6 +58,7 @@ import PrinterConfigPage from '@/pages/PrinterConfigPage';
 import KritikSaranPage from '@/pages/KritikSaranPage';
 import StockGudangPage from '@/pages/StockGudangPage';
 import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
+import DuplikatStokPage from '@/pages/DuplikatStokPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -127,6 +128,7 @@ const AuthenticatedApp = () => {
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
         <Route path="/stock-gudang" element={<StockGudangPage />} />
         <Route path="/rekap-poin-gaji" element={<RekapPoinGajiPage />} />
+        <Route path="/duplikat-stok" element={<DuplikatStokPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />
