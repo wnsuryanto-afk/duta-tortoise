@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
@@ -755,7 +755,7 @@ export default function GuidedHariIni({ user }) {
   );
 }
 
-// ── Widget Pakan — ultra-defensif ────────────────────────────────────
+// ── Widget Pakan — 1x fetch, no auto-retry ───────────────────────────
 function WidgetPakan({ user, today }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -763,29 +763,30 @@ function WidgetPakan({ user, today }) {
   const [checked, setChecked] = useState({});
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const isLoadingRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const doLoad = () => {
+    if (isLoadingRef.current) return; // sudah ada request aktif, skip
+    isLoadingRef.current = true;
     setLoading(true);
     setError(null);
-
-    withRetry(() => base44.entities.FeedStock.list("-name", 20))
+    base44.entities.FeedStock.list("-name", 50)
       .then(result => {
-        if (cancelled) return;
         const safeItems = Array.isArray(result) ? result : [];
         setItems(safeItems);
         setLoading(false);
+        isLoadingRef.current = false;
       })
       .catch(e => {
-        if (cancelled) return;
-        const is429 = e?.message?.includes("429");
-        setError(is429 ? "Server sedang sibuk, tarik untuk muat ulang" : (e?.message || "Gagal memuat data pakan"));
+        isLoadingRef.current = false; // izinkan retry manual
+        setError(e?.message || "Gagal memuat data pakan");
         setLoading(false);
       });
+  };
 
-    return () => { cancelled = true; };
-  }, [retryCount]);
+  useEffect(() => {
+    doLoad();
+  }, []); // dependency kosong — hanya jalan 1x saat mount
 
   const toggle = (id) => {
     setChecked(prev => ({ ...prev, [id]: !prev[id] }));
@@ -847,7 +848,7 @@ function WidgetPakan({ user, today }) {
         <p className="font-semibold text-red-800 mb-1">Pemberian Pakan — Error</p>
         <p className="text-sm text-red-700 font-mono break-all mb-3">{error}</p>
         <button
-          onClick={() => setRetryCount(c => c + 1)}
+          onClick={() => doLoad()}
           className="text-sm font-semibold text-red-700 border border-red-300 px-4 py-2 rounded-xl hover:bg-red-100"
         >
           Coba Lagi
