@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -57,9 +57,11 @@ export default function FeedStockPage() {
   const canDelete = isAdmin;
 
   const qc = useQueryClient();
-  const { data: stocks = [], isLoading } = useQuery({
+  const { data: stocks = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["feedstocks"],
-    queryFn: () => base44.entities.FeedStock.list("-created_date", 500),
+    queryFn: () => base44.entities.FeedStock.list("-created_date", 100),
+    staleTime: 5 * 60 * 1000,
+    retry: false, // jangan retry otomatis — user bisa tap refresh manual
   });
 
   const { data: settings } = useQuery({
@@ -88,7 +90,7 @@ export default function FeedStockPage() {
   const [seeding, setSeeding] = useState(false);
   const [scanResult, setScanResult] = useState(null);
 
-  const allSkus = stocks.map((s) => s.sku).filter(Boolean);
+  const allSkus = useMemo(() => stocks.map((s) => s.sku).filter(Boolean), [stocks]);
   const invalidate = () => qc.invalidateQueries({ queryKey: ["feedstocks"] });
 
   const handleGenerateSKU = async () => {
@@ -222,6 +224,11 @@ export default function FeedStockPage() {
       {/* List */}
       {isLoading ? (
         <div className="text-center py-16 text-muted-foreground">Memuat...</div>
+      ) : isError ? (
+        <div className="text-center py-16 space-y-3">
+          <p className="text-muted-foreground">Gagal memuat data stok pakan.</p>
+          <Button variant="outline" onClick={() => refetch()}>Coba Lagi</Button>
+        </div>
       ) : stocks.length === 0 ? (
         <Card className="py-16 text-center text-muted-foreground">
           <PackageOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
