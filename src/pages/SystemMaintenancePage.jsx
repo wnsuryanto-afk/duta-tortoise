@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Database, Home, Users, CheckCircle2, AlertTriangle, Baby } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
+import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
 
 export default function SystemMaintenancePage() {
   const { role } = useCurrentUser();
@@ -58,6 +59,9 @@ export default function SystemMaintenancePage() {
         <h1 className="text-2xl font-heading font-bold text-foreground">Pemeliharaan Sistem</h1>
         <p className="text-muted-foreground text-sm mt-1">Sinkronisasi dan recalculate data untuk menjaga integritas</p>
       </div>
+
+      {/* Target & Poin */}
+      <TargetPoinSettings />
 
       {lastRun && (
         <Alert className="bg-blue-50 border-blue-200">

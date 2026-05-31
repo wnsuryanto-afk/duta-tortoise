@@ -11,7 +11,7 @@ import SOPKPI from "@/components/sop/SOPKPI";
 export default function SOPPage() {
   const { role } = useCurrentUser();
   const isAdmin = ["owner", "admin", "manajer", "kepala_feeder"].includes(role);
-  const canManageSOP = role === "owner" || role === "admin";
+  const canManageSOP = ["owner", "admin", "manajer"].includes(role);
 
   return (
     <div className="space-y-6">

@@ -157,15 +157,6 @@ export default function GuidedHariIni({ user }) {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Ambil poin kebersihan kandang dari SOPTask (kategori kebersihan, harian)
-  const { data: sopTasks = [] } = useQuery({
-    queryKey: ["sop-tasks-kebersihan"],
-    queryFn: () => base44.entities.SOPTask.filter({ category: "kebersihan", frequency: "harian", is_active: true }),
-    staleTime: 15 * 60 * 1000,
-  });
-  // Poin per kandang: ambil dari SOPTask kebersihan pertama, fallback 10
-  const poinPerKandang = sopTasks[0]?.points ?? 10;
-
   // Notifikasi kritis: pakai cache dari NotificationBell, jangan query sendiri
   // Gunakan data yang sudah ada di queryClient dari "notifications"
   const kritisNotifs = [];  // widget darurat tidak perlu query notif sendiri
@@ -200,7 +191,7 @@ export default function GuidedHariIni({ user }) {
   const farmConfigured = !!(farmLat && farmLng);
 
   // Poin hari ini (pakan dikelola di dalam WidgetPakan)
-  const poinKandang  = kandangSaved.size * poinPerKandang;
+  const poinKandang  = kandangSaved.size * poinKebersihan;
   const poinKura     = sakitReports.length * 15;
   const poinCheckin  = hasCheckedIn ? 5 : 0;
   const totalPoin    = poinCheckin + poinKandang + poinKura;
@@ -312,14 +303,20 @@ export default function GuidedHariIni({ user }) {
     setLoading(false);
   };
 
+  // Poin kebersihan kandang dari SOPTask (dinamis)
+  const { data: sopTasksKebersihan = [] } = useQuery({
+    queryKey: ["sop-tasks-kebersihan"],
+    queryFn: () => base44.entities.SOPTask.filter({ category: "kebersihan" }),
+    staleTime: 10 * 60 * 1000,
+  });
+  const poinKebersihan = sopTasksKebersihan.find(t => t.is_active !== false)?.points ?? 10;
+
   const handleToggleKandang = async (k) => {
     const alreadySaved = kandangSaved.has(k);
     if (alreadySaved) {
-      // Toggle off — hapus dari state saja (tidak hapus DB untuk keamanan data)
       setKandangDone(p => { const n = new Set(p); n.delete(k); return n; });
       return;
     }
-    // Toggle on & simpan ke DB
     setKandangDone(p => { const n = new Set(p); n.add(k); return n; });
     try {
       await base44.entities.MaintenanceLog.create({
@@ -334,13 +331,12 @@ export default function GuidedHariIni({ user }) {
         done_at: nowStr(),
         done_by: user.full_name || user.email,
         done_by_email: user.email,
-        poin_earned: poinPerKandang,
+        poin_earned: poinKebersihan,
       });
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
       refetchML();
-      flashPoin(k, poinPerKandang);
+      flashPoin(k, poinKebersihan);
     } catch {
-      // duplikat — sudah ada, tandai sebagai saved
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
     }
   };
@@ -557,7 +553,7 @@ export default function GuidedHariIni({ user }) {
                 style={{ width: `${(kandangSaved.size / KANDANG_LIST.length) * 100}%` }} />
             </div>
 
-            <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinPerKandang} poin per kandang</span></p>
+            <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span></p>
 
             <div className="grid grid-cols-5 gap-2">
               {KANDANG_LIST.map(k => {

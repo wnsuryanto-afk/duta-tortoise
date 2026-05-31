@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, XCircle, Star, ChevronDown, ChevronUp, AlertTriangle, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -17,7 +18,6 @@ const statusConfig = {
   rejected:  { label: "Ditolak", color: "bg-red-100 text-red-700 border-red-200" },
 };
 
-// Task per-kandang: task_id biasanya berisi enclosure / MaintenanceLog key
 function isEnclosureTask(task) {
   const title = (task.task_title || task.task_id || "").toLowerCase();
   return (
@@ -53,7 +53,7 @@ function TaskSection({ title, tasks, badgeColor }) {
           {tasks.map((t, i) => (
             <div key={i} className="flex items-start justify-between text-xs gap-2">
               <span className="text-muted-foreground flex-1">✓ {t.task_title || t.task_id}</span>
-              <span className="text-amber-600 font-medium flex-shrink-0">{t.points} poin</span>
+              <span className="text-amber-600 font-medium flex-shrink-0">{t.points || 0} poin</span>
             </div>
           ))}
         </div>
@@ -66,12 +66,12 @@ export default function SOPApproval() {
   const queryClient = useQueryClient();
   const { user, role } = useCurrentUser();
   const [expanded, setExpanded] = useState({});
-  const [approvePoints, setApprovePoints] = useState({});
+  // approveGroups[id] = { utama: bool, kandang: bool }
+  const [approveGroups, setApproveGroups] = useState({});
   const [rejectReason, setRejectReason] = useState({});
   const [processing, setProcessing] = useState({});
   const [filterStatus, setFilterStatus] = useState("submitted");
 
-  // Role yang boleh approve: bukan keeper
   const canApprove = ["owner", "admin", "manajer", "kepala_feeder"].includes(role);
 
   const { data: checklists = [], isLoading } = useQuery({
@@ -82,25 +82,44 @@ export default function SOPApproval() {
         : base44.entities.DailyChecklist.filter({ status: filterStatus }, "-date", 100),
   });
 
-  const handleApprove = async (checklist, ptsOverride = null) => {
-    // Blokir self-approval
+  const getGroups = (c) => {
+    const id = c.id;
+    const tasks = c.completed_tasks || [];
+    const utamaTasks = tasks.filter(t => !isEnclosureTask(t));
+    const kandangTasks = tasks.filter(t => isEnclosureTask(t));
+    const poinUtama = utamaTasks.reduce((s, t) => s + (t.points || 0), 0);
+    const poinKandang = kandangTasks.reduce((s, t) => s + (t.points || 0), 0);
+
+    // Default: both groups approved
+    const grp = approveGroups[id] ?? { utama: true, kandang: true };
+    const willApprove =
+      (grp.utama ? poinUtama : 0) +
+      (grp.kandang ? poinKandang : 0);
+
+    return { utamaTasks, kandangTasks, poinUtama, poinKandang, grp, willApprove };
+  };
+
+  const toggleGroup = (cId, group) => {
+    setApproveGroups(prev => {
+      const cur = prev[cId] ?? { utama: true, kandang: true };
+      return { ...prev, [cId]: { ...cur, [group]: !cur[group] } };
+    });
+  };
+
+  const handleApprove = async (checklist) => {
     if (checklist.employee_email === user?.email) {
-      alert("Anda tidak bisa menyetujui checklist milik sendiri.\nMinta kepala feeder atau manajer untuk menyetujui.");
+      alert("Anda tidak bisa menyetujui checklist milik sendiri.");
       return;
     }
-
-    setProcessing((p) => ({ ...p, [checklist.id]: true }));
-    const pts = ptsOverride !== null
-      ? ptsOverride
-      : parseInt(approvePoints[checklist.id] ?? checklist.total_points_claimed ?? 0);
+    setProcessing(p => ({ ...p, [checklist.id]: true }));
+    const { willApprove } = getGroups(checklist);
 
     await base44.entities.DailyChecklist.update(checklist.id, {
       status: "approved",
       approved_by: user?.full_name || user?.email,
-      approved_points: pts,
+      approved_points: willApprove,
     });
 
-    // Update/create BonusReward
     const period = checklist.date?.substring(0, 7);
     const existing = await base44.entities.BonusReward.filter({
       employee_email: checklist.employee_email,
@@ -108,7 +127,7 @@ export default function SOPApproval() {
     });
     if (existing.length > 0) {
       await base44.entities.BonusReward.update(existing[0].id, {
-        total_points: (existing[0].total_points || 0) + pts,
+        total_points: (existing[0].total_points || 0) + willApprove,
       });
     } else {
       await base44.entities.BonusReward.create({
@@ -116,13 +135,13 @@ export default function SOPApproval() {
         employee_name: checklist.employee_name,
         employee_email: checklist.employee_email,
         period,
-        total_points: pts,
+        total_points: willApprove,
         status: "pending",
       });
     }
     queryClient.invalidateQueries({ queryKey: ["checklists-all"] });
     queryClient.invalidateQueries({ queryKey: ["bonus-rewards"] });
-    setProcessing((p) => ({ ...p, [checklist.id]: false }));
+    setProcessing(p => ({ ...p, [checklist.id]: false }));
   };
 
   const handleReject = async (checklist) => {
@@ -130,7 +149,7 @@ export default function SOPApproval() {
       alert("Anda tidak bisa menolak checklist milik sendiri.");
       return;
     }
-    setProcessing((p) => ({ ...p, [checklist.id]: true }));
+    setProcessing(p => ({ ...p, [checklist.id]: true }));
     await base44.entities.DailyChecklist.update(checklist.id, {
       status: "rejected",
       approved_by: user?.full_name || user?.email,
@@ -138,7 +157,7 @@ export default function SOPApproval() {
       rejection_reason: rejectReason[checklist.id] || "",
     });
     queryClient.invalidateQueries({ queryKey: ["checklists-all"] });
-    setProcessing((p) => ({ ...p, [checklist.id]: false }));
+    setProcessing(p => ({ ...p, [checklist.id]: false }));
   };
 
   return (
@@ -167,13 +186,8 @@ export default function SOPApproval() {
       ) : (
         <div className="space-y-3">
           {checklists.map((c) => {
-            const tasks = c.completed_tasks || [];
-            const utamaTasks = tasks.filter(t => !isEnclosureTask(t));
-            const kandangTasks = tasks.filter(t => isEnclosureTask(t));
-            const poinUtama = utamaTasks.reduce((s, t) => s + (t.points || 0), 0);
-            const poinKandang = kandangTasks.reduce((s, t) => s + (t.points || 0), 0);
-            // Hitung dari task aktual (lebih akurat dari total_points_claimed yang lama)
-            const totalClaimed = poinUtama + poinKandang || c.total_points_claimed || 0;
+            const { utamaTasks, kandangTasks, poinUtama, poinKandang, grp, willApprove } = getGroups(c);
+            const totalClaimed = c.total_points_claimed || (poinUtama + poinKandang);
             const isSelf = c.employee_email === user?.email;
 
             return (
@@ -221,7 +235,7 @@ export default function SOPApproval() {
                     )}
                   </div>
                   <button
-                    onClick={() => setExpanded((p) => ({ ...p, [c.id]: !p[c.id] }))}
+                    onClick={() => setExpanded(p => ({ ...p, [c.id]: !p[c.id] }))}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     {expanded[c.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -230,22 +244,11 @@ export default function SOPApproval() {
 
                 {expanded[c.id] && (
                   <div className="mt-4 pt-4 border-t space-y-3">
-                    {/* Task Utama */}
-                    <TaskSection
-                      title="Task Utama"
-                      tasks={utamaTasks}
-                      badgeColor="bg-primary/10 text-primary border-primary/20"
-                    />
-                    {/* Task Kebersihan Kandang */}
-                    <TaskSection
-                      title="Task Kebersihan Kandang"
-                      tasks={kandangTasks}
-                      badgeColor="bg-blue-100 text-blue-700 border-blue-200"
-                    />
-                    {tasks.length === 0 && (
+                    <TaskSection title="Task Utama" tasks={utamaTasks} badgeColor="bg-primary/10 text-primary border-primary/20" />
+                    <TaskSection title="Task Kebersihan Kandang" tasks={kandangTasks} badgeColor="bg-blue-100 text-blue-700 border-blue-200" />
+                    {(c.completed_tasks || []).length === 0 && (
                       <p className="text-xs text-muted-foreground text-center py-2">Tidak ada detail task tersimpan</p>
                     )}
-
                     {c.notes && <p className="text-xs text-muted-foreground italic">Catatan: {c.notes}</p>}
 
                     {c.status === "submitted" && canApprove && (
@@ -253,57 +256,68 @@ export default function SOPApproval() {
                         {isSelf ? (
                           <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
                             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                            Anda tidak bisa menyetujui checklist milik sendiri. Minta kepala feeder atau manajer untuk menyetujui.
+                            Anda tidak bisa menyetujui checklist milik sendiri. Minta kepala feeder atau manajer.
                           </div>
                         ) : (
                           <>
-                            {/* Quick approve buttons */}
-                            <div className="flex gap-2 flex-wrap">
-                              <button
-                                onClick={() => {
-                                  setApprovePoints(p => ({ ...p, [c.id]: String(totalClaimed) }));
-                                }}
-                                className="px-3 py-1.5 text-xs rounded-lg border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 font-medium"
-                              >
-                                ✓ Setujui Semua ({totalClaimed} poin)
-                              </button>
+                            {/* Grup pilih approval */}
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold text-muted-foreground">Pilih kelompok yang disetujui:</p>
+                              {poinUtama > 0 && (
+                                <label className="flex items-center gap-3 p-2.5 border rounded-lg cursor-pointer hover:bg-muted/40">
+                                  <Checkbox
+                                    checked={grp.utama}
+                                    onCheckedChange={() => toggleGroup(c.id, "utama")}
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-sm font-medium">Task Utama</span>
+                                    <span className="text-xs text-muted-foreground ml-2">({utamaTasks.length} task)</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-amber-600">{poinUtama} poin</span>
+                                </label>
+                              )}
                               {poinKandang > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setApprovePoints(p => ({ ...p, [c.id]: String(poinUtama) }));
-                                  }}
-                                  className="px-3 py-1.5 text-xs rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 font-medium"
-                                >
-                                  Task Utama Saja ({poinUtama} poin)
-                                </button>
+                                <label className="flex items-center gap-3 p-2.5 border rounded-lg cursor-pointer hover:bg-muted/40">
+                                  <Checkbox
+                                    checked={grp.kandang}
+                                    onCheckedChange={() => toggleGroup(c.id, "kandang")}
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-sm font-medium">Kebersihan Kandang</span>
+                                    <span className="text-xs text-muted-foreground ml-2">({kandangTasks.length} task)</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-amber-600">{poinKandang} poin</span>
+                                </label>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <label className="text-xs text-muted-foreground w-28 flex-shrink-0">Poin disetujui:</label>
-                              <Input
-                                type="number"
-                                className="h-8 w-28 text-sm"
-                                value={approvePoints[c.id] ?? String(totalClaimed)}
-                                onChange={(e) => setApprovePoints((p) => ({ ...p, [c.id]: e.target.value }))}
-                              />
-                              <span className="text-xs text-muted-foreground">dari {totalClaimed}</span>
+                            {/* Ringkasan */}
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Total diklaim:</span>
+                                <span className="font-semibold">{totalClaimed} poin</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Akan disetujui:</span>
+                                <span className="font-bold text-green-700 text-sm">{willApprove} poin</span>
+                              </div>
                             </div>
+
                             <Textarea
                               placeholder="Alasan penolakan (jika ditolak)"
                               className="h-14 text-xs resize-none"
                               value={rejectReason[c.id] || ""}
-                              onChange={(e) => setRejectReason((p) => ({ ...p, [c.id]: e.target.value }))}
+                              onChange={e => setRejectReason(p => ({ ...p, [c.id]: e.target.value }))}
                             />
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => handleApprove(c, parseInt(approvePoints[c.id] ?? totalClaimed))}
-                                disabled={processing[c.id]}
+                                onClick={() => handleApprove(c)}
+                                disabled={processing[c.id] || willApprove === 0}
                                 className="flex-1"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                                {processing[c.id] ? "..." : "Approve"}
+                                {processing[c.id] ? "..." : `Setujui ${willApprove} poin`}
                               </Button>
                               <Button
                                 size="sm"
