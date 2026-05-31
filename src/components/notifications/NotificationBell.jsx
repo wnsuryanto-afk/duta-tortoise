@@ -37,12 +37,19 @@ export default function NotificationBell() {
   const [filter, setFilter] = useState("semua"); // semua | belum | kritis
   const panelRef = useRef(null);
 
-  const { data: notifs = [] } = useQuery({
+  const { data: notifs = [], refetch: refetchNotifs } = useQuery({
     queryKey: ["notifications", user?.email],
     queryFn: () => base44.entities.Notification.filter({ recipient_email: user?.email }),
     enabled: !!user?.email,
-    refetchInterval: 60000,
+    staleTime: 5 * 60 * 1000,    // cache 5 menit
+    refetchInterval: false,       // matikan polling otomatis
+    refetchOnWindowFocus: false,  // jangan refetch saat tab aktif kembali
   });
+
+  // Refresh manual saat panel dibuka
+  useEffect(() => {
+    if (open && user?.email) refetchNotifs();
+  }, [open]);
 
   const unread = notifs.filter(n => !n.is_read && !n.is_dismissed);
 

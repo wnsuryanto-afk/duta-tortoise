@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+// useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
   TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart,
   Users, AlertTriangle, BarChart2, Target, ChevronRight, RefreshCw, ShieldAlert
@@ -69,126 +70,160 @@ export default function OwnerDashboard({ user }) {
   const thisYear = now.getFullYear();
   const thisMonthKey = format(now, "yyyy-MM");
 
-  // ── Data Queries ──────────────────────────────────
-  const { data: finances = [], refetch: refetchFin } = useQuery({
+  // ── Fase 1: data kritis — dimuat segera ──────────
+  const { data: finances = [] } = useQuery({
     queryKey: ["owner-finances"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500),
-    staleTime: 5 * 60 * 1000,
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 100), // turun dari 500
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
   });
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["owner-tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 300),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: breedings = [] } = useQuery({
-    queryKey: ["owner-breedings"],
-    queryFn: () => base44.entities.Breeding.list("-created_date", 200),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: feedStocks = [] } = useQuery({
-    queryKey: ["owner-feedstocks"],
-    queryFn: () => base44.entities.FeedStock.list(),
-    staleTime: 5 * 60 * 1000,
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 100), // turun dari 300
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
   });
 
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["owner-warehouse"],
-    queryFn: () => base44.entities.WarehouseItem.list(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: sales = [] } = useQuery({
-    queryKey: ["owner-sales"],
-    queryFn: () => base44.entities.Sale.list("-date", 200),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: annualGoals = [] } = useQuery({
-    queryKey: ["owner-annual-goals"],
-    queryFn: () => base44.entities.AnnualGoal.filter({ year: thisYear }),
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 50),
     staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: healthRecords = [] } = useQuery({
-    queryKey: ["owner-health"],
-    queryFn: () => base44.entities.HealthRecord.list("-date", 200),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: deathRecords = [] } = useQuery({
-    queryKey: ["owner-deaths"],
-    queryFn: () => base44.entities.DeathRecord.list("-death_date", 100),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: buyerProfiles = [] } = useQuery({
-    queryKey: ["owner-buyers"],
-    queryFn: () => base44.entities.BuyerProfile.list(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: kasbons = [] } = useQuery({
-    queryKey: ["owner-kasbons"],
-    queryFn: () => base44.entities.Kasbon.filter({ status: "active" }),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: warnings = [] } = useQuery({
-    queryKey: ["owner-warnings"],
-    queryFn: () => base44.entities.WarningLetter.list("-created_date", 50),
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: otLogs = [] } = useQuery({
-    queryKey: ["owner-ot"],
-    queryFn: () => base44.entities.OvertimeLog.list("-date", 100),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: measurements = [] } = useQuery({
-    queryKey: ["owner-measurements"],
-    queryFn: () => base44.entities.MeasurementHistory.list("-date", 200),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: enclosures = [] } = useQuery({
-    queryKey: ["owner-enclosures"],
-    queryFn: () => base44.entities.Enclosure.list(),
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: salaryConfigs = [] } = useQuery({
-    queryKey: ["owner-salary-configs"],
-    queryFn: () => base44.entities.SalaryConfig.list(),
-    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
   });
 
   const { data: companySettings = [] } = useQuery({
     queryKey: ["company-settings"],
     queryFn: () => base44.entities.CompanySettings.filter({ setting_key: "main" }),
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  // ── Fase 2: data sekunder — ditunda 1.5 detik ──
+  const [phase2Ready, setPhase2Ready] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setPhase2Ready(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const { data: breedings = [] } = useQuery({
+    queryKey: ["owner-breedings"],
+    queryFn: () => base44.entities.Breeding.list("-created_date", 50), // turun dari 200
+    enabled: phase2Ready,
     staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: feedStocks = [] } = useQuery({
+    queryKey: ["owner-feedstocks"],
+    queryFn: () => base44.entities.FeedStock.list("-name", 30),
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: sales = [] } = useQuery({
+    queryKey: ["owner-sales"],
+    queryFn: () => base44.entities.Sale.list("-date", 50), // turun dari 200
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["owner-health"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 50), // turun dari 200
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: buyerProfiles = [] } = useQuery({
+    queryKey: ["owner-buyers"],
+    queryFn: () => base44.entities.BuyerProfile.list("-updated_date", 30),
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
   });
 
   const { data: dailyChecklists = [] } = useQuery({
     queryKey: ["owner-checklists"],
     queryFn: () => base44.entities.DailyChecklist.filter({ date: format(now, "yyyy-MM-dd") }),
-    staleTime: 2 * 60 * 1000,
+    enabled: phase2Ready,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  // ── Fase 3: data tersier — ditunda 3 detik ─────
+  const [phase3Ready, setPhase3Ready] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setPhase3Ready(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const { data: annualGoals = [] } = useQuery({
+    queryKey: ["owner-annual-goals"],
+    queryFn: () => base44.entities.AnnualGoal.filter({ year: thisYear }),
+    enabled: phase3Ready,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: deathRecords = [] } = useQuery({
+    queryKey: ["owner-deaths"],
+    queryFn: () => base44.entities.DeathRecord.list("-death_date", 30), // turun dari 100
+    enabled: phase3Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: kasbons = [] } = useQuery({
+    queryKey: ["owner-kasbons"],
+    queryFn: () => base44.entities.Kasbon.filter({ status: "active" }),
+    enabled: phase3Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: warnings = [] } = useQuery({
+    queryKey: ["owner-warnings"],
+    queryFn: () => base44.entities.WarningLetter.list("-created_date", 20), // turun dari 50
+    enabled: phase3Ready,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: otLogs = [] } = useQuery({
+    queryKey: ["owner-ot"],
+    queryFn: () => base44.entities.OvertimeLog.list("-date", 30), // turun dari 100
+    enabled: phase3Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: measurements = [] } = useQuery({
+    queryKey: ["owner-measurements"],
+    queryFn: () => base44.entities.MeasurementHistory.list("-date", 50), // turun dari 200
+    enabled: phase3Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: enclosures = [] } = useQuery({
+    queryKey: ["owner-enclosures"],
+    queryFn: () => base44.entities.Enclosure.list(),
+    enabled: phase3Ready,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
   });
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ["owner-suppliers"],
-    queryFn: () => base44.entities.Supplier.list(),
-    staleTime: 10 * 60 * 1000,
+    queryFn: () => base44.entities.Supplier.list("-name", 20),
+    enabled: phase3Ready,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
   });
-
-  // ── Auto-refresh 5 menit ──────────────────────────
-  useEffect(() => {
-    const t = setInterval(() => refetchFin(), 5 * 60 * 1000);
-    return () => clearInterval(t);
-  }, []);
 
   // ── Finance Calcs ─────────────────────────────────
   const finThisMonth = finances.filter(f => f.date >= thisMonthStart && f.date <= thisMonthEnd);
@@ -349,11 +384,13 @@ export default function OwnerDashboard({ user }) {
 
   const today = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
 
-  // ── Salary ranking from SalaryConfig ─────────────
+  // ── Salary ranking — pakai data fase 3 ────────────
   const { data: salarySlips = [] } = useQuery({
     queryKey: ["owner-salary-slips", thisMonthKey],
     queryFn: () => base44.entities.SalarySlip.filter({ period: thisMonthKey }),
-    staleTime: 5 * 60 * 1000,
+    enabled: phase3Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
   });
 
   const employeeRanking = [...salarySlips]

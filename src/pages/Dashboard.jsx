@@ -32,11 +32,13 @@ import OperationalSummaryWidget from "@/components/dashboard/OperationalSummaryW
 function FallbackDashboard() {
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 300),
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 50), // turun dari 300
+    staleTime: 10 * 60 * 1000,
   });
   const { data: breedings = [] } = useQuery({
     queryKey: ["breedings"],
-    queryFn: () => base44.entities.Breeding.list("-created_date", 200),
+    queryFn: () => base44.entities.Breeding.list("-created_date", 30), // turun dari 200
+    staleTime: 10 * 60 * 1000,
   });
   const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "baby");
   const totalEggs = breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi").reduce((sum, b) => sum + (b.egg_count || 0), 0);
@@ -74,11 +76,18 @@ function FallbackDashboard() {
 export default function Dashboard() {
   const { user, role } = useCurrentUser();
 
-  // Notif checklist reminder
+  // Notif checklist reminder — hanya 1x per sesi (bukan tiap buka halaman)
   useEffect(() => {
-    if (role === "keeper" || role === "kepala_feeder") {
+    if (!role) return;
+    if (role !== "keeper" && role !== "kepala_feeder") return;
+    const sessionKey = `checklist_reminder_checked_${new Date().toDateString()}`;
+    if (sessionStorage.getItem(sessionKey)) return; // sudah dicek hari ini di sesi ini
+    sessionStorage.setItem(sessionKey, "1");
+    // Tunda 5 detik agar tidak menambah beban saat load awal
+    const t = setTimeout(() => {
       base44.functions.invoke("checkChecklistReminder", {}).catch(() => {});
-    }
+    }, 5000);
+    return () => clearTimeout(t);
   }, [role]);
 
   if (!user) return null;

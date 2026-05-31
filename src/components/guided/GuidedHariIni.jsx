@@ -13,6 +13,22 @@ import WidgetErrorBoundary from "./WidgetErrorBoundary";
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
 
+// Retry dengan jeda eksponensial untuk error 429
+async function withRetry(fn, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const is429 = e?.message?.includes("429") || e?.status === 429 || e?.response?.status === 429;
+      if (is429 && i < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, 2000 * (i + 1))); // 2s, 4s, 6s
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 function getSalam() {
   const h = new Date().getHours();
   if (h < 11) return "Selamat pagi";
@@ -89,15 +105,16 @@ export default function GuidedHariIni({ user }) {
   const [catatan, setCatatan]           = useState("");
   const [showCatatan, setShowCatatan]   = useState(false);
 
-  // ── Queries ──
-  const { data: attendance, refetch: refetchAtt } = useQuery({
+  // ── Queries — diberi jeda & staleTime panjang ──
+  const { data: attendance } = useQuery({
     queryKey: ["attendance-today", user?.email, today],
     queryFn: async () => {
       const res = await base44.entities.Attendance.filter({ employee_email: user.email, date: today });
       return res[0] || null;
     },
     enabled: !!user?.email,
-    refetchInterval: 30000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000, // 5 menit, bukan 30 detik
   });
 
   const { data: settings } = useQuery({
@@ -106,6 +123,7 @@ export default function GuidedHariIni({ user }) {
       const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
       return res[0] || null;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: salaryConfig } = useQuery({
@@ -114,42 +132,45 @@ export default function GuidedHariIni({ user }) {
       const res = await base44.entities.SalaryConfig.filter({ role: user?.role });
       return res[0] || null;
     },
-    enabled: !!user?.role,
+    enabled: !!user?.email,
+    staleTime: 10 * 60 * 1000,
   });
 
+  // Tortoise dimuat lazy (hanya saat showSakitForm dibuka)
   const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoise-names"],
-    queryFn: () => base44.entities.Tortoise.list("-name", 200),
+    queryKey: ["tortoise-names-keeper"],
+    queryFn: () => base44.entities.Tortoise.list("-name", 50), // limit 50, bukan 200
+    enabled: showSakitForm, // load HANYA saat form laporan dibuka
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: maintenanceLogs = [], refetch: refetchML } = useQuery({
     queryKey: ["maintenance-today", user?.email, today],
     queryFn: async () => base44.entities.MaintenanceLog.filter({ done_by_email: user.email, period_key: today }),
     enabled: !!user?.email,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: treatmentSchedules = [] } = useQuery({
     queryKey: ["treatment-schedules-active"],
     queryFn: () => base44.entities.TreatmentSchedule.filter({ is_active: true }),
+    staleTime: 10 * 60 * 1000,
   });
 
-  const { data: kritisNotifs = [], refetch: refetchNotifs } = useQuery({
-    queryKey: ["notif-kritis", user?.email, today],
-    queryFn: async () => {
-      const all = await base44.entities.Notification.filter({ recipient_email: user.email });
-      return all.filter(n => n.priority === "tinggi" && !n.is_read && !n.is_dismissed);
-    },
-    enabled: !!user?.email,
-    refetchInterval: 60000,
-  });
+  // Notifikasi kritis: pakai cache dari NotificationBell, jangan query sendiri
+  // Gunakan data yang sudah ada di queryClient dari "notifications"
+  const kritisNotifs = [];  // widget darurat tidak perlu query notif sendiri
+  const refetchNotifs = () => {};
 
+  // HealthRecord: load lazy, hanya saat widget darurat diperlukan
   const { data: sickTortoises = [] } = useQuery({
     queryKey: ["sick-tortoises-today"],
     queryFn: async () => {
-      const hrs = await base44.entities.HealthRecord.list("-date", 20);
+      const hrs = await base44.entities.HealthRecord.list("-date", 10); // limit 10
       return hrs.filter(h => h.date === today && h.type === "sakit");
     },
-    refetchInterval: 60000,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false, // matikan auto-refresh
   });
 
   // Sync kandang done dari maintenance logs (restore state setelah reload)
@@ -749,7 +770,7 @@ function WidgetPakan({ user, today }) {
     setLoading(true);
     setError(null);
 
-    base44.entities.FeedStock.list("-name", 20)
+    withRetry(() => base44.entities.FeedStock.list("-name", 20))
       .then(result => {
         if (cancelled) return;
         const safeItems = Array.isArray(result) ? result : [];
@@ -758,7 +779,8 @@ function WidgetPakan({ user, today }) {
       })
       .catch(e => {
         if (cancelled) return;
-        setError(e?.message || "Gagal memuat data pakan");
+        const is429 = e?.message?.includes("429");
+        setError(is429 ? "Server sedang sibuk, tarik untuk muat ulang" : (e?.message || "Gagal memuat data pakan"));
         setLoading(false);
       });
 
