@@ -732,15 +732,18 @@ export default function GuidedHariIni({ user }) {
 function WidgetPakan({ user, today }) {
   const [checked, setChecked] = useState({});
   const [saving, setSaving] = useState(false);
-  const [statusMsg, setStatusMsg] = useState(null); // { type: "ok"|"err", text }
-  const [feedList, setFeedList] = useState(null); // null = belum load
+  const [statusMsg, setStatusMsg] = useState(null);
+  const [feedList, setFeedList] = useState(null);
   const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Load data satu kali saat mount
   useEffect(() => {
     let cancelled = false;
+    setFeedList(null);
+    setLoadError(false);
+
     const timer = setTimeout(() => {
-      if (!cancelled && feedList === null) setLoadError(true);
+      if (!cancelled) setLoadError(true);
     }, 5000);
 
     base44.entities.FeedStock.list("-name", 20)
@@ -759,7 +762,7 @@ function WidgetPakan({ user, today }) {
       });
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, []);
+  }, [retryCount]);
 
   const toggle = (id) => {
     setChecked(prev => ({ ...prev, [id]: !prev[id] }));
@@ -820,7 +823,7 @@ function WidgetPakan({ user, today }) {
         <p className="font-semibold text-orange-800 mb-1">Pemberian Pakan</p>
         <p className="text-sm text-orange-700">Gagal memuat data pakan.</p>
         <button
-          onClick={() => { setLoadError(false); setFeedList(null); }}
+          onClick={() => setRetryCount(c => c + 1)}
           className="mt-2 text-sm font-semibold text-orange-700 border border-orange-300 px-4 py-2 rounded-xl"
         >
           Coba Lagi
