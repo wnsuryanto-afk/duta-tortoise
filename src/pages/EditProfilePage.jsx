@@ -28,6 +28,8 @@ export default function EditProfilePage() {
     queryKey: ["user-profile-edit", user?.email],
     queryFn: () => base44.entities.UserProfile.filter({ user_email: user?.email }),
     enabled: !!user?.email,
+    staleTime: 60 * 1000,
+    retry: 1,
   });
 
   useEffect(() => {

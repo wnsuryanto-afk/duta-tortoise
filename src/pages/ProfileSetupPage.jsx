@@ -49,13 +49,10 @@ export default function ProfileSetupPage() {
   // Check if profile exists
   const { data: profiles } = useQuery({
     queryKey: ["user-profile-setup", user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const data = await base44.entities.UserProfile.filter({ user_email: user.email });
-      console.log("ProfileSetup: UserProfile check", { email: user.email, count: data.length, hasData: data[0] });
-      return data;
-    },
+    queryFn: () => base44.entities.UserProfile.filter({ user_email: user.email }),
     enabled: !!user?.email,
+    staleTime: 60 * 1000,
+    retry: 1,
   });
 
   // Save profile mutation
