@@ -8,6 +8,7 @@ import {
   Smile, Star, Bell, X, Package, ChevronDown, ChevronUp, ClipboardList
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
+import WidgetErrorBoundary from "./WidgetErrorBoundary";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -440,6 +441,7 @@ export default function GuidedHariIni({ user }) {
         )}
 
         {/* ══ WIDGET 1: ABSENSI ══════════════════════════════════ */}
+        <WidgetErrorBoundary widgetName="Absensi">
         <Widget done={hasCheckedIn}>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -492,19 +494,23 @@ export default function GuidedHariIni({ user }) {
             )}
           </div>
         </Widget>
+        </WidgetErrorBoundary>
 
         {/* ══ WIDGET 2: SUPLEMEN ══════════════════════════════════ */}
         {supplemenHariIni.length > 0 && (
-          <WidgetSuplemen
-            items={supplemenHariIni}
-            user={user}
-            today={today}
-            qc={qc}
-            flashPoin={flashPoin}
-          />
+          <WidgetErrorBoundary widgetName="Suplemen">
+            <WidgetSuplemen
+              items={supplemenHariIni}
+              user={user}
+              today={today}
+              qc={qc}
+              flashPoin={flashPoin}
+            />
+          </WidgetErrorBoundary>
         )}
 
         {/* ══ WIDGET 3: KEBERSIHAN KANDANG ═══════════════════════ */}
+        <WidgetErrorBoundary widgetName="Kebersihan Kandang">
         <Widget done={kandangSaved.size === KANDANG_LIST.length}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-1">
@@ -546,16 +552,15 @@ export default function GuidedHariIni({ user }) {
             )}
           </div>
         </Widget>
+        </WidgetErrorBoundary>
 
         {/* ══ WIDGET 4: PEMBERIAN PAKAN ══════════════════════════ */}
-        <WidgetPakan
-          user={user}
-          today={today}
-          flashPoin={flashPoin}
-          showMsg={showMsg}
-        />
+        <WidgetErrorBoundary widgetName="Pemberian Pakan">
+          <WidgetPakan user={user} today={today} />
+        </WidgetErrorBoundary>
 
         {/* ══ WIDGET 5: KONDISI KURA ══════════════════════════════ */}
+        <WidgetErrorBoundary widgetName="Kondisi Kura">
         <Widget done={kondisiOk !== null || sakitReports.length > 0}>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -655,6 +660,7 @@ export default function GuidedHariIni({ user }) {
             )}
           </div>
         </Widget>
+        </WidgetErrorBoundary>
 
         {/* ══ WIDGET 6: AKSI CEPAT ═══════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -728,68 +734,66 @@ export default function GuidedHariIni({ user }) {
   );
 }
 
-// ── Widget Pakan — versi minimal ─────────────────────────────────────
+// ── Widget Pakan — ultra-defensif ────────────────────────────────────
 function WidgetPakan({ user, today }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [checked, setChecked] = useState({});
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
-  const [feedList, setFeedList] = useState(null);
-  const [loadError, setLoadError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    setFeedList(null);
-    setLoadError(false);
-
-    const timer = setTimeout(() => {
-      if (!cancelled) setLoadError(true);
-    }, 5000);
+    setLoading(true);
+    setError(null);
 
     base44.entities.FeedStock.list("-name", 20)
-      .then(data => {
-        if (!cancelled) {
-          clearTimeout(timer);
-          setFeedList(Array.isArray(data) ? data : []);
-        }
+      .then(result => {
+        if (cancelled) return;
+        const safeItems = Array.isArray(result) ? result : [];
+        setItems(safeItems);
+        setLoading(false);
       })
-      .catch(() => {
-        if (!cancelled) {
-          clearTimeout(timer);
-          setLoadError(true);
-          setFeedList([]);
-        }
+      .catch(e => {
+        if (cancelled) return;
+        setError(e?.message || "Gagal memuat data pakan");
+        setLoading(false);
       });
 
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => { cancelled = true; };
   }, [retryCount]);
 
   const toggle = (id) => {
     setChecked(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const checkedIds = feedList ? feedList.filter(f => checked[f.id]) : [];
+  const checkedCount = items.filter(f => checked[f?.id]).length;
 
   const handleSimpan = async () => {
-    if (checkedIds.length === 0) return;
+    if (checkedCount === 0) return;
     setSaving(true);
     setStatusMsg(null);
     try {
       const task = {
         task_id: `pakan-${today}`,
-        task_title: `Pemberian Pakan — ${checkedIds.length} item`,
+        task_title: `Pemberian Pakan — ${checkedCount} item`,
         done_at: nowStr(),
       };
-      const existing = await base44.entities.DailyChecklist.filter({ employee_email: user.email, date: today });
-      if (existing && existing[0]) {
-        const prevTasks = (existing[0].completed_tasks || []).filter(t => t.task_id !== task.task_id);
-        await base44.entities.DailyChecklist.update(existing[0].id, {
+      const existing = await base44.entities.DailyChecklist.filter({ employee_email: user?.email, date: today });
+      const existingRecord = Array.isArray(existing) ? existing[0] : null;
+      if (existingRecord) {
+        const prevTasks = Array.isArray(existingRecord.completed_tasks)
+          ? existingRecord.completed_tasks.filter(t => t?.task_id !== task.task_id)
+          : [];
+        await base44.entities.DailyChecklist.update(existingRecord.id, {
           completed_tasks: [...prevTasks, task],
         });
       } else {
         await base44.entities.DailyChecklist.create({
-          employee_email: user.email,
-          employee_name: user.full_name || user.email,
+          employee_email: user?.email || "",
+          employee_name: user?.full_name || user?.email || "",
           date: today,
           completed_tasks: [task],
           status: "draft",
@@ -797,15 +801,14 @@ function WidgetPakan({ user, today }) {
       }
       setStatusMsg({ type: "ok", text: "Tersimpan!" });
       setChecked({});
-    } catch (err) {
-      setStatusMsg({ type: "err", text: "Gagal simpan, coba lagi" });
+    } catch (e) {
+      setStatusMsg({ type: "err", text: e?.message || "Gagal simpan, coba lagi" });
     } finally {
       setSaving(false);
     }
   };
 
-  // Loading
-  if (feedList === null && !loadError) {
+  if (loading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
         <p className="font-semibold text-gray-800 mb-3">Pemberian Pakan</p>
@@ -816,15 +819,14 @@ function WidgetPakan({ user, today }) {
     );
   }
 
-  // Error load
-  if (loadError && (feedList === null || feedList.length === 0)) {
+  if (error) {
     return (
-      <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4">
-        <p className="font-semibold text-orange-800 mb-1">Pemberian Pakan</p>
-        <p className="text-sm text-orange-700">Gagal memuat data pakan.</p>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+        <p className="font-semibold text-red-800 mb-1">Pemberian Pakan — Error</p>
+        <p className="text-sm text-red-700 font-mono break-all mb-3">{error}</p>
         <button
           onClick={() => setRetryCount(c => c + 1)}
-          className="mt-2 text-sm font-semibold text-orange-700 border border-orange-300 px-4 py-2 rounded-xl"
+          className="text-sm font-semibold text-red-700 border border-red-300 px-4 py-2 rounded-xl hover:bg-red-100"
         >
           Coba Lagi
         </button>
@@ -832,8 +834,7 @@ function WidgetPakan({ user, today }) {
     );
   }
 
-  // Empty
-  if (feedList && feedList.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <p className="font-semibold text-gray-800 mb-1">Pemberian Pakan</p>
@@ -845,25 +846,29 @@ function WidgetPakan({ user, today }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
       <p className="font-semibold text-gray-800 mb-3">Pemberian Pakan</p>
-
       <div className="space-y-2">
-        {(feedList || []).map(f => (
-          <button
-            key={f.id}
-            onClick={() => toggle(f.id)}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
-              checked[f.id] ? "bg-green-50 border-green-400" : "bg-white border-gray-200"
-            }`}
-          >
-            <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${
-              checked[f.id] ? "bg-green-500 border-green-500" : "border-gray-300"
-            }`}>
-              {checked[f.id] && <span className="text-white text-xs font-bold">✓</span>}
-            </div>
-            <span className="text-sm text-gray-800">{f.name}</span>
-            <span className="text-xs text-gray-400 ml-auto">{f.unit}</span>
-          </button>
-        ))}
+        {items.map(f => {
+          const fId = f?.id;
+          const fName = f?.name || "—";
+          const fUnit = f?.unit || "";
+          return (
+            <button
+              key={fId}
+              onClick={() => toggle(fId)}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
+                checked[fId] ? "bg-green-50 border-green-400" : "bg-white border-gray-200"
+              }`}
+            >
+              <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${
+                checked[fId] ? "bg-green-500 border-green-500" : "border-gray-300"
+              }`}>
+                {checked[fId] && <span className="text-white text-xs font-bold">✓</span>}
+              </div>
+              <span className="text-sm text-gray-800">{fName}</span>
+              <span className="text-xs text-gray-400 ml-auto">{fUnit}</span>
+            </button>
+          );
+        })}
       </div>
 
       {statusMsg && (
@@ -874,7 +879,7 @@ function WidgetPakan({ user, today }) {
 
       <button
         onClick={handleSimpan}
-        disabled={saving || checkedIds.length === 0}
+        disabled={saving || checkedCount === 0}
         className="w-full mt-3 bg-green-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
       >
         {saving ? "Menyimpan..." : "Simpan Pakan Hari Ini"}
