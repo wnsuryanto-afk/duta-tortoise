@@ -168,12 +168,10 @@ export default function AppLayout() {
 
   const { data: profiles = [], isLoading: profileLoading, refetch: refetchProfile } = useQuery({
     queryKey: ["user-profile", user?.email],
-    queryFn: async () => {
-      const data = await base44.entities.UserProfile.filter({ user_email: user.email });
-      console.log("UserProfile check:", { email: user.email, count: data.length, hasData: data.length > 0, fields: data[0] });
-      return data;
-    },
+    queryFn: () => base44.entities.UserProfile.filter({ user_email: user.email }),
     enabled: !!user?.email,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   // is_complete = true HANYA jika 5 field esensial semua terisi
