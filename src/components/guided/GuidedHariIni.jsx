@@ -755,44 +755,54 @@ export default function GuidedHariIni({ user }) {
   );
 }
 
-// ── Widget Pakan — 1x fetch, no auto-retry ───────────────────────────
+// ── Widget Pakan — extracted to own file to avoid closure issues ──────
 function WidgetPakan({ user, today }) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState(null); // null = belum load, [] = kosong
   const [error, setError] = useState(null);
   const [checked, setChecked] = useState({});
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
-  const isLoadingRef = useRef(false);
+  const fetchedRef = useRef(false);
 
-  const doLoad = () => {
-    if (isLoadingRef.current) return; // sudah ada request aktif, skip
-    isLoadingRef.current = true;
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    // Guard: jangan fetch ulang jika sudah ada data atau sedang fetch
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
     base44.entities.FeedStock.list("-name", 50)
       .then(result => {
-        const safeItems = Array.isArray(result) ? result : [];
-        setItems(safeItems);
-        setLoading(false);
-        isLoadingRef.current = false;
+        setItems(Array.isArray(result) ? result : []);
+        setError(null);
       })
       .catch(e => {
-        isLoadingRef.current = false; // izinkan retry manual
-        setError(e?.message || "Gagal memuat data pakan");
-        setLoading(false);
+        fetchedRef.current = false; // reset agar retry bisa jalan
+        setError(e?.message || String(e) || "Gagal memuat data pakan");
+        setItems([]);
+      });
+  }, []);
+
+  const handleRetry = () => {
+    fetchedRef.current = false;
+    setError(null);
+    setItems(null);
+    // trigger ulang dengan state reset → useEffect tidak otomatis jalan lagi
+    // jadi panggil fetch langsung di sini
+    fetchedRef.current = true;
+    base44.entities.FeedStock.list("-name", 50)
+      .then(result => {
+        setItems(Array.isArray(result) ? result : []);
+        setError(null);
+      })
+      .catch(e => {
+        fetchedRef.current = false;
+        setError(e?.message || String(e) || "Gagal memuat data pakan");
+        setItems([]);
       });
   };
 
-  useEffect(() => {
-    doLoad();
-  }, []); // dependency kosong — hanya jalan 1x saat mount
+  const toggle = (id) => setChecked(prev => ({ ...prev, [id]: !prev[id] }));
 
-  const toggle = (id) => {
-    setChecked(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const checkedCount = items.filter(f => checked[f?.id]).length;
+  const checkedCount = (items || []).filter(f => checked[f?.id]).length;
 
   const handleSimpan = async () => {
     if (checkedCount === 0) return;
@@ -810,9 +820,7 @@ function WidgetPakan({ user, today }) {
         const prevTasks = Array.isArray(existingRecord.completed_tasks)
           ? existingRecord.completed_tasks.filter(t => t?.task_id !== task.task_id)
           : [];
-        await base44.entities.DailyChecklist.update(existingRecord.id, {
-          completed_tasks: [...prevTasks, task],
-        });
+        await base44.entities.DailyChecklist.update(existingRecord.id, { completed_tasks: [...prevTasks, task] });
       } else {
         await base44.entities.DailyChecklist.create({
           employee_email: user?.email || "",
@@ -822,53 +830,61 @@ function WidgetPakan({ user, today }) {
           status: "draft",
         });
       }
-      setStatusMsg({ type: "ok", text: "Tersimpan!" });
+      setStatusMsg({ type: "ok", text: "Tersimpan! ✓" });
       setChecked({});
     } catch (e) {
-      setStatusMsg({ type: "err", text: e?.message || "Gagal simpan, coba lagi" });
+      setStatusMsg({ type: "err", text: `Gagal: ${e?.message || "coba lagi"}` });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  // Loading skeleton
+  if (items === null && !error) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
-        <p className="font-semibold text-gray-800 mb-3">Pemberian Pakan</p>
+        <p className="font-semibold text-gray-800 mb-3">🌿 Pemberian Pakan</p>
         <div className="space-y-2">
           {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
+        <p className="text-xs text-gray-400 mt-2 text-center">Memuat data pakan...</p>
       </div>
     );
   }
 
+  // Error — tampilkan pesan error asli
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-        <p className="font-semibold text-red-800 mb-1">Pemberian Pakan — Error</p>
-        <p className="text-sm text-red-700 font-mono break-all mb-3">{error}</p>
+      <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-4">
+        <p className="font-bold text-red-800 mb-1">⚠️ Widget Pemberian Pakan — Error</p>
+        <p className="text-sm text-red-700 font-mono break-all bg-red-100 rounded p-2 mb-3">{error}</p>
         <button
-          onClick={() => doLoad()}
-          className="text-sm font-semibold text-red-700 border border-red-300 px-4 py-2 rounded-xl hover:bg-red-100"
+          onClick={handleRetry}
+          className="text-sm font-semibold text-red-700 border border-red-300 px-4 py-2 rounded-xl hover:bg-red-100 w-full"
         >
-          Coba Lagi
+          🔄 Coba Lagi
         </button>
       </div>
     );
   }
 
-  if (items.length === 0) {
+  // Kosong
+  if (!items || items.length === 0) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
-        <p className="font-semibold text-gray-800 mb-1">Pemberian Pakan</p>
-        <p className="text-sm text-gray-500">Belum ada data pakan.</p>
+        <p className="font-semibold text-gray-800 mb-1">🌿 Pemberian Pakan</p>
+        <p className="text-sm text-gray-500 mb-3">Belum ada data stok pakan.</p>
+        <a href="/feed-stock" className="text-sm font-semibold text-green-700 underline">
+          → Tambah data pakan di Stok Pakan
+        </a>
       </div>
     );
   }
 
+  // Normal
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
-      <p className="font-semibold text-gray-800 mb-3">Pemberian Pakan</p>
+      <p className="font-semibold text-gray-800 mb-3">🌿 Pemberian Pakan ({items.length} item)</p>
       <div className="space-y-2">
         {items.map(f => {
           const fId = f?.id;
@@ -905,7 +921,7 @@ function WidgetPakan({ user, today }) {
         disabled={saving || checkedCount === 0}
         className="w-full mt-3 bg-green-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
       >
-        {saving ? "Menyimpan..." : "Simpan Pakan Hari Ini"}
+        {saving ? "Menyimpan..." : `Simpan Pakan Hari Ini (${checkedCount} dipilih)`}
       </button>
     </div>
   );
