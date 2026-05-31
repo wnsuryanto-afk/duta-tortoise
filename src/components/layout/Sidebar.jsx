@@ -5,7 +5,7 @@ import {
   Wallet, Calculator, PieChart, Bell, Printer, Package, Thermometer,
   FileText, MessageSquare, Library, ListTodo, Activity, Settings,
   Calendar, ChevronDown, ChevronRight, Trophy, FlaskConical,
-  UtensilsCrossed, LayoutGrid, GitBranch, Skull, Home, Box,
+  LayoutGrid, GitBranch, Skull, Home, Box,
   TrendingUp, Target, Zap, AlertTriangle, Truck, ClipboardCheck,
   Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight
 } from "lucide-react";
@@ -57,7 +57,6 @@ const NAV_GROUPS = [
       { path: "/enclosure",           section: "enclosure",   label: "Daftar Kandang",       icon: Home },
       { path: "/incubator-readings",  section: "breeding",    label: "Inkubator",            icon: Thermometer },
       { path: "/maintenance-schedule",section: "maintenance", label: "Jadwal Pemeliharaan",  icon: Calendar },
-      { path: "/feeding-log",         section: "feed-stock",  label: "Pemberian Pakan",      icon: UtensilsCrossed },
     ],
   },
 
