@@ -172,7 +172,8 @@ export default function SOPApproval() {
             const kandangTasks = tasks.filter(t => isEnclosureTask(t));
             const poinUtama = utamaTasks.reduce((s, t) => s + (t.points || 0), 0);
             const poinKandang = kandangTasks.reduce((s, t) => s + (t.points || 0), 0);
-            const totalClaimed = c.total_points_claimed || (poinUtama + poinKandang);
+            // Hitung dari task aktual (lebih akurat dari total_points_claimed yang lama)
+            const totalClaimed = poinUtama + poinKandang || c.total_points_claimed || 0;
             const isSelf = c.employee_email === user?.email;
 
             return (

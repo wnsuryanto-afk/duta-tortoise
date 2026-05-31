@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, Check, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const categoryColors = {
   pakan: "bg-green-100 text-green-700",
@@ -51,7 +52,11 @@ function ToggleChip({ label, selected, onClick }) {
 
 export default function SOPTaskManager() {
   const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
+  const { role } = useCurrentUser();
+  const canEditPoints = ["owner", "manajer"].includes(role);
+  const [editingPointId, setEditingPointId] = useState(null);
+  const [editingPointVal, setEditingPointVal] = useState("");
+  const [showForm, setShowForm]  = useState(false);
   const [editData, setEditData] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
@@ -147,6 +152,15 @@ export default function SOPTaskManager() {
     queryClient.invalidateQueries({ queryKey: ["sop-tasks-all"] });
   };
 
+  const handleSavePoints = async (task) => {
+    const val = parseInt(editingPointVal);
+    if (isNaN(val) || val < 0) return;
+    await base44.entities.SOPTask.update(task.id, { points: val });
+    queryClient.invalidateQueries({ queryKey: ["sop-tasks-all"] });
+    queryClient.invalidateQueries({ queryKey: ["sop-tasks"] });
+    setEditingPointId(null);
+  };
+
   // Tortoise filtered by selected enclosures
   const filteredTortoises = form.target_enclosures.length > 0
     ? tortoises.filter(t => form.target_enclosures.includes(t.enclosure))
@@ -177,10 +191,37 @@ export default function SOPTaskManager() {
                     <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium capitalize ${categoryColors[t.category] || ""}`}>
                       {t.category}
                     </span>
-                    <Badge variant="outline" className="text-[11px] text-amber-600">
-                      <Star className="w-2.5 h-2.5 mr-1 fill-current" />
-                      {t.points} poin
-                    </Badge>
+                    {canEditPoints && editingPointId === t.id ? (
+                      <span className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={editingPointVal}
+                          onChange={e => setEditingPointVal(e.target.value)}
+                          className="h-6 w-16 text-xs px-1.5"
+                          autoFocus
+                          onKeyDown={e => { if (e.key === "Enter") handleSavePoints(t); if (e.key === "Escape") setEditingPointId(null); }}
+                        />
+                        <button onClick={() => handleSavePoints(t)} className="text-green-600 hover:text-green-800">
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        {parseInt(editingPointVal) > 100 && (
+                          <span className="text-[10px] text-amber-600 flex items-center gap-0.5">
+                            <AlertTriangle className="w-3 h-3" /> Poin besar
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className={`text-[11px] text-amber-600 ${canEditPoints ? "cursor-pointer hover:bg-amber-50" : ""}`}
+                        onClick={canEditPoints ? () => { setEditingPointId(t.id); setEditingPointVal(String(t.points ?? 10)); } : undefined}
+                        title={canEditPoints ? "Klik untuk edit poin" : undefined}
+                      >
+                        <Star className="w-2.5 h-2.5 mr-1 fill-current" />
+                        {t.points ?? 10} poin{canEditPoints && " ✎"}
+                      </Badge>
+                    )}
                     <span className="text-[11px] text-muted-foreground capitalize">{t.frequency}</span>
                     {t.frequency === "mingguan" && t.weekly_days?.length > 0 && (
                       <span className="text-[11px] text-primary">

@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, AlertTriangle, GraduationCap, Clock, Carrot, CreditCard, Calendar, Building2, Save } from "lucide-react";
+import { Plus, Edit, Trash2, AlertTriangle, GraduationCap, Clock, CreditCard, Calendar, Building2, Save, Star } from "lucide-react";
+import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -497,11 +498,13 @@ export default function HRPage() {
           <TabsTrigger value="warning" className="gap-1.5"><AlertTriangle className="w-3.5 h-3.5" />Surat Peringatan</TabsTrigger>
           <TabsTrigger value="training" className="gap-1.5"><GraduationCap className="w-3.5 h-3.5" />Training</TabsTrigger>
           <TabsTrigger value="settings" className="gap-1.5"><Building2 className="w-3.5 h-3.5" />KOP Surat</TabsTrigger>
+          <TabsTrigger value="target-poin" className="gap-1.5"><Star className="w-3.5 h-3.5" />Target & Poin</TabsTrigger>
         </TabsList>
         <TabsContent value="attendance" className="mt-4"><AttendanceSummaryTab /></TabsContent>
         <TabsContent value="warning" className="mt-4"><WarningLetterTab /></TabsContent>
         <TabsContent value="training" className="mt-4"><TrainingTab /></TabsContent>
         <TabsContent value="settings" className="mt-4"><CompanySettingsTab /></TabsContent>
+        <TabsContent value="target-poin" className="mt-4"><TargetPoinSettings /></TabsContent>
       </Tabs>
     </div>
   );
