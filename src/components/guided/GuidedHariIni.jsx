@@ -325,12 +325,12 @@ export default function GuidedHariIni({ user }) {
     });
   };
 
-  const handleSimpanPakan = async () => {
+  const handleSimpanPakan = async (feedItems = []) => {
     if (pakanDone.size === 0) return;
     setLoading(true);
     const completed = [...pakanDone].map(p => ({
       task_id: `pakan_${p}`,
-      task_title: PAKAN_LIST.find(x => x.id === p)?.label,
+      task_title: feedItems.find(x => x.id === p)?.name || p,
       done_at: nowStr(),
     }));
     const existing = await base44.entities.DailyChecklist.filter({ employee_email: user.email, date: today });
@@ -587,57 +587,16 @@ export default function GuidedHariIni({ user }) {
         </Widget>
 
         {/* ══ WIDGET 4: PEMBERIAN PAKAN ══════════════════════════ */}
-        <Widget done={pakanSaved && pakanDone.size > 0}>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <Leaf className="w-4 h-4 text-green-600" />
-                <span className="font-semibold text-gray-800">Pemberian Pakan</span>
-              </div>
-              <span className="text-xs text-gray-500">{pakanDone.size}/{PAKAN_LIST.length} item</span>
-            </div>
-            <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
-              <div className="h-full bg-green-500 rounded-full transition-all"
-                style={{ width: `${(pakanDone.size / PAKAN_LIST.length) * 100}%` }} />
-            </div>
-
-            <div className="space-y-2">
-              {PAKAN_LIST.map(p => {
-                const done = pakanDone.has(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => handleTogglePakan(p.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-98 ${
-                      done ? "bg-green-50 border-green-400" : "bg-white border-gray-200"
-                    }`}
-                  >
-                    <span className="text-xl">{p.icon}</span>
-                    <span className="flex-1 text-left text-sm font-medium text-gray-800">{p.label}</span>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                      done ? "bg-green-500 border-green-500" : "border-gray-300"
-                    }`}>
-                      {done && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {pakanDone.size > 0 && !pakanSaved && (
-              <button
-                onClick={handleSimpanPakan}
-                disabled={loading}
-                className="w-full mt-3 bg-green-700 text-white font-semibold py-3 rounded-xl active:scale-95 transition-transform disabled:opacity-60"
-              >
-                {loading ? "Menyimpan..." : `Simpan (${pakanDone.size} item · +${pakanDone.size * 5} poin)`}
-              </button>
-            )}
-            {pakanSaved && (
-              <p className="text-center text-sm font-semibold text-green-700 mt-3">✓ Pakan hari ini tersimpan</p>
-            )}
-          </div>
-        </Widget>
+        <WidgetPakan
+          user={user}
+          today={today}
+          pakanDone={pakanDone}
+          pakanSaved={pakanSaved}
+          loading={loading}
+          onToggle={handleTogglePakan}
+          onSimpan={handleSimpanPakan}
+          flashPoin={flashPoin}
+        />
 
         {/* ══ WIDGET 5: KONDISI KURA ══════════════════════════════ */}
         <Widget done={kondisiOk !== null || sakitReports.length > 0}>
@@ -807,6 +766,147 @@ export default function GuidedHariIni({ user }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Icon per kategori pakan ───────────────────────────────────────────
+function pakanIcon(category) {
+  const map = { sayuran: "🥬", buah: "🍎", rumput: "🌿", suplemen: "💊", pelet: "🟤", hay: "🟤", lainnya: "🍃" };
+  return map[category] || "🌾";
+}
+
+// ── Widget Pakan ──────────────────────────────────────────────────────
+function WidgetPakan({ user, today, pakanDone, pakanSaved, loading, onToggle, onSimpan, flashPoin }) {
+  const { data: feedStocks, isLoading, isError, refetch } = useQuery({
+    queryKey: ["feed-stocks-all"],
+    queryFn: () => base44.entities.FeedStock.list(),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+    retryDelay: 2000,
+  });
+
+  // Urutkan: mandatory dulu, lalu sisanya
+  const sorted = feedStocks
+    ? [...feedStocks].sort((a, b) => (b.is_mandatory ? 1 : 0) - (a.is_mandatory ? 1 : 0))
+    : [];
+
+  const total = sorted.length;
+  const doneCount = sorted.filter(f => pakanDone.has(f.id)).length;
+
+  // Skeleton loading
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border-2 border-gray-100 bg-white shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Leaf className="w-4 h-4 text-green-600" />
+          <span className="font-semibold text-gray-800">Pemberian Pakan Hari Ini</span>
+        </div>
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Leaf className="w-4 h-4 text-orange-600" />
+          <span className="font-semibold text-orange-800">Pemberian Pakan Hari Ini</span>
+        </div>
+        <p className="text-sm text-orange-700 mb-3">Gagal memuat data pakan. Tarik ke bawah untuk coba lagi.</p>
+        <button onClick={() => refetch()} className="text-sm font-semibold text-orange-700 border border-orange-300 px-4 py-2 rounded-xl hover:bg-orange-100">
+          🔄 Coba Lagi
+        </button>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (sorted.length === 0) {
+    return (
+      <div className="rounded-2xl border-2 border-gray-100 bg-white shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Leaf className="w-4 h-4 text-green-600" />
+          <span className="font-semibold text-gray-800">Pemberian Pakan Hari Ini</span>
+        </div>
+        <p className="text-sm text-gray-500 mb-3">Belum ada data pakan. Tambah pakan dulu di menu Stok Pakan.</p>
+        <a href="/feed-stock" className="inline-flex items-center gap-1.5 text-sm font-semibold text-green-700 border border-green-300 px-4 py-2 rounded-xl hover:bg-green-50">
+          + Tambah Pakan
+        </a>
+      </div>
+    );
+  }
+
+  const isDone = pakanSaved && doneCount > 0;
+
+  return (
+    <div className={`rounded-2xl border-2 shadow-sm transition-all ${isDone ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"}`}>
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Leaf className="w-4 h-4 text-green-600" />
+            <span className="font-semibold text-gray-800">Pemberian Pakan Hari Ini</span>
+          </div>
+          <span className="text-xs text-gray-500">{doneCount}/{total} item</span>
+        </div>
+
+        <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
+          <div className="h-full bg-green-500 rounded-full transition-all"
+            style={{ width: total > 0 ? `${(doneCount / total) * 100}%` : "0%" }} />
+        </div>
+
+        <div className="space-y-2">
+          {sorted.map(f => {
+            const done = pakanDone.has(f.id);
+            return (
+              <button
+                key={f.id}
+                onClick={() => !pakanSaved && onToggle(f.id)}
+                disabled={pakanSaved}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-98 ${
+                  done ? "bg-green-50 border-green-400" : "bg-white border-gray-200 hover:border-green-300"
+                } ${pakanSaved ? "cursor-default" : ""}`}
+              >
+                <span className="text-xl">{pakanIcon(f.category)}</span>
+                <div className="flex-1 text-left">
+                  <span className="text-sm font-medium text-gray-800">{f.name}</span>
+                  {f.is_mandatory && <span className="ml-1 text-yellow-500 text-xs">★</span>}
+                  <span className="text-xs text-gray-400 ml-1">{f.unit}</span>
+                </div>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                  done ? "bg-green-500 border-green-500" : "border-gray-300"
+                }`}>
+                  {done && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {doneCount > 0 && !pakanSaved && (
+          <button
+            onClick={() => onSimpan(sorted)}
+            disabled={loading}
+            className="w-full mt-3 bg-green-700 text-white font-semibold py-3 rounded-xl active:scale-95 transition-transform disabled:opacity-60"
+          >
+            {loading ? "Menyimpan..." : `Simpan (${doneCount} item · +${doneCount * 5} poin)`}
+          </button>
+        )}
+
+        {pakanSaved && (
+          <p className="text-center text-sm font-semibold text-green-700 mt-3">✓ Pakan hari ini tersimpan</p>
+        )}
+
+        <a href="/feed-stock" className="block text-center text-xs text-gray-400 hover:text-green-600 mt-3">
+          + Tambah item pakan lainnya
+        </a>
       </div>
     </div>
   );
