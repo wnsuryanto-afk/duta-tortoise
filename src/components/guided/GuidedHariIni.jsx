@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
@@ -50,14 +50,6 @@ const KANDANG_LIST = [
   "W1","W2","W3","W4","W5",
   "E1","E2","E3","E4","E5",
   "N1","N2","N3","L1","L2",
-];
-
-const PAKAN_LIST = [
-  { id: "sayuran",  label: "Sayuran pagi",      icon: "🥬" },
-  { id: "pelet",    label: "Pelet / Hay",        icon: "🟤" },
-  { id: "air",      label: "Air minum (ganti)",  icon: "💧" },
-  { id: "kalsium",  label: "Suplemen kalsium",   icon: "⚪" },
-  { id: "vitamin",  label: "Vitamin (jadwal)",   icon: "🌿" },
 ];
 
 const GEJALA_LIST = [
@@ -580,12 +572,7 @@ export default function GuidedHariIni({ user }) {
         </Widget>
         </WidgetErrorBoundary>
 
-        {/* ══ WIDGET 4: PEMBERIAN PAKAN ══════════════════════════ */}
-        <WidgetErrorBoundary widgetName="Pemberian Pakan">
-          <WidgetPakan user={user} today={today} />
-        </WidgetErrorBoundary>
-
-        {/* ══ WIDGET 5: KONDISI KURA ══════════════════════════════ */}
+        {/* ══ WIDGET 4: KONDISI KURA ══════════════════════════════ */}
         <WidgetErrorBoundary widgetName="Kondisi Kura">
         <Widget done={kondisiOk !== null || sakitReports.length > 0}>
           <div className="p-4">
@@ -688,7 +675,7 @@ export default function GuidedHariIni({ user }) {
         </Widget>
         </WidgetErrorBoundary>
 
-        {/* ══ WIDGET 6: AKSI CEPAT ═══════════════════════════════ */}
+        {/* ══ WIDGET 5: AKSI CEPAT ═══════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-sm font-semibold text-gray-700 mb-3">Aksi Cepat</p>
           <div className="grid grid-cols-3 gap-2">
@@ -739,10 +726,6 @@ export default function GuidedHariIni({ user }) {
                 <span className="font-semibold">{kandangSaved.size} kandang</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Pakan diberikan</span>
-                <span className="font-semibold">Lihat widget pakan</span>
-              </div>
-              <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Kondisi kura</span>
                 <span className={`font-semibold ${sakitReports.length > 0 ? "text-orange-600" : "text-green-700"}`}>
                   {sakitReports.length > 0 ? `${sakitReports.length} dilaporkan` : kondisiOk === true ? "Semua baik ✓" : "Belum dicek"}
@@ -760,177 +743,6 @@ export default function GuidedHariIni({ user }) {
   );
 }
 
-// ── Widget Pakan — extracted to own file to avoid closure issues ──────
-function WidgetPakan({ user, today }) {
-  const [items, setItems] = useState(null); // null = belum load, [] = kosong
-  const [error, setError] = useState(null);
-  const [checked, setChecked] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [statusMsg, setStatusMsg] = useState(null);
-  const fetchedRef = useRef(false);
-
-  useEffect(() => {
-    // Guard: jangan fetch ulang jika sudah ada data atau sedang fetch
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
-    base44.entities.FeedStock.list("-name", 50)
-      .then(result => {
-        setItems(Array.isArray(result) ? result : []);
-        setError(null);
-      })
-      .catch(e => {
-        fetchedRef.current = false; // reset agar retry bisa jalan
-        setError(e?.message || String(e) || "Gagal memuat data pakan");
-        setItems([]);
-      });
-  }, []);
-
-  const handleRetry = () => {
-    fetchedRef.current = false;
-    setError(null);
-    setItems(null);
-    // trigger ulang dengan state reset → useEffect tidak otomatis jalan lagi
-    // jadi panggil fetch langsung di sini
-    fetchedRef.current = true;
-    base44.entities.FeedStock.list("-name", 50)
-      .then(result => {
-        setItems(Array.isArray(result) ? result : []);
-        setError(null);
-      })
-      .catch(e => {
-        fetchedRef.current = false;
-        setError(e?.message || String(e) || "Gagal memuat data pakan");
-        setItems([]);
-      });
-  };
-
-  const toggle = (id) => setChecked(prev => ({ ...prev, [id]: !prev[id] }));
-
-  const checkedCount = (items || []).filter(f => checked[f?.id]).length;
-
-  const handleSimpan = async () => {
-    if (checkedCount === 0) return;
-    setSaving(true);
-    setStatusMsg(null);
-    try {
-      const task = {
-        task_id: `pakan-${today}`,
-        task_title: `Pemberian Pakan — ${checkedCount} item`,
-        done_at: nowStr(),
-      };
-      const existing = await base44.entities.DailyChecklist.filter({ employee_email: user?.email, date: today });
-      const existingRecord = Array.isArray(existing) ? existing[0] : null;
-      if (existingRecord) {
-        const prevTasks = Array.isArray(existingRecord.completed_tasks)
-          ? existingRecord.completed_tasks.filter(t => t?.task_id !== task.task_id)
-          : [];
-        await base44.entities.DailyChecklist.update(existingRecord.id, { completed_tasks: [...prevTasks, task] });
-      } else {
-        await base44.entities.DailyChecklist.create({
-          employee_email: user?.email || "",
-          employee_name: user?.full_name || user?.email || "",
-          date: today,
-          completed_tasks: [task],
-          status: "draft",
-        });
-      }
-      setStatusMsg({ type: "ok", text: "Tersimpan! ✓" });
-      setChecked({});
-    } catch (e) {
-      setStatusMsg({ type: "err", text: `Gagal: ${e?.message || "coba lagi"}` });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Loading skeleton
-  if (items === null && !error) {
-    return (
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
-        <p className="font-semibold text-gray-800 mb-3">🌿 Pemberian Pakan</p>
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />)}
-        </div>
-        <p className="text-xs text-gray-400 mt-2 text-center">Memuat data pakan...</p>
-      </div>
-    );
-  }
-
-  // Error — tampilkan pesan error asli
-  if (error) {
-    return (
-      <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-4">
-        <p className="font-bold text-red-800 mb-1">⚠️ Widget Pemberian Pakan — Error</p>
-        <p className="text-sm text-red-700 font-mono break-all bg-red-100 rounded p-2 mb-3">{error}</p>
-        <button
-          onClick={handleRetry}
-          className="text-sm font-semibold text-red-700 border border-red-300 px-4 py-2 rounded-xl hover:bg-red-100 w-full"
-        >
-          🔄 Coba Lagi
-        </button>
-      </div>
-    );
-  }
-
-  // Kosong
-  if (!items || items.length === 0) {
-    return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-4">
-        <p className="font-semibold text-gray-800 mb-1">🌿 Pemberian Pakan</p>
-        <p className="text-sm text-gray-500 mb-3">Belum ada data stok pakan.</p>
-        <a href="/feed-stock" className="text-sm font-semibold text-green-700 underline">
-          → Tambah data pakan di Stok Pakan
-        </a>
-      </div>
-    );
-  }
-
-  // Normal
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
-      <p className="font-semibold text-gray-800 mb-3">🌿 Pemberian Pakan ({items.length} item)</p>
-      <div className="space-y-2">
-        {items.map(f => {
-          const fId = f?.id;
-          const fName = f?.name || "—";
-          const fUnit = f?.unit || "";
-          return (
-            <button
-              key={fId}
-              onClick={() => toggle(fId)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
-                checked[fId] ? "bg-green-50 border-green-400" : "bg-white border-gray-200"
-              }`}
-            >
-              <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${
-                checked[fId] ? "bg-green-500 border-green-500" : "border-gray-300"
-              }`}>
-                {checked[fId] && <span className="text-white text-xs font-bold">✓</span>}
-              </div>
-              <span className="text-sm text-gray-800">{fName}</span>
-              <span className="text-xs text-gray-400 ml-auto">{fUnit}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {statusMsg && (
-        <p className={`mt-3 text-sm font-semibold text-center ${statusMsg.type === "ok" ? "text-green-700" : "text-red-600"}`}>
-          {statusMsg.text}
-        </p>
-      )}
-
-      <button
-        onClick={handleSimpan}
-        disabled={saving || checkedCount === 0}
-        className="w-full mt-3 bg-green-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
-      >
-        {saving ? "Menyimpan..." : `Simpan Pakan Hari Ini (${checkedCount} dipilih)`}
-      </button>
-    </div>
-  );
-}
 
 // ── Widget Suplemen ───────────────────────────────────────────────────
 function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
