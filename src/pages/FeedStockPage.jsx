@@ -70,6 +70,8 @@ export default function FeedStockPage() {
       const list = await base44.entities.CompanySettings.filter({ setting_key: "main" });
       return list[0] || {};
     },
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
   });
 
   const threshold = settings?.stok_approval_threshold ?? 500000;

@@ -43,14 +43,9 @@ export default function KepalaFeederDashboard({ user }) {
   const { data: companySettings = [] } = useQuery({
     queryKey: ["company-settings"],
     queryFn: () => base44.entities.CompanySettings.filter({ setting_key: "main" }),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
   });
-
-  // Auto refresh 5 menit
-  useEffect(() => {
-    const t = setInterval(() => refetchCL(), 5 * 60 * 1000);
-    return () => clearInterval(t);
-  }, []);
 
   const settings = companySettings[0] || {};
   const targetPoin = settings.min_poin_bulanan || 300;
