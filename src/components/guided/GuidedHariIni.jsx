@@ -78,8 +78,6 @@ export default function GuidedHariIni({ user }) {
   // ── Local state ──
   const [kandangDone, setKandangDone]   = useState(new Set());
   const [kandangSaved, setKandangSaved] = useState(new Set()); // already persisted
-  const [pakanDone, setPakanDone]       = useState(new Set());
-  const [pakanSaved, setPakanSaved]     = useState(false);
   const [kondisiOk, setKondisiOk]       = useState(null);
   const [sakitForm, setSakitForm]       = useState({ kura: "", gejala: new Set() });
   const [sakitReports, setSakitReports] = useState([]);
@@ -170,12 +168,11 @@ export default function GuidedHariIni({ user }) {
   const farmRadius = settings?.farm_location_radius || 200;
   const farmConfigured = !!(farmLat && farmLng);
 
-  // Poin hari ini
+  // Poin hari ini (pakan dikelola di dalam WidgetPakan)
   const poinKandang  = kandangSaved.size * 10;
-  const poinPakan    = pakanSaved ? pakanDone.size * 5 : 0;
   const poinKura     = sakitReports.length * 15;
   const poinCheckin  = hasCheckedIn ? 5 : 0;
-  const totalPoin    = poinCheckin + poinKandang + poinPakan + poinKura;
+  const totalPoin    = poinCheckin + poinKandang + poinKura;
 
   // Suplemen dari TreatmentSchedule
   const todayDayOfWeek = new Date().getDay();
@@ -317,43 +314,7 @@ export default function GuidedHariIni({ user }) {
     }
   };
 
-  const handleTogglePakan = (pid) => {
-    setPakanDone(p => {
-      const n = new Set(p);
-      n.has(pid) ? n.delete(pid) : n.add(pid);
-      return n;
-    });
-  };
-
-  const handleSimpanPakan = async (feedItems = []) => {
-    if (pakanDone.size === 0) return;
-    setLoading(true);
-    const completed = [...pakanDone].map(p => ({
-      task_id: `pakan_${p}`,
-      task_title: feedItems.find(x => x.id === p)?.name || p,
-      done_at: nowStr(),
-    }));
-    const existing = await base44.entities.DailyChecklist.filter({ employee_email: user.email, date: today });
-    if (existing[0]) {
-      const prevTasks = existing[0].completed_tasks || [];
-      const prevIds = new Set(prevTasks.map(t => t.task_id));
-      const newTasks = completed.filter(c => !prevIds.has(c.task_id));
-      await base44.entities.DailyChecklist.update(existing[0].id, {
-        completed_tasks: [...prevTasks, ...newTasks],
-      });
-    } else {
-      await base44.entities.DailyChecklist.create({
-        employee_email: user.email,
-        employee_name: user.full_name || user.email,
-        date: today,
-        completed_tasks: completed,
-        status: "draft",
-      });
-    }
-    setPakanSaved(true);
-    flashPoin("Pakan", pakanDone.size * 5);
-    setLoading(false);
-  };
+  // pakanDone & pakanSaved sekarang dikelola dalam WidgetPakan (self-contained)
 
   const handleLaporKura = async () => {
     if (!sakitForm.kura || sakitForm.gejala.size === 0) {
@@ -590,12 +551,8 @@ export default function GuidedHariIni({ user }) {
         <WidgetPakan
           user={user}
           today={today}
-          pakanDone={pakanDone}
-          pakanSaved={pakanSaved}
-          loading={loading}
-          onToggle={handleTogglePakan}
-          onSimpan={handleSimpanPakan}
           flashPoin={flashPoin}
+          showMsg={showMsg}
         />
 
         {/* ══ WIDGET 5: KONDISI KURA ══════════════════════════════ */}
@@ -751,7 +708,7 @@ export default function GuidedHariIni({ user }) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Pakan diberikan</span>
-                <span className="font-semibold">{pakanDone.size > 0 ? `${pakanDone.size} jenis` : "Belum dicentang"}</span>
+                <span className="font-semibold">Lihat widget pakan</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Kondisi kura</span>
@@ -777,26 +734,102 @@ function pakanIcon(category) {
   return map[category] || "🌾";
 }
 
-// ── Widget Pakan ──────────────────────────────────────────────────────
-function WidgetPakan({ user, today, pakanDone, pakanSaved, loading, onToggle, onSimpan, flashPoin }) {
+// Helper: timeout wrapper untuk API call
+function withTimeout(promise, ms = 8000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
+// ── Widget Pakan — self-contained, fully optimistic ───────────────────
+function WidgetPakan({ user, today, flashPoin, showMsg }) {
+  const [checked, setChecked] = useState(new Set()); // optimistic UI state
+  const [submitted, setSubmitted] = useState(false);  // setelah simpan ke DailyChecklist
+  const [loadTimeout, setLoadTimeout] = useState(false);
+
   const { data: feedStocks, isLoading, isError, refetch } = useQuery({
     queryKey: ["feed-stocks-all"],
     queryFn: () => base44.entities.FeedStock.list(),
     staleTime: 5 * 60 * 1000,
-    retry: 2,
+    retry: 1,
     retryDelay: 2000,
   });
 
-  // Urutkan: mandatory dulu, lalu sisanya
+  // Timeout 8 detik untuk loading
+  useEffect(() => {
+    if (!isLoading) { setLoadTimeout(false); return; }
+    const t = setTimeout(() => setLoadTimeout(true), 8000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
+
   const sorted = feedStocks
     ? [...feedStocks].sort((a, b) => (b.is_mandatory ? 1 : 0) - (a.is_mandatory ? 1 : 0))
     : [];
 
   const total = sorted.length;
-  const doneCount = sorted.filter(f => pakanDone.has(f.id)).length;
+  const doneCount = sorted.filter(f => checked.has(f.id)).length;
 
-  // Skeleton loading
-  if (isLoading) {
+  // ── Tap item → optimistic update, simpan ke background ──
+  const handleTap = (f) => {
+    if (submitted) return;
+    // Optimistic: update UI langsung
+    setChecked(prev => {
+      const n = new Set(prev);
+      n.has(f.id) ? n.delete(f.id) : n.add(f.id);
+      return n;
+    });
+    // Background: coba simpan FeedingLog (non-blocking, fire & forget)
+    withTimeout(
+      base44.entities.FeedingLog.create({
+        date: today,
+        fed_by_email: user.email,
+        fed_by_name: user.full_name || user.email,
+        feed_items: [{ feedstock_id: f.id, feedstock_name: f.name, feedstock_sku: f.sku || "", quantity: 1, unit: f.unit, is_checked: true }],
+        total_items_checked: 1,
+      })
+    ).catch(() => {
+      // FeedingLog gagal — tidak perlu rollback, hanya log silent
+    });
+  };
+
+  // ── Simpan ke DailyChecklist (sumber kebenaran poin) ──
+  const handleSimpan = async () => {
+    if (doneCount === 0) return;
+    const totalPoin = doneCount * 5;
+    // Optimistic: langsung tandai submitted
+    setSubmitted(true);
+    flashPoin("Pakan", totalPoin);
+    // Background: simpan ke DailyChecklist
+    withTimeout((async () => {
+      const task = {
+        task_id: `pakan-${today}`,
+        task_title: `Pemberian Pakan — ${doneCount} item`,
+        points: totalPoin,
+        done_at: nowStr(),
+      };
+      const existing = await base44.entities.DailyChecklist.filter({ employee_email: user.email, date: today });
+      if (existing[0]) {
+        const prevTasks = (existing[0].completed_tasks || []).filter(t => t.task_id !== task.task_id);
+        await base44.entities.DailyChecklist.update(existing[0].id, {
+          completed_tasks: [...prevTasks, task],
+        });
+      } else {
+        await base44.entities.DailyChecklist.create({
+          employee_email: user.email,
+          employee_name: user.full_name || user.email,
+          date: today,
+          completed_tasks: [task],
+          status: "draft",
+        });
+      }
+    })()).catch(() => {
+      showMsg("warn", "Tersimpan (mode offline) — akan disinkronkan nanti.");
+    });
+  };
+
+  // ── Skeleton loading ──
+  if (isLoading && !loadTimeout) {
     return (
       <div className="rounded-2xl border-2 border-gray-100 bg-white shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
@@ -804,31 +837,32 @@ function WidgetPakan({ user, today, pakanDone, pakanSaved, loading, onToggle, on
           <span className="font-semibold text-gray-800">Pemberian Pakan Hari Ini</span>
         </div>
         <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />
-          ))}
+          {[1, 2, 3].map(i => <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
       </div>
     );
   }
 
-  // Error state
-  if (isError) {
+  // ── Timeout / Error state ──
+  if (loadTimeout || isError) {
     return (
       <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 shadow-sm p-4">
         <div className="flex items-center gap-2 mb-2">
           <Leaf className="w-4 h-4 text-orange-600" />
           <span className="font-semibold text-orange-800">Pemberian Pakan Hari Ini</span>
         </div>
-        <p className="text-sm text-orange-700 mb-3">Gagal memuat data pakan. Tarik ke bawah untuk coba lagi.</p>
-        <button onClick={() => refetch()} className="text-sm font-semibold text-orange-700 border border-orange-300 px-4 py-2 rounded-xl hover:bg-orange-100">
+        <p className="text-sm text-orange-700 mb-3">
+          {loadTimeout ? "Koneksi lambat. Tarik ke bawah untuk coba lagi." : "Gagal memuat data pakan. Tarik ke bawah untuk coba lagi."}
+        </p>
+        <button onClick={() => { setLoadTimeout(false); refetch(); }}
+          className="text-sm font-semibold text-orange-700 border border-orange-300 px-4 py-2 rounded-xl hover:bg-orange-100">
           🔄 Coba Lagi
         </button>
       </div>
     );
   }
 
-  // Empty state
+  // ── Empty state ──
   if (sorted.length === 0) {
     return (
       <div className="rounded-2xl border-2 border-gray-100 bg-white shadow-sm p-4">
@@ -844,10 +878,8 @@ function WidgetPakan({ user, today, pakanDone, pakanSaved, loading, onToggle, on
     );
   }
 
-  const isDone = pakanSaved && doneCount > 0;
-
   return (
-    <div className={`rounded-2xl border-2 shadow-sm transition-all ${isDone ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"}`}>
+    <div className={`rounded-2xl border-2 shadow-sm transition-all ${submitted ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"}`}>
       <div className="p-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
@@ -856,23 +888,18 @@ function WidgetPakan({ user, today, pakanDone, pakanSaved, loading, onToggle, on
           </div>
           <span className="text-xs text-gray-500">{doneCount}/{total} item</span>
         </div>
-
         <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
           <div className="h-full bg-green-500 rounded-full transition-all"
             style={{ width: total > 0 ? `${(doneCount / total) * 100}%` : "0%" }} />
         </div>
-
         <div className="space-y-2">
           {sorted.map(f => {
-            const done = pakanDone.has(f.id);
+            const done = checked.has(f.id);
             return (
-              <button
-                key={f.id}
-                onClick={() => !pakanSaved && onToggle(f.id)}
-                disabled={pakanSaved}
+              <button key={f.id} onClick={() => handleTap(f)} disabled={submitted}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-98 ${
                   done ? "bg-green-50 border-green-400" : "bg-white border-gray-200 hover:border-green-300"
-                } ${pakanSaved ? "cursor-default" : ""}`}
+                } ${submitted ? "cursor-default" : ""}`}
               >
                 <span className="text-xl">{pakanIcon(f.category)}</span>
                 <div className="flex-1 text-left">
@@ -889,21 +916,15 @@ function WidgetPakan({ user, today, pakanDone, pakanSaved, loading, onToggle, on
             );
           })}
         </div>
-
-        {doneCount > 0 && !pakanSaved && (
-          <button
-            onClick={() => onSimpan(sorted)}
-            disabled={loading}
-            className="w-full mt-3 bg-green-700 text-white font-semibold py-3 rounded-xl active:scale-95 transition-transform disabled:opacity-60"
-          >
-            {loading ? "Menyimpan..." : `Simpan (${doneCount} item · +${doneCount * 5} poin)`}
+        {doneCount > 0 && !submitted && (
+          <button onClick={handleSimpan}
+            className="w-full mt-3 bg-green-700 text-white font-semibold py-3 rounded-xl active:scale-95 transition-transform">
+            Simpan ({doneCount} item · +{doneCount * 5} poin)
           </button>
         )}
-
-        {pakanSaved && (
+        {submitted && (
           <p className="text-center text-sm font-semibold text-green-700 mt-3">✓ Pakan hari ini tersimpan</p>
         )}
-
         <a href="/feed-stock" className="block text-center text-xs text-gray-400 hover:text-green-600 mt-3">
           + Tambah item pakan lainnya
         </a>

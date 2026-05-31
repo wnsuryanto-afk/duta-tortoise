@@ -17,11 +17,11 @@
     },
     "fed_by_email": {
       "type": "string",
-      "description": "Email feeder"
+      "description": "Email keeper yang memberi pakan"
     },
     "fed_by_name": {
       "type": "string",
-      "description": "Nama feeder"
+      "description": "Nama keeper yang memberi pakan"
     },
     "feed_items": {
       "type": "array",
@@ -44,33 +44,25 @@
           "unit": {
             "type": "string"
           },
-          "unit_price": {
-            "type": "number"
-          },
-          "subtotal": {
-            "type": "number"
+          "is_checked": {
+            "type": "boolean",
+            "default": true
           }
         }
       }
     },
-    "total_weight_grams": {
-      "type": "number",
-      "default": 0,
-      "description": "Total berat semua pakan (gram, otomatis)"
-    },
-    "total_cost": {
-      "type": "number",
-      "default": 0,
-      "description": "Total nilai pakan yang diberikan"
-    },
     "notes": {
-      "type": "string",
-      "description": "Catatan tambahan"
+      "type": "string"
+    },
+    "total_items_checked": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah item pakan yang dicentang"
     }
   },
   "required": [
     "date",
-    "enclosure_name",
-    "fed_by_email"
+    "fed_by_email",
+    "fed_by_name"
   ]
 }
