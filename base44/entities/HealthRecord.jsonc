@@ -28,6 +28,16 @@
       "default": "checkup",
       "description": "Jenis catatan"
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "auto_sick",
+        "auto_recovery"
+      ],
+      "default": "manual",
+      "description": "Asal catatan"
+    },
     "diagnosis": {
       "type": "array",
       "items": {
@@ -129,20 +139,17 @@
     "biaya_obat": {
       "type": "number",
       "default": 0,
-      "description": "Biaya obat/treatment (Rp) - dihitung otomatis dari treatment_items, atau manual jika treatment_items kosong"
+      "description": "Biaya obat/treatment (Rp)"
     },
     "biaya_obat_manual": {
       "type": "boolean",
-      "default": false,
-      "description": "true jika biaya_obat diisi manual (override otomatis)"
+      "default": false
     },
     "finance_tx_id": {
-      "type": "string",
-      "description": "ID FinanceTransaction yang dibuat otomatis"
+      "type": "string"
     },
     "vet_name": {
-      "type": "string",
-      "description": "Nama dokter hewan"
+      "type": "string"
     },
     "photo_urls": {
       "type": "array",

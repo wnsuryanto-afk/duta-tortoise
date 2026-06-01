@@ -334,10 +334,30 @@ export default function TortoiseList() {
               </SelectContent>
             </Select>
             <Select value={morphFilter} onValueChange={setMorphFilter}>
-              <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Morph" /></SelectTrigger>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Morph" /></SelectTrigger>
               <SelectContent className="max-h-60">
                 <SelectItem value="semua">Semua Morph</SelectItem>
-                {["normal","albino","ivory","caramel_albino","hypo","golden_greek","piebald","genetic_stripe","high_yellow","dark","paradox","anerythristic","axanthic","melanistic","mix","unknown"].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="het_albino">Het. Albino (Carrier)</SelectItem>
+                <SelectItem value="het_caramel_albino">Het. Caramel Albino</SelectItem>
+                <SelectItem value="het_hypo">Het. Hypo</SelectItem>
+                <SelectItem value="het_ivory">Het. Ivory</SelectItem>
+                <SelectItem value="double_het">Double Het</SelectItem>
+                <SelectItem value="albino">Albino</SelectItem>
+                <SelectItem value="ivory">Ivory</SelectItem>
+                <SelectItem value="caramel_albino">Caramel Albino</SelectItem>
+                <SelectItem value="hypo">Hypo</SelectItem>
+                <SelectItem value="golden_greek">Golden Greek</SelectItem>
+                <SelectItem value="piebald">Piebald</SelectItem>
+                <SelectItem value="genetic_stripe">Genetic Stripe</SelectItem>
+                <SelectItem value="high_yellow">High Yellow</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="paradox">Paradox</SelectItem>
+                <SelectItem value="anerythristic">Anerythristic</SelectItem>
+                <SelectItem value="axanthic">Axanthic</SelectItem>
+                <SelectItem value="melanistic">Melanistic</SelectItem>
+                <SelectItem value="mix">Mix</SelectItem>
+                <SelectItem value="unknown">Unknown</SelectItem>
               </SelectContent>
             </Select>
             <Select value={shellTypeFilter} onValueChange={setShellTypeFilter}>
@@ -436,6 +456,24 @@ export default function TortoiseList() {
                 <SelectItem value="xl6">&gt; 60 cm</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Toggle Proven Breeder */}
+            <button
+              onClick={() => setProvenFilter(v => v === "proven" ? "semua" : "proven")}
+              className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${provenFilter === "proven" ? "bg-green-100 border-green-500 text-green-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
+            >
+              ⭐ Proven Breeder
+              <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${provenFilter === "proven" ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(t => t.is_proven).length}</span>
+            </button>
+
+            {/* Toggle Sakit Saat Ini */}
+            <button
+              onClick={() => { setStatusFilter(v => v === "sakit" ? "semua" : "sakit"); }}
+              className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${statusFilter === "sakit" ? "bg-red-100 border-red-400 text-red-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
+            >
+              🏥 Sakit Saat Ini
+              <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === "sakit" ? "bg-red-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(t => t.is_currently_sick).length}</span>
+            </button>
 
             <button
               onClick={() => setIncompleteFilter(v => !v)}

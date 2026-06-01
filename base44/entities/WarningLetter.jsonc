@@ -1,0 +1,81 @@
+{
+  "name": "WarningLetter",
+  "type": "object",
+  "properties": {
+    "letter_number": {
+      "type": "string",
+      "description": "Nomor surat otomatis, e.g. SP-1/V/2026/001"
+    },
+    "employee_id": {
+      "type": "string"
+    },
+    "employee_name": {
+      "type": "string"
+    },
+    "employee_email": {
+      "type": "string"
+    },
+    "employee_role": {
+      "type": "string"
+    },
+    "employee_join_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "SP1",
+        "SP2",
+        "SP3"
+      ],
+      "default": "SP1"
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Daftar alasan peringatan"
+    },
+    "description": {
+      "type": "string",
+      "description": "Keterangan tambahan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "issued_by": {
+      "type": "string"
+    },
+    "issued_by_title": {
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string",
+      "default": "Duta Tortoise Farm"
+    },
+    "company_city": {
+      "type": "string"
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "default": false
+    },
+    "pdf_url": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Aktif jika < 6 bulan dari tanggal surat"
+    }
+  },
+  "required": [
+    "employee_name",
+    "level",
+    "reasons",
+    "date"
+  ]
+}

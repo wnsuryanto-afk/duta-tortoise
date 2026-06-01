@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, AlertTriangle, Video, Skull } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
 import IncompleteBanner from "@/components/common/IncompleteBanner";
 import { getMissingFields } from "@/lib/incompleteChecks";
-import DeathRecordDialog from "./DeathRecordDialog";
+import DeathRecordModal from "./DeathRecordModal";
+import SickModal from "./SickModal";
+import RecoveryModal from "./RecoveryModal";
 import { logActivity } from "@/lib/logActivity";
 
 const SPECIES_LIST = [
@@ -34,22 +36,27 @@ const SPECIES_PARAMS = {
 };
 
 const MORPHS = [
-  { value: "normal",         label: "Normal" },
-  { value: "albino",         label: "Albino" },
-  { value: "ivory",          label: "Ivory" },
-  { value: "caramel_albino", label: "Caramel Albino" },
-  { value: "hypo",           label: "Hypo" },
-  { value: "golden_greek",   label: "Golden Greek" },
-  { value: "piebald",        label: "Piebald" },
-  { value: "genetic_stripe", label: "Genetic Stripe" },
-  { value: "high_yellow",    label: "High Yellow" },
-  { value: "dark",           label: "Dark" },
-  { value: "paradox",        label: "Paradox" },
-  { value: "anerythristic",  label: "Anerythristic" },
-  { value: "axanthic",       label: "Axanthic" },
-  { value: "melanistic",     label: "Melanistic" },
-  { value: "mix",            label: "Mix (persilangan)" },
-  { value: "unknown",        label: "Unknown (belum diketahui)" },
+  { value: "normal",              label: "Normal" },
+  { value: "het_albino",          label: "Het. Albino (Carrier)" },
+  { value: "het_caramel_albino",  label: "Het. Caramel Albino" },
+  { value: "het_hypo",            label: "Het. Hypo" },
+  { value: "het_ivory",           label: "Het. Ivory" },
+  { value: "double_het",          label: "Double Het (Multi-carrier)" },
+  { value: "albino",              label: "Albino" },
+  { value: "ivory",               label: "Ivory" },
+  { value: "caramel_albino",      label: "Caramel Albino" },
+  { value: "hypo",                label: "Hypo" },
+  { value: "golden_greek",        label: "Golden Greek" },
+  { value: "piebald",             label: "Piebald" },
+  { value: "genetic_stripe",      label: "Genetic Stripe" },
+  { value: "high_yellow",         label: "High Yellow" },
+  { value: "dark",                label: "Dark" },
+  { value: "paradox",             label: "Paradox" },
+  { value: "anerythristic",       label: "Anerythristic" },
+  { value: "axanthic",            label: "Axanthic" },
+  { value: "melanistic",          label: "Melanistic" },
+  { value: "mix",                 label: "Mix (persilangan)" },
+  { value: "unknown",             label: "Unknown (belum diketahui)" },
 ];
 
 const SHELL_TYPES = [
@@ -76,11 +83,11 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [errors, setErrors] = useState({});
   const [photos, setPhotos] = useState(initPhotos(editData));
   const [thumbnailUrl, setThumbnailUrl] = useState(editData?.photo_url || (initPhotos(editData)[0]?.url || ""));
-  const [deathVideoUrl, setDeathVideoUrl] = useState(editData?.death_video_url || "");
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [videoError, setVideoError] = useState("");
   const [enclosureOptions, setEnclosureOptions] = useState([]);
-  const [showDeathDialog, setShowDeathDialog] = useState(false);
+  const [showDeathModal, setShowDeathModal]   = useState(false);
+  const [showSickModal, setShowSickModal]     = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [pendingStatus, setPendingStatus]     = useState(null); // status yang sedang dalam proses modal
   const [form, setForm] = useState(editData || {
     name: "", code: "", gender: "", morph: "normal",
     species: "sulcata", species_params: SPECIES_PARAMS["sulcata"],
@@ -129,16 +136,53 @@ export default function TortoiseForm({ open, onClose, editData }) {
     setThumbnailUrl(newThumb || "");
   };
 
-  const isMati = form.status === "mati";
+  // Intercept status changes for special modals
+  const handleStatusChange = (newStatus) => {
+    const prevStatus = form.status;
+    if (newStatus === "mati" && !editData?.death_date) {
+      // Jika belum pernah mati, tampilkan modal kematian
+      setPendingStatus(newStatus);
+      setShowDeathModal(true);
+      return;
+    }
+    set("status", newStatus);
+  };
 
-  const handleVideoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingVideo(true);
-    setVideoError("");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setDeathVideoUrl(file_url);
-    setUploadingVideo(false);
+  const handleDeathSaved = (deathData) => {
+    setForm(p => ({ ...p, status: "mati", previous_status: p.status, last_status_change: new Date().toISOString().split("T")[0], ...deathData }));
+    setShowDeathModal(false);
+    setPendingStatus(null);
+  };
+
+  const handleSickSaved = (healthExtra) => {
+    setForm(p => ({
+      ...p,
+      is_currently_sick: true,
+      status: "sakit",
+      previous_status: p.status !== "sakit" ? p.status : p.previous_status,
+      last_status_change: new Date().toISOString().split("T")[0],
+      _pendingHealthData: healthExtra,
+    }));
+    setShowSickModal(false);
+  };
+
+  const handleRecoveryConfirm = (withCheckup) => {
+    setForm(p => ({
+      ...p,
+      is_currently_sick: false,
+      status: p.previous_status || "aktif",
+      last_status_change: new Date().toISOString().split("T")[0],
+      _pendingRecovery: withCheckup,
+    }));
+    setShowRecoveryModal(false);
+  };
+
+  const handleSickToggle = (checked) => {
+    if (checked && !form.is_currently_sick) {
+      setShowSickModal(true);
+    } else if (!checked && form.is_currently_sick) {
+      setShowRecoveryModal(true);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -158,31 +202,60 @@ export default function TortoiseForm({ open, onClose, editData }) {
       }
     }
     
-    // Validasi wajib video saat status mati
-    if (isMati) {
-      if (!deathVideoUrl) {
-        setVideoError("Wajib upload video saat status kura-kura Mati.");
-        return;
-      }
-    }
-    setVideoError("");
+
     setSaving(true);
     const newWeight = form.weight_grams ? Number(form.weight_grams) : undefined;
     const newLength = form.shell_length_cm ? Number(form.shell_length_cm) : undefined;
+    // Auto-create HealthRecord jika sakit baru
+    const today = new Date().toISOString().split("T")[0];
+    if (form._pendingHealthData && editData?.id) {
+      try {
+        const existing = await base44.entities.HealthRecord.filter({ tortoise_id: editData.id, date: today, type: "sakit", source: "auto_sick" });
+        if (!existing || existing.length === 0) {
+          await base44.entities.HealthRecord.create({
+            tortoise_id: editData.id,
+            tortoise_name: form.name,
+            date: today,
+            type: "sakit",
+            source: "manual",
+            ...form._pendingHealthData,
+          });
+          queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
+        }
+      } catch (e) { console.warn("Auto health record gagal:", e); }
+    }
+
+    // Auto-create HealthRecord recovery jika diperlukan
+    if (form._pendingRecovery && editData?.id) {
+      try {
+        await base44.entities.HealthRecord.create({
+          tortoise_id: editData.id,
+          tortoise_name: form.name,
+          date: today,
+          type: "checkup",
+          source: "auto_recovery",
+          description: "Pulih dari sakit",
+        });
+        queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
+      } catch (e) { console.warn("Auto recovery health record gagal:", e); }
+    }
+
+    // Hapus field internal sebelum simpan
+    const { _pendingHealthData, _pendingRecovery, ...cleanForm } = form;
+
     const data = {
-      ...form,
+      ...cleanForm,
       weight_grams: newWeight,
       shell_length_cm: newLength,
       photos: photos,
       photo_url: thumbnailUrl || (photos[0]?.url || ""),
-      death_video_url: deathVideoUrl || undefined,
     };
 
     let tortoiseId = editData?.id;
     const oldEnclosure = editData?.enclosure || "";
     const newEnclosureName = data.enclosure || "";
     const oldData = editData ? { ...editData } : null;
-    const nameChanged = editData?.id && editData?.name && editData.name !== form.name;
+    const nameChanged = editData?.id && editData?.name && editData.name !== cleanForm.name;
     if (editData?.id) {
       await base44.entities.Tortoise.update(editData.id, data);
       // Sinkronisasi nama ke semua entitas terkait jika nama berubah
@@ -386,32 +459,25 @@ export default function TortoiseForm({ open, onClose, editData }) {
             <div className="space-y-1.5">
               <Label>Status Kondisi</Label>
               <p className="text-[11px] text-muted-foreground -mt-1">Kategori umur (baby/juvenile/dewasa) dihitung otomatis dari tanggal lahir</p>
-              <div className="flex gap-2">
-                <Select value={form.status === "baby" ? "aktif" : form.status} onValueChange={(v) => set("status", v)} className="flex-1">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="aktif">✅ Aktif</SelectItem>
-                    <SelectItem value="sakit">🤒 Sakit</SelectItem>
-                    <SelectItem value="breeding">❤️ Breeding</SelectItem>
-                    <SelectItem value="karantina">🔒 Karantina</SelectItem>
-                    <SelectItem value="mati">💀 Mati</SelectItem>
-                    <SelectItem value="terjual">🛒 Terjual</SelectItem>
-                    <SelectItem value="diarsipkan">📁 Diarsipkan</SelectItem>
-                  </SelectContent>
-                </Select>
-                {editData?.id && form.status !== "mati" && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowDeathDialog(true)}
-                    className="border-red-200 text-red-600 hover:bg-red-50"
-                    title="Catat Kematian"
-                  >
-                    <Skull className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
+              <Select value={form.status === "baby" ? "aktif" : form.status} onValueChange={handleStatusChange}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aktif">✅ Aktif</SelectItem>
+                  <SelectItem value="sakit">🤒 Sakit</SelectItem>
+                  <SelectItem value="breeding">❤️ Breeding</SelectItem>
+                  <SelectItem value="karantina">🔒 Karantina</SelectItem>
+                  <SelectItem value="mati">💀 Mati</SelectItem>
+                  <SelectItem value="terjual">🛒 Terjual</SelectItem>
+                  <SelectItem value="diarsipkan">📁 Diarsipkan</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* Sick toggle */}
+              {editData?.id && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input type="checkbox" id="is_sick" checked={!!form.is_currently_sick} onChange={e => handleSickToggle(e.target.checked)} className="w-4 h-4 accent-red-500" />
+                  <label htmlFor="is_sick" className="text-xs cursor-pointer text-red-700 font-medium">🏥 Sedang Sakit</label>
+                </div>
+              )}
             </div>
           </div>
 
@@ -536,37 +602,11 @@ export default function TortoiseForm({ open, onClose, editData }) {
             <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
           </div>
 
-          {/* Wajib foto + video saat mati */}
-          {isMati && (
-            <div className="space-y-3 p-3 rounded-xl bg-red-50 border border-red-200">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <p className="text-sm font-medium text-red-800">Status Mati — Dokumentasi Wajib</p>
-              </div>
-              <p className="text-xs text-red-700">Video wajib diupload sebagai bukti dokumentasi kematian.</p>
-
-              {/* Upload Video */}
-              <div className="space-y-1.5">
-                <Label className="text-red-800">Video Dokumentasi *</Label>
-                {deathVideoUrl ? (
-                  <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-red-200">
-                    <Video className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <span className="text-xs text-green-700 font-medium truncate flex-1">Video berhasil diupload ✓</span>
-                    <button type="button" onClick={() => setDeathVideoUrl("")} className="text-xs text-red-500 hover:underline">Hapus</button>
-                  </div>
-                ) : (
-                  <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-red-300 rounded-lg p-3 hover:border-red-400 transition-colors bg-white">
-                    <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} disabled={uploadingVideo} />
-                    {uploadingVideo
-                      ? <><Loader2 className="w-4 h-4 animate-spin text-red-500" /><span className="text-xs text-red-600">Mengupload video...</span></>
-                      : <><Video className="w-4 h-4 text-red-400" /><span className="text-xs text-red-600">Klik untuk upload video</span></>
-                    }
-                  </label>
-                )}
-              </div>
-              {videoError && (
-                <p className="text-xs text-red-600 font-medium">{videoError}</p>
-              )}
+          {/* Info status mati */}
+          {form.status === "mati" && form.death_date && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 space-y-1">
+              <p className="font-semibold">💀 Status Mati tercatat</p>
+              <p>Tanggal: {form.death_date} | Penyebab: {form.death_cause || "belum diisi"}</p>
             </div>
           )}
 
@@ -579,10 +619,23 @@ export default function TortoiseForm({ open, onClose, editData }) {
           </div>
         </form>
       </DialogContent>
-      <DeathRecordDialog
-        tortoise={editData}
-        open={showDeathDialog}
-        onOpenChange={setShowDeathDialog}
+      <DeathRecordModal
+        tortoise={form}
+        open={showDeathModal}
+        onClose={() => { setShowDeathModal(false); setPendingStatus(null); }}
+        onSaved={handleDeathSaved}
+      />
+      <SickModal
+        tortoise={form}
+        open={showSickModal}
+        onClose={() => setShowSickModal(false)}
+        onSaved={handleSickSaved}
+      />
+      <RecoveryModal
+        tortoise={form}
+        open={showRecoveryModal}
+        onClose={() => setShowRecoveryModal(false)}
+        onConfirm={handleRecoveryConfirm}
       />
     </Dialog>
   );

@@ -55,6 +55,7 @@ const sourceLabel = {
 
 // Background warna untuk card berdasarkan kondisi
 function getCardBg(tortoise) {
+  if (tortoise.status === "mati") return "bg-gray-100 border-gray-400 opacity-80";
   if (tortoise.status === "sakit") return "bg-red-50 border-red-200";
   if (tortoise.status === "terjual") return "bg-yellow-50 border-yellow-200";
   if (tortoise.status === "baby") return "bg-sky-50 border-sky-200";
@@ -64,17 +65,22 @@ function getCardBg(tortoise) {
 }
 
 const morphLabels = {
-  normal: "Normal", albino: "Albino", ivory: "Ivory",
-  caramel_albino: "Caramel Albino", hypo: "Hypo", golden_greek: "Golden Greek",
-  piebald: "Piebald", genetic_stripe: "Genetic Stripe", high_yellow: "High Yellow",
+  normal: "Normal",
+  het_albino: "Het. Albino", het_caramel_albino: "Het. Caramel Albino",
+  het_hypo: "Het. Hypo", het_ivory: "Het. Ivory", double_het: "Double Het",
+  albino: "Albino", ivory: "Ivory", caramel_albino: "Caramel Albino",
+  hypo: "Hypo", golden_greek: "Golden Greek", piebald: "Piebald",
+  genetic_stripe: "Genetic Stripe", high_yellow: "High Yellow",
   dark: "Dark", paradox: "Paradox", anerythristic: "Anerythristic",
   axanthic: "Axanthic", melanistic: "Melanistic", mix: "Mix", unknown: "Unknown",
   // legacy
-  over_scute: "Over Scute", less_scute: "Less Scute", het_albino: "Het Albino",
-  wc: "WC", cb: "CB",
+  over_scute: "Over Scute", less_scute: "Less Scute", wc: "WC", cb: "CB",
 };
 const morphColors = {
   normal: "bg-muted text-muted-foreground",
+  het_albino: "bg-orange-100 text-orange-700", het_caramel_albino: "bg-amber-100 text-amber-700",
+  het_hypo: "bg-lime-100 text-lime-700", het_ivory: "bg-yellow-100 text-yellow-700",
+  double_het: "bg-purple-100 text-purple-700",
   albino: "bg-pink-100 text-pink-700",
   ivory: "bg-yellow-100 text-yellow-700",
   caramel_albino: "bg-amber-100 text-amber-700",
@@ -156,11 +162,13 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
   const health = healthConfig[healthStatus] || healthConfig.none;
   const morph = tortoise.morph || "normal";
 
-  // Ambil semua foto (support multi-foto & backward compat single photo_url)
+  // Ambil semua foto (support multi-foto, is_primary, backward compat single photo_url)
   const photos = Array.isArray(tortoise.photos) && tortoise.photos.length > 0
     ? tortoise.photos
-    : tortoise.photo_url ? [{ url: tortoise.photo_url }] : [];
-  const thumbnailUrl = tortoise.photo_url || (photos[0]?.url || "");
+    : tortoise.photo_url ? [{ url: tortoise.photo_url, is_primary: true }] : [];
+  // Gunakan foto is_primary=true sebagai thumbnail utama
+  const primaryPhoto = photos.find(p => p.is_primary) || photos[0];
+  const thumbnailUrl = primaryPhoto?.url || tortoise.photo_url || "";
 
   const shareWA = (url) => {
     const text = encodeURIComponent(`Foto kura-kura ${tortoise.name}: ${url}`);
@@ -193,7 +201,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         >
           {thumbnailUrl ? (
             <>
-              <img src={thumbnailUrl} alt={tortoise.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" loading="lazy" />
+              <img src={thumbnailUrl} alt={tortoise.name} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 ${tortoise.status === "mati" ? "grayscale" : ""}`} loading="lazy" />
               {photos.length > 1 && (
                 <span className="absolute bottom-0 right-0 bg-black/60 text-white text-xs px-2 py-1 rounded-tl-md font-semibold">
                   +{photos.length - 1}
@@ -272,6 +280,14 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             {tortoise.birth_date && <span>🐣 {format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: id })}</span>}
             {tortoise.purchase_date && <span>🛒 {format(new Date(tortoise.purchase_date), "d MMM yyyy", { locale: id })}</span>}
           </div>
+          {/* Death info */}
+          {tortoise.status === "mati" && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700 text-white font-semibold">💀 Mati</span>
+              {tortoise.death_date && <span className="text-[10px] text-muted-foreground">{format(new Date(tortoise.death_date), "d MMM yyyy", { locale: id })}</span>}
+              {tortoise.death_cause && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-700">{tortoise.death_cause.replace(/_/g, " ")}</span>}
+            </div>
+          )}
           {/* Umur otomatis dari birth_date */}
           <div className="mt-1.5">
             <AgeBadge birthDate={tortoise.birth_date} />

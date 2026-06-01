@@ -69,6 +69,11 @@
       "type": "string",
       "enum": [
         "normal",
+        "het_albino",
+        "het_caramel_albino",
+        "het_hypo",
+        "het_ivory",
+        "double_het",
         "albino",
         "ivory",
         "caramel_albino",
@@ -121,6 +126,10 @@
     },
     "proven_year": {
       "type": "number"
+    },
+    "last_breeding_id": {
+      "type": "string",
+      "description": "ID Breeding terakhir"
     },
     "birth_date": {
       "type": "string",
@@ -229,9 +238,52 @@
           },
           "notes": {
             "type": "string"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "default": false
           }
         }
       }
+    },
+    "death_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kematian"
+    },
+    "death_cause": {
+      "type": "string",
+      "enum": [
+        "sakit",
+        "umur_tua",
+        "kecelakaan",
+        "predator",
+        "stress",
+        "egg_binding",
+        "tidak_diketahui",
+        "lainnya"
+      ],
+      "description": "Penyebab kematian"
+    },
+    "death_photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Foto bukti kematian"
+    },
+    "death_notes": {
+      "type": "string",
+      "description": "Catatan kematian"
+    },
+    "necropsy_done": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah otopsi dilakukan"
+    },
+    "necropsy_findings": {
+      "type": "string",
+      "description": "Temuan otopsi"
     },
     "death_video_url": {
       "type": "string"
