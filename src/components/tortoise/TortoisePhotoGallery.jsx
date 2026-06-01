@@ -79,23 +79,60 @@ export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnail
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
+  const [downloading, setDownloading] = useState(false);
+
   const downloadPhoto = async (url, idx) => {
     setDownloadError("");
+    setDownloading(true);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `${tortoiseName || "tortoise"}_${dateStr}_foto${idx + 1}.jpg`;
     try {
-      const response = await fetch(url);
+      // Fetch image dengan mode cors
+      const response = await fetch(url, { mode: "cors" });
       const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
+
+      // Resize via Canvas → max 800px width
+      const resized = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_W = 800;
+          let { width, height } = img;
+          if (width > MAX_W) {
+            height = Math.round((height * MAX_W) / width);
+            width = MAX_W;
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error("Canvas toBlob failed")), "image/jpeg", 0.85);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(blob);
+      });
+
+      // Web Share API — iOS native "Save to Photos"
+      if (navigator.canShare && navigator.canShare({ files: [new File([resized], filename, { type: "image/jpeg" })] })) {
+        const file = new File([resized], filename, { type: "image/jpeg" });
+        await navigator.share({ files: [file], title: tortoiseName || "Foto Kura" });
+        setDownloading(false);
+        return;
+      }
+
+      // Fallback: anchor download
+      const objectUrl = URL.createObjectURL(resized);
       const a = document.createElement("a");
-      const dateStr = new Date().toISOString().slice(0, 10);
       a.href = objectUrl;
-      a.download = `${tortoiseName || "tortoise"}_${dateStr}_foto${idx + 1}.jpg`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(objectUrl);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch (_) {
-      setDownloadError("Download gagal di browser ini. Tekan & tahan foto, lalu pilih Simpan Gambar.");
+      setDownloadError("Gagal download. Tekan & tahan foto, lalu pilih Simpan Gambar.");
     }
+    setDownloading(false);
   };
 
   return (
@@ -194,8 +231,9 @@ export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnail
                 <Star className="w-3.5 h-3.5 text-yellow-500" />
                 {photos[lightbox].is_primary ? "Ini Foto Utama" : "Set Foto Utama"}
               </Button>
-              <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => downloadPhoto(photos[lightbox].url, lightbox)}>
-                <Download className="w-3.5 h-3.5 text-blue-600" /> Download
+              <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => downloadPhoto(photos[lightbox].url, lightbox)} disabled={downloading}>
+                {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-blue-600" />}
+                {downloading ? "Mendownload..." : "Download"}
               </Button>
               <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => shareWA(photos[lightbox].url)}>
                 <Share2 className="w-3.5 h-3.5 text-green-600" />

@@ -1,249 +1,415 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
-import { Trash2, Filter, Download, Skull } from "lucide-react";
+import { id as localeId } from "date-fns/locale";
+import { Skull, Search, ArrowLeft, ExternalLink, Plus, X } from "lucide-react";
 import { toast } from "sonner";
-import DeathRecordDialog from "@/components/tortoise/DeathRecordDialog";
+import DeathRecordModal from "@/components/tortoise/DeathRecordModal";
 
-export default function DeathRecordsPage() {
-  const [selectedTortoise, setSelectedTortoise] = useState(null);
-  const [showDialog, setShowDialog] = useState(false);
-  const [filters, setFilters] = useState({
-    cause: "all",
-    month: "all",
-    year: new Date().getFullYear()
-  });
+const DEATH_CAUSE_LABELS = {
+  sakit:           "💊 Sakit / Penyakit",
+  umur_tua:        "🧓 Umur Tua",
+  kecelakaan:      "💥 Kecelakaan",
+  predator:        "🦅 Predator",
+  stress:          "😰 Stres",
+  egg_binding:     "🥚 Egg Binding",
+  tidak_diketahui: "❓ Tidak Diketahui",
+  lainnya:         "📝 Lainnya",
+};
 
-  const { data: deathRecords = [], isLoading } = useQuery({
-    queryKey: ["death-records", filters],
-    queryFn: async () => {
-      const records = await base44.entities.DeathRecord.list("-death_date", 200);
-      return records.filter(record => {
-        const recordDate = new Date(record.death_date);
-        const monthMatch = filters.month === "all" || (recordDate.getMonth() + 1) === parseInt(filters.month);
-        const yearMatch = recordDate.getFullYear() === parseInt(filters.year);
-        const causeMatch = filters.cause === "all" || record.cause_of_death === filters.cause;
-        return monthMatch && yearMatch && causeMatch;
-      });
-    }
-  });
-
-  const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoises-all"],
-    queryFn: () => base44.entities.Tortoise.list()
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      if (!confirm("Hapus catatan kematian ini?")) return;
-      await base44.entities.DeathRecord.delete(id);
-    },
-    onSuccess: () => {
-      toast.success("Catatan dihapus");
-      queryClient.invalidateQueries({ queryKey: ["death-records"] });
-    }
-  });
-
-  const queryClient = useQueryClient();
-
-  // Statistik
-  const stats = {
-    total: deathRecords.length,
-    thisMonth: deathRecords.filter(r => {
-      const d = new Date(r.death_date);
-      const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }).length,
-    thisYear: deathRecords.filter(r => new Date(r.death_date).getFullYear() === new Date().getFullYear()).length,
-    byCause: deathRecords.reduce((acc, r) => {
-      acc[r.cause_of_death] = (acc[r.cause_of_death] || 0) + 1;
-      return acc;
-    }, {})
-  };
-
-  const causeLabels = {
-    sakit: "Sakit",
-    tua: "Tua",
-    kecelakaan: "Kecelakaan",
-    predator: "Predator",
-    tidak_diketahui: "Tidak Diketahui",
-    lainnya: "Lainnya"
-  };
+function DeathCard({ tortoise, onClick }) {
+  const primaryPhoto = tortoise.death_photos?.[0]
+    || tortoise.photos?.find(p => p.is_primary)?.url
+    || tortoise.photos?.[0]?.url;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Catatan Kematian</h1>
-          <p className="text-muted-foreground">Dokumentasi dan statistik kematian tortoise</p>
+    <Card
+      className="cursor-pointer hover:shadow-md transition-shadow border border-border active:scale-[0.99]"
+      onClick={() => onClick(tortoise)}
+    >
+      <CardContent className="p-4">
+        <div className="flex gap-3">
+          {primaryPhoto ? (
+            <img src={primaryPhoto} alt={tortoise.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border grayscale" />
+          ) : (
+            <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Skull className="w-7 h-7 text-gray-400" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm">{tortoise.name}</span>
+              {tortoise.code && <span className="text-xs text-muted-foreground">({tortoise.code})</span>}
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">💀 Mati</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {tortoise.death_date
+                ? `Mati: ${format(new Date(tortoise.death_date), "d MMM yyyy", { locale: localeId })}`
+                : "Tanggal kematian belum diisi"}
+            </p>
+            {tortoise.death_cause && (
+              <p className="text-xs text-muted-foreground">
+                Penyebab: {DEATH_CAUSE_LABELS[tortoise.death_cause] || tortoise.death_cause}
+              </p>
+            )}
+            {tortoise.enclosure && (
+              <p className="text-xs text-muted-foreground">Kandang terakhir: {tortoise.enclosure}</p>
+            )}
+            {tortoise.death_notes && (
+              <p className="text-xs text-gray-500 line-clamp-2 italic">"{tortoise.death_notes}"</p>
+            )}
+          </div>
         </div>
-        <Button onClick={() => setShowDialog(true)}>
-          <Skull className="w-4 h-4 mr-2" />
-          Catat Kematian
+        <div className="mt-3 flex justify-end">
+          <button className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+            Lihat Detail <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DeathDetail({ tortoise, onBack, onEdit }) {
+  const deathPhotos = tortoise.death_photos || [];
+  const regularPhotos = tortoise.photos || [];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+          <ArrowLeft className="w-4 h-4" /> Kembali
         </Button>
+        <h2 className="font-bold text-lg flex-1">Detail Kematian — {tortoise.name}</h2>
+        <Button size="sm" variant="outline" onClick={() => onEdit(tortoise)}>Edit</Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Kematian</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Bulan Ini</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.thisMonth}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tahun Ini</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.thisYear}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Penyebab Utama</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold">
-              {Object.entries(stats.byCause).sort((a, b) => b[1] - a[1])[0]?.[0] 
-                ? causeLabels[Object.entries(stats.byCause).sort((a, b) => b[1] - a[1])[0][0]]
-                : "-"}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Foto utama */}
+      {(deathPhotos[0] || regularPhotos.find(p => p.is_primary)?.url) && (
+        <img
+          src={deathPhotos[0] || regularPhotos.find(p => p.is_primary)?.url}
+          alt={tortoise.name}
+          className="w-full max-h-64 object-cover rounded-2xl border grayscale"
+        />
+      )}
 
-      {/* Filters */}
+      {/* Info utama */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">Filter:</span>
+        <CardContent className="p-4 space-y-3">
+          <h3 className="font-bold text-base border-b pb-2">Informasi Kematian</h3>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Nama</p>
+              <p className="font-medium">{tortoise.name} {tortoise.code ? `(${tortoise.code})` : ""}</p>
             </div>
-            <Select value={filters.cause} onValueChange={(v) => setFilters({ ...filters, cause: v })}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Penyebab" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Penyebab</SelectItem>
-                {Object.entries(causeLabels).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filters.month} onValueChange={(v) => setFilters({ ...filters, month: v })}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Bulan" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Bulan</SelectItem>
-                {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
-                  <SelectItem key={m} value={m}>{format(new Date(2000, m-1, 1), 'MMMM', { locale: id })}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filters.year.toString()} onValueChange={(v) => setFilters({ ...filters, year: parseInt(v) })}>
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2024, 2025, 2026].map(y => (
-                  <SelectItem key={y} value={y}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div>
+              <p className="text-xs text-muted-foreground">Tanggal Mati</p>
+              <p className="font-medium">{tortoise.death_date ? format(new Date(tortoise.death_date), "d MMMM yyyy", { locale: localeId }) : "-"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Penyebab</p>
+              <p className="font-medium">{DEATH_CAUSE_LABELS[tortoise.death_cause] || tortoise.death_cause || "-"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Kandang Terakhir</p>
+              <p className="font-medium">{tortoise.enclosure || "-"}</p>
+            </div>
+            {tortoise.death_notes && (
+              <div className="col-span-2">
+                <p className="text-xs text-muted-foreground">Catatan Kematian</p>
+                <p className="font-medium">{tortoise.death_notes}</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Death Records List */}
+      {/* Foto bukti kematian */}
+      {deathPhotos.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-bold text-sm mb-3">Foto Bukti Kematian ({deathPhotos.length})</h3>
+            <div className="flex gap-2 flex-wrap">
+              {deathPhotos.map((url, i) => (
+                <img key={i} src={url} alt={`bukti-${i+1}`} className="w-20 h-20 rounded-xl object-cover border grayscale" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Otopsi */}
+      {tortoise.necropsy_done && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-bold text-sm mb-2">🔬 Riwayat Otopsi</h3>
+            <p className="text-sm text-muted-foreground">{tortoise.necropsy_findings || "Otopsi dilakukan — temuan tidak dicatat."}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Riwayat kura */}
       <Card>
-        <CardHeader>
-          <CardTitle>Riwayat Kematian</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Memuat data...</div>
-          ) : deathRecords.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Skull className="w-10 h-10 mx-auto mb-3 opacity-20" />
-              <p>Belum ada catatan kematian tortoise</p>
+        <CardContent className="p-4 space-y-2">
+          <h3 className="font-bold text-sm border-b pb-2">Riwayat Kura</h3>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Tanggal Lahir</p>
+              <p className="font-medium">{tortoise.birth_date ? format(new Date(tortoise.birth_date), "d MMM yyyy", { locale: localeId }) : "-"}</p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {deathRecords.map((record) => {
-                const tort = tortoises.find(t => t.id === record.tortoise_id);
-                const lastPhoto = tort?.photos?.slice(-1)[0]?.url || record.photo_urls?.[0];
-                return (
-                <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 gap-4">
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    {lastPhoto ? (
-                      <img src={lastPhoto} alt={record.tortoise_name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
-                        <Skull className="w-7 h-7 text-black/40" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">{record.tortoise_name}</span>
-                        {tort?.code && <span className="text-xs text-muted-foreground">({tort.code})</span>}
-                        <Badge variant="destructive" className="text-xs">Mati</Badge>
-                        {record.necropsy_done && <Badge variant="outline" className="text-xs">Autopsi</Badge>}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {format(new Date(record.death_date), "dd MMMM yyyy", { locale: id })}
-                        {" · "}{causeLabels[record.cause_of_death] || record.cause_of_death}
-                      </div>
-                      {tort?.enclosure && <div className="text-xs text-muted-foreground">Kandang terakhir: {tort.enclosure}</div>}
-                      {record.cause_detail && (
-                        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{record.cause_detail}</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteMutation.mutate(record.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                );
-              })}
+            <div>
+              <p className="text-xs text-muted-foreground">Berat Terakhir</p>
+              <p className="font-medium">{tortoise.weight_grams ? `${tortoise.weight_grams} gram` : "-"}</p>
             </div>
-          )}
+            <div>
+              <p className="text-xs text-muted-foreground">Spesies</p>
+              <p className="font-medium">{tortoise.species || "-"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Jenis Kelamin</p>
+              <p className="font-medium capitalize">{tortoise.gender || "-"}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
 
-      <DeathRecordDialog
-        tortoise={selectedTortoise}
-        open={showDialog}
-        onOpenChange={(open) => {
-          setShowDialog(open);
-          if (!open) setSelectedTortoise(null);
-        }}
-      />
+// Modal pilih kura untuk lapor kematian baru
+function SelectTortoiseModal({ tortoises, onSelect, onClose }) {
+  const [search, setSearch] = useState("");
+  const LIVE_STATUSES = ["aktif", "baby", "sakit", "breeding"];
+  const filtered = tortoises
+    .filter(t => LIVE_STATUSES.includes(t.status))
+    .filter(t => {
+      const q = search.toLowerCase();
+      return !q || t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q);
+    });
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50" />
+      <div
+        className="relative bg-background w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col"
+        style={{ maxHeight: "80vh" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="font-bold text-base">Pilih Kura yang Meninggal</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-3 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Cari nama atau kode kura..."
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <div className="overflow-y-auto flex-1">
+          {filtered.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8 text-sm">Tidak ada kura aktif ditemukan</p>
+          ) : filtered.map(t => {
+            const photo = t.photos?.find(p => p.is_primary)?.url || t.photos?.[0]?.url;
+            return (
+              <button
+                key={t.id}
+                className="w-full flex items-center gap-3 p-3 hover:bg-muted/40 transition-colors border-b last:border-0 text-left"
+                onClick={() => onSelect(t)}
+              >
+                {photo ? (
+                  <img src={photo} alt={t.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                    <Skull className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-sm">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.code || ""} · {t.enclosure || "Tanpa kandang"}</p>
+                  {t.is_proven && <span className="text-[10px] text-amber-600">⭐ Proven Breeder</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DeathRecordsPage() {
+  const qc = useQueryClient();
+  const [detail, setDetail] = useState(null);
+  const [showSelectModal, setShowSelectModal] = useState(false);
+  const [deathModalTortoise, setDeathModalTortoise] = useState(null);
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [filterCause, setFilterCause] = useState("all");
+  const [filterSearch, setFilterSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+
+  const { data: allTortoises = [], isLoading } = useQuery({
+    queryKey: ["tortoises-all-death"],
+    queryFn: () => base44.entities.Tortoise.list("-death_date", 500),
+  });
+
+  const deadTortoises = useMemo(() => {
+    return allTortoises.filter(t => t.status === "mati");
+  }, [allTortoises]);
+
+  const filtered = useMemo(() => {
+    let list = deadTortoises.filter(t => {
+      const matchYear = !filterYear || !t.death_date || new Date(t.death_date).getFullYear().toString() === filterYear;
+      const matchCause = filterCause === "all" || t.death_cause === filterCause;
+      const q = filterSearch.toLowerCase();
+      const matchSearch = !q || t.name?.toLowerCase().includes(q) || t.code?.toLowerCase().includes(q);
+      return matchYear && matchCause && matchSearch;
+    });
+    if (sortBy === "newest") list = [...list].sort((a, b) => (b.death_date || "") > (a.death_date || "") ? 1 : -1);
+    else if (sortBy === "oldest") list = [...list].sort((a, b) => (a.death_date || "") > (b.death_date || "") ? 1 : -1);
+    else if (sortBy === "cause") list = [...list].sort((a, b) => (a.death_cause || "").localeCompare(b.death_cause || ""));
+    return list;
+  }, [deadTortoises, filterYear, filterCause, filterSearch, sortBy]);
+
+  const now = new Date();
+  const statsThisYear = deadTortoises.filter(t => t.death_date && new Date(t.death_date).getFullYear() === now.getFullYear()).length;
+  const statsThisMonth = deadTortoises.filter(t => {
+    if (!t.death_date) return false;
+    const d = new Date(t.death_date);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+
+  const years = [...new Set(deadTortoises.filter(t => t.death_date).map(t => new Date(t.death_date).getFullYear().toString()))].sort((a, b) => b - a);
+  if (!years.includes(now.getFullYear().toString())) years.unshift(now.getFullYear().toString());
+
+  const handleDeathModalSaved = async (deathData) => {
+    if (!deathModalTortoise) return;
+    await base44.entities.Tortoise.update(deathModalTortoise.id, {
+      status: "mati",
+      ...deathData,
+    });
+    qc.invalidateQueries({ queryKey: ["tortoises-all-death"] });
+    setDeathModalTortoise(null);
+    setShowSelectModal(false);
+    toast.success(`${deathModalTortoise.name} berhasil dicatat meninggal.`);
+  };
+
+  if (detail) {
+    return (
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto">
+        <DeathDetail
+          tortoise={detail}
+          onBack={() => setDetail(null)}
+          onEdit={(t) => { setDeathModalTortoise(t); setDetail(null); }}
+        />
+        {deathModalTortoise && (
+          <DeathRecordModal
+            tortoise={deathModalTortoise}
+            open={!!deathModalTortoise}
+            onClose={() => setDeathModalTortoise(null)}
+            onSaved={handleDeathModalSaved}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-6 space-y-5 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Skull className="w-6 h-6 text-gray-600" /> Catatan Kematian
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {statsThisYear} kura mati tahun ini · {statsThisMonth} bulan ini
+          </p>
+        </div>
+        <Button onClick={() => setShowSelectModal(true)} className="gap-2 bg-red-600 hover:bg-red-700 text-white flex-shrink-0">
+          <Plus className="w-4 h-4" /> Lapor Kematian Baru
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[160px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input value={filterSearch} onChange={e => setFilterSearch(e.target.value)} placeholder="Cari nama/kode..." className="pl-9" />
+        </div>
+        <Select value={filterYear} onValueChange={setFilterYear}>
+          <SelectTrigger className="w-28"><SelectValue placeholder="Tahun" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Tahun</SelectItem>
+            {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterCause} onValueChange={setFilterCause}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Penyebab" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Penyebab</SelectItem>
+            {Object.entries(DEATH_CAUSE_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Terbaru</SelectItem>
+            <SelectItem value="oldest">Terlama</SelectItem>
+            <SelectItem value="cause">Penyebab</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* List */}
+      {isLoading ? (
+        <div className="text-center py-16 text-muted-foreground">Memuat data...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <Skull className="w-12 h-12 mx-auto mb-3 opacity-20" />
+          <p className="text-lg font-medium">Tidak ada catatan kematian</p>
+          <p className="text-sm">Sesuaikan filter atau tambah laporan baru</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {filtered.map(t => (
+            <DeathCard key={t.id} tortoise={t} onClick={setDetail} />
+          ))}
+        </div>
+      )}
+
+      {/* Modal pilih kura */}
+      {showSelectModal && (
+        <SelectTortoiseModal
+          tortoises={allTortoises}
+          onSelect={(t) => { setDeathModalTortoise(t); setShowSelectModal(false); }}
+          onClose={() => setShowSelectModal(false)}
+        />
+      )}
+
+      {/* Modal kematian */}
+      {deathModalTortoise && (
+        <DeathRecordModal
+          tortoise={deathModalTortoise}
+          open={!!deathModalTortoise}
+          onClose={() => setDeathModalTortoise(null)}
+          onSaved={handleDeathModalSaved}
+        />
+      )}
     </div>
   );
 }

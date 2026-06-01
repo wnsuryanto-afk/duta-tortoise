@@ -24,6 +24,7 @@ import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
 import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
 import EggGrid from "@/components/breeding/EggGrid";
+import TortoiseForm from "@/components/tortoise/TortoiseForm";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -121,6 +122,8 @@ export default function BreedingAndEggs() {
   const [editIncubator, setEditIncubator] = useState(null);
   const [showIncubatorForm, setShowIncubatorForm] = useState(false);
   const [activeTab, setActiveTab] = useState("pembiakan");
+  const [newTortoiseData, setNewTortoiseData] = useState(null);
+  const [showTortoiseForm, setShowTortoiseForm] = useState(false);
 
   const { data: breedings = [], isLoading: breedingLoading } = useQuery({
     queryKey: ["breedings"],
@@ -145,6 +148,41 @@ export default function BreedingAndEggs() {
 
   // KALKULASI TELUR INKUBATOR MENGGUNAKAN HELPER (SUMBER KEBENARAN TUNGGAL)
   // Fungsi calculateIncubatorEggs dan getClutchesInIncubator sekarang di-import dari breedingUtils
+
+  // Fungsi hitung fase inkubasi
+  const getIncubationPhase = (b) => {
+    if (b.status === "menetas" || b.status === "gagal") return { fase: b.status, color: b.status === "menetas" ? "green" : "gray" };
+    if (!b.egg_laying_date) return null;
+    const daysSince = differenceInDays(today, parseISO(b.egg_laying_date));
+    const hatchStart = b.estimated_hatch_start ? parseISO(b.estimated_hatch_start) : null;
+    const hatchEnd   = b.estimated_hatch_end   ? parseISO(b.estimated_hatch_end)   : null;
+    const daysToStart = hatchStart ? differenceInDays(hatchStart, today) : null;
+    const daysToEnd   = hatchEnd   ? differenceInDays(hatchEnd,   today) : null;
+
+    if (daysToEnd !== null && daysToEnd < 0)  return { fase: "terlewat",    color: "gray",   daysSince, daysToStart, daysToEnd, hatchStart, hatchEnd };
+    if (daysToStart !== null && daysToStart <= 0) return { fase: "aktif",   color: "red",    daysSince, daysToStart, daysToEnd, hatchStart, hatchEnd };
+    if (daysToStart !== null && daysToStart <= 7) return { fase: "mendekati", color: "orange", daysSince, daysToStart, daysToEnd, hatchStart, hatchEnd };
+    if (daysSince >= 60)  return { fase: "pertengahan", color: "yellow",  daysSince, daysToStart, daysToEnd, hatchStart, hatchEnd };
+    return { fase: "awal", color: "green", daysSince, daysToStart, daysToEnd, hatchStart, hatchEnd };
+  };
+
+  const PHASE_STYLE = {
+    awal:        { badge: "bg-green-100 text-green-800 border-green-300",   label: "🥚 Awal Inkubasi" },
+    pertengahan: { badge: "bg-yellow-100 text-yellow-800 border-yellow-300", label: "🥚 Pertengahan" },
+    mendekati:   { badge: "bg-orange-100 text-orange-800 border-orange-300", label: "🥚 Mendekati Menetas" },
+    aktif:       { badge: "bg-red-100 text-red-800 border-red-300",          label: "🚨 Masa Penetasan!" },
+    terlewat:    { badge: "bg-gray-200 text-gray-700 border-gray-400",       label: "⚠️ Lewat Estimasi" },
+    menetas:     { badge: "bg-primary/10 text-primary border-primary/30",    label: "✅ Sudah Menetas" },
+    gagal:       { badge: "bg-gray-100 text-gray-600 border-gray-300",       label: "❌ Gagal" },
+  };
+
+  // Sort breedings: aktif & mendekati duluan
+  const phaseOrder = { aktif: 0, mendekati: 1, terlewat: 2, pertengahan: 3, awal: 4, menetas: 5, gagal: 6 };
+  const sortedBreedings = [...breedings].sort((a, b) => {
+    const pa = getIncubationPhase(a)?.fase || "awal";
+    const pb = getIncubationPhase(b)?.fase || "awal";
+    return (phaseOrder[pa] ?? 9) - (phaseOrder[pb] ?? 9);
+  });
 
   const activeBreedings = breedings.filter(b => b.status !== "menetas" && b.status !== "gagal");
   const historyBreedings = breedings.filter(b => b.status === "menetas" || b.status === "gagal");
@@ -189,47 +227,20 @@ export default function BreedingAndEggs() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {breedings.map((b) => {
+              {sortedBreedings.map((b) => {
                 const active = b.status !== "menetas" && b.status !== "gagal";
-                const startDate = b.estimated_hatch_date_start ? parseISO(b.estimated_hatch_date_start) : null;
-                const endDate = b.estimated_hatch_date_end ? parseISO(b.estimated_hatch_date_end) : null;
-                const daysToStart = startDate && active ? differenceInDays(startDate, today) : null;
-                const daysToEnd = endDate && active ? differenceInDays(endDate, today) : null;
-
-                // Progress bar calculation (0-105 days incubation)
-                const incubationDay = b.egg_laying_date ? differenceInDays(today, new Date(b.egg_laying_date)) : 0;
+                const phase = getIncubationPhase(b);
+                const phaseStyle = phase ? (PHASE_STYLE[phase.fase] || PHASE_STYLE.awal) : null;
+                const incubationDay = phase?.daysSince ?? 0;
                 const incubationProgress = Math.min(100, Math.max(0, (incubationDay / 105) * 100));
-
-                const isMenetas = b.status === "menetas";
-                const isGagal = b.status === "gagal";
-                const isOverdue = active && daysToEnd !== null && daysToEnd < 0;
-                const inHatchRange = active && daysToStart !== null && daysToEnd !== null && daysToStart <= 0 && daysToEnd >= 0;
-                const beforeRange = active && daysToStart !== null && daysToStart > 0;
-                const isH7 = active && beforeRange && daysToStart <= 7;
-                const isH30 = active && beforeRange && daysToStart > 7 && daysToStart <= 30;
-                const dayInHatchRange = inHatchRange && startDate ? differenceInDays(today, startDate) + 1 : null;
-
-                // Card color berdasarkan kondisi
-                const cardClass = isOverdue
-                  ? "border-gray-700 bg-gray-900 text-white"
-                  : inHatchRange
-                  ? "border-red-600 bg-red-600 text-white animate-pulse"
-                  : isH7
-                  ? "border-red-400 bg-red-100"
-                  : isH30
-                  ? "border-yellow-400 bg-yellow-50"
-                  : "border-border";
-
-                // Countdown display logic
-                const countdownDays = active && daysToStart !== null ? daysToStart : null;
-                const countdownColor = countdownDays === null ? "" :
-                  isOverdue || inHatchRange ? "text-red-600" :
-                  isH7 ? "text-red-600" :
-                  isH30 ? "text-orange-500" : "text-green-600";
-                const countdownAnimate = (isH7 || inHatchRange) && active ? "animate-pulse" : "";
+                const showPulse = phase?.fase === "aktif" || phase?.fase === "mendekati";
 
                 return (
-                  <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow ${cardClass}`}>
+                  <Card key={b.id} className={`p-5 hover:shadow-md transition-shadow ${
+                    phase?.fase === "aktif" ? "border-red-500" :
+                    phase?.fase === "mendekati" ? "border-orange-400" :
+                    "border-border"
+                  }`}>
                     {/* Baris 1: Foto | Nama pasangan | Badge status | ⋮ */}
                     <div className="flex items-start gap-3">
                       {b.photos?.length > 0 && (
@@ -243,10 +254,11 @@ export default function BreedingAndEggs() {
                               <Badge variant="outline" className={`text-[11px] capitalize ${statusColors[b.status] || ""}`}>
                                 {b.status}
                               </Badge>
-                              {isMenetas && <Badge className="text-[11px] bg-green-600 text-white">✅ Menetas</Badge>}
-                              {isGagal && <Badge className="text-[11px] bg-gray-500 text-white">❌ Gagal</Badge>}
-                              {active && isOverdue && <Badge className="text-[11px] bg-gray-800 text-white animate-pulse">⚠️ CEK SEKARANG</Badge>}
-                              {active && inHatchRange && <Badge className="text-[11px] bg-red-600 text-white animate-pulse">🚨 MASA PENETASAN</Badge>}
+                              {phaseStyle && active && (
+                                <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${phaseStyle.badge} ${showPulse ? "animate-pulse" : ""}`}>
+                                  {phaseStyle.label}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <BreedingCardMenu
@@ -260,116 +272,51 @@ export default function BreedingAndEggs() {
                       </div>
                     </div>
 
-                    {/* Baris 2+3: Detail + COUNTDOWN BESAR */}
-                    <div className="flex gap-4 mt-4">
-                      {/* Info kiri */}
-                      <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                        {b.egg_laying_date && (
-                          <div>
-                            <p className="text-muted-foreground">Bertelur</p>
-                            <p className="font-medium">{format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</p>
-                          </div>
-                        )}
-                        {b.egg_count > 0 && (
-                          <div>
-                            <p className="text-muted-foreground">Telur</p>
-                            <p className="font-medium">{b.egg_count} butir</p>
-                          </div>
-                        )}
-                        {(b.estimated_hatch_date_start || b.estimated_hatch_date_end || b.estimated_hatch_date) && (
-                          <div className="col-span-2">
-                            <p className="text-muted-foreground">Perkiraan Menetas</p>
-                            <p className={`font-medium ${inHatchRange ? "text-green-700" : ""}`}>
-                              {b.estimated_hatch_date_start
-                                ? `${format(new Date(b.estimated_hatch_date_start), "d MMM", { locale: id })} – ${b.estimated_hatch_date_end ? format(new Date(b.estimated_hatch_date_end), "d MMM yyyy", { locale: id }) : "-"}`
-                                : b.estimated_hatch_date ? format(new Date(b.estimated_hatch_date), "d MMM yyyy", { locale: id }) : "-"
-                              }
-                            </p>
-                          </div>
-                        )}
-                        {b.incubator_name && (
-                          <div>
-                            <p className="text-muted-foreground">Inkubator</p>
-                            <p className="font-medium">{b.incubator_name}</p>
-                          </div>
-                        )}
-                        {b.incubation_temp > 0 && (
-                          <div>
-                            <p className="text-muted-foreground">Suhu</p>
-                            <p className="font-medium">{b.incubation_temp}°C</p>
-                          </div>
-                        )}
-                        {b.status === "menetas" && b.hatched_count > 0 && (
-                          <div>
-                            <p className="text-muted-foreground">Menetas</p>
-                            <p className="font-medium text-primary">{b.hatched_count} ekor 🐢</p>
-                          </div>
-                        )}
-                        {b.status === "menetas" && b.failed_count > 0 && (
-                          <div>
-                            <p className="text-muted-foreground">Gagal</p>
-                            <p className="font-medium text-destructive">{b.failed_count} butir ❌</p>
-                          </div>
-                        )}
-                        {b.hatch_date && b.status === "menetas" && (
-                          <div>
-                            <p className="text-muted-foreground">Tgl Menetas</p>
-                            <p className="font-medium">{format(new Date(b.hatch_date), "d MMM yyyy", { locale: id })}</p>
-                          </div>
-                        )}
+                    {/* Alert pulsing untuk aktif/mendekati */}
+                    {active && showPulse && (
+                      <div className={`mt-3 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                        phase?.fase === "aktif" ? "bg-red-100 text-red-800 border border-red-300" : "bg-orange-100 text-orange-800 border border-orange-300"
+                      } animate-pulse`}>
+                        ⚠️ Pantau telur — mendekati waktu menetas
                       </div>
+                    )}
 
-                      {/* COUNTDOWN BESAR (kanan) */}
-                      {active && (
-                        <div className="flex-shrink-0 flex flex-col items-center justify-center text-center min-w-[80px]">
-                          {isOverdue ? (
-                            <div className="text-red-600 animate-pulse text-center">
-                              <div className="text-xs font-semibold">Segera</div>
-                              <div className="text-2xl font-black">Cek!</div>
-                            </div>
-                          ) : inHatchRange ? (
-                            <div className="text-red-600 animate-pulse text-center">
-                              <div className="text-[28px] font-black leading-none">🚨</div>
-                              <div className="text-xs font-bold mt-0.5">Menetas!</div>
-                            </div>
-                          ) : countdownDays !== null ? (
-                            <div className={`text-center ${countdownAnimate}`}>
-                              <div className={`font-black leading-none ${countdownColor}`} style={{ fontSize: "2.2rem" }}>
-                                {countdownDays}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground font-medium mt-0.5 leading-tight">hari menuju<br/>menetas</div>
-                            </div>
-                          ) : (
-                            <div className="text-center text-muted-foreground text-xs">—</div>
-                          )}
-                        </div>
+                    {/* Info */}
+                    <div className="mt-3 text-xs space-y-1.5">
+                      {b.egg_laying_date && (
+                        <p className="text-muted-foreground">H+{incubationDay} dari {format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</p>
                       )}
+                      {phase?.hatchStart && phase?.hatchEnd && (
+                        <p className="text-muted-foreground">Estimasi menetas: {format(phase.hatchStart, "d MMM", { locale: id })} s/d {format(phase.hatchEnd, "d MMM yyyy", { locale: id })}</p>
+                      )}
+                      <div className="flex flex-wrap gap-3">
+                        {b.egg_count > 0 && <span>{b.egg_count} butir telur</span>}
+                        {b.incubator_name && <span>📦 {b.incubator_name}</span>}
+                        {b.incubation_temp > 0 && <span>🌡 {b.incubation_temp}°C</span>}
+                        {b.status === "menetas" && b.hatched_count > 0 && <span className="text-primary font-medium">{b.hatched_count} ekor 🐢</span>}
+                        {b.hatch_date && b.status === "menetas" && <span>{format(new Date(b.hatch_date), "d MMM yyyy", { locale: id })}</span>}
+                      </div>
                     </div>
+
                     {/* Progress Bar Inkubasi */}
-                    {b.status === "inkubasi" && b.egg_laying_date && (
+                    {active && b.egg_laying_date && (
                       <div className="mt-3 space-y-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Hari ke-{incubationDay} dari 105 hari</span>
+                          <span className="text-muted-foreground">Progress inkubasi</span>
                           <span className="font-semibold">{Math.round(incubationProgress)}%</span>
                         </div>
-                        <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
                             style={{
                               width: `${incubationProgress}%`,
-                              background: incubationDay < 80
-                                ? 'linear-gradient(90deg, #22c55e 0%, #84cc16 100%)'
-                                : incubationDay < 95
-                                ? 'linear-gradient(90deg, #eab308 0%, #f59e0b 100%)'
-                                : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                              background: incubationDay < 60
+                                ? 'linear-gradient(90deg, #22c55e, #84cc16)'
+                                : incubationDay < 80
+                                ? 'linear-gradient(90deg, #eab308, #f59e0b)'
+                                : 'linear-gradient(90deg, #ef4444, #dc2626)'
                             }}
                           />
-                          <div className="absolute top-0 right-[19%] h-full w-0.5 bg-red-600 opacity-50" />
-                          <div className="absolute top-0 right-0 h-full w-0.5 bg-red-600 opacity-50" />
-                        </div>
-                        <div className="flex justify-between text-[10px] text-muted-foreground">
-                          <span>Bertelur</span>
-                          <span className="text-red-600 font-semibold">Menetas 80-105hr</span>
                         </div>
                       </div>
                     )}
@@ -470,7 +417,7 @@ export default function BreedingAndEggs() {
                     {/* Egg Grid */}
                     <div className="p-4 pt-3">
                       {b.egg_records && b.egg_records.length > 0 ? (
-                        <EggGrid breeding={b} />
+                        <EggGrid breeding={b} onRequestNewTortoise={(data) => { setNewTortoiseData(data); setShowTortoiseForm(true); }} />
                       ) : (
                         <p className="text-xs text-muted-foreground text-center py-2">
                           Belum ada data per butir telur • {b.egg_count} butir total
@@ -684,6 +631,9 @@ export default function BreedingAndEggs() {
 
       {showForm && (
         <BreedingForm open={showForm} onClose={() => setShowForm(false)} editData={editData} />
+      )}
+      {showTortoiseForm && (
+        <TortoiseForm open={showTortoiseForm} onClose={() => { setShowTortoiseForm(false); setNewTortoiseData(null); }} editData={newTortoiseData} />
       )}
       <HatchDialog
         open={!!hatchBreeding}
