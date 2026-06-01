@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
-  LogOut, ClipboardList, BarChart2, Warehouse, BookOpen, Stethoscope,
+  LogOut, ClipboardList, BarChart2, BookOpen, Stethoscope,
   Wallet, Calculator, PieChart, Bell, Printer, Package, Thermometer,
   FileText, MessageSquare, Library, ListTodo, Activity, Settings,
-  Calendar, ChevronDown, ChevronRight, Trophy, FlaskConical,
-  LayoutGrid, GitBranch, Skull, Home, Box,
-  TrendingUp, Target, Zap, AlertTriangle, Truck, ClipboardCheck,
+  Calendar, ChevronDown, ChevronRight, Trophy,
+  LayoutGrid, GitBranch, Skull, Home,
+  TrendingUp, Zap, AlertTriangle, Truck, ClipboardCheck,
   Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight
 } from "lucide-react";
 import { useState } from "react";
@@ -67,11 +67,8 @@ const NAV_GROUPS = [
     icon: Package,
     color: "text-blue-500",
     items: [
-      { path: "/feed-stock",    section: "feed-stock",  label: "Stok Pakan",           icon: Box },
-      { path: "/warehouse",     section: "warehouse",   label: "Gudang — Obat & Alat", icon: Warehouse },
-      { path: "/stock-gudang",  section: "stock-gudang",label: "Semua Stok (Unified)", icon: LayoutGrid },
-      { path: "/pellet-recipe", section: "pellet-recipe",label:"Resep & Produksi Pelet",icon: FlaskConical },
-      { path: "/supplier",      section: "supplier",    label: "Pemasok",              icon: Truck },
+      { path: "/stok-unified",  section: "stock-gudang", label: "Inventaris & Pergerakan", icon: LayoutGrid },
+      { path: "/supplier",      section: "supplier",     label: "Pemasok",                icon: Truck },
     ],
   },
 
