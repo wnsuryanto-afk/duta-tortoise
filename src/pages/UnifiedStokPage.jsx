@@ -32,6 +32,7 @@ function StatCard({ label, value, sub, color = "text-foreground", icon: Icon }) 
 export default function UnifiedStokPage() {
   const { role } = useCurrentUser();
   const [tab, setTab] = useState("inventory");
+  const [inventoryFilter, setInventoryFilter] = useState(null); // for external filter trigger
 
   const { data: feedstocks = [] } = useQuery({
     queryKey: ["feedstocks"],
@@ -63,6 +64,7 @@ export default function UnifiedStokPage() {
   const totalNilai = allItems.reduce((s, i) => s + (i._price * (i.current_stock || 0)), 0);
 
   const criticalCount = allItems.filter(i => i.current_stock < i.minimum_stock).length;
+  const mandatoryEmptyCount = allItems.filter(i => i.is_mandatory && i.current_stock <= 0).length;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayMovements = movements.filter(m => m.date === todayStr);
@@ -102,13 +104,15 @@ export default function UnifiedStokPage() {
           color="text-blue-600"
           icon={ArrowUpDown}
         />
-        <StatCard
-          label="Item Hilang / Rusak"
-          value={lostOrDamaged}
-          sub="dari peminjaman"
-          color={lostOrDamaged > 0 ? "text-orange-600" : "text-green-600"}
-          icon={TrendingDown}
-        />
+        <div onClick={() => { if (mandatoryEmptyCount > 0) setTab("inventory"); }} className={mandatoryEmptyCount > 0 ? "cursor-pointer" : ""}>
+          <StatCard
+            label="Item Wajib Habis"
+            value={mandatoryEmptyCount}
+            sub={mandatoryEmptyCount > 0 ? "⚠️ Klik untuk lihat" : "Semua aman"}
+            color={mandatoryEmptyCount > 0 ? "text-red-600" : "text-green-600"}
+            icon={TrendingDown}
+          />
+        </div>
       </div>
 
       {/* Main tabs */}
