@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { User, Mail, Calendar, Building, Shield, Save, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ export default function EditProfilePage() {
   const [isDirty, setIsDirty] = useState(false);
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [waSameAsPhone, setWaSameAsPhone] = useState(true);
 
   // Fetch current user and profile
   const { data: user } = useQuery({
@@ -34,7 +36,12 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (profiles.length > 0) {
-      setFormData(profiles[0]);
+      const p = profiles[0];
+      setFormData(p);
+      // Jika whatsapp sudah diisi dan berbeda dari phone, uncheck
+      if (p.whatsapp && p.phone && p.whatsapp !== p.phone) {
+        setWaSameAsPhone(false);
+      }
       setLoading(false);
     } else if (user) {
       // Create new profile if doesn't exist
@@ -88,7 +95,9 @@ export default function EditProfilePage() {
     }
 
     const isComplete = IS_COMPLETE_FIELDS.every(f => formData[f] && formData[f].toString().trim() !== "");
-    updateMutation.mutate({ ...formData, is_complete: isComplete });
+    const finalData = { ...formData };
+    if (waSameAsPhone) finalData.whatsapp = formData.phone || "";
+    updateMutation.mutate({ ...finalData, is_complete: isComplete });
   };
 
   const handleCancel = () => {
@@ -150,7 +159,7 @@ export default function EditProfilePage() {
               />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="phone">Nomor Telepon *</Label>
               <Input
                 id="phone"
@@ -159,16 +168,32 @@ export default function EditProfilePage() {
                 placeholder="08123456789"
                 className={!formData.phone ? "border-red-500" : ""}
               />
-            </div>
-
-            <div>
-              <Label htmlFor="whatsapp">Nomor WhatsApp</Label>
-              <Input
-                id="whatsapp"
-                value={formData.whatsapp || ""}
-                onChange={(e) => handleChange("whatsapp", e.target.value)}
-                placeholder="08123456789"
-              />
+              <div className="flex items-center gap-2 mt-1">
+                <Checkbox
+                  id="wa-same"
+                  checked={waSameAsPhone}
+                  onCheckedChange={(checked) => {
+                    setWaSameAsPhone(!!checked);
+                    setIsDirty(true);
+                    if (checked) handleChange("whatsapp", formData.phone || "");
+                  }}
+                />
+                <label htmlFor="wa-same" className="text-xs text-muted-foreground cursor-pointer select-none">
+                  Nomor WhatsApp sama dengan nomor telepon
+                </label>
+              </div>
+              {!waSameAsPhone && (
+                <div className="mt-2">
+                  <Label htmlFor="whatsapp" className="text-xs">Nomor WhatsApp</Label>
+                  <Input
+                    id="whatsapp"
+                    value={formData.whatsapp || ""}
+                    onChange={(e) => handleChange("whatsapp", e.target.value)}
+                    placeholder="08123456789"
+                    className="mt-1"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
