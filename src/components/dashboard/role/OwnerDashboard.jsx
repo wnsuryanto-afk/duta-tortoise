@@ -332,17 +332,17 @@ export default function OwnerDashboard({ user }) {
   const activeKasbons = kasbons.filter(k => k.status === "active" || k.remaining_amount > 0);
   const totalKasbonDebt = activeKasbons.reduce((s, k) => s + (k.remaining_amount || k.amount || 0), 0);
 
+  // SP Aktif + filtered logs
+  const activeWarnings = warnings.filter(w => w.status === "aktif" || !w.status);
+  const activeOtLogs = otLogs.filter(o => !o.excluded_from_reports);
+  const activeMeasurements = measurements.filter(m => !m.excluded_from_reports);
+
   // Lembur bulan ini
   const otThis = activeOtLogs.filter(o => (o.date || "").startsWith(thisMonthKey));
   const otLast = activeOtLogs.filter(o => (o.date || "").startsWith(format(subMonths(now, 1), "yyyy-MM")));
   const totalOtHoursThis = otThis.reduce((s, o) => s + (o.hours || 0), 0);
   const totalOtHoursLast = otLast.reduce((s, o) => s + (o.hours || 0), 0);
   const totalOtPayThis = otThis.reduce((s, o) => s + (o.total_pay || 0), 0);
-
-  // SP Aktif
-  const activeWarnings = warnings.filter(w => w.status === "aktif" || !w.status);
-  const activeOtLogs = otLogs.filter(o => !o.excluded_from_reports);
-  const activeMeasurements = measurements.filter(m => !m.excluded_from_reports);
 
   // ── Supplier ──────────────────────────────────────
   const supplierExpenses = finances.filter(f => f.type === "pengeluaran" && f.date?.startsWith(thisMonthKey));
