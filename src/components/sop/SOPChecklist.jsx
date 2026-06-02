@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PhotoUploadWithWatermark from "./PhotoUploadWithWatermark";
 import SOPVideoTask from "./SOPVideoTask";
+import { useTestMode } from "@/lib/useTestMode";
 
 const categoryColors = {
   pakan: "bg-green-100 text-green-700",
@@ -25,6 +26,7 @@ const categoryColors = {
 export default function SOPChecklist() {
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
+  const { testModeTag } = useTestMode();
   const today = format(new Date(), "yyyy-MM-dd");
   const [checked, setChecked] = useState({});
   const [taskNotes, setTaskNotes] = useState({});
@@ -87,6 +89,7 @@ export default function SOPChecklist() {
       total_points_claimed: totalPoints,
       status: "submitted",
       notes: generalNotes,
+      ...testModeTag,
     });
     queryClient.invalidateQueries({ queryKey: ["checklist-today"] });
     setSubmitting(false);

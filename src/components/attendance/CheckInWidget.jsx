@@ -9,12 +9,14 @@ import { Clock, LogIn, LogOut, CheckCircle2, MapPin, AlertTriangle } from "lucid
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "./useGPSLocation";
+import { useTestMode } from "@/lib/useTestMode";
 
 const DEFAULT_RADIUS = 200;
 
 export default function CheckInWidget() {
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
+  const { testModeTag } = useTestMode();
   const [loading, setLoading] = useState(false);
   const [gpsError, setGpsError] = useState(null);
   const [locationWarning, setLocationWarning] = useState(null);
@@ -94,6 +96,7 @@ export default function CheckInWidget() {
       location_verified: verified,
       shift_start: salaryConfig?.shift_start || "08:00",
       shift_end: salaryConfig?.shift_end || "16:00",
+      ...testModeTag,
     });
 
     queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
@@ -145,6 +148,7 @@ export default function CheckInWidget() {
           date: today,
           hours: overtimeHours,
           notes: `Lembur otomatis dari checkout ${checkoutTime}`,
+          ...testModeTag,
         });
       }
     } else {
@@ -165,6 +169,7 @@ export default function CheckInWidget() {
           date: today,
           hours: overtimeHours,
           notes: `Lembur otomatis dari checkout ${checkoutTime}`,
+          ...testModeTag,
         });
       }
     }

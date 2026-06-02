@@ -11,6 +11,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil } from "lucide-react";
 import DiagnosisPanel, { DIAGNOSIS_CATEGORIES } from "./DiagnosisPanel";
 import TreatmentItemsPicker from "./TreatmentItemsPicker";
+import { useTestMode } from "@/lib/useTestMode";
 
 const SEVERITY_OPTIONS = [
   { value: "ringan",  label: "🟢 Ringan" },
@@ -21,6 +22,7 @@ const SEVERITY_OPTIONS = [
 
 export default function HealthForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
+  const { testModeTag } = useTestMode();
   const [saving, setSaving] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
@@ -115,7 +117,7 @@ export default function HealthForm({ open, onClose, editData }) {
     if (editData?.id) {
       savedRecord = await base44.entities.HealthRecord.update(editData.id, data);
     } else {
-      savedRecord = await base44.entities.HealthRecord.create(data);
+      savedRecord = await base44.entities.HealthRecord.create({ ...data, ...testModeTag });
     }
     // Auto-create FinanceTransaction jika ada biaya_obat dan type sakit/obat
     if (data.biaya_obat > 0 && (data.type === "sakit" || data.type === "obat")) {
@@ -136,6 +138,7 @@ export default function HealthForm({ open, onClose, editData }) {
           date: data.date,
           description: txDesc,
           reference_id: savedRecord?.id || editData?.id || "",
+          ...testModeTag,
         });
         if (tx?.id && savedRecord?.id) {
           await base44.entities.HealthRecord.update(savedRecord.id, { finance_tx_id: tx.id });

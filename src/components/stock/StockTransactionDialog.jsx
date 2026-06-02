@@ -7,6 +7,7 @@ import { ArrowUpCircle, ArrowDownCircle, AlertTriangle } from "lucide-react";
 import { formatRp } from "@/lib/skuUtils";
 import { format } from "date-fns";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 
 /**
  * Dialog untuk stok masuk/keluar + approval otomatis jika nilai > threshold.
@@ -20,6 +21,7 @@ import { base44 } from "@/api/base44Client";
  *   initialType: "masuk" | "keluar"
  */
 export default function StockTransactionDialog({ item, itemType, user, role, threshold = 500000, onClose, initialType = "masuk" }) {
+  const { testModeTag } = useTestMode();
   const [txType, setTxType] = useState(initialType);
   const [qty, setQty] = useState("");
   const [notes, setNotes] = useState("");
@@ -61,6 +63,7 @@ export default function StockTransactionDialog({ item, itemType, user, role, thr
       notes,
       date: format(new Date(), "yyyy-MM-dd"),
       status,
+      ...testModeTag,
     });
 
     // Only update stock if no approval needed
@@ -83,6 +86,7 @@ export default function StockTransactionDialog({ item, itemType, user, role, thr
           date: format(new Date(), "yyyy-MM-dd"),
           description: `Beli ${delta} ${item.unit} ${item.name} (${item.sku || ""})`,
           created_by_name: user?.full_name || user?.email || "",
+          ...testModeTag,
         });
       }
     } else {
