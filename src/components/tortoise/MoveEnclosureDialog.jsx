@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -44,6 +45,7 @@ function groupEnclosures(enclosures) {
 }
 
 export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }) {
+  const { user } = useCurrentUser();
   const [newEnclosure, setNewEnclosure] = useState("");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -96,7 +98,8 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
       from_enclosure: oldEnclosure,
       to_enclosure: target,
       moved_date: format(new Date(), "yyyy-MM-dd"),
-      reason: reason.trim() || null,
+      reason: reason.trim() || "-",
+      moved_by: user?.full_name || user?.email || "-",
     });
 
     try {
