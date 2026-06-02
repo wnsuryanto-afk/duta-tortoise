@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, CreditCard, CheckCircle2, XCircle, Clock, Wallet, Minus } from "lucide-react";
+import { logActivity } from "@/lib/logActivity";
 import { toast } from "sonner";
 import { format, addWeeks, nextSaturday } from "date-fns";
 import { id } from "date-fns/locale";
@@ -101,12 +102,32 @@ export default function KasbonPage() {
       approved_by: user.full_name || user.email,
       approved_date: format(new Date(), "yyyy-MM-dd"),
     });
+    await logActivity({
+      action: "approve",
+      entity_type: "Kasbon",
+      entity_id: kasbon.id,
+      entity_name: kasbon.employee_name,
+      changes_detail: [
+        { field: "status", label: "Status Kasbon", old_value: "pending", new_value: "approved" },
+      ],
+      changes_summary: `Kasbon Rp ${(kasbon.amount || 0).toLocaleString("id-ID")} disetujui`,
+    });
     queryClient.invalidateQueries({ queryKey: ["kasbons"] });
   };
 
   const handleReject = async (kasbon) => {
     if (!confirm("Tolak pengajuan kasbon ini?")) return;
     await base44.entities.Kasbon.update(kasbon.id, { status: "rejected" });
+    await logActivity({
+      action: "reject",
+      entity_type: "Kasbon",
+      entity_id: kasbon.id,
+      entity_name: kasbon.employee_name,
+      changes_detail: [
+        { field: "status", label: "Status Kasbon", old_value: "pending", new_value: "rejected" },
+      ],
+      changes_summary: "Kasbon ditolak",
+    });
     queryClient.invalidateQueries({ queryKey: ["kasbons"] });
   };
 

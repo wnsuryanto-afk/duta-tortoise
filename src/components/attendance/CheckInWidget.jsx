@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "./useGPSLocation";
 import { useTestMode } from "@/lib/useTestMode";
+import { logActivity } from "@/lib/logActivity";
 
 const DEFAULT_RADIUS = 200;
 
@@ -84,12 +85,13 @@ export default function CheckInWidget() {
       setGpsError(err.message);
     }
 
-    await base44.entities.Attendance.create({
+    const checkInTime = nowStr();
+    const newRecord = await base44.entities.Attendance.create({
       employee_id: user.id,
       employee_name: user.full_name || user.email,
       employee_email: user.email,
       date: today,
-      check_in: nowStr(),
+      check_in: checkInTime,
       status: "hadir",
       check_in_lat: lat,
       check_in_lng: lng,
@@ -97,6 +99,17 @@ export default function CheckInWidget() {
       shift_start: salaryConfig?.shift_start || "08:00",
       shift_end: salaryConfig?.shift_end || "16:00",
       ...testModeTag,
+    });
+
+    await logActivity({
+      action: "checkin",
+      entity_type: "Attendance",
+      entity_id: newRecord?.id,
+      entity_name: `${user.full_name || user.email} - ${today}`,
+      changes_detail: [
+        { field: "check_in", label: "Check In", old_value: "-", new_value: checkInTime },
+      ],
+      changes_summary: `Check in pukul ${checkInTime}`,
     });
 
     queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
@@ -140,6 +153,17 @@ export default function CheckInWidget() {
         overtime_hours: overtimeHours,
       });
 
+      await logActivity({
+        action: "checkout",
+        entity_type: "Attendance",
+        entity_id: todayAttendance.id,
+        entity_name: `${todayAttendance.employee_name} - ${today}`,
+        changes_detail: [
+          { field: "check_out", label: "Check Out", old_value: "-", new_value: checkoutTime },
+        ],
+        changes_summary: `Check out pukul ${checkoutTime}${overtimeHours > 0 ? ` · Lembur ${overtimeHours} jam` : ""}`,
+      });
+
       // Buat OvertimeLog otomatis jika ada lembur
       if (overtimeHours > 0) {
         await base44.entities.OvertimeLog.create({
@@ -160,6 +184,17 @@ export default function CheckInWidget() {
       await base44.entities.Attendance.update(todayAttendance.id, {
         check_out: checkoutTime,
         overtime_hours: overtimeHours,
+      });
+
+      await logActivity({
+        action: "checkout",
+        entity_type: "Attendance",
+        entity_id: todayAttendance.id,
+        entity_name: `${todayAttendance.employee_name} - ${today}`,
+        changes_detail: [
+          { field: "check_out", label: "Check Out", old_value: "-", new_value: checkoutTime },
+        ],
+        changes_summary: `Check out pukul ${checkoutTime}${overtimeHours > 0 ? ` · Lembur ${overtimeHours} jam` : ""}`,
       });
 
       if (overtimeHours > 0) {

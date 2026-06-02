@@ -7,21 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Activity, Search, Eye, Calendar, User } from "lucide-react";
+import { Activity, Search, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
-const ACTION_COLORS = {
-  create: "bg-green-100 text-green-700 border-green-300",
-  update: "bg-blue-100 text-blue-700 border-blue-300",
-  delete: "bg-red-100 text-red-700 border-red-300",
-  login: "bg-purple-100 text-purple-700 border-purple-300",
-  logout: "bg-gray-100 text-gray-700 border-gray-300",
-};
-
-const ACTION_LABELS = {
-  create: "BUAT", update: "UBAH", delete: "HAPUS", login: "MASUK", logout: "KELUAR",
+const ACTION_META = {
+  create:   { label: "BUAT",      color: "bg-green-100 text-green-700 border-green-300",   icon: "➕" },
+  update:   { label: "UBAH",      color: "bg-blue-100 text-blue-700 border-blue-300",       icon: "✏️" },
+  delete:   { label: "HAPUS",     color: "bg-red-100 text-red-700 border-red-300",          icon: "🗑️" },
+  approve:  { label: "SETUJUI",   color: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: "✅" },
+  reject:   { label: "TOLAK",     color: "bg-rose-100 text-rose-700 border-rose-300",       icon: "❌" },
+  transfer: { label: "TRANSFER",  color: "bg-purple-100 text-purple-700 border-purple-300", icon: "🔄" },
+  checkin:  { label: "CHECK IN",  color: "bg-teal-100 text-teal-700 border-teal-300",       icon: "🕐" },
+  checkout: { label: "CHECK OUT", color: "bg-cyan-100 text-cyan-700 border-cyan-300",       icon: "🕔" },
+  login:    { label: "MASUK",     color: "bg-gray-100 text-gray-700 border-gray-300",       icon: "🔑" },
 };
 
 const ENTITY_ICONS = {
@@ -31,17 +31,36 @@ const ENTITY_ICONS = {
   WarehouseItem: "📦", DailyChecklist: "📋", MaintenanceLog: "🔧",
 };
 
+// Modul filter groups
+const MODULE_GROUPS = {
+  kura:       { label: "🐢 Kura", types: ["Tortoise", "HealthRecord", "Breeding"] },
+  checklist:  { label: "📋 Checklist", types: ["DailyChecklist"] },
+  breeding:   { label: "🥚 Breeding", types: ["Breeding"] },
+  stok:       { label: "📦 Stok", types: ["FeedStock", "WarehouseItem"] },
+  absensi:    { label: "✅ Absensi", types: ["Attendance"] },
+  kasbon:     { label: "📝 Kasbon", types: ["Kasbon"] },
+};
+
+// Aksi filter groups
+const ACTION_GROUPS = {
+  update:    ["update"],
+  create:    ["create"],
+  delete:    ["delete"],
+  approve:   ["approve", "reject"],
+  transfer:  ["transfer"],
+  checkinout: ["checkin", "checkout"],
+};
+
 function formatTimestamp(ts) {
   if (!ts) return "-";
-  try {
-    return format(new Date(ts), "dd MMM yyyy, HH:mm", { locale: idLocale });
-  } catch { return ts; }
+  try { return format(new Date(ts), "dd MMM yyyy, HH:mm", { locale: idLocale }); }
+  catch { return ts; }
 }
 
 // ── Detail Modal ─────────────────────────────────────────────────────────────
 function ActivityDetailModal({ log, onClose }) {
   if (!log) return null;
-
+  const meta = ACTION_META[log.action] || { label: log.action, color: "bg-gray-100", icon: "📄" };
   const hasChangesDetail = Array.isArray(log.changes_detail) && log.changes_detail.length > 0;
 
   return (
@@ -58,8 +77,8 @@ function ActivityDetailModal({ log, onClose }) {
         <div className="grid grid-cols-2 gap-3 text-sm bg-muted/40 rounded-xl p-4">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Aksi</p>
-            <Badge variant="outline" className={ACTION_COLORS[log.action] || "bg-gray-100"}>
-              {ACTION_LABELS[log.action] || log.action}
+            <Badge variant="outline" className={meta.color}>
+              {meta.icon} {meta.label}
             </Badge>
           </div>
           <div>
@@ -87,71 +106,49 @@ function ActivityDetailModal({ log, onClose }) {
           </div>
         </div>
 
-        {/* UPDATE: tabel perubahan */}
-        {log.action === "update" && (
+        {/* Tabel perubahan — tampil untuk SEMUA aksi yang punya changes_detail */}
+        {hasChangesDetail ? (
           <div>
-            <p className="text-sm font-semibold mb-2">Perubahan Data</p>
-            {hasChangesDetail ? (
-              <div className="rounded-xl border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-xs text-muted-foreground font-medium">Field</th>
-                      <th className="text-left px-3 py-2 text-xs text-muted-foreground font-medium">Nilai Lama</th>
-                      <th className="text-left px-3 py-2 text-xs text-muted-foreground font-medium">Nilai Baru</th>
+            <p className="text-sm font-semibold mb-2">Detail Perubahan</p>
+            <div className="rounded-xl border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-xs text-muted-foreground font-medium">Field</th>
+                    <th className="text-left px-3 py-2 text-xs text-muted-foreground font-medium">Nilai Lama</th>
+                    <th className="text-left px-3 py-2 text-xs text-muted-foreground font-medium">Nilai Baru</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {log.changes_detail.map((ch, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="px-3 py-2 font-medium text-foreground">{ch.label || ch.field}</td>
+                      <td className="px-3 py-2"><span className="text-red-600 line-through">{ch.old_value}</span></td>
+                      <td className="px-3 py-2"><span className="text-green-700 font-semibold">{ch.new_value}</span></td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {log.changes_detail.map((ch, i) => (
-                      <tr key={i} className="border-t">
-                        <td className="px-3 py-2 font-medium text-foreground">{ch.label || ch.field}</td>
-                        <td className="px-3 py-2">
-                          <span className="text-red-600 line-through">{ch.old_value}</span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className="text-green-700 font-semibold">{ch.new_value}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : log.changes_summary ? (
-              <div className="rounded-xl border bg-muted/30 p-3 space-y-1">
-                {log.changes_summary.split(" | ").map((line, i) => (
-                  <p key={i} className="text-sm text-foreground/80">• {line}</p>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">Tidak ada detail perubahan tercatat</p>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-
-        {/* CREATE: ringkasan field utama */}
-        {log.action === "create" && (
+        ) : log.action === "create" ? (
           <div>
             <p className="text-sm font-semibold mb-2">Data Dibuat</p>
-            {log.changes_summary ? (
-              <div className="rounded-xl border bg-green-50 p-3">
-                <p className="text-sm text-green-800">{log.changes_summary}</p>
-              </div>
-            ) : (
-              <div className="rounded-xl border bg-green-50 p-3">
-                <p className="text-sm text-green-800">Record baru berhasil dibuat: <strong>{log.entity_name}</strong></p>
-              </div>
-            )}
+            <div className="rounded-xl border bg-green-50 p-3">
+              <p className="text-sm text-green-800">
+                {log.changes_summary || `Record baru berhasil dibuat: `}<strong>{log.entity_name}</strong>
+              </p>
+            </div>
           </div>
-        )}
-
-        {/* DELETE */}
-        {log.action === "delete" && (
+        ) : log.action === "delete" ? (
           <div>
             <p className="text-sm font-semibold mb-2">Data Dihapus</p>
             <div className="rounded-xl border bg-red-50 p-3">
               <p className="text-sm text-red-800">Record <strong>{log.entity_name}</strong> (ID: <span className="font-mono text-xs">{log.entity_id}</span>) telah dihapus.</p>
             </div>
           </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Tidak ada detail perubahan tercatat</p>
         )}
 
         {log.notes && (
@@ -169,7 +166,8 @@ function ActivityDetailModal({ log, onClose }) {
 export default function ActivityLogPage() {
   const { role, user } = useCurrentUser();
   const [search, setSearch] = useState("");
-  const [actionFilter, setActionFilter] = useState("semua");
+  const [actionGroupFilter, setActionGroupFilter] = useState("semua");
+  const [moduleFilter, setModuleFilter] = useState("semua");
   const [entityFilter, setEntityFilter] = useState("semua");
   const [userFilter, setUserFilter] = useState("semua");
   const [dateFrom, setDateFrom] = useState("");
@@ -195,7 +193,14 @@ export default function ActivityLogPage() {
       log.user_email?.toLowerCase().includes(search.toLowerCase()) ||
       log.changes_summary?.toLowerCase().includes(search.toLowerCase());
 
-    const matchAction = actionFilter === "semua" || log.action === actionFilter;
+    // Filter aksi group
+    const actionActions = ACTION_GROUPS[actionGroupFilter];
+    const matchAction = actionGroupFilter === "semua" || (actionActions && actionActions.includes(log.action));
+
+    // Filter modul
+    const modTypes = MODULE_GROUPS[moduleFilter]?.types;
+    const matchModule = moduleFilter === "semua" || (modTypes && modTypes.includes(log.entity_type));
+
     const matchEntity = entityFilter === "semua" || log.entity_type === entityFilter;
     const matchUser = userFilter === "semua" || log.user_email === userFilter;
 
@@ -203,15 +208,17 @@ export default function ActivityLogPage() {
     if (dateFrom && log.timestamp) matchDate = log.timestamp >= dateFrom;
     if (dateTo && log.timestamp && matchDate) matchDate = log.timestamp.startsWith(dateTo) || log.timestamp <= dateTo + "T23:59:59";
 
-    return matchSearch && matchAction && matchEntity && matchUser && matchDate;
+    return matchSearch && matchAction && matchModule && matchEntity && matchUser && matchDate;
   });
 
   const stats = {
     total: filtered.length,
     create: filtered.filter(l => l.action === "create").length,
     update: filtered.filter(l => l.action === "update").length,
-    delete: filtered.filter(l => l.action === "delete").length,
+    other: filtered.filter(l => !["create", "update"].includes(l.action)).length,
   };
+
+  const hasAnyFilter = search || actionGroupFilter !== "semua" || moduleFilter !== "semua" || entityFilter !== "semua" || userFilter !== "semua" || dateFrom || dateTo;
 
   if (!["owner", "admin", "manajer", "keeper", "kepala_feeder"].includes(role)) {
     return (
@@ -235,7 +242,7 @@ export default function ActivityLogPage() {
           { label: "Total Aktivitas", val: stats.total, color: "text-foreground" },
           { label: "Buat", val: stats.create, color: "text-green-600" },
           { label: "Ubah", val: stats.update, color: "text-blue-600" },
-          { label: "Hapus", val: stats.delete, color: "text-red-600" },
+          { label: "Lainnya", val: stats.other, color: "text-purple-600" },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-4 text-center">
@@ -248,7 +255,7 @@ export default function ActivityLogPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
-        <div className="relative flex-1 min-w-[180px]">
+        <div className="relative min-w-[180px] flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Cari nama, user, perubahan..."
@@ -258,32 +265,49 @@ export default function ActivityLogPage() {
           />
         </div>
 
-        <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-32 h-9">
-            <SelectValue placeholder="Aksi" />
+        {/* Filter Tipe Aksi */}
+        <Select value={actionGroupFilter} onValueChange={setActionGroupFilter}>
+          <SelectTrigger className="w-36 h-9">
+            <SelectValue placeholder="Tipe Aksi" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="semua">Semua Aksi</SelectItem>
-            <SelectItem value="create">Buat</SelectItem>
-            <SelectItem value="update">Ubah</SelectItem>
-            <SelectItem value="delete">Hapus</SelectItem>
+            <SelectItem value="update">✏️ Ubah</SelectItem>
+            <SelectItem value="create">➕ Tambah</SelectItem>
+            <SelectItem value="delete">🗑️ Hapus</SelectItem>
+            <SelectItem value="approve">✅ Approve</SelectItem>
+            <SelectItem value="transfer">🔄 Transfer</SelectItem>
+            <SelectItem value="checkinout">🕐 Check In/Out</SelectItem>
           </SelectContent>
         </Select>
 
+        {/* Filter Modul */}
+        <Select value={moduleFilter} onValueChange={setModuleFilter}>
+          <SelectTrigger className="w-36 h-9">
+            <SelectValue placeholder="Modul" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="semua">Semua Modul</SelectItem>
+            {Object.entries(MODULE_GROUPS).map(([key, g]) => (
+              <SelectItem key={key} value={key}>{g.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Filter Tipe Data spesifik */}
         <Select value={entityFilter} onValueChange={setEntityFilter}>
-          <SelectTrigger className="w-44 h-9">
+          <SelectTrigger className="w-40 h-9">
             <SelectValue placeholder="Tipe Data" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="semua">Semua Tipe</SelectItem>
             {entityTypes.map(type => (
-              <SelectItem key={type} value={type}>
-                {ENTITY_ICONS[type] || "📄"} {type}
-              </SelectItem>
+              <SelectItem key={type} value={type}>{ENTITY_ICONS[type] || "📄"} {type}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
+        {/* Filter User */}
         {!isKeeperLevel && (
           <Select value={userFilter} onValueChange={setUserFilter}>
             <SelectTrigger className="w-44 h-9">
@@ -298,16 +322,17 @@ export default function ActivityLogPage() {
           </Select>
         )}
 
+        {/* Date range */}
         <div className="flex items-center gap-1.5">
           <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-36" title="Dari tanggal" />
           <span className="text-muted-foreground text-xs">–</span>
           <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-36" title="Sampai tanggal" />
         </div>
 
-        {(search || actionFilter !== "semua" || entityFilter !== "semua" || userFilter !== "semua" || dateFrom || dateTo) && (
+        {hasAnyFilter && (
           <Button variant="ghost" size="sm" onClick={() => {
-            setSearch(""); setActionFilter("semua"); setEntityFilter("semua");
-            setUserFilter("semua"); setDateFrom(""); setDateTo("");
+            setSearch(""); setActionGroupFilter("semua"); setModuleFilter("semua");
+            setEntityFilter("semua"); setUserFilter("semua"); setDateFrom(""); setDateTo("");
           }}>
             Reset
           </Button>
@@ -336,52 +361,53 @@ export default function ActivityLogPage() {
                 <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">Tipe Data</th>
                 <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">Nama</th>
                 {!isKeeperLevel && <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">User</th>}
-                <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium hidden md:table-cell">Ringkasan Perubahan</th>
+                <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium hidden md:table-cell">Ringkasan</th>
                 <th className="px-4 py-2.5"></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((log, i) => (
-                <tr
-                  key={log.id || i}
-                  className="border-t hover:bg-muted/30 cursor-pointer transition-colors"
-                  onClick={() => setSelectedLog(log)}
-                >
-                  <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                    {formatTimestamp(log.timestamp)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline" className={`text-xs ${ACTION_COLORS[log.action] || "bg-gray-100"}`}>
-                      {ACTION_LABELS[log.action] || log.action}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {ENTITY_ICONS[log.entity_type] || "📄"} {log.entity_type}
-                  </td>
-                  <td className="px-4 py-3 font-medium">
-                    {log.entity_name || <span className="text-muted-foreground italic">—</span>}
-                  </td>
-                  {!isKeeperLevel && (
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {log.user_name || log.user_email}
+              {filtered.map((log, i) => {
+                const meta = ACTION_META[log.action] || { label: log.action, color: "bg-gray-100 text-gray-700 border-gray-300", icon: "📄" };
+                return (
+                  <tr
+                    key={log.id || i}
+                    className="border-t hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => setSelectedLog(log)}
+                  >
+                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {formatTimestamp(log.timestamp)}
                     </td>
-                  )}
-                  <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell max-w-xs">
-                    {log.changes_summary ? (
-                      <span className="line-clamp-2">{log.changes_summary}</span>
-                    ) : log.action === "update" ? (
-                      <span className="italic opacity-50">Tidak ada detail</span>
-                    ) : (
-                      <span className="opacity-40">—</span>
+                    <td className="px-4 py-3">
+                      <Badge variant="outline" className={`text-xs ${meta.color}`}>
+                        {meta.icon} {meta.label}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {ENTITY_ICONS[log.entity_type] || "📄"} {log.entity_type}
+                    </td>
+                    <td className="px-4 py-3 font-medium">
+                      {log.entity_name || <span className="text-muted-foreground italic">—</span>}
+                    </td>
+                    {!isKeeperLevel && (
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {log.user_name || log.user_email}
+                      </td>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <Eye className="w-3.5 h-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell max-w-xs">
+                      {log.changes_summary ? (
+                        <span className="line-clamp-2">{log.changes_summary}</span>
+                      ) : (
+                        <span className="opacity-40">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Eye className="w-3.5 h-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { logActivity } from "@/lib/logActivity";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -91,6 +92,17 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
     const oldEnclosure = tortoise.enclosure || "";
 
     await base44.entities.Tortoise.update(tortoise.id, { enclosure: target });
+
+    await logActivity({
+      action: "transfer",
+      entity_type: "Tortoise",
+      entity_id: tortoise.id,
+      entity_name: tortoise.name,
+      changes_detail: [
+        { field: "enclosure", label: "Kandang", old_value: oldEnclosure || "-", new_value: target },
+      ],
+      changes_summary: `Pindah kandang: ${oldEnclosure || "-"} → ${target}`,
+    });
 
     await base44.entities.EnclosureHistory.create({
       tortoise_id: tortoise.id,

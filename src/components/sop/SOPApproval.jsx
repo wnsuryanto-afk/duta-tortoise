@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, XCircle, Star, ChevronDown, ChevronUp, AlertTriangle, UserCheck } from "lucide-react";
+import { logActivity } from "@/lib/logActivity";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -120,6 +121,18 @@ export default function SOPApproval() {
       approved_points: willApprove,
     });
 
+    await logActivity({
+      action: "approve",
+      entity_type: "DailyChecklist",
+      entity_id: checklist.id,
+      entity_name: `${checklist.employee_name} - ${checklist.date}`,
+      changes_detail: [
+        { field: "status", label: "Status", old_value: "submitted", new_value: "approved" },
+        { field: "approved_points", label: "Poin Disetujui", old_value: "-", new_value: String(willApprove) },
+      ],
+      changes_summary: `Checklist disetujui: ${willApprove} poin`,
+    });
+
     const period = checklist.date?.substring(0, 7);
     const existing = await base44.entities.BonusReward.filter({
       employee_email: checklist.employee_email,
@@ -156,6 +169,19 @@ export default function SOPApproval() {
       approved_points: 0,
       rejection_reason: rejectReason[checklist.id] || "",
     });
+
+    await logActivity({
+      action: "reject",
+      entity_type: "DailyChecklist",
+      entity_id: checklist.id,
+      entity_name: `${checklist.employee_name} - ${checklist.date}`,
+      changes_detail: [
+        { field: "status", label: "Status", old_value: "submitted", new_value: "rejected" },
+        { field: "approved_points", label: "Poin Disetujui", old_value: "-", new_value: "0" },
+      ],
+      changes_summary: "Checklist ditolak",
+    });
+
     queryClient.invalidateQueries({ queryKey: ["checklists-all"] });
     setProcessing(p => ({ ...p, [checklist.id]: false }));
   };
