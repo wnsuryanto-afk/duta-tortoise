@@ -93,6 +93,11 @@
       "type": "boolean",
       "default": false,
       "description": "Data dimigrasikan dari ItemUsage lama"
+    },
+    "excluded_from_reports": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)"
     }
   },
   "required": [

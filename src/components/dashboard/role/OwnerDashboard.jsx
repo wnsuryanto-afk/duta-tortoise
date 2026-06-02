@@ -7,6 +7,7 @@ import {
   TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart,
   Users, AlertTriangle, BarChart2, Target, ChevronRight, RefreshCw, ShieldAlert
 } from "lucide-react";
+import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -226,8 +227,9 @@ export default function OwnerDashboard({ user }) {
   });
 
   // ── Finance Calcs ─────────────────────────────────
-  const finThisMonth = finances.filter(f => f.date >= thisMonthStart && f.date <= thisMonthEnd);
-  const finLastMonth = finances.filter(f => f.date >= lastMonthStart && f.date <= lastMonthEnd);
+  const activeFinances = finances.filter(f => !f.excluded_from_reports);
+  const finThisMonth = activeFinances.filter(f => f.date >= thisMonthStart && f.date <= thisMonthEnd);
+  const finLastMonth = activeFinances.filter(f => f.date >= lastMonthStart && f.date <= lastMonthEnd);
 
   const sumIncome = (arr) => arr.filter(f => f.type === "pemasukan").reduce((s, f) => s + (f.amount || 0), 0);
   const sumExpense = (arr) => arr.filter(f => f.type === "pengeluaran").reduce((s, f) => s + (f.amount || 0), 0);
@@ -298,10 +300,11 @@ export default function OwnerDashboard({ user }) {
   const totalDebt = debtors.reduce((s, b) => s + (b.remaining_balance || 0), 0);
 
   // ── Charts ────────────────────────────────────────
+  const activeSales = sales.filter(s => !s.excluded_from_reports);
   const last6Months = Array.from({ length: 6 }).map((_, i) => {
     const d = subMonths(now, 5 - i);
     const key = format(d, "yyyy-MM");
-    const total = sales
+    const total = activeSales
       .filter(s => (s.date || s.sale_date || s.created_date || "").startsWith(key))
       .reduce((sum, s) => sum + (s.price || s.amount || 0), 0);
     return { name: MONTH_NAMES_ID[d.getMonth()], value: total };
@@ -330,14 +333,16 @@ export default function OwnerDashboard({ user }) {
   const totalKasbonDebt = activeKasbons.reduce((s, k) => s + (k.remaining_amount || k.amount || 0), 0);
 
   // Lembur bulan ini
-  const otThis = otLogs.filter(o => (o.date || "").startsWith(thisMonthKey));
-  const otLast = otLogs.filter(o => (o.date || "").startsWith(format(subMonths(now, 1), "yyyy-MM")));
+  const otThis = activeOtLogs.filter(o => (o.date || "").startsWith(thisMonthKey));
+  const otLast = activeOtLogs.filter(o => (o.date || "").startsWith(format(subMonths(now, 1), "yyyy-MM")));
   const totalOtHoursThis = otThis.reduce((s, o) => s + (o.hours || 0), 0);
   const totalOtHoursLast = otLast.reduce((s, o) => s + (o.hours || 0), 0);
   const totalOtPayThis = otThis.reduce((s, o) => s + (o.total_pay || 0), 0);
 
   // SP Aktif
   const activeWarnings = warnings.filter(w => w.status === "aktif" || !w.status);
+  const activeOtLogs = otLogs.filter(o => !o.excluded_from_reports);
+  const activeMeasurements = measurements.filter(m => !m.excluded_from_reports);
 
   // ── Supplier ──────────────────────────────────────
   const supplierExpenses = finances.filter(f => f.type === "pengeluaran" && f.date?.startsWith(thisMonthKey));
@@ -351,8 +356,8 @@ export default function OwnerDashboard({ user }) {
   }).filter(e => e.count > 0).sort((a, b) => b.count - a.count || a.sick - b.sick).slice(0, 5);
 
   // ── Growth Rate ───────────────────────────────────
-  const measThis = measurements.filter(m => (m.date || "").startsWith(thisMonthKey));
-  const measLast = measurements.filter(m => (m.date || "").startsWith(format(subMonths(now, 1), "yyyy-MM")));
+  const measThis = activeMeasurements.filter(m => (m.date || "").startsWith(thisMonthKey));
+  const measLast = activeMeasurements.filter(m => (m.date || "").startsWith(format(subMonths(now, 1), "yyyy-MM")));
   const avgWeight = (arr) => arr.length ? Math.round(arr.reduce((s, m) => s + (m.weight_grams || 0), 0) / arr.length) : 0;
   const avgLength = (arr) => arr.length ? (arr.reduce((s, m) => s + (m.shell_length_cm || 0), 0) / arr.length).toFixed(1) : 0;
   const wThis = avgWeight(measThis), wLast = avgWeight(measLast);
@@ -419,6 +424,9 @@ export default function OwnerDashboard({ user }) {
           <BarChart2 className="w-4 h-4" /> Lihat Laporan Lengkap
         </Link>
       </div>
+
+      {/* ── EXCLUDED DATA WIDGET ── */}
+      <ExcludedDataWidget />
 
       {/* ── ROW 1: KESEHATAN FINANSIAL ── */}
       <div>

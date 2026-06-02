@@ -6,6 +6,7 @@ import ExportButton from "@/components/common/ExportButton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, DollarSign, Printer, CreditCard } from "lucide-react";
+import ExcludeToggle from "@/components/owner/ExcludeToggle";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import SaleForm from "@/components/sales/SaleForm";
@@ -30,7 +31,8 @@ const shippingLabels = { ambil_sendiri: "Ambil Sendiri", kirim_kurir: "Kurir", c
 
 export default function SalesList() {
   const queryClient = useQueryClient();
-  const { role } = useCurrentUser();
+  const { user, role } = useCurrentUser();
+  const isOwner = role === "owner";
   const perms = getPerms(role, "sales");
   const ownerCanDelete = canDeleteGlobal(role);
   const [showForm, setShowForm] = useState(false);
@@ -50,7 +52,7 @@ export default function SalesList() {
 
   if (!canAccess(role, "sales")) return <AccessDenied />;
 
-  const totalRevenue = sales.reduce((sum, s) => sum + (s.price || 0), 0);
+  const totalRevenue = sales.filter(s => !s.excluded_from_reports).reduce((sum, s) => sum + (s.price || 0), 0);
 
   const handleDelete = async (sale) => {
     if (confirm("Hapus data penjualan ini?")) {
@@ -105,7 +107,7 @@ export default function SalesList() {
       ) : (
         <div className="space-y-3">
           {sales.map((s) => (
-            <Card key={s.id} className="p-4 hover:shadow-md transition-shadow group">
+            <Card key={s.id} className={`p-4 hover:shadow-md transition-shadow group ${s.excluded_from_reports ? "opacity-60 border-dashed" : ""}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 flex-1">
                   <div className="text-center flex-shrink-0 w-14">
@@ -156,7 +158,10 @@ export default function SalesList() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  {isOwner && (
+                    <ExcludeToggle record={s} entityName="Sale" queryKey={["sales"]} />
+                  )}
                   {perms.canEdit && (
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="Bukti Bayar" onClick={() => setProofSale(s)}>
                       <CreditCard className="w-3.5 h-3.5" />

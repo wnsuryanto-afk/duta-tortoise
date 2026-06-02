@@ -15,6 +15,7 @@ import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import ExcludeToggle from "@/components/owner/ExcludeToggle";
 
 const CATEGORIES = {
   penjualan_tortoise: { label: "Penjualan Tortoise",     color: "bg-green-100 text-green-700",   type: "pemasukan"    },
@@ -52,8 +53,12 @@ export default function FinancePage() {
 
   if (!canAccess(role, "finance")) return <AccessDenied />;
 
-  // Filter by period
-  const periodTx = transactions.filter((t) => t.date?.startsWith(period));
+  const isOwner = role === "owner";
+
+  // Filter by period — laporan hanya tampil yang tidak di-exclude
+  const periodTx = transactions.filter((t) => t.date?.startsWith(period) && !t.excluded_from_reports);
+  // Untuk list lengkap (termasuk excluded, tapi ditandai)
+  const periodTxAll = transactions.filter((t) => t.date?.startsWith(period));
 
   const totalPemasukan = periodTx.filter((t) => t.type === "pemasukan").reduce((s, t) => s + (t.amount || 0), 0);
   const totalPengeluaran = periodTx.filter((t) => t.type === "pengeluaran").reduce((s, t) => s + (t.amount || 0), 0);
@@ -181,28 +186,28 @@ export default function FinancePage() {
 
         {/* Pemasukan */}
         <TabsContent value="pemasukan" className="mt-4 space-y-2">
-          {periodTx.filter(t => t.type === "pemasukan").length === 0 ? (
+          {periodTxAll.filter(t => t.type === "pemasukan").length === 0 ? (
             <p className="text-center py-10 text-muted-foreground">Belum ada pemasukan bulan ini</p>
-          ) : periodTx.filter(t => t.type === "pemasukan").map((t) => (
-            <TxRow key={t.id} tx={t} />
+          ) : periodTxAll.filter(t => t.type === "pemasukan").map((t) => (
+            <TxRow key={t.id} tx={t} isOwner={isOwner} />
           ))}
         </TabsContent>
 
         {/* Pengeluaran */}
         <TabsContent value="pengeluaran" className="mt-4 space-y-2">
-          {periodTx.filter(t => t.type === "pengeluaran").length === 0 ? (
+          {periodTxAll.filter(t => t.type === "pengeluaran").length === 0 ? (
             <p className="text-center py-10 text-muted-foreground">Belum ada pengeluaran bulan ini</p>
-          ) : periodTx.filter(t => t.type === "pengeluaran").map((t) => (
-            <TxRow key={t.id} tx={t} />
+          ) : periodTxAll.filter(t => t.type === "pengeluaran").map((t) => (
+            <TxRow key={t.id} tx={t} isOwner={isOwner} />
           ))}
         </TabsContent>
 
         {/* Semua */}
         <TabsContent value="semua" className="mt-4 space-y-2">
-          {periodTx.length === 0 ? (
+          {periodTxAll.length === 0 ? (
             <p className="text-center py-10 text-muted-foreground">Belum ada transaksi bulan ini</p>
-          ) : periodTx.map((t) => (
-            <TxRow key={t.id} tx={t} />
+          ) : periodTxAll.map((t) => (
+            <TxRow key={t.id} tx={t} isOwner={isOwner} />
           ))}
         </TabsContent>
       </Tabs>
@@ -261,27 +266,36 @@ export default function FinancePage() {
   );
 }
 
-function TxRow({ tx }) {
+function TxRow({ tx, isOwner }) {
   const conf = CATEGORIES[tx.category] || CATEGORIES.lainnya;
   return (
-    <Card className="p-3 flex items-center gap-3">
+    <Card className={`p-3 flex items-center gap-3 ${tx.excluded_from_reports ? "opacity-60 border-dashed border-gray-300" : ""}`}>
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm ${tx.type === "pemasukan" ? "bg-green-100" : "bg-red-100"}`}>
         {tx.type === "pemasukan" ? "↑" : "↓"}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{tx.description || conf.label}</p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${conf.color}`}>{conf.label}</span>
           {tx.created_by_name && <span className="text-xs text-muted-foreground">{tx.created_by_name}</span>}
         </div>
       </div>
-      <div className="text-right flex-shrink-0">
-        <p className={`text-sm font-bold ${tx.type === "pemasukan" ? "text-green-600" : "text-red-600"}`}>
-          {tx.type === "pemasukan" ? "+" : "-"}Rp {(tx.amount || 0).toLocaleString("id-ID")}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {tx.date && format(parseISO(tx.date), "d MMM", { locale: id })}
-        </p>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="text-right">
+          <p className={`text-sm font-bold ${tx.type === "pemasukan" ? "text-green-600" : "text-red-600"}`}>
+            {tx.type === "pemasukan" ? "+" : "-"}Rp {(tx.amount || 0).toLocaleString("id-ID")}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {tx.date && format(parseISO(tx.date), "d MMM", { locale: id })}
+          </p>
+        </div>
+        {isOwner && (
+          <ExcludeToggle
+            record={tx}
+            entityName="FinanceTransaction"
+            queryKey={["finance-transactions"]}
+          />
+        )}
       </div>
     </Card>
   );

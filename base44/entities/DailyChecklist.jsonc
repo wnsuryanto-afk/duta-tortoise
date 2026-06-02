@@ -86,6 +86,11 @@
     "notes": {
       "type": "string",
       "description": "Catatan tambahan"
+    },
+    "excluded_from_reports": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)"
     }
   },
   "required": [

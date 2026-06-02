@@ -112,8 +112,7 @@
         "type": "object",
         "properties": {
           "item_id": {
-            "type": "string",
-            "description": "ID WarehouseItem"
+            "type": "string"
           },
           "item_name": {
             "type": "string"
@@ -169,6 +168,11 @@
       "type": "string",
       "format": "date",
       "description": "Tanggal kontrol berikutnya"
+    },
+    "excluded_from_reports": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)"
     }
   },
   "required": [

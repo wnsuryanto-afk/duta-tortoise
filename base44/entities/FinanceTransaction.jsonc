@@ -45,6 +45,11 @@
     },
     "created_by_name": {
       "type": "string"
+    },
+    "excluded_from_reports": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)"
     }
   },
   "required": [

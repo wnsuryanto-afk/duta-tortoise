@@ -45,6 +45,11 @@
     "notes": {
       "type": "string",
       "description": "Catatan"
+    },
+    "excluded_from_reports": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)"
     }
   },
   "required": [
