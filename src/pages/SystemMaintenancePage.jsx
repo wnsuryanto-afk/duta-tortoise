@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Database, Home, Users, CheckCircle2, AlertTriangle, Baby } from "lucide-react";
+import { RefreshCw, Database, Home, Users, CheckCircle2, AlertTriangle, Baby, FlaskConical } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
+import TestModeSettings from "@/components/owner/TestModeSettings";
 
 export default function SystemMaintenancePage() {
   const { role } = useCurrentUser();
@@ -58,6 +59,12 @@ export default function SystemMaintenancePage() {
       <div>
         <h1 className="text-2xl font-heading font-bold text-foreground">Pemeliharaan Sistem</h1>
         <p className="text-muted-foreground text-sm mt-1">Sinkronisasi dan recalculate data untuk menjaga integritas</p>
+      </div>
+
+      {/* Mode Testing */}
+      <div>
+        <h2 className="text-base font-semibold text-foreground mb-3">Mode Testing</h2>
+        <TestModeSettings />
       </div>
 
       {/* Target & Poin */}
@@ -179,6 +186,38 @@ export default function SystemMaintenancePage() {
             )}
             {results.babyMigrate?.error && (
               <div className="text-sm text-red-700 bg-red-50 p-2 rounded-lg">✗ {results.babyMigrate.error}</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tag Data Test Lama */}
+        <Card className="md:col-span-2 border border-purple-200 bg-purple-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-800">
+              <FlaskConical className="w-5 h-5 text-purple-600" />
+              Tandai Data Test Lama (Sekali Pakai)
+            </CardTitle>
+            <CardDescription className="text-purple-700">
+              Tandai DailyChecklist dari "Iwan Suryanto" & "Diana Susantio" sebelum 2026-06-02, dan Attendance dengan durasi &lt;5 menit sebagai <code className="bg-purple-100 px-1 rounded">is_test_data=true</code>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              variant="outline"
+              onClick={() => handleRecalculate("tagLegacy", "tagLegacyTestData")}
+              disabled={loading.tagLegacy}
+              className="w-full gap-2 border-purple-300 text-purple-800 hover:bg-purple-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading.tagLegacy ? 'animate-spin' : ''}`} />
+              {loading.tagLegacy ? "Memproses..." : "Jalankan Tagging Data Test Lama"}
+            </Button>
+            {results.tagLegacy && !results.tagLegacy.error && (
+              <div className="text-sm text-purple-800 bg-purple-100 p-2 rounded-lg">
+                ✓ {results.tagLegacy.message}
+              </div>
+            )}
+            {results.tagLegacy?.error && (
+              <div className="text-sm text-red-700 bg-red-50 p-2 rounded-lg">✗ {results.tagLegacy.error}</div>
             )}
           </CardContent>
         </Card>

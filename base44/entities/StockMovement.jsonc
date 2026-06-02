@@ -98,6 +98,11 @@
       "type": "boolean",
       "default": false,
       "description": "Dikecualikan dari laporan (owner only)"
+    },
+    "is_test_data": {
+      "type": "boolean",
+      "default": false,
+      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan"
     }
   },
   "required": [

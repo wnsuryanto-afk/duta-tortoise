@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import TourController from "@/components/tutorial/TourController";
 import IncompleteProfileBanner from "@/components/profile/IncompleteProfileBanner";
+import TestModeBanner from "@/components/owner/TestModeBanner";
 import { toast } from "sonner";
 
 // ── Fullscreen profile setup — ditampilkan saat profil belum lengkap (non-owner) ──
@@ -299,6 +300,7 @@ export default function AppLayout() {
           </div>
         </div>
 
+        <TestModeBanner />
         <div className="p-4 lg:p-8 max-w-7xl mx-auto">
           {isOwner && <IncompleteProfileBanner user={user} profile={profile} />}
           <Outlet />

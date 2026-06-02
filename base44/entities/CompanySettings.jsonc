@@ -67,6 +67,20 @@
       "type": "number",
       "default": 500000,
       "description": "Nilai minimum stok keluar yang memerlukan approval (Rp)"
+    },
+    "test_mode_active": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mode testing aktif \u2014 semua data baru akan ditandai is_test_data=true"
+    },
+    "test_mode_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu test mode diaktifkan"
+    },
+    "test_mode_started_by": {
+      "type": "string",
+      "description": "Email user yang mengaktifkan test mode"
     }
   },
   "required": [

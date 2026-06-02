@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp } from "lucide-react";
+import { useTestMode } from "@/lib/useTestMode";
 
 export default function SaleForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
+  const { testModeTag } = useTestMode();
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -62,7 +64,7 @@ export default function SaleForm({ open, onClose, editData }) {
     if (editData?.id) {
       await base44.entities.Sale.update(editData.id, data);
     } else {
-      await base44.entities.Sale.create(data);
+      await base44.entities.Sale.create({ ...data, ...testModeTag });
       // Update tortoise status to terjual and remove from enclosure
       if (data.tortoise_id) {
         await base44.entities.Tortoise.update(data.tortoise_id, {
