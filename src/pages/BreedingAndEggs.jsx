@@ -416,11 +416,11 @@ export default function BreedingAndEggs() {
 
                     {/* Egg Grid */}
                     <div className="p-4 pt-3">
-                      {b.egg_records && b.egg_records.length > 0 ? (
+                      {b.egg_count > 0 ? (
                         <EggGrid breeding={b} onRequestNewTortoise={(data) => { setNewTortoiseData(data); setShowTortoiseForm(true); }} />
                       ) : (
                         <p className="text-xs text-muted-foreground text-center py-2">
-                          Belum ada data per butir telur • {b.egg_count} butir total
+                          Jumlah telur belum diisi
                         </p>
                       )}
                     </div>
