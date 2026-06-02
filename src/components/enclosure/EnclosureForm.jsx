@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { logActivity } from "@/lib/logActivity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +22,30 @@ export default function EnclosureForm({ enclosure, onClose, onSaved }) {
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const mutation = useMutation({
-    mutationFn: () => isEdit
-      ? base44.entities.Enclosure.update(enclosure.id, form)
-      : base44.entities.Enclosure.create(form),
+    mutationFn: async () => {
+      if (isEdit) {
+        const result = await base44.entities.Enclosure.update(enclosure.id, form);
+        await logActivity({
+          action: "update",
+          entity_type: "Enclosure",
+          entity_id: enclosure.id,
+          entity_name: form.name,
+          before: enclosure,
+          after: form,
+        });
+        return result;
+      } else {
+        const result = await base44.entities.Enclosure.create(form);
+        await logActivity({
+          action: "create",
+          entity_type: "Enclosure",
+          entity_id: result?.id,
+          entity_name: form.name,
+          notes: "Kandang baru ditambahkan",
+        });
+        return result;
+      }
+    },
     onSuccess: onSaved,
   });
 

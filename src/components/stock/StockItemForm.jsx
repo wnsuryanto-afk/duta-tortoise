@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { base44 } from "@/api/base44Client";
 import { generateSKU, getPrefix } from "@/lib/skuUtils";
 import { Camera, RefreshCw } from "lucide-react";
+import { logActivity } from "@/lib/logActivity";
 
 /**
  * Reusable form for FeedStock and WarehouseItem.
@@ -156,12 +157,28 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
       payload.purchase_price = Number(form.purchase_price) || 0;
     }
 
+    const entityType = isFeed ? "FeedStock" : "WarehouseItem";
     const Entity = isFeed ? base44.entities.FeedStock : base44.entities.WarehouseItem;
     let saved;
     if (editData?.id) {
       saved = await Entity.update(editData.id, payload);
+      await logActivity({
+        action: "update",
+        entity_type: entityType,
+        entity_id: editData.id,
+        entity_name: form.name,
+        before: editData,
+        after: payload,
+      });
     } else {
       saved = await Entity.create(payload);
+      await logActivity({
+        action: "create",
+        entity_type: entityType,
+        entity_id: saved?.id,
+        entity_name: form.name,
+        notes: `${isFeed ? "Pakan" : "Barang gudang"} baru ditambahkan`,
+      });
     }
     setSaving(false);
     onSaved(saved || payload);
