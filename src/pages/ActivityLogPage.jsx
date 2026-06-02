@@ -123,7 +123,7 @@ function ActivityDetailModal({ log, onClose }) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic">Detail perubahan tidak tersedia</p>
+              <p className="text-sm text-muted-foreground italic">Tidak ada detail perubahan tercatat</p>
             )}
           </div>
         )}

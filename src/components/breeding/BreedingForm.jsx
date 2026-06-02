@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { logActivity } from "@/lib/logActivity";
 import { Loader2, Camera, X, ImagePlus, AlertTriangle } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -155,8 +156,23 @@ export default function BreedingForm({ open, onClose, editData }) {
     };
     if (editData?.id) {
       await base44.entities.Breeding.update(editData.id, data);
+      await logActivity({
+        action: "update",
+        entity_type: "Breeding",
+        entity_id: editData.id,
+        entity_name: `${form.male_name} × ${form.female_name}`,
+        before: editData,
+        after: data,
+      });
     } else {
-      await base44.entities.Breeding.create(data);
+      const created = await base44.entities.Breeding.create(data);
+      await logActivity({
+        action: "create",
+        entity_type: "Breeding",
+        entity_id: created.id,
+        entity_name: `${form.male_name} × ${form.female_name}`,
+        notes: "Data breeding baru ditambahkan",
+      });
     }
 
     // Update current_eggs di inkubator jika dipilih

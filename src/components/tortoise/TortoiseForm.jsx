@@ -270,7 +270,8 @@ export default function TortoiseForm({ open, onClose, editData }) {
         entity_type: "Tortoise",
         entity_id: editData.id,
         entity_name: form.name,
-        changes: { before: oldData, after: data },
+        before: oldData,
+        after: data,
         notes: `Status: ${oldData?.status} → ${data.status}`,
       });
     } else {
