@@ -3,16 +3,25 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Eye, User, ChevronRight, UserPlus } from "lucide-react";
 import { useViewAs } from "@/lib/ViewAsContext";
 import { ROLE_LABELS } from "@/lib/permissions";
+import { useNavigate } from "react-router-dom";
+
+const ROLE_OPTIONS = [
+  { role: "owner",         emoji: "👑", label: "Owner",         desc: "Akses penuh semua fitur" },
+  { role: "manajer",       emoji: "📊", label: "Manajer",       desc: "Dashboard keuangan, SDM, breeding" },
+  { role: "admin",         emoji: "🗂️", label: "Admin",         desc: "Approval queue, stok, treatment" },
+  { role: "kepala_feeder", emoji: "👨‍💼", label: "Kepala Feeder", desc: "Feeding, SOP, kandang" },
+  { role: "keeper",        emoji: "👷", label: "Keeper",        desc: "Absensi, task harian, checklist" },
+];
 
 export default function ViewAsSelector({ open, onClose }) {
   const { activateViewAs } = useViewAs();
-  const [mode, setMode] = useState("role"); // "role" | "user"
-  const [selectedRole, setSelectedRole] = useState("");
-  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserMode, setShowUserMode] = useState(false);
+  const navigate = useNavigate();
 
   const { data: users = [] } = useQuery({
     queryKey: ["users-list"],
@@ -22,93 +31,124 @@ export default function ViewAsSelector({ open, onClose }) {
 
   const nonOwners = users.filter(u => u.role !== "owner");
 
-  const handleActivate = () => {
-    if (mode === "role" && selectedRole) {
-      activateViewAs(selectedRole, ROLE_LABELS[selectedRole] || selectedRole);
+  const handleSelectRole = (role, label) => {
+    if (role === "owner") {
+      activateViewAs(null, "Owner");
       onClose();
-    } else if (mode === "user" && selectedUser) {
-      const u = users.find(u => u.id === selectedUser);
-      if (u) {
-        activateViewAs(u.role || "keeper", `${u.full_name || u.email} (${ROLE_LABELS[u.role] || u.role})`);
-        onClose();
-      }
+      return;
     }
+    const matchingUser = users.find(u => u.role === role);
+    const userEmail = matchingUser?.email || null;
+    activateViewAs(role, label, userEmail);
+    onClose();
+  };
+
+  const handleSelectUser = (u) => {
+    activateViewAs(u.role || "keeper", `${u.full_name || u.email} (${ROLE_LABELS[u.role] || u.role})`, u.email);
+    onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Eye className="w-4 h-4" /> Lihat Sebagai
+      <DialogContent className="max-w-sm p-0 overflow-hidden">
+        <DialogHeader className="px-5 pt-5 pb-3 border-b">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Eye className="w-4 h-4 text-primary" /> Lihat Sebagai
           </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <p className="text-sm text-muted-foreground">
-            Simulasikan tampilan dan akses sesuai role atau user tertentu. Anda tetap sebagai Owner, hanya tampilan yang berubah.
+          <p className="text-xs text-muted-foreground mt-1">
+            Simulasikan tampilan sesuai role. Anda tetap sebagai Owner — tidak ada data yang berubah.
           </p>
+        </DialogHeader>
 
-          {/* Mode toggle */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMode("role")}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${mode === "role" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border"}`}
-            >
-              Per Role
-            </button>
-            <button
-              onClick={() => setMode("user")}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${mode === "user" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border"}`}
-            >
-              <Users className="inline w-3.5 h-3.5 mr-1" /> Per User
-            </button>
-          </div>
+        {/* Mode toggle */}
+        <div className="flex border-b">
+          <button
+            onClick={() => setShowUserMode(false)}
+            className={`flex-1 py-2.5 text-xs font-medium transition-colors ${!showUserMode ? "text-primary border-b-2 border-primary bg-primary/5" : "text-muted-foreground hover:bg-muted/40"}`}
+          >
+            Per Role
+          </button>
+          <button
+            onClick={() => setShowUserMode(true)}
+            className={`flex-1 py-2.5 text-xs font-medium transition-colors ${showUserMode ? "text-primary border-b-2 border-primary bg-primary/5" : "text-muted-foreground hover:bg-muted/40"}`}
+          >
+            <User className="inline w-3 h-3 mr-1" /> Per Karyawan
+          </button>
+        </div>
 
-          {mode === "role" && (
-            <div className="space-y-1.5">
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih role..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="keeper">🐢 Keeper</SelectItem>
-                  <SelectItem value="kepala_feeder">🧑‍🌾 Kepala Feeder</SelectItem>
-                  <SelectItem value="manajer">👔 Manajer</SelectItem>
-                  <SelectItem value="admin">🛡️ Admin</SelectItem>
-                  <SelectItem value="owner">👑 Owner</SelectItem>
-                  <SelectItem value="investor">👁 Investor</SelectItem>
-                </SelectContent>
-              </Select>
+        <div className="max-h-[400px] overflow-y-auto">
+          {!showUserMode ? (
+            <div className="py-2">
+              {ROLE_OPTIONS.map(({ role, emoji, label, desc }) => {
+                const matchingUsers = users.filter(u => u.role === role);
+                const hasUsers = matchingUsers.length > 0;
+
+                return (
+                  <button
+                    key={role}
+                    onClick={() => handleSelectRole(role, label)}
+                    className="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors text-left group"
+                  >
+                    <span className="text-xl w-8 text-center">{emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">{label}</p>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
+                      {!hasUsers && role !== "owner" && (
+                        <Badge variant="outline" className="text-[10px] mt-0.5 border-amber-300 text-amber-600 bg-amber-50">
+                          Belum ada user
+                        </Badge>
+                      )}
+                      {hasUsers && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {matchingUsers.length} user terdaftar
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-2">
+              {nonOwners.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground text-sm">
+                  <User className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                  <p>Belum ada karyawan terdaftar</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-3 gap-1.5"
+                    onClick={() => { navigate("/users"); onClose(); }}
+                  >
+                    <UserPlus className="w-3.5 h-3.5" /> Daftarkan User
+                  </Button>
+                </div>
+              ) : (
+                nonOwners.map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => handleSelectUser(u)}
+                    className="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                      {(u.full_name || u.email || "?")[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{u.full_name || u.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                      <Badge variant="outline" className="text-[10px] mt-0.5">{ROLE_LABELS[u.role] || u.role}</Badge>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                ))
+              )}
             </div>
           )}
+        </div>
 
-          {mode === "user" && (
-            <div className="space-y-1.5">
-              <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih karyawan..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {nonOwners.map(u => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.full_name || u.email} — {ROLE_LABELS[u.role] || u.role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-            <Button
-              className="flex-1 gap-2"
-              onClick={handleActivate}
-              disabled={(mode === "role" && !selectedRole) || (mode === "user" && !selectedUser)}
-            >
-              <Eye className="w-4 h-4" /> Aktifkan Pratinjau
-            </Button>
-          </div>
+        <div className="px-5 py-3 border-t">
+          <Button variant="outline" className="w-full" onClick={onClose}>Batal</Button>
         </div>
       </DialogContent>
     </Dialog>

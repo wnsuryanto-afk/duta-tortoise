@@ -1,13 +1,17 @@
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useViewAs } from "@/lib/ViewAsContext";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { UserPlus, AlertTriangle } from "lucide-react";
 import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import AdminDashboard from "@/components/dashboard/role/AdminDashboard";
 import KepalaFeederDashboard from "@/components/dashboard/role/KepalaFeederDashboard";
 
 // Fallback: dashboard lama untuk role yang belum punya tampilan khusus
-import { useQuery } from "@tanstack/react-query";
 import { Shell, Baby, Egg, ClipboardList, Users, Package, Target } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
@@ -73,30 +77,86 @@ function FallbackDashboard() {
   );
 }
 
-export default function Dashboard() {
-  const { user, role } = useCurrentUser();
+// Banner saat view-as role yang tidak punya user terdaftar
+function NoUserPreviewBanner({ role }) {
+  const navigate = useNavigate();
+  const ROLE_LABELS_LOCAL = {
+    keeper: "Keeper", kepala_feeder: "Kepala Feeder",
+    admin: "Admin", manajer: "Manajer",
+  };
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 mb-4 bg-amber-50 border border-amber-300 rounded-xl">
+      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-amber-800">
+          ⚠️ Preview Mode — Belum ada user dengan role "{ROLE_LABELS_LOCAL[role] || role}" terdaftar
+        </p>
+        <p className="text-xs text-amber-700 mt-0.5">
+          Dashboard ditampilkan dengan data yang ada. Daftarkan user baru agar tampilan lebih akurat.
+        </p>
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="border-amber-400 text-amber-800 hover:bg-amber-100 whitespace-nowrap flex-shrink-0"
+        onClick={() => navigate("/users")}
+      >
+        <UserPlus className="w-3.5 h-3.5 mr-1" /> Daftarkan User
+      </Button>
+    </div>
+  );
+}
 
-  // Notif checklist reminder — hanya 1x per sesi (bukan tiap buka halaman)
+export default function Dashboard() {
+  const { user, role: realRole } = useCurrentUser();
+  const { viewAsRole, viewAsUserEmail, isViewingAs } = useViewAs();
+
+  // Role yang digunakan untuk render
+  const effectiveRole = isViewingAs && viewAsRole ? viewAsRole : realRole;
+
+  // Cek apakah ada user dengan role ini
+  const { data: users = [] } = useQuery({
+    queryKey: ["users-list-for-preview"],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isViewingAs && !!viewAsRole,
+    staleTime: 60 * 1000,
+  });
+
+  const hasUserForRole = !isViewingAs || users.some(u => u.role === effectiveRole);
+  const showNoUserBanner = isViewingAs && viewAsRole && !hasUserForRole;
+
+  // Notif checklist reminder — hanya 1x per sesi
   useEffect(() => {
-    if (!role) return;
-    if (role !== "keeper" && role !== "kepala_feeder") return;
+    if (!realRole) return;
+    if (realRole !== "keeper" && realRole !== "kepala_feeder") return;
     const sessionKey = `checklist_reminder_checked_${new Date().toDateString()}`;
-    if (sessionStorage.getItem(sessionKey)) return; // sudah dicek hari ini di sesi ini
+    if (sessionStorage.getItem(sessionKey)) return;
     sessionStorage.setItem(sessionKey, "1");
-    // Tunda 5 detik agar tidak menambah beban saat load awal
     const t = setTimeout(() => {
       base44.functions.invoke("checkChecklistReminder", {}).catch(() => {});
     }, 5000);
     return () => clearTimeout(t);
-  }, [role]);
+  }, [realRole]);
 
   if (!user) return null;
 
-  if (role === "owner" || role === "manajer") return <OwnerDashboard user={user} />;
-  if (role === "admin") return <AdminDashboard user={user} />;
-  if (role === "kepala_feeder") return <KepalaFeederDashboard user={user} />;
-  if (role === "keeper") return <KeeperDashboard />;
+  // Saat "Lihat Sebagai" null atau owner: tampilkan normal
+  if (isViewingAs && viewAsRole === null) {
+    return <OwnerDashboard user={user} />;
+  }
 
-  // investor / lainnya
-  return <FallbackDashboard />;
+  const renderDashboard = () => {
+    if (effectiveRole === "owner" || effectiveRole === "manajer") return <OwnerDashboard user={user} />;
+    if (effectiveRole === "admin") return <AdminDashboard user={user} />;
+    if (effectiveRole === "kepala_feeder") return <KepalaFeederDashboard user={user} />;
+    if (effectiveRole === "keeper") return <KeeperDashboard viewAsEmail={isViewingAs ? viewAsUserEmail : undefined} />;
+    return <FallbackDashboard />;
+  };
+
+  return (
+    <div>
+      {showNoUserBanner && <NoUserPreviewBanner role={effectiveRole} />}
+      {renderDashboard()}
+    </div>
+  );
 }

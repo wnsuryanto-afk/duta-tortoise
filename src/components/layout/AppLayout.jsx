@@ -147,16 +147,17 @@ function ProfileSetupScreen({ user, onComplete }) {
 
 export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
-  const { viewAsRole, viewAsLabel, resetViewAs } = useViewAs();
+  const { viewAsRole, viewAsLabel, isViewingAs, resetViewAs } = useViewAs();
   const [showViewAsSelector, setShowViewAsSelector] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
-  const isOwner = user?.role === "owner";
-  const isGuidedRole = ["keeper", "kepala_feeder"].includes(user?.role);
+  const isOwner = user?.role === "owner"; // selalu berdasarkan role asli
+  // Saat ViewAs aktif, jangan masuk GuidedMode
+  const isGuidedRole = ["keeper", "kepala_feeder"].includes(user?.role) && !isViewingAs;
   const [forceNormalMode, setForceNormalMode] = useState(false);
   const isInvestor = (viewAsRole || user?.role) === "investor";
-  const isViewingAs = !!viewAsRole;
+  // isViewingAs comes from context now
 
   // Close user menu on outside click
   useEffect(() => {
@@ -205,15 +206,15 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {isViewingAs && (
-        <ViewAsRoleBanner viewAsLabel={viewAsLabel} onReset={resetViewAs} />
+      {isViewingAs && viewAsRole && (
+        <ViewAsRoleBanner viewAsLabel={viewAsLabel} viewAsRole={viewAsRole} onReset={resetViewAs} />
       )}
 
       <Sidebar viewAsRole={isViewingAs ? viewAsRole : null} />
 
       <main className={`lg:ml-64 min-h-screen ${isViewingAs ? "mt-10" : ""}`}>
         {/* ── Top bar ── */}
-        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className={`sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b transition-colors ${isViewingAs && viewAsRole ? "border-blue-400 border-b-2" : "border-border"}`}>
           <div className="flex justify-between items-center px-4 lg:px-8 py-3 max-w-7xl mx-auto">
             <div className="w-8 lg:hidden" />
             <div className="flex-1" />
@@ -227,6 +228,15 @@ export default function AppLayout() {
                 >
                   <Eye className="w-3.5 h-3.5" /> Lihat Sebagai
                 </Button>
+              )}
+
+              {isOwner && isViewingAs && viewAsRole && (
+                <button
+                  onClick={() => setShowViewAsSelector(true)}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200 transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Ganti Role
+                </button>
               )}
 
               {isInvestor && (
@@ -273,13 +283,13 @@ export default function AppLayout() {
                           {label}
                         </button>
                       ))}
-                      {isOwner && !isViewingAs && (
+                      {isOwner && (
                         <button
                           onClick={() => { setShowViewAsSelector(true); setShowUserMenu(false); }}
                           className="w-full flex items-center gap-3 px-4 py-2 text-[13px] hover:bg-amber-50 transition-colors text-amber-700"
                         >
                           <Eye className="w-4 h-4" />
-                          Lihat Sebagai...
+                          {isViewingAs && viewAsRole ? "Ganti Preview Role..." : "Lihat Sebagai..."}
                         </button>
                       )}
                       <ThemeToggle compact />
