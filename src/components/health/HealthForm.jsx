@@ -10,6 +10,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil } from "lucide-react";
 import DiagnosisPanel, { DIAGNOSIS_CATEGORIES } from "./DiagnosisPanel";
+import DosisKalkulator from "./DosisKalkulator";
 import TreatmentItemsPicker from "./TreatmentItemsPicker";
 import { useTestMode } from "@/lib/useTestMode";
 
@@ -350,6 +351,14 @@ export default function HealthForm({ open, onClose, editData }) {
               </div>
             )}
           </div>
+
+          {/* Kalkulator Dosis Otomatis */}
+          <DosisKalkulator
+            selectedDiagnoses={selectedDiagnoses}
+            tortoiseId={form.tortoise_id}
+            tortoises={tortoises}
+            onSalinTreatment={(ringkasan) => handleChange("treatment", ringkasan)}
+          />
 
           {/* Auto-panel panduan */}
           <DiagnosisPanel

@@ -1,0 +1,119 @@
+{
+  "name": "DiagnosisProtocol",
+  "type": "object",
+  "properties": {
+    "diagnosis_code": {
+      "type": "string",
+      "description": "Kode diagnosis (sama dengan enum di HealthRecord)"
+    },
+    "diagnosis_name": {
+      "type": "string",
+      "description": "Nama penyakit dalam Bahasa Indonesia"
+    },
+    "diagnosis_name_en": {
+      "type": "string",
+      "description": "Nama penyakit dalam Bahasa Inggris"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "infeksi_bakteri",
+        "infeksi_jamur",
+        "parasit",
+        "nutrisi",
+        "reproduksi",
+        "trauma",
+        "organ",
+        "pernapasan",
+        "pencernaan",
+        "mata",
+        "kulit",
+        "lainnya"
+      ],
+      "description": "Kategori penyakit"
+    },
+    "severity_default": {
+      "type": "string",
+      "enum": [
+        "ringan",
+        "sedang",
+        "berat",
+        "kritis"
+      ],
+      "description": "Tingkat keparahan default"
+    },
+    "gejala_utama": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Gejala utama yang terlihat"
+    },
+    "treatment_items": {
+      "type": "array",
+      "description": "Daftar obat + dosis per kg BB",
+      "items": {
+        "type": "object",
+        "properties": {
+          "obat_name": {
+            "type": "string",
+            "description": "Nama obat"
+          },
+          "obat_sku": {
+            "type": "string",
+            "description": "SKU di WarehouseItem"
+          },
+          "dosis_mg_per_kg": {
+            "type": "number",
+            "description": "Dosis dalam mg/kg BB"
+          },
+          "dosis_ml_per_kg": {
+            "type": "number",
+            "description": "Dosis dalam ml/kg BB (jika cairan)"
+          },
+          "rute": {
+            "type": "string",
+            "description": "SC / IM / Oral / Topikal / Mata"
+          },
+          "frekuensi": {
+            "type": "string",
+            "description": "1x/hari, 2x/hari, dst"
+          },
+          "durasi_hari": {
+            "type": "number",
+            "description": "Lama pemberian (hari)"
+          },
+          "catatan_dosis": {
+            "type": "string",
+            "description": "Catatan khusus dosis"
+          }
+        }
+      }
+    },
+    "perawatan_pendukung": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tindakan non-obat: rendam, isolasi, dll"
+    },
+    "catatan_penting": {
+      "type": "string",
+      "description": "Peringatan / catatan klinis penting"
+    },
+    "kapan_ke_drh": {
+      "type": "string",
+      "description": "Kondisi yang mengharuskan ke dokter hewan"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "diagnosis_code",
+    "diagnosis_name",
+    "category",
+    "treatment_items"
+  ]
+}
