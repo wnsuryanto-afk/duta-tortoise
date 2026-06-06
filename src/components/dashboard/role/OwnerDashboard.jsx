@@ -8,6 +8,7 @@ import {
   Users, AlertTriangle, BarChart2, Target, ChevronRight, RefreshCw, ShieldAlert
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
+import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -819,6 +820,9 @@ export default function OwnerDashboard({ user }) {
           })}
         </div>
       </div>
+
+      {/* ── DAFTAR BELANJA ── */}
+      <ShoppingListWidget />
 
       {/* ── ROW 13: ALERT KRITIS ── */}
       <div className="bg-card rounded-xl border border-border p-4">

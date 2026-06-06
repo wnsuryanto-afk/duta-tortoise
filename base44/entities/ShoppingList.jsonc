@@ -1,0 +1,88 @@
+{
+  "name": "ShoppingList",
+  "type": "object",
+  "properties": {
+    "nama_barang": {
+      "type": "string",
+      "description": "Nama barang yang perlu dibeli"
+    },
+    "jumlah": {
+      "type": "number",
+      "description": "Jumlah yang perlu dibeli"
+    },
+    "satuan": {
+      "type": "string",
+      "description": "Satuan (pcs, botol, kg, dll)"
+    },
+    "platform_beli": {
+      "type": "string",
+      "enum": [
+        "Tokopedia",
+        "Shopee",
+        "Apotek",
+        "Toko Hewan",
+        "Langsung",
+        "Lainnya"
+      ],
+      "description": "Platform/tempat pembelian"
+    },
+    "harga_est_per_unit": {
+      "type": "number",
+      "default": 0,
+      "description": "Estimasi harga per unit (Rp)"
+    },
+    "total_est": {
+      "type": "number",
+      "default": 0,
+      "description": "Total estimasi harga (Rp)"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "segera",
+        "minggu_ini",
+        "bulan_ini",
+        "opsional"
+      ],
+      "default": "minggu_ini",
+      "description": "Prioritas pembelian"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "belum_dibeli",
+        "sudah_dipesan",
+        "sudah_dibeli"
+      ],
+      "default": "belum_dibeli",
+      "description": "Status pembelian"
+    },
+    "qty_aktual": {
+      "type": "number",
+      "description": "Jumlah aktual yang dibeli"
+    },
+    "harga_aktual": {
+      "type": "number",
+      "description": "Harga aktual total yang dibeli (Rp)"
+    },
+    "tanggal_dibeli": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal dibeli"
+    },
+    "link_produk": {
+      "type": "string",
+      "description": "URL link produk (opsional)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan"
+    }
+  },
+  "required": [
+    "nama_barang",
+    "jumlah",
+    "satuan",
+    "priority"
+  ]
+}

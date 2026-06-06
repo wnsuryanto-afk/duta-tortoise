@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import {
   CheckCircle, AlertTriangle, Package, Users, DollarSign, Heart, Clock, RefreshCw, ChevronRight
 } from "lucide-react";
+import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -282,6 +283,9 @@ export default function AdminDashboard({ user }) {
           </div>
         </div>
       </div>
+
+      {/* ── DAFTAR BELANJA ── */}
+      <ShoppingListWidget />
 
       {/* ── SECTION 5: TREATMENT AKTIF ── */}
       <div className="bg-card rounded-xl border border-border p-4">
