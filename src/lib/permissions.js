@@ -38,7 +38,7 @@ export const NAV_ACCESS = {
     "activity-log", "system-maintenance", "vet-contacts", "maintenance",
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
     "operational-costs", "kritik-saran", "stock-gudang",
-    "salary-slip", "stock-prediction",
+    "salary-slip", "stock-prediction", "panduan-pakan",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -49,7 +49,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "printer-config",
     "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction",
+    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "panduan-pakan",
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -60,7 +60,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "activity-log",
     "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction",
+    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "panduan-pakan",
   ],
   kepala_feeder: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -68,14 +68,14 @@ export const NAV_ACCESS = {
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "death-records", "vet-contacts", "maintenance",
     "help", "petty-cash", "pellet-recipe", "warehouse", "activity-log",
-    "kritik-saran", "stock-gudang",
+    "kritik-saran", "stock-gudang", "panduan-pakan",
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "sop", "sop-library", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "death-records", "vet-contacts", "maintenance",
-    "help", "activity-log", "kritik-saran", "stock-gudang",
+    "help", "activity-log", "kritik-saran", "stock-gudang", "panduan-pakan",
   ],
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",
