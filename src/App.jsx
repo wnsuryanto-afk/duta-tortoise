@@ -63,6 +63,7 @@ import MigrasiKategoriPage from '@/pages/MigrasiKategoriPage';
 import DashboardStokPage from '@/pages/DashboardStokPage';
 import MigrasiStrukturPage from '@/pages/MigrasiStrukturPage';
 import UnifiedStokPage from '@/pages/UnifiedStokPage';
+import PanduanPakanPage from '@/pages/PanduanPakanPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -137,6 +138,7 @@ const AuthenticatedApp = () => {
         <Route path="/dashboard-stok" element={<DashboardStokPage />} />
         <Route path="/migrasi-struktur" element={<MigrasiStrukturPage />} />
         <Route path="/stok-unified" element={<UnifiedStokPage />} />
+        <Route path="/panduan-pakan" element={<PanduanPakanPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

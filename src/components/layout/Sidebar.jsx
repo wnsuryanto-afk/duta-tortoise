@@ -7,7 +7,7 @@ import {
   Calendar, ChevronDown, ChevronRight, Trophy,
   LayoutGrid, GitBranch, Skull, Home,
   TrendingUp, Zap, AlertTriangle, Truck, ClipboardCheck,
-  Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight
+  Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight, Leaf
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -57,6 +57,17 @@ const NAV_GROUPS = [
       { path: "/enclosure",           section: "enclosure",   label: "Daftar Kandang",       icon: Home },
       { path: "/incubator-readings",  section: "breeding",    label: "Inkubator",            icon: Thermometer },
       { path: "/maintenance-schedule",section: "maintenance", label: "Jadwal Pemeliharaan",  icon: Calendar },
+    ],
+  },
+
+  // ── 3.5 PANDUAN PAKAN ────────────────────
+  {
+    id: "panduan",
+    label: "Panduan Pakan",
+    icon: Leaf,
+    color: "text-green-500",
+    items: [
+      { path: "/panduan-pakan", section: "panduan-pakan", label: "🌿 Panduan Pakan Sulcata", icon: Leaf },
     ],
   },
 

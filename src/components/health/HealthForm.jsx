@@ -42,6 +42,12 @@ export default function HealthForm({ open, onClose, editData }) {
     queryFn: () => base44.entities.FeedStock.list(),
   });
 
+  const { data: diagnosisProtocols = [] } = useQuery({
+    queryKey: ["diagnosis-protocols"],
+    queryFn: () => base44.entities.DiagnosisProtocol.filter({ is_active: true }),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const [form, setForm] = useState(editData || {
     tortoise_name: "", tortoise_id: "",
     date: new Date().toISOString().split("T")[0],
@@ -365,6 +371,7 @@ export default function HealthForm({ open, onClose, editData }) {
             selectedDiagnoses={selectedDiagnoses}
             warehouseItems={warehouseItems}
             feedStocks={feedStocks}
+            diagnosisProtocols={diagnosisProtocols}
           />
 
           <div className="flex justify-end gap-3 pt-2">

@@ -342,31 +342,66 @@ function GuidePanel({ disease }) {
   );
 }
 
-export default function DiagnosisPanel({ selectedDiagnoses, warehouseItems = [], feedStocks = [] }) {
+// DiagnosisPanel now accepts diagnosisProtocols (from DiagnosisProtocol entity) for SKU-based lookup
+export default function DiagnosisPanel({ selectedDiagnoses, warehouseItems = [], feedStocks = [], diagnosisProtocols = [] }) {
   if (!selectedDiagnoses || selectedDiagnoses.length === 0) return null;
 
-  // Collect all needed stocks
-  const allStocks = [...new Set(selectedDiagnoses.flatMap(d => DISEASE_GUIDES[d]?.stocks || []))];
+  // Collect stock items from DiagnosisProtocol (SKU-based) + fallback to DISEASE_GUIDES (name-based)
+  // Returns array of { obat_name, obat_sku }
+  const allStockItems = (() => {
+    const seen = new Set();
+    const result = [];
 
-  const getStockStatus = (stockName) => {
-    const lower = stockName.toLowerCase();
-    const warehouseMatch = warehouseItems.find(i => i.name?.toLowerCase().includes(lower) || lower.includes(i.name?.toLowerCase()));
-    const feedMatch = feedStocks.find(i => i.name?.toLowerCase().includes(lower) || lower.includes(i.name?.toLowerCase()));
-    const item = warehouseMatch || feedMatch;
+    // From DiagnosisProtocol (has SKU)
+    for (const diag of selectedDiagnoses) {
+      const protocol = diagnosisProtocols.find(p => p.diagnosis_code === diag);
+      if (protocol?.treatment_items?.length) {
+        for (const item of protocol.treatment_items) {
+          const key = item.obat_sku || item.obat_name;
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({ obat_name: item.obat_name, obat_sku: item.obat_sku });
+          }
+        }
+      } else {
+        // Fallback: DISEASE_GUIDES (name only, no SKU)
+        for (const stockName of (DISEASE_GUIDES[diag]?.stocks || [])) {
+          if (!seen.has(stockName)) {
+            seen.add(stockName);
+            result.push({ obat_name: stockName, obat_sku: null });
+          }
+        }
+      }
+    }
+    return result;
+  })();
+
+  const getStockStatus = ({ obat_name, obat_sku }) => {
+    let item = null;
+    if (obat_sku) {
+      // Primary: lookup by SKU
+      item = warehouseItems.find(i => i.sku === obat_sku);
+    }
+    if (!item) {
+      // Fallback: lookup by name (fuzzy)
+      const lower = obat_name.toLowerCase();
+      item = warehouseItems.find(i => i.name?.toLowerCase().includes(lower) || lower.includes(i.name?.toLowerCase()))
+          || feedStocks.find(i => i.name?.toLowerCase().includes(lower) || lower.includes(i.name?.toLowerCase()));
+    }
     if (!item) return "unknown";
     if (item.current_stock <= 0) return "habis";
-    if (item.current_stock <= item.minimum_stock) return "hampir_habis";
+    if (item.current_stock < item.minimum_stock) return "hampir_habis";
     return "cukup";
   };
 
   const stockStatusConfig = {
-    cukup: { label: "✅ Cukup", color: "text-green-700 bg-green-50 border-green-200" },
-    hampir_habis: { label: "⚠️ Hampir Habis", color: "text-amber-700 bg-amber-50 border-amber-200" },
-    habis: { label: "❌ Habis", color: "text-red-700 bg-red-50 border-red-200" },
-    unknown: { label: "❓ Tidak Didata", color: "text-gray-600 bg-gray-50 border-gray-200" },
+    cukup:       { label: "✓ Cukup",        color: "text-green-700 bg-green-50 border-green-200" },
+    hampir_habis:{ label: "⚠ Menipis",      color: "text-amber-700 bg-amber-50 border-amber-200" },
+    habis:       { label: "✗ Habis",         color: "text-red-700 bg-red-50 border-red-200" },
+    unknown:     { label: "? Tidak Didata",  color: "text-gray-600 bg-gray-50 border-gray-200" },
   };
 
-  const hasLowStock = allStocks.some(s => ["habis", "hampir_habis"].includes(getStockStatus(s)));
+  const hasLowStock = allStockItems.some(s => ["habis", "hampir_habis"].includes(getStockStatus(s)));
 
   return (
     <div className="space-y-3">
@@ -377,7 +412,7 @@ export default function DiagnosisPanel({ selectedDiagnoses, warehouseItems = [],
         </div>
       </div>
 
-      {allStocks.length > 0 && (
+      {allStockItems.length > 0 && (
         <div className="border rounded-xl p-3 bg-muted/20">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold">📦 Stok yang Dibutuhkan</p>
@@ -386,12 +421,12 @@ export default function DiagnosisPanel({ selectedDiagnoses, warehouseItems = [],
             )}
           </div>
           <div className="space-y-1">
-            {allStocks.map(stock => {
-              const status = getStockStatus(stock);
+            {allStockItems.map(stockItem => {
+              const status = getStockStatus(stockItem);
               const cfg = stockStatusConfig[status];
               return (
-                <div key={stock} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs ${cfg.color}`}>
-                  <span>{stock}</span>
+                <div key={stockItem.obat_sku || stockItem.obat_name} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs ${cfg.color}`}>
+                  <span>{stockItem.obat_name}</span>
                   <span className="font-semibold">{cfg.label}</span>
                 </div>
               );

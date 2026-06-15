@@ -24,7 +24,6 @@ import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
 import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
 import EggGrid from "@/components/breeding/EggGrid";
-import TortoiseForm from "@/components/tortoise/TortoiseForm";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -122,8 +121,7 @@ export default function BreedingAndEggs() {
   const [editIncubator, setEditIncubator] = useState(null);
   const [showIncubatorForm, setShowIncubatorForm] = useState(false);
   const [activeTab, setActiveTab] = useState("pembiakan");
-  const [newTortoiseData, setNewTortoiseData] = useState(null);
-  const [showTortoiseForm, setShowTortoiseForm] = useState(false);
+
 
   const { data: breedings = [], isLoading: breedingLoading } = useQuery({
     queryKey: ["breedings"],
@@ -417,7 +415,7 @@ export default function BreedingAndEggs() {
                     {/* Egg Grid */}
                     <div className="p-4 pt-3">
                       {b.egg_count > 0 ? (
-                        <EggGrid breeding={b} onRequestNewTortoise={(data) => { setNewTortoiseData(data); setShowTortoiseForm(true); }} />
+                        <EggGrid breeding={b} />
                       ) : (
                         <p className="text-xs text-muted-foreground text-center py-2">
                           Jumlah telur belum diisi
@@ -632,9 +630,7 @@ export default function BreedingAndEggs() {
       {showForm && (
         <BreedingForm open={showForm} onClose={() => setShowForm(false)} editData={editData} />
       )}
-      {showTortoiseForm && (
-        <TortoiseForm open={showTortoiseForm} onClose={() => { setShowTortoiseForm(false); setNewTortoiseData(null); }} editData={newTortoiseData} />
-      )}
+
       <HatchDialog
         open={!!hatchBreeding}
         onClose={() => setHatchBreeding(null)}
