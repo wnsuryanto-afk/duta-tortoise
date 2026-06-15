@@ -23,9 +23,10 @@ import { toast } from "sonner";
 // ── Fullscreen profile setup — ditampilkan saat profil belum lengkap (non-owner) ──
 function ProfileSetupScreen({ user, onComplete }) {
   const queryClient = useQueryClient();
+  const [existingProfileId, setExistingProfileId] = useState(null);
   const [form, setForm] = useState({
     full_name: user?.full_name || "",
-    phone: "",
+    hp_whatsapp: "",
     join_date: "",
     bank_name: "",
     bank_account_number: "",
@@ -34,6 +35,7 @@ function ProfileSetupScreen({ user, onComplete }) {
     emergency_contact: "",
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [errors, setErrors] = useState({});
 
   // Pre-fill dari profil yang sudah ada
@@ -41,10 +43,11 @@ function ProfileSetupScreen({ user, onComplete }) {
     base44.entities.UserProfile.filter({ user_email: user?.email }).then(profiles => {
       if (profiles?.[0]) {
         const p = profiles[0];
+        setExistingProfileId(p.id);
         setForm(prev => ({
           ...prev,
           full_name: p.full_name || prev.full_name,
-          phone: p.phone || "",
+          hp_whatsapp: p.hp_whatsapp || p.phone || "",
           join_date: p.join_date || "",
           bank_name: p.bank_name || "",
           bank_account_number: p.bank_account_number || "",
@@ -56,35 +59,57 @@ function ProfileSetupScreen({ user, onComplete }) {
     }).catch(() => {});
   }, [user?.email]);
 
-  const REQUIRED = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
+  const REQUIRED = ["full_name", "hp_whatsapp", "join_date", "bank_name", "bank_account_number"];
   const isValid = REQUIRED.every(f => form[f]?.toString().trim() !== "");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const newErrors = {};
-    REQUIRED.forEach(f => { if (!form[f]?.toString().trim()) newErrors[f] = true; });
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+  const saveAndRedirect = async (skipValidation = false) => {
+    if (!skipValidation) {
+      const newErrors = {};
+      REQUIRED.forEach(f => { if (!form[f]?.toString().trim()) newErrors[f] = true; });
+      if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+    }
 
     setSaving(true);
-    const isComplete = REQUIRED.every(f => form[f]?.toString().trim() !== "");
-    const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
-    const data = { ...form, is_complete: isComplete, user_id: user.id, user_email: user.email };
+    setSaveError("");
+    try {
+      const data = {
+        ...form,
+        is_complete: true,
+        tour_completed: true,
+        user_id: user.id,
+        user_email: user.email,
+      };
 
-    if (profiles?.[0]) {
-      await base44.entities.UserProfile.update(profiles[0].id, data);
-    } else {
-      await base44.entities.UserProfile.create(data);
+      // Ambil profil terbaru untuk menghindari race condition
+      const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
+      const profileId = profiles?.[0]?.id || existingProfileId;
+
+      if (profileId) {
+        await base44.entities.UserProfile.update(profileId, data);
+      } else {
+        await base44.entities.UserProfile.create(data);
+      }
+
+      if (form.full_name && user.full_name !== form.full_name) {
+        await base44.auth.updateMe({ full_name: form.full_name });
+      }
+
+      toast.success("Profil berhasil disimpan!");
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      // Redirect paksa ke dashboard — jangan tunggu refetch
+      onComplete();
+    } catch (err) {
+      setSaveError("Gagal menyimpan: " + (err?.message || "Terjadi kesalahan. Coba lagi."));
+      setSaving(false);
     }
-
-    if (form.full_name && user.full_name !== form.full_name) {
-      await base44.auth.updateMe({ full_name: form.full_name });
-    }
-
-    queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-    toast.success("Profil berhasil disimpan!");
-    setSaving(false);
-    onComplete();
   };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    saveAndRedirect(false);
+  };
+
+  const handleSkip = () => saveAndRedirect(true);
 
   const handleChange = (f, v) => {
     setForm(p => ({ ...p, [f]: v }));
@@ -103,9 +128,9 @@ function ProfileSetupScreen({ user, onComplete }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
             { id: "full_name", label: "Nama Lengkap *", placeholder: "Nama lengkap Anda" },
-            { id: "phone", label: "Nomor Telepon *", placeholder: "08123456789" },
+            { id: "hp_whatsapp", label: "Nomor HP/WhatsApp *", placeholder: "08123456789" },
             { id: "join_date", label: "Tanggal Bergabung *", type: "date" },
-            { id: "id_number", label: "Nomor KTP", placeholder: "16 digit" },
+            { id: "id_number", label: "Nomor KTP", placeholder: "16 digit (opsional)" },
           ].map(({ id, label, placeholder, type }) => (
             <div key={id} className="space-y-1">
               <Label htmlFor={id}>{label}</Label>
@@ -123,7 +148,7 @@ function ProfileSetupScreen({ user, onComplete }) {
             </div>
             <div className="space-y-1">
               <Label>Nama Pemilik Rekening</Label>
-              <Input value={form.bank_account_name} onChange={e => handleChange("bank_account_name", e.target.value)} placeholder="Sesuai buku tabungan" />
+              <Input value={form.bank_account_name} onChange={e => handleChange("bank_account_name", e.target.value)} placeholder="Sesuai buku tabungan (opsional)" />
             </div>
           </div>
           <div className="space-y-1">
@@ -133,13 +158,28 @@ function ProfileSetupScreen({ user, onComplete }) {
             {errors.bank_account_number && <p className="text-xs text-red-500">Wajib diisi</p>}
           </div>
           <div className="space-y-1">
-            <Label>Kontak Darurat</Label>
+            <Label>Kontak Darurat <span className="text-muted-foreground text-xs">(opsional)</span></Label>
             <Input value={form.emergency_contact} onChange={e => handleChange("emergency_contact", e.target.value)} placeholder="Nama & nomor telepon" />
           </div>
-          <Button type="submit" disabled={saving || !isValid}
-            className={`w-full font-semibold py-3 mt-2 ${isValid ? "bg-green-700 hover:bg-green-800" : "bg-gray-200 text-gray-400"}`}>
+
+          {saveError && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {saveError}
+            </div>
+          )}
+
+          <Button type="submit" disabled={saving}
+            className="w-full font-semibold py-3 mt-2 bg-green-700 hover:bg-green-800">
             {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</> : "Simpan & Lanjutkan →"}
           </Button>
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={saving}
+            className="w-full text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 py-1 transition-colors disabled:opacity-50"
+          >
+            Lewati & Masuk →
+          </button>
         </form>
       </div>
     </div>
@@ -169,7 +209,9 @@ export default function AppLayout() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showUserMenu]);
 
-  const { data: profiles = [], isLoading: profileLoading, refetch: refetchProfile } = useQuery({
+  const [onboardingDone, setOnboardingDone] = useState(false);
+
+  const { data: profiles = [], isLoading: profileLoading } = useQuery({
     queryKey: ["user-profile", user?.email],
     queryFn: () => base44.entities.UserProfile.filter({ user_email: user.email }),
     enabled: !!user?.email,
@@ -177,16 +219,10 @@ export default function AppLayout() {
     retry: 1,
   });
 
-  // is_complete = true HANYA jika 5 field esensial semua terisi
-  const checkProfileComplete = (p) => {
-    if (!p) return false;
-    const fields = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
-    return fields.every(f => p[f] && p[f].toString().trim() !== "");
-  };
-
   const isProfileLoaded = !isLoading && !profileLoading && !!user;
   const profile = profiles[0];
-  const profileComplete = checkProfileComplete(profile);
+  // Cek hanya berdasarkan is_complete dari database ATAU flag lokal setelah onboarding selesai
+  const profileComplete = onboardingDone || profile?.is_complete === true;
   const navigate = useNavigate();
 
   // Masih loading — tampilkan spinner diam, jangan render kondisi apapun
@@ -201,7 +237,7 @@ export default function AppLayout() {
   // Non-owner + profil belum lengkap → tampilkan fullscreen setup form
   // Owner → tetap masuk app (ada banner kuning saja)
   if (isProfileLoaded && !isOwner && !profileComplete) {
-    return <ProfileSetupScreen user={user} onComplete={() => refetchProfile()} />;
+    return <ProfileSetupScreen user={user} onComplete={() => setOnboardingDone(true)} />;
   }
 
   // Keeper / Kepala Feeder → Guided Mode (kecuali user minta normal)
