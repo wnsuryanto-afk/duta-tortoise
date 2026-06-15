@@ -1,33 +1,29 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import ExportButton from "@/components/common/ExportButton";
-import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, DollarSign, Printer, CreditCard } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Plus, DollarSign, TrendingUp, ShoppingBag, Clock, Printer, CreditCard, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ExportButton from "@/components/common/ExportButton";
 import ExcludeToggle from "@/components/owner/ExcludeToggle";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import SaleWizard from "@/components/sales/SaleWizard";
 import SaleForm from "@/components/sales/SaleForm";
+import SaleCard from "@/components/sales/SaleCard";
 import SalePrintModal from "@/components/sales/SalePrintModal";
 import PaymentProofsSection from "@/components/sales/PaymentProofsSection";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms, canDelete as canDeleteGlobal } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import IncompleteBadge from "@/components/common/IncompleteBadge";
-import { getMissingFields } from "@/lib/incompleteChecks";
 import PageTooltip from "@/components/tutorial/PageTooltip";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 
-const paymentColors = {
-  lunas: "bg-primary/10 text-primary",
-  dp: "bg-accent/10 text-accent",
-  belum_bayar: "bg-destructive/10 text-destructive",
-};
-
-const paymentLabels = { lunas: "Lunas", dp: "DP", belum_bayar: "Belum Bayar" };
-const shippingLabels = { ambil_sendiri: "Ambil Sendiri", kirim_kurir: "Kurir", cargo: "Cargo" };
+function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
 export default function SalesList() {
   const queryClient = useQueryClient();
@@ -35,24 +31,63 @@ export default function SalesList() {
   const isOwner = role === "owner";
   const perms = getPerms(role, "sales");
   const ownerCanDelete = canDeleteGlobal(role);
-  const [showForm, setShowForm] = useState(false);
+
+  const [showWizard, setShowWizard] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [printSale, setPrintSale] = useState(null);
   const [proofSale, setProofSale] = useState(null);
+  const [activeTab, setActiveTab] = useState("riwayat");
+
+  // Filters
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterPlatform, setFilterPlatform] = useState("semua");
+  const [sortBy, setSortBy] = useState("terbaru");
 
   const { data: sales = [], isLoading } = useQuery({
     queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 200),
+    queryFn: () => base44.entities.Sale.list("-sale_date", 300),
   });
 
   const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoises-for-sale"],
+    queryKey: ["tortoises"],
     queryFn: () => base44.entities.Tortoise.list("name", 500),
   });
 
-  if (!canAccess(role, "sales")) return <AccessDenied />;
+  // Enrich sales dengan tortoise photo
+  const enrichedSales = useMemo(() => sales.map(s => {
+    const t = tortoises.find(t2 => t2.id === s.tortoise_id);
+    const primaryPhoto = t?.photos?.find(p => p.is_primary)?.url || t?.photos?.[0]?.url || null;
+    return { ...s, _tortoise_photo: primaryPhoto };
+  }), [sales, tortoises]);
 
-  const totalRevenue = sales.filter(s => !s.excluded_from_reports).reduce((sum, s) => sum + (s.price || 0), 0);
+  // Split tabs
+  const salesAktif = enrichedSales.filter(s => s.payment_status === "dp" || s.payment_status === "belum_bayar");
+  const salesRiwayat = enrichedSales.filter(s => s.payment_status === "lunas");
+
+  // Filter & sort helper
+  const applyFilters = (list) => {
+    let result = [...list];
+    if (filterMonth) result = result.filter(s => s.sale_date?.startsWith(filterMonth));
+    if (filterPlatform !== "semua") result = result.filter(s => s.platform === filterPlatform);
+    if (sortBy === "terbaru") result.sort((a, b) => (b.sale_date || "").localeCompare(a.sale_date || ""));
+    else if (sortBy === "harga") result.sort((a, b) => (b.price || 0) - (a.price || 0));
+    else if (sortBy === "laba") result.sort((a, b) => ((b.price || 0) - (b.hpp || 0)) - ((a.price || 0) - (a.hpp || 0)));
+    return result;
+  };
+
+  const filteredAktif = applyFilters(salesAktif);
+  const filteredRiwayat = applyFilters(salesRiwayat);
+
+  const totalRevenue = enrichedSales.filter(s => !s.excluded_from_reports).reduce((sum, s) => sum + (s.price || 0), 0);
+  const totalLaba = enrichedSales.filter(s => !s.excluded_from_reports && s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const salesThisMonth = enrichedSales.filter(s => s.sale_date?.startsWith(currentMonth) && !s.excluded_from_reports);
+  const revenueThisMonth = salesThisMonth.reduce((sum, s) => sum + (s.price || 0), 0);
+  const labaThisMonth = salesThisMonth.filter(s => s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
+  const avgMargin = enrichedSales.filter(s => s.hpp > 0 && s.price > 0).length > 0
+    ? Math.round(enrichedSales.filter(s => s.hpp > 0 && s.price > 0).reduce((sum, s) => sum + ((s.price - s.hpp) / s.price * 100), 0) / enrichedSales.filter(s => s.hpp > 0 && s.price > 0).length)
+    : 0;
 
   const handleDelete = async (sale) => {
     if (confirm("Hapus data penjualan ini?")) {
@@ -61,19 +96,92 @@ export default function SalesList() {
     }
   };
 
+  const FilterBar = () => (
+    <div className="flex flex-wrap gap-2">
+      <Input
+        type="month"
+        value={filterMonth}
+        onChange={e => setFilterMonth(e.target.value)}
+        className="w-40 h-9 text-xs"
+        placeholder="Filter bulan"
+      />
+      <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+        <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Platform" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="semua">Semua Platform</SelectItem>
+          {["Instagram","Tokopedia","Shopee","WhatsApp","Facebook","Referral","Langsung","Lainnya"].map(p => (
+            <SelectItem key={p} value={p}>{p}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={sortBy} onValueChange={setSortBy}>
+        <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Urutan" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="terbaru">Terbaru</SelectItem>
+          <SelectItem value="harga">Harga Tertinggi</SelectItem>
+          <SelectItem value="laba">Laba Terbesar</SelectItem>
+        </SelectContent>
+      </Select>
+      {(filterMonth || filterPlatform !== "semua") && (
+        <button onClick={() => { setFilterMonth(""); setFilterPlatform("semua"); }} className="px-3 h-9 text-xs rounded-lg border border-destructive/40 bg-destructive/5 text-destructive hover:bg-destructive/10 transition-colors">
+          ✕ Reset
+        </button>
+      )}
+    </div>
+  );
+
+  const SaleListSection = ({ list }) => {
+    if (list.length === 0) return (
+      <div className="text-center py-16 text-muted-foreground">
+        <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <p>Tidak ada data penjualan</p>
+      </div>
+    );
+    return (
+      <div className="space-y-3">
+        {list.map(s => (
+          <div key={s.id} className="group relative">
+            <SaleCard sale={s} onDetail={null} onPrint={() => setPrintSale(s)} />
+            {/* Admin actions overlay */}
+            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {isOwner && <ExcludeToggle record={s} entityName="Sale" queryKey={["sales"]} />}
+              {perms.canEdit && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Bukti Bayar" onClick={() => setProofSale(s)}>
+                  <CreditCard className="w-3.5 h-3.5" />
+                </Button>
+              )}
+              {perms.canEdit && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditData(s); setShowEditForm(true); }}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+              )}
+              {ownerCanDelete && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(s)}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  if (!canAccess(role, "sales")) return <AccessDenied />;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-heading font-bold">Penjualan</h1>
             <PageTooltip page="sales" />
           </div>
-          <p className="text-muted-foreground mt-1">
-            Total: Rp {totalRevenue.toLocaleString("id-ID")} dari {sales.length} transaksi
+          <p className="text-muted-foreground mt-1 text-sm">
+            {enrichedSales.length} transaksi · Total Rp {fmt(totalRevenue)}
           </p>
         </div>
-
         <div className="flex gap-2 flex-wrap">
           <ExportButton
             data={sales}
@@ -82,113 +190,85 @@ export default function SalesList() {
             columns={[
               {key:"sale_date",label:"Tgl"},{key:"tortoise_name",label:"Kura-kura"},
               {key:"buyer_name",label:"Pembeli"},{key:"hp_whatsapp",label:"HP/WA"},
-              {key:"price",label:"Harga"},{key:"payment_status",label:"Pembayaran"},
+              {key:"price",label:"Harga"},{key:"hpp",label:"HPP"},{key:"payment_status",label:"Pembayaran"},
               {key:"shipping_method",label:"Pengiriman"},{key:"platform",label:"Platform"},
             ]}
           />
           {perms.canCreate && (
-            <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Penjualan
+            <Button onClick={() => setShowWizard(true)}>
+              <Plus className="w-4 h-4 mr-2" /> Catat Penjualan
             </Button>
           )}
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-        </div>
-      ) : sales.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-lg">Belum ada data penjualan</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sales.map((s) => (
-            <Card key={s.id} className={`p-4 hover:shadow-md transition-shadow group ${s.excluded_from_reports ? "opacity-60 border-dashed" : ""}`}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="text-center flex-shrink-0 w-14">
-                    <p className="text-2xl font-heading font-bold">{s.sale_date ? format(new Date(s.sale_date), "d") : "-"}</p>
-                    <p className="text-[11px] text-muted-foreground uppercase">{s.sale_date ? format(new Date(s.sale_date), "MMM yy", { locale: id }) : ""}</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-sm">{s.tortoise_name}</h3>
-                      <Badge className={`text-[11px] ${paymentColors[s.payment_status] || ""}`}>
-                        {paymentLabels[s.payment_status] || s.payment_status}
-                      </Badge>
-                      <IncompleteBadge missingFields={getMissingFields("sale", s)} onEdit={perms.canEdit ? () => { setEditData(s); setShowForm(true); } : undefined} />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {s.buyer_name} {(s.hp_whatsapp || s.buyer_phone) ? `• ${s.hp_whatsapp || s.buyer_phone}` : ""}
-                    </p>
-                    {/* DP progress bar */}
-                    {s.payment_status === "dp" && s.price > 0 && (
-                      <div className="mt-2">
-                        {(() => {
-                          const paid = s.total_paid || s.dp_amount || 0;
-                          const pct = Math.min(100, Math.round((paid / s.price) * 100));
-                          return (
-                            <div>
-                              <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-                                <span>{pct}% lunas (Rp {paid.toLocaleString("id-ID")} dari Rp {s.price.toLocaleString("id-ID")})</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-accent rounded-full" style={{ width: `${pct}%` }} />
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-                    <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>{shippingLabels[s.shipping_method] || s.shipping_method}</span>
-                      {s.buyer_address && <span className="truncate max-w-[200px]">📍 {s.buyer_address}</span>}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-primary">Rp {s.price?.toLocaleString("id-ID")}</p>
-                    {s.hpp > 0 && (
-                      <p className={`text-xs font-medium ${(s.price - s.hpp) >= 0 ? "text-green-600" : "text-destructive"}`}>
-                        Profit: Rp {(s.price - s.hpp).toLocaleString("id-ID")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  {isOwner && (
-                    <ExcludeToggle record={s} entityName="Sale" queryKey={["sales"]} />
-                  )}
-                  {perms.canEdit && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Bukti Bayar" onClick={() => setProofSale(s)}>
-                      <CreditCard className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Cetak" onClick={() => setPrintSale(s)}>
-                    <Printer className="w-3.5 h-3.5" />
-                  </Button>
-                  {perms.canEdit && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditData(s); setShowForm(true); }}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-                  {ownerCanDelete && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(s)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-                </div>
+      {/* Summary widgets */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Bulan Ini", value: `${salesThisMonth.length} ekor`, sub: `Rp ${fmt(revenueThisMonth)}`, icon: ShoppingBag, color: "text-primary" },
+          { label: "Total Laba Bulan Ini", value: `Rp ${fmt(labaThisMonth)}`, sub: `Margin rata-rata ${avgMargin}%`, icon: TrendingUp, color: labaThisMonth >= 0 ? "text-green-600" : "text-red-600" },
+          { label: "Menunggu Follow-up", value: salesAktif.length, sub: "DP / Belum Bayar", icon: Clock, color: "text-amber-600" },
+          { label: "Total Terjual", value: enrichedSales.length, sub: `Rp ${fmt(totalRevenue)}`, icon: DollarSign, color: "text-primary" },
+        ].map(item => (
+          <Card key={item.label} className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+                <p className={`text-xl font-bold mt-1 ${item.color}`}>{item.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>
               </div>
-            </Card>
-          ))}
-        </div>
+              <item.icon className={`w-5 h-5 ${item.color} opacity-60`} />
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="aktif" className="gap-1.5">
+            <Clock className="w-4 h-4" /> Perlu Follow-up
+            {salesAktif.length > 0 && <Badge className="bg-amber-500 text-white text-[10px] ml-1">{salesAktif.length}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="riwayat" className="gap-1.5">
+            <ShoppingBag className="w-4 h-4" /> Riwayat Terjual
+            <Badge variant="secondary" className="text-[10px] ml-1">{salesRiwayat.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="aktif" className="mt-4 space-y-4">
+          <FilterBar />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-7 h-7 border-4 border-muted border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : (
+            <SaleListSection list={filteredAktif} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="riwayat" className="mt-4 space-y-4">
+          <FilterBar />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-7 h-7 border-4 border-muted border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : (
+            <SaleListSection list={filteredRiwayat} />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Modals */}
+      {showWizard && (
+        <SaleWizard open={showWizard} onClose={(success) => {
+          setShowWizard(false);
+          if (success) queryClient.invalidateQueries({ queryKey: ["sales"] });
+        }} />
       )}
 
-      {showForm && (
-        <SaleForm open={showForm} onClose={() => setShowForm(false)} editData={editData} />
+      {showEditForm && editData && (
+        <SaleForm open={showEditForm} onClose={() => { setShowEditForm(false); setEditData(null); }} editData={editData} />
       )}
 
       <SalePrintModal
@@ -198,7 +278,6 @@ export default function SalesList() {
         tortoise={tortoises.find(t => t.id === printSale?.tortoise_id)}
       />
 
-      {/* Payment proofs dialog */}
       <Dialog open={!!proofSale} onOpenChange={o => !o && setProofSale(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>

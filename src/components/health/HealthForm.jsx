@@ -182,7 +182,7 @@ export default function HealthForm({ open, onClose, editData }) {
                 <Select value={form.tortoise_id} onValueChange={handleTortoiseSelect}>
                   <SelectTrigger><SelectValue placeholder="Pilih tortoise" /></SelectTrigger>
                   <SelectContent>
-                    {tortoises.map((t) => (
+                    {tortoises.filter(t => t.status !== "terjual" && t.status !== "mati" && t.status !== "diarsipkan").map((t) => (
                       <SelectItem key={t.id} value={t.id}>{t.name} {t.code ? `(${t.code})` : ""}</SelectItem>
                     ))}
                   </SelectContent>

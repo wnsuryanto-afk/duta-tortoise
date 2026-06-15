@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, Eye, TrendingUp, CalendarX, Skull } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, Eye, TrendingUp, CalendarX, Skull, ShoppingBag } from "lucide-react";
+import TortoiseTerjualTab from "@/components/tortoise/TortoiseTerjualTab";
 import ExportButton from "@/components/common/ExportButton";
 import TortoiseCard from "@/components/tortoise/TortoiseCard";
 import TortoiseForm from "@/components/tortoise/TortoiseForm";
@@ -268,6 +269,10 @@ export default function TortoiseList() {
           <TabsTrigger value="kematian" className="flex-1 sm:flex-none gap-1.5">
             <Skull className="w-4 h-4" /> Kematian
             <Badge variant="secondary" className="text-xs ml-1">{deathRecords.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="terjual" className="flex-1 sm:flex-none gap-1.5">
+            <ShoppingBag className="w-4 h-4" /> Terjual
+            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "terjual").length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -720,6 +725,12 @@ export default function TortoiseList() {
             </div>
           )}
         </TabsContent>
+
+        {/* ══════════ TAB TERJUAL ══════════ */}
+        <TabsContent value="terjual" className="mt-5">
+          <TortoiseTerjualTab tortoises={tortoises} isOwner={ownerCanDelete} />
+        </TabsContent>
+
       </Tabs>
 
       {/* ── Dialogs ── */}
