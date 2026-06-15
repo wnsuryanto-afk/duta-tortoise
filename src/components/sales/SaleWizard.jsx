@@ -436,15 +436,41 @@ export default function SaleWizard({ open, onClose }) {
       });
 
       // C) Create FinanceTransaction
-      await base44.entities.FinanceTransaction.create({
+      const laba = price - hpp;
+      const marginPct = price > 0 ? Math.round((laba / price) * 100) : 0;
+      const finTx = await base44.entities.FinanceTransaction.create({
         type: "pemasukan",
         category: "penjualan_tortoise",
         amount: price,
         date: form.sale_date,
-        description: `Penjualan ${selectedTortoise?.code || selectedTortoise?.name} ke ${form.buyer_name}`,
+        description: `Penjualan ${selectedTortoise?.code || selectedTortoise?.name} ke ${form.buyer_name} — Laba Rp ${fmt(laba)}`,
         reference_id: newSale.id,
         ...(testModeTag || {}),
       });
+      // Update Sale with additional fields & finance_tx_id
+      await base44.entities.Sale.update(newSale.id, {
+        tortoise_code: selectedTortoise?.code || "",
+        tortoise_species: selectedTortoise?.species || "",
+        tortoise_weight: selectedTortoise?.weight_grams || 0,
+        profit: laba,
+        margin_percent: marginPct,
+        purchase_price_original: selectedTortoise?.purchase_price || 0,
+        care_cost_estimate: (calcAgeMonths(selectedTortoise?.birth_date) || 0) * 150000,
+        finance_tx_id: finTx?.id || "",
+      });
+      // D) Update BuyerProfile
+      try {
+        if (form.buyer_profile_id) {
+          await base44.entities.BuyerProfile.update(form.buyer_profile_id, { is_repeat_buyer: true });
+        } else if (form.buyer_name) {
+          await base44.entities.BuyerProfile.create({
+            buyer_name: form.buyer_name,
+            hp_whatsapp: form.hp_whatsapp,
+            buyer_address: form.buyer_address || "",
+            buyer_city: form.buyer_city || "",
+          });
+        }
+      } catch (_) { /* non-critical */ }
 
       // D) Update enclosure counter — invalidate and backend will recalculate
       if (prevTortoise?.enclosure) {

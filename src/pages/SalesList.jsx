@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Plus, DollarSign, TrendingUp, ShoppingBag, Clock, Printer, CreditCard, Pencil, Trash2 } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, ShoppingBag, Clock, Printer, CreditCard, Pencil, Trash2, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ExportButton from "@/components/common/ExportButton";
 import ExcludeToggle from "@/components/owner/ExcludeToggle";
@@ -37,7 +37,10 @@ export default function SalesList() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [printSale, setPrintSale] = useState(null);
   const [proofSale, setProofSale] = useState(null);
-  const [activeTab, setActiveTab] = useState("riwayat");
+  const [activeTab, setActiveTab] = useState("semua");
+  const [cancelSale, setCancelSale] = useState(null);
+  const [cancelEnclosure, setCancelEnclosure] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   // Filters
   const [filterMonth, setFilterMonth] = useState("");
@@ -64,6 +67,7 @@ export default function SalesList() {
   // Split tabs
   const salesAktif = enrichedSales.filter(s => s.payment_status === "dp" || s.payment_status === "belum_bayar");
   const salesRiwayat = enrichedSales.filter(s => s.payment_status === "lunas");
+  const salesSemua = enrichedSales;
 
   // Filter & sort helper
   const applyFilters = (list) => {
@@ -78,6 +82,7 @@ export default function SalesList() {
 
   const filteredAktif = applyFilters(salesAktif);
   const filteredRiwayat = applyFilters(salesRiwayat);
+  const filteredSemua = applyFilters(salesSemua);
 
   const totalRevenue = enrichedSales.filter(s => !s.excluded_from_reports).reduce((sum, s) => sum + (s.price || 0), 0);
   const totalLaba = enrichedSales.filter(s => !s.excluded_from_reports && s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
@@ -93,6 +98,32 @@ export default function SalesList() {
     if (confirm("Hapus data penjualan ini?")) {
       await base44.entities.Sale.delete(sale.id);
       queryClient.invalidateQueries({ queryKey: ["sales"] });
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!cancelSale) return;
+    setCancelling(true);
+    try {
+      // Kembalikan status kura
+      await base44.entities.Tortoise.update(cancelSale.tortoise_id, {
+        status: cancelSale._prev_status || "aktif",
+        enclosure: cancelEnclosure || "",
+        last_status_change: new Date().toISOString().split("T")[0],
+      });
+      // Hapus finance tx terkait
+      if (cancelSale.finance_tx_id) {
+        await base44.entities.FinanceTransaction.delete(cancelSale.finance_tx_id);
+      }
+      // Soft cancel sale
+      await base44.entities.Sale.update(cancelSale.id, { excluded_from_reports: true, notes: (cancelSale.notes || "") + " [DIBATALKAN]" });
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["tortoises"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
+      setCancelSale(null);
+      setCancelEnclosure("");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -130,7 +161,7 @@ export default function SalesList() {
     </div>
   );
 
-  const SaleListSection = ({ list }) => {
+  const SaleListSection = ({ list, showCancel }) => {
     if (list.length === 0) return (
       <div className="text-center py-16 text-muted-foreground">
         <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -155,6 +186,12 @@ export default function SalesList() {
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
               )}
+              {isOwner && showCancel && s.tortoise_id && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" title="Batalkan Penjualan"
+                  onClick={() => setCancelSale({ ...s, _prev_status: "aktif" })}>
+                  <span className="text-xs">↩</span>
+                </Button>
+              )}
               {ownerCanDelete && (
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(s)}>
                   <Trash2 className="w-3.5 h-3.5" />
@@ -167,6 +204,7 @@ export default function SalesList() {
     );
   };
 
+  const isInvestor = role === "investor";
   if (!canAccess(role, "sales")) return <AccessDenied />;
 
   return (
@@ -194,7 +232,7 @@ export default function SalesList() {
               {key:"shipping_method",label:"Pengiriman"},{key:"platform",label:"Platform"},
             ]}
           />
-          {perms.canCreate && (
+          {perms.canCreate && !isInvestor && (
             <Button onClick={() => setShowWizard(true)}>
               <Plus className="w-4 h-4 mr-2" /> Catat Penjualan
             </Button>
@@ -226,15 +264,30 @@ export default function SalesList() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
+          <TabsTrigger value="semua" className="gap-1.5">
+            <DollarSign className="w-4 h-4" /> Semua
+            <Badge variant="secondary" className="text-[10px] ml-1">{salesSemua.length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="aktif" className="gap-1.5">
-            <Clock className="w-4 h-4" /> Perlu Follow-up
+            <Clock className="w-4 h-4" /> Belum Lunas
             {salesAktif.length > 0 && <Badge className="bg-amber-500 text-white text-[10px] ml-1">{salesAktif.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="riwayat" className="gap-1.5">
-            <ShoppingBag className="w-4 h-4" /> Riwayat Terjual
+            <ShoppingBag className="w-4 h-4" /> Lunas
             <Badge variant="secondary" className="text-[10px] ml-1">{salesRiwayat.length}</Badge>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="semua" className="mt-4 space-y-4">
+          <FilterBar />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-7 h-7 border-4 border-muted border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : (
+            <SaleListSection list={filteredSemua} showCancel={isOwner} />
+          )}
+        </TabsContent>
 
         <TabsContent value="aktif" className="mt-4 space-y-4">
           <FilterBar />
@@ -243,7 +296,7 @@ export default function SalesList() {
               <div className="w-7 h-7 border-4 border-muted border-t-primary rounded-full animate-spin" />
             </div>
           ) : (
-            <SaleListSection list={filteredAktif} />
+            <SaleListSection list={filteredAktif} showCancel={isOwner} />
           )}
         </TabsContent>
 
@@ -254,7 +307,7 @@ export default function SalesList() {
               <div className="w-7 h-7 border-4 border-muted border-t-primary rounded-full animate-spin" />
             </div>
           ) : (
-            <SaleListSection list={filteredRiwayat} />
+            <SaleListSection list={filteredRiwayat} showCancel={isOwner} />
           )}
         </TabsContent>
       </Tabs>
@@ -277,6 +330,39 @@ export default function SalesList() {
         sale={printSale}
         tortoise={tortoises.find(t => t.id === printSale?.tortoise_id)}
       />
+
+      {/* Dialog Pembatalan */}
+      <Dialog open={!!cancelSale} onOpenChange={o => !o && setCancelSale(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700">
+              <Undo2 className="w-5 h-5" /> Batalkan Penjualan
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Yakin batalkan penjualan <strong>{cancelSale?.tortoise_name}</strong> ke <strong>{cancelSale?.buyer_name}</strong>?
+            </p>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-lg">
+              ⚠️ Kura akan dikembalikan ke status aktif dan FinanceTransaction terkait akan dihapus.
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Kembalikan ke Kandang</label>
+              <Input
+                value={cancelEnclosure}
+                onChange={e => setCancelEnclosure(e.target.value)}
+                placeholder="cth: W1 (opsional)"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setCancelSale(null)} disabled={cancelling}>Batal</Button>
+              <Button className="flex-1 bg-amber-600 hover:bg-amber-700" onClick={handleCancel} disabled={cancelling}>
+                {cancelling ? "Membatalkan..." : "✓ Ya, Batalkan"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!proofSale} onOpenChange={o => !o && setProofSale(null)}>
         <DialogContent className="max-w-md">

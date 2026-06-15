@@ -474,6 +474,45 @@ export default function OwnerDashboard({ user }) {
         </div>
       </div>
 
+      {/* ── WIDGET PENJUALAN BULAN INI ── */}
+      {phase2Ready && (
+        <div className="bg-card rounded-xl border border-green-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <SectionTitle icon={DollarSign}>🐢 Penjualan Bulan Ini</SectionTitle>
+            <Link to="/sales" className="text-xs text-primary hover:underline flex items-center gap-1">Lihat Semua <ChevronRight className="w-3 h-3" /></Link>
+          </div>
+          {(() => {
+            const salesThisMonth = sales.filter(s => (s.sale_date || "").startsWith(thisMonthKey) && !s.excluded_from_reports);
+            const revenueThisMonth = salesThisMonth.reduce((s, x) => s + (x.price || 0), 0);
+            const labaThisMonth = salesThisMonth.filter(x => x.hpp > 0).reduce((s, x) => s + ((x.price||0) - (x.hpp||0)), 0);
+            const salesWithHpp = salesThisMonth.filter(x => x.hpp > 0 && x.price > 0);
+            const avgMargin = salesWithHpp.length > 0
+              ? Math.round(salesWithHpp.reduce((s, x) => s + ((x.price - x.hpp) / x.price * 100), 0) / salesWithHpp.length)
+              : 0;
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Ekor Terjual</p>
+                  <p className="text-xl font-bold text-green-700">{salesThisMonth.length}</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Total Pemasukan</p>
+                  <p className="text-base font-bold text-green-700">{fmt(revenueThisMonth)}</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Total Laba</p>
+                  <p className={`text-base font-bold ${labaThisMonth >= 0 ? "text-green-700" : "text-red-600"}`}>{fmt(labaThisMonth)}</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Margin Rata-rata</p>
+                  <p className="text-xl font-bold text-green-700">{avgMargin}%</p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* ── ROW 3: POPULASI & BREEDING ── */}
       <div>
         <SectionTitle icon={Shell}>Populasi & Breeding</SectionTitle>
