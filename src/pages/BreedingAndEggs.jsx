@@ -24,6 +24,7 @@ import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
 import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
 import EggGrid from "@/components/breeding/EggGrid";
+import ClutchOffspringSection from "@/components/breeding/ClutchOffspringSection";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -615,6 +616,7 @@ export default function BreedingAndEggs() {
                     )}
                   </div>
                   {b.notes && <p className="text-xs text-muted-foreground mt-3 line-clamp-2">{b.notes}</p>}
+                  <ClutchOffspringSection breeding={b} />
                 </Card>
               ))}
             </div>
