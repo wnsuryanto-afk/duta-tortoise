@@ -24,7 +24,7 @@ export const INCOMPLETE_CHECKS = {
   sale: {
     label: "Penjualan",
     fields: [
-      { key: "buyer_phone", label: "No. telepon pembeli", check: (d) => !!d.buyer_phone },
+      { key: "hp_whatsapp", label: "No. HP/WhatsApp pembeli", check: (d) => !!(d.hp_whatsapp || d.buyer_phone) },
       { key: "platform", label: "Platform penjualan", check: (d) => !!d.platform },
       { key: "payment_status", label: "Status pembayaran", check: (d) => !!d.payment_status },
       { key: "shipping_method", label: "Metode pengiriman", check: (d) => !!d.shipping_method },
@@ -42,7 +42,7 @@ export const INCOMPLETE_CHECKS = {
     label: "Profil Karyawan",
     fields: [
       { key: "full_name", label: "Nama lengkap", check: (d) => !!d.full_name },
-      { key: "phone", label: "No. telepon", check: (d) => !!d.phone },
+      { key: "hp_whatsapp", label: "No. HP/WhatsApp", check: (d) => !!(d.hp_whatsapp || d.phone) },
       { key: "join_date", label: "Tanggal bergabung", check: (d) => !!d.join_date },
       { key: "bank_name", label: "Nama bank", check: (d) => !!d.bank_name },
       { key: "bank_account_number", label: "No. rekening", check: (d) => !!d.bank_account_number },

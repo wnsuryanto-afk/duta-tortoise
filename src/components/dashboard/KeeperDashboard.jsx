@@ -218,10 +218,13 @@ export default function KeeperDashboard() {
 
   const upcomingReminders = reminders
     .filter((r) => {
-      const days = differenceInDays(parseISO(r.due_date), parseISO(today));
-      return days <= 7;
+      if (!r?.due_date) return false;
+      try {
+        const days = differenceInDays(parseISO(r.due_date), parseISO(today));
+        return days <= 7;
+      } catch { return false; }
     })
-    .sort((a, b) => a.due_date.localeCompare(b.due_date))
+    .sort((a, b) => (a.due_date || "").localeCompare(b.due_date || ""))
     .slice(0, 3);
 
   const approvedPoints = checklists
@@ -392,7 +395,7 @@ export default function KeeperDashboard() {
           </div>
           <div className="space-y-2">
             {upcomingReminders.map((r) => {
-              const days = differenceInDays(parseISO(r.due_date), parseISO(today));
+              const days = r.due_date ? differenceInDays(parseISO(r.due_date), parseISO(today)) : 0;
               const isOverdue = days < 0;
               const isToday = days === 0;
               return (

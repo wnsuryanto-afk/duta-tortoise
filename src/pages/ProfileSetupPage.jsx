@@ -10,8 +10,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { upsertUserProfile } from "@/lib/userProfileUpsert";
 
-const REQUIRED_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
-const IS_COMPLETE_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
+const REQUIRED_FIELDS = ["full_name", "hp_whatsapp", "join_date", "bank_name", "bank_account_number"];
+const IS_COMPLETE_FIELDS = ["full_name", "hp_whatsapp", "join_date", "bank_name", "bank_account_number"];
 
 export default function ProfileSetupPage() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function ProfileSetupPage() {
 
   const [form, setForm] = useState({
     full_name: "",
-    phone: "",
+    hp_whatsapp: "",
     join_date: "",
     id_number: "",
     bank_name: "",
@@ -116,7 +116,7 @@ export default function ProfileSetupPage() {
       setForm(prev => ({
         ...prev,
         full_name: p.full_name || prev.full_name,
-        phone: p.phone || prev.phone,
+        hp_whatsapp: p.hp_whatsapp || p.phone || prev.hp_whatsapp,
         join_date: p.join_date || prev.join_date,
         id_number: p.id_number || prev.id_number,
         bank_name: p.bank_name || prev.bank_name,
@@ -152,7 +152,7 @@ export default function ProfileSetupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {[
               { id: "full_name", label: "Nama Lengkap", placeholder: "Nama lengkap Anda", required: true },
-              { id: "phone", label: "Nomor Telepon", placeholder: "08123456789", required: true },
+              { id: "hp_whatsapp", label: "No. HP / WhatsApp", placeholder: "08123456789", required: true },
               { id: "join_date", label: "Tanggal Bergabung", type: "date", required: true },
               { id: "id_number", label: "Nomor KTP", placeholder: "Nomor KTP 16 digit", required: false },
             ].map(({ id, label, placeholder, type, required }) => (

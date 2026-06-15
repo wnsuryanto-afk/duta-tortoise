@@ -229,7 +229,7 @@ function EggBottomSheet({ egg, candlingAllowed, onClose, onSave }) {
 }
 
 // ── Desktop Popup ─────────────────────────────────────────────────────────────
-function EggDesktopPopup({ egg, candlingAllowed, onClose, onSave }) {
+function EggDesktopPopup({ egg, candlingAllowed, onClose, onSave, anchorRef }) {
   const [saving, setSaving] = useState(false);
 
   const handleSelect = async (value) => {
@@ -240,27 +240,47 @@ function EggDesktopPopup({ egg, candlingAllowed, onClose, onSave }) {
   };
 
   return (
-    <div className="absolute z-50 top-12 left-1/2 -translate-x-1/2 bg-card border border-border rounded-xl shadow-xl p-2 min-w-[170px]">
-      <p className="text-[10px] text-muted-foreground font-semibold px-2 py-1 uppercase tracking-wide">Telur #{egg.egg_number}</p>
-      {EGG_STATUS.map(s => {
-        const isDisabled = (s.value === "fertile" || s.value === "infertil") && !candlingAllowed;
-        return (
-          <button
-            key={s.value}
-            onClick={() => !isDisabled && !saving && handleSelect(s.value)}
-            disabled={saving || isDisabled}
-            className={`w-full text-left text-xs px-3 py-2 rounded-lg mb-0.5 transition-colors flex items-center justify-between
-              ${egg.status === s.value ? "bg-primary/10 font-bold text-primary" : "hover:bg-muted"}
-              ${isDisabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
-            `}
-          >
-            <span>{s.label}</span>
-            {isDisabled && <span className="text-[9px] text-muted-foreground">🔒</span>}
-            {egg.status === s.value && !isDisabled && <span className="text-[10px]">✓</span>}
+    <>
+      {/* Overlay transparan untuk close saat klik luar */}
+      <div className="fixed inset-0 z-[999]" onClick={onClose} />
+      {/* Popup centered fixed */}
+      <div
+        className="fixed z-[1000] bg-card border border-border rounded-xl shadow-2xl p-2 min-w-[180px]"
+        style={{
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          maxHeight: "80vh",
+          overflowY: "auto",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-border mb-1">
+          <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">Telur #{egg.egg_number}</p>
+          <button onClick={onClose} className="w-5 h-5 rounded flex items-center justify-center hover:bg-muted text-muted-foreground">
+            <X className="w-3 h-3" />
           </button>
-        );
-      })}
-    </div>
+        </div>
+        {EGG_STATUS.map(s => {
+          const isDisabled = (s.value === "fertile" || s.value === "infertil") && !candlingAllowed;
+          return (
+            <button
+              key={s.value}
+              onClick={() => !isDisabled && !saving && handleSelect(s.value)}
+              disabled={saving || isDisabled}
+              className={`w-full text-left text-xs px-3 py-2.5 rounded-lg mb-0.5 transition-colors flex items-center justify-between
+                ${egg.status === s.value ? "bg-primary/10 font-bold text-primary" : "hover:bg-muted"}
+                ${isDisabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+              `}
+            >
+              <span>{s.label}</span>
+              {isDisabled && <span className="text-[9px] text-muted-foreground">🔒 H+30</span>}
+              {egg.status === s.value && !isDisabled && <span className="text-[10px]">✓</span>}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }
 

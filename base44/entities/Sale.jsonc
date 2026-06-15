@@ -11,15 +11,16 @@
     "buyer_name": {
       "type": "string"
     },
-    "buyer_phone": {
-      "type": "string"
+    "hp_whatsapp": {
+      "type": "string",
+      "description": "No. HP / WhatsApp pembeli"
     },
     "buyer_address": {
       "type": "string"
     },
     "buyer_profile_id": {
       "type": "string",
-      "description": "Link ke BuyerProfile (auto-sync via buyer_phone)"
+      "description": "Link ke BuyerProfile (auto-sync via hp_whatsapp)"
     },
     "sale_date": {
       "type": "string",
@@ -145,7 +146,7 @@
     "buyer_name",
     "price",
     "sale_date",
-    "buyer_phone",
+    "hp_whatsapp",
     "payment_status",
     "shipping_method"
   ]

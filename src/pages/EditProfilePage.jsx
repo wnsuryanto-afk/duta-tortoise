@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { User, Mail, Calendar, Building, Shield, Save, X } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -18,7 +17,7 @@ export default function EditProfilePage() {
   const [isDirty, setIsDirty] = useState(false);
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
-  const [waSameAsPhone, setWaSameAsPhone] = useState(true);
+
 
   // Fetch current user and profile
   const { data: user } = useQuery({
@@ -39,9 +38,7 @@ export default function EditProfilePage() {
       const p = profiles[0];
       setFormData(p);
       // Jika whatsapp sudah diisi dan berbeda dari phone, uncheck
-      if (p.whatsapp && p.phone && p.whatsapp !== p.phone) {
-        setWaSameAsPhone(false);
-      }
+      // legacy compat: tidak ada whatsapp terpisah lagi
       setLoading(false);
     } else if (user) {
       // Create new profile if doesn't exist
@@ -83,10 +80,10 @@ export default function EditProfilePage() {
     setIsDirty(true);
   };
 
-  const IS_COMPLETE_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
+  const IS_COMPLETE_FIELDS = ["full_name", "hp_whatsapp", "join_date", "bank_name", "bank_account_number"];
 
   const handleSave = () => {
-    const required = ["full_name", "phone", "join_date"];
+    const required = ["full_name", "hp_whatsapp", "join_date"];
     const missing = required.filter(f => !formData[f] || formData[f].toString().trim() === "");
     
     if (missing.length > 0) {
@@ -95,9 +92,7 @@ export default function EditProfilePage() {
     }
 
     const isComplete = IS_COMPLETE_FIELDS.every(f => formData[f] && formData[f].toString().trim() !== "");
-    const finalData = { ...formData };
-    if (waSameAsPhone) finalData.whatsapp = formData.phone || "";
-    updateMutation.mutate({ ...finalData, is_complete: isComplete });
+    updateMutation.mutate({ ...formData, is_complete: isComplete });
   };
 
   const handleCancel = () => {
@@ -160,40 +155,14 @@ export default function EditProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Nomor Telepon *</Label>
+              <Label htmlFor="hp_whatsapp">No. HP / WhatsApp *</Label>
               <Input
-                id="phone"
-                value={formData.phone || ""}
-                onChange={(e) => handleChange("phone", e.target.value)}
+                id="hp_whatsapp"
+                value={formData.hp_whatsapp || formData.phone || ""}
+                onChange={(e) => handleChange("hp_whatsapp", e.target.value)}
                 placeholder="08123456789"
-                className={!formData.phone ? "border-red-500" : ""}
+                className={!formData.hp_whatsapp && !formData.phone ? "border-red-500" : ""}
               />
-              <div className="flex items-center gap-2 mt-1">
-                <Checkbox
-                  id="wa-same"
-                  checked={waSameAsPhone}
-                  onCheckedChange={(checked) => {
-                    setWaSameAsPhone(!!checked);
-                    setIsDirty(true);
-                    if (checked) handleChange("whatsapp", formData.phone || "");
-                  }}
-                />
-                <label htmlFor="wa-same" className="text-xs text-muted-foreground cursor-pointer select-none">
-                  Nomor WhatsApp sama dengan nomor telepon
-                </label>
-              </div>
-              {!waSameAsPhone && (
-                <div className="mt-2">
-                  <Label htmlFor="whatsapp" className="text-xs">Nomor WhatsApp</Label>
-                  <Input
-                    id="whatsapp"
-                    value={formData.whatsapp || ""}
-                    onChange={(e) => handleChange("whatsapp", e.target.value)}
-                    placeholder="08123456789"
-                    className="mt-1"
-                  />
-                </div>
-              )}
             </div>
 
             <div>

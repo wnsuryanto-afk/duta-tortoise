@@ -24,7 +24,7 @@ export default function SaleForm({ open, onClose, editData }) {
   const available = tortoises.filter((t) => t.status === "aktif" || t.status === "breeding");
 
   const [form, setForm] = useState(editData || {
-    tortoise_name: "", tortoise_id: "", buyer_name: "", buyer_phone: "",
+    tortoise_name: "", tortoise_id: "", buyer_name: "", hp_whatsapp: "",
     buyer_address: "", sale_date: new Date().toISOString().split("T")[0],
     price: "", hpp: "", shipping_cost: 0, payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
   });
@@ -35,7 +35,7 @@ export default function SaleForm({ open, onClose, editData }) {
     const e = {};
     if (!form.tortoise_name?.trim()) e.tortoise_name = "Nama tortoise wajib diisi";
     if (!form.buyer_name?.trim()) e.buyer_name = "Nama pembeli wajib diisi";
-    if (!form.buyer_phone?.trim()) e.buyer_phone = "Nomor telepon pembeli wajib diisi";
+    if (!form.hp_whatsapp?.trim()) e.hp_whatsapp = "No. HP / WhatsApp pembeli wajib diisi";
     if (!form.price) e.price = "Harga jual wajib diisi";
     if (!form.sale_date) e.sale_date = "Tanggal jual wajib diisi";
     setErrors(e);
@@ -118,9 +118,9 @@ export default function SaleForm({ open, onClose, editData }) {
               {errors.buyer_name && <p className="text-xs text-red-500">{errors.buyer_name}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>No. Telepon <span className="text-red-500">*</span></Label>
-              <Input value={form.buyer_phone} onChange={(e) => handleChange("buyer_phone", e.target.value)} className={errors.buyer_phone ? "border-red-500" : ""} />
-              {errors.buyer_phone && <p className="text-xs text-red-500">{errors.buyer_phone}</p>}
+              <Label>No. HP / WhatsApp <span className="text-red-500">*</span></Label>
+              <Input value={form.hp_whatsapp} onChange={(e) => handleChange("hp_whatsapp", e.target.value)} className={errors.hp_whatsapp ? "border-red-500" : ""} placeholder="08123456789" />
+              {errors.hp_whatsapp && <p className="text-xs text-red-500">{errors.hp_whatsapp}</p>}
             </div>
           </div>
           <div className="space-y-1.5">
@@ -191,7 +191,7 @@ export default function SaleForm({ open, onClose, editData }) {
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <Button type="submit" disabled={saving || !form.tortoise_name?.trim() || !form.buyer_name?.trim() || !form.buyer_phone?.trim() || !form.price || !form.sale_date}>
+            <Button type="submit" disabled={saving || !form.tortoise_name?.trim() || !form.buyer_name?.trim() || !form.hp_whatsapp?.trim() || !form.price || !form.sale_date}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editData?.id ? "Simpan" : "Tambah"}
             </Button>

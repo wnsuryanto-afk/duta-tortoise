@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import PageErrorBoundary from "@/components/common/PageErrorBoundary";
 import Sidebar from "./Sidebar";
 import GuidedLayout from "@/components/guided/GuidedLayout";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -188,6 +189,15 @@ export default function AppLayout() {
   const profileComplete = checkProfileComplete(profile);
   const navigate = useNavigate();
 
+  // Masih loading — tampilkan spinner diam, jangan render kondisi apapun
+  if (isLoading || (!!user?.email && profileLoading)) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // Non-owner + profil belum lengkap → tampilkan fullscreen setup form
   // Owner → tetap masuk app (ada banner kuning saja)
   if (isProfileLoaded && !isOwner && !profileComplete) {
@@ -197,10 +207,12 @@ export default function AppLayout() {
   // Keeper / Kepala Feeder → Guided Mode (kecuali user minta normal)
   if (isProfileLoaded && isGuidedRole && !forceNormalMode && !isViewingAs) {
     return (
-      <GuidedLayout
-        user={user}
-        onSwitchToNormal={() => setForceNormalMode(true)}
-      />
+      <PageErrorBoundary>
+        <GuidedLayout
+          user={user}
+          onSwitchToNormal={() => setForceNormalMode(true)}
+        />
+      </PageErrorBoundary>
     );
   }
 
@@ -313,7 +325,9 @@ export default function AppLayout() {
         <TestModeBanner />
         <div className="p-4 lg:p-8 max-w-7xl mx-auto">
           {isOwner && <IncompleteProfileBanner user={user} profile={profile} />}
-          <Outlet />
+          <PageErrorBoundary>
+            <Outlet />
+          </PageErrorBoundary>
         </div>
       </main>
 

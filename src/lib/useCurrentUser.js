@@ -7,6 +7,8 @@ export function useCurrentUser() {
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me(),
     staleTime: 5 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const { viewAsRole, isViewingAs } = useViewAs?.() || { viewAsRole: null, isViewingAs: false };

@@ -11,8 +11,9 @@
     "full_name": {
       "type": "string"
     },
-    "phone": {
-      "type": "string"
+    "hp_whatsapp": {
+      "type": "string",
+      "description": "No. HP / WhatsApp"
     },
     "address": {
       "type": "string"
@@ -42,7 +43,7 @@
     "is_complete": {
       "type": "boolean",
       "default": false,
-      "description": "true jika full_name, phone, join_date, bank_name, dan bank_account_number semua terisi"
+      "description": "true jika full_name, hp_whatsapp, join_date, bank_name, dan bank_account_number semua terisi"
     },
     "tour_completed": {
       "type": "boolean",
@@ -57,7 +58,7 @@
     "user_id",
     "user_email",
     "full_name",
-    "phone",
+    "hp_whatsapp",
     "join_date"
   ]
 }

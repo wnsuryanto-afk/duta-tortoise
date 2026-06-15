@@ -212,9 +212,9 @@ export default function KepalaFeederDashboard({ user }) {
                   <div>
                     <p className="text-sm font-semibold">{cl.employee_name}</p>
                     <p className="text-xs text-muted-foreground">{cl.date} · {cl.total_points_claimed || 0} poin diklaim</p>
-                    {cl.completed_tasks && (
+                    {Array.isArray(cl.completed_tasks) && cl.completed_tasks.length > 0 && (
                       <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">
-                        {typeof cl.completed_tasks === "object" ? Object.values(cl.completed_tasks).flat().slice(0, 3).join(", ") : cl.completed_tasks}
+                        {cl.completed_tasks.slice(0, 3).map(t => t?.task_title || t?.title || "").filter(Boolean).join(", ")}
                       </p>
                     )}
                   </div>

@@ -80,6 +80,7 @@ export const NAV_ACCESS = {
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",
     "health", "finance", "breeding-report", "sales-report", "info", "breeding-planner",
+    "panduan-pakan", "kritik-saran",
   ],
 };
 

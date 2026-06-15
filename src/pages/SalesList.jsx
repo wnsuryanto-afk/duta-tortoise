@@ -81,7 +81,7 @@ export default function SalesList() {
             title="Data Penjualan"
             columns={[
               {key:"sale_date",label:"Tgl"},{key:"tortoise_name",label:"Kura-kura"},
-              {key:"buyer_name",label:"Pembeli"},{key:"buyer_phone",label:"Telp"},
+              {key:"buyer_name",label:"Pembeli"},{key:"hp_whatsapp",label:"HP/WA"},
               {key:"price",label:"Harga"},{key:"payment_status",label:"Pembayaran"},
               {key:"shipping_method",label:"Pengiriman"},{key:"platform",label:"Platform"},
             ]}
@@ -123,7 +123,7 @@ export default function SalesList() {
                       <IncompleteBadge missingFields={getMissingFields("sale", s)} onEdit={perms.canEdit ? () => { setEditData(s); setShowForm(true); } : undefined} />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {s.buyer_name} {s.buyer_phone ? `• ${s.buyer_phone}` : ""}
+                      {s.buyer_name} {(s.hp_whatsapp || s.buyer_phone) ? `• ${s.hp_whatsapp || s.buyer_phone}` : ""}
                     </p>
                     {/* DP progress bar */}
                     {s.payment_status === "dp" && s.price > 0 && (

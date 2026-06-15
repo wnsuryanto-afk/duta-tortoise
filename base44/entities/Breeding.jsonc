@@ -1,6 +1,15 @@
 {
   "name": "Breeding",
   "type": "object",
+  "required": [
+    "male_name",
+    "female_name",
+    "egg_laying_date",
+    "egg_count",
+    "status",
+    "season_year",
+    "incubator_name"
+  ],
   "properties": {
     "male_id": {
       "type": "string"
@@ -36,11 +45,7 @@
     },
     "incubator_name": {
       "type": "string",
-      "enum": [
-        "Inkubator 1",
-        "Inkubator 2"
-      ],
-      "description": "Lokasi Inkubator"
+      "description": "Nama inkubator (diambil dari entity Incubator)"
     },
     "tray_number": {
       "type": "number",
@@ -88,6 +93,7 @@
     },
     "egg_records": {
       "type": "array",
+      "description": "Status tracking per butir telur",
       "items": {
         "type": "object",
         "properties": {
@@ -112,12 +118,19 @@
             "type": "string",
             "format": "date"
           },
+          "tortoise_id": {
+            "type": "string",
+            "description": "ID Tortoise yang dibuat saat telur menetas"
+          },
+          "tortoise_code": {
+            "type": "string",
+            "description": "Kode bayi (BB-YYYYNNN) untuk tampilan cepat"
+          },
           "notes": {
             "type": "string"
           }
         }
-      },
-      "description": "Status tracking per butir telur"
+      }
     },
     "candling_day_30_done": {
       "type": "boolean",
@@ -169,14 +182,5 @@
       "default": false,
       "description": "Apakah data sudah diarsipkan"
     }
-  },
-  "required": [
-    "male_name",
-    "female_name",
-    "egg_laying_date",
-    "egg_count",
-    "status",
-    "season_year",
-    "incubator_name"
-  ]
+  }
 }

@@ -17,6 +17,10 @@ import TortoiseCompletenessPanel from "./TortoiseCompletenessPanel";
 import { canViewPrice } from "@/lib/permissions";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { AgeBadge } from "./AgeDisplay";
+import TortoiseLineagePanel from "./TortoiseLineagePanel";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { GitBranch } from "lucide-react";
 
 function PriceField({ label, value }) {
   return (
@@ -156,7 +160,15 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
   const [showSizeHistory, setShowSizeHistory] = useState(false);
   const [showGrowth, setShowGrowth] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [showLineage, setShowLineage] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(null);
+
+  const { data: allTortoises = [] } = useQuery({
+    queryKey: ["tortoises-lineage"],
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
+    enabled: showLineage,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const showActions = onEdit || onDelete || onMove;
   const health = healthConfig[healthStatus] || healthConfig.none;
@@ -353,6 +365,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="QR Code" onClick={() => setShowQR(true)}>
               <QrCode className="w-3 h-3" />
             </Button>
+            {(tortoise.parent_male || tortoise.parent_female || tortoise.source === "hasil_sendiri") && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Silsilah" onClick={() => setShowLineage(true)}>
+                <GitBranch className="w-3 h-3" />
+              </Button>
+            )}
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(tortoise)}>
                 <Pencil className="w-3 h-3" />
@@ -494,6 +511,21 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
         </DialogHeader>
         <div className="py-2">
           <GrowthTimeline tortoise={tortoise} />
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Silsilah */}
+    <Dialog open={showLineage} onOpenChange={setShowLineage}>
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <GitBranch className="w-4 h-4 text-primary" />
+            Silsilah — {tortoise.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          <TortoiseLineagePanel tortoise={tortoise} allTortoises={allTortoises} />
         </div>
       </DialogContent>
     </Dialog>
