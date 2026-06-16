@@ -31,7 +31,8 @@ const STATUS_CELL = {
 async function generateBabyCode() {
   const year = new Date().getFullYear();
   const prefix = `BB-${year}`;
-  const existing = await base44.entities.Tortoise.filter({ source: "hasil_sendiri" }, "-created_date", 200);
+  // Fetch ALL tortoises to find existing BB- codes properly
+  const existing = await base44.entities.Tortoise.list("-created_date", 2000);
   const nums = existing
     .map(t => t.code || "")
     .filter(c => c.startsWith(prefix))
@@ -48,14 +49,22 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
     gender: "belum_diketahui",
     enclosure: "",
     birth_date: hatchDate,
+    weight_grams: "",
   });
   const [saving, setSaving] = useState(false);
   const [loadingCode, setLoadingCode] = useState(true);
 
   const { data: enclosures = [] } = useQuery({
     queryKey: ["enclosures"],
-    queryFn: () => base44.entities.Enclosure.list(),
+    queryFn: () => base44.entities.Enclosure.list("-created_date", 200),
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Get female tortoise species
+  const { data: femaleTortoise } = useQuery({
+    queryKey: ["tortoise-female", breeding?.female_id],
+    queryFn: () => breeding?.female_id ? base44.entities.Tortoise.get(breeding.female_id) : null,
+    enabled: !!breeding?.female_id,
   });
 
   useEffect(() => {
@@ -78,6 +87,7 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
       name: form.code,
       birth_date: form.birth_date,
       gender: form.gender,
+      species: femaleTortoise?.species || "sulcata",
       source: "hasil_sendiri",
       status: "aktif",
       age_category: "baby",
@@ -85,9 +95,11 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
       parent_male: breeding.male_name,
       parent_female: breeding.female_name,
       last_breeding_id: breeding.id,
+      weight_grams: form.weight_grams ? Number(form.weight_grams) : undefined,
       weighing_interval_days: 14,
       is_archived: false,
       morph: "normal",
+      purchase_price: 0,
     });
     setSaving(false);
     toast.success(`🐢 Baby ${form.code} berhasil ditambahkan ke kandang ${form.enclosure}`);
@@ -141,6 +153,11 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
           <div className="space-y-1.5">
             <Label>Tanggal Menetas</Label>
             <Input type="date" value={form.birth_date} onChange={e => set("birth_date", e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Berat Awal (gram) — opsional</Label>
+            <Input type="number" min="0" value={form.weight_grams} onChange={e => set("weight_grams", e.target.value)} placeholder="0" />
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-1">
@@ -452,7 +469,13 @@ export default function EggGrid({ breeding }) {
               </span>
             )}
             {egg.status === "menetas" && !egg.tortoise_code && (
-              <span className="text-[9px] px-1 py-0.5 rounded-full bg-gray-100 text-gray-500 whitespace-nowrap">belum didata</span>
+              <button
+                className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 cursor-pointer hover:bg-amber-200 font-medium whitespace-nowrap"
+                onClick={() => updateEggStatus(egg.egg_number, "menetas", egg.check_date || new Date().toISOString().split("T")[0], egg.notes || "")}
+                title="Klik untuk daftarkan data kura"
+              >
+                🐢 + Data
+              </button>
             )}
 
             {/* Desktop popup */}

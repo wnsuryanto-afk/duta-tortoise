@@ -139,7 +139,7 @@ export default function HatchDialog({ open, onClose, breeding }) {
 
   const { data: enclosures = [] } = useQuery({
     queryKey: ["enclosures"],
-    queryFn: () => base44.entities.Enclosure.list(),
+    queryFn: () => base44.entities.Enclosure.list("-created_date", 200),
   });
 
   // Filter hanya kandang baby (indoor + nama mengandung "baby")
@@ -162,7 +162,7 @@ export default function HatchDialog({ open, onClose, breeding }) {
     const dateStr = hatchDate.replace(/-/g, "").substring(2, 8);
     const existingBabies = await base44.entities.Tortoise.filter({
       birth_date: hatchDate,
-    });
+    }, "-created_date", 200);
     const startIdx = existingBabies.length;
     
     return Array.from({ length: count }, (_, i) => {

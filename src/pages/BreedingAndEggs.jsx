@@ -131,7 +131,7 @@ export default function BreedingAndEggs() {
 
   const { data: incubators = [], isLoading: incubatorLoading } = useQuery({
     queryKey: ["incubators"],
-    queryFn: () => base44.entities.Incubator.list(),
+    queryFn: () => base44.entities.Incubator.list("-created_date", 200),
   });
 
   if (!canAccess(role, "breeding")) return <AccessDenied />;

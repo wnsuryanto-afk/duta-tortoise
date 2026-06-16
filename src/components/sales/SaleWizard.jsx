@@ -28,7 +28,7 @@ function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 // ── STEP 1: Pilih Kura ──
 function StepPilihKura({ tortoises, selectedId, onSelect }) {
   const [search, setSearch] = useState("");
-  const available = tortoises.filter(t => t.status === "aktif" || t.status === "breeding");
+  const available = tortoises.filter(t => t.status === "aktif" || t.status === "breeding" || t.status === "baby");
   const filtered = available.filter(t =>
     !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase())
   );
@@ -370,8 +370,8 @@ export default function SaleWizard({ open, onClose }) {
   const [errors, setErrors] = useState({});
 
   const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 300),
+    queryKey: ["tortoises-sale"],
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 2000),
   });
 
   const selectedTortoise = tortoises.find(t => t.id === form.tortoise_id);
