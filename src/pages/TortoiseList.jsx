@@ -69,23 +69,23 @@ export default function TortoiseList() {
   // ── Data Queries ──
   const { data: tortoises = [], isLoading } = useQuery({
     queryKey: ["tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 300),
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 2000),
   });
   const { data: healthRecords = [] } = useQuery({
     queryKey: ["health-records-all"],
-    queryFn: () => base44.entities.HealthRecord.list("-date", 500),
+    queryFn: () => base44.entities.HealthRecord.list("-date", 2000),
   });
   const { data: breedingRecords = [] } = useQuery({
     queryKey: ["breeding-records-all"],
-    queryFn: () => base44.entities.Breeding.list("-mating_date", 500),
+    queryFn: () => base44.entities.Breeding.list("-mating_date", 2000),
   });
   const { data: enclosures = [] } = useQuery({
     queryKey: ["enclosures"],
-    queryFn: () => base44.entities.Enclosure.list("-created_date"),
+    queryFn: () => base44.entities.Enclosure.list("-created_date", 200),
   });
   const { data: deathRecords = [] } = useQuery({
     queryKey: ["death-records"],
-    queryFn: () => base44.entities.DeathRecord.list("-death_date"),
+    queryFn: () => base44.entities.DeathRecord.list("-death_date", 200),
   });
 
   const deleteMutation = useMutation({
@@ -256,19 +256,19 @@ export default function TortoiseList() {
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="kura" className="flex-1 sm:flex-none gap-1.5">
             <Shell className="w-4 h-4" /> Kura-kura
-            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "aktif" || t.status === "baby").length}</Badge>
+            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="kandang" className="flex-1 sm:flex-none gap-1.5">
             <Home className="w-4 h-4" /> Kandang
-            <Badge variant="secondary" className="text-xs ml-1">{enclosures.length}</Badge>
+            <Badge variant="secondary" className="text-xs ml-1">{enclosures.filter(e => e.is_active !== false).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="karantina" className="flex-1 sm:flex-none gap-1.5">
             <CalendarX className="w-4 h-4" /> Karantina
-            <Badge variant="secondary" className="text-xs ml-1">{quarantinedTortoises.length}</Badge>
+            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.in_quarantine === true).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="kematian" className="flex-1 sm:flex-none gap-1.5">
             <Skull className="w-4 h-4" /> Kematian
-            <Badge variant="secondary" className="text-xs ml-1">{deathRecords.length}</Badge>
+            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "mati").length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="terjual" className="flex-1 sm:flex-none gap-1.5">
             <ShoppingBag className="w-4 h-4" /> Terjual
