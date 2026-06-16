@@ -1,5 +1,6 @@
 import { useState } from "react";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
+import LabaRugiPanel from "@/components/finance/LabaRugiPanel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -195,8 +196,8 @@ export default function FinancePage() {
         </TabsContent>
 
         {/* Laba Rugi */}
-        <TabsContent value="laba-rugi" className="mt-4 space-y-4">
-          <LabaRugiPanel period={period} transactions={periodTx} />
+        <TabsContent value="laba-rugi" className="mt-4">
+          <LabaRugiPanel />
         </TabsContent>
 
         {/* Pemasukan */}
@@ -281,97 +282,7 @@ export default function FinancePage() {
   );
 }
 
-function LabaRugiPanel({ period, transactions }) {
-  const pemasukan = transactions.filter(t => t.type === "pemasukan");
-  const pengeluaran = transactions.filter(t => t.type === "pengeluaran");
-  const totalPemasukan = pemasukan.reduce((s, t) => s + (t.amount || 0), 0);
-  const totalPengeluaran = pengeluaran.reduce((s, t) => s + (t.amount || 0), 0);
-  const labaRugi = totalPemasukan - totalPengeluaran;
-
-  // Sales breakdown dari penjualan_tortoise transactions (yang punya description dengan "Penjualan")
-  const saleTx = pemasukan.filter(t => t.category === "penjualan_tortoise");
-
-  return (
-    <div className="space-y-4">
-      {/* Ringkasan L/R */}
-      <Card className="p-5">
-        <h2 className="font-semibold text-base mb-4">Laporan Laba Rugi — {period}</h2>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-sm font-medium text-green-700">TOTAL PEMASUKAN</span>
-            <span className="font-bold text-green-700">Rp {totalPemasukan.toLocaleString("id-ID")}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-sm font-medium text-red-600">TOTAL PENGELUARAN</span>
-            <span className="font-bold text-red-600">-Rp {totalPengeluaran.toLocaleString("id-ID")}</span>
-          </div>
-          <div className={`flex justify-between items-center py-3 px-4 rounded-xl ${labaRugi >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-            <span className={`text-base font-bold ${labaRugi >= 0 ? "text-green-800" : "text-red-800"}`}>
-              {labaRugi >= 0 ? "LABA BERSIH" : "RUGI BERSIH"}
-            </span>
-            <span className={`text-xl font-bold ${labaRugi >= 0 ? "text-green-700" : "text-red-700"}`}>
-              Rp {Math.abs(labaRugi).toLocaleString("id-ID")}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Breakdown per kura */}
-      {saleTx.length > 0 && (
-        <Card className="p-5">
-          <h2 className="font-semibold text-base mb-3">Breakdown Penjualan per Kura</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-muted-foreground border-b">
-                  <th className="text-left pb-2">Keterangan</th>
-                  <th className="text-right pb-2">Harga Jual</th>
-                  <th className="text-right pb-2">Tanggal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {saleTx.map(tx => (
-                  <tr key={tx.id}>
-                    <td className="py-2 text-sm">{tx.description || "-"}</td>
-                    <td className="py-2 text-right font-semibold text-green-700">Rp {(tx.amount || 0).toLocaleString("id-ID")}</td>
-                    <td className="py-2 text-right text-muted-foreground text-xs">{tx.date || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t font-bold">
-                  <td className="py-2">Total Penjualan</td>
-                  <td className="py-2 text-right text-green-700">Rp {saleTx.reduce((s,t) => s + (t.amount||0), 0).toLocaleString("id-ID")}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </Card>
-      )}
-
-      {/* Pengeluaran per kategori */}
-      {pengeluaran.length > 0 && (
-        <Card className="p-5">
-          <h2 className="font-semibold text-base mb-3">Rincian Pengeluaran</h2>
-          <div className="space-y-2">
-            {Object.entries(pengeluaran.reduce((map, t) => {
-              const cat = t.category || "lainnya";
-              if (!map[cat]) map[cat] = 0;
-              map[cat] += t.amount || 0;
-              return map;
-            }, {})).sort((a,b) => b[1]-a[1]).map(([cat, amt]) => (
-              <div key={cat} className="flex justify-between items-center">
-                <span className="text-sm capitalize">{cat.replace(/_/g, " ")}</span>
-                <span className="text-sm font-semibold text-red-600">-Rp {amt.toLocaleString("id-ID")}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
+// LabaRugiPanel moved to components/finance/LabaRugiPanel.jsx
 
 function TxRow({ tx, isOwner }) {
   const conf = CATEGORIES[tx.category] || CATEGORIES.lainnya;

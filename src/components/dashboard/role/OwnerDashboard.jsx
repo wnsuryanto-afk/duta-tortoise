@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
+import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -464,6 +465,9 @@ export default function OwnerDashboard({ user }) {
           />
         </div>
       </div>
+
+      {/* ── WIDGET LABA RUGI ── */}
+      <LabaRugiWidget />
 
       {/* ── ROW 2: NILAI & MODAL ── */}
       <div>

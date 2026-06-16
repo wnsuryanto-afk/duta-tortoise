@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircle2, TrendingUp, TrendingDown, Search } from "lucide-react";
+import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircle2, TrendingUp, TrendingDown, Search, Info } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
+import { useCostPerTortoise, calcCareCost } from "@/hooks/useCostPerTortoise";
 import { format, differenceInMonths } from "date-fns";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
@@ -378,11 +379,13 @@ function StepDetailPenjualan({ form, onChange, errors }) {
 }
 
 // ── STEP 4: Review HPP & Laba ──
-function StepReview({ form, tortoise }) {
+function StepReview({ form, tortoise, costData }) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const biayaPerBulan = costData?.biayaPerEkor || 100000;
+  const isDataAktual = costData?.isDataAktual;
   const farmMonths = calcFarmMonths(tortoise);
   const purchasePrice = tortoise?.purchase_price || 0;
-  const estimasiPerawatan = farmMonths * 150000;
+  const estimasiPerawatan = farmMonths * biayaPerBulan;
   const shippingCost = Number(form.shipping_cost) || 0;
   const totalHpp = purchasePrice + estimasiPerawatan + shippingCost;
   const price = Number(form.price) || 0;
@@ -419,12 +422,12 @@ function StepReview({ form, tortoise }) {
         <Row
           label={
             <span className="inline-flex items-center gap-1">
-              Estimasi Perawatan
+              Biaya Perawatan
               <button type="button" onClick={() => setShowTooltip(!showTooltip)} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 text-[10px] font-bold text-muted-foreground leading-none">?</button>
             </span>
           }
           value={`Rp ${fmt(estimasiPerawatan)}`}
-          sub={`${farmMonths} bulan × Rp 150.000/bln · ${entryLabel}: ${entryDisplay || "tidak diketahui"}`}
+          sub={<>{farmMonths} bulan × Rp {fmt(biayaPerBulan)}/bln · {entryLabel}: {entryDisplay || "tidak diketahui"} · <span className={isDataAktual ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>{isDataAktual ? "Data aktual" : "Estimasi default"}</span></>}
         />
 
         {showTooltip && (
@@ -556,6 +559,10 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
   }, [preselectedBuyer, initialized]);
 
   const selectedTortoise = tortoises.find(t => t.id === form.tortoise_id);
+
+  // Fetch actual cost data
+  const currentPeriod = new Date().toISOString().slice(0, 7);
+  const costData = useCostPerTortoise(currentPeriod);
 
   const onChange = (field, value) => {
     setForm(p => ({ ...p, [field]: value }));

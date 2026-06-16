@@ -6,6 +6,7 @@ import {
   CheckCircle, AlertTriangle, Package, Users, DollarSign, Heart, Clock, RefreshCw, ChevronRight
 } from "lucide-react";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
+import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -263,26 +264,7 @@ export default function AdminDashboard({ user }) {
       </div>
 
       {/* ── SECTION 4: KEUANGAN RINGKAS ── */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold">Keuangan Bulan Ini</p>
-          <Link to="/finance" className="text-xs text-primary hover:underline">Lihat laporan lengkap</Link>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-xs text-muted-foreground">Pemasukan</p>
-            <p className="text-base font-bold text-green-600">{fmt(income)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Pengeluaran</p>
-            <p className="text-base font-bold text-red-500">{fmt(expense)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Net</p>
-            <p className={`text-base font-bold ${net >= 0 ? "text-green-600" : "text-red-500"}`}>{fmt(net)}</p>
-          </div>
-        </div>
-      </div>
+      <LabaRugiWidget />
 
       {/* ── DAFTAR BELANJA ── */}
       <ShoppingListWidget />

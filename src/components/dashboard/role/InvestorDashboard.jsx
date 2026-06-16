@@ -4,6 +4,7 @@ import { Eye, TrendingUp, TrendingDown, DollarSign, Shell, Egg, Heart } from "lu
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import { useState, useEffect } from "react";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -101,29 +102,7 @@ export default function InvestorDashboard({ user }) {
       </div>
 
       {/* Ringkasan keuangan */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <h2 className="font-semibold text-sm mb-3">💰 Ringkasan Bulan Ini</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-green-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-muted-foreground">Ekor Terjual</p>
-            <p className="text-xl font-bold text-green-700">{salesThisMonth.length}</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-muted-foreground">Pemasukan</p>
-            <p className="text-base font-bold text-green-700">{fmt(incomeThis)}</p>
-            {incomeLast > 0 && <p className="text-[10px] text-muted-foreground">{incomeThis > incomeLast ? "↑" : "↓"} vs bln lalu</p>}
-          </div>
-          <div className="bg-blue-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-muted-foreground">Pengeluaran</p>
-            <p className="text-base font-bold text-blue-700">{fmt(expenseThis)}</p>
-          </div>
-          <div className={`rounded-lg p-3 text-center ${profit >= 0 ? "bg-primary/5" : "bg-red-50"}`}>
-            <p className="text-xs text-muted-foreground">Laba Bersih</p>
-            <p className={`text-base font-bold ${profit >= 0 ? "text-primary" : "text-red-600"}`}>{fmt(profit)}</p>
-            <p className="text-[10px] text-muted-foreground">{margin}% margin</p>
-          </div>
-        </div>
-      </div>
+      <LabaRugiWidget />
 
       {/* Populasi */}
       <div className="bg-card rounded-xl border border-border p-4">
