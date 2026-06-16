@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function BuyerForm({ data, onSave, onClose }) {
   const [form, setForm] = useState(data || {
-    name: "", phone: "", email: "", city: "",
+    name: "", hp_whatsapp: "", email: "", city: "", buyer_address: "",
     platform_asal: "", favorite_morph: "", budget_range: "", notes: "",
     total_purchases: 0, total_spent: 0,
   });
@@ -18,7 +18,7 @@ export default function BuyerForm({ data, onSave, onClose }) {
   const validate = () => {
     const e = {};
     if (!form.name?.trim()) e.name = "Nama pembeli wajib diisi";
-    if (!form.phone?.trim()) e.phone = "Nomor telepon wajib diisi";
+    if (!form.hp_whatsapp?.trim()) e.hp_whatsapp = "Nomor HP/WA wajib diisi";
     if (!form.platform_asal) e.platform_asal = "Platform asal wajib dipilih";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -32,7 +32,7 @@ export default function BuyerForm({ data, onSave, onClose }) {
     onSave();
   };
 
-  const isValid = form.name?.trim() && form.phone?.trim() && form.platform_asal;
+  const isValid = form.name?.trim() && form.hp_whatsapp?.trim() && form.platform_asal;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -44,8 +44,8 @@ export default function BuyerForm({ data, onSave, onClose }) {
         </div>
         <div className="col-span-2">
           <Label>No. HP / WhatsApp <span className="text-red-500">*</span></Label>
-          <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="08xxx atau 628xxx" className={errors.phone ? "border-red-500" : ""} />
-          {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+          <Input value={form.hp_whatsapp} onChange={e => set("hp_whatsapp", e.target.value)} placeholder="08xxx atau 628xxx" className={errors.hp_whatsapp ? "border-red-500" : ""} />
+          {errors.hp_whatsapp && <p className="text-xs text-red-500 mt-1">{errors.hp_whatsapp}</p>}
         </div>
         <div>
           <Label>Email</Label>
@@ -54,6 +54,10 @@ export default function BuyerForm({ data, onSave, onClose }) {
         <div>
           <Label>Kota</Label>
           <Input value={form.city || ""} onChange={e => set("city", e.target.value)} />
+        </div>
+        <div className="col-span-2">
+          <Label>Alamat</Label>
+          <Textarea value={form.buyer_address || ""} onChange={e => set("buyer_address", e.target.value)} rows={2} placeholder="Alamat lengkap" />
         </div>
         <div>
           <Label>Platform Asal <span className="text-red-500">*</span></Label>

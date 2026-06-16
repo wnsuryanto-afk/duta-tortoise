@@ -4,12 +4,10 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-
     const sale = body.data;
     if (!sale || !sale.id) {
       return Response.json({ ok: true, skip: "no data" });
     }
-
     const db = base44.asServiceRole;
 
     // ── A. Catat FinanceTransaction (cegah duplikat) ────────────────────
@@ -35,8 +33,7 @@ Deno.serve(async (req) => {
           previous_status: tortoise.status || "aktif",
           last_status_change: sale.sale_date || new Date().toISOString().split("T")[0],
         });
-
-        // Kurangi current_count kandang asal (jangan minus)
+        // Kurangi current_count kandang asal
         if (tortoise.enclosure) {
           const enclosures = await db.entities.Enclosure.filter({ id: tortoise.enclosure });
           const enclosure = enclosures && enclosures[0];
@@ -49,9 +46,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── C. Upsert BuyerProfile ────────────────────────────────────────────
-    if (sale.buyer_phone) {
-      const existingBuyers = await db.entities.BuyerProfile.filter({ phone: sale.buyer_phone });
+    // ── C. Upsert BuyerProfile (only if buyer_profile_id not already set by client) ──
+    const hp = sale.hp_whatsapp || sale.buyer_phone;
+    if (hp && !sale.buyer_profile_id) {
+      const existingBuyers = await db.entities.BuyerProfile.filter({ hp_whatsapp: hp });
       const saleDate = sale.sale_date || new Date().toISOString().split("T")[0];
 
       if (existingBuyers && existingBuyers.length > 0) {
@@ -60,17 +58,25 @@ Deno.serve(async (req) => {
           total_purchases: (buyer.total_purchases || 0) + 1,
           total_spent: (buyer.total_spent || 0) + (sale.price || 0),
           last_purchase_date: saleDate,
+          last_purchased_tortoise: sale.tortoise_code || "",
+          is_repeat_buyer: (buyer.total_purchases || 0) + 1 > 1,
           name: buyer.name || sale.buyer_name,
-          address: buyer.address || sale.buyer_address,
+          buyer_address: buyer.buyer_address || sale.buyer_address || "",
+          city: buyer.city || sale.buyer_city || "",
         });
       } else {
         await db.entities.BuyerProfile.create({
           name: sale.buyer_name || "",
-          phone: sale.buyer_phone,
-          address: sale.buyer_address || "",
+          hp_whatsapp: hp,
+          buyer_address: sale.buyer_address || "",
+          city: sale.buyer_city || "",
+          platform_asal: sale.platform || "Langsung",
           total_purchases: 1,
           total_spent: sale.price || 0,
+          first_purchase_date: saleDate,
           last_purchase_date: saleDate,
+          last_purchased_tortoise: sale.tortoise_code || "",
+          is_repeat_buyer: false,
         });
       }
     }

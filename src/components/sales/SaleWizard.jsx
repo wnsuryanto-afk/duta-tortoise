@@ -182,24 +182,27 @@ function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
 function StepDataPembeli({ form, onChange, errors }) {
   const { data: buyers = [] } = useQuery({
     queryKey: ["buyer-profiles"],
-    queryFn: () => base44.entities.BuyerProfile.list("-created_date", 200),
+    queryFn: () => base44.entities.BuyerProfile.list("-last_purchase_date", 200),
   });
 
   const [buyerSearch, setBuyerSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const filtered = buyers.filter(b =>
-    buyerSearch && (b.buyer_name?.toLowerCase().includes(buyerSearch.toLowerCase()) || b.hp_whatsapp?.includes(buyerSearch))
+    buyerSearch && (b.name?.toLowerCase().includes(buyerSearch.toLowerCase()) || b.hp_whatsapp?.includes(buyerSearch))
   );
 
   const selectBuyer = (b) => {
-    onChange("buyer_name", b.buyer_name || "");
+    onChange("buyer_name", b.name || "");
     onChange("hp_whatsapp", b.hp_whatsapp || "");
+    onChange("buyer_city", b.city || "");
     onChange("buyer_address", b.buyer_address || "");
     onChange("buyer_profile_id", b.id || "");
-    setBuyerSearch(b.buyer_name || "");
+    setBuyerSearch(b.name || "");
     setShowSuggestions(false);
   };
+
+  const selectedBuyer = form.buyer_profile_id ? buyers.find(b => b.id === form.buyer_profile_id) : null;
 
   return (
     <div className="space-y-4">
@@ -222,9 +225,10 @@ function StepDataPembeli({ form, onChange, errors }) {
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-muted transition-colors">
                 <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-sm">{b.buyer_name}</p>
-                  <p className="text-xs text-muted-foreground">{b.hp_whatsapp} {b.buyer_city ? `· ${b.buyer_city}` : ""}</p>
+                  <p className="font-medium text-sm">{b.name}</p>
+                  <p className="text-xs text-muted-foreground">{b.hp_whatsapp}{b.city ? ` · ${b.city}` : ""}</p>
                 </div>
+                {b.is_repeat_buyer && <Badge className="ml-auto bg-amber-100 text-amber-700 text-[10px]">⭐ Setia</Badge>}
               </button>
             ))}
           </div>
@@ -233,6 +237,24 @@ function StepDataPembeli({ form, onChange, errors }) {
           <p className="text-xs text-muted-foreground mt-1">Tidak ditemukan — isi form di bawah untuk pembeli baru</p>
         )}
       </div>
+
+      {/* Repeat buyer info */}
+      {selectedBuyer && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+          {selectedBuyer.is_repeat_buyer ? (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-amber-100 text-amber-800 text-xs border-0">⭐ Pelanggan Setia</Badge>
+              <span className="text-blue-800">
+                Sudah beli <strong>{selectedBuyer.total_purchases || 0} ekor</strong>
+                {selectedBuyer.last_purchased_tortoise ? ` — terakhir: ${selectedBuyer.last_purchased_tortoise}` : ""}
+                {selectedBuyer.last_purchase_date ? ` (${selectedBuyer.last_purchase_date})` : ""}
+              </span>
+            </div>
+          ) : (
+            <span className="text-blue-800">Pembeli baru — transaksi pertama</span>
+          )}
+        </div>
+      )}
 
       <div className="border-t pt-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Data Pembeli</p>
@@ -420,7 +442,7 @@ function StepReview({ form, tortoise }) {
 }
 
 // ── MAIN WIZARD ──
-export default function SaleWizard({ open, onClose, preSelectedTortoiseId }) {
+export default function SaleWizard({ open, onClose, preSelectedTortoiseId, preselectedBuyer }) {
   const queryClient = useQueryClient();
   const { testModeTag } = useTestMode();
   const [step, setStep] = useState(0);
@@ -447,6 +469,12 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId }) {
     queryFn: () => base44.entities.Sale.list("-sale_date", 500),
   });
 
+  // Fetch buyers for repeat-buyer tracking & handleSave
+  const { data: buyers = [] } = useQuery({
+    queryKey: ["buyer-profiles"],
+    queryFn: () => base44.entities.BuyerProfile.list("-last_purchase_date", 200),
+  });
+
   // Auto-select preSelectedTortoiseId on mount
   useEffect(() => {
     if (preSelectedTortoiseId && tortoises.length > 0 && !initialized) {
@@ -458,6 +486,21 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId }) {
       }
     }
   }, [preSelectedTortoiseId, tortoises, initialized]);
+
+  // Auto-fill buyer data from preselectedBuyer
+  useEffect(() => {
+    if (preselectedBuyer && !initialized) {
+      onChange("buyer_name", preselectedBuyer.name || "");
+      onChange("hp_whatsapp", preselectedBuyer.hp_whatsapp || "");
+      onChange("buyer_city", preselectedBuyer.city || "");
+      onChange("buyer_address", preselectedBuyer.buyer_address || "");
+      onChange("buyer_profile_id", preselectedBuyer.id || "");
+      onChange("platform", preselectedBuyer.platform_asal || "");
+      // Jump to step 1 (Data Pembeli) so user can review then proceed
+      setStep(1);
+      setInitialized(true);
+    }
+  }, [preselectedBuyer, initialized]);
 
   const selectedTortoise = tortoises.find(t => t.id === form.tortoise_id);
 
@@ -546,19 +589,47 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId }) {
         care_cost_estimate: (calcAgeMonths(selectedTortoise?.birth_date) || 0) * 150000,
         finance_tx_id: finTx?.id || "",
       });
-      // D) Update BuyerProfile
+      // D) Update / Create BuyerProfile
+      const tortoiseCode = selectedTortoise?.code || "";
       try {
         if (form.buyer_profile_id) {
-          await base44.entities.BuyerProfile.update(form.buyer_profile_id, { is_repeat_buyer: true });
-        } else if (form.buyer_name) {
-          await base44.entities.BuyerProfile.create({
-            buyer_name: form.buyer_name,
+          // Existing buyer — increment stats
+          const existingBuyer = buyers.find(b => b.id === form.buyer_profile_id) || {};
+          await base44.entities.BuyerProfile.update(form.buyer_profile_id, {
+            total_purchases: (existingBuyer.total_purchases || 0) + 1,
+            total_spent: (existingBuyer.total_spent || 0) + price,
+            last_purchase_date: form.sale_date,
+            last_purchased_tortoise: tortoiseCode,
+            is_repeat_buyer: (existingBuyer.total_purchases || 0) + 1 > 1,
+            // Update address/city if changed
+            buyer_address: form.buyer_address || existingBuyer.buyer_address || "",
+            city: form.buyer_city || existingBuyer.city || "",
+            hp_whatsapp: form.hp_whatsapp || existingBuyer.hp_whatsapp || "",
+            platform_asal: form.platform || existingBuyer.platform_asal || "Langsung",
+          });
+        } else {
+          // New buyer — create profile
+          const newBuyer = await base44.entities.BuyerProfile.create({
+            name: form.buyer_name,
             hp_whatsapp: form.hp_whatsapp,
             buyer_address: form.buyer_address || "",
-            buyer_city: form.buyer_city || "",
+            city: form.buyer_city || "",
+            platform_asal: form.platform || "Langsung",
+            total_purchases: 1,
+            total_spent: price,
+            first_purchase_date: form.sale_date,
+            last_purchase_date: form.sale_date,
+            last_purchased_tortoise: tortoiseCode,
+            is_repeat_buyer: false,
+          });
+          // Link sale to new buyer profile
+          await base44.entities.Sale.update(newSale.id, {
+            buyer_profile_id: newBuyer?.id || "",
           });
         }
       } catch (_) { /* non-critical */ }
+
+      queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
 
       // D) Update enclosure counter — invalidate and backend will recalculate
       if (prevTortoise?.enclosure) {

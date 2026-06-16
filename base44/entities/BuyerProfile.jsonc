@@ -15,6 +15,10 @@
     "city": {
       "type": "string"
     },
+    "buyer_address": {
+      "type": "string",
+      "description": "Alamat lengkap pembeli"
+    },
     "platform_asal": {
       "type": "string",
       "enum": [
@@ -34,6 +38,10 @@
     "last_purchase_date": {
       "type": "string",
       "format": "date"
+    },
+    "last_purchased_tortoise": {
+      "type": "string",
+      "description": "Kode kura terakhir yang dibeli"
     },
     "total_purchases": {
       "type": "number",
@@ -71,6 +79,11 @@
     "is_blacklist": {
       "type": "boolean",
       "default": false
+    },
+    "is_repeat_buyer": {
+      "type": "boolean",
+      "default": false,
+      "description": "true jika total_purchases > 1"
     }
   },
   "required": [
