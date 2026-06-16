@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +26,24 @@ function calcAgeMonths(birthDate) {
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
 // ── STEP 1: Pilih Kura ──
-function StepPilihKura({ tortoises, selectedId, onSelect }) {
+function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
   const [search, setSearch] = useState("");
-  const available = tortoises.filter(t => t.status === "aktif" || t.status === "breeding" || t.status === "baby");
-  const filtered = available.filter(t =>
+
+  // Section 1: Active/Breeding/Baby
+  const activeTortoises = tortoises.filter(t =>
+    t.status === "aktif" || t.status === "breeding" || t.status === "baby"
+  );
+
+  // Section 2: Terjual but no Sale record
+  const saleTortoiseIds = new Set(allSales.map(s => s.tortoise_id).filter(Boolean));
+  const terjualNoSale = tortoises.filter(t =>
+    t.status === "terjual" && !saleTortoiseIds.has(t.id)
+  );
+
+  const filteredActive = activeTortoises.filter(t =>
+    !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredTerjualNoSale = terjualNoSale.filter(t =>
     !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -80,34 +94,84 @@ function StepPilihKura({ tortoises, selectedId, onSelect }) {
         </div>
       )}
 
-      <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
-        {filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">Tidak ada kura dengan status aktif/breeding</p>
-        ) : (
-          filtered.map(t => {
-            const isSelected = t.id === selectedId;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => onSelect(t.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${isSelected ? "border-green-500 bg-green-50" : "border-border hover:bg-muted"}`}
-              >
-                {primaryPhoto(t) ? (
-                  <img src={primaryPhoto(t)} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                    <Shell className="w-5 h-5 text-muted-foreground" />
+      <div className="max-h-64 overflow-y-auto space-y-4 pr-1">
+        {/* Section 1: Aktif */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">
+            🟢 Kura Aktif ({filteredActive.length})
+          </p>
+          {filteredActive.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2 px-1">Tidak ada kura aktif</p>
+          ) : (
+            filteredActive.map(t => {
+              const isSelected = t.id === selectedId;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => onSelect(t.id)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors mb-1.5 ${isSelected ? "border-green-500 bg-green-50" : "border-border hover:bg-muted"}`}
+                >
+                  {primaryPhoto(t) ? (
+                    <img src={primaryPhoto(t)} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <Shell className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{t.name} {t.code && <span className="font-mono text-xs text-muted-foreground">({t.code})</span>}</p>
+                    <p className="text-xs text-muted-foreground">{speciesLabel[t.species] || t.species} · {t.gender} · {t.enclosure || "Tanpa Kandang"}</p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{t.name} {t.code && <span className="font-mono text-xs text-muted-foreground">({t.code})</span>}</p>
-                  <p className="text-xs text-muted-foreground">{speciesLabel[t.species] || t.species} · {t.gender} · {t.enclosure || "Tanpa Kandang"}</p>
-                </div>
-                {isSelected && <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />}
-              </button>
-            );
-          })
+                  {isSelected && <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Section 2: Terjual — Belum Ada Data */}
+        {terjualNoSale.length > 0 && (
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-amber-700 mb-1.5 px-1">
+              ⚠️ Terjual — Belum Ada Data Penjualan ({terjualNoSale.length})
+            </p>
+            <p className="text-xs text-amber-600 mb-2 px-1">
+              Kura ini sudah berstatus terjual tapi belum tercatat penjualannya. Isi data penjualan di sini.
+            </p>
+            {filteredTerjualNoSale.length === 0 && search ? (
+              <p className="text-sm text-muted-foreground py-2 px-1">Tidak ada yang cocok dengan pencarian</p>
+            ) : (
+              filteredTerjualNoSale.map(t => {
+                const isSelected = t.id === selectedId;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => onSelect(t.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors mb-1.5 ${isSelected ? "border-amber-500 bg-amber-50" : "border-amber-200 bg-amber-50/50 hover:bg-amber-100"}`}
+                  >
+                    {primaryPhoto(t) ? (
+                      <img src={primaryPhoto(t)} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                        <Shell className="w-5 h-5 text-amber-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{t.name} {t.code && <span className="font-mono text-xs text-muted-foreground">({t.code})</span>}</p>
+                      <p className="text-xs text-amber-600">Status terjual — belum ada data penjualan</p>
+                    </div>
+                    {isSelected && <CheckCircle2 className="w-5 h-5 text-amber-600 flex-shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {filteredActive.length === 0 && terjualNoSale.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">Tidak ada kura yang bisa dijual</p>
         )}
       </div>
     </div>
@@ -347,19 +411,22 @@ function StepReview({ form, tortoise }) {
       </div>
 
       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-        ⚠️ Setelah simpan: status kura otomatis berubah ke <strong>Terjual</strong>, dilepas dari kandang, dan transaksi keuangan dibuat otomatis.
+        {tortoise?.status === "terjual"
+          ? "⚠️ Kura ini sudah berstatus Terjual sebelumnya. Hanya data penjualan yang akan tercatat (status tidak berubah)."
+          : "⚠️ Setelah simpan: status kura otomatis berubah ke Terjual, dilepas dari kandang, dan transaksi keuangan dibuat otomatis."}
       </div>
     </div>
   );
 }
 
 // ── MAIN WIZARD ──
-export default function SaleWizard({ open, onClose }) {
+export default function SaleWizard({ open, onClose, preSelectedTortoiseId }) {
   const queryClient = useQueryClient();
   const { testModeTag } = useTestMode();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [initialized, setInitialized] = useState(false);
 
   const [form, setForm] = useState({
     tortoise_id: "", tortoise_name: "",
@@ -373,6 +440,24 @@ export default function SaleWizard({ open, onClose }) {
     queryKey: ["tortoises-sale"],
     queryFn: () => base44.entities.Tortoise.list("-created_date", 2000),
   });
+
+  // Fetch sales to check which terjual tortoises have no Sale record
+  const { data: allSales = [] } = useQuery({
+    queryKey: ["sales-all"],
+    queryFn: () => base44.entities.Sale.list("-sale_date", 500),
+  });
+
+  // Auto-select preSelectedTortoiseId on mount
+  useEffect(() => {
+    if (preSelectedTortoiseId && tortoises.length > 0 && !initialized) {
+      const t = tortoises.find(t2 => t2.id === preSelectedTortoiseId);
+      if (t) {
+        onChange("tortoise_id", t.id);
+        onChange("tortoise_name", t.name || "");
+        setInitialized(true);
+      }
+    }
+  }, [preSelectedTortoiseId, tortoises, initialized]);
 
   const selectedTortoise = tortoises.find(t => t.id === form.tortoise_id);
 
@@ -426,14 +511,17 @@ export default function SaleWizard({ open, onClose }) {
       };
       const newSale = await base44.entities.Sale.create(saleData);
 
-      // A) Update Tortoise status
+      // A) Update Tortoise status (skip if already terjual — fallback case)
       const prevTortoise = selectedTortoise;
-      await base44.entities.Tortoise.update(form.tortoise_id, {
-        status: "terjual",
-        previous_status: prevTortoise?.status || "aktif",
-        enclosure: "",
-        last_status_change: today,
-      });
+      const isAlreadyTerjual = prevTortoise?.status === "terjual";
+      if (!isAlreadyTerjual) {
+        await base44.entities.Tortoise.update(form.tortoise_id, {
+          status: "terjual",
+          previous_status: prevTortoise?.status || "aktif",
+          enclosure: "",
+          last_status_change: today,
+        });
+      }
 
       // C) Create FinanceTransaction
       const laba = price - hpp;
@@ -531,6 +619,7 @@ export default function SaleWizard({ open, onClose }) {
           {step === 0 && (
             <StepPilihKura
               tortoises={tortoises}
+              allSales={allSales}
               selectedId={form.tortoise_id}
               onSelect={id => {
                 const t = tortoises.find(t => t.id === id);

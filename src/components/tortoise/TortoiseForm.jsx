@@ -540,7 +540,6 @@ export default function TortoiseForm({ open, onClose, editData }) {
                   <SelectItem value="breeding">❤️ Breeding</SelectItem>
                   <SelectItem value="karantina">🔒 Karantina</SelectItem>
                   <SelectItem value="mati">💀 Mati</SelectItem>
-                  <SelectItem value="terjual">🛒 Terjual</SelectItem>
                   <SelectItem value="diarsipkan">📁 Diarsipkan</SelectItem>
                 </SelectContent>
               </Select>

@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, Eye, TrendingUp, CalendarX, Skull, ShoppingBag } from "lucide-react";
 import TortoiseTerjualTab from "@/components/tortoise/TortoiseTerjualTab";
 import ExportButton from "@/components/common/ExportButton";
+import SaleWizard from "@/components/sales/SaleWizard";
 import TortoiseCard from "@/components/tortoise/TortoiseCard";
 import TortoiseForm from "@/components/tortoise/TortoiseForm";
 import MoveEnclosureDialog from "@/components/tortoise/MoveEnclosureDialog";
@@ -58,6 +59,8 @@ export default function TortoiseList() {
   // Enclosure state
   const [showEnclosureForm, setShowEnclosureForm] = useState(false);
   const [editingEnclosure, setEditingEnclosure] = useState(null);
+  const [showSellWizard, setShowSellWizard] = useState(false);
+  const [sellTarget, setSellTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [selectedEnclosureDetail, setSelectedEnclosureDetail] = useState(null);
 
@@ -225,6 +228,7 @@ export default function TortoiseList() {
     }
   };
   const handleMove = (tortoise) => setMoveTarget(tortoise);
+  const handleSell = (tortoise) => { setSellTarget(tortoise); setShowSellWizard(true); };
   const handleMoved = () => queryClient.invalidateQueries({ queryKey: ["tortoises"] });
 
   // ── Enclosure derived ──
@@ -520,7 +524,7 @@ export default function TortoiseList() {
           ) : viewMode === "semua" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[b.status] ?? 0)).map((t) => (
-                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
+                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} onSell={perms.canCreate ? handleSell : null} />
               ))}
             </div>
           ) : (
@@ -556,7 +560,7 @@ export default function TortoiseList() {
                     {!collapsed && (
                       <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         {items.map((t) => (
-                           <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} />
+                           <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} onSell={perms.canCreate ? handleSell : null} />
                         ))}
                       </div>
                     )}
@@ -734,6 +738,13 @@ export default function TortoiseList() {
       </Tabs>
 
       {/* ── Dialogs ── */}
+      {showSellWizard && (
+        <SaleWizard open={showSellWizard} preSelectedTortoiseId={sellTarget?.id} onClose={(success) => {
+          setShowSellWizard(false);
+          setSellTarget(null);
+          if (success) queryClient.invalidateQueries({ queryKey: ["tortoises"] });
+        }} />
+      )}
       {showForm && <TortoiseForm open={showForm} onClose={() => setShowForm(false)} editData={editData} />}
       {moveTarget && <MoveEnclosureDialog tortoise={moveTarget} open={!!moveTarget} onClose={() => setMoveTarget(null)} onMoved={handleMoved} />}
       {renameEnclosure && <RenameEnclosureDialog open={!!renameEnclosure} onClose={() => setRenameEnclosure(null)} enclosureName={renameEnclosure.name} tortoiseIds={renameEnclosure.ids} />}

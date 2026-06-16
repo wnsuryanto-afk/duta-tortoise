@@ -366,6 +366,19 @@ export default function OwnerDashboard({ user }) {
 
   // ── Alert Kritis ──────────────────────────────────
   const criticalAlerts = [];
+
+  // Tortoises with status "terjual" but no Sale record
+  const saleTortoiseIds = new Set(sales.map(s => s.tortoise_id).filter(Boolean));
+  const terjualNoSale = tortoises.filter(t => t.status === "terjual" && !saleTortoiseIds.has(t.id));
+  if (terjualNoSale.length > 0) {
+    criticalAlerts.push({
+      type: "red",
+      msg: `${terjualNoSale.length} kura berstatus "terjual" tapi belum ada data penjualan`,
+      href: "/sales",
+      linkLabel: "Lengkapi →",
+    });
+  }
+
   sickTortoises.slice(0, 3).forEach(t =>
     criticalAlerts.push({ type: "red", msg: `Kura sakit: ${t.name} — ${t.enclosure || "-"}` })
   );
@@ -873,7 +886,14 @@ export default function OwnerDashboard({ user }) {
             {criticalAlerts.map((a, i) => (
               <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${a.type === "red" ? "bg-red-50 border border-red-100" : "bg-amber-50 border border-amber-100"}`}>
                 <span className="text-base mt-0.5">{a.type === "red" ? "🔴" : "🟡"}</span>
-                <span className={`text-sm ${a.type === "red" ? "text-red-800" : "text-amber-800"}`}>{a.msg}</span>
+                <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800" : "text-amber-800"}`}>
+                  {a.msg}
+                  {a.href && (
+                    <Link to={a.href} className="ml-2 text-primary font-medium underline hover:no-underline text-xs">
+                      {a.linkLabel || "Lihat →"}
+                    </Link>
+                  )}
+                </span>
               </div>
             ))}
           </div>
