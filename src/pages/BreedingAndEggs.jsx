@@ -32,6 +32,7 @@ const statusColors = {
   inkubasi: "bg-chart-4/10 text-chart-4 border-chart-4/20",
   menetas: "bg-primary/10 text-primary border-primary/20",
   gagal: "bg-destructive/10 text-destructive border-destructive/20",
+  selesai: "bg-green-100 text-green-800 border-green-400",
 };
 
 function IncubatorForm({ incubator, onClose, onSaved }) {
@@ -150,7 +151,7 @@ export default function BreedingAndEggs() {
 
   // Fungsi hitung fase inkubasi
   const getIncubationPhase = (b) => {
-    if (b.status === "menetas" || b.status === "gagal") return { fase: b.status, color: b.status === "menetas" ? "green" : "gray" };
+    if (b.status === "menetas" || b.status === "gagal" || b.status === "selesai") return { fase: b.status, color: b.status === "menetas" ? "green" : b.status === "selesai" ? "green" : "gray" };
     if (!b.egg_laying_date) return null;
     const daysSince = differenceInDays(today, parseISO(b.egg_laying_date));
     const hatchStart = b.estimated_hatch_start ? parseISO(b.estimated_hatch_start) : null;
@@ -173,18 +174,20 @@ export default function BreedingAndEggs() {
     terlewat:    { badge: "bg-gray-200 text-gray-700 border-gray-400",       label: "⚠️ Lewat Estimasi" },
     menetas:     { badge: "bg-primary/10 text-primary border-primary/30",    label: "✅ Sudah Menetas" },
     gagal:       { badge: "bg-gray-100 text-gray-600 border-gray-300",       label: "❌ Gagal" },
+    selesai:     { badge: "bg-green-100 text-green-800 border-green-400",    label: "✅ Selesai" },
   };
 
   // Sort breedings: aktif & mendekati duluan
-  const phaseOrder = { aktif: 0, mendekati: 1, terlewat: 2, pertengahan: 3, awal: 4, menetas: 5, gagal: 6 };
+  const phaseOrder = { aktif: 0, mendekati: 1, terlewat: 2, pertengahan: 3, awal: 4, menetas: 5, gagal: 6, selesai: 7 };
   const sortedBreedings = [...breedings].sort((a, b) => {
     const pa = getIncubationPhase(a)?.fase || "awal";
     const pb = getIncubationPhase(b)?.fase || "awal";
     return (phaseOrder[pa] ?? 9) - (phaseOrder[pb] ?? 9);
   });
+  const pembiakanBreedings = sortedBreedings.filter(b => b.status !== "selesai");
 
-  const activeBreedings = breedings.filter(b => b.status !== "menetas" && b.status !== "gagal");
-  const historyBreedings = breedings.filter(b => b.status === "menetas" || b.status === "gagal");
+  const activeBreedings = breedings.filter(b => b.status !== "menetas" && b.status !== "gagal" && b.status !== "selesai");
+  const historyBreedings = breedings.filter(b => b.status === "menetas" || b.status === "gagal" || b.status === "selesai");
 
   return (
     <div className="space-y-6">
@@ -226,8 +229,8 @@ export default function BreedingAndEggs() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {sortedBreedings.map((b) => {
-                const active = b.status !== "menetas" && b.status !== "gagal";
+              {pembiakanBreedings.map((b) => {
+                const active = b.status !== "menetas" && b.status !== "gagal" && b.status !== "selesai";
                 const phase = getIncubationPhase(b);
                 const phaseStyle = phase ? (PHASE_STYLE[phase.fase] || PHASE_STYLE.awal) : null;
                 const incubationDay = phase?.daysSince ?? 0;
@@ -333,14 +336,14 @@ export default function BreedingAndEggs() {
             <div className="flex items-center justify-center py-20">
               <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
             </div>
-          ) : activeBreedings.length === 0 ? (
+          ) : [...activeBreedings, ...breedings.filter(b => b.status === "selesai")].length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Egg className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="text-lg">Tidak ada telur aktif dalam inkubasi</p>
             </div>
           ) : (
             <div className="space-y-6">
-              {activeBreedings.map((b) => {
+              {[...activeBreedings, ...breedings.filter(b => b.status === "selesai")].map((b) => {
                 const startDate = b.estimated_hatch_date_start ? parseISO(b.estimated_hatch_date_start) : null;
                 const endDate = b.estimated_hatch_date_end ? parseISO(b.estimated_hatch_date_end) : null;
                 const hatchDate = b.estimated_hatch_date ? new Date(b.estimated_hatch_date) : null;
@@ -616,6 +619,22 @@ export default function BreedingAndEggs() {
                     )}
                   </div>
                   {b.notes && <p className="text-xs text-muted-foreground mt-3 line-clamp-2">{b.notes}</p>}
+                  {b.status === "selesai" && b.hatch_rate > 0 && (
+                    <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                        <div><span className="text-muted-foreground">Menetas:</span> <strong className="text-green-700">{b.hatched_count || 0} ekor</strong></div>
+                        <div><span className="text-muted-foreground">Hatch Rate:</span> <strong className="text-green-700">{b.hatch_rate}%</strong></div>
+                        {b.fertile_count > 0 && <div><span className="text-muted-foreground">Fertile:</span> <strong>{b.fertile_count}</strong></div>}
+                        {b.infertile_count > 0 && <div><span className="text-muted-foreground">Infertil:</span> <strong>{b.infertile_count}</strong></div>}
+                        {b.failed_count > 0 && <div><span className="text-muted-foreground">Gagal:</span> <strong>{b.failed_count}</strong></div>}
+                      </div>
+                    </div>
+                  )}
+                  {b.status === "selesai" && b.egg_count > 0 && (
+                    <div className="mt-3">
+                      <EggGrid breeding={b} />
+                    </div>
+                  )}
                   <ClutchOffspringSection breeding={b} />
                 </Card>
               ))}

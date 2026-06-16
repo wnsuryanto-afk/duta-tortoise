@@ -75,13 +75,31 @@
     "failed_count": {
       "type": "number"
     },
+    "fertile_count": {
+      "type": "number",
+      "description": "Jumlah telur fertile (termasuk yang menetas)"
+    },
+    "infertile_count": {
+      "type": "number",
+      "description": "Jumlah telur infertil"
+    },
+    "hatch_rate": {
+      "type": "number",
+      "description": "Hatch rate (%) = menetas / egg_count x 100"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal inkubasi diselesaikan"
+    },
     "status": {
       "type": "string",
       "enum": [
         "bertelur",
         "inkubasi",
         "menetas",
-        "gagal"
+        "gagal",
+        "selesai"
       ],
       "default": "bertelur"
     },
