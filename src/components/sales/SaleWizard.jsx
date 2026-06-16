@@ -18,9 +18,26 @@ const speciesLabel = { sulcata:"Sulcata", red_foot:"Red Foot", leopard:"Leopard"
 const genderLabel = { jantan:"♂ Jantan", betina:"♀ Betina", belum_diketahui:"?" };
 const morphLabel = { normal:"Normal", het_albino:"Het Albino", albino:"Albino", ivory:"Ivory", hypo:"Hypo", caramel_albino:"Caramel Albino", high_yellow:"High Yellow", unknown:"Unknown" };
 
+// Hitung umur biologis (display only)
 function calcAgeMonths(birthDate) {
   if (!birthDate) return null;
   return differenceInMonths(new Date(), new Date(birthDate));
+}
+
+// Hitung bulan di farm — prioritas: purchase_date → created_date → birth_date (hasil_sendiri)
+function calcFarmMonths(tortoise) {
+  if (!tortoise) return 0;
+  const today = new Date();
+  // Kura hasil sendiri: pakai birth_date (lahir di farm)
+  if (tortoise.source === "hasil_sendiri" && tortoise.birth_date) {
+    return Math.max(0, differenceInMonths(today, new Date(tortoise.birth_date)));
+  }
+  // Prioritas: purchase_date → created_date
+  const entryDate = tortoise.purchase_date || tortoise.created_date;
+  if (entryDate) {
+    return Math.max(0, differenceInMonths(today, new Date(entryDate)));
+  }
+  return 0;
 }
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
@@ -362,19 +379,33 @@ function StepDetailPenjualan({ form, onChange, errors }) {
 
 // ── STEP 4: Review HPP & Laba ──
 function StepReview({ form, tortoise }) {
-  const ageMonths = calcAgeMonths(tortoise?.birth_date);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const farmMonths = calcFarmMonths(tortoise);
   const purchasePrice = tortoise?.purchase_price || 0;
-  const estimasiPerawatan = ageMonths ? ageMonths * 150000 : 0;
+  const estimasiPerawatan = farmMonths * 150000;
   const shippingCost = Number(form.shipping_cost) || 0;
   const totalHpp = purchasePrice + estimasiPerawatan + shippingCost;
   const price = Number(form.price) || 0;
   const laba = price - totalHpp;
   const margin = price > 0 ? Math.round((laba / price) * 100) : 0;
 
-  const Row = ({ label, value, bold, className = "" }) => (
-    <div className={`flex justify-between items-center py-1.5 ${bold ? "font-semibold" : ""} ${className}`}>
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm ${bold ? "text-foreground" : ""}`}>{value}</span>
+  // Tentukan tanggal masuk farm untuk display
+  const isHasilSendiri = tortoise?.source === "hasil_sendiri";
+  const entryDateRaw = isHasilSendiri ? tortoise?.birth_date : (tortoise?.purchase_date || tortoise?.created_date);
+  const entryLabel = isHasilSendiri ? "Lahir di farm" : "Masuk farm";
+  const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+  const entryDisplay = entryDateRaw ? (() => {
+    const [y, m, d] = entryDateRaw.split("-");
+    return `${parseInt(d)} ${monthNames[parseInt(m)-1]} ${y}`;
+  })() : null;
+
+  const Row = ({ label, value, bold, className = "", sub }) => (
+    <div className={`${bold ? "font-semibold" : ""} ${className}`}>
+      <div className="flex justify-between items-center py-1.5">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className={`text-sm ${bold ? "text-foreground" : ""}`}>{value}</span>
+      </div>
+      {sub && <p className="text-[10px] text-muted-foreground ml-0 -mt-1 mb-1">{sub}</p>}
     </div>
   );
 
@@ -382,17 +413,39 @@ function StepReview({ form, tortoise }) {
     <div className="space-y-5">
       {/* HPP Breakdown */}
       <div className="bg-muted/40 rounded-xl p-4 space-y-1">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">Breakdown HPP</p>
-        <Row label="Harga Beli Awal" value={purchasePrice ? `Rp ${fmt(purchasePrice)}` : "Tidak tercatat"} />
-        <Row label={`Estimasi Perawatan${ageMonths ? ` (${ageMonths} bln × Rp 150.000)` : ""}`} value={`Rp ${fmt(estimasiPerawatan)}`} />
+        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">📊 Perhitungan HPP</p>
+        <Row label="Harga Beli Awal" value={purchasePrice ? `Rp ${fmt(purchasePrice)}` : "Rp 0"} />
+
+        <Row
+          label={
+            <span className="inline-flex items-center gap-1">
+              Estimasi Perawatan
+              <button type="button" onClick={() => setShowTooltip(!showTooltip)} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 text-[10px] font-bold text-muted-foreground leading-none">?</button>
+            </span>
+          }
+          value={`Rp ${fmt(estimasiPerawatan)}`}
+          sub={`${farmMonths} bulan × Rp 150.000/bln · ${entryLabel}: ${entryDisplay || "tidak diketahui"}`}
+        />
+
+        {showTooltip && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-800 space-y-0.5">
+            <p className="font-semibold">Estimasi Rp 150.000/bulan mencakup:</p>
+            <p>• Pakan (sayur, pelet, hay): ~Rp 75.000</p>
+            <p>• Vitamin & suplemen: ~Rp 25.000</p>
+            <p>• Obat preventif: ~Rp 15.000</p>
+            <p>• Listrik/air pro-rata: ~Rp 25.000</p>
+            <p>• Substrat/pasir: ~Rp 10.000</p>
+            <p className="text-[10px] mt-1 italic">Catatan: ini estimasi rata-rata, bukan kumulatif aktual.</p>
+          </div>
+        )}
+
         <Row label="Ongkos Kirim" value={`Rp ${fmt(shippingCost)}`} />
         <div className="border-t mt-2 pt-2">
           <Row label="TOTAL HPP" value={`Rp ${fmt(totalHpp)}`} bold />
         </div>
-        {ageMonths == null && (
-          <p className="text-[11px] text-amber-600 mt-1">⚠️ Tanggal lahir tidak tercatat, estimasi perawatan = Rp 0</p>
+        {farmMonths === 0 && !isHasilSendiri && (
+          <p className="text-[11px] text-amber-600 mt-1">⚠️ Tanggal masuk farm tidak diketahui, estimasi perawatan = Rp 0</p>
         )}
-        <p className="text-[10px] text-muted-foreground mt-1">*Estimasi rata-rata Rp 150.000/bulan, bukan biaya aktual kumulatif</p>
       </div>
 
       {/* Laba */}
@@ -403,16 +456,16 @@ function StepReview({ form, tortoise }) {
         </div>
         <div className="space-y-1">
           <Row label="Harga Jual" value={`Rp ${fmt(price)}`} />
-          <Row label="Total HPP" value={`Rp ${fmt(totalHpp)}`} />
+          <Row label="HPP" value={`-Rp ${fmt(totalHpp)}`} />
           <div className="border-t mt-2 pt-2">
             <div className="flex justify-between items-center">
-              <span className="font-bold">LABA BERSIH</span>
+              <span className="font-bold">💰 LABA BERSIH</span>
               <span className={`text-xl font-bold ${laba >= 0 ? "text-green-700" : "text-red-700"}`}>
                 Rp {fmt(laba)}
               </span>
             </div>
             <div className="flex justify-between items-center mt-1">
-              <span className="text-sm text-muted-foreground">Margin</span>
+              <span className="text-sm text-muted-foreground">📈 Margin</span>
               <span className={`text-sm font-semibold ${laba >= 0 ? "text-green-600" : "text-red-600"}`}>
                 {margin}%
               </span>
@@ -529,8 +582,8 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
 
   const calcHpp = () => {
     const purchasePrice = selectedTortoise?.purchase_price || 0;
-    const ageMonths = calcAgeMonths(selectedTortoise?.birth_date) || 0;
-    const estimasiPerawatan = ageMonths * 150000;
+    const farmMonths = calcFarmMonths(selectedTortoise);
+    const estimasiPerawatan = farmMonths * 150000;
     const shippingCost = Number(form.shipping_cost) || 0;
     return purchasePrice + estimasiPerawatan + shippingCost;
   };
@@ -586,7 +639,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         profit: laba,
         margin_percent: marginPct,
         purchase_price_original: selectedTortoise?.purchase_price || 0,
-        care_cost_estimate: (calcAgeMonths(selectedTortoise?.birth_date) || 0) * 150000,
+        care_cost_estimate: calcFarmMonths(selectedTortoise) * 150000,
         finance_tx_id: finTx?.id || "",
       });
       // D) Update / Create BuyerProfile
