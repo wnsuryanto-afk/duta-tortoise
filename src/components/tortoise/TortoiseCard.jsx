@@ -3,13 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag, QrCode, Lock, FileText, ShoppingBag } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag, QrCode, Lock, FileText, ShoppingBag, Star, GitBranch } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
 import EggHistoryPanel from "./EggHistoryPanel";
 import SizeHistoryPanel from "./SizeHistoryPanel";
-import GrowthTimeline from "./GrowthTimeline";
+import PhotoProgressPanel from "./PhotoProgressPanel";
 import TortoiseQRCode from "./TortoiseQRCode";
 import IncompleteBadge from "@/components/common/IncompleteBadge";
 import { getMissingFields } from "@/lib/incompleteChecks";
@@ -20,7 +20,6 @@ import { AgeBadge } from "./AgeDisplay";
 import TortoiseLineagePanel from "./TortoiseLineagePanel";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { GitBranch } from "lucide-react";
 
 function PriceField({ label, value }) {
   return (
@@ -249,6 +248,11 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
               </span>
             )}
             <IncompleteBadge missingFields={missingFields} onEdit={onEdit ? () => onEdit(tortoise) : undefined} />
+            {tortoise.age_category === "baby" && photos.length === 0 && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600 border border-gray-300">
+                📷 Belum ada foto
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -404,50 +408,78 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
       )}
     </Card>
 
-    {/* Lightbox multi-foto */}
-    {lightboxIdx !== null && photos.length > 0 && (
-      <Dialog open={lightboxIdx !== null} onOpenChange={() => setLightboxIdx(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{tortoise.name} — Foto {lightboxIdx + 1}/{photos.length}</DialogTitle>
-          </DialogHeader>
-          <div className="relative">
-            <img src={photos[lightboxIdx].url} alt={tortoise.name} className="w-full rounded-xl object-contain max-h-96" />
-            {photos.length > 1 && (
-              <>
-                <button type="button" onClick={() => setLightboxIdx((lightboxIdx - 1 + photos.length) % photos.length)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button type="button" onClick={() => setLightboxIdx((lightboxIdx + 1) % photos.length)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </>
-            )}
-          </div>
-          {/* Thumbnail strip */}
-          {photos.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto py-1">
-              {photos.map((p, i) => (
-                <button key={i} type="button" onClick={() => setLightboxIdx(i)}
-                  className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${i === lightboxIdx ? "border-primary" : "border-transparent"}`}>
-                  <img src={p.url} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
+    {/* Lightbox multi-foto with metadata */}
+    {lightboxIdx !== null && photos.length > 0 && (() => {
+      const currentPhoto = photos[lightboxIdx];
+      return (
+        <Dialog open={lightboxIdx !== null} onOpenChange={() => setLightboxIdx(null)}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>{tortoise.name} — Foto {lightboxIdx + 1}/{photos.length}</span>
+                {currentPhoto?.is_primary && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 font-medium">⭐ Utama</span>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="relative">
+              <img src={currentPhoto?.url} alt={tortoise.name} className="w-full rounded-xl object-contain max-h-80" />
+              {photos.length > 1 && (
+                <>
+                  <button type="button" onClick={() => setLightboxIdx((lightboxIdx - 1 + photos.length) % photos.length)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button type="button" onClick={() => setLightboxIdx((lightboxIdx + 1) % photos.length)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
-          )}
-          <div className="flex gap-2 mt-1">
-            <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => shareWA(photos[lightboxIdx].url)}>
-              <Share2 className="w-3.5 h-3.5 text-green-600" /> WhatsApp
-            </Button>
-            <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => saveToDevice(photos[lightboxIdx].url)}>
-              <Download className="w-3.5 h-3.5 text-blue-600" /> Simpan ke HP
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )}
+            {/* Photo metadata */}
+            {currentPhoto?.date && (
+              <p className="text-sm font-medium">{format(new Date(currentPhoto.date), "d MMMM yyyy", { locale: id })}</p>
+            )}
+            <div className="flex flex-wrap gap-2 text-xs">
+              {currentPhoto?.weight_grams && <span className="bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200">⚖️ {currentPhoto.weight_grams}g</span>}
+              {currentPhoto?.shell_length_cm && <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200">📏 {currentPhoto.shell_length_cm}cm</span>}
+            </div>
+            {currentPhoto?.notes && <p className="text-sm text-muted-foreground italic">"{currentPhoto.notes}"</p>}
+            {/* Thumbnail strip */}
+            {photos.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto py-1">
+                {photos.map((p, i) => (
+                  <button key={i} type="button" onClick={() => setLightboxIdx(i)}
+                    className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${i === lightboxIdx ? "border-primary" : "border-transparent"}`}>
+                    <img src={p.url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 mt-1 flex-wrap">
+              <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => shareWA(currentPhoto?.url)}>
+                <Share2 className="w-3.5 h-3.5 text-green-600" /> WhatsApp
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => saveToDevice(currentPhoto?.url)}>
+                <Download className="w-3.5 h-3.5 text-blue-600" /> Simpan
+              </Button>
+            </div>
+            {/* Jadikan Foto Utama */}
+            {currentPhoto && !currentPhoto.is_primary && (
+              <Button size="sm" variant="outline" className="gap-1 text-xs w-full"
+                onClick={async () => {
+                  const updated = photos.map((p, i) => ({ ...p, is_primary: i === lightboxIdx }));
+                  await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
+                  setLightboxIdx(null);
+                }}>
+                <Star className="w-3 h-3" /> Jadikan Foto Utama
+              </Button>
+            )}
+          </DialogContent>
+        </Dialog>
+      );
+    })()}
 
     {/* Riwayat Kandang */}
     <Dialog open={showHistory} onOpenChange={setShowHistory}>
@@ -509,17 +541,17 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
       </DialogContent>
     </Dialog>
 
-    {/* Foto Perkembangan */}
+    {/* Foto Progres Pertumbuhan */}
     <Dialog open={showGrowth} onOpenChange={setShowGrowth}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Camera className="w-4 h-4 text-accent" />
-            Perkembangan — {tortoise.name}
+            Foto Progres — {tortoise.name}
           </DialogTitle>
         </DialogHeader>
         <div className="py-2">
-          <GrowthTimeline tortoise={tortoise} />
+          <PhotoProgressPanel tortoise={tortoise} onClose={() => setShowGrowth(false)} />
         </div>
       </DialogContent>
     </Dialog>

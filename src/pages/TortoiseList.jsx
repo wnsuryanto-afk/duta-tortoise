@@ -210,7 +210,7 @@ export default function TortoiseList() {
     });
     const statusOrder = { aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 };
     Object.values(map).forEach((arr) => { arr.sort((a, b) => (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0)); });
-    const order = ["W1","W2","W3","W4","W5","N1","N2","E1","E2","E3","E4","E5","L2"];
+    const order = ["W1","W2","W3","W4","W5","N1","N2","E1","E2","E3","E4","E5","L2","Baby 1","Baby 2","Baby 3"];
     return Object.entries(map).sort(([a], [b]) => {
       const ai = order.indexOf(a); const bi = order.indexOf(b);
       if (ai >= 0 && bi >= 0) return ai - bi;
@@ -394,13 +394,27 @@ export default function TortoiseList() {
                   { label: "Kandang Baby", prefix: "Baby" },
                 ].map(group => {
                   const groupEncs = enclosures.filter(e => e.name.startsWith(group.prefix)).sort((a,b) => a.name.localeCompare(b.name));
-                  if (groupEncs.length === 0) return null;
+                  if (groupEncs.length === 0) {
+                    // Fallback: cek dari data tortoise yang ada enclosure-nya tapi belum jadi Enclosure entity
+                    const virtualEncs = [...new Set(tortoises.filter(t => t.enclosure?.startsWith(group.prefix)).map(t => t.enclosure))].sort();
+                    if (virtualEncs.length === 0) return null;
+                    return (
+                      <div key={group.label}>
+                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{group.label}</div>
+                        {virtualEncs.map(name => (
+                          <SelectItem key={`virtual-${name}`} value={name}>
+                            {name} ({tortoises.filter(t => t.enclosure === name && t.status !== "mati" && t.status !== "terjual").length})
+                          </SelectItem>
+                        ))}
+                      </div>
+                    );
+                  }
                   return (
                     <div key={group.label}>
                       <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{group.label}</div>
                       {groupEncs.map(enc => (
                         <SelectItem key={enc.id} value={enc.name}>
-                          {enc.name} {enc.current_count != null ? `(${enc.current_count})` : ""}
+                          {enc.name} {enc.current_count != null ? `(${enc.current_count})` : `(${tortoises.filter(t => t.enclosure === enc.name && t.status !== "mati" && t.status !== "terjual").length})`}
                         </SelectItem>
                       ))}
                     </div>
@@ -537,7 +551,7 @@ export default function TortoiseList() {
                       <div className="flex items-center gap-3">
                         {collapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                         <button type="button" onClick={(e) => { e.stopPropagation(); setEnclosureFilter(enclosureFilter === enclosure ? null : enclosure); }} className={`font-semibold text-sm hover:text-primary hover:underline transition-colors ${enclosureFilter === enclosure ? "text-primary underline" : ""}`}>
-                          Kandang {enclosure}
+                          {enclosure.startsWith("Baby") ? enclosure : `Kandang ${enclosure}`}
                         </button>
                         <Badge variant="secondary" className="text-xs">{items.length} ekor</Badge>
                         <div className="flex gap-1 text-xs text-muted-foreground">
