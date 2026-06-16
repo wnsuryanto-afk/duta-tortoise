@@ -443,6 +443,9 @@ export default function OwnerDashboard({ user }) {
       {/* ── EXCLUDED DATA WIDGET ── */}
       <ExcludedDataWidget />
 
+      {/* ── WIDGET LABA RUGI REALTIME ── */}
+      <LabaRugiWidget />
+
       {/* ── ROW 1: KESEHATAN FINANSIAL ── */}
       <div>
         <SectionTitle icon={DollarSign}>Kesehatan Finansial Bulan Ini</SectionTitle>
@@ -465,9 +468,6 @@ export default function OwnerDashboard({ user }) {
           />
         </div>
       </div>
-
-      {/* ── WIDGET LABA RUGI ── */}
-      <LabaRugiWidget />
 
       {/* ── ROW 2: NILAI & MODAL ── */}
       <div>

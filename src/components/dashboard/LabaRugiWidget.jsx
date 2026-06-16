@@ -1,93 +1,96 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { TrendingUp, TrendingDown, DollarSign, Package, ChevronRight } from "lucide-react";
-import { useMemo } from "react";
-import { format } from "date-fns";
+import { Card } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, DollarSign, ChevronRight } from "lucide-react";
+import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
 
-function fmt(n) { return `Rp ${Number(n || 0).toLocaleString("id-ID")}`; }
+const fmt = n => `Rp ${(n || 0).toLocaleString("id-ID")}`;
 
 export default function LabaRugiWidget() {
   const now = new Date();
-  const period = format(now, "yyyy-MM");
+  const monthKey = format(now, "yyyy-MM");
+  const thisMonthStart = format(startOfMonth(now), "yyyy-MM-dd");
+  const thisMonthEnd = format(endOfMonth(now), "yyyy-MM-dd");
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ["lr-widget-tx"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500),
+  const costData = useCostPerTortoise(monthKey);
+
+  const { data: finances = [] } = useQuery({
+    queryKey: ["widget-labugi-finances", monthKey],
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 200),
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: tortoises = [] } = useQuery({
-    queryKey: ["lr-widget-tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-name", 500),
-    staleTime: 10 * 60 * 1000,
-  });
+  const periodFinances = finances.filter(f =>
+    f.date >= thisMonthStart && f.date <= thisMonthEnd && !f.excluded_from_reports
+  );
 
-  const computed = useMemo(() => {
-    const monthTx = transactions.filter(t => t.date?.startsWith(period) && !t.excluded_from_reports);
-    const pemasukan = monthTx.filter(t => t.type === "pemasukan").reduce((s,t)=>s+(t.amount||0),0);
-    const pengeluaran = monthTx.filter(t => t.type === "pengeluaran").reduce((s,t)=>s+(t.amount||0),0);
-    const labaRugi = pemasukan - pengeluaran;
-    const activeCount = tortoises.filter(t => t.status==="aktif" || t.status==="baby" || t.status==="breeding").length;
-    const biayaPerEkor = pengeluaran > 0 && activeCount > 0 ? Math.round(pengeluaran / activeCount) : null;
-    const maxBar = Math.max(pemasukan, pengeluaran, 1);
+  const pemasukan = periodFinances
+    .filter(f => f.type === "pemasukan")
+    .reduce((s, f) => s + (f.amount || 0), 0);
 
-    return { pemasukan, pengeluaran, labaRugi, biayaPerEkor, activeCount, maxBar };
-  }, [transactions, tortoises, period]);
+  const pengeluaran = periodFinances
+    .filter(f => f.type === "pengeluaran")
+    .reduce((s, f) => s + (f.amount || 0), 0);
 
-  if (!transactions.length && !tortoises.length) return null;
-
-  const isLaba = computed.labaRugi >= 0;
+  // Add salary slips and petty cash (from costData breakdown)
+  const totalPengeluaran = pengeluaran + (costData?.breakdown?.gaji_karyawan || 0) + (costData?.breakdown?.petty_cash || 0);
+  const labaRugi = pemasukan - totalPengeluaran;
+  const maxVal = Math.max(pemasukan, totalPengeluaran, 1);
+  const incomePct = Math.round((pemasukan / maxVal) * 100);
+  const expensePct = Math.round((totalPengeluaran / maxVal) * 100);
 
   return (
-    <Link to="/finance" className="block bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
+    <Card className="p-4 bg-gradient-to-br from-green-50/50 to-white border-green-200">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-sm flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-primary" />
-          Laba Rugi Bulan Ini
-        </h3>
-        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <span className="text-lg">💰</span>
+          <p className="font-semibold text-sm">Laba Rugi Bulan Ini</p>
+        </div>
+        <Link to="/finance" className="text-xs text-primary hover:underline flex items-center gap-1">
+          Detail <ChevronRight className="w-3 h-3" />
+        </Link>
       </div>
 
-      {/* Bar visual pemasukan vs pengeluaran */}
+      {/* Progress bar */}
       <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground w-20">Pemasukan</span>
-          <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${(computed.pemasukan / computed.maxBar) * 100}%` }} />
-          </div>
-          <span className="text-xs font-semibold text-green-600 w-24 text-right">{fmt(computed.pemasukan)}</span>
+        <div className="flex justify-between text-xs">
+          <span className="text-green-600 font-medium">Pemasukan {fmt(pemasukan)}</span>
+          <span className="text-red-500 font-medium">{fmt(totalPengeluaran)} Pengeluaran</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground w-20">Pengeluaran</span>
-          <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${(computed.pengeluaran / computed.maxBar) * 100}%` }} />
-          </div>
-          <span className="text-xs font-semibold text-red-600 w-24 text-right">{fmt(computed.pengeluaran)}</span>
+        <div className="w-full h-3 bg-muted rounded-full overflow-hidden flex">
+          <div className="h-full bg-green-500 rounded-l-full transition-all" style={{ width: `${incomePct}%` }} />
+          <div className="h-full bg-red-400 rounded-r-full transition-all" style={{ width: `${expensePct}%` }} />
         </div>
       </div>
 
-      {/* Laba/Rugi */}
-      <div className={`rounded-lg p-3 ${isLaba ? "bg-green-50" : "bg-red-50"}`}>
-        <div className="flex items-center gap-2">
-          {isLaba ? <TrendingUp className="w-5 h-5 text-green-600" /> : <TrendingDown className="w-5 h-5 text-red-600" />}
-          <div>
-            <p className="text-xs text-muted-foreground">{isLaba ? "LABA BERSIH" : "RUGI BERSIH"}</p>
-            <p className={`text-xl font-bold ${isLaba ? "text-green-700" : "text-red-700"}`}>
-              {fmt(Math.abs(computed.labaRugi))}
-            </p>
+      {/* Laba / Rugi */}
+      <div className={`rounded-lg p-3 ${labaRugi >= 0 ? "bg-green-100/70" : "bg-red-100/70"}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {labaRugi >= 0
+              ? <TrendingUp className="w-5 h-5 text-green-600" />
+              : <TrendingDown className="w-5 h-5 text-red-600" />
+            }
+            <span className={`text-sm font-bold ${labaRugi >= 0 ? "text-green-800" : "text-red-800"}`}>
+              {labaRugi >= 0 ? "LABA" : "RUGI"}
+            </span>
           </div>
+          <span className={`text-lg font-bold ${labaRugi >= 0 ? "text-green-700" : "text-red-700"}`}>
+            {fmt(Math.abs(labaRugi))}
+          </span>
         </div>
       </div>
 
       {/* Biaya per ekor */}
-      {computed.biayaPerEkor !== null && (
-        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-          <Package className="w-3 h-3" />
-          <span>Biaya per ekor: <strong>{fmt(computed.biayaPerEkor)}</strong>/bln</span>
-          <span className="text-[10px]">({computed.activeCount} ekor)</span>
-        </div>
-      )}
-    </Link>
+      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+        <span>Biaya per ekor/bulan</span>
+        <span className="font-semibold">
+          {fmt(costData?.biayaPerEkor || 0)}
+          {!costData?.isDataAktual && <span className="text-amber-500 ml-1">(estimasi)</span>}
+        </span>
+      </div>
+    </Card>
   );
 }

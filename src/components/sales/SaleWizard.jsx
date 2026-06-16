@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,6 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircle2, TrendingUp, TrendingDown, Search, Info } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
-import { useCostPerTortoise, calcCareCost } from "@/hooks/useCostPerTortoise";
 import { format, differenceInMonths } from "date-fns";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
@@ -379,15 +378,12 @@ function StepDetailPenjualan({ form, onChange, errors }) {
 }
 
 // ── STEP 4: Review HPP & Laba ──
-function StepReview({ form, tortoise, costData }) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const biayaPerBulan = costData?.biayaPerEkor || 100000;
-  const isDataAktual = costData?.isDataAktual;
+function StepReview({ form, tortoise, costPerTortoise, isActual, fallback }) {
   const farmMonths = calcFarmMonths(tortoise);
   const purchasePrice = tortoise?.purchase_price || 0;
-  const estimasiPerawatan = farmMonths * biayaPerBulan;
+  const biayaPerawatan = farmMonths * costPerTortoise;
   const shippingCost = Number(form.shipping_cost) || 0;
-  const totalHpp = purchasePrice + estimasiPerawatan + shippingCost;
+  const totalHpp = purchasePrice + biayaPerawatan + shippingCost;
   const price = Number(form.price) || 0;
   const laba = price - totalHpp;
   const margin = price > 0 ? Math.round((laba / price) * 100) : 0;
@@ -401,6 +397,8 @@ function StepReview({ form, tortoise, costData }) {
     const [y, m, d] = entryDateRaw.split("-");
     return `${parseInt(d)} ${monthNames[parseInt(m)-1]} ${y}`;
   })() : null;
+
+  const showFallbackBadge = costPerTortoise === fallback && !isActual;
 
   const Row = ({ label, value, bold, className = "", sub }) => (
     <div className={`${bold ? "font-semibold" : ""} ${className}`}>
@@ -416,29 +414,36 @@ function StepReview({ form, tortoise, costData }) {
     <div className="space-y-5">
       {/* HPP Breakdown */}
       <div className="bg-muted/40 rounded-xl p-4 space-y-1">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">📊 Perhitungan HPP</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">
+          📊 Perhitungan HPP
+          {isActual ? (
+            <Badge className="ml-2 bg-green-100 text-green-700 text-[10px] border-0">Data aktual</Badge>
+          ) : (
+            <Badge className="ml-2 bg-amber-100 text-amber-700 text-[10px] border-0">Estimasi default</Badge>
+          )}
+        </p>
         <Row label="Harga Beli Awal" value={purchasePrice ? `Rp ${fmt(purchasePrice)}` : "Rp 0"} />
 
-        <Row
-          label={
-            <span className="inline-flex items-center gap-1">
+        <div>
+          <div className="flex justify-between items-center py-1.5">
+            <span className="text-sm text-muted-foreground inline-flex items-center gap-1">
               Biaya Perawatan
-              <button type="button" onClick={() => setShowTooltip(!showTooltip)} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 text-[10px] font-bold text-muted-foreground leading-none">?</button>
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted-foreground/20 text-[10px] font-bold text-muted-foreground leading-none cursor-help" title={isActual ? "Dihitung dari total pengeluaran aktual bulan ini ÷ jumlah kura aktif" : `Menggunakan fallback karena belum ada data pengeluaran. Fallback saat ini: Rp ${fmt(fallback)}/bln`}>?</span>
             </span>
-          }
-          value={`Rp ${fmt(estimasiPerawatan)}`}
-          sub={<>{farmMonths} bulan × Rp {fmt(biayaPerBulan)}/bln · {entryLabel}: {entryDisplay || "tidak diketahui"} · <span className={isDataAktual ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>{isDataAktual ? "Data aktual" : "Estimasi default"}</span></>}
-        />
+            <span className="text-sm">{`Rp ${fmt(biayaPerawatan)}`}</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground -mt-1 mb-1">
+            {farmMonths} bulan × Rp {fmt(costPerTortoise)}/bln · {entryLabel}: {entryDisplay || "tidak diketahui"}
+          </p>
+        </div>
 
-        {showTooltip && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-800 space-y-0.5">
-            <p className="font-semibold">Estimasi Rp 150.000/bulan mencakup:</p>
-            <p>• Pakan (sayur, pelet, hay): ~Rp 75.000</p>
-            <p>• Vitamin & suplemen: ~Rp 25.000</p>
-            <p>• Obat preventif: ~Rp 15.000</p>
-            <p>• Listrik/air pro-rata: ~Rp 25.000</p>
-            <p>• Substrat/pasir: ~Rp 10.000</p>
-            <p className="text-[10px] mt-1 italic">Catatan: ini estimasi rata-rata, bukan kumulatif aktual.</p>
+        {showFallbackBadge && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 flex items-start gap-2">
+            <Info className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-700">
+              Belum ada data pengeluaran aktual bulan ini. Menggunakan estimasi default <strong>Rp {fmt(fallback)}/ekor/bulan</strong>.
+              Edit di Pengaturan Finance jika perlu.
+            </p>
           </div>
         )}
 
@@ -447,7 +452,7 @@ function StepReview({ form, tortoise, costData }) {
           <Row label="TOTAL HPP" value={`Rp ${fmt(totalHpp)}`} bold />
         </div>
         {farmMonths === 0 && !isHasilSendiri && (
-          <p className="text-[11px] text-amber-600 mt-1">⚠️ Tanggal masuk farm tidak diketahui, estimasi perawatan = Rp 0</p>
+          <p className="text-[11px] text-amber-600 mt-1">⚠️ Tanggal masuk farm tidak diketahui, biaya perawatan = Rp 0</p>
         )}
       </div>
 
@@ -464,7 +469,7 @@ function StepReview({ form, tortoise, costData }) {
             <div className="flex justify-between items-center">
               <span className="font-bold">💰 LABA BERSIH</span>
               <span className={`text-xl font-bold ${laba >= 0 ? "text-green-700" : "text-red-700"}`}>
-                Rp {fmt(laba)}
+                {laba >= 0 ? `Rp ${fmt(laba)}` : `-Rp ${fmt(Math.abs(laba))}`}
               </span>
             </div>
             <div className="flex justify-between items-center mt-1">
@@ -531,6 +536,53 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     queryFn: () => base44.entities.BuyerProfile.list("-last_purchase_date", 200),
   });
 
+  // Fetch data untuk kalkulasi biaya per ekor aktual
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const { data: allFinanceTx = [] } = useQuery({
+    queryKey: ["finance-transactions-cost"],
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500),
+  });
+  const { data: allSalarySlips = [] } = useQuery({
+    queryKey: ["salary-slips-cost"],
+    queryFn: () => base44.entities.SalarySlip.list("-period", 200),
+  });
+  const { data: allPettyCash = [] } = useQuery({
+    queryKey: ["petty-cash-requests-cost"],
+    queryFn: () => base44.entities.PettyCashRequest.list("-request_date", 200),
+  });
+  const { data: costSettings = [] } = useQuery({
+    queryKey: ["company-settings-cost"],
+    queryFn: () => base44.entities.CompanySettings.list("setting_key", 5),
+  });
+
+  // Hitung biaya per ekor dari data aktual
+  const { costPerTortoise, isActual, fallback } = useMemo(() => {
+    const fallbackVal = costSettings?.[0]?.hpp_fallback_per_ekor ?? 100000;
+
+    // Total pengeluaran FinanceTransaction
+    const totalFinance = allFinanceTx
+      .filter(t => t.type === "pengeluaran" && (t.date || "").startsWith(currentMonth) && !t.is_test_data && !t.excluded_from_reports)
+      .reduce((s, t) => s + (t.amount || 0), 0);
+
+    // Total SalarySlip paid
+    const totalSalary = allSalarySlips
+      .filter(s => s.status === "paid" && (s.paid_date || "").startsWith(currentMonth) && !s.is_test_data && !s.excluded_from_reports)
+      .reduce((s, sl) => s + (sl.net_total || sl.gross_total || 0), 0);
+
+    // Total PettyCash disbursed
+    const totalPettyCash = allPettyCash
+      .filter(p => p.status === "disbursed" && (p.disbursement_date || "").startsWith(currentMonth) && !p.is_test_data)
+      .reduce((s, p) => s + (p.amount_requested || 0), 0);
+
+    const total = totalFinance + totalSalary + totalPettyCash;
+    const activeCount = tortoises.filter(t => ["aktif", "breeding", "baby"].includes(t.status)).length;
+
+    if (activeCount > 0 && total > 0) {
+      return { costPerTortoise: Math.round(total / activeCount), isActual: true, fallback: fallbackVal };
+    }
+    return { costPerTortoise: fallbackVal, isActual: false, fallback: fallbackVal };
+  }, [allFinanceTx, allSalarySlips, allPettyCash, tortoises, costSettings, currentMonth]);
+
   // Auto-select preSelectedTortoiseId on mount
   useEffect(() => {
     if (preSelectedTortoiseId && tortoises.length > 0 && !initialized) {
@@ -560,10 +612,6 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
 
   const selectedTortoise = tortoises.find(t => t.id === form.tortoise_id);
 
-  // Fetch actual cost data
-  const currentPeriod = new Date().toISOString().slice(0, 7);
-  const costData = useCostPerTortoise(currentPeriod);
-
   const onChange = (field, value) => {
     setForm(p => ({ ...p, [field]: value }));
     setErrors(p => ({ ...p, [field]: "" }));
@@ -590,9 +638,9 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
   const calcHpp = () => {
     const purchasePrice = selectedTortoise?.purchase_price || 0;
     const farmMonths = calcFarmMonths(selectedTortoise);
-    const estimasiPerawatan = farmMonths * 150000;
+    const biayaPerawatan = farmMonths * costPerTortoise;
     const shippingCost = Number(form.shipping_cost) || 0;
-    return purchasePrice + estimasiPerawatan + shippingCost;
+    return purchasePrice + biayaPerawatan + shippingCost;
   };
 
   const handleSave = async () => {

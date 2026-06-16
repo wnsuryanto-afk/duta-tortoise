@@ -85,7 +85,12 @@
     "hpp_fallback_per_ekor": {
       "type": "number",
       "default": 100000,
-      "description": "Fallback biaya per ekor/bulan jika belum ada data pengeluaran aktual"
+      "description": "Fallback biaya perawatan per ekor per bulan jika belum ada data pengeluaran (Rp)"
+    },
+    "hpp_include_salary": {
+      "type": "boolean",
+      "default": true,
+      "description": "Sertakan gaji dalam perhitungan biaya per ekor untuk HPP"
     }
   },
   "required": [
