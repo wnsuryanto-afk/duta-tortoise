@@ -322,3 +322,51 @@ function TxRow({ tx, isOwner }) {
     </Card>
   );
 }
+
+function PengaturanHPP() {
+  const qc = useQueryClient();
+  const { data: settings = [] } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: () => base44.entities.CompanySettings.filter({ setting_key: "main" }),
+  });
+  const current = settings[0];
+  const [fallback, setFallback] = useState(current?.hpp_fallback_per_ekor || 100000);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!current) return;
+    setSaving(true);
+    await base44.entities.CompanySettings.update(current.id, { hpp_fallback_per_ekor: Number(fallback) });
+    qc.invalidateQueries({ queryKey: ["company-settings"] });
+    setSaving(false);
+  };
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Settings className="w-5 h-5 text-muted-foreground" />
+        <h2 className="font-semibold text-base">Pengaturan HPP</h2>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <Label className="text-sm">Fallback Biaya Per Ekor/Bulan (Rp)</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Dipakai jika belum ada data pengeluaran aktual bulan ini. Default: Rp 100.000
+          </p>
+          <Input
+            type="number"
+            min={0}
+            step={10000}
+            value={fallback}
+            onChange={(e) => setFallback(Number(e.target.value))}
+            className="max-w-xs"
+          />
+        </div>
+        <Button onClick={handleSave} disabled={saving} size="sm">
+          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          Simpan
+        </Button>
+      </div>
+    </Card>
+  );
+}
