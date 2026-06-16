@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format, differenceInMonths, differenceInYears } from "date-fns";
 import { id } from "date-fns/locale";
 import { Shell, Share2, Download, Copy, CheckCircle, QrCode, ChevronLeft, ChevronRight } from "lucide-react";
-import QRCode from "qrcode";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -18,7 +17,6 @@ function getAge(birthDate) {
 }
 
 function WatermarkedPhoto({ src, alt, className }) {
-  const canvasRef = useRef(null);
   const [dataUrl, setDataUrl] = useState(null);
 
   useEffect(() => {
@@ -54,13 +52,8 @@ function WatermarkedPhoto({ src, alt, className }) {
 }
 
 function QRDisplay({ url }) {
-  const [qrDataUrl, setQrDataUrl] = useState(null);
-  useEffect(() => {
-    QRCode.toDataURL(url, { width: 180, margin: 2, color: { dark: "#1a3a0a", light: "#ffffff" } })
-      .then(setQrDataUrl)
-      .catch(() => {});
-  }, [url]);
-  return qrDataUrl ? <img src={qrDataUrl} alt="QR Code Passport" className="w-36 h-36 rounded-xl border-4 border-white shadow-lg" /> : null;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&format=png&margin=6&color=1a3a0a`;
+  return <img src={qrSrc} alt="QR Code Passport" className="w-36 h-36 rounded-xl border-4 border-white shadow-lg bg-white" />;
 }
 
 function PhotoCarousel({ photos }) {

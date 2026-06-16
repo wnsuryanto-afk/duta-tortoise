@@ -111,6 +111,7 @@ export default function FinancePage() {
               ))}
             </SelectContent>
           </Select>
+          <MonthlyReportExport role={role} />
           {canManage && (
             <Button onClick={() => setShowForm(true)} className="gap-2">
               <Plus className="w-4 h-4" /> Tambah Transaksi

@@ -145,8 +145,8 @@ const AuthenticatedApp = () => {
         <Route path="/edit-profil" element={<EditProfilePage />} />
         <Route path="/incomplete-data" element={<IncompleteDataPage />} />
       </Route>
-      <Route path="*" element={<PageNotFound />} />
       <Route path="/passport" element={<TortoisePassport />} />
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };
