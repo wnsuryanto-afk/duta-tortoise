@@ -10,6 +10,7 @@ import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import AdminDashboard from "@/components/dashboard/role/AdminDashboard";
 import KepalaFeederDashboard from "@/components/dashboard/role/KepalaFeederDashboard";
+import InvestorDashboard from "@/components/dashboard/role/InvestorDashboard";
 
 // Fallback: dashboard lama untuk role yang belum punya tampilan khusus
 import { Shell, Baby, Egg, ClipboardList, Users, Package, Target } from "lucide-react";
@@ -150,6 +151,7 @@ export default function Dashboard() {
     if (effectiveRole === "admin") return <AdminDashboard user={user} />;
     if (effectiveRole === "kepala_feeder") return <KepalaFeederDashboard user={user} />;
     if (effectiveRole === "keeper") return <KeeperDashboard viewAsEmail={isViewingAs ? viewAsUserEmail : undefined} />;
+    if (effectiveRole === "investor") return <InvestorDashboard user={user} />;
     return <FallbackDashboard />;
   };
 

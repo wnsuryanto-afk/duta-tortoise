@@ -13,6 +13,8 @@ import { id } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
+import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
+import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 
 function getMinutesUntil(timeStr) {
   if (!timeStr) return null;
@@ -413,6 +415,12 @@ export default function KeeperDashboard() {
           </div>
         </Card>
       )}
+
+      {/* ── 3.5 INKUBATOR ── */}
+      <KeeperIncubatorWidget />
+
+      {/* ── 3.7 PERLU PERHATIAN ── */}
+      <KeeperAttentionWidget />
 
       {/* ── 4. KPI RINGKAS ── */}
       <Card className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">

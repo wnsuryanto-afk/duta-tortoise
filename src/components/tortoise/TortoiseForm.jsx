@@ -77,10 +77,57 @@ function initPhotos(editData) {
   return [];
 }
 
+// ── Validasi biologis ──────────────────────────────────────────
+function getAgeCategory(birthDate) {
+  if (!birthDate) return null;
+  const ageMonths = (new Date() - new Date(birthDate)) / (1000 * 60 * 60 * 24 * 30.44);
+  const ageYears = ageMonths / 12;
+  if (ageYears < 1) return "baby";
+  if (ageYears < 3) return "juvenile";
+  if (ageYears < 5) return "sub_adult";
+  return "dewasa";
+}
+
+function checkBioWarnings(form) {
+  const warnings = [];
+  const weight = form.weight_grams ? Number(form.weight_grams) : null;
+  const shell = form.shell_length_cm ? Number(form.shell_length_cm) : null;
+  const ageGroup = getAgeCategory(form.birth_date);
+
+  if (weight !== null) {
+    if (weight <= 0) return [{ field: "weight", msg: "Berat tidak boleh 0 atau negatif", blocking: true }];
+    if (ageGroup === "baby" && weight > 2000)
+      warnings.push({ field: "weight", msg: `Berat ${weight}g (${(weight/1000).toFixed(1)}kg) tidak wajar untuk baby (<1 thn). Wajar: <2kg` });
+    else if (ageGroup === "juvenile" && weight > 15000)
+      warnings.push({ field: "weight", msg: `Berat ${(weight/1000).toFixed(1)}kg tidak wajar untuk juvenile (1-3 thn). Wajar: <15kg` });
+    else if (ageGroup === "sub_adult" && weight > 30000)
+      warnings.push({ field: "weight", msg: `Berat ${(weight/1000).toFixed(1)}kg tidak wajar untuk sub-adult (3-5 thn). Wajar: <30kg` });
+    else if (ageGroup === "dewasa" && weight > 100000)
+      warnings.push({ field: "weight", msg: `Berat ${(weight/1000).toFixed(1)}kg sangat tidak wajar untuk dewasa. Wajar: <100kg` });
+  }
+
+  if (shell !== null && ageGroup) {
+    const species = form.species || "sulcata";
+    if (ageGroup === "baby" && shell > 15)
+      warnings.push({ field: "shell", msg: `Panjang cangkang ${shell}cm tidak wajar untuk baby. Wajar: <15cm` });
+    else if (ageGroup === "juvenile" && shell > 35)
+      warnings.push({ field: "shell", msg: `Panjang cangkang ${shell}cm tidak wajar untuk juvenile. Wajar: <35cm` });
+    else if (ageGroup === "dewasa" && species === "aldabra" && shell > 120)
+      warnings.push({ field: "shell", msg: `Panjang cangkang ${shell}cm tidak wajar untuk dewasa aldabra. Wajar: <120cm` });
+    else if (ageGroup === "dewasa" && species !== "aldabra" && shell > 85)
+      warnings.push({ field: "shell", msg: `Panjang cangkang ${shell}cm tidak wajar untuk dewasa ${species}. Wajar: <85cm` });
+  }
+
+  return warnings;
+}
+
 export default function TortoiseForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [bioWarnings, setBioWarnings] = useState([]);
+  const [showWarningConfirm, setShowWarningConfirm] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState(null);
   const [photos, setPhotos] = useState(initPhotos(editData));
   const [thumbnailUrl, setThumbnailUrl] = useState(editData?.photo_url || (initPhotos(editData)[0]?.url || ""));
   const [enclosureOptions, setEnclosureOptions] = useState([]);
@@ -201,8 +248,32 @@ export default function TortoiseForm({ open, onClose, editData }) {
         return;
       }
     }
-    
 
+    // Cek validasi biologis
+    const warnings = checkBioWarnings(form);
+    const hasBlocking = warnings.some(w => w.blocking);
+    if (hasBlocking) {
+      const blockW = warnings.filter(w => w.blocking);
+      setErrors(e => ({ ...e, weight_grams: blockW[0]?.msg || "Data tidak valid" }));
+      return;
+    }
+    if (warnings.length > 0) {
+      setBioWarnings(warnings);
+      setShowWarningConfirm(true);
+      setPendingSubmitData(true); // flag: sudah siap submit setelah konfirm
+      return;
+    }
+
+    await doSave();
+  };
+
+  const handleSaveAnyway = async () => {
+    setShowWarningConfirm(false);
+    setBioWarnings([]);
+    await doSave(true);
+  };
+
+  const doSave = async (withWarning = false) => {
     setSaving(true);
     const newWeight = form.weight_grams ? Number(form.weight_grams) : undefined;
     const newLength = form.shell_length_cm ? Number(form.shell_length_cm) : undefined;
@@ -332,6 +403,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
     queryClient.invalidateQueries({ queryKey: ["tortoises"] });
     setSaving(false);
+    setPendingSubmitData(null);
     onClose();
   };
 
@@ -602,6 +674,39 @@ export default function TortoiseForm({ open, onClose, editData }) {
             <Label>Catatan</Label>
             <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
           </div>
+
+          {/* ── Banner warning biologis (inline saat sudah tampil confirm) ── */}
+          {showWarningConfirm && bioWarnings.length > 0 && (
+            <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-400 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-amber-800">⚠️ Data mungkin tidak akurat:</p>
+                  {bioWarnings.map((w, i) => (
+                    <p key={i} className="text-sm text-amber-700 mt-1">{w.msg}</p>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-amber-700">Apakah Anda yakin ingin menyimpan data ini?</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowWarningConfirm(false); setBioWarnings([]); setPendingSubmitData(null); }}
+                  className="flex-1 py-2 rounded-lg border border-amber-400 text-amber-800 text-sm font-medium hover:bg-amber-100 transition-colors"
+                >
+                  Perbaiki Data
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAnyway}
+                  disabled={saving}
+                  className="flex-1 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                >
+                  {saving ? "Menyimpan..." : "Simpan Tetap"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Info status mati */}
           {form.status === "mati" && form.death_date && (

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag, QrCode, Lock } from "lucide-react";
+import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, ChevronLeft, ChevronRight, Share2, Ruler, Download, Camera, Tag, QrCode, Lock, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
@@ -370,6 +370,10 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, healt
                 <GitBranch className="w-3 h-3" />
               </Button>
             )}
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Passport Digital"
+              onClick={() => window.open(`/passport?id=${tortoise.id}`, "_blank")}>
+              <FileText className="w-3 h-3" />
+            </Button>
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(tortoise)}>
                 <Pencil className="w-3 h-3" />

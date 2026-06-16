@@ -3,11 +3,13 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
-  Users, CheckCircle, XCircle, AlertTriangle, Star, ChevronRight, Loader2
+  Users, CheckCircle, XCircle, AlertTriangle, Star, ChevronRight, Loader2, Package, Wallet
 } from "lucide-react";
 import { format, subMonths, startOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { toast } from "sonner";
+import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
+import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
@@ -47,7 +49,39 @@ export default function KepalaFeederDashboard({ user }) {
     refetchInterval: false,
   });
 
+  const { data: warehouseItems = [] } = useQuery({
+    queryKey: ["kf-warehouse"],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 100),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: feedStocks = [] } = useQuery({
+    queryKey: ["kf-feedstocks"],
+    queryFn: () => base44.entities.FeedStock.list("-name", 50),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: pettyCash = [] } = useQuery({
+    queryKey: ["kf-petty-cash"],
+    queryFn: () => base44.entities.PettyCash.list("-created_date", 10),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: pettyCashRequests = [] } = useQuery({
+    queryKey: ["kf-petty-cash-requests"],
+    queryFn: () => base44.entities.PettyCashRequest.filter({ status: "pending" }),
+    staleTime: 3 * 60 * 1000,
+  });
+
   const settings = companySettings[0] || {};
+
+  // Stok kritis (mandatory & below minimum)
+  const criticalWarehouseStock = warehouseItems.filter(i => i.is_mandatory && i.current_stock < i.minimum_stock);
+  const criticalFeedStock = feedStocks.filter(f => f.current_stock <= (f.minimum_stock || 0));
+
+  // Kas kecil saldo
+  const latestPettyCash = pettyCash[0] || null;
+  const pettyCashBalance = latestPettyCash?.balance ?? 0;
   const targetPoin = settings.min_poin_bulanan || 300;
 
   const keepers = allUsers.filter(u => u.role === "keeper");
@@ -267,6 +301,82 @@ export default function KepalaFeederDashboard({ user }) {
           </div>
         )}
       </div>
+
+      {/* ── SECTION KAS KECIL ── */}
+      <div className="bg-card rounded-xl border border-border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-green-600" />
+            <h2 className="font-semibold text-sm text-foreground">💵 Kas Kecil</h2>
+          </div>
+          <Link to="/petty-cash" className="text-xs text-primary hover:underline flex items-center gap-1">
+            Lihat <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-xs text-muted-foreground">Saldo Saat Ini</p>
+            <p className="text-xl font-bold text-green-700">Rp {pettyCashBalance.toLocaleString("id-ID")}</p>
+          </div>
+          {pettyCashRequests.length > 0 && (
+            <div className="px-3 py-1.5 rounded-lg bg-amber-100 border border-amber-200 text-center">
+              <p className="text-lg font-bold text-amber-700">{pettyCashRequests.length}</p>
+              <p className="text-xs text-amber-600">Request Pending</p>
+            </div>
+          )}
+        </div>
+        {pettyCashRequests.length === 0 && (
+          <p className="text-xs text-green-600">✓ Tidak ada request pending</p>
+        )}
+      </div>
+
+      {/* ── SECTION STOK KRITIS ── */}
+      {(criticalWarehouseStock.length > 0 || criticalFeedStock.length > 0) && (
+        <div className="bg-card rounded-xl border border-red-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Package className="w-4 h-4 text-red-500" />
+            <h2 className="font-semibold text-sm text-foreground">📦 Stok Kritis</h2>
+            <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+              {criticalWarehouseStock.length + criticalFeedStock.length} item
+            </span>
+          </div>
+          <div className="space-y-2">
+            {criticalWarehouseStock.map(item => (
+              <div key={item.id} className="flex items-center justify-between p-2.5 bg-red-50 border border-red-100 rounded-lg">
+                <div>
+                  <p className="text-sm font-semibold text-red-800">{item.name}</p>
+                  <p className="text-xs text-red-600">{item.category}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-red-700">{item.current_stock} {item.unit}</p>
+                  <p className="text-xs text-red-500">Min: {item.minimum_stock}</p>
+                </div>
+              </div>
+            ))}
+            {criticalFeedStock.map(item => (
+              <div key={item.id} className="flex items-center justify-between p-2.5 bg-orange-50 border border-orange-100 rounded-lg">
+                <div>
+                  <p className="text-sm font-semibold text-orange-800">{item.name}</p>
+                  <p className="text-xs text-orange-600">Pakan</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-orange-700">{item.current_stock} {item.unit}</p>
+                  <p className="text-xs text-orange-500">Min: {item.minimum_stock || 0}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Link to="/stok-unified" className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+            Kelola Stok <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
+      {/* ── INKUBATOR ── */}
+      <KeeperIncubatorWidget />
+
+      {/* ── PERLU PERHATIAN ── */}
+      <KeeperAttentionWidget />
 
       {/* ── SECTION 4: TUGASKU ── */}
       <div className="bg-card rounded-xl border border-border p-4">

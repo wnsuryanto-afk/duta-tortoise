@@ -64,6 +64,7 @@ import DashboardStokPage from '@/pages/DashboardStokPage';
 import MigrasiStrukturPage from '@/pages/MigrasiStrukturPage';
 import UnifiedStokPage from '@/pages/UnifiedStokPage';
 import PanduanPakanPage from '@/pages/PanduanPakanPage';
+import TortoisePassport from '@/pages/TortoisePassport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -145,6 +146,7 @@ const AuthenticatedApp = () => {
         <Route path="/incomplete-data" element={<IncompleteDataPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
+      <Route path="/passport" element={<TortoisePassport />} />
     </Routes>
   );
 };
