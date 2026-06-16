@@ -384,7 +384,14 @@ function StepReview({ form, tortoise, costData }) {
   const biayaPerBulan = costData?.biayaPerEkor || 100000;
   const isDataAktual = costData?.isDataAktual;
   const farmMonths = calcFarmMonths(tortoise, form.sale_date);
-  const purchasePrice = tortoise?.purchase_price || 0;
+
+  // Determine purchase price: use form input > tortoise data > 0
+  const isHasilSendiri = tortoise?.source === "hasil_sendiri" || tortoise?.code?.startsWith?.("BB-");
+  const purchasePrice = isHasilSendiri ? 0 :
+    form.purchase_price_input !== "" ? Number(form.purchase_price_input) || 0 :
+    tortoise?.purchase_price || 0;
+  const purchasePriceEmpty = !isHasilSendiri && purchasePrice === 0;
+
   const estimasiPerawatan = farmMonths * biayaPerBulan;
   const shippingCost = Number(form.shipping_cost) || 0;
   const totalHpp = purchasePrice + estimasiPerawatan + shippingCost;
@@ -393,7 +400,6 @@ function StepReview({ form, tortoise, costData }) {
   const margin = price > 0 ? Math.round((laba / price) * 100) : 0;
 
   // Tentukan tanggal masuk farm untuk display
-  const isHasilSendiri = tortoise?.source === "hasil_sendiri";
   const entryDateRaw = isHasilSendiri ? tortoise?.birth_date : (tortoise?.purchase_date || tortoise?.created_date);
   const entryLabel = isHasilSendiri ? "Lahir di farm" : "Masuk farm";
   const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
@@ -417,7 +423,17 @@ function StepReview({ form, tortoise, costData }) {
       {/* HPP Breakdown */}
       <div className="bg-muted/40 rounded-xl p-4 space-y-1">
         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">📊 Perhitungan HPP</p>
-        <Row label="Harga Beli Awal" value={purchasePrice ? `Rp ${fmt(purchasePrice)}` : "Rp 0"} />
+
+        {/* Purchase price row */}
+        {isHasilSendiri ? (
+          <Row label="Harga Beli / Kulakan" value="Rp 0"
+            sub="🐣 Hasil penetasan sendiri — harga beli Rp 0" />
+        ) : purchasePriceEmpty ? (
+          <Row label="Harga Beli / Kulakan" value="Rp 0"
+            sub="ℹ️ Harga beli tidak diisi — HPP hanya dari biaya perawatan + ongkir" />
+        ) : (
+          <Row label="Harga Beli / Kulakan" value={`Rp ${fmt(purchasePrice)}`} />
+        )}
 
         <Row
           label={
@@ -511,6 +527,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     buyer_name: "", hp_whatsapp: "", buyer_address: "", buyer_city: "", buyer_profile_id: "",
     price: "", shipping_cost: 0, payment_status: "lunas", shipping_method: "ambil_sendiri",
     platform: "", sale_date: new Date().toISOString().split("T")[0], notes: "", dp_amount: "",
+    purchase_price_input: "",
   });
   const [errors, setErrors] = useState({});
 
@@ -588,7 +605,11 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
   const back = () => setStep(s => s - 1);
 
   const calcHpp = () => {
-    const purchasePrice = selectedTortoise?.purchase_price || 0;
+    const isHasilSendiri = selectedTortoise?.source === "hasil_sendiri" || selectedTortoise?.code?.startsWith?.("BB-");
+    // Use form input if filled, else fallback to tortoise.purchase_price, hasil_sendiri always 0
+    const purchasePrice = isHasilSendiri ? 0 :
+      form.purchase_price_input !== "" ? Number(form.purchase_price_input) || 0 :
+      selectedTortoise?.purchase_price || 0;
     const biayaPerBulan = costData?.biayaPerEkor || 100000;
     const farmMonths = calcFarmMonths(selectedTortoise, form.sale_date);
     const estimasiPerawatan = farmMonths * biayaPerBulan;
@@ -639,6 +660,12 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         reference_id: newSale.id,
         ...(testModeTag || {}),
       });
+      // Determine the actual purchase price used
+      const isHasilSendiriForSave = selectedTortoise?.source === "hasil_sendiri" || selectedTortoise?.code?.startsWith?.("BB-");
+      const actualPurchasePrice = isHasilSendiriForSave ? 0 :
+        form.purchase_price_input !== "" ? Number(form.purchase_price_input) || 0 :
+        selectedTortoise?.purchase_price || 0;
+
       // Update Sale with additional fields & finance_tx_id
       await base44.entities.Sale.update(newSale.id, {
         tortoise_code: selectedTortoise?.code || "",
@@ -646,10 +673,17 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         tortoise_weight: selectedTortoise?.weight_grams || 0,
         profit: laba,
         margin_percent: marginPct,
-        purchase_price_original: selectedTortoise?.purchase_price || 0,
+        purchase_price_original: actualPurchasePrice,
         care_cost_estimate: calcFarmMonths(selectedTortoise, form.sale_date) * (costData?.biayaPerEkor || 100000),
         finance_tx_id: finTx?.id || "",
       });
+
+      // Persist purchase price to Tortoise if user filled it and tortoise didn't have one
+      if (!isHasilSendiriForSave && actualPurchasePrice > 0 && (!selectedTortoise?.purchase_price || selectedTortoise.purchase_price === 0)) {
+        try {
+          await base44.entities.Tortoise.update(form.tortoise_id, { purchase_price: actualPurchasePrice });
+        } catch (_) { /* non-critical */ }
+      }
       // D) Update / Create BuyerProfile
       const tortoiseCode = selectedTortoise?.code || "";
       try {
@@ -757,12 +791,64 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
                 const t = tortoises.find(t => t.id === id);
                 onChange("tortoise_id", id);
                 onChange("tortoise_name", t?.name || "");
+                // Auto-fill purchase price
+                const isHasilSendiri = t?.source === "hasil_sendiri" || t?.code?.startsWith?.("BB-");
+                if (isHasilSendiri) {
+                  onChange("purchase_price_input", "0");
+                } else if (t?.purchase_price && t.purchase_price > 0) {
+                  onChange("purchase_price_input", String(t.purchase_price));
+                } else {
+                  onChange("purchase_price_input", "");
+                }
               }}
             />
           )}
+
+          {/* Harga Beli — muncul setelah kura dipilih */}
+          {step === 0 && form.tortoise_id && selectedTortoise && (() => {
+            const isHasilSendiri = selectedTortoise.source === "hasil_sendiri" || selectedTortoise.code?.startsWith?.("BB-");
+            const isMissingPrice = !isHasilSendiri && (!selectedTortoise.purchase_price || selectedTortoise.purchase_price === 0);
+            const currentVal = form.purchase_price_input;
+            return (
+              <div className={`p-4 rounded-xl border mt-4 ${isHasilSendiri ? "bg-blue-50 border-blue-200" : isMissingPrice && !currentVal ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-200"}`}>
+                <Label className="text-sm font-semibold mb-1 block">
+                  Harga Beli / Kulakan (Rp)
+                  {isHasilSendiri && <span className="ml-2 text-xs font-normal text-blue-600">— Hasil Penetasan Sendiri</span>}
+                </Label>
+                {isHasilSendiri ? (
+                  <div>
+                    <Input type="number" min="0" value="0" disabled className="max-w-xs bg-blue-100/50" />
+                    <p className="text-[11px] text-blue-600 mt-1">🐣 Hasil penetasan sendiri — harga beli Rp 0</p>
+                  </div>
+                ) : (
+                  <div>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={currentVal}
+                      onChange={e => onChange("purchase_price_input", e.target.value)}
+                      placeholder={selectedTortoise.purchase_price ? `Rp ${fmt(selectedTortoise.purchase_price)} (dari data kura)` : "Isi harga beli..."}
+                      className={`max-w-xs ${!currentVal && isMissingPrice ? "border-yellow-400 bg-yellow-50" : ""}`}
+                    />
+                    {!currentVal && isMissingPrice && (
+                      <p className="text-[11px] text-yellow-700 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> Harga beli belum tercatat. Isi untuk perhitungan HPP yang akurat.
+                      </p>
+                    )}
+                    {currentVal && Number(currentVal) > 0 && (
+                      <p className="text-[11px] text-green-700 mt-1">✓ Harga beli diisi manual: Rp {fmt(Number(currentVal))}</p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Tidak wajib — jika kosong, HPP dihitung tanpa harga beli
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {step === 1 && <StepDataPembeli form={form} onChange={onChange} errors={errors} />}
           {step === 2 && <StepDetailPenjualan form={form} onChange={onChange} errors={errors} />}
-          {step === 3 && <StepReview form={form} tortoise={selectedTortoise} costData={costData} />}
+          {step === 3 && <StepReview form={form} tortoise={selectedTortoise} costData={costData} formData={form} />}
         </div>
 
         {errors.tortoise_id && step === 0 && (

@@ -139,6 +139,31 @@
       "type": "boolean",
       "default": false,
       "description": "Ditandai sebagai data test \u2014 tidak masuk laporan"
+    },
+    "purchase_price_original": {
+      "type": "number",
+      "description": "Harga beli/kulakan yang diisi saat penjualan"
+    },
+    "tortoise_code": {
+      "type": "string"
+    },
+    "tortoise_species": {
+      "type": "string"
+    },
+    "tortoise_weight": {
+      "type": "number"
+    },
+    "profit": {
+      "type": "number"
+    },
+    "margin_percent": {
+      "type": "number"
+    },
+    "care_cost_estimate": {
+      "type": "number"
+    },
+    "finance_tx_id": {
+      "type": "string"
     }
   },
   "required": [
