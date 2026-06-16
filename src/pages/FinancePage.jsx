@@ -1,5 +1,6 @@
 import { useState } from "react";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
+import LabaRugiEnhanced from "@/components/finance/LabaRugiEnhanced";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, TrendingDown, DollarSign, Loader2 } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, DollarSign, Loader2, Settings } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -57,11 +58,6 @@ export default function FinancePage() {
     queryKey: ["sales-finance"],
     queryFn: () => base44.entities.Sale.list("-sale_date", 500),
     enabled: tab === "laba-rugi",
-  });
-
-  const { data: settings = [] } = useQuery({
-    queryKey: ["company-settings-finance"],
-    queryFn: () => base44.entities.CompanySettings.filter({ setting_key: "main" }),
   });
 
   if (!canAccess(role, "finance")) return <AccessDenied />;
@@ -171,6 +167,7 @@ export default function FinancePage() {
           <TabsTrigger value="pemasukan">Pemasukan</TabsTrigger>
           <TabsTrigger value="pengeluaran">Pengeluaran</TabsTrigger>
           <TabsTrigger value="semua">Semua Transaksi</TabsTrigger>
+          {canManage && <TabsTrigger value="pengaturan">Pengaturan</TabsTrigger>}
         </TabsList>
 
         {/* Ringkasan per kategori */}
@@ -201,7 +198,7 @@ export default function FinancePage() {
 
         {/* Laba Rugi */}
         <TabsContent value="laba-rugi" className="mt-4 space-y-4">
-          <LabaRugiPanel period={period} transactions={periodTx} />
+          <LabaRugiEnhanced period={period} />
         </TabsContent>
 
         {/* Pemasukan */}
@@ -230,12 +227,12 @@ export default function FinancePage() {
             <TxRow key={t.id} tx={t} isOwner={isOwner} />
           ))}
         </TabsContent>
-      </Tabs>
 
-      {/* ── HPP Settings (Owner only) ── */}
-      {isOwner && settings.length > 0 && (
-        <HppSettingsCard settings={settings[0]} qc={qc} />
-      )}
+        {/* Pengaturan HPP */}
+        <TabsContent value="pengaturan" className="mt-4">
+          <PengaturanHPP />
+        </TabsContent>
+      </Tabs>
 
       {/* Add transaction dialog */}
       <Dialog open={showForm} onOpenChange={(o) => !o && setShowForm(false)}>
@@ -288,140 +285,6 @@ export default function FinancePage() {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function LabaRugiPanel({ period, transactions }) {
-  const pemasukan = transactions.filter(t => t.type === "pemasukan");
-  const pengeluaran = transactions.filter(t => t.type === "pengeluaran");
-  const totalPemasukan = pemasukan.reduce((s, t) => s + (t.amount || 0), 0);
-  const totalPengeluaran = pengeluaran.reduce((s, t) => s + (t.amount || 0), 0);
-  const labaRugi = totalPemasukan - totalPengeluaran;
-
-  // Sales breakdown dari penjualan_tortoise transactions (yang punya description dengan "Penjualan")
-  const saleTx = pemasukan.filter(t => t.category === "penjualan_tortoise");
-
-  return (
-    <div className="space-y-4">
-      {/* Ringkasan L/R */}
-      <Card className="p-5">
-        <h2 className="font-semibold text-base mb-4">Laporan Laba Rugi — {period}</h2>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-sm font-medium text-green-700">TOTAL PEMASUKAN</span>
-            <span className="font-bold text-green-700">Rp {totalPemasukan.toLocaleString("id-ID")}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-sm font-medium text-red-600">TOTAL PENGELUARAN</span>
-            <span className="font-bold text-red-600">-Rp {totalPengeluaran.toLocaleString("id-ID")}</span>
-          </div>
-          <div className={`flex justify-between items-center py-3 px-4 rounded-xl ${labaRugi >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-            <span className={`text-base font-bold ${labaRugi >= 0 ? "text-green-800" : "text-red-800"}`}>
-              {labaRugi >= 0 ? "LABA BERSIH" : "RUGI BERSIH"}
-            </span>
-            <span className={`text-xl font-bold ${labaRugi >= 0 ? "text-green-700" : "text-red-700"}`}>
-              Rp {Math.abs(labaRugi).toLocaleString("id-ID")}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Breakdown per kura */}
-      {saleTx.length > 0 && (
-        <Card className="p-5">
-          <h2 className="font-semibold text-base mb-3">Breakdown Penjualan per Kura</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-muted-foreground border-b">
-                  <th className="text-left pb-2">Keterangan</th>
-                  <th className="text-right pb-2">Harga Jual</th>
-                  <th className="text-right pb-2">Tanggal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {saleTx.map(tx => (
-                  <tr key={tx.id}>
-                    <td className="py-2 text-sm">{tx.description || "-"}</td>
-                    <td className="py-2 text-right font-semibold text-green-700">Rp {(tx.amount || 0).toLocaleString("id-ID")}</td>
-                    <td className="py-2 text-right text-muted-foreground text-xs">{tx.date || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t font-bold">
-                  <td className="py-2">Total Penjualan</td>
-                  <td className="py-2 text-right text-green-700">Rp {saleTx.reduce((s,t) => s + (t.amount||0), 0).toLocaleString("id-ID")}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </Card>
-      )}
-
-      {/* Pengeluaran per kategori */}
-      {pengeluaran.length > 0 && (
-        <Card className="p-5">
-          <h2 className="font-semibold text-base mb-3">Rincian Pengeluaran</h2>
-          <div className="space-y-2">
-            {Object.entries(pengeluaran.reduce((map, t) => {
-              const cat = t.category || "lainnya";
-              if (!map[cat]) map[cat] = 0;
-              map[cat] += t.amount || 0;
-              return map;
-            }, {})).sort((a,b) => b[1]-a[1]).map(([cat, amt]) => (
-              <div key={cat} className="flex justify-between items-center">
-                <span className="text-sm capitalize">{cat.replace(/_/g, " ")}</span>
-                <span className="text-sm font-semibold text-red-600">-Rp {amt.toLocaleString("id-ID")}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function HppSettingsCard({ settings, qc }) {
-  const [val, setVal] = useState(settings.hpp_fallback_per_ekor || 100000);
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    await base44.entities.CompanySettings.update(settings.id, {
-      hpp_fallback_per_ekor: Number(val),
-    });
-    qc.invalidateQueries({ queryKey: ["company-settings-finance"] });
-    qc.invalidateQueries({ queryKey: ["company-settings-cost"] });
-    setSaving(false);
-  };
-
-  return (
-    <Card className="p-5">
-      <h2 className="font-semibold text-base mb-3">⚙️ Pengaturan HPP</h2>
-      <div className="space-y-4">
-        <div className="flex items-end gap-3 flex-wrap">
-          <div className="space-y-1.5 flex-1 min-w-[200px]">
-            <Label className="text-xs">Fallback Biaya Per Ekor per Bulan (Rp)</Label>
-            <Input
-              type="number"
-              min="0"
-              value={val}
-              onChange={e => setVal(e.target.value)}
-              placeholder="100000"
-            />
-            <p className="text-[10px] text-muted-foreground">
-              Dipakai saat belum ada data pengeluaran aktual. Default: Rp 100.000
-            </p>
-          </div>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="mb-0.5">
-            {saving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
-            Simpan
-          </Button>
-        </div>
-      </div>
-    </Card>
   );
 }
 
