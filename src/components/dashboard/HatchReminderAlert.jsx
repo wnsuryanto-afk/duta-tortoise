@@ -16,7 +16,7 @@ export default function HatchReminderAlert() {
 
   // Cari yang punya estimated_hatch_date, belum menetas, dan <= 10 hari lagi
   const upcoming = breedings.filter(b => {
-    if (!b.estimated_hatch_date || b.status === "menetas" || b.status === "gagal") return false;
+    if (!b.estimated_hatch_date || b.status === "menetas" || b.status === "gagal" || b.status === "selesai") return false;
     const days = differenceInDays(parseISO(b.estimated_hatch_date), today);
     return days >= 0 && days <= 10;
   }).sort((a, b) => (a.estimated_hatch_date || "").localeCompare(b.estimated_hatch_date || ""));

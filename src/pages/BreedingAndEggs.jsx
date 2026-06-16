@@ -186,8 +186,10 @@ export default function BreedingAndEggs() {
   });
   const pembiakanBreedings = sortedBreedings.filter(b => b.status !== "selesai");
 
-  const activeBreedings = breedings.filter(b => b.status !== "menetas" && b.status !== "gagal" && b.status !== "selesai");
-  const historyBreedings = breedings.filter(b => b.status === "menetas" || b.status === "gagal" || b.status === "selesai");
+  // Telur & Inkubasi: bertelur, inkubasi, menetas, selesai
+  const activeBreedings = breedings.filter(b => b.status !== "gagal" && b.status !== "selesai");
+  // Riwayat: hanya yang sudah selesai difinalisasi
+  const historyBreedings = breedings.filter(b => b.status === "selesai");
 
   return (
     <div className="space-y-6">
@@ -376,9 +378,17 @@ export default function BreedingAndEggs() {
                           {b.egg_laying_date && <span className={inHatchRange ? "text-red-100" : "text-muted-foreground"}>🗓 {format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</span>}
                         </div>
                       </div>
-                      {/* COUNTDOWN BESAR */}
+                      {/* COUNTDOWN / SELESAI BADGE */}
                       <div className="flex-shrink-0 text-center min-w-[72px]">
-                        {inHatchRange ? (
+                        {b.status === "selesai" ? (
+                          <div className="text-green-700 text-center">
+                            <div className="text-xl">✅</div>
+                            <div className="text-[10px] font-semibold leading-tight">Selesai</div>
+                            {b.completed_date && (
+                              <div className="text-[9px] text-muted-foreground">{format(new Date(b.completed_date), "d MMM", { locale: id })}</div>
+                            )}
+                          </div>
+                        ) : inHatchRange ? (
                           <div className="text-white text-center">
                             <div className="text-2xl">🚨</div>
                             <div className="text-xs font-bold">Menetas!</div>
@@ -611,10 +621,16 @@ export default function BreedingAndEggs() {
                         <p className="font-medium text-destructive">{b.failed_count} butir ❌</p>
                       </div>
                     )}
-                    {b.egg_count > 0 && b.hatched_count >= 0 && (
+                    {b.completed_date && (
+                      <div>
+                        <p className="text-muted-foreground">Selesai</p>
+                        <p className="font-medium">{format(new Date(b.completed_date), "d MMM yyyy", { locale: id })}</p>
+                      </div>
+                    )}
+                    {b.hatch_rate > 0 && (
                       <div>
                         <p className="text-muted-foreground">Hatch Rate</p>
-                        <p className="font-medium">{Math.round((b.hatched_count / b.egg_count) * 100)}%</p>
+                        <p className="font-medium">{b.hatch_rate}%</p>
                       </div>
                     )}
                   </div>

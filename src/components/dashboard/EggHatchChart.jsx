@@ -3,13 +3,35 @@ import { Egg } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export default function EggHatchChart({ breedings = [] }) {
-  const totalEggs = breedings.reduce((s, b) => s + (b.egg_count || 0), 0);
-  const totalHatched = breedings.reduce((s, b) => s + (b.hatched_count || 0), 0);
-  const belumMenetas = Math.max(0, totalEggs - totalHatched);
+  // Use egg_records for accurate count
+  let totalEggs = 0, menetasCount = 0, fertileCount = 0, infertilCount = 0, belumCek = 0, gagalCount = 0;
+  breedings.forEach(b => {
+    const records = b.egg_records || [];
+    if (records.length > 0) {
+      records.forEach(e => {
+        totalEggs++;
+        if (e.status === "menetas") menetasCount++;
+        else if (e.status === "fertile") fertileCount++;
+        else if (e.status === "infertil") infertilCount++;
+        else if (e.status === "gagal") gagalCount++;
+        else belumCek++;
+      });
+    } else {
+      // No per-egg records → all "belum dicek"
+      totalEggs += (b.egg_count || 0);
+      belumCek += (b.egg_count || 0);
+    }
+  });
+
+  const checkedTotal = menetasCount + fertileCount + infertilCount + gagalCount;
+  const hatchRate = checkedTotal > 0 ? Math.round((menetasCount / checkedTotal) * 100) : 0;
 
   const data = [
-    { name: "Sudah Menetas", value: totalHatched, color: "#22c55e" },
-    { name: "Belum Menetas", value: belumMenetas, color: "#f97316" },
+    { name: "🐢 Menetas", value: menetasCount, color: "#22c55e" },
+    { name: "🟢 Fertile", value: fertileCount, color: "#86efac" },
+    { name: "🔴 Infertil", value: infertilCount, color: "#fca5a5" },
+    { name: "⚫ Gagal", value: gagalCount, color: "#6b7280" },
+    { name: "⬜ Belum Cek", value: belumCek, color: "#d1d5db" },
   ].filter((d) => d.value > 0);
 
   return (
@@ -40,18 +62,18 @@ export default function EggHatchChart({ breedings = [] }) {
                   ))}
                 </Pie>
                 <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-3 mt-2">
             <div className="p-2.5 rounded-xl bg-green-50 text-center">
-              <p className="text-xl font-bold text-green-600">{totalHatched}</p>
-              <p className="text-xs text-green-700">Sudah Menetas</p>
+              <p className="text-xl font-bold text-green-600">{menetasCount}</p>
+              <p className="text-xs text-green-700">🐢 Sudah Menetas</p>
             </div>
-            <div className="p-2.5 rounded-xl bg-orange-50 text-center">
-              <p className="text-xl font-bold text-orange-600">{belumMenetas}</p>
-              <p className="text-xs text-orange-700">Belum Menetas</p>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-center">
+              <p className="text-xl font-bold text-blue-600">{checkedTotal > 0 ? `${hatchRate}%` : "-"}</p>
+              <p className="text-xs text-blue-700">📊 Hatch Rate (dari {checkedTotal} dicek)</p>
             </div>
           </div>
         </>

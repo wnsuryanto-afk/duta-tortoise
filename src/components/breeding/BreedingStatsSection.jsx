@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +24,13 @@ export default function BreedingStatsSection({ breedings = [] }) {
 
   const currentYear = new Date().getFullYear();
 
+  // Fetch actual baby tortoises for accurate "Total Menetas" count
+  const { data: tortoises = [] } = useQuery({
+    queryKey: ["tortoises-stats"],
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 2000),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Monthly production data
   const monthlyData = useMemo(() => {
     const months = parseInt(range);
@@ -37,15 +46,23 @@ export default function BreedingStatsSection({ breedings = [] }) {
           return isWithinInterval(d, { start, end });
         } catch { return false; }
       });
-      const completed = inMonth.filter(b => b.status === "menetas");
       const totalEggs = inMonth.reduce((s, b) => s + (b.egg_count || 0), 0);
-      const totalHatched = completed.reduce((s, b) => s + (b.hatched_count || 0), 0);
-      const totalEggsForRate = completed.reduce((s, b) => s + (b.egg_count || 0), 0);
-      const hatchRate = totalEggsForRate > 0 ? Math.round((totalHatched / totalEggsForRate) * 100) : 0;
+      // Hatch rate per bulan: menetas / telur dicek (pakai egg_records)
+      let monthChecked = 0, monthHatched = 0;
+      inMonth.forEach(b => {
+        const records = b.egg_records || [];
+        records.forEach(e => {
+          if (e.status !== "belum_dicek") {
+            monthChecked++;
+            if (e.status === "menetas") monthHatched++;
+          }
+        });
+      });
+      const hatchRate = monthChecked > 0 ? Math.round((monthHatched / monthChecked) * 100) : 0;
       return {
         month: format(date, "MMM yy", { locale: id }),
         telur: totalEggs,
-        menetas: totalHatched,
+        menetas: monthHatched,
         hatchRate,
       };
     });
@@ -54,13 +71,39 @@ export default function BreedingStatsSection({ breedings = [] }) {
   // Stats for current year
   const yearStats = useMemo(() => {
     const thisYear = breedings.filter(b => b.egg_laying_date?.startsWith(String(currentYear)));
-    const completed = thisYear.filter(b => b.status === "menetas");
     const totalEggs = thisYear.reduce((s, b) => s + (b.egg_count || 0), 0);
-    const totalHatched = completed.reduce((s, b) => s + (b.hatched_count || 0), 0);
-    const totalEggsForRate = completed.reduce((s, b) => s + (b.egg_count || 0), 0);
-    const hatchRate = totalEggsForRate > 0 ? ((totalHatched / totalEggsForRate) * 100).toFixed(1) : 0;
-    return { totalEggs, totalHatched, hatchRate };
-  }, [breedings, currentYear]);
+
+    // Total menetas dari baby Tortoise aktual (source="hasil_sendiri" tahun ini)
+    const actualBabiesThisYear = tortoises.filter(t =>
+      t.source === "hasil_sendiri" && t.birth_date?.startsWith(String(currentYear))
+    ).length;
+
+    // Hatch rate overall: total menetas / total telur yang SUDAH DICEK (bukan belum_dicek)
+    let totalChecked = 0;
+    let totalHatchedFromRecords = 0;
+    breedings.forEach(b => {
+      const records = b.egg_records || [];
+      if (records.length === 0 && b.egg_count > 0) {
+        // No per-egg records → all are "belum_dicek" → jangan masuk pembagi
+        return;
+      }
+      records.forEach(e => {
+        if (e.status !== "belum_dicek") {
+          totalChecked++;
+          if (e.status === "menetas") totalHatchedFromRecords++;
+        }
+      });
+    });
+    // Fallback: if no per-egg records, use aggregated hatched_count from completed breedings
+    if (totalChecked === 0) {
+      const completed = thisYear.filter(b => b.status === "menetas" || b.status === "selesai");
+      totalChecked = completed.reduce((s, b) => s + (b.egg_count || 0), 0);
+      totalHatchedFromRecords = completed.reduce((s, b) => s + (b.hatched_count || 0), 0);
+    }
+    const hatchRateOverall = totalChecked > 0 ? ((totalHatchedFromRecords / totalChecked) * 100).toFixed(1) : "0";
+
+    return { totalEggs, totalHatched: actualBabiesThisYear, totalHatchedFromRecords, totalChecked, hatchRateOverall };
+  }, [breedings, tortoises, currentYear]);
 
   // Morph distribution from hatched tortoises this year
   const morphData = useMemo(() => {
@@ -117,13 +160,14 @@ export default function BreedingStatsSection({ breedings = [] }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
           { label: `Total Telur ${currentYear}`, value: yearStats.totalEggs, unit: "butir", icon: "🥚" },
-          { label: `Total Menetas ${currentYear}`, value: yearStats.totalHatched, unit: "ekor", icon: "🐢" },
-          { label: "Hatch Rate Overall", value: `${yearStats.hatchRate}%`, unit: "", icon: "📊" },
+          { label: `Total Menetas ${currentYear}`, value: yearStats.totalHatched, unit: "ekor", icon: "🐢", sub: `(${yearStats.totalHatchedFromRecords} dari egg_records)` },
+          { label: "Hatch Rate Overall", value: `${yearStats.hatchRateOverall}%`, unit: "", icon: "📊", sub: `${yearStats.totalHatchedFromRecords}/${yearStats.totalChecked} telur dicek` },
         ].map(s => (
           <Card key={s.label} className="p-4 text-center">
             <p className="text-2xl">{s.icon}</p>
             <p className="text-2xl font-bold text-primary mt-1">{s.value}<span className="text-sm font-normal text-muted-foreground ml-1">{s.unit}</span></p>
             <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+            {s.sub && <p className="text-[10px] text-muted-foreground/60">{s.sub}</p>}
           </Card>
         ))}
       </div>

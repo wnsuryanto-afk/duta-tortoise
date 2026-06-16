@@ -567,11 +567,18 @@ export default function EggGrid({ breeding, onRefresh }) {
 
   const summary = {
     belum_dicek: records.filter(e => e.status === "belum_dicek").length,
-    fertile:     records.filter(e => e.status === "fertile").length,
+    fertile_only: records.filter(e => e.status === "fertile").length,
     infertil:    records.filter(e => e.status === "infertil").length,
     menetas:     records.filter(e => e.status === "menetas").length,
     gagal:       records.filter(e => e.status === "gagal").length,
   };
+  // fertile TOTAL = fertile_only + menetas + gagal (menetas & gagal are sub-categories)
+  const fertileTotal = summary.fertile_only + summary.menetas + summary.gagal;
+  // berkembang = fertile yang masih dalam proses (belum menetas, belum gagal)
+  const berkembang = summary.fertile_only;
+  // Validation
+  const calculatedTotal = fertileTotal + summary.infertil + summary.belum_dicek;
+  const dataMismatch = calculatedTotal !== eggCount;
 
   const registeredBabies = records.filter(e => e.status === "menetas" && e.tortoise_id);
   const allChecked = summary.belum_dicek === 0;
@@ -677,25 +684,30 @@ export default function EggGrid({ breeding, onRefresh }) {
 
   return (
     <div className="space-y-3">
-      {/* Summary chips */}
+      {/* Summary chips — corret hierarchy: fertile ⊃ menetas, gagal, berkembang */}
       <div className="flex flex-wrap gap-1.5 text-xs">
-        {summary.menetas > 0 && (
-          <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-800 font-semibold">
-            🐢 {summary.menetas}/{eggCount} Menetas
+        <span className="px-2 py-1 rounded-full bg-muted text-foreground font-semibold">
+          Total: {eggCount} butir
+        </span>
+        {fertileTotal > 0 && (
+          <span className="px-2 py-1 rounded-full bg-green-100 text-green-800">
+            🟢 Fertile: {fertileTotal} {fertileTotal > 0 && <span className="opacity-70">→ 🐢{summary.menetas} 💀{summary.gagal} 🥚{berkembang}</span>}
           </span>
         )}
-        {summary.fertile > 0 && <span className="px-2 py-1 rounded-full bg-green-100 text-green-700">🟢 Fertile: {summary.fertile}</span>}
         {summary.infertil > 0 && <span className="px-2 py-1 rounded-full bg-red-100 text-red-700">🔴 Infertil: {summary.infertil}</span>}
         {summary.belum_dicek > 0 && <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">⬜ Belum Cek: {summary.belum_dicek}</span>}
-        {summary.gagal > 0 && <span className="px-2 py-1 rounded-full bg-gray-700 text-white">⚫ Gagal: {summary.gagal}</span>}
+        {dataMismatch && (
+          <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300" title="Total egg_records tidak sama dengan egg_count">
+            ⚠️ Data telur perlu dicek ulang
+          </span>
+        )}
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar — sections sum to 100% without overlap */}
       <div className="h-2 rounded-full bg-gray-100 overflow-hidden flex">
-        <div className="bg-green-400 transition-all" style={{ width: `${(summary.fertile / eggCount) * 100}%` }} />
-        <div className="bg-amber-400 transition-all" style={{ width: `${(summary.menetas / eggCount) * 100}%` }} />
-        <div className="bg-red-400 transition-all" style={{ width: `${(summary.infertil / eggCount) * 100}%` }} />
-        <div className="bg-gray-600 transition-all" style={{ width: `${(summary.gagal / eggCount) * 100}%` }} />
+        <div className="bg-green-400 transition-all" style={{ width: `${(fertileTotal / eggCount) * 100}%` }} />
+        <div className="bg-red-300 transition-all" style={{ width: `${(summary.infertil / eggCount) * 100}%` }} />
+        <div className="bg-gray-300 transition-all" style={{ width: `${(summary.belum_dicek / eggCount) * 100}%` }} />
       </div>
 
       {/* Quick actions — only if not readonly */}
@@ -790,14 +802,18 @@ export default function EggGrid({ breeding, onRefresh }) {
           </p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
             <div>
-              <span className="text-green-700">🐢 Menetas: <strong>{summary.menetas}</strong></span>
-              {breeding.hatch_rate > 0 && <span className="text-green-600 ml-1">({breeding.hatch_rate}%)</span>}
+              <span className="text-green-700">🟢 Fertile: <strong>{fertileTotal}</strong></span>
+              <div className="text-xs text-muted-foreground ml-4">
+                🐢 Menetas: <strong>{summary.menetas}</strong>{breeding.hatch_rate > 0 && <span> ({breeding.hatch_rate}%)</span>}<br />
+                💀 Gagal: <strong>{summary.gagal}</strong><br />
+                🥚 Berkembang: <strong>{berkembang}</strong>
+              </div>
             </div>
             <div>
-              <span className="text-green-700">🟢 Fertile gagal menetas: <strong>{summary.fertile}</strong></span>
+              <div><span className="text-red-600">🔴 Infertil: <strong>{summary.infertil}</strong></span></div>
+              <div><span className="text-gray-500">⬜ Belum Cek: <strong>{summary.belum_dicek}</strong></span></div>
+              {dataMismatch && <div className="text-yellow-600 text-xs mt-1">⚠️ Periksa ulang</div>}
             </div>
-            <div><span className="text-red-600">🔴 Infertil: <strong>{summary.infertil}</strong></span></div>
-            <div><span className="text-gray-600">⚫ Gagal: <strong>{summary.gagal}</strong></span></div>
           </div>
           {role === "owner" && (
             <Button size="sm" variant="outline" className="mt-2 gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50"
