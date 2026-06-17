@@ -147,7 +147,9 @@ export default function TortoiseList() {
     if (!t.weight_grams || t.weight_grams === 0) return true;
     if (!t.shell_length_cm || t.shell_length_cm === 0) return true;
     if (!t.birth_date) return true;
-    if (!t.gender || t.gender === "belum_diketahui") return true;
+    // Gender hanya wajib untuk kura >= 20 cm (bukan baby)
+    const isSmall = (t.shell_length_cm && t.shell_length_cm < 20) || t.age_category === "baby";
+    if (!isSmall && (!t.gender || t.gender === "belum_diketahui")) return true;
     if (!t.enclosure) return true;
     if (!t.species) return true;
     const hasPhoto = (Array.isArray(t.photos) && t.photos.length > 0) || t.photo_url;
@@ -403,7 +405,7 @@ export default function TortoiseList() {
                         <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{group.label}</div>
                         {virtualEncs.map(name => (
                           <SelectItem key={`virtual-${name}`} value={name}>
-                            {name} ({tortoises.filter(t => t.enclosure === name && t.status !== "mati" && t.status !== "terjual").length})
+                            {name} ({tortoises.filter(t => t.enclosure === name && t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length})
                           </SelectItem>
                         ))}
                       </div>
@@ -414,15 +416,15 @@ export default function TortoiseList() {
                       <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{group.label}</div>
                       {groupEncs.map(enc => (
                         <SelectItem key={enc.id} value={enc.name}>
-                          {enc.name} {enc.current_count != null ? `(${enc.current_count})` : `(${tortoises.filter(t => t.enclosure === enc.name && t.status !== "mati" && t.status !== "terjual").length})`}
+                          {enc.name} ({tortoises.filter(t => t.enclosure === enc.name && t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length})
                         </SelectItem>
                       ))}
-                    </div>
-                  );
-                })}
-                {enclosures.filter(e => !["W","N","E","L","B"].some(p => e.name.startsWith(p)) && !e.name.startsWith("Baby")).map(enc => (
-                  <SelectItem key={enc.id} value={enc.name}>{enc.name}</SelectItem>
-                ))}
+                      </div>
+                      );
+                      })}
+                      {enclosures.filter(e => !["W","N","E","L","B"].some(p => e.name.startsWith(p)) && !e.name.startsWith("Baby")).map(enc => (
+                      <SelectItem key={enc.id} value={enc.name}>{enc.name} ({tortoises.filter(t => t.enclosure === enc.name && t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length})</SelectItem>
+                      ))}
               </SelectContent>
             </Select>
             <div className="flex rounded-lg border overflow-hidden h-9">

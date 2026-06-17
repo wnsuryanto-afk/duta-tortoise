@@ -163,7 +163,10 @@ export default function TortoiseForm({ open, onClose, editData }) {
     const e = {};
     if (!form.name?.trim()) e.name = "Nama tortoise wajib diisi";
     if (!form.code?.trim()) e.code = "Kode identifikasi wajib diisi";
-    if (!form.gender || form.gender === "belum_diketahui") e.gender = "Jenis kelamin wajib dipilih";
+    // Gender: hanya wajib jika cangkang >= 20 cm
+    const shellLen = form.shell_length_cm ? Number(form.shell_length_cm) : 0;
+    const isSmall = shellLen < 20 || form.age_category === "baby";
+    if (!isSmall && (!form.gender || form.gender === "belum_diketahui")) e.gender = "Jenis kelamin wajib dipilih";
     if (!form.morph) e.morph = "Morph wajib dipilih";
     if (!form.source || form.source === "tidak_diketahui") e.source = "Asal kura-kura wajib dipilih";
     if (!form.status) e.status = "Status wajib dipilih";
@@ -241,7 +244,10 @@ export default function TortoiseForm({ open, onClose, editData }) {
     if (isOldData) {
       const basicErrors = {};
       if (!form.name?.trim()) basicErrors.name = "Nama wajib diisi";
-      if (!form.gender) basicErrors.gender = "Jenis kelamin wajib dipilih";
+      // Gender: hanya wajib jika cangkang >= 20 cm
+      const shellLen = form.shell_length_cm ? Number(form.shell_length_cm) : 0;
+      const isSmall = shellLen < 20 || form.age_category === "baby";
+      if (!isSmall && !form.gender) basicErrors.gender = "Jenis kelamin wajib dipilih";
       if (!form.status) basicErrors.status = "Status wajib dipilih";
       if (Object.keys(basicErrors).length > 0) {
         setErrors(basicErrors);
@@ -467,7 +473,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Jenis Kelamin <span className="text-red-500">*</span></Label>
+              <Label>Jenis Kelamin {(form.shell_length_cm && Number(form.shell_length_cm) >= 20 && form.age_category !== "baby") ? <span className="text-red-500">*</span> : null}</Label>
               <Select value={form.gender} onValueChange={(v) => set("gender", v)}>
                 <SelectTrigger className={errors.gender ? "border-red-500 ring-1 ring-red-400" : ""}>
                   <SelectValue placeholder="Pilih..." />
@@ -478,7 +484,13 @@ export default function TortoiseForm({ open, onClose, editData }) {
                   <SelectItem value="belum_diketahui">? Belum Diketahui</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.gender && <p className="text-xs text-red-600">{errors.gender}</p>}
+              {(form.shell_length_cm && Number(form.shell_length_cm) < 20) || form.age_category === "baby" ? (
+                <p className="text-xs text-muted-foreground italic">ℹ️ Opsional — gender ditentukan saat cangkang &gt; 20 cm</p>
+              ) : errors.gender ? (
+                <p className="text-xs text-red-600">{errors.gender}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Disarankan diisi untuk kura dewasa</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Morph / Warna</Label>
