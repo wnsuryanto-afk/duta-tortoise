@@ -159,7 +159,10 @@ export default function TortoiseList() {
 
   const filtered = tortoises.filter((t) => {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "semua" || t.status === statusFilter;
+    let matchStatus;
+    if (statusFilter === "semua") matchStatus = true;
+    else if (statusFilter === "baby") matchStatus = t.age_category === "baby" && t.status === "aktif";
+    else matchStatus = t.status === statusFilter;
     const matchGender = genderFilter === "semua" || t.gender === genderFilter;
     const matchMorph = morphFilter === "semua" || (t.morph || "normal") === morphFilter;
     const matchShell = shellTypeFilter === "semua" || (t.shell_type || "normal") === shellTypeFilter;
@@ -202,9 +205,9 @@ export default function TortoiseList() {
   const grouped = useMemo(() => {
     const map = {};
     // Di view kandang, kura mati & terjual tidak ditampilkan (kecuali filter eksplisit status mati/terjual)
-    const forGrouped = (statusFilter === "mati" || statusFilter === "terjual")
+    const forGrouped = (statusFilter === "mati" || statusFilter === "terjual" || statusFilter === "diarsipkan")
       ? filtered
-      : filtered.filter(t => t.status !== "mati" && t.status !== "terjual");
+      : filtered.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan");
     forGrouped.forEach((t) => {
       const key = t.enclosure || "Tidak Ada Kandang";
       if (!map[key]) map[key] = [];
@@ -323,16 +326,16 @@ export default function TortoiseList() {
 
           <div className="flex flex-wrap gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="semua">Semua Status</SelectItem>
-                <SelectItem value="aktif">Aktif</SelectItem>
-                <SelectItem value="baby">🐣 Baby</SelectItem>
-                <SelectItem value="sakit">Sakit</SelectItem>
-                <SelectItem value="breeding">Breeding</SelectItem>
-                <SelectItem value="terjual">Terjual</SelectItem>
-                <SelectItem value="mati">Mati</SelectItem>
-                <SelectItem value="diarsipkan">Diarsipkan</SelectItem>
+                <SelectItem value="semua">Semua Status ({tortoises.length})</SelectItem>
+                <SelectItem value="aktif">Aktif ({tortoises.filter(t => t.status === "aktif").length})</SelectItem>
+                <SelectItem value="baby">🐣 Baby ({tortoises.filter(t => t.age_category === "baby" && t.status === "aktif").length})</SelectItem>
+                <SelectItem value="sakit">Sakit ({tortoises.filter(t => t.status === "sakit").length})</SelectItem>
+                <SelectItem value="breeding">Breeding ({tortoises.filter(t => t.status === "breeding").length})</SelectItem>
+                <SelectItem value="terjual">Terjual ({tortoises.filter(t => t.status === "terjual").length})</SelectItem>
+                <SelectItem value="mati">Mati ({tortoises.filter(t => t.status === "mati").length})</SelectItem>
+                <SelectItem value="diarsipkan">Diarsipkan ({tortoises.filter(t => t.status === "diarsipkan" || t.is_archived).length})</SelectItem>
               </SelectContent>
             </Select>
             <Select value={genderFilter} onValueChange={setGenderFilter}>
@@ -563,7 +566,7 @@ export default function TortoiseList() {
                         </div>
                         <div className="flex gap-1 text-xs">
                           <span className="text-green-600">{items.filter(t => t.status === "aktif").length}</span>
-                          <span className="text-blue-600">·{items.filter(t => t.status === "baby").length}</span>
+                          <span className="text-blue-600">·{items.filter(t => t.age_category === "baby").length}</span>
                           <span className="text-yellow-600">·{items.filter(t => t.status === "sakit").length}</span>
                         </div>
                       </div>
