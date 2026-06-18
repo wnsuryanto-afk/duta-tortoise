@@ -11,11 +11,10 @@
       "enum": [
         "obat",
         "vitamin",
-        "checkup",
-        "kebersihan",
         "perawatan_luka",
         "mandi",
-        "jemur",
+        "checkup",
+        "kebersihan",
         "lainnya"
       ],
       "default": "lainnya",
@@ -25,16 +24,19 @@
       "type": "string",
       "enum": [
         "harian",
-        "2harian",
+        "dua_harian",
         "mingguan",
-        "2mingguan",
+        "dua_mingguan",
         "bulanan",
         "quarterly",
-        "musiman",
-        "tahunan"
+        "tahunan",
+        "musiman"
       ],
-      "default": "mingguan",
-      "description": "Frekuensi: harian=setiap hari, 2harian=setiap 2 hari, mingguan=1x/minggu, 2mingguan=tiap 2 minggu, bulanan=1x/bulan, quarterly=tiap 3 bulan, musiman=saat musim bertelur"
+      "default": "mingguan"
+    },
+    "frequency_interval_days": {
+      "type": "number",
+      "description": "Interval hari untuk perhitungan jadwal (dua_harian=2, dua_mingguan=14, quarterly=90)"
     },
     "weekly_days": {
       "type": "array",
@@ -67,7 +69,7 @@
         "dewasa"
       ],
       "default": "semua",
-      "description": "Filter umur kura-kura"
+      "description": "Filter kategori umur"
     },
     "tortoise_ids": {
       "type": "array",
@@ -89,20 +91,21 @@
       "type": "boolean",
       "default": true
     },
-    "dosage": {
+    "dose": {
       "type": "string",
-      "description": "Dosis treatment (cth: 50mg/kg, 1 tablet/ekor)"
+      "description": "Dosis / instruksi (cth: 50mg/kg berat badan)"
     },
-    "item_sku": {
+    "related_sku": {
       "type": "string",
-      "description": "SKU item terkait dari WarehouseItem"
-    },
-    "item_name": {
-      "type": "string",
-      "description": "Nama item terkait"
+      "description": "SKU item stok gudang terkait (opsional)"
     },
     "sop_task_title": {
-      "type": "string"
+      "type": "string",
+      "description": "Judul SOP task yang dibuat otomatis"
+    },
+    "deadline_time": {
+      "type": "string",
+      "description": "Waktu pelaksanaan ideal (HH:mm)"
     },
     "notes": {
       "type": "string"
