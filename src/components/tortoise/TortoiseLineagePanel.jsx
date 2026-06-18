@@ -54,31 +54,47 @@ function ConnectorLine({ horizontal = false }) {
 }
 
 export default function TortoiseLineagePanel({ tortoise, allTortoises }) {
-  const tortoiseByName = useMemo(() => {
+  // Code-based lookup (parent_male/parent_female menyimpan KODE, bukan nama)
+  const tortoiseByCode = useMemo(() => {
     const map = {};
-    allTortoises.forEach(t => { map[t.name] = t; });
+    allTortoises.forEach(t => { if (t.code) map[t.code] = t; });
     return map;
   }, [allTortoises]);
 
-  const father = tortoise.parent_male ? tortoiseByName[tortoise.parent_male] || null : null;
-  const mother = tortoise.parent_female ? tortoiseByName[tortoise.parent_female] || null : null;
+  // ID-based fallback
+  const tortoiseById = useMemo(() => {
+    const map = {};
+    allTortoises.forEach(t => { map[t.id] = t; });
+    return map;
+  }, [allTortoises]);
+
+  function findParent(ref) {
+    if (!ref) return null;
+    if (tortoiseByCode[ref]) return tortoiseByCode[ref];
+    if (tortoiseById[ref]) return tortoiseById[ref];
+    return null;
+  }
+
+  const father = findParent(tortoise.parent_male);
+  const mother = findParent(tortoise.parent_female);
 
   // Grandparents
-  const pGF = father?.parent_male ? (tortoiseByName[father.parent_male] || null) : null;
-  const pGM = father?.parent_female ? (tortoiseByName[father.parent_female] || null) : null;
-  const mGF = mother?.parent_male ? (tortoiseByName[mother.parent_male] || null) : null;
-  const mGM = mother?.parent_female ? (tortoiseByName[mother.parent_female] || null) : null;
+  const pGF = findParent(father?.parent_male);
+  const pGM = findParent(father?.parent_female);
+  const mGF = findParent(mother?.parent_male);
+  const mGM = findParent(mother?.parent_female);
 
   const hasParents = !!(tortoise.parent_male || tortoise.parent_female);
   const hasGrandparents = father?.parent_male || father?.parent_female || mother?.parent_male || mother?.parent_female;
 
-  // Keturunan
-  const children = useMemo(() =>
-    allTortoises.filter(t =>
-      t.source === "hasil_sendiri" &&
-      (t.parent_male === tortoise.name || t.parent_female === tortoise.name)
-    ),
-  [allTortoises, tortoise.name]);
+  // Keturunan: cari tortoise yang parent_male/parent_female = CODE dari kura ini
+  const children = useMemo(() => {
+    const code = tortoise.code;
+    if (!code) return [];
+    return allTortoises.filter(t =>
+      t.parent_male === code || t.parent_female === code
+    );
+  }, [allTortoises, tortoise.code]);
 
   if (!hasParents && children.length === 0) {
     return (
