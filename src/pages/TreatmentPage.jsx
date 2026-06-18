@@ -17,12 +17,25 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, 
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
-const FREQ_LABELS = { harian: "Harian", mingguan: "Mingguan", bulanan: "Bulanan", tahunan: "Tahunan" };
+const FREQ_LABELS = {
+  harian:       "Harian",
+  dua_harian:   "2 Hari Sekali",
+  mingguan:     "Mingguan",
+  dua_mingguan: "2 Minggu Sekali",
+  bulanan:      "Bulanan",
+  quarterly:    "3 Bulanan",
+  tahunan:      "Tahunan",
+  musiman:      "Musiman",
+};
 const FREQ_COLORS = {
-  harian:   "bg-blue-100 text-blue-700",
-  mingguan: "bg-green-100 text-green-700",
-  bulanan:  "bg-orange-100 text-orange-700",
-  tahunan:  "bg-purple-100 text-purple-700",
+  harian:       "bg-blue-100 text-blue-700",
+  dua_harian:   "bg-sky-100 text-sky-700",
+  mingguan:     "bg-green-100 text-green-700",
+  dua_mingguan: "bg-teal-100 text-teal-700",
+  bulanan:      "bg-orange-100 text-orange-700",
+  quarterly:    "bg-amber-100 text-amber-700",
+  tahunan:      "bg-purple-100 text-purple-700",
+  musiman:      "bg-pink-100 text-pink-700",
 };
 const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
@@ -301,7 +314,7 @@ export default function TreatmentPage() {
           <div className="space-y-2">
             {/* Filter Frekuensi */}
             <div className="flex flex-wrap gap-1.5">
-              {["semua", "harian", "mingguan", "bulanan", "tahunan"].map(f => (
+              {["semua", "harian", "dua_harian", "mingguan", "dua_mingguan", "bulanan", "quarterly", "musiman", "tahunan"].map(f => (
                 <button key={f} onClick={() => setFreqFilter(f)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${freqFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
                   {f === "semua" ? "Semua Frekuensi" : FREQ_LABELS[f]}
@@ -552,8 +565,12 @@ export default function TreatmentPage() {
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="harian">Harian</SelectItem>
+                  <SelectItem value="dua_harian">2 Hari Sekali</SelectItem>
                   <SelectItem value="mingguan">Mingguan</SelectItem>
+                  <SelectItem value="dua_mingguan">2 Minggu Sekali</SelectItem>
                   <SelectItem value="bulanan">Bulanan</SelectItem>
+                  <SelectItem value="quarterly">3 Bulanan (Quarterly)</SelectItem>
+                  <SelectItem value="musiman">Musiman</SelectItem>
                   <SelectItem value="tahunan">Tahunan</SelectItem>
                 </SelectContent>
               </Select>
