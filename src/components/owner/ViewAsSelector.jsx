@@ -10,11 +10,12 @@ import { ROLE_LABELS } from "@/lib/permissions";
 import { useNavigate } from "react-router-dom";
 
 const ROLE_OPTIONS = [
-  { role: "owner",         emoji: "👑", label: "Owner",         desc: "Akses penuh semua fitur" },
+  { role: "owner",         emoji: "👑", label: "Owner",         desc: "Kembali ke tampilan Owner (akses penuh)" },
   { role: "manajer",       emoji: "📊", label: "Manajer",       desc: "Dashboard keuangan, SDM, breeding" },
   { role: "admin",         emoji: "🗂️", label: "Admin",         desc: "Approval queue, stok, treatment" },
-  { role: "kepala_feeder", emoji: "👨‍💼", label: "Kepala Feeder", desc: "Feeding, SOP, kandang" },
-  { role: "keeper",        emoji: "👷", label: "Keeper",        desc: "Absensi, task harian, checklist" },
+  { role: "kepala_feeder", emoji: "👨‍💼", label: "Kepala Feeder", desc: "Feeding, SOP, kandang, kas kecil" },
+  { role: "keeper",        emoji: "👷", label: "Keeper",        desc: "Tugas harian, checklist, treatment" },
+  { role: "investor",      emoji: "💼", label: "Investor",      desc: "Laporan keuangan & populasi (read-only)" },
 ];
 
 export default function ViewAsSelector({ open, onClose }) {

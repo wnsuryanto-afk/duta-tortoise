@@ -11,8 +11,11 @@
       "enum": [
         "obat",
         "vitamin",
+        "checkup",
+        "kebersihan",
         "perawatan_luka",
         "mandi",
+        "jemur",
         "lainnya"
       ],
       "default": "lainnya",
@@ -22,11 +25,16 @@
       "type": "string",
       "enum": [
         "harian",
+        "2harian",
         "mingguan",
+        "2mingguan",
         "bulanan",
+        "quarterly",
+        "musiman",
         "tahunan"
       ],
-      "default": "mingguan"
+      "default": "mingguan",
+      "description": "Frekuensi: harian=setiap hari, 2harian=setiap 2 hari, mingguan=1x/minggu, 2mingguan=tiap 2 minggu, bulanan=1x/bulan, quarterly=tiap 3 bulan, musiman=saat musim bertelur"
     },
     "weekly_days": {
       "type": "array",
@@ -51,6 +59,16 @@
       ],
       "default": "semua"
     },
+    "age_filter": {
+      "type": "string",
+      "enum": [
+        "semua",
+        "baby",
+        "dewasa"
+      ],
+      "default": "semua",
+      "description": "Filter umur kura-kura"
+    },
     "tortoise_ids": {
       "type": "array",
       "items": {
@@ -71,10 +89,22 @@
       "type": "boolean",
       "default": true
     },
-    "notes": {
-      "type": "string"
+    "dosage": {
+      "type": "string",
+      "description": "Dosis treatment (cth: 50mg/kg, 1 tablet/ekor)"
+    },
+    "item_sku": {
+      "type": "string",
+      "description": "SKU item terkait dari WarehouseItem"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Nama item terkait"
     },
     "sop_task_title": {
+      "type": "string"
+    },
+    "notes": {
       "type": "string"
     }
   },

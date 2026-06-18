@@ -38,7 +38,21 @@ export default function NotificationsPage() {
 
   const { data: notifs = [], isLoading } = useQuery({
     queryKey: ["notifications", user?.email],
-    queryFn: () => base44.entities.Notification.filter({ recipient_email: user?.email }),
+    queryFn: async () => {
+      const all = await base44.entities.Notification.filter({ recipient_email: user?.email });
+      // Auto-hapus notifikasi > 30 hari
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+      const old = all.filter(n => {
+        const ts = n.created_at || n.created_date;
+        return ts && new Date(ts) < cutoff;
+      });
+      if (old.length > 0) {
+        await Promise.all(old.map(n => base44.entities.Notification.delete(n.id)));
+        return all.filter(n => !old.find(o => o.id === n.id));
+      }
+      return all;
+    },
     enabled: !!user?.email,
   });
 
