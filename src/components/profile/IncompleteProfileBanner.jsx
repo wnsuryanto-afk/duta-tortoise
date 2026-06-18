@@ -1,29 +1,24 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { AlertTriangle, X, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-const REQUIRED_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
-
-function isProfileIncomplete(profile) {
-  if (!profile) return true;
-  return REQUIRED_FIELDS.some(f => !profile[f] || profile[f] === "-");
-}
-
+/**
+ * Banner kuning untuk owner — muncul HANYA jika profile tidak complete.
+ * Cek utama: is_complete flag di UserProfile.
+ * Field opsional (bank, hp_whatsapp) tidak memicu banner jika is_complete sudah true.
+ */
 export default function IncompleteProfileBanner({ user, profile }) {
   const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
 
   if (dismissed) return null;
-  if (!user || !isProfileIncomplete(profile)) return null;
+  if (!user) return null;
 
-  const missing = REQUIRED_FIELDS.filter(f => !profile?.[f] || profile[f] === "-");
-  const fieldLabels = {
-    full_name: "Nama Lengkap", phone: "No. Telepon", join_date: "Tanggal Bergabung",
-    bank_name: "Nama Bank", bank_account_number: "No. Rekening"
-  };
+  // Cek utama: is_complete flag
+  if (profile?.is_complete === true) return null;
+  // Tanpa profile, anggap belum lengkap
+  if (!profile) return null;
 
   return (
     <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-start gap-3 mb-4">
@@ -31,15 +26,14 @@ export default function IncompleteProfileBanner({ user, profile }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-amber-900">⚠️ Profil kamu belum lengkap</p>
         <p className="text-xs text-amber-700 mt-0.5">
-          Lengkapi data berikut agar gaji dan notifikasi berjalan dengan baik:{" "}
-          <span className="font-medium">{missing.map(f => fieldLabels[f]).join(", ")}</span>
+          Lengkapi data profil agar laporan dan notifikasi berjalan dengan baik.
         </p>
       </div>
       <div className="flex gap-2 flex-shrink-0">
         <Button
           size="sm"
           className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white gap-1"
-          onClick={() => navigate("/hr")}
+          onClick={() => navigate("/edit-profil")}
         >
           Lengkapi <ChevronRight className="w-3 h-3" />
         </Button>

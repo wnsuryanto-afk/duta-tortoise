@@ -4,7 +4,7 @@ import PageErrorBoundary from "@/components/common/PageErrorBoundary";
 import Sidebar from "./Sidebar";
 import GuidedLayout from "@/components/guided/GuidedLayout";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
@@ -18,12 +18,13 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import TourController from "@/components/tutorial/TourController";
 import IncompleteProfileBanner from "@/components/profile/IncompleteProfileBanner";
 import TestModeBanner from "@/components/owner/TestModeBanner";
+import { getBestProfile } from "@/lib/getBestProfile";
+import { upsertUserProfile } from "@/lib/userProfileUpsert";
 import { toast } from "sonner";
 
 // ── Fullscreen profile setup — ditampilkan saat profil belum lengkap (non-owner) ──
 function ProfileSetupScreen({ user, onComplete }) {
   const queryClient = useQueryClient();
-  const [existingProfileId, setExistingProfileId] = useState(null);
   const [form, setForm] = useState({
     full_name: user?.full_name || "",
     hp_whatsapp: "",
@@ -35,34 +36,33 @@ function ProfileSetupScreen({ user, onComplete }) {
     emergency_contact: "",
   });
   const [saving, setSaving] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [errors, setErrors] = useState({});
 
-  // Pre-fill dari profil yang sudah ada
+  // Pre-fill dari profil terbaik yang sudah ada
   useEffect(() => {
     base44.entities.UserProfile.filter({ user_email: user?.email }).then(profiles => {
-      if (profiles?.[0]) {
-        const p = profiles[0];
-        setExistingProfileId(p.id);
+      const best = getBestProfile(profiles);
+      if (best) {
         setForm(prev => ({
           ...prev,
-          full_name: p.full_name || prev.full_name,
-          hp_whatsapp: p.hp_whatsapp || p.phone || "",
-          join_date: p.join_date || "",
-          bank_name: p.bank_name || "",
-          bank_account_number: p.bank_account_number || "",
-          bank_account_name: p.bank_account_name || "",
-          id_number: p.id_number || "",
-          emergency_contact: p.emergency_contact || "",
+          full_name: best.full_name || prev.full_name,
+          hp_whatsapp: best.hp_whatsapp || best.phone || "",
+          join_date: best.join_date || "",
+          bank_name: best.bank_name || "",
+          bank_account_number: best.bank_account_number || "",
+          bank_account_name: best.bank_account_name || "",
+          id_number: best.id_number || "",
+          emergency_contact: best.emergency_contact || "",
         }));
       }
     }).catch(() => {});
   }, [user?.email]);
 
-  const REQUIRED = ["full_name", "hp_whatsapp", "join_date", "bank_name", "bank_account_number"];
-  const isValid = REQUIRED.every(f => form[f]?.toString().trim() !== "");
+  const REQUIRED = ["full_name"];
 
-  const saveAndRedirect = async (skipValidation = false) => {
+  const doSave = async (skipValidation = false) => {
     if (!skipValidation) {
       const newErrors = {};
       REQUIRED.forEach(f => { if (!form[f]?.toString().trim()) newErrors[f] = true; });
@@ -73,22 +73,20 @@ function ProfileSetupScreen({ user, onComplete }) {
     setSaveError("");
     try {
       const data = {
-        ...form,
+        full_name: form.full_name || user?.full_name || "Pengguna",
+        hp_whatsapp: form.hp_whatsapp || "",
+        join_date: form.join_date || new Date().toISOString().split("T")[0],
+        bank_name: form.bank_name || "",
+        bank_account_number: form.bank_account_number || "",
+        bank_account_name: form.bank_account_name || "",
+        id_number: form.id_number || "",
+        emergency_contact: form.emergency_contact || "",
         is_complete: true,
         tour_completed: true,
-        user_id: user.id,
-        user_email: user.email,
       };
 
-      // Ambil profil terbaru untuk menghindari race condition
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
-      const profileId = profiles?.[0]?.id || existingProfileId;
-
-      if (profileId) {
-        await base44.entities.UserProfile.update(profileId, data);
-      } else {
-        await base44.entities.UserProfile.create(data);
-      }
+      // GUNAKAN upsert — cari dulu, update jika ada, create jika belum
+      await upsertUserProfile(user, data);
 
       if (form.full_name && user.full_name !== form.full_name) {
         await base44.auth.updateMe({ full_name: form.full_name });
@@ -96,7 +94,6 @@ function ProfileSetupScreen({ user, onComplete }) {
 
       toast.success("Profil berhasil disimpan!");
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-      // Redirect paksa ke dashboard — jangan tunggu refetch
       onComplete();
     } catch (err) {
       setSaveError("Gagal menyimpan: " + (err?.message || "Terjadi kesalahan. Coba lagi."));
@@ -106,14 +103,18 @@ function ProfileSetupScreen({ user, onComplete }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    saveAndRedirect(false);
+    doSave(false);
   };
 
-  const handleSkip = () => saveAndRedirect(true);
+  const handleSkip = () => {
+    setSkipping(true);
+    doSave(true).finally(() => setSkipping(false));
+  };
 
   const handleChange = (f, v) => {
     setForm(p => ({ ...p, [f]: v }));
     setErrors(p => ({ ...p, [f]: false }));
+    setSaveError("");
   };
 
   return (
@@ -123,14 +124,16 @@ function ProfileSetupScreen({ user, onComplete }) {
           <div className="text-4xl mb-2">🐢</div>
           <h1 className="text-xl font-bold text-green-900 font-heading">Duta Tortoise</h1>
           <h2 className="text-lg font-semibold text-green-800 mt-2">Lengkapi Profil Anda</h2>
-          <p className="text-sm text-muted-foreground mt-1">Data ini diperlukan untuk penggajian. Harap lengkapi sebelum menggunakan app.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Hanya <strong>Nama Lengkap</strong> yang wajib.<br />Data lainnya bisa dilengkapi nanti.
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
             { id: "full_name", label: "Nama Lengkap *", placeholder: "Nama lengkap Anda" },
-            { id: "hp_whatsapp", label: "Nomor HP/WhatsApp *", placeholder: "08123456789" },
-            { id: "join_date", label: "Tanggal Bergabung *", type: "date" },
-            { id: "id_number", label: "Nomor KTP", placeholder: "16 digit (opsional)" },
+            { id: "hp_whatsapp", label: "Nomor HP/WhatsApp (opsional)", placeholder: "08123456789" },
+            { id: "join_date", label: "Tanggal Bergabung (opsional)", type: "date" },
+            { id: "id_number", label: "Nomor KTP (opsional)", placeholder: "16 digit" },
           ].map(({ id, label, placeholder, type }) => (
             <div key={id} className="space-y-1">
               <Label htmlFor={id}>{label}</Label>
@@ -141,24 +144,20 @@ function ProfileSetupScreen({ user, onComplete }) {
           ))}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Nama Bank *</Label>
-              <Input value={form.bank_name} onChange={e => handleChange("bank_name", e.target.value)}
-                placeholder="cth: BCA" className={errors.bank_name ? "border-red-500 bg-red-50" : ""} />
-              {errors.bank_name && <p className="text-xs text-red-500">Wajib diisi</p>}
+              <Label>Nama Bank (opsional)</Label>
+              <Input value={form.bank_name} onChange={e => handleChange("bank_name", e.target.value)} placeholder="cth: BCA" />
             </div>
             <div className="space-y-1">
-              <Label>Nama Pemilik Rekening</Label>
-              <Input value={form.bank_account_name} onChange={e => handleChange("bank_account_name", e.target.value)} placeholder="Sesuai buku tabungan (opsional)" />
+              <Label>Nama Pemilik Rekening (opsional)</Label>
+              <Input value={form.bank_account_name} onChange={e => handleChange("bank_account_name", e.target.value)} placeholder="Sesuai buku tabungan" />
             </div>
           </div>
           <div className="space-y-1">
-            <Label>Nomor Rekening *</Label>
-            <Input value={form.bank_account_number} onChange={e => handleChange("bank_account_number", e.target.value)}
-              placeholder="Nomor rekening" className={errors.bank_account_number ? "border-red-500 bg-red-50" : ""} />
-            {errors.bank_account_number && <p className="text-xs text-red-500">Wajib diisi</p>}
+            <Label>Nomor Rekening (opsional)</Label>
+            <Input value={form.bank_account_number} onChange={e => handleChange("bank_account_number", e.target.value)} placeholder="Nomor rekening" />
           </div>
           <div className="space-y-1">
-            <Label>Kontak Darurat <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+            <Label>Kontak Darurat (opsional)</Label>
             <Input value={form.emergency_contact} onChange={e => handleChange("emergency_contact", e.target.value)} placeholder="Nama & nomor telepon" />
           </div>
 
@@ -168,17 +167,17 @@ function ProfileSetupScreen({ user, onComplete }) {
             </div>
           )}
 
-          <Button type="submit" disabled={saving}
+          <Button type="submit" disabled={saving || skipping}
             className="w-full font-semibold py-3 mt-2 bg-green-700 hover:bg-green-800">
             {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</> : "Simpan & Lanjutkan →"}
           </Button>
           <button
             type="button"
             onClick={handleSkip}
-            disabled={saving}
+            disabled={saving || skipping}
             className="w-full text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 py-1 transition-colors disabled:opacity-50"
           >
-            Lewati & Masuk →
+            {skipping ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin inline" />Memproses...</> : "Lewati & Masuk →"}
           </button>
         </form>
       </div>
@@ -220,7 +219,8 @@ export default function AppLayout() {
   });
 
   const isProfileLoaded = !isLoading && !profileLoading && !!user;
-  const profile = profiles[0];
+  // Ambil profil TERBAIK (is_complete=true, terbaru, bukan duplikat)
+  const profile = getBestProfile(profiles);
   // Cek hanya berdasarkan is_complete dari database ATAU flag lokal setelah onboarding selesai
   const profileComplete = onboardingDone || profile?.is_complete === true;
   const navigate = useNavigate();

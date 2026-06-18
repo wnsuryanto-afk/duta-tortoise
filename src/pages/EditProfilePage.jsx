@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { upsertUserProfile } from "@/lib/userProfileUpsert";
+import { getBestProfile } from "@/lib/getBestProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,13 +36,13 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (profiles.length > 0) {
-      const p = profiles[0];
-      setFormData(p);
-      // Jika whatsapp sudah diisi dan berbeda dari phone, uncheck
-      // legacy compat: tidak ada whatsapp terpisah lagi
+      const p = getBestProfile(profiles);
+      if (p) {
+        setFormData(p);
+      }
       setLoading(false);
     } else if (user) {
-      // Create new profile if doesn't exist
+      // Belum ada profile — start fresh
       setFormData({
         user_id: user.id,
         user_email: user.email,
@@ -57,7 +58,7 @@ export default function EditProfilePage() {
     },
     onSuccess: async (_, variables) => {
       // Sinkronisasi nama karyawan ke semua entitas jika nama berubah
-      const oldName = profiles[0]?.full_name;
+      const oldName = getBestProfile(profiles)?.full_name;
       if (oldName && variables.full_name && oldName !== variables.full_name && user?.email) {
         base44.functions.invoke("syncEmployeeName", {
           employee_email: user.email,
@@ -80,18 +81,17 @@ export default function EditProfilePage() {
     setIsDirty(true);
   };
 
-  const IS_COMPLETE_FIELDS = ["full_name", "hp_whatsapp", "join_date", "bank_name", "bank_account_number"];
-
   const handleSave = () => {
-    const required = ["full_name", "hp_whatsapp", "join_date"];
-    const missing = required.filter(f => !formData[f] || formData[f].toString().trim() === "");
-    
-    if (missing.length > 0) {
-      toast.error("Field wajib belum diisi: " + missing.join(", "));
+    // Hanya full_name yang wajib
+    if (!formData.full_name || formData.full_name.toString().trim() === "") {
+      toast.error("Nama Lengkap wajib diisi");
       return;
     }
 
-    const isComplete = IS_COMPLETE_FIELDS.every(f => formData[f] && formData[f].toString().trim() !== "");
+    // Pertahankan is_complete yang sudah ada, atau set true jika data utama terisi
+    const isComplete = formData.is_complete === true || (
+      formData.hp_whatsapp && formData.join_date
+    );
     updateMutation.mutate({ ...formData, is_complete: isComplete });
   };
 
