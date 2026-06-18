@@ -4,23 +4,19 @@
  */
 import { base44 } from "@/api/base44Client";
 
-const IS_COMPLETE_FIELDS = ["full_name", "phone", "join_date", "bank_name", "bank_account_number"];
-
 /**
  * Simpan profil user dengan pola upsert:
  * - Cari UserProfile dengan user_email yang sama
  * - Jika ada → UPDATE record pertama yang ditemukan
  * - Jika tidak ada → CREATE 1 record baru
+ * - Jika data sudah mengandung is_complete, hormati nilainya (jangan kalkulasi ulang)
  * @param {object} user  - objek user dari base44.auth.me()
  * @param {object} data  - data yang ingin disimpan
  * @returns {object} record UserProfile yang disimpan
  */
 export async function upsertUserProfile(user, data) {
-  const isComplete = IS_COMPLETE_FIELDS.every(
-    (f) => data[f] && data[f].toString().trim() !== ""
-  );
-
-  const dataToSave = { ...data, is_complete: isComplete };
+  // Hormati is_complete yang sudah di-set oleh caller (jangan kalkulasi ulang)
+  const dataToSave = { ...data };
 
   // Cari profile yang sudah ada berdasarkan email
   const existing = await base44.entities.UserProfile.filter({ user_email: user.email });
