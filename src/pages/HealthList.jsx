@@ -51,9 +51,28 @@ export default function HealthList() {
     return tortoises.filter(t => t.name?.toLowerCase().includes(tortoiseSearch.toLowerCase())).slice(0, 6);
   }, [tortoises, tortoiseSearch]);
 
+  // Build tortoise lookup maps for code-based search
+  const tortoiseCodeMap = useMemo(() => {
+    const nameToCode = {};
+    const idToCode = {};
+    tortoises.forEach(t => {
+      if (t.code) {
+        nameToCode[t.name?.toLowerCase()] = t.code.toLowerCase();
+        idToCode[t.id] = t.code.toLowerCase();
+      }
+    });
+    return { nameToCode, idToCode };
+  }, [tortoises]);
+
   const filtered = useMemo(() => {
+    const q = search.toLowerCase();
     return records.filter(r => {
-      const matchSearch = !search || r.tortoise_name?.toLowerCase().includes(search.toLowerCase()) || r.description?.toLowerCase().includes(search.toLowerCase());
+      // Search: name, description, OR tortoise code
+      const matchSearch = !q
+        || r.tortoise_name?.toLowerCase().includes(q)
+        || r.description?.toLowerCase().includes(q)
+        || tortoiseCodeMap.idToCode[r.tortoise_id]?.includes(q)
+        || tortoiseCodeMap.nameToCode[r.tortoise_name?.toLowerCase()]?.includes(q);
       const matchType = typeFilter === "semua" || r.type === typeFilter;
       const matchTortoise = !tortoiseSearch || r.tortoise_name?.toLowerCase().includes(tortoiseSearch.toLowerCase());
       let matchDate = true;
@@ -67,7 +86,7 @@ export default function HealthList() {
       }
       return matchSearch && matchType && matchTortoise && matchDate;
     });
-  }, [records, search, typeFilter, tortoiseSearch, dateFrom, dateTo]);
+  }, [records, search, typeFilter, tortoiseSearch, dateFrom, dateTo, tortoiseCodeMap]);
 
   const hasActiveFilters = typeFilter !== "semua" || tortoiseSearch || dateFrom || dateTo;
 
@@ -106,7 +125,7 @@ export default function HealthList() {
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cari nama kura-kura atau deskripsi..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+          <Input placeholder="Cari nama / kode kura (cth: B65) / deskripsi..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
         </div>
         <Button variant={showFilters ? "default" : "outline"} className="gap-2 h-10 shrink-0" onClick={() => setShowFilters(p => !p)}>
           <Filter className="w-4 h-4" />

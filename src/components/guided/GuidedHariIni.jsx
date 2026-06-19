@@ -10,6 +10,7 @@ import {
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import TugasHariIni from "@/components/sop/TugasHariIni";
+import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -97,6 +98,8 @@ export default function GuidedHariIni({ user }) {
   const [showSakitForm, setShowSakitForm] = useState(false);
   const [catatan, setCatatan]           = useState("");
   const [showCatatan, setShowCatatan]   = useState(false);
+  const [showSelfie, setShowSelfie]     = useState(false);
+  const [selfieMode, setSelfieMode]     = useState(null); // "checkin" | "checkout"
 
   // ── Queries — diberi jeda & staleTime panjang ──
   const { data: attendance } = useQuery({
@@ -206,7 +209,9 @@ export default function GuidedHariIni({ user }) {
 
   // ── HANDLERS ──
 
-  const handleCheckIn = async () => {
+  const startCheckIn = () => { setSelfieMode("checkin"); setShowSelfie(true); };
+
+  const handleCheckIn = async (selfieUrl) => {
     if (hasCheckedIn) return;
     setLoading(true);
     let lat = null, lng = null, verified = false;
@@ -232,13 +237,16 @@ export default function GuidedHariIni({ user }) {
       location_verified: verified,
       shift_start: salaryConfig?.shift_start || "08:00",
       shift_end: salaryConfig?.shift_end || "16:00",
+      selfie_checkin_url: selfieUrl || "",
     });
     qc.invalidateQueries({ queryKey: ["attendance-today"] });
     flashPoin("Check in", 5);
     setLoading(false);
   };
 
-  const handleCheckOut = async () => {
+  const startCheckOut = () => { setSelfieMode("checkout"); setShowSelfie(true); };
+
+  const handleCheckOut = async (selfieUrl) => {
     if (hasCheckedOut || !attendance) return;
     setLoading(true);
     if (farmConfigured) {
@@ -260,6 +268,7 @@ export default function GuidedHariIni({ user }) {
         check_out: checkoutTime,
         check_out_lat: pos.lat, check_out_lng: pos.lng,
         overtime_hours: ot,
+        selfie_checkout_url: selfieUrl || "",
       });
       if (ot > 0) {
         await base44.entities.OvertimeLog.create({
@@ -275,6 +284,7 @@ export default function GuidedHariIni({ user }) {
       const ot = calcOvertimeHours(checkoutTime, shiftEnd);
       await base44.entities.Attendance.update(attendance.id, {
         check_out: checkoutTime, overtime_hours: ot,
+        selfie_checkout_url: selfieUrl || "",
       });
       if (ot > 0) {
         await base44.entities.OvertimeLog.create({
@@ -288,6 +298,12 @@ export default function GuidedHariIni({ user }) {
     qc.invalidateQueries({ queryKey: ["attendance-today"] });
     showMsg("success", "Check out berhasil! Kerja bagus hari ini.");
     setLoading(false);
+  };
+
+  const handleSelfieComplete = (url) => {
+    if (selfieMode === "checkin") handleCheckIn(url);
+    else if (selfieMode === "checkout") handleCheckOut(url);
+    setSelfieMode(null);
   };
 
   // Poin kebersihan kandang dari SOPTask (dinamis)
@@ -392,15 +408,6 @@ export default function GuidedHariIni({ user }) {
   // ── RENDER ──────────────────────────────────────────────────────────────
   const todayLabel = format(new Date(), "EEEE, d MMMM yyyy", { locale: id });
 
-  // Null guard — setelah semua hooks, aman untuk React
-  if (!user?.email) {
-    return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <div className="w-6 h-6 border-2 border-green-300 border-t-green-700 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="pb-6">
       {/* ── HEADER ── */}
@@ -489,11 +496,11 @@ export default function GuidedHariIni({ user }) {
               <div>
                 <p className="text-sm text-gray-500 mb-3">Belum mulai kerja hari ini</p>
                 <button
-                  onClick={handleCheckIn}
+                  onClick={startCheckIn}
                   disabled={loading}
                   className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-2xl text-base active:scale-95 transition-transform disabled:opacity-60"
                 >
-                  {loading ? "Tunggu sebentar..." : "🏁 CHECK IN — Mulai Kerja"}
+                  {loading ? "Tunggu sebentar..." : "📸 CHECK IN — Selfie & Mulai Kerja"}
                 </button>
                 {farmConfigured && <p className="text-xs text-center text-gray-400 mt-2 flex items-center justify-center gap-1"><MapPin className="w-3 h-3" /> GPS diperlukan</p>}
               </div>
@@ -504,11 +511,11 @@ export default function GuidedHariIni({ user }) {
                 <p className="text-sm text-green-700 font-medium mb-1">✓ Masuk jam {attendance.check_in}</p>
                 <p className="text-xs text-gray-500 mb-3">Sudah bekerja {workDuration(attendance.check_in)}</p>
                 <button
-                  onClick={handleCheckOut}
+                  onClick={startCheckOut}
                   disabled={loading}
                   className="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 rounded-2xl text-sm active:scale-95 transition-transform disabled:opacity-60"
                 >
-                  {loading ? "Tunggu sebentar..." : "🏠 CHECK OUT — Selesai Kerja"}
+                  {loading ? "Tunggu sebentar..." : "📸 CHECK OUT — Selfie & Selesai Kerja"}
                 </button>
                 {farmConfigured && <p className="text-xs text-center text-gray-400 mt-2">GPS diperlukan untuk check out</p>}
               </div>
@@ -732,6 +739,22 @@ export default function GuidedHariIni({ user }) {
         </div>
 
         {/* ══ RINGKASAN HARI INI (setelah checkout) ════════════════ */}
+        {/* Selfie Capture Dialog */}
+        <SelfieCaptureDialog
+          open={showSelfie}
+          onClose={() => { setShowSelfie(false); setSelfieMode(null); }}
+          onCapture={handleSelfieComplete}
+          title={selfieMode === "checkin" ? "Selfie Check In" : "Selfie Check Out"}
+        />
+
+        {/* Selfie preview */}
+        {attendance?.selfie_checkin_url && (
+          <div className="flex items-center gap-2 px-1">
+            <img src={attendance.selfie_checkin_url} alt="Selfie masuk" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
+            <span className="text-xs text-gray-400">Selfie masuk {attendance.check_in}</span>
+          </div>
+        )}
+
         {hasCheckedOut && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 space-y-2">
             <p className="font-bold text-green-800 text-base">🏆 Ringkasan Hari Ini</p>

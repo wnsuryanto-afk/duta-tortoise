@@ -8,9 +8,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Mail, Calendar, Building, Shield, Save, X } from "lucide-react";
+import { User, Mail, Calendar, Building, Shield, Save, X, Camera, Loader2 } from "lucide-react";
+import UserAvatar from "@/components/common/UserAvatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+function ProfilePhotoSection({ formData, user, onChange }) {
+  const [uploading, setUploading] = useState(false);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      onChange("photo_url", file_url);
+    } catch {
+      toast.error("Gagal upload foto");
+    }
+    setUploading(false);
+  };
+
+  return (
+    <div className="flex items-center gap-4 mb-6">
+      <div className="relative group">
+        <UserAvatar name={formData.full_name || user?.email} photoUrl={formData.photo_url} size="xl" />
+        <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+          {uploading ? (
+            <Loader2 className="w-6 h-6 text-white animate-spin" />
+          ) : (
+            <Camera className="w-6 h-6 text-white" />
+          )}
+          <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploading} />
+        </label>
+      </div>
+      <div>
+        <p className="font-semibold text-lg">{formData.full_name || "Belum diset"}</p>
+        <p className="text-sm text-muted-foreground">{user?.email}</p>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium mt-1 inline-block">
+          {user?.role || "user"}
+        </span>
+        <p className="text-xs text-muted-foreground mt-1">Klik foto untuk mengganti</p>
+      </div>
+    </div>
+  );
+}
 
 export default function EditProfilePage() {
   const navigate = useNavigate();
@@ -127,20 +169,7 @@ export default function EditProfilePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary">
-                {(formData.full_name || user?.email || "?")[0].toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p className="font-semibold text-lg">{formData.full_name || "Belum diset"}</p>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium mt-1 inline-block">
-                {user?.role || "user"}
-              </span>
-            </div>
-          </div>
+          <ProfilePhotoSection formData={formData} user={user} onChange={handleChange} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
