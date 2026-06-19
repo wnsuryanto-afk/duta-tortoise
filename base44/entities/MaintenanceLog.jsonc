@@ -25,7 +25,7 @@
     },
     "item_id": {
       "type": "string",
-      "description": "ID item checklist (d1, d2, w1, m1, etc.)"
+      "description": "ID item checklist"
     },
     "item_label": {
       "type": "string",
@@ -33,12 +33,11 @@
     },
     "period_key": {
       "type": "string",
-      "description": "Kunci periode (YYYY-MM-DD untuk harian, YYYY-MM-Wn untuk mingguan, YYYY-MM untuk bulanan)"
+      "description": "Kunci periode (YYYY-MM-DD)"
     },
     "is_done": {
       "type": "boolean",
-      "default": false,
-      "description": "Sudah dicentang oleh keeper"
+      "default": false
     },
     "done_at": {
       "type": "string",
@@ -50,29 +49,54 @@
     },
     "done_by_email": {
       "type": "string",
-      "description": "Email keeper yang mencentang (untuk link ke DailyChecklist)"
+      "description": "Email keeper"
     },
     "is_verified": {
       "type": "boolean",
-      "default": false,
-      "description": "Sudah diverifikasi oleh kepala feeder"
+      "default": false
     },
     "verified_by": {
-      "type": "string",
-      "description": "Nama kepala feeder yang verifikasi"
+      "type": "string"
     },
     "verified_at": {
-      "type": "string",
-      "description": "Jam verifikasi (HH:mm)"
+      "type": "string"
     },
     "poin_earned": {
       "type": "number",
-      "default": 0,
-      "description": "Poin yang diperoleh dari task ini"
+      "default": 0
     },
     "notes": {
+      "type": "string"
+    },
+    "photo_url": {
       "type": "string",
-      "description": "Catatan tambahan"
+      "description": "URL foto dokumentasi kegiatan"
+    },
+    "is_extra": {
+      "type": "boolean",
+      "default": false,
+      "description": "Tugas tambahan di luar SOP"
+    },
+    "extra_description": {
+      "type": "string",
+      "description": "Deskripsi tugas tambahan"
+    },
+    "approval_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "description": "Status approval tugas tambahan"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Nama yang approve"
+    },
+    "approved_at": {
+      "type": "string",
+      "description": "Waktu approve"
     }
   },
   "required": [

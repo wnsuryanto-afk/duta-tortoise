@@ -392,6 +392,15 @@ export default function GuidedHariIni({ user }) {
   // ── RENDER ──────────────────────────────────────────────────────────────
   const todayLabel = format(new Date(), "EEEE, d MMMM yyyy", { locale: id });
 
+  // Null guard — setelah semua hooks, aman untuk React
+  if (!user?.email) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="w-6 h-6 border-2 border-green-300 border-t-green-700 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-6">
       {/* ── HEADER ── */}

@@ -15,15 +15,23 @@ import { base44 } from "@/api/base44Client";
  * @returns {object} record UserProfile yang disimpan
  */
 export async function upsertUserProfile(user, data) {
-  // Hormati is_complete yang sudah di-set oleh caller (jangan kalkulasi ulang)
   const dataToSave = { ...data };
 
   // Cari profile yang sudah ada berdasarkan email
-  const existing = await base44.entities.UserProfile.filter({ user_email: user.email });
+  let existing = [];
+  try {
+    existing = await base44.entities.UserProfile.filter({ user_email: user.email });
+  } catch {
+    existing = [];
+  }
 
-  if (existing && existing.length > 0) {
-    // UPDATE record pertama (yang paling lengkap / terbaru)
-    const best = existing.find((p) => p.is_complete) || existing[0];
+  // Filter out duplikat yang sudah ditandai
+  const valid = (existing || []).filter(p => p.full_name !== "[DUPLIKAT-HAPUS]");
+
+  if (valid.length > 0) {
+    // UPDATE record terbaik (is_complete=true dulu, lalu terbaru)
+    const best = valid.find(p => p.is_complete === true)
+      || valid.sort((a, b) => new Date(b.updated_date || 0) - new Date(a.updated_date || 0))[0];
     return await base44.entities.UserProfile.update(best.id, dataToSave);
   } else {
     // CREATE baru hanya jika belum ada sama sekali

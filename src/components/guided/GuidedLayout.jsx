@@ -273,6 +273,15 @@ function FAB({ user }) {
 export default function GuidedLayout({ user, onSwitchToNormal }) {
   const [activeTab, setActiveTab] = useState("hari-ini");
 
+  // Null guard — jangan crash jika user belum ada
+  if (!user?.email) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-green-200 border-t-green-700 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto relative">
       {/* Content area */}

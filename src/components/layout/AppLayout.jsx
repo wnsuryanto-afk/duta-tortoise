@@ -179,6 +179,18 @@ function ProfileSetupScreen({ user, onComplete }) {
           >
             {skipping ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin inline" />Memproses...</> : "Lewati & Masuk →"}
           </button>
+
+          {/* Tombol darurat jika terjebak di halaman ini */}
+          <div className="mt-4 pt-3 border-t border-gray-100 text-center">
+            <p className="text-xs text-muted-foreground mb-2">Mengalami masalah?</p>
+            <button
+              type="button"
+              onClick={() => window.open("https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20tidak%20bisa%20masuk%20ke%20Duta%20Tortoise", "_blank")}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              📱 Hubungi Admin via WhatsApp
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -210,19 +222,20 @@ export default function AppLayout() {
 
   const [onboardingDone, setOnboardingDone] = useState(false);
 
-  const { data: profiles = [], isLoading: profileLoading } = useQuery({
+  const { data: profiles = [], isLoading: profileLoading, isError: profileError } = useQuery({
     queryKey: ["user-profile", user?.email],
     queryFn: () => base44.entities.UserProfile.filter({ user_email: user.email }),
     enabled: !!user?.email,
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+    retry: 2,
   });
 
   const isProfileLoaded = !isLoading && !profileLoading && !!user;
   // Ambil profil TERBAIK (is_complete=true, terbaru, bukan duplikat)
   const profile = getBestProfile(profiles);
   // Cek hanya berdasarkan is_complete dari database ATAU flag lokal setelah onboarding selesai
-  const profileComplete = onboardingDone || profile?.is_complete === true;
+  // Jika query error → anggap profil sudah lengkap agar user tidak terjebak di onboarding
+  const profileComplete = onboardingDone || profile?.is_complete === true || profileError;
   const navigate = useNavigate();
 
   // Masih loading — tampilkan spinner diam, jangan render kondisi apapun
@@ -236,6 +249,7 @@ export default function AppLayout() {
 
   // Non-owner + profil belum lengkap → tampilkan fullscreen setup form
   // Owner → tetap masuk app (ada banner kuning saja)
+  // Jika query error → JANGAN blokir di onboarding, biarkan masuk dashboard
   if (isProfileLoaded && !isOwner && !profileComplete) {
     return <ProfileSetupScreen user={user} onComplete={() => setOnboardingDone(true)} />;
   }

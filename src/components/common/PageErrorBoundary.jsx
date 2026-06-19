@@ -1,5 +1,5 @@
 import React from "react";
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshCw, AlertTriangle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 class PageErrorBoundary extends React.Component {
@@ -21,6 +21,10 @@ class PageErrorBoundary extends React.Component {
     window.location.reload();
   };
 
+  handleRetryReset = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
   render() {
     if (this.state.hasError) {
       return (
@@ -31,7 +35,7 @@ class PageErrorBoundary extends React.Component {
           <div>
             <h2 className="text-lg font-semibold text-foreground">Terjadi Kesalahan</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Halaman ini mengalami error. Silakan coba refresh.
+              Halaman ini mengalami error. Silakan coba refresh atau hubungi admin.
             </p>
             {this.state.error && (
               <p className="text-xs text-muted-foreground/60 mt-2 font-mono bg-muted px-3 py-1.5 rounded max-w-sm mx-auto break-all">
@@ -39,10 +43,24 @@ class PageErrorBoundary extends React.Component {
               </p>
             )}
           </div>
-          <Button onClick={this.handleRefresh} className="gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Refresh Halaman
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button onClick={this.handleRetryReset} variant="outline" className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Coba Lagi
+            </Button>
+            <Button onClick={this.handleRefresh} className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Refresh Halaman
+            </Button>
+            <Button
+              variant="secondary"
+              className="gap-2"
+              onClick={() => window.open("https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mengalami%20error%20di%20Duta%20Tortoise", "_blank")}
+            >
+              <MessageCircle className="w-4 h-4" />
+              Hubungi Admin
+            </Button>
+          </div>
         </div>
       );
     }

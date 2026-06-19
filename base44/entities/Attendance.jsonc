@@ -37,6 +37,14 @@
       "type": "number",
       "description": "Longitude saat check out"
     },
+    "selfie_checkin_url": {
+      "type": "string",
+      "description": "URL foto selfie saat check in"
+    },
+    "selfie_checkout_url": {
+      "type": "string",
+      "description": "URL foto selfie saat check out"
+    },
     "location_verified": {
       "type": "boolean",
       "default": false,

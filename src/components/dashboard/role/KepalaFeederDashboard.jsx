@@ -150,6 +150,15 @@ export default function KepalaFeederDashboard({ user }) {
     toast.success("Semua checklist disetujui!");
   };
 
+  // Null guard setelah semua hooks — aman untuk React
+  if (!user?.email) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 pb-10 animate-fade-in">
       {/* ── HEADER ── */}
