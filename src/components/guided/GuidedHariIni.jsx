@@ -182,12 +182,6 @@ export default function GuidedHariIni({ user }) {
   const farmRadius = settings?.farm_location_radius || 200;
   const farmConfigured = !!(farmLat && farmLng);
 
-  // Poin hari ini (pakan dikelola di dalam WidgetPakan)
-  const poinKandang  = kandangSaved.size * poinKebersihan;
-  const poinKura     = sakitReports.length * 15;
-  const poinCheckin  = hasCheckedIn ? 5 : 0;
-  const totalPoin    = poinCheckin + poinKandang + poinKura;
-
   // Suplemen dari TreatmentSchedule
   const todayDayOfWeek = new Date().getDay();
   const supplemenHariIni = treatmentSchedules.filter(ts => {
@@ -302,6 +296,12 @@ export default function GuidedHariIni({ user }) {
     staleTime: 10 * 60 * 1000,
   });
   const poinKebersihan = sopTasksKebersihan.find(t => t.is_active !== false)?.points ?? 10;
+
+  // Poin hari ini (dideklarasikan setelah poinKebersihan)
+  const poinKandang = kandangSaved.size * poinKebersihan;
+  const poinKura    = sakitReports.length * 15;
+  const poinCheckin = hasCheckedIn ? 5 : 0;
+  const totalPoin   = poinCheckin + poinKandang + poinKura;
 
   const handleToggleKandang = async (k) => {
     const alreadySaved = kandangSaved.has(k);
