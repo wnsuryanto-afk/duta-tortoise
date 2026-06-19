@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
+import TugasHariIni from "@/components/sop/TugasHariIni";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -426,6 +427,11 @@ export default function GuidedHariIni({ user }) {
       )}
 
       <div className="px-4 pt-4 space-y-4">
+
+        {/* ══ TUGAS HARI INI — JADWAL KERJA ════════════════════════ */}
+        <WidgetErrorBoundary widgetName="Tugas Hari Ini">
+          <TugasHariIni user={user} showTeamView={false} />
+        </WidgetErrorBoundary>
 
         {/* ══ WIDGET DARURAT ══════════════════════════════════════ */}
         {(sickTortoises.length > 0 || kritisNotifs.length > 0) && (
