@@ -5,10 +5,10 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Pencil, Package, BookOpen, Plus, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowLeft, Pencil, Package, BookOpen, Plus } from "lucide-react";
 import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "./PanduanPenyakitPage";
 import DiagnosisProtocolForm from "@/components/health/DiagnosisProtocolForm";
+import DiseaseImageUpload from "@/components/health/DiseaseImageUpload";
 
 export default function PanduanPenyakitDetailPage() {
   const { id } = useParams();
@@ -18,8 +18,6 @@ export default function PanduanPenyakitDetailPage() {
   const canEdit = ["owner", "admin"].includes(role);
   const [showForm, setShowForm] = useState(false);
   const [addingImage, setAddingImage] = useState(false);
-  const [imageUrlInput, setImageUrlInput] = useState("");
-  const [imageCaptionInput, setImageCaptionInput] = useState("");
 
   const isNew = id === "new";
 
@@ -34,22 +32,9 @@ export default function PanduanPenyakitDetailPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const handleSaveImage = async () => {
-    if (!imageUrlInput.trim()) return;
-    setAddingImage(true);
-    try {
-      await base44.entities.DiagnosisProtocol.update(id, {
-        image_url: imageUrlInput.trim(),
-        image_caption: imageCaptionInput.trim(),
-      });
-      qc.invalidateQueries({ queryKey: ["diagnosis-protocol", id] });
-      qc.invalidateQueries({ queryKey: ["diagnosis-protocols-catalog"] });
-      toast.success("Gambar disimpan!");
-      setImageUrlInput("");
-      setImageCaptionInput("");
-    } catch {
-      toast.error("Gagal menyimpan gambar");
-    }
+  const handleImageSaved = () => {
+    qc.invalidateQueries({ queryKey: ["diagnosis-protocol", id] });
+    qc.invalidateQueries({ queryKey: ["diagnosis-protocols-catalog"] });
     setAddingImage(false);
   };
 
@@ -119,12 +104,25 @@ export default function PanduanPenyakitDetailPage() {
       </div>
 
       {/* Image */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden relative">
         {protocol.image_url ? (
           <div>
             <img src={protocol.image_url} alt={protocol.diagnosis_name} className="w-full max-h-80 object-cover" />
             {protocol.image_caption && (
               <p className="text-xs text-muted-foreground px-4 py-2 bg-muted/30 border-t">{protocol.image_caption}</p>
+            )}
+            {canEdit && !addingImage && (
+              <div className="absolute top-2 right-2">
+                <Button variant="secondary" size="sm" className="gap-1.5 shadow-md" onClick={() => setAddingImage(true)}>
+                  <Plus className="w-3.5 h-3.5" /> Ganti Gambar
+                </Button>
+              </div>
+            )}
+            {canEdit && addingImage && (
+              <div className="p-3 bg-background/95 backdrop-blur border-t space-y-2">
+                <DiseaseImageUpload protocolId={id} onSaved={handleImageSaved} />
+                <Button size="sm" variant="ghost" onClick={() => setAddingImage(false)}>Batal</Button>
+              </div>
             )}
           </div>
         ) : (
@@ -137,30 +135,9 @@ export default function PanduanPenyakitDetailPage() {
               </Button>
             )}
             {canEdit && addingImage && (
-              <div className="mt-3 w-full max-w-md space-y-2">
-                <input
-                  type="url"
-                  placeholder="Paste URL gambar di sini..."
-                  value={imageUrlInput}
-                  onChange={e => setImageUrlInput(e.target.value)}
-                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-                />
-                <input
-                  type="text"
-                  placeholder="Caption / sumber gambar (opsional)"
-                  value={imageCaptionInput}
-                  onChange={e => setImageCaptionInput(e.target.value)}
-                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSaveImage} disabled={addingImage || !imageUrlInput.trim()} className="gap-2">
-                    {addingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                    Simpan Gambar
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setAddingImage(false); setImageUrlInput(""); setImageCaptionInput(""); }}>
-                    Batal
-                  </Button>
-                </div>
+              <div className="mt-3 w-full space-y-2">
+                <DiseaseImageUpload protocolId={id} onSaved={handleImageSaved} />
+                <Button size="sm" variant="ghost" onClick={() => setAddingImage(false)}>Batal</Button>
               </div>
             )}
           </div>
