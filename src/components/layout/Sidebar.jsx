@@ -40,6 +40,7 @@ const NAV_GROUPS = [
     items: [
       { path: "/tortoise",    section: "tortoise",   label: "Daftar Kura",        icon: Shell },
       { path: "/health",      section: "health",     label: "Rekam Kesehatan",    icon: Heart },
+      { path: "/panduan-penyakit", section: "panduan-penyakit", label: "Panduan Penyakit", icon: BookOpen },
       { path: "/breeding",    section: "breeding",   label: "Breeding & Telur",   icon: Baby },
       { path: "/family-tree", section: "family-tree",label: "Silsilah",           icon: GitBranch },
       { path: "/treatment",   section: "treatment",  label: "Jadwal Treatment",   icon: Stethoscope },

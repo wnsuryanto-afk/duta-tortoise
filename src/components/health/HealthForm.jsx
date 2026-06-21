@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Loader2, X, Upload, Pencil } from "lucide-react";
+import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import DiagnosisPanel, { DIAGNOSIS_CATEGORIES } from "./DiagnosisPanel";
 import DosisKalkulator from "./DosisKalkulator";
 import TreatmentItemsPicker from "./TreatmentItemsPicker";
@@ -242,13 +243,36 @@ export default function HealthForm({ open, onClose, editData }) {
               ))}
             </div>
             {selectedDiagnoses.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {selectedDiagnoses.map(d => (
-                  <Badge key={d} variant="secondary" className="gap-1 text-xs">
-                    {d}
-                    <button type="button" onClick={() => toggleDiagnosis(d)}><X className="w-3 h-3" /></button>
-                  </Badge>
-                ))}
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedDiagnoses.map(d => (
+                    <Badge key={d} variant="secondary" className="gap-1 text-xs">
+                      {d}
+                      <button type="button" onClick={() => toggleDiagnosis(d)}><X className="w-3 h-3" /></button>
+                    </Badge>
+                  ))}
+                </div>
+                {(() => {
+                  const links = selectedDiagnoses.map(d => {
+                    const p = diagnosisProtocols.find(p => p.diagnosis_code === d || p.diagnosis_name === d);
+                    return p ? { name: d, id: p.id } : null;
+                  }).filter(Boolean);
+                  if (links.length === 0) return null;
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      {links.map(l => (
+                        <Link
+                          key={l.id}
+                          to={`/panduan-penyakit/${l.id}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <BookOpen className="w-3 h-3" /> Lihat Panduan Lengkap: {l.name}
+                        </Link>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

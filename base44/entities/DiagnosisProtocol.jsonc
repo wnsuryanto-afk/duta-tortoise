@@ -105,6 +105,14 @@
       "type": "string",
       "description": "Kondisi yang mengharuskan ke dokter hewan"
     },
+    "image_url": {
+      "type": "string",
+      "description": "URL gambar referensi penyakit"
+    },
+    "image_caption": {
+      "type": "string",
+      "description": "Kredit sumber / caption gambar"
+    },
     "is_active": {
       "type": "boolean",
       "default": true

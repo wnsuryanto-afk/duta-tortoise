@@ -38,7 +38,7 @@ export const NAV_ACCESS = {
     "activity-log", "system-maintenance", "vet-contacts", "maintenance",
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
     "operational-costs", "kritik-saran", "stock-gudang",
-    "salary-slip", "stock-prediction", "panduan-pakan",
+    "salary-slip", "stock-prediction", "panduan-pakan", "panduan-penyakit",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -49,7 +49,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "printer-config",
     "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "panduan-pakan",
+    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "panduan-pakan", "panduan-penyakit",
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -60,23 +60,23 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "activity-log",
     "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "panduan-pakan",
+    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "panduan-pakan", "panduan-penyakit",
   ],
   kepala_feeder: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "sop", "treatment",
     "info", "notifications", "panduan-pakan", "kritik-saran",
-    "petty-cash", "stock-gudang", "warehouse", "feed-stock",
+    "petty-cash", "stock-gudang", "warehouse", "feed-stock", "panduan-penyakit",
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "enclosure",
     "health", "sop", "treatment",
-    "info", "notifications", "panduan-pakan", "kritik-saran",
+    "info", "notifications", "panduan-pakan", "kritik-saran", "panduan-penyakit",
   ],
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",
     "health", "finance", "breeding-report", "sales-report", "info", "breeding-planner",
-    "panduan-pakan", "kritik-saran", "sales",
+    "panduan-pakan", "kritik-saran", "sales", "panduan-penyakit",
   ],
 };
 
