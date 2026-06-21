@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
 import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
+import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -210,6 +211,9 @@ export default function AdminDashboard({ user }) {
             urgent={totalCritical > 0}
             href="/dashboard-stok"
           />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <PettyCashWidget />
         </div>
       </div>
 

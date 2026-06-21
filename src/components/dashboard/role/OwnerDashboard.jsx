@@ -10,6 +10,7 @@ import {
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
 import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
+import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -466,6 +467,9 @@ export default function OwnerDashboard({ user }) {
             value={<span className={Number(margin) >= 0 ? "text-green-700" : "text-red-600"}>{margin}%</span>}
             sub={<span className="text-xs text-muted-foreground">Laba ÷ Pemasukan</span>}
           />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <PettyCashWidget />
         </div>
       </div>
 

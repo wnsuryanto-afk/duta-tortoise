@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,13 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Wallet, Plus, TrendingDown, CheckCircle2, Clock, XCircle, Banknote } from "lucide-react";
+import { Wallet, Plus, Minus, Scale, Clock, CheckCircle2, XCircle, Banknote, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccessPettyCash } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { toast } from "sonner";
+import TopUpForm from "@/components/pettycash/TopUpForm";
+import PemakaianForm from "@/components/pettycash/PemakaianForm";
+import RekonsiliasiForm from "@/components/pettycash/RekonsiliasiForm";
+import LedgerHistory from "@/components/pettycash/LedgerHistory";
 
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
@@ -27,15 +31,6 @@ const STATUS_CONFIG = {
   ditolak:   { label: "Ditolak",   color: "bg-red-100 text-red-700" },
 };
 
-const CAT_TO_FINANCE = {
-  Obat: "obat_perawatan",
-  Vitamin: "vitamin_suplemen",
-  Pakan: "pakan",
-  "Peralatan Kandang": "lainnya",
-  Transportasi: "lainnya",
-  Lainnya: "lainnya",
-};
-
 function formatRp(n) {
   return "Rp " + Number(n || 0).toLocaleString("id-ID");
 }
@@ -43,38 +38,26 @@ function formatRp(n) {
 function RequestForm({ user, role, users, onClose, onSaved }) {
   const isKepalaFeeder = role === "kepala_feeder";
   const [form, setForm] = useState({
-    keperluan: "",
-    amount: "",
-    category: "",
-    need_date: "",
-    notes: "",
+    keperluan: "", amount: "", category: "", need_date: "", notes: "",
     feeder_email: isKepalaFeeder ? user?.email : "",
     feeder_name: isKepalaFeeder ? (user?.full_name || user?.email) : "",
   });
   const [saving, setSaving] = useState(false);
-
   const kepalaFeeders = (users || []).filter(u => u.role === "kepala_feeder");
 
   const handleSave = async () => {
     if (!form.keperluan || !form.amount || !form.category || !form.need_date) {
-      toast.error("Isi semua field wajib");
-      return;
+      toast.error("Isi semua field wajib"); return;
     }
     setSaving(true);
     await base44.entities.PettyCashRequest.create({
       requester_email: form.feeder_email || user?.email,
       requester_name: form.feeder_name || user?.full_name || user?.email,
-      reason: form.keperluan,
-      amount_requested: Number(form.amount),
-      category: form.category,
-      need_date: form.need_date,
-      notes: form.notes,
-      status: "diajukan",
-      request_date: new Date().toISOString().split("T")[0],
+      reason: form.keperluan, amount_requested: Number(form.amount),
+      category: form.category, need_date: form.need_date, notes: form.notes,
+      status: "diajukan", request_date: new Date().toISOString().split("T")[0],
     });
-    setSaving(false);
-    onSaved();
-    onClose();
+    setSaving(false); onSaved(); onClose();
     toast.success("Request kas kecil berhasil diajukan");
   };
 
@@ -94,37 +77,20 @@ function RequestForm({ user, role, users, onClose, onSaved }) {
           </Select>
         </div>
       )}
-      <div>
-        <Label className="text-xs">Keperluan *</Label>
-        <Input value={form.keperluan} onChange={e => setForm(f => ({ ...f, keperluan: e.target.value }))} placeholder="Jelaskan keperluan..." className="mt-1" />
-      </div>
-      <div>
-        <Label className="text-xs">Nominal (Rp) *</Label>
-        <Input type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" className="mt-1" />
-      </div>
+      <div><Label className="text-xs">Keperluan *</Label><Input value={form.keperluan} onChange={e => setForm(f => ({ ...f, keperluan: e.target.value }))} placeholder="Jelaskan keperluan..." className="mt-1" /></div>
+      <div><Label className="text-xs">Nominal (Rp) *</Label><Input type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" className="mt-1" /></div>
       <div>
         <Label className="text-xs">Kategori *</Label>
         <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
           <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih kategori..." /></SelectTrigger>
-          <SelectContent>
-            {REQUEST_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
+          <SelectContent>{REQUEST_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <div>
-        <Label className="text-xs">Tanggal Butuh *</Label>
-        <Input type="date" value={form.need_date} onChange={e => setForm(f => ({ ...f, need_date: e.target.value }))} className="mt-1" />
-      </div>
-      <div>
-        <Label className="text-xs">Keterangan Tambahan</Label>
-        <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opsional..." className="mt-1 resize-none h-16" />
-      </div>
+      <div><Label className="text-xs">Tanggal Butuh *</Label><Input type="date" value={form.need_date} onChange={e => setForm(f => ({ ...f, need_date: e.target.value }))} className="mt-1" /></div>
+      <div><Label className="text-xs">Keterangan Tambahan</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opsional..." className="mt-1 resize-none h-16" /></div>
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button className="flex-1" onClick={handleSave}
-          disabled={saving || !form.keperluan || !form.amount || !form.category || !form.need_date}>
-          {saving ? "Mengirim..." : "Ajukan Request"}
-        </Button>
+        <Button className="flex-1" onClick={handleSave} disabled={saving || !form.keperluan || !form.amount || !form.category || !form.need_date}>{saving ? "Mengirim..." : "Ajukan Request"}</Button>
       </div>
     </div>
   );
@@ -133,8 +99,15 @@ function RequestForm({ user, role, users, onClose, onSaved }) {
 export default function PettyCashPage() {
   const qc = useQueryClient();
   const { role, user } = useCurrentUser();
-  const isOwnerOrManajer = ["owner", "admin", "manajer"].includes(role);
-  const isFeeder = ["kepala_feeder", "keeper"].includes(role);
+  const isOwnerAdminManajer = ["owner", "admin", "manajer"].includes(role);
+  const canReconcile = ["owner", "admin"].includes(role);
+  const isFeeder = role === "kepala_feeder";
+
+  const { data: ledger = [], isLoading: ledgerLoading } = useQuery({
+    queryKey: ["petty-cash-ledger"],
+    queryFn: () => base44.entities.PettyCashLedger.list("-entry_date", 200),
+    staleTime: 30 * 1000,
+  });
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["petty-cash-requests"],
@@ -146,19 +119,33 @@ export default function PettyCashPage() {
     queryFn: () => base44.entities.User.list(),
   });
 
+  const [showTopUp, setShowTopUp] = useState(false);
+  const [showPemakaian, setShowPemakaian] = useState(false);
+  const [showRekonsiliasi, setShowRekonsiliasi] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
-  const [filterMonth, setFilterMonth] = useState("all");
-  const [filterCat, setFilterCat] = useState("all");
+
+  const currentSaldo = ledger.length > 0 ? (ledger[0].balance_after || 0) : 0;
+  const isNeg = currentSaldo <= 0;
 
   const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["petty-cash-ledger"] });
     qc.invalidateQueries({ queryKey: ["petty-cash-requests"] });
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });
   };
 
+  // Disburse: update status only, NO FinanceTransaction (cegah dobel — pemakaian resmi lewat ledger)
+  const handleDisburse = async (req) => {
+    await base44.entities.PettyCashRequest.update(req.id, {
+      status: "dicairkan",
+      disbursement_date: new Date().toISOString().split("T")[0],
+    });
+    invalidate();
+    toast.success("Dicairkan. Catat sebagai pemakaian di Kas Kecil untuk masuk Laba Rugi.");
+  };
+
   const handleApprove = async (req, approved) => {
     if (req.requester_email === user?.email) {
-      toast.error("Anda tidak bisa menyetujui pengajuan milik sendiri. Minta atasan atau admin untuk menyetujui.");
-      return;
+      toast.error("Anda tidak bisa menyetujui pengajuan milik sendiri."); return;
     }
     await base44.entities.PettyCashRequest.update(req.id, {
       status: approved ? "disetujui" : "ditolak",
@@ -169,74 +156,36 @@ export default function PettyCashPage() {
     toast.success(approved ? "Request disetujui" : "Request ditolak");
   };
 
-  const handleDisburse = async (req) => {
-    await base44.entities.PettyCashRequest.update(req.id, {
-      status: "dicairkan",
-      disbursement_date: new Date().toISOString().split("T")[0],
-    });
-    // Auto-catat ke laporan keuangan
-    await base44.entities.FinanceTransaction.create({
-      type: "pengeluaran",
-      category: CAT_TO_FINANCE[req.category] || "lainnya",
-      amount: req.amount_requested,
-      date: new Date().toISOString().split("T")[0],
-      description: `Kas Kecil — ${req.reason} — ${req.requester_name}`,
-      created_by_name: user?.full_name || user?.email,
-    });
-    invalidate();
-    toast.success("Dicairkan & dicatat ke Laba Rugi");
-  };
-
   if (!canAccessPettyCash(role)) return <AccessDenied />;
-
-  const thisMonth = format(new Date(), "yyyy-MM");
-  const disbursedThisMonth = requests.filter(r => r.status === "dicairkan" && r.request_date?.startsWith(thisMonth));
-  const totalDisbursed = disbursedThisMonth.reduce((s, r) => s + (r.amount_requested || 0), 0);
-  const waitingCount = requests.filter(r => r.status === "diajukan").length;
 
   const activeRequests = requests.filter(r => ["diajukan", "disetujui"].includes(r.status));
   const historyRequests = requests.filter(r => ["dicairkan", "ditolak"].includes(r.status));
-
-  const applyFilters = (list) => list.filter(r => {
-    const monthMatch = filterMonth === "all" || r.request_date?.startsWith(filterMonth);
-    const catMatch = filterCat === "all" || r.category === filterCat;
-    return monthMatch && catMatch;
-  });
-
-  const months = [...new Set(requests.map(r => r.request_date?.substring(0, 7)).filter(Boolean))].sort().reverse();
+  const waitingCount = requests.filter(r => r.status === "diajukan").length;
 
   const RequestCard = ({ req }) => {
-    const statusConf = STATUS_CONFIG[req.status] || STATUS_CONFIG.diajukan;
+    const sc = STATUS_CONFIG[req.status] || STATUS_CONFIG.diajukan;
     return (
       <Card className="p-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className="font-semibold text-sm">{req.requester_name}</span>
-              <Badge className={statusConf.color}>{statusConf.label}</Badge>
+              <Badge className={sc.color}>{sc.label}</Badge>
               {req.category && <Badge variant="outline" className="text-xs">{req.category}</Badge>}
             </div>
-            <p className="text-2xl font-bold text-primary">{formatRp(req.amount_requested)}</p>
+            <p className="text-lg font-bold text-primary">{formatRp(req.amount_requested)}</p>
             <p className="text-sm text-muted-foreground mt-1">{req.reason}</p>
-            {req.need_date && <p className="text-xs text-muted-foreground mt-0.5">Butuh: {format(new Date(req.need_date), "d MMM yyyy", { locale: id })}</p>}
-            {req.notes && <p className="text-xs text-muted-foreground italic mt-1">{req.notes}</p>}
           </div>
-          {isOwnerOrManajer && (
+          {isOwnerAdminManajer && (
             <div className="flex flex-col gap-1.5">
               {req.status === "diajukan" && (
                 <>
-                  <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700" onClick={() => handleApprove(req, true)}>
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Setujui
-                  </Button>
-                  <Button size="sm" variant="outline" className="gap-1.5 text-red-600 border-red-200" onClick={() => handleApprove(req, false)}>
-                    <XCircle className="w-3.5 h-3.5" /> Tolak
-                  </Button>
+                  <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700" onClick={() => handleApprove(req, true)}><CheckCircle2 className="w-3.5 h-3.5" /> Setujui</Button>
+                  <Button size="sm" variant="outline" className="gap-1.5 text-red-600 border-red-200" onClick={() => handleApprove(req, false)}><XCircle className="w-3.5 h-3.5" /> Tolak</Button>
                 </>
               )}
               {req.status === "disetujui" && (
-                <Button size="sm" className="gap-1.5" onClick={() => handleDisburse(req)}>
-                  <Banknote className="w-3.5 h-3.5" /> Cairkan
-                </Button>
+                <Button size="sm" className="gap-1.5" onClick={() => handleDisburse(req)}><Banknote className="w-3.5 h-3.5" /> Cairkan</Button>
               )}
             </div>
           )}
@@ -247,109 +196,133 @@ export default function PettyCashPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-primary" /> Kas Kecil
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Request & pencairan kas kecil operasional</p>
-          <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 max-w-lg">
-            <span className="font-semibold">ℹ️ Catatan:</span> Kas kecil direkap terpisah dari kas utama. Pengeluaran kas kecil
-            <span className="font-semibold"> hanya masuk ke Laba Rugi saat dicairkan</span> (bukan setiap transaksi kecil),
-            sehingga tidak terjadi pencatatan ganda dengan FinanceTransaction utama.
-          </div>
-        </div>
-        {(isOwnerOrManajer || isFeeder) && (
-          <Button onClick={() => setShowRequestForm(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Request Kas Kecil
-          </Button>
-        )}
+      <div>
+        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
+          <Wallet className="w-6 h-6 text-primary" /> Kas Kecil
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1">Saldo kas kecil operasional & request dana</p>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingDown className="w-4 h-4 text-red-500" />
-            <p className="text-xs text-muted-foreground">Kas Kecil Bulan Ini</p>
+      {/* ── SALDO PANEL ── */}
+      {isOwnerAdminManajer && (
+        <Card className={`p-5 ${isNeg ? "border-red-300 bg-red-50" : "border-green-200 bg-green-50/50"}`}>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Saldo Kas Kecil Saat Ini</p>
+              <p className={`text-4xl font-bold mt-1 ${isNeg ? "text-red-600" : "text-green-700"}`}>
+                {formatRp(currentSaldo)}
+              </p>
+              {isNeg && <p className="text-xs text-red-500 mt-0.5">⚠️ Saldo minus — perlu top up</p>}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={() => setShowTopUp(true)} className="gap-2 bg-green-600 hover:bg-green-700">
+                <Plus className="w-4 h-4" /> Isi Saldo
+              </Button>
+              <Button onClick={() => setShowPemakaian(true)} variant="destructive" className="gap-2">
+                <Minus className="w-4 h-4" /> Catat Pemakaian
+              </Button>
+              {canReconcile && (
+                <Button onClick={() => setShowRekonsiliasi(true)} variant="outline" className="gap-2">
+                  <Scale className="w-4 h-4" /> Rekonsiliasi
+                </Button>
+              )}
+            </div>
           </div>
-          <p className="text-xl font-bold text-red-600">{formatRp(totalDisbursed)}</p>
-          <p className="text-xs text-muted-foreground">{disbursedThisMonth.length} transaksi dicairkan</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-4 h-4 text-amber-500" />
-            <p className="text-xs text-muted-foreground">Menunggu Approve</p>
-          </div>
-          <p className="text-xl font-bold text-amber-600">{waitingCount}</p>
-          <p className="text-xs text-muted-foreground">request pending</p>
-        </Card>
-      </div>
+      )}
 
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        <Select value={filterMonth} onValueChange={setFilterMonth}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Bulan" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Bulan</SelectItem>
-            {months.map(m => <SelectItem key={m} value={m}>{format(new Date(m + "-01"), "MMM yyyy", { locale: id })}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filterCat} onValueChange={setFilterCat}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Kategori" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Kategori</SelectItem>
-            {REQUEST_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Tabs defaultValue="aktif">
+      {/* ── TABS ── */}
+      <Tabs defaultValue={isOwnerAdminManajer ? "ledger" : "request"}>
         <TabsList>
-          <TabsTrigger value="aktif">
-            Request Aktif
-            {activeRequests.length > 0 && <span className="ml-1.5 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">{activeRequests.length}</span>}
+          {isOwnerAdminManajer && <TabsTrigger value="ledger">Kas Kecil (Ledger)</TabsTrigger>}
+          <TabsTrigger value="request">
+            Request Dana
+            {waitingCount > 0 && <span className="ml-1.5 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">{waitingCount}</span>}
           </TabsTrigger>
-          <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="aktif" className="mt-4 space-y-3">
+        {/* LEDGER TAB */}
+        {isOwnerAdminManajer && (
+          <TabsContent value="ledger" className="mt-4">
+            {ledgerLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Memuat...</div>
+            ) : ledger.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
+                <Wallet className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="font-medium">Belum ada transaksi kas kecil</p>
+                <p className="text-sm mt-1">Klik "Isi Saldo" untuk memulai</p>
+              </div>
+            ) : (
+              <LedgerHistory ledger={ledger} />
+            )}
+          </TabsContent>
+        )}
+
+        {/* REQUEST TAB */}
+        <TabsContent value="request" className="mt-4 space-y-3">
+          {(isOwnerAdminManajer || isFeeder) && (
+            <div className="flex justify-end">
+              <Button onClick={() => setShowRequestForm(true)} variant="outline" className="gap-2">
+                <Plus className="w-4 h-4" /> Request Kas Kecil
+              </Button>
+            </div>
+          )}
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Memuat...</div>
-          ) : applyFilters(activeRequests).length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <Clock className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>Tidak ada request aktif</p>
-            </div>
           ) : (
-            applyFilters(activeRequests).map(req => <RequestCard key={req.id} req={req} />)
-          )}
-        </TabsContent>
-
-        <TabsContent value="riwayat" className="mt-4 space-y-3">
-          {applyFilters(historyRequests).length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground text-sm">Belum ada riwayat</div>
-          ) : (
-            applyFilters(historyRequests).map(req => <RequestCard key={req.id} req={req} />)
+            <>
+              {activeRequests.length === 0 && historyRequests.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <Clock className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p>Belum ada request</p>
+                </div>
+              ) : (
+                <>
+                  {activeRequests.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase">Aktif ({activeRequests.length})</p>
+                      {activeRequests.map(req => <RequestCard key={req.id} req={req} />)}
+                    </div>
+                  )}
+                  {historyRequests.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase">Riwayat</p>
+                      {historyRequests.map(req => <RequestCard key={req.id} req={req} />)}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Request Form Dialog */}
+      {/* ── DIALOGS ── */}
+      <Dialog open={showTopUp} onOpenChange={setShowTopUp}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Plus className="w-5 h-5 text-green-600" /> Isi Saldo (Top Up)</DialogTitle></DialogHeader>
+          <TopUpForm currentSaldo={currentSaldo} user={user} role={role} onClose={() => setShowTopUp(false)} onSaved={invalidate} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPemakaian} onOpenChange={setShowPemakaian}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Minus className="w-5 h-5 text-red-600" /> Catat Pemakaian</DialogTitle></DialogHeader>
+          <PemakaianForm currentSaldo={currentSaldo} user={user} role={role} onClose={() => setShowPemakaian(false)} onSaved={invalidate} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRekonsiliasi} onOpenChange={setShowRekonsiliasi}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Scale className="w-5 h-5 text-primary" /> Rekonsiliasi Saldo</DialogTitle></DialogHeader>
+          <RekonsiliasiForm currentSaldo={currentSaldo} user={user} role={role} onClose={() => setShowRekonsiliasi(false)} onSaved={invalidate} />
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showRequestForm} onOpenChange={setShowRequestForm}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-primary" /> Request Kas Kecil
-            </DialogTitle>
-          </DialogHeader>
-          <RequestForm
-            user={user}
-            role={role}
-            users={users}
-            onClose={() => setShowRequestForm(false)}
-            onSaved={invalidate}
-          />
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Wallet className="w-5 h-5 text-primary" /> Request Kas Kecil</DialogTitle></DialogHeader>
+          <RequestForm user={user} role={role} users={users} onClose={() => setShowRequestForm(false)} onSaved={invalidate} />
         </DialogContent>
       </Dialog>
     </div>

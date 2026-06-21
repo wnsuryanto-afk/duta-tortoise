@@ -1,0 +1,78 @@
+{
+  "name": "PettyCashLedger",
+  "properties": {
+    "amount": {
+      "description": "Nominal (positif). Top_up menambah saldo, pemakaian mengurangi.",
+      "type": "number"
+    },
+    "balance_after": {
+      "description": "Saldo kas kecil setelah transaksi ini",
+      "type": "number"
+    },
+    "category": {
+      "default": "lainnya",
+      "description": "Kategori pemakaian",
+      "enum": [
+        "obat",
+        "vitamin",
+        "pakan",
+        "peralatan_kandang",
+        "transportasi",
+        "konsumsi",
+        "lainnya"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "Keterangan pemakaian / sumber top up",
+      "type": "string"
+    },
+    "entry_date": {
+      "description": "Tanggal transaksi",
+      "format": "date",
+      "type": "string"
+    },
+    "entry_type": {
+      "description": "top_up = isi saldo, pemakaian = uang keluar, penyesuaian = koreksi rekonsiliasi",
+      "enum": [
+        "top_up",
+        "pemakaian",
+        "penyesuaian"
+      ],
+      "type": "string"
+    },
+    "finance_tx_id": {
+      "description": "ID FinanceTransaction yang dibuat (hanya untuk pemakaian)",
+      "type": "string"
+    },
+    "linked_request_id": {
+      "description": "ID PettyCashRequest jika pemakaian berasal dari request yang disetujui (cegah dobel hitung)",
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "proof_photo": {
+      "description": "URL foto nota/bukti",
+      "type": "string"
+    },
+    "recorded_by_email": {
+      "type": "string"
+    },
+    "recorded_by_name": {
+      "description": "Nama yang mencatat",
+      "type": "string"
+    },
+    "recorded_by_role": {
+      "description": "Role pencatat: admin/owner/manajer",
+      "type": "string"
+    }
+  },
+  "required": [
+    "entry_type",
+    "amount",
+    "entry_date",
+    "recorded_by_name"
+  ],
+  "type": "object"
+}
