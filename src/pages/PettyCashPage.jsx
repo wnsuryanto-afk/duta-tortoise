@@ -14,7 +14,6 @@ import { Wallet, Plus, Minus, Scale, Clock, CheckCircle2, XCircle, Banknote, Tre
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccessPettyCash } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { toast } from "sonner";
 import TopUpForm from "@/components/pettycash/TopUpForm";
@@ -99,8 +98,23 @@ function RequestForm({ user, role, users, onClose, onSaved }) {
 export default function PettyCashPage() {
   const qc = useQueryClient();
   const { role, user } = useCurrentUser();
-  const isOwnerAdminManajer = ["owner", "admin", "manajer"].includes(role);
-  const canReconcile = ["owner", "admin"].includes(role);
+
+  const { data: settingsArr = [] } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: () => base44.entities.CompanySettings.filter({ setting_key: "main" }),
+    staleTime: 5 * 60 * 1000,
+  });
+  const settings = settingsArr[0];
+
+  // Hak akses baca dari CompanySettings, fallback ke default jika belum ada
+  const accessRoles  = settings?.petty_cash_access_roles  || ["owner", "manajer", "admin", "kepala_feeder"];
+  const recordRoles  = settings?.petty_cash_record_roles  || ["owner", "manajer", "admin", "kepala_feeder"];
+  const approveRoles = settings?.petty_cash_approve_roles || ["owner", "manajer"];
+
+  const canAccessModule  = accessRoles.includes(role);
+  const isOwnerAdminManajer = recordRoles.includes(role);  // bisa lihat ledger & catat pemakaian
+  const canApproveRequest   = approveRoles.includes(role);
+  const canReconcile        = approveRoles.includes(role);
   const isFeeder = role === "kepala_feeder";
 
   const { data: ledger = [], isLoading: ledgerLoading } = useQuery({
@@ -156,7 +170,7 @@ export default function PettyCashPage() {
     toast.success(approved ? "Request disetujui" : "Request ditolak");
   };
 
-  if (!canAccessPettyCash(role)) return <AccessDenied />;
+  if (!canAccessModule) return <AccessDenied />;
 
   const activeRequests = requests.filter(r => ["diajukan", "disetujui"].includes(r.status));
   const historyRequests = requests.filter(r => ["dicairkan", "ditolak"].includes(r.status));
@@ -176,7 +190,7 @@ export default function PettyCashPage() {
             <p className="text-lg font-bold text-primary">{formatRp(req.amount_requested)}</p>
             <p className="text-sm text-muted-foreground mt-1">{req.reason}</p>
           </div>
-          {isOwnerAdminManajer && (
+          {canApproveRequest && (
             <div className="flex flex-col gap-1.5">
               {req.status === "diajukan" && (
                 <>

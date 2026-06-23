@@ -254,7 +254,7 @@ function CompanySettingsTab() {
   const qc = useQueryClient();
   const { data: settings = [] } = useQuery({
     queryKey: ["company-settings"],
-    queryFn: () => base44.entities.CompanySettings.list(),
+    queryFn: () => base44.entities.CompanySettings.filter({ setting_key: "main" }),
   });
   const existing = settings[0];
   const [form, setForm] = useState(null);
