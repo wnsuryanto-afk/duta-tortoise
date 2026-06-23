@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Plus, Search, MessageCircle, MapPin, Phone, Shell } from "lucide-react";
+import { Users, Plus, Search, MessageCircle, MapPin, Phone, Shell, RefreshCw } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import BuyerForm from "@/components/crm/BuyerForm";
@@ -26,8 +26,16 @@ export default function CRMPage() {
   const [riwayatBuyer, setRiwayatBuyer] = useState(null); // { buyer, sales[] }
   const [jualKeBuyer, setJualKeBuyer] = useState(null); // pre-select buyer in SaleWizard
 
+  const [syncingId, setSyncingId] = useState(null);
   const cmCanAccess = ["owner", "admin", "manajer"].includes(role);
   const canEdit = ["owner", "admin"].includes(role);
+
+  const handleSyncBuyer = async (buyer) => {
+    setSyncingId(buyer.id);
+    await base44.functions.invoke("recalculateBuyerProfiles", { buyer_profile_id: buyer.id });
+    await queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
+    setSyncingId(null);
+  };
 
   const { data: buyersRaw = [], isLoading } = useQuery({
     queryKey: ["buyer-profiles"],
@@ -274,12 +282,25 @@ export default function CRMPage() {
                 </div>
               )}
 
-              <Button
-                className="w-full gap-2 bg-green-700 hover:bg-green-800"
-                onClick={() => { setRiwayatBuyer(null); setJualKeBuyer(riwayatBuyer); }}
-              >
-                🛒 Jual Lagi ke {riwayatBuyer.name}
-              </Button>
+              <div className="flex gap-2">
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    className="gap-1.5 text-xs"
+                    disabled={syncingId === riwayatBuyer.id}
+                    onClick={() => handleSyncBuyer(riwayatBuyer)}
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${syncingId === riwayatBuyer.id ? "animate-spin" : ""}`} />
+                    Sinkronkan Ulang
+                  </Button>
+                )}
+                <Button
+                  className="flex-1 gap-2 bg-green-700 hover:bg-green-800"
+                  onClick={() => { setRiwayatBuyer(null); setJualKeBuyer(riwayatBuyer); }}
+                >
+                  🛒 Jual Lagi ke {riwayatBuyer.name}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

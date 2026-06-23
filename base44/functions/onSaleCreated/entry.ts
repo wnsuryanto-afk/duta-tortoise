@@ -33,7 +33,6 @@ Deno.serve(async (req) => {
           previous_status: tortoise.status || "aktif",
           last_status_change: sale.sale_date || new Date().toISOString().split("T")[0],
         });
-        // Kurangi current_count kandang asal
         if (tortoise.enclosure) {
           const enclosures = await db.entities.Enclosure.filter({ id: tortoise.enclosure });
           const enclosure = enclosures && enclosures[0];
@@ -46,37 +45,60 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── C. Upsert BuyerProfile (only if buyer_profile_id not already set by client) ──
+    // ── C. Upsert BuyerProfile — hitung ulang dari Sale (anti-dobel) ─────
+    // Dengan menghitung dari sumber data asli, update ini idempoten:
+    // berapapun kali trigger dijalankan, hasilnya selalu angka yang benar.
     const hp = sale.hp_whatsapp || sale.buyer_phone;
-    if (hp && !sale.buyer_profile_id) {
-      const existingBuyers = await db.entities.BuyerProfile.filter({ hp_whatsapp: hp });
+    if (hp) {
       const saleDate = sale.sale_date || new Date().toISOString().split("T")[0];
 
+      // Ambil semua sale milik pembeli ini (by hp_whatsapp)
+      const allBuyerSales = await db.entities.Sale.filter({ hp_whatsapp: hp });
+      const totalPurchases = allBuyerSales.length;
+      const totalSpent = allBuyerSales.reduce((sum, s) => sum + (s.price || 0), 0);
+      const sortedDates = allBuyerSales.map(s => s.sale_date).filter(Boolean).sort();
+      const lastPurchaseDate = sortedDates[sortedDates.length - 1] || saleDate;
+      const firstPurchaseDate = sortedDates[0] || saleDate;
+
+      // Kode kura dari penjualan terakhir
+      const lastSale = allBuyerSales
+        .filter(s => s.sale_date)
+        .sort((a, b) => (a.sale_date > b.sale_date ? -1 : 1))[0];
+      const lastTortoiseCode = lastSale?.tortoise_code || sale.tortoise_code || "";
+
+      let tier = "baru";
+      if (totalSpent > 10000000) tier = "vip";
+      else if (totalSpent > 2000000) tier = "reguler";
+
+      const existingBuyers = await db.entities.BuyerProfile.filter({ hp_whatsapp: hp });
+
       if (existingBuyers && existingBuyers.length > 0) {
-        const buyer = existingBuyers[0];
-        await db.entities.BuyerProfile.update(buyer.id, {
-          total_purchases: (buyer.total_purchases || 0) + 1,
-          total_spent: (buyer.total_spent || 0) + (sale.price || 0),
-          last_purchase_date: saleDate,
-          last_purchased_tortoise: sale.tortoise_code || "",
-          is_repeat_buyer: (buyer.total_purchases || 0) + 1 > 1,
-          name: buyer.name || sale.buyer_name,
-          buyer_address: buyer.buyer_address || sale.buyer_address || "",
-          city: buyer.city || sale.buyer_city || "",
+        await db.entities.BuyerProfile.update(existingBuyers[0].id, {
+          total_purchases: totalPurchases,
+          total_spent: totalSpent,
+          first_purchase_date: firstPurchaseDate,
+          last_purchase_date: lastPurchaseDate,
+          last_purchased_tortoise: lastTortoiseCode,
+          is_repeat_buyer: totalPurchases > 1,
+          tier,
+          name: existingBuyers[0].name || sale.buyer_name,
+          buyer_address: existingBuyers[0].buyer_address || sale.buyer_address || "",
         });
-      } else {
+      } else if (!sale.buyer_profile_id) {
+        // Hanya buat baru jika belum ada profil sama sekali
         await db.entities.BuyerProfile.create({
           name: sale.buyer_name || "",
           hp_whatsapp: hp,
           buyer_address: sale.buyer_address || "",
           city: sale.buyer_city || "",
           platform_asal: sale.platform || "Langsung",
-          total_purchases: 1,
-          total_spent: sale.price || 0,
-          first_purchase_date: saleDate,
-          last_purchase_date: saleDate,
-          last_purchased_tortoise: sale.tortoise_code || "",
-          is_repeat_buyer: false,
+          total_purchases: totalPurchases,
+          total_spent: totalSpent,
+          first_purchase_date: firstPurchaseDate,
+          last_purchase_date: lastPurchaseDate,
+          last_purchased_tortoise: lastTortoiseCode,
+          is_repeat_buyer: totalPurchases > 1,
+          tier,
         });
       }
     }
