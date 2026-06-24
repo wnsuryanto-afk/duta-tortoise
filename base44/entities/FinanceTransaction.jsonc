@@ -26,8 +26,17 @@
       "type": "string",
       "description": "Detail sub-kategori"
     },
+    "qty": {
+      "type": "number",
+      "description": "Jumlah unit (opsional, default 1)"
+    },
+    "harga_satuan": {
+      "type": "number",
+      "description": "Harga per unit (Rp)"
+    },
     "amount": {
-      "type": "number"
+      "type": "number",
+      "description": "Total nominal = qty \u00d7 harga_satuan"
     },
     "date": {
       "type": "string",
@@ -45,6 +54,15 @@
     },
     "created_by_name": {
       "type": "string"
+    },
+    "edited_by": {
+      "type": "string",
+      "description": "Nama user yang terakhir edit"
+    },
+    "edited_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu terakhir diedit"
     },
     "excluded_from_reports": {
       "type": "boolean",

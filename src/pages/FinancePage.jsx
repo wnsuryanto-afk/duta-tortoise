@@ -1,6 +1,7 @@
 import { useState } from "react";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
 import LabaRugiEnhanced from "@/components/finance/LabaRugiEnhanced";
+import EditTransactionDialog from "@/components/finance/EditTransactionDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -11,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, TrendingDown, DollarSign, Loader2, Settings } from "lucide-react";
-import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { Plus, TrendingUp, TrendingDown, DollarSign, Loader2, Settings, Edit2 } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
@@ -29,6 +30,7 @@ const CATEGORIES = {
   internet:           { label: "Internet",               color: "bg-purple-100 text-purple-700", type: "pengeluaran"  },
   sewa:               { label: "Sewa",                   color: "bg-orange-100 text-orange-700", type: "pengeluaran"  },
   perawatan_kandang:  { label: "Perawatan Kandang",      color: "bg-green-100 text-green-700",   type: "pengeluaran"  },
+  kas_kecil:          { label: "Kas Kecil",              color: "bg-indigo-100 text-indigo-700", type: "pengeluaran"  },
   lainnya:            { label: "Lainnya",                color: "bg-gray-100 text-gray-700",     type: "pemasukan"    },
 };
 
@@ -37,23 +39,132 @@ const MONTHS = Array.from({ length: 12 }, (_, i) => ({
   label: format(new Date(2026, i, 1), "MMMM yyyy", { locale: id }),
 }));
 
+// ── Add Transaction Form ───────────────────────────────────────────────────────
+function AddTransactionForm({ user, onClose, onSaved }) {
+  const qc = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    type: "pengeluaran",
+    category: "lainnya",
+    qty: "",
+    harga_satuan: "",
+    amount: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    description: "",
+  });
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const qtyNum = Number(form.qty) || 0;
+  const hargaNum = Number(form.harga_satuan) || 0;
+  const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
+  const displayAmount = autoTotal !== null ? autoTotal : (Number(form.amount) || 0);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!displayAmount || displayAmount <= 0) return;
+    setSaving(true);
+    const payload = {
+      type: form.type,
+      category: form.category,
+      amount: displayAmount,
+      date: form.date,
+      description: form.description,
+      created_by_name: user?.full_name || user?.email || "",
+    };
+    if (qtyNum > 0) payload.qty = qtyNum;
+    if (hargaNum > 0) payload.harga_satuan = hargaNum;
+    await base44.entities.FinanceTransaction.create(payload);
+    qc.invalidateQueries({ queryKey: ["finance-transactions"] });
+    setSaving(false);
+    onSaved?.();
+    onClose();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+      <div className="flex gap-2">
+        {["pemasukan", "pengeluaran"].map(t => (
+          <button key={t} type="button" onClick={() => set("type", t)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${form.type === t ? (t === "pemasukan" ? "bg-green-500 text-white border-green-500" : "bg-red-500 text-white border-red-500") : "bg-background border-border"}`}>
+            {t === "pemasukan" ? "↑ Pemasukan" : "↓ Pengeluaran"}
+          </button>
+        ))}
+      </div>
+      <div>
+        <Label className="text-xs">Kategori</Label>
+        <Select value={form.category} onValueChange={v => set("category", v)}>
+          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Qty + Harga Satuan */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs">Qty (opsional)</Label>
+          <Input type="number" min={0} value={form.qty} onChange={e => set("qty", e.target.value)} placeholder="cth: 5" className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs">Harga Satuan (Rp)</Label>
+          <Input type="number" min={0} value={form.harga_satuan} onChange={e => set("harga_satuan", e.target.value)} placeholder="cth: 20000" className="mt-1" />
+        </div>
+      </div>
+
+      {/* Total */}
+      {autoTotal !== null ? (
+        <div>
+          <Label className="text-xs text-green-700 font-semibold">
+            Total Otomatis: {qtyNum} × Rp {hargaNum.toLocaleString("id-ID")} =
+          </Label>
+          <div className="mt-1 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-base font-bold text-green-700">
+            Rp {autoTotal.toLocaleString("id-ID")}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <Label className="text-xs">Nominal (Rp) *</Label>
+          <Input type="number" min={0} value={form.amount} onChange={e => set("amount", e.target.value)} required className="mt-1" />
+        </div>
+      )}
+
+      <div>
+        <Label className="text-xs">Tanggal</Label>
+        <Input type="date" value={form.date} onChange={e => set("date", e.target.value)} className="mt-1" />
+      </div>
+      <div>
+        <Label className="text-xs">Keterangan</Label>
+        <Input value={form.description} onChange={e => set("description", e.target.value)} className="mt-1" />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
+        <Button type="submit" className="flex-1" disabled={saving || displayAmount <= 0}>
+          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          Simpan
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FinancePage() {
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
-  const canManage = ["admin", "owner"].includes(role);
+  const canManage = ["admin", "owner", "manajer"].includes(role);
+  const canDelete = ["admin", "owner"].includes(role);
   const currentPeriod = format(new Date(), "yyyy-MM");
   const [period, setPeriod] = useState(currentPeriod);
   const [showForm, setShowForm] = useState(false);
+  const [editTx, setEditTx] = useState(null);
   const [tab, setTab] = useState("ringkasan");
-  const [form, setForm] = useState({ type: "pemasukan", category: "lainnya", amount: "", date: format(new Date(), "yyyy-MM-dd"), description: "" });
-  const [saving, setSaving] = useState(false);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["finance-transactions"],
     queryFn: () => base44.entities.FinanceTransaction.list("-date", 1000),
   });
 
-  // Pre-fetch sales untuk tab laba-rugi (hooks harus dipanggil sebelum guard)
   useQuery({
     queryKey: ["sales-finance"],
     queryFn: () => base44.entities.Sale.list("-sale_date", 500),
@@ -64,34 +175,69 @@ export default function FinancePage() {
 
   const isOwner = role === "owner";
 
-  // Filter by period — laporan hanya tampil yang tidak di-exclude
-  const periodTx = transactions.filter((t) => t.date?.startsWith(period) && !t.excluded_from_reports);
-  // Untuk list lengkap (termasuk excluded, tapi ditandai)
+  const periodTx    = transactions.filter((t) => t.date?.startsWith(period) && !t.excluded_from_reports);
   const periodTxAll = transactions.filter((t) => t.date?.startsWith(period));
 
-  const totalPemasukan = periodTx.filter((t) => t.type === "pemasukan").reduce((s, t) => s + (t.amount || 0), 0);
+  const totalPemasukan  = periodTx.filter((t) => t.type === "pemasukan").reduce((s, t) => s + (t.amount || 0), 0);
   const totalPengeluaran = periodTx.filter((t) => t.type === "pengeluaran").reduce((s, t) => s + (t.amount || 0), 0);
   const labaRugi = totalPemasukan - totalPengeluaran;
 
-  // Per kategori
   const byCategory = {};
   periodTx.forEach((t) => {
     if (!byCategory[t.category]) byCategory[t.category] = 0;
     byCategory[t.category] += t.amount || 0;
   });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    await base44.entities.FinanceTransaction.create({
-      ...form,
-      amount: Number(form.amount),
-      created_by_name: user?.full_name || user?.email || "",
-    });
-    qc.invalidateQueries({ queryKey: ["finance-transactions"] });
-    setSaving(false);
-    setShowForm(false);
-    setForm({ type: "pemasukan", category: "lainnya", amount: "", date: format(new Date(), "yyyy-MM-dd"), description: "" });
+  const TxRow = ({ tx }) => {
+    const conf = CATEGORIES[tx.category] || CATEGORIES.lainnya;
+    return (
+      <Card className={`p-3 flex items-start gap-3 ${tx.excluded_from_reports ? "opacity-60 border-dashed border-gray-300" : ""}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm mt-0.5 ${tx.type === "pemasukan" ? "bg-green-100" : "bg-red-100"}`}>
+          {tx.type === "pemasukan" ? "↑" : "↓"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium">{tx.description || conf.label}</p>
+          {/* Tampilkan qty × harga jika ada */}
+          {tx.qty && tx.harga_satuan && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {tx.qty} × Rp {Number(tx.harga_satuan).toLocaleString("id-ID")} = Rp {(tx.qty * tx.harga_satuan).toLocaleString("id-ID")}
+            </p>
+          )}
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${conf.color}`}>{conf.label}</span>
+            {tx.created_by_name && <span className="text-xs text-muted-foreground">{tx.created_by_name}</span>}
+          </div>
+          {/* Audit trail edit */}
+          {tx.edited_by && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 italic">
+              Diedit oleh {tx.edited_by} · {tx.edited_at ? format(new Date(tx.edited_at), "d MMM HH:mm", { locale: id }) : ""}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="text-right">
+            <p className={`text-sm font-bold ${tx.type === "pemasukan" ? "text-green-600" : "text-red-600"}`}>
+              {tx.type === "pemasukan" ? "+" : "-"}Rp {(tx.amount || 0).toLocaleString("id-ID")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {tx.date && format(parseISO(tx.date), "d MMM", { locale: id })}
+            </p>
+          </div>
+          {canManage && (
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => setEditTx(tx)}>
+              <Edit2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {isOwner && (
+            <ExcludeToggle
+              record={tx}
+              entityName="FinanceTransaction"
+              queryKey={["finance-transactions"]}
+            />
+          )}
+        </div>
+      </Card>
+    );
   };
 
   return (
@@ -103,13 +249,9 @@ export default function FinancePage() {
         </div>
         <div className="flex items-center gap-2">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {MONTHS.map((m) => (
-                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-              ))}
+              {MONTHS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
             </SelectContent>
           </Select>
           <MonthlyReportExport role={role} />
@@ -125,9 +267,7 @@ export default function FinancePage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-5 bg-green-50 border-green-200">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-green-100">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
+            <div className="p-2.5 rounded-xl bg-green-100"><TrendingUp className="w-5 h-5 text-green-600" /></div>
             <div>
               <p className="text-xs text-muted-foreground">Total Pemasukan</p>
               <p className="text-xl font-bold text-green-700">Rp {totalPemasukan.toLocaleString("id-ID")}</p>
@@ -136,9 +276,7 @@ export default function FinancePage() {
         </Card>
         <Card className="p-5 bg-red-50 border-red-200">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-red-100">
-              <TrendingDown className="w-5 h-5 text-red-600" />
-            </div>
+            <div className="p-2.5 rounded-xl bg-red-100"><TrendingDown className="w-5 h-5 text-red-600" /></div>
             <div>
               <p className="text-xs text-muted-foreground">Total Pengeluaran</p>
               <p className="text-xl font-bold text-red-700">Rp {totalPengeluaran.toLocaleString("id-ID")}</p>
@@ -170,7 +308,6 @@ export default function FinancePage() {
           {canManage && <TabsTrigger value="pengaturan">Pengaturan</TabsTrigger>}
         </TabsList>
 
-        {/* Ringkasan per kategori */}
         <TabsContent value="ringkasan" className="mt-4 space-y-3">
           <Card className="p-5">
             <h2 className="font-semibold text-base mb-4">Rincian per Kategori</h2>
@@ -180,9 +317,7 @@ export default function FinancePage() {
                 if (amount === 0) return null;
                 return (
                   <div key={key} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${conf.color}`}>{conf.label}</span>
-                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${conf.color}`}>{conf.label}</span>
                     <span className={`text-sm font-semibold ${conf.type === "pemasukan" ? "text-green-600" : "text-red-600"}`}>
                       {conf.type === "pemasukan" ? "+" : "-"}Rp {amount.toLocaleString("id-ID")}
                     </span>
@@ -196,130 +331,54 @@ export default function FinancePage() {
           </Card>
         </TabsContent>
 
-        {/* Laba Rugi */}
         <TabsContent value="laba-rugi" className="mt-4 space-y-4">
           <LabaRugiEnhanced period={period} />
         </TabsContent>
 
-        {/* Pemasukan */}
         <TabsContent value="pemasukan" className="mt-4 space-y-2">
-          {periodTxAll.filter(t => t.type === "pemasukan").length === 0 ? (
-            <p className="text-center py-10 text-muted-foreground">Belum ada pemasukan bulan ini</p>
-          ) : periodTxAll.filter(t => t.type === "pemasukan").map((t) => (
-            <TxRow key={t.id} tx={t} isOwner={isOwner} />
-          ))}
+          {periodTxAll.filter(t => t.type === "pemasukan").length === 0
+            ? <p className="text-center py-10 text-muted-foreground">Belum ada pemasukan bulan ini</p>
+            : periodTxAll.filter(t => t.type === "pemasukan").map(t => <TxRow key={t.id} tx={t} />)}
         </TabsContent>
 
-        {/* Pengeluaran */}
         <TabsContent value="pengeluaran" className="mt-4 space-y-2">
-          {periodTxAll.filter(t => t.type === "pengeluaran").length === 0 ? (
-            <p className="text-center py-10 text-muted-foreground">Belum ada pengeluaran bulan ini</p>
-          ) : periodTxAll.filter(t => t.type === "pengeluaran").map((t) => (
-            <TxRow key={t.id} tx={t} isOwner={isOwner} />
-          ))}
+          {periodTxAll.filter(t => t.type === "pengeluaran").length === 0
+            ? <p className="text-center py-10 text-muted-foreground">Belum ada pengeluaran bulan ini</p>
+            : periodTxAll.filter(t => t.type === "pengeluaran").map(t => <TxRow key={t.id} tx={t} />)}
         </TabsContent>
 
-        {/* Semua */}
         <TabsContent value="semua" className="mt-4 space-y-2">
-          {periodTxAll.length === 0 ? (
-            <p className="text-center py-10 text-muted-foreground">Belum ada transaksi bulan ini</p>
-          ) : periodTxAll.map((t) => (
-            <TxRow key={t.id} tx={t} isOwner={isOwner} />
-          ))}
+          {periodTxAll.length === 0
+            ? <p className="text-center py-10 text-muted-foreground">Belum ada transaksi bulan ini</p>
+            : periodTxAll.map(t => <TxRow key={t.id} tx={t} />)}
         </TabsContent>
 
-        {/* Pengaturan HPP */}
-        <TabsContent value="pengaturan" className="mt-4">
-          <PengaturanHPP />
-        </TabsContent>
+        {canManage && (
+          <TabsContent value="pengaturan" className="mt-4">
+            <PengaturanHPP />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Add transaction dialog */}
       <Dialog open={showForm} onOpenChange={(o) => !o && setShowForm(false)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Tambah Transaksi Manual</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-3 mt-2">
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setForm(p => ({ ...p, type: "pemasukan" }))}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${form.type === "pemasukan" ? "bg-green-500 text-white border-green-500" : "bg-background border-border"}`}>
-                ↑ Pemasukan
-              </button>
-              <button type="button" onClick={() => setForm(p => ({ ...p, type: "pengeluaran" }))}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${form.type === "pengeluaran" ? "bg-red-500 text-white border-red-500" : "bg-background border-border"}`}>
-                ↓ Pengeluaran
-              </button>
-            </div>
-            <div>
-              <Label className="text-xs">Kategori</Label>
-              <Select value={form.category} onValueChange={(v) => setForm(p => ({ ...p, category: v }))}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CATEGORIES).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Nominal (Rp) *</Label>
-              <Input type="number" min={0} value={form.amount} onChange={(e) => setForm(p => ({ ...p, amount: e.target.value }))} required className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs">Tanggal</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm(p => ({ ...p, date: e.target.value }))} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs">Keterangan</Label>
-              <Input value={form.description} onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))} className="mt-1" />
-            </div>
-            <div className="flex gap-2 pt-1">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Batal</Button>
-              <Button type="submit" className="flex-1" disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Simpan
-              </Button>
-            </div>
-          </form>
+          <DialogHeader><DialogTitle>Tambah Transaksi Manual</DialogTitle></DialogHeader>
+          <AddTransactionForm user={user} onClose={() => setShowForm(false)} onSaved={() => {}} />
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
 
-function TxRow({ tx, isOwner }) {
-  const conf = CATEGORIES[tx.category] || CATEGORIES.lainnya;
-  return (
-    <Card className={`p-3 flex items-center gap-3 ${tx.excluded_from_reports ? "opacity-60 border-dashed border-gray-300" : ""}`}>
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm ${tx.type === "pemasukan" ? "bg-green-100" : "bg-red-100"}`}>
-        {tx.type === "pemasukan" ? "↑" : "↓"}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{tx.description || conf.label}</p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${conf.color}`}>{conf.label}</span>
-          {tx.created_by_name && <span className="text-xs text-muted-foreground">{tx.created_by_name}</span>}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <div className="text-right">
-          <p className={`text-sm font-bold ${tx.type === "pemasukan" ? "text-green-600" : "text-red-600"}`}>
-            {tx.type === "pemasukan" ? "+" : "-"}Rp {(tx.amount || 0).toLocaleString("id-ID")}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {tx.date && format(parseISO(tx.date), "d MMM", { locale: id })}
-          </p>
-        </div>
-        {isOwner && (
-          <ExcludeToggle
-            record={tx}
-            entityName="FinanceTransaction"
-            queryKey={["finance-transactions"]}
-          />
-        )}
-      </div>
-    </Card>
+      {/* Edit transaction dialog */}
+      {editTx && (
+        <EditTransactionDialog
+          tx={editTx}
+          user={user}
+          canDelete={canDelete}
+          onClose={() => setEditTx(null)}
+          onSaved={() => setEditTx(null)}
+        />
+      )}
+    </div>
   );
 }
 
@@ -350,17 +409,8 @@ function PengaturanHPP() {
       <div className="space-y-4">
         <div>
           <Label className="text-sm">Fallback Biaya Per Ekor/Bulan (Rp)</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            Dipakai jika belum ada data pengeluaran aktual bulan ini. Default: Rp 100.000
-          </p>
-          <Input
-            type="number"
-            min={0}
-            step={10000}
-            value={fallback}
-            onChange={(e) => setFallback(Number(e.target.value))}
-            className="max-w-xs"
-          />
+          <p className="text-xs text-muted-foreground mb-2">Dipakai jika belum ada data pengeluaran aktual bulan ini. Default: Rp 100.000</p>
+          <Input type="number" min={0} step={10000} value={fallback} onChange={(e) => setFallback(Number(e.target.value))} className="max-w-xs" />
         </div>
         <Button onClick={handleSave} disabled={saving} size="sm">
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

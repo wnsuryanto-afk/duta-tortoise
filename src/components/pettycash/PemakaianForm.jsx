@@ -19,7 +19,9 @@ const PEMAKAIAN_CATS = [
 ];
 
 export default function PemakaianForm({ currentSaldo, user, role, onClose, onSaved }) {
-  const [amount, setAmount] = useState("");
+  const [qty, setQty] = useState("");
+  const [hargaSatuan, setHargaSatuan] = useState("");
+  const [amountManual, setAmountManual] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split("T")[0]);
@@ -28,7 +30,11 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
   const [saving, setSaving] = useState(false);
   const [confirmOver, setConfirmOver] = useState(false);
 
-  const amt = Number(amount) || 0;
+  // Kalau qty & harga_satuan keduanya diisi → auto total; kalau tidak, pakai manual
+  const qtyNum = Number(qty) || 0;
+  const hargaNum = Number(hargaSatuan) || 0;
+  const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
+  const amt = autoTotal !== null ? autoTotal : (Number(amountManual) || 0);
   const isOver = amt > currentSaldo;
 
   const handlePhoto = async (e) => {
@@ -56,7 +62,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
     setSaving(true);
     try {
       const balanceAfter = currentSaldo - amt;
-      const ledger = await base44.entities.PettyCashLedger.create({
+      const ledgerPayload = {
         entry_type: "pemakaian",
         amount: amt,
         balance_after: balanceAfter,
@@ -67,17 +73,30 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         recorded_by_name: user?.full_name || user?.email,
         recorded_by_email: user?.email,
         recorded_by_role: role,
-      });
-      // Auto-create FinanceTransaction (only for pemakaian)
-      const tx = await base44.entities.FinanceTransaction.create({
+      };
+      if (qtyNum > 0) ledgerPayload.qty = qtyNum;
+      if (hargaNum > 0) ledgerPayload.harga_satuan = hargaNum;
+
+      const ledger = await base44.entities.PettyCashLedger.create(ledgerPayload);
+
+      // Bangun label deskripsi dengan qty × harga jika ada
+      const txDesc = qtyNum > 0 && hargaNum > 0
+        ? `${description.trim()} — ${qtyNum} × Rp ${hargaNum.toLocaleString("id-ID")} = Rp ${amt.toLocaleString("id-ID")}`
+        : description.trim();
+
+      const txPayload = {
         type: "pengeluaran",
         category: "kas_kecil",
         amount: amt,
         date: entryDate,
-        description: description.trim(),
+        description: txDesc,
         reference_id: ledger.id,
         created_by_name: user?.full_name || user?.email,
-      });
+      };
+      if (qtyNum > 0) txPayload.qty = qtyNum;
+      if (hargaNum > 0) txPayload.harga_satuan = hargaNum;
+
+      const tx = await base44.entities.FinanceTransaction.create(txPayload);
       if (tx?.id) {
         await base44.entities.PettyCashLedger.update(ledger.id, { finance_tx_id: tx.id });
       }
@@ -92,16 +111,60 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
 
   return (
     <div className="space-y-3">
-      <div>
-        <Label className="text-xs">Nominal (Rp) *</Label>
-        <Input type="number" value={amount} onChange={e => { setAmount(e.target.value); setConfirmOver(false); }} placeholder="0" className="mt-1 text-lg font-semibold" autoFocus />
+      {/* Qty & Harga Satuan */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs">Qty (opsional)</Label>
+          <Input
+            type="number" min={0} value={qty}
+            onChange={e => { setQty(e.target.value); setConfirmOver(false); }}
+            placeholder="cth: 5"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Harga Satuan (Rp)</Label>
+          <Input
+            type="number" min={0} value={hargaSatuan}
+            onChange={e => { setHargaSatuan(e.target.value); setConfirmOver(false); }}
+            placeholder="cth: 20000"
+            className="mt-1"
+          />
+        </div>
       </div>
+
+      {/* Total */}
+      <div>
+        {autoTotal !== null ? (
+          <>
+            <Label className="text-xs text-green-700 font-semibold">
+              Total Otomatis: {qtyNum} × Rp {hargaNum.toLocaleString("id-ID")} =
+            </Label>
+            <div className="mt-1 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg text-lg font-bold text-green-700">
+              Rp {autoTotal.toLocaleString("id-ID")}
+            </div>
+          </>
+        ) : (
+          <>
+            <Label className="text-xs">Nominal Total (Rp) *</Label>
+            <Input
+              type="number" min={0} value={amountManual}
+              onChange={e => { setAmountManual(e.target.value); setConfirmOver(false); }}
+              placeholder="0"
+              className="mt-1 text-lg font-semibold"
+              autoFocus
+            />
+          </>
+        )}
+      </div>
+
       {isOver && (
         <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>Saldo tidak cukup (sisa Rp {Number(currentSaldo).toLocaleString("id-ID")}). {confirmOver ? "Akan dilanjutkan — saldo bisa minus." : "Lanjutkan?"}</span>
         </div>
       )}
+
       <div>
         <Label className="text-xs">Kategori *</Label>
         <Select value={category} onValueChange={setCategory}>
@@ -134,7 +197,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       )}
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button className="flex-1" onClick={handleSave} disabled={saving || uploading || !amount || !category || !description.trim()}
+        <Button className="flex-1" onClick={handleSave} disabled={saving || uploading || !amt || !category || !description.trim()}
           variant={isOver ? "destructive" : "default"}>
           {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
           {isOver && !confirmOver ? "Lanjutkan?" : "Catat Pemakaian"}
