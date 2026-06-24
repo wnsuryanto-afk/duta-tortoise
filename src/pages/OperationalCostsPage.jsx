@@ -8,16 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Pill, Leaf, Salad, Loader2, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { Plus, Users, Pill, Leaf, Salad, Loader2, TrendingDown, TrendingUp, Trophy, Wrench, Fuel, Flame, Wallet } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import { useFinanceCategories } from "@/hooks/useEntityCategories";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const CATEGORIES = {
-  gaji: {
+  gaji_karyawan: {
     label: "Gaji",
     icon: Users,
     color: "bg-blue-100 text-blue-700",
@@ -45,6 +46,41 @@ const CATEGORIES = {
     chartColor: "#84CC16",
     subCategories: ["Pakan Wajib", "Pakan Tidak Wajib", "Sayur", "Pelet", "Rumput/Hay"],
   },
+  operasional: {
+    label: "Operasional",
+    icon: Wrench,
+    color: "bg-yellow-100 text-yellow-700",
+    chartColor: "#EAB308",
+    subCategories: [],
+  },
+  solar_bbm: {
+    label: "Solar / BBM",
+    icon: Fuel,
+    color: "bg-amber-100 text-amber-700",
+    chartColor: "#F59E0B",
+    subCategories: [],
+  },
+  rokok: {
+    label: "Rokok",
+    icon: Flame,
+    color: "bg-stone-100 text-stone-700",
+    chartColor: "#A8A29E",
+    subCategories: [],
+  },
+  kas_kecil: {
+    label: "Kas Kecil",
+    icon: Wallet,
+    color: "bg-indigo-100 text-indigo-700",
+    chartColor: "#6366F1",
+    subCategories: [],
+  },
+  lainnya: {
+    label: "Lainnya",
+    icon: TrendingDown,
+    color: "bg-gray-100 text-gray-700",
+    chartColor: "#6B7280",
+    subCategories: [],
+  },
 };
 
 function formatRp(v) { return "Rp " + (v || 0).toLocaleString("id-ID"); }
@@ -55,7 +91,7 @@ const LAST_12 = Array.from({ length: 12 }, (_, i) => {
 });
 
 const EMPTY_FORM = {
-  category: "gaji",
+  category: "gaji_karyawan",
   sub_category: "",
   amount: "",
   date: format(new Date(), "yyyy-MM-dd"),
@@ -71,6 +107,7 @@ export default function OperationalCostsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [activeCard, setActiveCard] = useState(null);
+  const { pengeluaran: pengeluaranCats } = useFinanceCategories();
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["finance-transactions-ops"],
@@ -84,7 +121,10 @@ export default function OperationalCostsPage() {
 
   if (!canAccess(role, "finance")) return <AccessDenied />;
 
-  const opsTx = transactions.filter(t => Object.keys(CATEGORIES).includes(t.category));
+  const normCat = (c) => (c === "gaji" ? "gaji_karyawan" : c);
+  const opsTx = transactions
+    .map(t => ({ ...t, category: normCat(t.category) }))
+    .filter(t => Object.keys(CATEGORIES).includes(t.category));
   const thisMonth = format(new Date(), "yyyy-MM");
   const lastMonth = format(subMonths(new Date(), 1), "yyyy-MM");
   const thisMonthTx = opsTx.filter(t => t.date?.startsWith(thisMonth));
@@ -292,9 +332,9 @@ export default function OperationalCostsPage() {
               <Label className="text-xs">Kategori *</Label>
               <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v, sub_category: "" }))}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CATEGORIES).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                <SelectContent className="max-h-72 overflow-y-auto">
+                  {(pengeluaranCats.length ? pengeluaranCats : Object.entries(CATEGORIES).map(([k, v]) => ({ value: k, label: v.label }))).map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

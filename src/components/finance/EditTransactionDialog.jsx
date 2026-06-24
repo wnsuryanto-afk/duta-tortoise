@@ -10,6 +10,7 @@ import { AlertTriangle, Loader2, ExternalLink } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useFinanceCategories } from "@/hooks/useEntityCategories";
 
 const CATEGORIES = {
   penjualan_tortoise: "Penjualan Tortoise",
@@ -53,6 +54,10 @@ export default function EditTransactionDialog({ tx, user, onClose, onSaved }) {
     harga_satuan: tx.harga_satuan || "",
     amount: tx.amount || "",
   });
+
+  const { pemasukan, pengeluaran } = useFinanceCategories();
+  const catOpts = form.type === "pemasukan" ? pemasukan : pengeluaran;
+  const ddCats = catOpts.length ? catOpts : Object.entries(CATEGORIES).map(([k, v]) => ({ value: k, label: v }));
 
   const qty = Number(form.qty) || 0;
   const harga = Number(form.harga_satuan) || 0;
@@ -163,8 +168,8 @@ export default function EditTransactionDialog({ tx, user, onClose, onSaved }) {
               <Label className="text-xs">Kategori</Label>
               <Select value={form.category} onValueChange={v => set("category", v)}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                <SelectContent className="max-h-72 overflow-y-auto">
+                  {ddCats.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

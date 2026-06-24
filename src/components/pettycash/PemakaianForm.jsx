@@ -8,6 +8,7 @@ import { Loader2, Upload, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
 import { PETTYCASH_CATS as PEMAKAIAN_CATS } from "@/lib/financeCategories";
+import { usePettyCashCategories } from "@/hooks/useEntityCategories";
 
 export default function PemakaianForm({ currentSaldo, user, role, onClose, onSaved }) {
   const [qty, setQty] = useState("");
@@ -20,6 +21,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmOver, setConfirmOver] = useState(false);
+  const { cats: pettyCats } = usePettyCashCategories();
 
   // Kalau qty & harga_satuan keduanya diisi → auto total; kalau tidak, pakai manual
   const qtyNum = Number(qty) || 0;
@@ -160,8 +162,8 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         <Label className="text-xs">Kategori *</Label>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih kategori..." /></SelectTrigger>
-          <SelectContent>
-            {PEMAKAIAN_CATS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          <SelectContent className="max-h-72 overflow-y-auto">
+            {(pettyCats.length ? pettyCats : PEMAKAIAN_CATS).map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

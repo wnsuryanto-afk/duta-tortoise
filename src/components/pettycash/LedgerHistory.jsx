@@ -6,6 +6,7 @@ import { Search, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
+import { usePettyCashCategories } from "@/hooks/useEntityCategories";
 
 const TYPE_CONFIG = {
   top_up:      { label: "Top Up",      color: "bg-green-100 text-green-700 border-green-200", sign: "+" },
@@ -24,6 +25,7 @@ export default function LedgerHistory({ ledger }) {
   const [filterMonth, setFilterMonth] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterCat, setFilterCat] = useState("all");
+  const { cats: pettyCats } = usePettyCashCategories();
 
   const months = useMemo(() => {
     return [...new Set(ledger.map(l => l.entry_date?.substring(0, 7)).filter(Boolean))].sort().reverse();
@@ -69,9 +71,9 @@ export default function LedgerHistory({ ledger }) {
         </Select>
         <Select value={filterCat} onValueChange={setFilterCat}>
           <SelectTrigger className="w-36 h-9"><SelectValue placeholder="Kategori" /></SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72 overflow-y-auto">
             <SelectItem value="all">Semua Kategori</SelectItem>
-            {Object.entries(CAT_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+            {(pettyCats.length ? pettyCats : Object.entries(CAT_LABELS).map(([k, v]) => ({ value: k, label: v }))).map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
 import LabaRugiEnhanced from "@/components/finance/LabaRugiEnhanced";
 import EditTransactionDialog from "@/components/finance/EditTransactionDialog";
+import { useFinanceCategories } from "@/hooks/useEntityCategories";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -56,6 +57,11 @@ function AddTransactionForm({ user, onClose, onSaved }) {
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  const { pemasukan, pengeluaran } = useFinanceCategories();
+  const catOptions = form.type === "pemasukan"
+    ? (pemasukan.length ? pemasukan : [{ value: "penjualan_tortoise", label: "Penjualan Tortoise" }, { value: "lainnya", label: "Lainnya" }])
+    : (pengeluaran.length ? pengeluaran : Object.entries(CATEGORIES).filter(([, v]) => v.type === "pengeluaran" || v.type === "both").map(([k, v]) => ({ value: k, label: v.label })));
+
   const qtyNum = Number(form.qty) || 0;
   const hargaNum = Number(form.harga_satuan) || 0;
   const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
@@ -96,8 +102,8 @@ function AddTransactionForm({ user, onClose, onSaved }) {
         <Label className="text-xs">Kategori</Label>
         <Select value={form.category} onValueChange={v => set("category", v)}>
           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(CATEGORIES).filter(([, v]) => v.type === form.type || v.type === "both").map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+          <SelectContent className="max-h-72 overflow-y-auto">
+            {catOptions.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
