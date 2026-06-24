@@ -7,16 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Upload, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
-
-const PEMAKAIAN_CATS = [
-  { value: "obat", label: "Obat" },
-  { value: "vitamin", label: "Vitamin" },
-  { value: "pakan", label: "Pakan" },
-  { value: "peralatan_kandang", label: "Peralatan Kandang" },
-  { value: "transportasi", label: "Transportasi" },
-  { value: "konsumsi", label: "Konsumsi" },
-  { value: "lainnya", label: "Lainnya" },
-];
+import { PETTYCASH_CATS as PEMAKAIAN_CATS } from "@/lib/financeCategories";
 
 export default function PemakaianForm({ currentSaldo, user, role, onClose, onSaved }) {
   const [qty, setQty] = useState("");

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, DollarSign, Package, Users, Pill, FlaskConical, Wallet, MoreHorizontal } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Package, Users, Pill, FlaskConical, Wallet, MoreHorizontal, Fuel, Flame } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import {
@@ -93,6 +93,8 @@ export default function LabaRugiPanel() {
       obat_perawatan: expByCat["obat_perawatan"] || 0,
       vitamin_suplemen: expByCat["vitamin_suplemen"] || 0,
       operasional: expByCat["operasional"] || 0,
+      solar_bbm: expByCat["solar_bbm"] || 0,
+      rokok: expByCat["rokok"] || 0,
       kas_kecil: totalKasKecil,
       lainnya: expByCat["lainnya"] || 0,
     };
@@ -275,6 +277,8 @@ export default function LabaRugiPanel() {
             "Pakan": { icon: Package, value: computed.pengeluaranBreakdown.pakan },
             "Obat & Perawatan": { icon: Pill, value: computed.pengeluaranBreakdown.obat_perawatan },
             "Vitamin & Suplemen": { icon: FlaskConical, value: computed.pengeluaranBreakdown.vitamin_suplemen },
+            "Solar / BBM": { icon: Fuel, value: computed.pengeluaranBreakdown.solar_bbm },
+            "Rokok": { icon: Flame, value: computed.pengeluaranBreakdown.rokok },
             "Kas Kecil": { icon: Wallet, value: computed.pengeluaranBreakdown.kas_kecil, detail: computed.monthPetty },
             "Lainnya": { icon: MoreHorizontal, value: computed.pengeluaranBreakdown.lainnya + computed.pengeluaranBreakdown.operasional },
           }).map(([label, info]) => {

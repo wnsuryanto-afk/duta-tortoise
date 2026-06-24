@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
 
 const TYPE_CONFIG = {
   top_up:      { label: "Top Up",      color: "bg-green-100 text-green-700 border-green-200", sign: "+" },
@@ -12,11 +13,7 @@ const TYPE_CONFIG = {
   penyesuaian: { label: "Penyesuaian", color: "bg-gray-100 text-gray-600 border-gray-200", sign: "±" },
 };
 
-const CAT_LABELS = {
-  obat: "Obat", vitamin: "Vitamin", pakan: "Pakan",
-  peralatan_kandang: "Peralatan Kandang", transportasi: "Transportasi",
-  konsumsi: "Konsumsi", lainnya: "Lainnya",
-};
+const CAT_LABELS = PETTYCASH_CAT_LABELS;
 
 function formatRp(n) {
   return "Rp " + Number(n || 0).toLocaleString("id-ID");

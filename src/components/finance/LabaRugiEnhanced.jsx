@@ -116,6 +116,8 @@ export default function LabaRugiEnhanced({ period }) {
     sewa: "Sewa",
     pembelian_barang: "Pembelian Barang",
     perawatan_kandang: "Perawatan Kandang",
+    solar_bbm: "Solar / BBM",
+    rokok: "Rokok",
     lainnya: "Lainnya",
   };
 

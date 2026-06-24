@@ -18,6 +18,8 @@ const CATEGORIES = {
   vitamin_suplemen: "Vitamin & Suplemen",
   pakan: "Pakan",
   operasional: "Operasional",
+  solar_bbm: "Solar / BBM",
+  rokok: "Rokok",
   kas_kecil: "Kas Kecil",
   lainnya: "Lainnya",
 };

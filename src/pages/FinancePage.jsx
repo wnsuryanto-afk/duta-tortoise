@@ -31,7 +31,9 @@ const CATEGORIES = {
   sewa:               { label: "Sewa",                   color: "bg-orange-100 text-orange-700", type: "pengeluaran"  },
   perawatan_kandang:  { label: "Perawatan Kandang",      color: "bg-green-100 text-green-700",   type: "pengeluaran"  },
   kas_kecil:          { label: "Kas Kecil",              color: "bg-indigo-100 text-indigo-700", type: "pengeluaran"  },
-  lainnya:            { label: "Lainnya",                color: "bg-gray-100 text-gray-700",     type: "pemasukan"    },
+  solar_bbm:          { label: "Solar / BBM",            color: "bg-amber-100 text-amber-700",   type: "pengeluaran"  },
+  rokok:              { label: "Rokok",                  color: "bg-stone-100 text-stone-700",   type: "pengeluaran"  },
+  lainnya:            { label: "Lainnya",                color: "bg-gray-100 text-gray-700",     type: "both"          },
 };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({
@@ -84,7 +86,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
     <form onSubmit={handleSubmit} className="space-y-3 mt-2">
       <div className="flex gap-2">
         {["pemasukan", "pengeluaran"].map(t => (
-          <button key={t} type="button" onClick={() => set("type", t)}
+          <button key={t} type="button" onClick={() => setForm(p => ({ ...p, type: t, category: t === "pemasukan" ? "penjualan_tortoise" : "operasional" }))}
             className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${form.type === t ? (t === "pemasukan" ? "bg-green-500 text-white border-green-500" : "bg-red-500 text-white border-red-500") : "bg-background border-border"}`}>
             {t === "pemasukan" ? "↑ Pemasukan" : "↓ Pengeluaran"}
           </button>
@@ -95,7 +97,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
         <Select value={form.category} onValueChange={v => set("category", v)}>
           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {Object.entries(CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+            {Object.entries(CATEGORIES).filter(([, v]) => v.type === form.type || v.type === "both").map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
