@@ -9,10 +9,11 @@ import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2, Eye } from "l
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccess } from "@/lib/permissions";
+import { canAccess, formatRole } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { toast } from "sonner";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -23,11 +24,7 @@ export default function RekapPoinGajiPage() {
   const [generating, setGenerating] = useState(null);
   const [viewSlip, setViewSlip] = useState(null);
 
-  const { data: companySettings = [] } = useQuery({
-    queryKey: ["company-settings"],
-    queryFn: () => base44.entities.CompanySettings.list(),
-  });
-  const settings = companySettings[0] || {};
+  const settings = useCompanySettings();
   const TARGET_POIN_SETTING = settings.min_poin_bulanan || 300;
   const NILAI_PER_POIN_SETTING = settings.nilai_per_poin || 500;
 
@@ -310,7 +307,7 @@ export default function RekapPoinGajiPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">{row.emp.full_name || row.emp.email}</p>
-                    <Badge variant="outline" className="text-[11px] mt-0.5 capitalize">{row.emp.role}</Badge>
+                    <Badge variant="outline" className="text-[11px] mt-0.5">{formatRole(row.emp.role)}</Badge>
                   </div>
                 </div>
 

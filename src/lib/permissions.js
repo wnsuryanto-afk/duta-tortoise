@@ -237,3 +237,10 @@ export function canEditUsers(role) {
 export function canViewAllPayroll(role) {
   return role === "owner";
 }
+
+// Helper: ubah role internal (dengan underscore) jadi label tampilan rapi.
+// Nilai DB tetap pakai underscore (kepala_feeder); hanya label yang dirapikan.
+export function formatRole(role) {
+  if (!role) return "";
+  return ROLE_LABELS[role] || role.replace(/_/g, " ");
+}

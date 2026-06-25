@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { formatRole } from "@/lib/permissions";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -140,7 +141,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
           {/* Info karyawan */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm mb-4">
             <div className="flex gap-2"><span className="text-muted-foreground w-28">Nama</span><span className="font-medium">: {slip.employee_name}</span></div>
-            <div className="flex gap-2"><span className="text-muted-foreground w-28">Jabatan</span><span className="font-medium capitalize">: {slip.employee_role}</span></div>
+            <div className="flex gap-2"><span className="text-muted-foreground w-28">Jabatan</span><span className="font-medium">: {formatRole(slip.employee_role)}</span></div>
             <div className="flex gap-2"><span className="text-muted-foreground w-28">Periode</span><span className="font-medium">: {periodLabel}</span></div>
             <div className="flex gap-2"><span className="text-muted-foreground w-28">Tgl. Dibuat</span><span className="font-medium">: {slip.generated_date ? format(new Date(slip.generated_date), "d MMM yyyy", { locale: id }) : "-"}</span></div>
           </div>
@@ -241,7 +242,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
             <div>
               <p className="text-muted-foreground mb-10">Diterima oleh,</p>
               <p className="border-t border-gray-400 pt-1 font-medium">{slip.employee_name}</p>
-              <p className="text-muted-foreground capitalize">{slip.employee_role}</p>
+              <p className="text-muted-foreground">{formatRole(slip.employee_role)}</p>
             </div>
           </div>
           <p className="text-center text-[10px] text-muted-foreground mt-4">

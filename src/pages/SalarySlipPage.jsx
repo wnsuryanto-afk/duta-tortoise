@@ -10,9 +10,10 @@ import { Printer, FileText, TrendingUp, Users, Filter, Star, CheckCircle2, XCirc
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccess } from "@/lib/permissions";
+import { canAccess, formatRole } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 
 const statusConfig = {
   draft:    { label: "Draft",     color: "bg-gray-100 text-gray-700" },
@@ -39,11 +40,7 @@ export default function SalarySlipPage() {
     queryFn: () => base44.entities.User.list(),
   });
 
-  const { data: companySettings = [] } = useQuery({
-    queryKey: ["company-settings"],
-    queryFn: () => base44.entities.CompanySettings.list(),
-  });
-  const settings = companySettings[0] || {};
+  const settings = useCompanySettings();
 
   const employees = users.filter(u => ["keeper", "admin", "kepala_feeder"].includes(u.role));
 
@@ -180,7 +177,7 @@ export default function SalarySlipPage() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-semibold">{slip.employee_name}</span>
                       <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
-                      <Badge variant="outline" className="text-[11px] capitalize">{slip.employee_role}</Badge>
+                      <Badge variant="outline" className="text-[11px]">{formatRole(slip.employee_role)}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Periode: {slip.period ? format(new Date(slip.period + "-01"), "MMMM yyyy", { locale: id }) : slip.period}

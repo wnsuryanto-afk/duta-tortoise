@@ -239,7 +239,7 @@ export default function MonthlySalaryPage() {
       doc.setTextColor(40,40,40);
       doc.setFont("helvetica","normal");
       const row = [
-        String(idx+1), emp.name, emp.role,
+        String(idx+1), emp.name, roleLabel(emp.role),
         fmtRp(emp.baseSalary), fmtRp(emp.kpiValue), fmtRp(emp.overtimePay), fmtRp(emp.vegPay),
         fmtRp(emp.absentDeduction), fmtRp(emp.kasbonDed), fmtRp(emp.netSalary)
       ];
