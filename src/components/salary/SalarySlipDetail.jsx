@@ -10,6 +10,7 @@ import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatRole } from "@/lib/permissions";
+import { logActivity } from "@/lib/logActivity";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -41,6 +42,13 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
       approved_by: user?.full_name || user?.email,
       approved_date: format(new Date(), "yyyy-MM-dd"),
     });
+    await logActivity({
+      action: "approve",
+      entity_type: "SalarySlip",
+      entity_id: slip.id,
+      entity_name: `${slip.employee_name} — ${slip.period}`,
+      changes_summary: `Menyetujui slip gaji ${slip.employee_name} periode ${slip.period}`,
+    });
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
     toast.success("Slip gaji disetujui");
     onClose();
@@ -52,6 +60,13 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
       status: "paid",
       paid_date: paidDate,
       paid_by: user?.full_name || user?.email,
+    });
+    await logActivity({
+      action: "update",
+      entity_type: "SalarySlip",
+      entity_id: slip.id,
+      entity_name: `${slip.employee_name} — ${slip.period}`,
+      changes_summary: `Menandai slip gaji ${slip.employee_name} periode ${slip.period} sebagai dibayar`,
     });
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
     toast.success("Slip gaji ditandai dibayar");
@@ -171,7 +186,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                 </td>
               </tr>
               <tr>
-                <td className="p-2 border border-border">Bonus Poin ({slip.total_poin || 0} × Rp {(settings.nilai_per_poin || 500).toLocaleString("id-ID")})</td>
+                <td className="p-2 border border-border">Bonus Poin ({slip.total_poin || 0} poin)</td>
                 <td className="p-2 border border-border text-right text-green-600 font-medium">+{fmt(slip.poin_bonus)}</td>
               </tr>
               {hasPoinDed && (

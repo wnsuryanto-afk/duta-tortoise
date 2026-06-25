@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
 import { PETTYCASH_CATS as PEMAKAIAN_CATS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
+import { logActivity } from "@/lib/logActivity";
 
 export default function PemakaianForm({ currentSaldo, user, role, onClose, onSaved }) {
   const [qty, setQty] = useState("");
@@ -93,6 +94,13 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       if (tx?.id) {
         await base44.entities.PettyCashLedger.update(ledger.id, { finance_tx_id: tx.id });
       }
+      await logActivity({
+        action: "create",
+        entity_type: "PettyCashLedger",
+        entity_id: ledger.id,
+        entity_name: `Kas kecil — ${description.trim()}`,
+        changes_summary: `Mencatat pemakaian kas kecil "${description.trim()}" sebesar Rp ${amt.toLocaleString("id-ID")} (${category})`,
+      });
       toast.success("Pemakaian dicatat & masuk Laba Rugi!");
       onSaved();
       onClose();

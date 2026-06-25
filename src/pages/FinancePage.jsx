@@ -3,6 +3,7 @@ import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
 import LabaRugiEnhanced from "@/components/finance/LabaRugiEnhanced";
 import EditTransactionDialog from "@/components/finance/EditTransactionDialog";
 import { useFinanceCategories } from "@/hooks/useEntityCategories";
+import { logActivity } from "@/lib/logActivity";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -81,7 +82,14 @@ function AddTransactionForm({ user, onClose, onSaved }) {
     };
     if (qtyNum > 0) payload.qty = qtyNum;
     if (hargaNum > 0) payload.harga_satuan = hargaNum;
-    await base44.entities.FinanceTransaction.create(payload);
+    const created = await base44.entities.FinanceTransaction.create(payload);
+    await logActivity({
+      action: "create",
+      entity_type: "FinanceTransaction",
+      entity_id: created.id,
+      entity_name: payload.description || payload.category,
+      changes_summary: `Menambah ${payload.type === "pemasukan" ? "pemasukan" : "pengeluaran"} "${payload.description || payload.category}" sebesar Rp ${(payload.amount || 0).toLocaleString("id-ID")}`,
+    });
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });
     setSaving(false);
     onSaved?.();

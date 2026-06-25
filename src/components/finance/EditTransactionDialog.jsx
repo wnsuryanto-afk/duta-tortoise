@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useFinanceCategories } from "@/hooks/useEntityCategories";
+import { logActivity } from "@/lib/logActivity";
 
 const CATEGORIES = {
   penjualan_tortoise: "Penjualan Tortoise",
@@ -34,7 +35,7 @@ function detectSource(tx) {
   return { label: "Transaksi Terkait", path: null };
 }
 
-export default function EditTransactionDialog({ tx, user, onClose, onSaved }) {
+export default function EditTransactionDialog({ tx, user, canDelete, onClose, onSaved }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const source = detectSource(tx);
@@ -81,6 +82,14 @@ export default function EditTransactionDialog({ tx, user, onClose, onSaved }) {
     if (form.qty) payload.qty = Number(form.qty);
     if (form.harga_satuan) payload.harga_satuan = Number(form.harga_satuan);
     await base44.entities.FinanceTransaction.update(tx.id, payload);
+    await logActivity({
+      action: "update",
+      entity_type: "FinanceTransaction",
+      entity_id: tx.id,
+      entity_name: tx.description || tx.category,
+      before: tx,
+      after: { ...tx, ...payload },
+    });
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });
     toast.success("Transaksi diperbarui");
     onSaved?.();
@@ -91,6 +100,13 @@ export default function EditTransactionDialog({ tx, user, onClose, onSaved }) {
   const handleDelete = async () => {
     setDeleting(true);
     await base44.entities.FinanceTransaction.delete(tx.id);
+    await logActivity({
+      action: "delete",
+      entity_type: "FinanceTransaction",
+      entity_id: tx.id,
+      entity_name: tx.description || tx.category,
+      changes_summary: `Menghapus transaksi "${tx.description || tx.category}" sebesar Rp ${(tx.amount || 0).toLocaleString("id-ID")}`,
+    });
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });
     toast.success("Transaksi dihapus");
     onSaved?.();
@@ -222,10 +238,12 @@ export default function EditTransactionDialog({ tx, user, onClose, onSaved }) {
               </Button>
             </div>
 
-            {/* Tombol hapus */}
-            <Button variant="ghost" className="w-full text-red-600 hover:bg-red-50 text-xs" onClick={() => setShowDelete(true)}>
-              Hapus Transaksi Ini
-            </Button>
+            {/* Tombol hapus — hanya Owner & Admin */}
+            {canDelete && (
+              <Button variant="ghost" className="w-full text-red-600 hover:bg-red-50 text-xs" onClick={() => setShowDelete(true)}>
+                Hapus Transaksi Ini
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

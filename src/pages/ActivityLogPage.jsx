@@ -29,6 +29,7 @@ const ENTITY_ICONS = {
   HealthRecord: "🏥", UserProfile: "👤", FinanceTransaction: "💵",
   Kasbon: "📝", Attendance: "✅", SalarySlip: "💼", FeedStock: "🥬",
   WarehouseItem: "📦", DailyChecklist: "📋", MaintenanceLog: "🔧",
+  PettyCashLedger: "🪙",
 };
 
 // Modul filter groups
@@ -39,6 +40,7 @@ const MODULE_GROUPS = {
   stok:       { label: "📦 Stok", types: ["FeedStock", "WarehouseItem"] },
   absensi:    { label: "✅ Absensi", types: ["Attendance"] },
   kasbon:     { label: "📝 Kasbon", types: ["Kasbon"] },
+  keuangan:   { label: "💵 Keuangan", types: ["FinanceTransaction", "PettyCashLedger"] },
 };
 
 // Aksi filter groups

@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { logActivity } from "@/lib/logActivity";
 
 const statusConfig = {
   submitted: { label: "Menunggu", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -93,6 +94,13 @@ export default function SOPApproval() {
         approved_by: user?.full_name || user?.email,
         approved_points: willApprove,
       });
+      await logActivity({
+        action: "approve",
+        entity_type: "DailyChecklist",
+        entity_id: c.id,
+        entity_name: `${c.employee_name} — ${c.date}`,
+        changes_summary: `Menyetujui poin checklist ${c.employee_name} (${c.date}): ${willApprove} poin`,
+      });
       toast.success(`Checklist ${c.employee_name} disetujui — ${willApprove} poin`);
       setExpanded((p) => ({ ...p, [c.id]: false }));
       qc.invalidateQueries({ queryKey: ["checklists-all"] });
@@ -116,6 +124,13 @@ export default function SOPApproval() {
         approved_by: user?.full_name || user?.email,
         approved_points: 0,
         rejection_reason: reason,
+      });
+      await logActivity({
+        action: "reject",
+        entity_type: "DailyChecklist",
+        entity_id: c.id,
+        entity_name: `${c.employee_name} — ${c.date}`,
+        changes_summary: `Menolak poin checklist ${c.employee_name} (${c.date}): ${reason}`,
       });
       toast.success("Checklist ditolak");
       setExpanded((p) => ({ ...p, [c.id]: false }));
