@@ -79,7 +79,7 @@ export default function RekapPoinGajiPage() {
   const monthStart = selectedMonth + "-01";
   const monthEnd = format(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1), "yyyy-MM") + "-01";
 
-  const employees = users.filter(u => ["keeper", "admin", "manajer", "kepala_feeder"].includes(u.role));
+  const employees = users.filter(u => ["keeper", "admin", "kepala_feeder"].includes(u.role));
 
   const rekapData = useMemo(() => {
     return employees.map(emp => {

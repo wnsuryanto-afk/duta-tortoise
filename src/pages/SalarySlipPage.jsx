@@ -45,11 +45,11 @@ export default function SalarySlipPage() {
   });
   const settings = companySettings[0] || {};
 
-  const employees = users.filter(u => ["keeper", "admin", "manajer", "kepala_feeder"].includes(u.role));
+  const employees = users.filter(u => ["keeper", "admin", "kepala_feeder"].includes(u.role));
 
   const filtered = useMemo(() => {
     return slips.filter(s => {
-      if (s.employee_role === "owner") return false; // owner tidak digaji
+      if (s.employee_role === "owner" || s.employee_role === "manajer") return false; // owner & manajer tidak digaji
       const empMatch = filterEmployee === "all" || s.employee_email === filterEmployee;
       const periodMatch = !filterPeriod || s.period === filterPeriod;
       return empMatch && periodMatch;
