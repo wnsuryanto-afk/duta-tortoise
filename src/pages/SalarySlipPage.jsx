@@ -49,6 +49,7 @@ export default function SalarySlipPage() {
 
   const filtered = useMemo(() => {
     return slips.filter(s => {
+      if (s.employee_role === "owner") return false; // owner tidak digaji
       const empMatch = filterEmployee === "all" || s.employee_email === filterEmployee;
       const periodMatch = !filterPeriod || s.period === filterPeriod;
       return empMatch && periodMatch;

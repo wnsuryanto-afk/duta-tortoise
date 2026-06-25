@@ -84,9 +84,10 @@ export default function RekapPoinGajiPage() {
   const rekapData = useMemo(() => {
     return employees.map(emp => {
       const config = salaryConfigs.find(c => c.role === emp.role);
-      const pointValue = NILAI_PER_POIN_SETTING;
+      const daily = ["keeper", "kepala_feeder"].includes(emp.role);
+      const pointValue = (config?.point_value && config.point_value > 0) ? config.point_value : (daily ? 200 : 0);
       const baseSalary = config?.base_salary || 0;
-      const salaryType = config?.salary_type || "bulanan";
+      const salaryType = daily ? "harian" : "bulanan";
       const absentDeduction = config?.absent_deduction || 0;
       const overtimeRate = config?.overtime_rate_per_hour || 0;
       const vegRate = config?.vegetable_rate_per_trip || 0;
@@ -101,15 +102,21 @@ export default function RekapPoinGajiPage() {
         c.date >= monthStart &&
         c.date < monthEnd
       );
-      const checklistPoin = empChecklists.reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
+      const checklistPoin = empChecklists
+        .filter((c) => c.status !== "rejected")
+        .reduce((s, c) => {
+          const pts = c.approved_points || c.total_points_claimed ||
+            (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0) : 0);
+          return s + (pts || 0);
+        }, 0);
 
       const totalPoin = bonusPoin + checklistPoin;
       const targetTercapai = totalPoin >= TARGET_POIN_SETTING;
       const selisihPoin = Math.abs(totalPoin - TARGET_POIN_SETTING);
 
       const bonus = totalPoin * pointValue;
-      const potonganPoin = targetTercapai ? 0 : selisihPoin * pointValue;
-      const kpiBonus = bonus - potonganPoin;
+      const potonganPoin = 0;
+      const kpiBonus = bonus;
 
       // Gaji pokok
       const empAttendances = attendances.filter(a => a.employee_email === emp.email && a.date >= monthStart && a.date < monthEnd);

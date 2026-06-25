@@ -38,6 +38,21 @@ export default function MonthlySalaryPage() {
     enabled: isAdmin,
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
+  });
+
+  const roleLabel = (r) => ({
+    kepala_feeder: "Kepala Feeder",
+    keeper: "Keeper",
+    manajer: "Manajer",
+    admin: "Admin",
+    owner: "Owner",
+  })[r] || r || "Keeper";
+  const isDailyRole = (r) => ["keeper", "kepala_feeder"].includes(r);
+
   const { data: checklists = [] } = useQuery({
     queryKey: ["checklists-salary", period],
     queryFn: async () => {
@@ -80,85 +95,92 @@ export default function MonthlySalaryPage() {
     enabled: isAdmin,
   });
 
-  // Build per-employee salary calculation
+  // Build per-employee salary calculation (eligible employees from User; owner excluded)
   const salaryData = useMemo(() => {
-    // Map config by role
     const configMap = {};
     salaryConfigs.forEach((c) => { configMap[c.role] = c; });
 
-    // Get all unique employees from attendance/checklists
     const empMap = {};
+    users.forEach((u) => {
+      if (!["keeper", "kepala_feeder", "manajer", "admin"].includes(u.role)) return;
+      if (!u.email) return;
+      const profile = userProfiles.find((p) => p.user_email === u.email);
+      empMap[u.email] = {
+        email: u.email,
+        name: u.full_name || profile?.full_name || u.email,
+        role: u.role,
+        profile,
+        attendDays: 0,
+        kpiPoints: 0,
+        overtimeHours: 0,
+        vegTrips: 0,
+        kasbonDeduction: 0,
+      };
+    });
 
-    const addEmp = (email, name) => {
-      if (!email) return;
-      if (!empMap[email]) {
-        const profile = userProfiles.find((p) => p.user_email === email);
-        empMap[email] = {
-          email,
-          name: name || profile?.full_name || email,
-          role: profile?.role || "keeper",
-          profile,
-          attendDays: 0,
-          absentDays: 0,
-          kpiPoints: 0,
-          overtimeHours: 0,
-          vegTrips: 0,
-          kasbonDeduction: 0,
-        };
-      }
-    };
-
-    attendances.forEach((a) => addEmp(a.employee_email, a.employee_name));
-    checklists.forEach((c) => addEmp(c.employee_email, c.employee_name));
-    overtimeLogs.forEach((o) => addEmp(o.employee_email, o.employee_name));
-    vegPickups.forEach((v) => addEmp(v.employee_email, v.employee_name));
-
-    // Attendance
     const [yr, mo] = period.split("-").map(Number);
     const workDays = getDaysInMonth(new Date(yr, mo - 1));
 
+    // Attendance (hari hadir)
     attendances.forEach((a) => {
-      if (!empMap[a.employee_email]) return;
-      if (a.status === "hadir") empMap[a.employee_email].attendDays++;
+      const emp = empMap[a.employee_email];
+      if (!emp) return;
+      if (a.status === "hadir") emp.attendDays++;
     });
 
-    // KPI points
+    // KPI points dari checklist SOP yang dikirim (exclude rejected)
     checklists.forEach((c) => {
-      if (!empMap[c.employee_email]) return;
-      empMap[c.employee_email].kpiPoints += c.approved_points || 0;
+      const emp = empMap[c.employee_email];
+      if (!emp) return;
+      if (c.status === "rejected") return;
+      const pts = c.approved_points || c.total_points_claimed ||
+        (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((s, t) => s + (t.points || 0), 0) : 0);
+      emp.kpiPoints += pts || 0;
     });
 
     // Overtime
     overtimeLogs.forEach((o) => {
-      if (!empMap[o.employee_email]) return;
-      empMap[o.employee_email].overtimeHours += o.hours || 0;
+      const emp = empMap[o.employee_email];
+      if (!emp) return;
+      emp.overtimeHours += o.hours || 0;
     });
 
     // Vegetable pickup
     vegPickups.forEach((v) => {
-      if (!empMap[v.employee_email]) return;
-      empMap[v.employee_email].vegTrips += v.trips || 0;
+      const emp = empMap[v.employee_email];
+      if (!emp) return;
+      emp.vegTrips += v.trips || 0;
     });
 
     // Kasbon deduction
     kasbons.forEach((k) => {
-      if (!empMap[k.employee_email]) return;
+      const emp = empMap[k.employee_email];
+      if (!emp) return;
       const remaining = (k.amount || 0) - (k.total_paid || 0);
       if (remaining > 0) {
-        // Cicilan mingguan × 4 minggu = cicilan bulanan
-        empMap[k.employee_email].kasbonDeduction += Math.min(remaining, (k.weekly_deduction || 100000) * 4);
+        emp.kasbonDeduction += Math.min(remaining, (k.weekly_deduction || 100000) * 4);
       }
     });
 
     // Calculate salary
     return Object.values(empMap).map((emp) => {
-      const cfg = configMap[emp.role] || configMap["keeper"] || {};
-      const baseSalary = cfg.base_salary || 0;
-      const kpiValue = (emp.kpiPoints || 0) * (cfg.point_value || 0);
-      const overtimePay = (emp.overtimeHours || 0) * (cfg.overtime_rate_per_hour || 0);
-      const vegPay = (emp.vegTrips || 0) * (cfg.vegetable_rate_per_trip || 0);
-      const absentDays = Math.max(0, emp.attendDays === 0 ? 0 : workDays - emp.attendDays);
-      const absentDeduction = absentDays * (cfg.absent_deduction || 0);
+      const cfg = configMap[emp.role] || {};
+      const baseRate = cfg.base_salary || 0;
+      const daily = isDailyRole(emp.role);
+      // Harian: gaji pokok = base × hari hadir; Bulanan: flat
+      const baseSalary = daily ? baseRate * emp.attendDays : baseRate;
+      // KPI: poin × point_value (default 200 utk keeper & kepala_feeder)
+      const pointValue = (cfg.point_value && cfg.point_value > 0) ? cfg.point_value : (daily ? 200 : 0);
+      const kpiValue = emp.kpiPoints * pointValue;
+      const overtimePay = emp.overtimeHours * (cfg.overtime_rate_per_hour || 0);
+      const vegPay = emp.vegTrips * (cfg.vegetable_rate_per_trip || 0);
+
+      let absentDays = 0;
+      let absentDeduction = 0;
+      if (!daily) {
+        absentDays = Math.max(0, workDays - emp.attendDays);
+        absentDeduction = absentDays * (cfg.absent_deduction || 0);
+      }
       const kasbonDed = emp.kasbonDeduction || 0;
 
       const totalGross = baseSalary + kpiValue + overtimePay + vegPay;
@@ -167,7 +189,10 @@ export default function MonthlySalaryPage() {
 
       return {
         ...emp,
+        baseRate,
+        daily,
         baseSalary,
+        pointValue,
         kpiValue,
         overtimePay,
         vegPay,
@@ -179,7 +204,7 @@ export default function MonthlySalaryPage() {
         netSalary,
       };
     }).sort((a, b) => b.netSalary - a.netSalary);
-  }, [salaryConfigs, attendances, checklists, overtimeLogs, vegPickups, kasbons, userProfiles, period]);
+  }, [salaryConfigs, users, attendances, checklists, overtimeLogs, vegPickups, kasbons, userProfiles, period]);
 
   const totalNet = salaryData.reduce((s, e) => s + e.netSalary, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === period)?.label || period;
@@ -334,13 +359,20 @@ export default function MonthlySalaryPage() {
                   <td className="px-4 py-3 text-muted-foreground text-xs">{i + 1}</td>
                   <td className="px-4 py-3">
                     <p className="font-medium">{emp.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{emp.role} · {emp.attendDays} hari hadir</p>
+                    <p className="text-xs text-muted-foreground">{roleLabel(emp.role)} · {emp.attendDays} hari hadir</p>
                   </td>
-                  <td className="px-3 py-3 text-center text-sm">{fmtRp(emp.baseSalary)}</td>
+                  <td className="px-3 py-3 text-center text-sm">
+                    <div className="flex flex-col items-center">
+                      <span className="font-semibold">{fmtRp(emp.baseSalary)}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {emp.daily ? `${emp.attendDays} hari × ${fmtRp(emp.baseRate)}` : "Bulanan"}
+                      </span>
+                    </div>
+                  </td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center">
                       <span className="text-sm font-medium text-amber-700">{fmtRp(emp.kpiValue)}</span>
-                      <span className="text-[10px] text-muted-foreground">{emp.kpiPoints} poin</span>
+                      <span className="text-[10px] text-muted-foreground">{emp.kpiPoints} poin × {fmtRp(emp.pointValue || 0)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
