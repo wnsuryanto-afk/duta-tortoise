@@ -129,6 +129,16 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 2 * 60 * 1000,
   });
 
+  const { data: myChecklistStatus } = useQuery({
+    queryKey: ["my-checklist-today", user?.email, today],
+    queryFn: async () => {
+      const res = await base44.entities.DailyChecklist.filter({ employee_email: user.email, date: today });
+      return res[0] || null;
+    },
+    enabled: !!user?.email,
+    staleTime: 60 * 1000,
+  });
+
   // Photo map: item_id → photo_url (from saved logs)
   const photoMap = useMemo(() => {
     const map = {};
@@ -268,6 +278,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           <div className="text-right">
             <p className="text-2xl font-bold text-green-700">{progressPct}%</p>
             <p className="text-xs text-gray-400">{doneProgress}/{totalProgress} selesai</p>
+            <p className="text-xs font-bold text-amber-600 flex items-center gap-0.5 justify-end mt-0.5">
+              <Star className="w-3 h-3 fill-current" />{myLogs.reduce((s, l) => s + (l.poin_earned || 0), 0)} poin
+            </p>
           </div>
         </div>
         <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -292,6 +305,35 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           )}
         </div>
       </div>
+
+      {/* Status approval checklist keeper */}
+      {myChecklistStatus && myChecklistStatus.status === "submitted" && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 flex items-center gap-2.5">
+          <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Menunggu persetujuan owner</p>
+            <p className="text-xs text-amber-700">Checklist hari ini sudah dikirim — poin dihitung setelah disetujui.</p>
+          </div>
+        </div>
+      )}
+      {myChecklistStatus && myChecklistStatus.status === "approved" && (
+        <div className="rounded-2xl border border-green-200 bg-green-50 p-3 flex items-center gap-2.5">
+          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-green-800">Disetujui: {myChecklistStatus.approved_points || 0} poin</p>
+            {myChecklistStatus.approved_by && <p className="text-xs text-green-700">oleh {myChecklistStatus.approved_by}</p>}
+          </div>
+        </div>
+      )}
+      {myChecklistStatus && myChecklistStatus.status === "rejected" && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 flex items-center gap-2.5">
+          <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-800">Checklist ditolak</p>
+            {myChecklistStatus.rejection_reason && <p className="text-xs text-red-700">{myChecklistStatus.rejection_reason}</p>}
+          </div>
+        </div>
+      )}
 
       {/* Task List */}
       <div className="space-y-2">
@@ -362,6 +404,9 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
           <div className="flex items-start gap-2 flex-wrap">
             <p className={`text-sm font-semibold ${isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
             {task.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${task.badgeColor}`}>{task.badge}</span>}
+            {!isIstirahat && !isAbsensi && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">+10 poin</span>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /> {task.waktu}</span>

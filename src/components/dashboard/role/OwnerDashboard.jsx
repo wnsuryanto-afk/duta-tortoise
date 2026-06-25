@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 // useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
   TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart,
-  Users, AlertTriangle, BarChart2, Target, ChevronRight, RefreshCw, ShieldAlert
+  Users, AlertTriangle, BarChart2, Target, ChevronRight, RefreshCw, ShieldAlert, ListChecks
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
@@ -155,6 +155,14 @@ export default function OwnerDashboard({ user }) {
     queryFn: () => base44.entities.DailyChecklist.filter({ date: format(now, "yyyy-MM-dd") }),
     enabled: phase2Ready,
     staleTime: 5 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  const { data: pendingApproval = [] } = useQuery({
+    queryKey: ["owner-pending-approval"],
+    queryFn: () => base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500),
+    enabled: phase2Ready,
+    staleTime: 60 * 1000,
     refetchInterval: false,
   });
 
@@ -446,6 +454,31 @@ export default function OwnerDashboard({ user }) {
 
       {/* ── WIDGET LABA RUGI REALTIME ── */}
       <LabaRugiWidget />
+
+      {/* ── WIDGET CHECKLIST MENUNGGU APPROVAL ── */}
+      {phase2Ready && (
+        <Link
+          to="/approval-poin"
+          className="block bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-100 text-amber-700 flex-shrink-0">
+              <ListChecks className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-amber-800">
+                Checklist menunggu approval: {pendingApproval.length}
+              </p>
+              <p className="text-xs text-amber-700">
+                {pendingApproval.length > 0
+                  ? "Klik untuk meninjau & menyetujui poin karyawan →"
+                  : "✓ Tidak ada checklist menunggu persetujuan"}
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-amber-700 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+      )}
 
       {/* ── ROW 1: KESEHATAN FINANSIAL ── */}
       <div>

@@ -39,6 +39,7 @@ export const NAV_ACCESS = {
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
     "operational-costs", "kritik-saran", "stock-gudang",
     "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
+    "approval-poin",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
