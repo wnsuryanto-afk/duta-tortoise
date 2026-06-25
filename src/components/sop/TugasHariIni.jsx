@@ -11,9 +11,10 @@ import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   CheckCircle2, Clock, Users, ChevronDown, ChevronUp,
-  Camera, Plus, Loader2, Check, X, Star
+  Camera, Plus, Loader2, Check, X, Star, Salad
 } from "lucide-react";
 import ExtraTaskForm from "./ExtraTaskForm";
+import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 
 // ── JADWAL TETAP ──
 const JADWAL_MINGGU = [
@@ -87,7 +88,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [savingId, setSavingId] = useState(null);
   const [showTeam, setShowTeam] = useState(false);
   const [showExtraForm, setShowExtraForm] = useState(false);
+  const [showPakanForm, setShowPakanForm] = useState(false);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
+  const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
 
   // ── Queries ──
   const { data: myLogs = [], refetch: refetchLogs } = useQuery({
@@ -282,6 +285,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           <button onClick={() => setShowExtraForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg px-3 py-1.5 hover:bg-amber-50">
             <Plus className="w-3.5 h-3.5" /> Tambah Pekerjaan
           </button>
+          {canCatatPakan && (
+            <button onClick={() => setShowPakanForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50">
+              <Salad className="w-3.5 h-3.5" /> Catat Pengambilan Pakan
+            </button>
+          )}
         </div>
       </div>
 
@@ -328,6 +336,15 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         today={today}
         onSaved={() => { refetchLogs(); refetchAllLogs(); }}
       />
+
+      {canCatatPakan && (
+        <PakanHarianForm
+          open={showPakanForm}
+          onClose={() => setShowPakanForm(false)}
+          user={user}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["pakan-harian-today"] })}
+        />
+      )}
     </div>
   );
 }

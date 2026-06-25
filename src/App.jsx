@@ -66,6 +66,7 @@ import UnifiedStokPage from '@/pages/UnifiedStokPage';
 import PanduanPakanPage from '@/pages/PanduanPakanPage';
 import PanduanPenyakitPage from '@/pages/PanduanPenyakitPage';
 import PanduanPenyakitDetailPage from '@/pages/PanduanPenyakitDetailPage';
+import PakanHarianPage from '@/pages/PakanHarianPage';
 import TortoisePassport from '@/pages/TortoisePassport';
 
 const AuthenticatedApp = () => {
@@ -142,6 +143,7 @@ const AuthenticatedApp = () => {
         <Route path="/migrasi-struktur" element={<MigrasiStrukturPage />} />
         <Route path="/stok-unified" element={<UnifiedStokPage />} />
         <Route path="/panduan-pakan" element={<PanduanPakanPage />} />
+        <Route path="/pakan-harian" element={<PakanHarianPage />} />
         <Route path="/panduan-penyakit" element={<PanduanPenyakitPage />} />
         <Route path="/panduan-penyakit/:id" element={<PanduanPenyakitDetailPage />} />
 

@@ -7,7 +7,7 @@ import {
   Calendar, ChevronDown, ChevronRight, Trophy,
   LayoutGrid, GitBranch, Skull, Home,
   TrendingUp, Zap, AlertTriangle, Truck, ClipboardCheck,
-  Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight, Leaf
+  Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight, Leaf, Salad
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -68,7 +68,8 @@ const NAV_GROUPS = [
     icon: Leaf,
     color: "text-green-500",
     items: [
-      { path: "/panduan-pakan", section: "panduan-pakan", label: "🌿 Panduan Pakan Sulcata", icon: Leaf },
+      { path: "/panduan-pakan", section: "panduan-pakan",  label: "Panduan Pakan Sulcata", icon: Leaf },
+      { path: "/pakan-harian",  section: "pakan-harian",   label: "Pakan Harian",           icon: Salad },
     ],
   },
 

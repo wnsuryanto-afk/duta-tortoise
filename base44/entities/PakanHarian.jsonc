@@ -1,0 +1,72 @@
+{
+  "name": "PakanHarian",
+  "properties": {
+    "basket_count": {
+      "description": "Jumlah keranjang yang diambil/diberikan",
+      "type": "number"
+    },
+    "feed_source": {
+      "default": "rumput",
+      "description": "Sumber pakan",
+      "enum": [
+        "rumput",
+        "sayur_pasar",
+        "campur",
+        "lainnya"
+      ],
+      "type": "string"
+    },
+    "feed_type_detail": {
+      "description": "Detail jenis pakan (contoh: kangkung, sawi, rumput gajah)",
+      "type": "string"
+    },
+    "log_date": {
+      "description": "Tanggal pencatatan",
+      "format": "date",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Catatan tambahan",
+      "type": "string"
+    },
+    "photo_url": {
+      "description": "Foto bukti ambilan pakan (wajib)",
+      "type": "string"
+    },
+    "recorded_by_email": {
+      "type": "string"
+    },
+    "recorded_by_name": {
+      "description": "Nama keeper/kepala feeder yang mencatat",
+      "type": "string"
+    },
+    "session": {
+      "default": "pagi",
+      "description": "Sesi pemberian pakan",
+      "enum": [
+        "pagi",
+        "sore"
+      ],
+      "type": "string"
+    },
+    "trip_cost_rokok": {
+      "description": "Biaya rokok tukar keranjang (Rp), hanya jika sayur pasar",
+      "type": "number"
+    },
+    "trip_cost_solar": {
+      "description": "Biaya solar (Rp), hanya jika ambil sayur pasar",
+      "type": "number"
+    },
+    "trip_finance_tx_id": {
+      "description": "ID FinanceTransaction biaya trip (jika dibuat)",
+      "type": "string"
+    }
+  },
+  "required": [
+    "log_date",
+    "session",
+    "basket_count",
+    "recorded_by_name"
+  ],
+  "type": "object"
+}

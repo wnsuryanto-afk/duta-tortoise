@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
+import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 
 function getMinutesUntil(timeStr) {
   if (!timeStr) return null;
@@ -424,6 +425,9 @@ export default function KeeperDashboard() {
           </div>
         </Card>
       )}
+
+      {/* ── PAKAN HARI INI ── */}
+      <PakanHarianWidget />
 
       {/* ── 3.5 INKUBATOR ── */}
       <KeeperIncubatorWidget />

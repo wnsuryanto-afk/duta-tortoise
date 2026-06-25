@@ -10,6 +10,7 @@ import { id as idLocale } from "date-fns/locale";
 import { toast } from "sonner";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
+import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
@@ -338,6 +339,9 @@ export default function KepalaFeederDashboard({ user }) {
           <p className="text-xs text-green-600">✓ Tidak ada request pending</p>
         )}
       </div>
+
+      {/* ── PAKAN HARI INI ── */}
+      <PakanHarianWidget />
 
       {/* ── SECTION STOK KRITIS ── */}
       {(criticalWarehouseStock.length > 0 || criticalFeedStock.length > 0) && (
