@@ -714,39 +714,61 @@ export default function TortoiseList() {
 
         {/* ══════════ TAB KEMATIAN ══════════ */}
         <TabsContent value="kematian" className="mt-5 space-y-4">
-          <p className="text-sm text-muted-foreground">{deathRecords.length} catatan kematian</p>
-          
-          {deathRecords.length === 0 ? (
-            <EmptyState
-              type="sop"
-              customTitle="Belum Ada Catatan Kematian"
-              customDescription="Belum ada记录 kematian tortoise"
-            />
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {deathRecords.map(record => (
-                <Card key={record.id}>
-                  <CardHeader>
-                    <CardTitle>{record.tortoise_name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Tanggal: {new Date(record.death_date).toLocaleDateString('id-ID')}
-                    </p>
-                    <p className="text-sm">
-                      Penyebab: <Badge variant="outline">{record.cause_of_death}</Badge>
-                    </p>
-                    {record.cause_detail && (
-                      <p className="text-xs text-muted-foreground">{record.cause_detail}</p>
-                    )}
-                    {record.recorded_by && (
-                      <p className="text-xs text-muted-foreground">Dicatat oleh: {record.recorded_by}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+          {(() => {
+            const deadTortoises = tortoises.filter(t => t.status === "mati");
+            // Gabungkan data deathRecord ke tortoise berdasarkan tortoise_id
+            const deathMap = {};
+            deathRecords.forEach(r => { if (r.tortoise_id) deathMap[r.tortoise_id] = r; });
+
+            return (
+              <>
+                <p className="text-sm text-muted-foreground">{deadTortoises.length} catatan kematian</p>
+                {deadTortoises.length === 0 ? (
+                  <EmptyState
+                    type="sop"
+                    customTitle="Belum Ada Catatan Kematian"
+                    customDescription="Belum ada catatan kematian tortoise"
+                  />
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {deadTortoises.map(t => {
+                      const dr = deathMap[t.id];
+                      const deathDate = dr?.death_date || t.death_date;
+                      const deathCause = dr?.cause_of_death || t.death_cause;
+                      const recordedBy = dr?.recorded_by;
+                      return (
+                        <Card key={t.id} className="border-red-200 bg-red-50/30">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center justify-between">
+                              <span>{t.name}</span>
+                              <Badge variant="destructive" className="text-xs">Mati</Badge>
+                            </CardTitle>
+                            {t.code && <p className="text-xs text-muted-foreground font-mono">{t.code}</p>}
+                          </CardHeader>
+                          <CardContent className="space-y-1.5">
+                            <p className="text-sm text-muted-foreground">
+                              Kandang terakhir: <span className="text-foreground">{t.enclosure || "—"}</span>
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Tanggal kematian: <span className="text-foreground">
+                                {deathDate ? new Date(deathDate).toLocaleDateString("id-ID") : "Tidak dicatat"}
+                              </span>
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Penyebab: <span className="text-foreground">{deathCause || "—"}</span>
+                            </p>
+                            {recordedBy && (
+                              <p className="text-xs text-muted-foreground">Dicatat oleh: {recordedBy}</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </TabsContent>
 
         {/* ══════════ TAB TERJUAL ══════════ */}
