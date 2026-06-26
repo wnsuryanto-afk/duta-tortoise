@@ -20,7 +20,7 @@ export default function OwnerSummaryWidget() {
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-owner-summary"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 600),
   });
 
   const { data: incubators = [] } = useQuery({
@@ -63,7 +63,8 @@ export default function OwnerSummaryWidget() {
     queryFn: () => base44.entities.Breeding.filter({ status: "inkubasi" }),
   });
 
-  const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "baby").length;
+  // Hanya status "aktif", exclude is_archived
+  const activeTortoises = tortoises.filter((t) => t.status === "aktif" && !t.is_archived).length;
   // Total telur dari SUM current_eggs semua inkubator
   const incubatingEggs = incubators.reduce((sum, inc) => sum + (inc.current_eggs || 0), 0);
   const periodTx = transactions.filter((t) => t.date?.startsWith(currentPeriod));
@@ -98,7 +99,7 @@ export default function OwnerSummaryWidget() {
   });
 
   // Alert: tortoise aktif belum ditimbang > 30 hari
-  const activeTortList = tortoises.filter(t => t.status === "aktif" || t.status === "baby");
+  const activeTortList = tortoises.filter(t => t.status === "aktif" && !t.is_archived);
   const notWeighedRecently = activeTortList.filter(t => {
     const lastWeigh = healthRecords
       .filter(h => h.tortoise_id === t.id || h.tortoise_name === t.name)
@@ -123,7 +124,7 @@ export default function OwnerSummaryWidget() {
     },
     {
       label: "Total Baby",
-      value: tortoises.filter(t => t.status === "baby").length,
+      value: tortoises.filter(t => t.status === "baby" && !t.is_archived).length,
       icon: Shell,
       color: "text-chart-4",
       bg: "bg-chart-4/10",

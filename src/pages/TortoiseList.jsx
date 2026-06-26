@@ -265,7 +265,7 @@ export default function TortoiseList() {
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="kura" className="flex-1 sm:flex-none gap-1.5">
             <Shell className="w-4 h-4" /> Kura-kura
-            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length}</Badge>
+            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "aktif" && !t.is_archived).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="kandang" className="flex-1 sm:flex-none gap-1.5">
             <Home className="w-4 h-4" /> Kandang
@@ -277,7 +277,7 @@ export default function TortoiseList() {
           </TabsTrigger>
           <TabsTrigger value="kematian" className="flex-1 sm:flex-none gap-1.5">
             <Skull className="w-4 h-4" /> Kematian
-            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "mati").length}</Badge>
+            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "mati" || t.is_archived).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="terjual" className="flex-1 sm:flex-none gap-1.5">
             <ShoppingBag className="w-4 h-4" /> Terjual
@@ -289,10 +289,10 @@ export default function TortoiseList() {
         <TabsContent value="kura" className="mt-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-sm text-muted-foreground">Menampilkan <span className="font-semibold text-foreground">{filtered.length}</span> kura dari {tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length} aktif</p>
+              <p className="text-sm text-muted-foreground">Menampilkan <span className="font-semibold text-foreground">{filtered.length}</span> kura dari {tortoises.filter(t => t.status === "aktif" && !t.is_archived).length} aktif</p>
               {(() => {
-                const activeCount = tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length;
-                const visibleActive = filtered.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length;
+                const activeCount = tortoises.filter(t => t.status === "aktif" && !t.is_archived).length;
+                const visibleActive = filtered.filter(t => t.status === "aktif" && !t.is_archived).length;
                 const hidden = activeCount - visibleActive;
                 return (statusFilter === "semua" && !incompleteFilter && !enclosureFilter && !search && hidden > 0) ? (
                   <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">⚠️ {hidden} kura tidak tampil</span>

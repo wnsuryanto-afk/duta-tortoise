@@ -84,7 +84,7 @@ export default function OwnerDashboard({ user }) {
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["owner-tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 100), // turun dari 300
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,
   });
@@ -258,9 +258,10 @@ export default function OwnerDashboard({ user }) {
   const totalStockValue = feedValue + warehouseValue;
 
   // ── Tortoise Calcs ────────────────────────────────
-  const activeTortoises = tortoises.filter(t => ["aktif", "baby"].includes(t.status));
-  const sickTortoises = tortoises.filter(t => t.status === "sakit" || t.is_currently_sick);
-  const soldThisMonth = tortoises.filter(t => t.status === "terjual" && (t.last_status_change || "").startsWith(thisMonthKey));
+  // Hanya status "aktif", exclude is_archived (F14, B119 sudah diarsipkan dengan status "mati")
+  const activeTortoises = tortoises.filter(t => t.status === "aktif" && !t.is_archived);
+  const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
+  const soldThisMonth = tortoises.filter(t => t.status === "terjual" && !t.is_archived && (t.last_status_change || "").startsWith(thisMonthKey));
   const costPerTortoise = activeTortoises.length > 0 ? Math.round(expenseThis / activeTortoises.length) : 0;
 
   // ── Breeding Calcs ────────────────────────────────
@@ -361,7 +362,7 @@ export default function OwnerDashboard({ user }) {
 
   // ── Top Kandang ───────────────────────────────────
   const enclosureStats = enclosures.map(enc => {
-    const count = tortoises.filter(t => t.enclosure === enc.name && ["aktif", "baby"].includes(t.status)).length;
+    const count = tortoises.filter(t => t.enclosure === enc.name && t.status === "aktif" && !t.is_archived).length;
     const sick = sickThisMonth.filter(h => h.enclosure_name === enc.name || tortoises.find(t => t.id === h.tortoise_id && t.enclosure === enc.name)).length;
     return { name: enc.name, count, sick };
   }).filter(e => e.count > 0).sort((a, b) => b.count - a.count || a.sick - b.sick).slice(0, 5);
