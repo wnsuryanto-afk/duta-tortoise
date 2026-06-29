@@ -55,18 +55,24 @@ export default function HealthList() {
   const tortoiseCodeMap = useMemo(() => {
     const nameToCode = {};
     const idToCode = {};
+    const idToStatus = {};
     tortoises.forEach(t => {
+      idToStatus[t.id] = t.status;
       if (t.code) {
         nameToCode[t.name?.toLowerCase()] = t.code.toLowerCase();
         idToCode[t.id] = t.code.toLowerCase();
       }
     });
-    return { nameToCode, idToCode };
+    return { nameToCode, idToCode, idToStatus };
   }, [tortoises]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return records.filter(r => {
+      // Exclude health records milik kura yang sudah mati/terjual (hanya di list ini)
+      const tortoiseStatus = tortoiseCodeMap.idToStatus[r.tortoise_id];
+      if (tortoiseStatus === "mati" || tortoiseStatus === "terjual") return false;
+
       // Search: name, description, OR tortoise code
       const matchSearch = !q
         || r.tortoise_name?.toLowerCase().includes(q)

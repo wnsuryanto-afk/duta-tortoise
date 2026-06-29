@@ -56,6 +56,8 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
     setSaving(true);
     try {
       const balanceAfter = currentSaldo - amt;
+      const byName = user?.full_name || user?.email || "Admin";
+      if (!byName) { toast.error("Data pengguna belum dimuat, coba refresh halaman."); setSaving(false); return; }
       const ledgerPayload = {
         entry_type: "pemakaian",
         amount: amt,
@@ -64,9 +66,9 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         description: description.trim(),
         entry_date: entryDate,
         proof_photo: proofPhoto || undefined,
-        recorded_by_name: user?.full_name || user?.email,
-        recorded_by_email: user?.email,
-        recorded_by_role: role,
+        recorded_by_name: byName,
+        recorded_by_email: user?.email || "",
+        recorded_by_role: role || "admin",
       };
       if (qtyNum > 0) ledgerPayload.qty = qtyNum;
       if (hargaNum > 0) ledgerPayload.harga_satuan = hargaNum;
@@ -85,7 +87,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         date: entryDate,
         description: txDesc,
         reference_id: ledger.id,
-        created_by_name: user?.full_name || user?.email,
+        created_by_name: byName,
       };
       if (qtyNum > 0) txPayload.qty = qtyNum;
       if (hargaNum > 0) txPayload.harga_satuan = hargaNum;
