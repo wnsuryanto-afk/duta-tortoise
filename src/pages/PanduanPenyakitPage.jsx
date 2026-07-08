@@ -33,7 +33,7 @@ export const SEVERITY_CONFIG = {
 export default function PanduanPenyakitPage() {
   const navigate = useNavigate();
   const { role } = useCurrentUser();
-  const canEdit = ["owner", "admin"].includes(role);
+  const canEdit = role === "owner";
 
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("semua");

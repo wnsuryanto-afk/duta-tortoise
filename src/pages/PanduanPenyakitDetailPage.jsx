@@ -15,7 +15,7 @@ export default function PanduanPenyakitDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { role } = useCurrentUser();
-  const canEdit = ["owner", "admin", "manajer"].includes(role);
+  const canEdit = role === "owner";
   const [showForm, setShowForm] = useState(false);
 
   const isNew = id === "new";
