@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -138,7 +138,14 @@ export default function PettyCashPage() {
   const [showRekonsiliasi, setShowRekonsiliasi] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
 
-  const currentSaldo = ledger.length > 0 ? (ledger[0].balance_after || 0) : 0;
+  const currentSaldo = useMemo(() => {
+    if (ledger.length === 0) return 0;
+    const sorted = [...ledger].sort((a, b) => {
+      const d = (b.entry_date || "").localeCompare(a.entry_date || "");
+      return d !== 0 ? d : (b.created_date || "").localeCompare(a.created_date || "");
+    });
+    return sorted[0]?.balance_after || 0;
+  }, [ledger]);
   const isNeg = currentSaldo <= 0;
 
   const invalidate = () => {
@@ -267,7 +274,7 @@ export default function PettyCashPage() {
                 <p className="text-sm mt-1">Klik "Isi Saldo" untuk memulai</p>
               </div>
             ) : (
-              <LedgerHistory ledger={ledger} />
+              <LedgerHistory ledger={ledger} role={role} />
             )}
           </TabsContent>
         )}

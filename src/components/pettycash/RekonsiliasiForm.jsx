@@ -34,6 +34,8 @@ export default function RekonsiliasiForm({ currentSaldo, user, role, onClose, on
         recorded_by_role: role,
       });
       // Penyesuaian TIDAK membuat FinanceTransaction
+      // Recalculate all balance_after to ensure chain consistency
+      await base44.functions.invoke('recalculatePettyCashBalance', {});
       toast.success("Rekonsiliasi disimpan! Saldo disesuaikan.");
       onSaved();
       onClose();

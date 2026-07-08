@@ -30,6 +30,8 @@ export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }
         recorded_by_email: user?.email,
         recorded_by_role: role,
       });
+      // Recalculate all balance_after to ensure chain consistency
+      await base44.functions.invoke('recalculatePettyCashBalance', {});
       toast.success("Saldo berhasil diisi!");
       onSaved();
       onClose();

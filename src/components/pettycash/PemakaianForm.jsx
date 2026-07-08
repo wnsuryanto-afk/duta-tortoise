@@ -103,6 +103,8 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         entity_name: `Kas kecil — ${description.trim()}`,
         changes_summary: `Mencatat pemakaian kas kecil "${description.trim()}" sebesar Rp ${amt.toLocaleString("id-ID")} (${category})`,
       });
+      // Recalculate all balance_after to ensure chain consistency (handles backdated entries)
+      await base44.functions.invoke('recalculatePettyCashBalance', {});
       toast.success("Pemakaian dicatat & masuk Laba Rugi!");
       onSaved();
       onClose();

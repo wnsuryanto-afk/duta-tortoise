@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import DiagnosisPanel, { DIAGNOSIS_CATEGORIES } from "./DiagnosisPanel";
 import DosisKalkulator from "./DosisKalkulator";
 import TreatmentItemsPicker from "./TreatmentItemsPicker";
+import TortoiseSearchSelect from "./TortoiseSearchSelect";
 import { useTestMode } from "@/lib/useTestMode";
 
 const SEVERITY_OPTIONS = [
@@ -29,8 +30,8 @@ export default function HealthForm({ open, onClose, editData }) {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 200),
+    queryKey: ["tortoises-active"],
+    queryFn: () => base44.entities.Tortoise.filter({ status: "aktif" }, "-created_date", 500),
   });
 
   const { data: warehouseItems = [] } = useQuery({
@@ -180,14 +181,7 @@ export default function HealthForm({ open, onClose, editData }) {
             <div className="space-y-1.5">
               <Label>Tortoise *</Label>
               {tortoises.length > 0 ? (
-                <Select value={form.tortoise_id} onValueChange={handleTortoiseSelect}>
-                  <SelectTrigger><SelectValue placeholder="Pilih tortoise" /></SelectTrigger>
-                  <SelectContent>
-                    {tortoises.filter(t => t.status !== "terjual" && t.status !== "mati" && t.status !== "diarsipkan").map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name} {t.code ? `(${t.code})` : ""}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <TortoiseSearchSelect tortoises={tortoises} value={form.tortoise_id} onChange={handleTortoiseSelect} />
               ) : (
                 <Input value={form.tortoise_name} onChange={(e) => handleChange("tortoise_name", e.target.value)} required />
               )}

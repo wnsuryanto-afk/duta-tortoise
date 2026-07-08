@@ -1,12 +1,20 @@
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ImageIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Search, ImageIcon, Pencil, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
+import { logActivity } from "@/lib/logActivity";
+import EditLedgerEntryDialog from "./EditLedgerEntryDialog";
+import { toast } from "sonner";
 
 const TYPE_CONFIG = {
   top_up:      { label: "Top Up",      color: "bg-green-100 text-green-700 border-green-200", sign: "+" },
@@ -20,20 +28,40 @@ function formatRp(n) {
   return "Rp " + Number(n || 0).toLocaleString("id-ID");
 }
 
-export default function LedgerHistory({ ledger }) {
+export default function LedgerHistory({ ledger, role }) {
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterCat, setFilterCat] = useState("all");
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [deletingEntry, setDeletingEntry] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const { cats: pettyCats } = usePettyCashCategories();
 
-  const months = useMemo(() => {
-    return [...new Set(ledger.map(l => l.entry_date?.substring(0, 7)).filter(Boolean))].sort().reverse();
+  const canEdit = ["owner", "admin", "manajer"].includes(role);
+  const canDelete = ["owner", "admin"].includes(role);
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["petty-cash-ledger"] });
+    qc.invalidateQueries({ queryKey: ["finance-transactions"] });
+  };
+
+  // Sort by (entry_date desc, created_date desc) for correct latest-first display
+  const sortedLedger = useMemo(() => {
+    return [...ledger].sort((a, b) => {
+      const d = (b.entry_date || "").localeCompare(a.entry_date || "");
+      return d !== 0 ? d : (b.created_date || "").localeCompare(a.created_date || "");
+    });
   }, [ledger]);
+
+  const months = useMemo(() => {
+    return [...new Set(sortedLedger.map(l => l.entry_date?.substring(0, 7)).filter(Boolean))].sort().reverse();
+  }, [sortedLedger]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return ledger.filter(l => {
+    return sortedLedger.filter(l => {
       const matchSearch = !q
         || l.description?.toLowerCase().includes(q)
         || l.notes?.toLowerCase().includes(q)
@@ -43,7 +71,32 @@ export default function LedgerHistory({ ledger }) {
       const matchCat = filterCat === "all" || l.category === filterCat;
       return matchSearch && matchMonth && matchType && matchCat;
     });
-  }, [ledger, search, filterMonth, filterType, filterCat]);
+  }, [sortedLedger, search, filterMonth, filterType, filterCat]);
+
+  const handleDelete = async () => {
+    if (!deletingEntry) return;
+    setDeleteBusy(true);
+    try {
+      if (deletingEntry.finance_tx_id) {
+        await base44.entities.FinanceTransaction.delete(deletingEntry.finance_tx_id);
+      }
+      await base44.entities.PettyCashLedger.delete(deletingEntry.id);
+      await base44.functions.invoke('recalculatePettyCashBalance', {});
+      await logActivity({
+        action: "delete",
+        entity_type: "PettyCashLedger",
+        entity_id: deletingEntry.id,
+        entity_name: `Kas kecil — ${deletingEntry.description || ""}`,
+        changes_summary: `Menghapus entri ${deletingEntry.entry_type} Rp ${Number(deletingEntry.amount || 0).toLocaleString("id-ID")}`,
+      });
+      toast.success("Entri dihapus & saldo dihitung ulang");
+      invalidate();
+      setDeletingEntry(null);
+    } catch (err) {
+      toast.error("Gagal hapus: " + (err?.message || ""));
+    }
+    setDeleteBusy(false);
+  };
 
   return (
     <div className="space-y-3">
@@ -114,11 +167,62 @@ export default function LedgerHistory({ ledger }) {
                   </p>
                   <p className="text-xs text-muted-foreground">Saldo: {formatRp(l.balance_after)}</p>
                 </div>
+                {(canEdit || canDelete) && (
+                  <div className="flex flex-col gap-1 flex-shrink-0">
+                    {canEdit && (
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingEntry(l)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => setDeletingEntry(l)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={(v) => !v && setEditingEntry(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="w-5 h-5 text-primary" /> Edit Entri Kas Kecil</DialogTitle>
+          </DialogHeader>
+          {editingEntry && (
+            <EditLedgerEntryDialog
+              entry={editingEntry}
+              onClose={() => setEditingEntry(null)}
+              onSaved={() => { invalidate(); setEditingEntry(null); }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingEntry} onOpenChange={(v) => !v && setDeletingEntry(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Entri Kas Kecil?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Entri "{deletingEntry?.description}" sebesar {formatRp(deletingEntry?.amount)} akan dihapus permanen.
+              {deletingEntry?.finance_tx_id && " Transaksi keuangan terkait juga akan dihapus."}
+              {" "}Saldo berjalan akan dihitung ulang otomatis.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700" disabled={deleteBusy}>
+              {deleteBusy && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
