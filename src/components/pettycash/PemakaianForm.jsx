@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload, AlertTriangle, Camera, X } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, Camera, X, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
 import { PETTYCASH_CATS as PEMAKAIAN_CATS } from "@/lib/financeCategories";
@@ -24,6 +24,9 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmOver, setConfirmOver] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanWarning, setScanWarning] = useState(false);
+  const [scanError, setScanError] = useState(false);
   const { cats: pettyCats } = usePettyCashCategories();
 
   // Kalau qty & harga_satuan keduanya diisi → auto total; kalau tidak, pakai manual
@@ -48,6 +51,66 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       setProofPhoto(file_url);
     } catch { toast.error("Gagal upload foto"); }
     setUploading(false);
+  };
+
+  const handleScan = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) { toast.error("Format harus JPG/PNG/WEBP"); return; }
+    setScanning(true);
+    setScanWarning(false);
+    setScanError(false);
+    try {
+      let f = file;
+      if (file.size > 500 * 1024) {
+        const res = await compressImage(file, { maxWidthOrHeight: 1280, quality: 0.8 });
+        f = res.file;
+      }
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
+      setProofPhoto(file_url);
+      setNoNota(false);
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: "Baca struk/nota belanja Indonesia ini. Ekstrak dalam JSON: total (angka rupiah), tanggal (YYYY-MM-DD, jika tidak ada pakai null), keterangan (ringkasan barang, maks 10 kata), kategori (pilih satu: obat/vitamin/pakan/peralatan_kandang/transportasi/solar_bbm/rokok/konsumsi/lainnya), qty (angka atau null), harga_satuan (angka atau null). Jika bukan nota atau tidak terbaca, kembalikan {\"error\": true}.",
+        response_json_schema: {
+          type: "object",
+          properties: {
+            total: { type: "number" },
+            tanggal: { type: "string" },
+            keterangan: { type: "string" },
+            kategori: { type: "string" },
+            qty: { type: "number" },
+            harga_satuan: { type: "number" },
+            error: { type: "boolean" }
+          }
+        },
+        file_urls: [file_url],
+      });
+
+      if (result?.error) {
+        setScanError(true);
+      } else if (result) {
+        if (result.qty && result.harga_satuan) {
+          setQty(String(result.qty));
+          setHargaSatuan(String(result.harga_satuan));
+          setAmountManual("");
+        } else if (result.total) {
+          setAmountManual(String(result.total));
+          setQty("");
+          setHargaSatuan("");
+        }
+        if (result.keterangan) setDescription(result.keterangan);
+        if (result.tanggal) setEntryDate(result.tanggal);
+        const validCats = (pettyCats.length ? pettyCats : PEMAKAIAN_CATS).map(c => c.value);
+        if (result.kategori && validCats.includes(result.kategori)) setCategory(result.kategori);
+        setScanWarning(true);
+      }
+    } catch (err) {
+      setScanError(true);
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleSave = async () => {
@@ -121,6 +184,25 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
 
   return (
     <div className="space-y-3">
+      {/* Scan Nota Otomatis */}
+      <label className="flex items-center justify-center gap-2 w-full p-3 bg-primary/10 border-2 border-dashed border-primary/40 rounded-lg cursor-pointer hover:bg-primary/15 text-primary font-semibold text-sm transition-colors">
+        {scanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <ScanLine className="w-5 h-5" />}
+        {scanning ? "Membaca nota..." : "📷 Scan Nota"}
+        <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" capture="environment" className="hidden" onChange={handleScan} disabled={scanning || saving} />
+      </label>
+      {scanWarning && (
+        <div className="flex items-center gap-2 p-2.5 bg-yellow-50 border border-yellow-300 rounded-lg text-xs text-yellow-800">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>Hasil scan otomatis — periksa nominal sebelum simpan.</span>
+        </div>
+      )}
+      {scanError && (
+        <div className="flex items-center gap-2 p-2.5 bg-orange-50 border border-orange-300 rounded-lg text-xs text-orange-800">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>Nota tidak terbaca, silakan isi manual.</span>
+        </div>
+      )}
+
       {/* Qty & Harga Satuan */}
       <div className="grid grid-cols-2 gap-2">
         <div>
@@ -225,7 +307,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       )}
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button className="flex-1" onClick={handleSave} disabled={saving || uploading || !amt || !category || !description.trim() || (!proofPhoto && !noNota) || (noNota && !noNotaReason.trim())}
+        <Button className="flex-1" onClick={handleSave} disabled={saving || scanning || uploading || !amt || !category || !description.trim() || (!proofPhoto && !noNota) || (noNota && !noNotaReason.trim())}
           variant={isOver ? "destructive" : "default"}>
           {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
           {isOver && !confirmOver ? "Lanjutkan?" : "Catat Pemakaian"}
