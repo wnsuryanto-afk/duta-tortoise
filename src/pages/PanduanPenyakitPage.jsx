@@ -119,11 +119,14 @@ export default function PanduanPenyakitPage() {
                 className="text-left bg-card rounded-xl border border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all overflow-hidden group"
               >
                 <div className="aspect-[4/3] bg-muted/30 flex items-center justify-center overflow-hidden">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.diagnosis_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                  ) : (
-                    <BookOpen className="w-10 h-10 text-muted-foreground/30" />
-                  )}
+                  {(() => {
+                    const coverUrl = (p.images?.length > 0 && p.images[0]?.url) || p.image_url;
+                    return coverUrl ? (
+                      <img src={coverUrl} alt={p.diagnosis_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    ) : (
+                      <BookOpen className="w-10 h-10 text-muted-foreground/30" />
+                    );
+                  })()}
                 </div>
                 <div className="p-3 space-y-1.5">
                   <p className="font-semibold text-sm leading-tight line-clamp-2">{p.diagnosis_name}</p>
