@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, ImageIcon, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
@@ -36,6 +36,7 @@ export default function LedgerHistory({ ledger, role }) {
   const [filterCat, setFilterCat] = useState("all");
   const [editingEntry, setEditingEntry] = useState(null);
   const [deletingEntry, setDeletingEntry] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const { cats: pettyCats } = usePettyCashCategories();
 
@@ -148,7 +149,13 @@ export default function LedgerHistory({ ledger, role }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-sm font-medium truncate">{l.description || "—"}</span>
-                    {l.proof_photo && <ImageIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />}
+                    {l.proof_photo ? (
+                      <button type="button" onClick={() => setPhotoPreview(l.proof_photo)} className="flex-shrink-0">
+                        <img src={l.proof_photo} alt="nota" className="w-8 h-8 rounded object-cover border hover:opacity-80 transition-opacity" />
+                      </button>
+                    ) : (l.entry_type === "pemakaian" && l.notes) ? (
+                      <Badge variant="outline" className="text-[10px] py-0 bg-gray-100 text-gray-500 border-gray-200" title={l.notes}>Tanpa nota</Badge>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                     <Badge variant="outline" className={`text-[10px] py-0 ${tc.color}`}>{tc.label}</Badge>
@@ -223,6 +230,13 @@ export default function LedgerHistory({ ledger, role }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Photo Preview */}
+      <Dialog open={!!photoPreview} onOpenChange={(v) => !v && setPhotoPreview(null)}>
+        <DialogContent className="max-w-md p-2">
+          {photoPreview && <img src={photoPreview} alt="nota" className="w-full rounded-lg" />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

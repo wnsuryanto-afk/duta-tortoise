@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload, AlertTriangle } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, Camera, X } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
 import { PETTYCASH_CATS as PEMAKAIAN_CATS } from "@/lib/financeCategories";
@@ -19,6 +19,8 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
   const [description, setDescription] = useState("");
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split("T")[0]);
   const [proofPhoto, setProofPhoto] = useState("");
+  const [noNota, setNoNota] = useState(false);
+  const [noNotaReason, setNoNotaReason] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmOver, setConfirmOver] = useState(false);
@@ -52,6 +54,8 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
     if (!amt || amt <= 0) { toast.error("Nominal harus > 0"); return; }
     if (!category) { toast.error("Pilih kategori"); return; }
     if (!description.trim()) { toast.error("Keterangan wajib diisi"); return; }
+    if (!proofPhoto && !noNota) { toast.error("Foto nota wajib. Atau centang 'Tidak ada nota' dengan alasan."); return; }
+    if (noNota && !noNotaReason.trim()) { toast.error("Alasan 'tidak ada nota' wajib diisi"); return; }
     if (isOver && !confirmOver) { setConfirmOver(true); return; }
     setSaving(true);
     try {
@@ -65,7 +69,8 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         category,
         description: description.trim(),
         entry_date: entryDate,
-        proof_photo: proofPhoto || undefined,
+        proof_photo: noNota ? undefined : (proofPhoto || undefined),
+        notes: noNota ? noNotaReason.trim() : undefined,
         recorded_by_name: byName,
         recorded_by_email: user?.email || "",
         recorded_by_role: role || "admin",
@@ -187,22 +192,40 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         <Label className="text-xs">Tanggal *</Label>
         <Input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} className="mt-1" />
       </div>
-      <div>
-        <Label className="text-xs">Foto Nota (opsional)</Label>
-        <div className="flex items-center gap-2 mt-1">
-          <label className="flex items-center gap-1.5 px-3 py-2 border rounded-lg cursor-pointer hover:bg-muted text-xs text-muted-foreground">
-            <Upload className="w-3.5 h-3.5" /> {uploading ? "Uploading..." : "Pilih Foto"}
-            <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" className="hidden" onChange={handlePhoto} disabled={uploading} />
-          </label>
-          {proofPhoto && <img src={proofPhoto} alt="nota" className="w-12 h-12 rounded-lg object-cover border" />}
-        </div>
+      <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border">
+        <Label className="text-xs font-semibold flex items-center gap-1.5">
+          <Camera className="w-3.5 h-3.5" /> Foto Nota {noNota ? "" : "*"}
+        </Label>
+        {!noNota && (
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1.5 px-3 py-2 border rounded-lg cursor-pointer hover:bg-muted text-xs text-muted-foreground bg-background">
+              <Upload className="w-3.5 h-3.5" /> {uploading ? "Uploading..." : "Pilih / Ambil Foto"}
+              <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" capture="environment" className="hidden" onChange={handlePhoto} disabled={uploading || saving} />
+            </label>
+            {proofPhoto && (
+              <div className="relative">
+                <img src={proofPhoto} alt="nota" className="w-14 h-14 rounded-lg object-cover border" />
+                <button type="button" onClick={() => setProofPhoto("")} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={noNota} onChange={e => setNoNota(e.target.checked)} className="w-4 h-4 rounded border-border" />
+          <span className="text-xs text-muted-foreground">Tidak ada nota</span>
+        </label>
+        {noNota && (
+          <Input value={noNotaReason} onChange={e => setNoNotaReason(e.target.value)} placeholder="Alasan (cth: parkir, tanpa nota) *" className="text-xs" />
+        )}
       </div>
       {confirmOver && (
         <p className="text-xs text-red-600 font-medium">⚠️ Konfirmasi: Saldo akan menjadi minus (Rp {(currentSaldo - amt).toLocaleString("id-ID")})</p>
       )}
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button className="flex-1" onClick={handleSave} disabled={saving || uploading || !amt || !category || !description.trim()}
+        <Button className="flex-1" onClick={handleSave} disabled={saving || uploading || !amt || !category || !description.trim() || (!proofPhoto && !noNota) || (noNota && !noNotaReason.trim())}
           variant={isOver ? "destructive" : "default"}>
           {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
           {isOver && !confirmOver ? "Lanjutkan?" : "Catat Pemakaian"}
