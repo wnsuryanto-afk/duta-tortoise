@@ -62,7 +62,19 @@
     "kasbon_deduction": {
       "type": "number",
       "default": 0,
-      "description": "Potongan kasbon"
+      "description": "Potongan kasbon periode ini"
+    },
+    "kasbon_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ID Kasbon yang dipotong di slip ini"
+    },
+    "kasbon_remaining": {
+      "type": "number",
+      "default": 0,
+      "description": "Sisa kasbon setelah potongan periode ini"
     },
     "total_poin": {
       "type": "number",

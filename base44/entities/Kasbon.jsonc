@@ -12,7 +12,8 @@
       "type": "string"
     },
     "amount": {
-      "type": "number"
+      "type": "number",
+      "description": "Total nominal kasbon yang dipinjam"
     },
     "request_date": {
       "type": "string",
@@ -33,11 +34,13 @@
     },
     "weekly_deduction": {
       "type": "number",
-      "default": 100000
+      "default": 100000,
+      "description": "Potongan per periode gaji (default Rp 100.000)"
     },
     "total_paid": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "Total yang sudah dibayar/dipotong"
     },
     "approved_by": {
       "type": "string"
@@ -45,6 +48,52 @@
     "approved_date": {
       "type": "string",
       "format": "date"
+    },
+    "deduction_log": {
+      "type": "array",
+      "description": "Riwayat potongan/pembayaran kasbon",
+      "items": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Nominal potongan/pembayaran"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Tanggal potongan"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "salary_slip",
+              "cash"
+            ],
+            "description": "manual = catat potongan, salary_slip = dipotong dari slip gaji, cash = pelunasan tunai"
+          },
+          "salary_period": {
+            "type": "string",
+            "description": "Periode gaji (YYYY-MM) jika dipotong via slip"
+          },
+          "salary_slip_id": {
+            "type": "string",
+            "description": "ID slip gaji jika dipotong via slip (anti-dobel potong)"
+          },
+          "recorded_by": {
+            "type": "string",
+            "description": "Nama yang mencatat"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "finance_tx_id": {
+      "type": "string",
+      "description": "ID FinanceTransaction pengeluaran saat kasbon dicairkan (opsional)"
     },
     "notes": {
       "type": "string"

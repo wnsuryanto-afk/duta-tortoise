@@ -150,10 +150,12 @@ export default function MonthlySalaryPage() {
     kasbons.forEach((k) => {
       const emp = empMap[k.employee_email];
       if (!emp) return;
+      if (k.status !== "approved") return;
       const remaining = (k.amount || 0) - (k.total_paid || 0);
-      if (remaining > 0) {
-        emp.kasbonDeduction += Math.min(remaining, (k.weekly_deduction || 100000) * 4);
-      }
+      if (remaining <= 0) return;
+      const alreadyDeducted = (k.deduction_log || []).some(d => d.salary_period === period && d.salary_slip_id);
+      if (alreadyDeducted) return;
+      emp.kasbonDeduction += Math.min(remaining, k.weekly_deduction || 100000);
     });
 
     // Calculate salary

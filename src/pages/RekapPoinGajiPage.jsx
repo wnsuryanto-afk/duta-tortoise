@@ -130,7 +130,20 @@ export default function RekapPoinGajiPage() {
       let deduction = salaryType === "harian" ? 0 : absenDays * absentDeduction;
 
       const empKasbons = kasbons.filter(k => k.employee_email === emp.email && k.status === "approved");
-      const kasbonDeduction = empKasbons.reduce((s, k) => s + (k.installment_amount || k.weekly_deduction || 0), 0);
+      let kasbonDeduction = 0;
+      let kasbonRemaining = 0;
+      const kasbonIdsToDeduct = [];
+      empKasbons.forEach(k => {
+        const sisaK = (k.amount || 0) - (k.total_paid || 0);
+        if (sisaK <= 0) return;
+        // Anti-dobel: skip jika sudah dipotong untuk periode ini via slip
+        const alreadyDeducted = (k.deduction_log || []).some(d => d.salary_period === selectedMonth && d.salary_slip_id);
+        if (alreadyDeducted) { kasbonRemaining += sisaK; return; }
+        const deduction = Math.min(k.weekly_deduction || 100000, sisaK);
+        kasbonDeduction += deduction;
+        kasbonIdsToDeduct.push(k.id);
+        kasbonRemaining += (sisaK - deduction);
+      });
 
       const netTotal = effectiveBase + overtimePay + vegPay + kpiBonus - deduction - kasbonDeduction;
 
@@ -141,7 +154,7 @@ export default function RekapPoinGajiPage() {
         emp, config, totalPoin, targetTercapai, selisihPoin,
         bonus, potonganPoin, kpiBonus, netTotal, effectiveBase,
         overtimePay, vegPay, vegTrips: totalVegTrips, vegDates: vegData.dates,
-        deduction, kasbonDeduction, hadirDays,
+        deduction, kasbonDeduction, kasbonIdsToDeduct, kasbonRemaining, hadirDays,
         existingSlip, pointValue,
       };
     });
@@ -179,6 +192,8 @@ export default function RekapPoinGajiPage() {
       vegetable_trip_dates: row.vegDates,
       absent_deduction: row.deduction,
       kasbon_deduction: row.kasbonDeduction,
+      kasbon_ids: row.kasbonIdsToDeduct,
+      kasbon_remaining: row.kasbonRemaining,
       net_total: row.netTotal,
       total_points: row.totalPoin,
       point_value: row.pointValue,
@@ -190,12 +205,41 @@ export default function RekapPoinGajiPage() {
       status: "draft",
       generated_date: format(new Date(), "yyyy-MM-dd"),
     };
+    let slipId;
     if (row.existingSlip) {
       await base44.entities.SalarySlip.update(row.existingSlip.id, data);
+      slipId = row.existingSlip.id;
       toast.success(`Slip gaji ${row.emp.full_name || row.emp.email} diperbarui`);
     } else {
-      await base44.entities.SalarySlip.create(data);
+      const created = await base44.entities.SalarySlip.create(data);
+      slipId = created.id;
       toast.success(`Slip gaji ${row.emp.full_name || row.emp.email} dibuat`);
+    }
+    // Update kasbon: total_paid + deduction_log (anti-dobel via salary_slip_id)
+    for (const kasbonId of row.kasbonIdsToDeduct || []) {
+      const k = kasbons.find(kk => kk.id === kasbonId);
+      if (!k) continue;
+      const sisaK = (k.amount || 0) - (k.total_paid || 0);
+      if (sisaK <= 0) continue;
+      const deduction = Math.min(k.weekly_deduction || 100000, sisaK);
+      const newPaid = (k.total_paid || 0) + deduction;
+      const newStatus = newPaid >= k.amount ? "lunas" : "approved";
+      const newLog = [...(k.deduction_log || []), {
+        amount: deduction,
+        date: format(new Date(), "yyyy-MM-dd"),
+        method: "salary_slip",
+        salary_period: selectedMonth,
+        salary_slip_id: slipId,
+        recorded_by: user?.full_name || user?.email,
+      }];
+      await base44.entities.Kasbon.update(k.id, {
+        total_paid: newPaid,
+        status: newStatus,
+        deduction_log: newLog,
+      });
+    }
+    if ((row.kasbonIdsToDeduct || []).length > 0) {
+      qc.invalidateQueries({ queryKey: ["kasbons"] });
     }
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
     setGenerating(null);
@@ -221,6 +265,8 @@ export default function RekapPoinGajiPage() {
         vegetable_trip_dates: row.vegDates,
         absent_deduction: row.deduction,
         kasbon_deduction: row.kasbonDeduction,
+        kasbon_ids: row.kasbonIdsToDeduct,
+        kasbon_remaining: row.kasbonRemaining,
         net_total: row.netTotal,
         total_poin: row.totalPoin,
         poin_bonus: row.bonus,
@@ -229,13 +275,39 @@ export default function RekapPoinGajiPage() {
         status: "draft",
         generated_date: format(new Date(), "yyyy-MM-dd"),
       };
+      let slipId;
       if (row.existingSlip) {
         await base44.entities.SalarySlip.update(row.existingSlip.id, data);
+        slipId = row.existingSlip.id;
       } else {
-        await base44.entities.SalarySlip.create(data);
+        const created = await base44.entities.SalarySlip.create(data);
+        slipId = created.id;
+      }
+      for (const kasbonId of row.kasbonIdsToDeduct || []) {
+        const k = kasbons.find(kk => kk.id === kasbonId);
+        if (!k) continue;
+        const sisaK = (k.amount || 0) - (k.total_paid || 0);
+        if (sisaK <= 0) continue;
+        const deduction = Math.min(k.weekly_deduction || 100000, sisaK);
+        const newPaid = (k.total_paid || 0) + deduction;
+        const newStatus = newPaid >= k.amount ? "lunas" : "approved";
+        const newLog = [...(k.deduction_log || []), {
+          amount: deduction,
+          date: format(new Date(), "yyyy-MM-dd"),
+          method: "salary_slip",
+          salary_period: selectedMonth,
+          salary_slip_id: slipId,
+          recorded_by: user?.full_name || user?.email,
+        }];
+        await base44.entities.Kasbon.update(k.id, {
+          total_paid: newPaid,
+          status: newStatus,
+          deduction_log: newLog,
+        });
       }
     }
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
+    qc.invalidateQueries({ queryKey: ["kasbons"] });
     toast.success(`${rekapData.length} slip gaji berhasil dibuat/diperbarui`);
     setGenerating(null);
   };

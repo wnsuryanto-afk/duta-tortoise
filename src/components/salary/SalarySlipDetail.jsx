@@ -241,7 +241,14 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
               </tr>
               {hasKasbonDed && (
                 <tr>
-                  <td className="p-2 border border-border text-red-600">Potongan Kasbon</td>
+                  <td className="p-2 border border-border text-red-600">
+                    Potongan Kasbon
+                    {(slip.kasbon_remaining || 0) > 0 && (
+                      <span className="block text-[10px] text-muted-foreground ml-1">
+                        Sisa: {fmt(slip.kasbon_remaining)}
+                      </span>
+                    )}
+                  </td>
                   <td className="p-2 border border-border text-right text-red-600 font-medium">({fmt(slip.kasbon_deduction)})</td>
                 </tr>
               )}
