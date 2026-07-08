@@ -25,7 +25,24 @@ const TYPE_CONFIG = {
 const CAT_LABELS = PETTYCASH_CAT_LABELS;
 
 function formatRp(n) {
-  return "Rp " + Number(n || 0).toLocaleString("id-ID");
+  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
+}
+
+function safeFormatDate(dateStr, createdDate) {
+  const opts = { locale: id };
+  if (dateStr && dateStr !== "null" && dateStr !== "undefined") {
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) return format(d, "d MMM yyyy", opts);
+    } catch {}
+  }
+  if (createdDate) {
+    try {
+      const d = new Date(createdDate);
+      if (!isNaN(d.getTime())) return format(d, "d MMM yyyy", opts);
+    } catch {}
+  }
+  return "—";
 }
 
 export default function LedgerHistory({ ledger, role }) {
@@ -57,7 +74,12 @@ export default function LedgerHistory({ ledger, role }) {
   }, [ledger]);
 
   const months = useMemo(() => {
-    return [...new Set(sortedLedger.map(l => l.entry_date?.substring(0, 7)).filter(Boolean))].sort().reverse();
+    return [...new Set(sortedLedger.map(l => {
+      if (!l.entry_date || l.entry_date === "null") return null;
+      const d = new Date(l.entry_date);
+      if (isNaN(d.getTime())) return null;
+      return l.entry_date.substring(0, 7);
+    }).filter(Boolean))].sort().reverse();
   }, [sortedLedger]);
 
   const filtered = useMemo(() => {
@@ -163,7 +185,7 @@ export default function LedgerHistory({ ledger, role }) {
                       <Badge variant="outline" className="text-[10px] py-0">{CAT_LABELS[l.category] || l.category}</Badge>
                     )}
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(l.entry_date), "d MMM yyyy", { locale: id })}
+                      {safeFormatDate(l.entry_date, l.created_date)}
                     </span>
                     <span className="text-xs text-muted-foreground">· {l.recorded_by_name || "—"}</span>
                   </div>

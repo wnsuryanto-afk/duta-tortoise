@@ -31,7 +31,7 @@ const STATUS_CONFIG = {
 };
 
 function formatRp(n) {
-  return "Rp " + Number(n || 0).toLocaleString("id-ID");
+  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
 }
 
 function RequestForm({ user, role, users, onClose, onSaved }) {
@@ -144,7 +144,7 @@ export default function PettyCashPage() {
       const d = (b.entry_date || "").localeCompare(a.entry_date || "");
       return d !== 0 ? d : (b.created_date || "").localeCompare(a.created_date || "");
     });
-    return sorted[0]?.balance_after || 0;
+    return Math.round(sorted[0]?.balance_after || 0);
   }, [ledger]);
   const isNeg = currentSaldo <= 0;
 

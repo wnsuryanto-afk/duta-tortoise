@@ -27,12 +27,14 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
   const [scanning, setScanning] = useState(false);
   const [scanWarning, setScanWarning] = useState(false);
   const [scanError, setScanError] = useState(false);
+  const [scanDateInfo, setScanDateInfo] = useState(false);
+  const [scanDateWarning, setScanDateWarning] = useState(false);
   const { cats: pettyCats } = usePettyCashCategories();
 
   // Kalau qty & harga_satuan keduanya diisi → auto total; kalau tidak, pakai manual
   const qtyNum = Number(qty) || 0;
   const hargaNum = Number(hargaSatuan) || 0;
-  const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
+  const autoTotal = qtyNum > 0 && hargaNum > 0 ? Math.round(qtyNum * hargaNum) : null;
   const amt = autoTotal !== null ? autoTotal : (Number(amountManual) || 0);
   const isOver = amt > currentSaldo;
 
@@ -61,6 +63,8 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
     setScanning(true);
     setScanWarning(false);
     setScanError(false);
+    setScanDateInfo(false);
+    setScanDateWarning(false);
     try {
       let f = file;
       if (file.size > 500 * 1024) {
@@ -92,16 +96,43 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         setScanError(true);
       } else if (result) {
         if (result.qty && result.harga_satuan) {
-          setQty(String(result.qty));
-          setHargaSatuan(String(result.harga_satuan));
+          setQty(String(Math.round(result.qty)));
+          setHargaSatuan(String(Math.round(result.harga_satuan)));
           setAmountManual("");
         } else if (result.total) {
-          setAmountManual(String(result.total));
+          setAmountManual(String(Math.round(result.total)));
           setQty("");
           setHargaSatuan("");
         }
         if (result.keterangan) setDescription(result.keterangan);
-        if (result.tanggal) setEntryDate(result.tanggal);
+        // Validate scanned date: null/invalid → today; suspicious year → today + warning
+        const todayStr = new Date().toISOString().split("T")[0];
+        const currentYear = new Date().getFullYear();
+        const rawDate = result.tanggal;
+        let parsedDate = null;
+        if (rawDate && rawDate !== "null" && rawDate !== "undefined") {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) parsedDate = d;
+        }
+        if (!parsedDate) {
+          setEntryDate(todayStr);
+          setScanDateInfo(true);
+          setScanDateWarning(false);
+        } else {
+          const yr = parsedDate.getFullYear();
+          if (yr < 2025 || yr > currentYear) {
+            setEntryDate(todayStr);
+            setScanDateInfo(false);
+            setScanDateWarning(true);
+          } else {
+            const y = parsedDate.getFullYear();
+            const m = String(parsedDate.getMonth() + 1).padStart(2, "0");
+            const d = String(parsedDate.getDate()).padStart(2, "0");
+            setEntryDate(`${y}-${m}-${d}`);
+            setScanDateInfo(false);
+            setScanDateWarning(false);
+          }
+        }
         const validCats = (pettyCats.length ? pettyCats : PEMAKAIAN_CATS).map(c => c.value);
         if (result.kategori && validCats.includes(result.kategori)) setCategory(result.kategori);
         setScanWarning(true);
@@ -122,7 +153,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
     if (isOver && !confirmOver) { setConfirmOver(true); return; }
     setSaving(true);
     try {
-      const balanceAfter = currentSaldo - amt;
+      const balanceAfter = Math.round(currentSaldo - amt);
       const byName = user?.full_name || user?.email || "Admin";
       if (!byName) { toast.error("Data pengguna belum dimuat, coba refresh halaman."); setSaving(false); return; }
       const ledgerPayload = {
@@ -272,7 +303,13 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       </div>
       <div>
         <Label className="text-xs">Tanggal *</Label>
-        <Input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} className="mt-1" />
+        <Input type="date" value={entryDate} onChange={e => { setEntryDate(e.target.value); setScanDateWarning(false); setScanDateInfo(false); }} className={`mt-1 ${scanDateWarning ? "border-yellow-400 bg-yellow-50" : ""}`} />
+        {scanDateInfo && (
+          <p className="text-xs text-blue-600 mt-1">ℹ️ Tanggal tidak terbaca, dipakai hari ini.</p>
+        )}
+        {scanDateWarning && (
+          <p className="text-xs text-yellow-700 mt-1">⚠️ Tahun tanggal tidak wajar — periksa tanggal.</p>
+        )}
       </div>
       <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border">
         <Label className="text-xs font-semibold flex items-center gap-1.5">

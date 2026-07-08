@@ -19,7 +19,7 @@ export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }
     if (!amt || amt <= 0) { toast.error("Nominal harus > 0"); return; }
     setSaving(true);
     try {
-      const balanceAfter = currentSaldo + amt;
+      const balanceAfter = Math.round(currentSaldo + amt);
       await base44.entities.PettyCashLedger.create({
         entry_type: "top_up",
         amount: amt,

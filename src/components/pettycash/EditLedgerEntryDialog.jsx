@@ -47,7 +47,7 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
 
   const qtyNum = Number(qty) || 0;
   const hargaNum = Number(hargaSatuan) || 0;
-  const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
+  const autoTotal = qtyNum > 0 && hargaNum > 0 ? Math.round(qtyNum * hargaNum) : null;
   const amt = autoTotal !== null ? autoTotal : (Number(amountManual) || 0);
 
   const isPemakaian = entry.entry_type === "pemakaian";

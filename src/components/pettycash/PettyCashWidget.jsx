@@ -10,7 +10,7 @@ export default function PettyCashWidget() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const saldo = ledger.length > 0 ? (ledger[0].balance_after || 0) : 0;
+  const saldo = ledger.length > 0 ? Math.round(ledger[0].balance_after || 0) : 0;
   const isNeg = saldo <= 0;
 
   return (
@@ -23,7 +23,7 @@ export default function PettyCashWidget() {
           <p className="text-xs text-muted-foreground">Kas Kecil</p>
         </div>
         <p className={`text-xl font-bold ${isNeg ? "text-red-600" : "text-green-700"}`}>
-          Rp {Number(saldo).toLocaleString("id-ID")}
+          Rp {Math.round(Number(saldo)).toLocaleString("id-ID")}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">Saldo saat ini</p>
       </div>

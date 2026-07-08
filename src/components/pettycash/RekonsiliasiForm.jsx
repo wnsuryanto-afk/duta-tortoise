@@ -12,8 +12,8 @@ export default function RekonsiliasiForm({ currentSaldo, user, role, onClose, on
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const phys = Number(physicalCash) || 0;
-  const selisih = phys - currentSaldo;
+  const phys = Math.round(Number(physicalCash) || 0);
+  const selisih = Math.round(phys - currentSaldo);
 
   const handleSave = async () => {
     if (!physicalCash) { toast.error("Masukkan saldo fisik"); return; }
@@ -49,7 +49,7 @@ export default function RekonsiliasiForm({ currentSaldo, user, role, onClose, on
     <div className="space-y-3">
       <div className="p-3 bg-muted/30 rounded-lg text-sm">
         <p className="text-muted-foreground">Saldo di App:</p>
-        <p className="text-lg font-bold">Rp {Number(currentSaldo).toLocaleString("id-ID")}</p>
+        <p className="text-lg font-bold">Rp {Math.round(Number(currentSaldo)).toLocaleString("id-ID")}</p>
       </div>
       <div>
         <Label className="text-xs">Saldo Fisik Uang Sekarang (Rp) *</Label>
