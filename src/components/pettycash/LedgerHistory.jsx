@@ -14,6 +14,8 @@ import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
 import { logActivity } from "@/lib/logActivity";
 import EditLedgerEntryDialog from "./EditLedgerEntryDialog";
+import FilterSummary from "./FilterSummary";
+import CategoryRecap from "./CategoryRecap";
 import { toast } from "sonner";
 
 const TYPE_CONFIG = {
@@ -59,6 +61,7 @@ export default function LedgerHistory({ ledger, role }) {
 
   const canEdit = ["owner", "admin", "manajer"].includes(role);
   const canDelete = ["owner", "admin"].includes(role);
+  const hasActiveFilter = search !== "" || filterMonth !== "all" || filterType !== "all" || filterCat !== "all";
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["petty-cash-ledger"] });
@@ -123,6 +126,8 @@ export default function LedgerHistory({ ledger, role }) {
 
   return (
     <div className="space-y-3">
+      <CategoryRecap ledger={ledger} />
+
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[180px]">
@@ -153,6 +158,10 @@ export default function LedgerHistory({ ledger, role }) {
           </SelectContent>
         </Select>
       </div>
+
+      {hasActiveFilter && (
+        <FilterSummary filtered={filtered} filterCat={filterCat} />
+      )}
 
       {/* List */}
       {filtered.length === 0 ? (
