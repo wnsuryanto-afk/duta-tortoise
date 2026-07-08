@@ -1,10 +1,10 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Printer, CheckCircle2, XCircle, Clock, X } from "lucide-react";
+import { Printer, CheckCircle2, XCircle, Clock, X, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const printRef = useRef(null);
+  const [vegExpanded, setVegExpanded] = useState(false);
 
   if (!slip) return null;
 
@@ -119,7 +120,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
 
   const grossTotal = (slip.base_salary || 0) + (slip.kpi_bonus || 0) + (slip.overtime_pay || 0) + (slip.vegetable_pay || 0);
   const hasOvertime = (slip.overtime_pay || 0) > 0;
-  const hasVeg = (slip.vegetable_pay || 0) > 0;
+  const hasVeg = (slip.vegetable_pay || 0) > 0 || (slip.vegetable_trips || 0) > 0;
   const hasKasbonDed = (slip.kasbon_deduction || 0) > 0;
   const hasPoinDed = (slip.poin_deduction || 0) > 0;
   const targetPoin = settings.min_poin_bulanan || 300;
@@ -208,10 +209,31 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                 </tr>
               )}
               {hasVeg && (
-                <tr>
-                  <td className="p-2 border border-border">Tunjangan Sayuran</td>
-                  <td className="p-2 border border-border text-right text-blue-600 font-medium">+{fmt(slip.vegetable_pay)}</td>
-                </tr>
+                <>
+                  <tr className="cursor-pointer hover:bg-blue-50/50" onClick={() => setVegExpanded(!vegExpanded)}>
+                    <td className="p-2 border border-border">
+                      <span className="flex items-center gap-1">
+                        {vegExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        Sayur ({slip.vegetable_trips || 0} trip)
+                      </span>
+                    </td>
+                    <td className="p-2 border border-border text-right text-blue-600 font-medium">+{fmt(slip.vegetable_pay)}</td>
+                  </tr>
+                  {vegExpanded && slip.vegetable_trip_dates?.length > 0 && (
+                    <tr>
+                      <td colSpan={2} className="p-2 border border-border bg-blue-50/30">
+                        <p className="text-xs text-muted-foreground mb-1">Tanggal ambil sayur:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {slip.vegetable_trip_dates.map((d, i) => (
+                            <span key={i} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                              {format(new Date(d), "d MMM", { locale: id })}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
               <tr className="bg-muted/30 font-semibold">
                 <td className="p-2 border border-border">Total Bruto</td>

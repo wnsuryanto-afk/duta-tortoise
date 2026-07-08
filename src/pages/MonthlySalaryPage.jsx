@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useVegTrips } from "@/hooks/useVegTrips";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -80,14 +81,7 @@ export default function MonthlySalaryPage() {
     enabled: isAdmin,
   });
 
-  const { data: vegPickups = [] } = useQuery({
-    queryKey: ["veg-pickup-salary", period],
-    queryFn: async () => {
-      const all = await base44.entities.VegetablePickup.list("-date", 500);
-      return all.filter((v) => v.date?.startsWith(period));
-    },
-    enabled: isAdmin,
-  });
+  const { data: vegTripsMap = {} } = useVegTrips(period, isAdmin);
 
   const { data: kasbons = [] } = useQuery({
     queryKey: ["kasbons-active"],
@@ -145,11 +139,11 @@ export default function MonthlySalaryPage() {
       emp.overtimeHours += o.hours || 0;
     });
 
-    // Vegetable pickup
-    vegPickups.forEach((v) => {
-      const emp = empMap[v.employee_email];
+    // Vegetable trips (dari PakanHarian, dedup per hari)
+    Object.entries(vegTripsMap).forEach(([email, data]) => {
+      const emp = empMap[email];
       if (!emp) return;
-      emp.vegTrips += v.trips || 0;
+      emp.vegTrips += data.trips || 0;
     });
 
     // Kasbon deduction
@@ -204,7 +198,7 @@ export default function MonthlySalaryPage() {
         netSalary,
       };
     }).sort((a, b) => b.netSalary - a.netSalary);
-  }, [salaryConfigs, users, attendances, checklists, overtimeLogs, vegPickups, kasbons, userProfiles, period]);
+  }, [salaryConfigs, users, attendances, checklists, overtimeLogs, vegTripsMap, kasbons, userProfiles, period]);
 
   const totalNet = salaryData.reduce((s, e) => s + e.netSalary, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === period)?.label || period;

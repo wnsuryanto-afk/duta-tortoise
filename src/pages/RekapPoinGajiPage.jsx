@@ -14,6 +14,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import { toast } from "sonner";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { useCompanySettings } from "@/lib/useCompanySettings";
+import { useVegTrips } from "@/hooks/useVegTrips";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -68,10 +69,7 @@ export default function RekapPoinGajiPage() {
     queryFn: () => base44.entities.OvertimeLog.list("-date", 300),
   });
 
-  const { data: vegetablePickups = [] } = useQuery({
-    queryKey: ["vegetable-pickups"],
-    queryFn: () => base44.entities.VegetablePickup.list("-date", 300),
-  });
+  const { data: vegTripsMap = {} } = useVegTrips(selectedMonth);
 
   const monthStart = selectedMonth + "-01";
   const monthEnd = format(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1), "yyyy-MM") + "-01";
@@ -124,8 +122,8 @@ export default function RekapPoinGajiPage() {
       const totalOvertimeHours = empOvertime.reduce((s, o) => s + (o.hours || 0), 0);
       const overtimePay = totalOvertimeHours * overtimeRate;
 
-      const empVeg = vegetablePickups.filter(v => v.employee_email === emp.email && v.date >= monthStart && v.date < monthEnd);
-      const totalVegTrips = empVeg.reduce((s, v) => s + (v.trips || 0), 0);
+      const vegData = vegTripsMap[emp.email] || { trips: 0, dates: [] };
+      const totalVegTrips = daily ? vegData.trips : 0;
       const vegPay = totalVegTrips * vegRate;
 
       let effectiveBase = salaryType === "harian" ? hadirDays * baseSalary : baseSalary;
@@ -142,11 +140,12 @@ export default function RekapPoinGajiPage() {
       return {
         emp, config, totalPoin, targetTercapai, selisihPoin,
         bonus, potonganPoin, kpiBonus, netTotal, effectiveBase,
-        overtimePay, vegPay, deduction, kasbonDeduction, hadirDays,
+        overtimePay, vegPay, vegTrips: totalVegTrips, vegDates: vegData.dates,
+        deduction, kasbonDeduction, hadirDays,
         existingSlip, pointValue,
       };
     });
-  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegetablePickups, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING]);
+  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegTripsMap, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING]);
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
@@ -176,6 +175,8 @@ export default function RekapPoinGajiPage() {
       kpi_bonus: row.kpiBonus,
       overtime_pay: row.overtimePay,
       vegetable_pay: row.vegPay,
+      vegetable_trips: row.vegTrips,
+      vegetable_trip_dates: row.vegDates,
       absent_deduction: row.deduction,
       kasbon_deduction: row.kasbonDeduction,
       net_total: row.netTotal,
@@ -216,6 +217,8 @@ export default function RekapPoinGajiPage() {
         kpi_bonus: row.kpiBonus,
         overtime_pay: row.overtimePay,
         vegetable_pay: row.vegPay,
+        vegetable_trips: row.vegTrips,
+        vegetable_trip_dates: row.vegDates,
         absent_deduction: row.deduction,
         kasbon_deduction: row.kasbonDeduction,
         net_total: row.netTotal,

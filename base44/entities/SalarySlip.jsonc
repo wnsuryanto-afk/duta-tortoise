@@ -40,7 +40,19 @@
     "vegetable_pay": {
       "type": "number",
       "default": 0,
-      "description": "Total sayuran/perjalanan"
+      "description": "Total upah ambil sayur"
+    },
+    "vegetable_trips": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah trip ambil sayur (1 trip = 1 hari ambil sayur pasar/campur)"
+    },
+    "vegetable_trip_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Daftar tanggal trip ambil sayur untuk transparansi"
     },
     "absent_deduction": {
       "type": "number",
