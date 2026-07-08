@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, X } from "lucide-react";
+import { Loader2, Plus, Trash2, X, Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "@/pages/PanduanPenyakitPage";
+import { compressImage } from "@/lib/useImageCompression";
 
 export default function DiagnosisProtocolForm({ open, onClose, editData, onSaved }) {
   const qc = useQueryClient();
@@ -28,12 +29,17 @@ export default function DiagnosisProtocolForm({ open, onClose, editData, onSaved
     kapan_ke_drh: "",
     image_url: "",
     image_caption: "",
+    images: [],
     is_active: true,
   });
 
   // Local input states for array fields
   const [gejalaInput, setGejalaInput] = useState("");
   const [perawatanInput, setPerawatanInput] = useState("");
+  const [newImgUrl, setNewImgUrl] = useState("");
+  const [newImgCaption, setNewImgCaption] = useState("");
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const imgFileRef = useRef(null);
 
   const handleChange = (field, value) => setForm(p => ({ ...p, [field]: value }));
 
@@ -64,6 +70,55 @@ export default function DiagnosisProtocolForm({ open, onClose, editData, onSaved
 
   const removeTreatmentItem = (idx) => {
     handleChange("treatment_items", (form.treatment_items || []).filter((_, i) => i !== idx));
+  };
+
+  // ── Gallery images handlers ──
+  const images = Array.isArray(form.images) ? form.images : [];
+
+  const addImage = () => {
+    if (!newImgUrl.trim()) return;
+    handleChange("images", [...images, { url: newImgUrl.trim(), caption: newImgCaption.trim() }]);
+    setNewImgUrl("");
+    setNewImgCaption("");
+  };
+
+  const updateImage = (idx, field, value) => {
+    const next = [...images];
+    next[idx] = { ...next[idx], [field]: value };
+    handleChange("images", next);
+  };
+
+  const removeImage = (idx) => {
+    handleChange("images", images.filter((_, i) => i !== idx));
+  };
+
+  const handleImgFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+      toast.error("Format harus JPG, PNG, atau WEBP");
+      e.target.value = "";
+      return;
+    }
+    setUploadingImg(true);
+    try {
+      let fileToUpload = file;
+      if (file.size > 500 * 1024) {
+        try {
+          const result = await compressImage(file, { maxWidthOrHeight: 1280, quality: 0.8 });
+          fileToUpload = result.file;
+        } catch {
+          // fallback: pakai file asli
+        }
+      }
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
+      handleChange("images", [...images, { url: file_url, caption: "" }]);
+      toast.success("Foto ditambahkan ke galeri");
+    } catch (err) {
+      toast.error("Gagal upload: " + (err?.message || ""));
+    }
+    setUploadingImg(false);
+    if (imgFileRef.current) imgFileRef.current.value = "";
   };
 
   const handleSubmit = async () => {
@@ -144,8 +199,106 @@ export default function DiagnosisProtocolForm({ open, onClose, editData, onSaved
             <Input value={form.image_url || ""} onChange={e => handleChange("image_url", e.target.value)} placeholder="https://..." />
           </div>
           <div className="space-y-1.5">
-            <Label>Caption / Sumber Gambar</Label>
+            <Label>Caption / Sumber Gambar (legacy)</Label>
             <Input value={form.image_caption || ""} onChange={e => handleChange("image_caption", e.target.value)} placeholder="Sumber: ..." />
+          </div>
+
+          {/* Galeri Foto Referensi */}
+          <div className="space-y-2 border rounded-lg p-3 bg-muted/20">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" /> Galeri Foto Referensi
+              </Label>
+              <input
+                ref={imgFileRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                className="hidden"
+                onChange={handleImgFileSelect}
+                disabled={uploadingImg}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-7 text-xs"
+                onClick={() => imgFileRef.current?.click()}
+                disabled={uploadingImg}
+              >
+                {uploadingImg ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                Upload Foto
+              </Button>
+            </div>
+
+            {/* Existing images list */}
+            {images.length > 0 && (
+              <div className="space-y-2">
+                {images.map((img, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="w-10 h-10 flex-shrink-0 rounded-md overflow-hidden bg-muted border">
+                      {img.url ? (
+                        <img src={img.url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-full h-full p-2 text-muted-foreground/40" />
+                      )}
+                    </div>
+                    <Input
+                      placeholder="URL gambar"
+                      value={img.url || ""}
+                      onChange={e => updateImage(idx, "url", e.target.value)}
+                      className="h-8 text-xs flex-1"
+                    />
+                    <Input
+                      placeholder="Caption (opsional)"
+                      value={img.caption || ""}
+                      onChange={e => updateImage(idx, "caption", e.target.value)}
+                      className="h-8 text-xs flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"
+                      aria-label="Hapus foto"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add by URL + caption */}
+            <div className="flex items-center gap-2 pt-1 border-t">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1 h-7 text-xs text-primary"
+                onClick={addImage}
+                disabled={!newImgUrl.trim()}
+              >
+                <Plus className="w-3 h-3" /> Tambah Foto
+              </Button>
+              <Input
+                placeholder="Tempel URL gambar..."
+                value={newImgUrl}
+                onChange={e => setNewImgUrl(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addImage())}
+                className="h-8 text-xs flex-1"
+              />
+              <Input
+                placeholder="Caption (opsional)"
+                value={newImgCaption}
+                onChange={e => setNewImgCaption(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addImage())}
+                className="h-8 text-xs flex-1"
+              />
+            </div>
+            {images.length === 0 && !newImgUrl && (
+              <p className="text-xs text-muted-foreground italic">
+                Belum ada foto di galeri. Upload dari file atau tempel URL.
+              </p>
+            )}
           </div>
 
           {/* Gejala Utama */}

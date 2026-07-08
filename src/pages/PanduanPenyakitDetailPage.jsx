@@ -5,19 +5,18 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Pencil, Package, BookOpen, Plus } from "lucide-react";
+import { ArrowLeft, Pencil, Package } from "lucide-react";
 import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "./PanduanPenyakitPage";
 import DiagnosisProtocolForm from "@/components/health/DiagnosisProtocolForm";
-import DiseaseImageUpload from "@/components/health/DiseaseImageUpload";
+import DiseaseImageGallery from "@/components/health/DiseaseImageGallery";
 
 export default function PanduanPenyakitDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { role } = useCurrentUser();
-  const canEdit = ["owner", "admin"].includes(role);
+  const canEdit = ["owner", "admin", "manajer"].includes(role);
   const [showForm, setShowForm] = useState(false);
-  const [addingImage, setAddingImage] = useState(false);
 
   const isNew = id === "new";
 
@@ -31,12 +30,6 @@ export default function PanduanPenyakitDetailPage() {
     enabled: !isNew,
     staleTime: 5 * 60 * 1000,
   });
-
-  const handleImageSaved = () => {
-    qc.invalidateQueries({ queryKey: ["diagnosis-protocol", id] });
-    qc.invalidateQueries({ queryKey: ["diagnosis-protocols-catalog"] });
-    setAddingImage(false);
-  };
 
   if (isNew) {
     return (
@@ -103,45 +96,9 @@ export default function PanduanPenyakitDetailPage() {
         )}
       </div>
 
-      {/* Image */}
-      <Card className="overflow-hidden relative">
-        {protocol.image_url ? (
-          <div>
-            <img src={protocol.image_url} alt={protocol.diagnosis_name} className="w-full max-h-80 object-cover" />
-            {protocol.image_caption && (
-              <p className="text-xs text-muted-foreground px-4 py-2 bg-muted/30 border-t">{protocol.image_caption}</p>
-            )}
-            {canEdit && !addingImage && (
-              <div className="absolute top-2 right-2">
-                <Button variant="secondary" size="sm" className="gap-1.5 shadow-md" onClick={() => setAddingImage(true)}>
-                  <Plus className="w-3.5 h-3.5" /> Ganti Gambar
-                </Button>
-              </div>
-            )}
-            {canEdit && addingImage && (
-              <div className="p-3 bg-background/95 backdrop-blur border-t space-y-2">
-                <DiseaseImageUpload protocolId={id} onSaved={handleImageSaved} />
-                <Button size="sm" variant="ghost" onClick={() => setAddingImage(false)}>Batal</Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <BookOpen className="w-12 h-12 text-muted-foreground/30 mb-2" />
-            <p className="text-sm text-muted-foreground">Belum ada gambar</p>
-            {canEdit && !addingImage && (
-              <Button variant="outline" size="sm" className="mt-3 gap-2" onClick={() => setAddingImage(true)}>
-                <Plus className="w-4 h-4" /> Tambah Gambar
-              </Button>
-            )}
-            {canEdit && addingImage && (
-              <div className="mt-3 w-full space-y-2">
-                <DiseaseImageUpload protocolId={id} onSaved={handleImageSaved} />
-                <Button size="sm" variant="ghost" onClick={() => setAddingImage(false)}>Batal</Button>
-              </div>
-            )}
-          </div>
-        )}
+      {/* Image Gallery */}
+      <Card className="overflow-hidden">
+        <DiseaseImageGallery protocol={protocol} />
       </Card>
 
       {/* Gejala */}
