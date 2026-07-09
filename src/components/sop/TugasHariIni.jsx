@@ -1,8 +1,13 @@
 /**
  * TugasHariIni — Jadwal Kerja Harian Duta Tortoise
- * + Foto dokumentasi per kegiatan
- * + Pekerjaan tambahan di luar SOP
- * + Integrasi treatment & reminder timbang
+ *
+ * SUMBER TUNGGAL & SEGAR: SOPTask (is_active=true). Hormati frequency,
+ * weekly_days, monthly_dates, points, dan title terkini. Task nonaktif
+ * TIDAK muncul. TreatmentSchedule TIDAK diinjeksi di sini (anti dobel
+ * dengan WidgetSuplemen) — suplemen/vitamin hanya muncul via Suplemen.
+ *
+ * Anti-dobel: penambahan task dicek terhadap log hari ini (item_id unik);
+ * tombol centang kebal double-tap (disabled saat proses).
  */
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,62 +21,26 @@ import {
 import ExtraTaskForm from "./ExtraTaskForm";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 
-// ── JADWAL TETAP ──
-const JADWAL_MINGGU = [
-  { id: "abs_masuk",   label: "Absensi jam masuk",                           waktu: "07:00",        icon: "🏁" },
-  { id: "cari_kaktus", label: "Cari kaktus untuk pakan kura",                waktu: "07:00–08:20",  icon: "🌵" },
-  { id: "pakan_pagi",  label: "Pemberian pakan kura + cek kesehatan kura",   waktu: "08:20–09:00",  icon: "🐢", keterangan: "All kandang" },
-  { id: "potong_bunga",label: "Potong bunga sepatu & rumput liar + aktivitas tambahan", waktu: "09:00–11:45", icon: "✂️" },
-  { id: "istirahat",   label: "Istirahat",                                    waktu: "11:45–13:00",  icon: "☕", noCheck: true },
-  { id: "bersih_kand", label: "Pembersihan kandang",                          waktu: "13:00–14:00",  icon: "🏠", keterangan: "All kandang" },
-  { id: "aktiv_sore",  label: "Aktivitas tambahan lain",                      waktu: "14:00–16:00",  icon: "⚡" },
-  { id: "abs_pulang",  label: "Absensi jam pulang",                           waktu: "16:00",        icon: "🏠" },
+// ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
+const STRUCTURAL = [
+  { id: "abs_masuk",  label: "Absensi jam masuk",  waktu: "07:00",      icon: "🏁", structural: true },
+  { id: "istirahat",  label: "Istirahat",          waktu: "11:45–13:00", icon: "☕", noCheck: true },
+  { id: "abs_pulang", label: "Absensi jam pulang", waktu: "16:00",      icon: "🏠", structural: true },
 ];
-
-const JADWAL_SENIN_SABTU = [
-  { id: "abs_masuk",   label: "Absensi jam masuk",                            waktu: "07:00",        icon: "🏁" },
-  { id: "cuci_sayur1", label: "Cuci rumput / sayuran rempesan",               waktu: "07:00–08:20",  icon: "🥬" },
-  { id: "pakan_pagi",  label: "Pemberian pakan kura + cek kesehatan",         waktu: "08:20–09:00",  icon: "🐢", keterangan: "All kandang" },
-  { id: "aktiv_pagi",  label: "Aktivitas tambahan",                           waktu: "09:00–11:45",  icon: "⚡" },
-  { id: "istirahat",   label: "Istirahat",                                    waktu: "11:45–13:00",  icon: "☕", noCheck: true },
-  { id: "bersih_kand", label: "Pembersihan kandang",                          waktu: "13:00–14:00",  icon: "🏠", keterangan: "All kandang" },
-  { id: "cuci_sayur2", label: "Cuci rumput / sayuran rempesan",               waktu: "14:00–14:30",  icon: "🥬" },
-  { id: "pakan_sore",  label: "Pemberian pakan kura",                         waktu: "14:30–15:00",  icon: "🐢", keterangan: "All kandang" },
-  { id: "cek_sore",    label: "Cek kesehatan kura + aktivitas tambahan lain", waktu: "15:00–16:00",  icon: "❤️" },
-  { id: "abs_pulang",  label: "Absensi jam pulang",                           waktu: "16:00",        icon: "🏠" },
-];
-
 const ABSENSI_IDS = new Set(["abs_masuk", "abs_pulang"]);
-const EPOCH_REFERENCE = new Date("2024-01-01");
 
-function daysSinceEpoch(dateStr) {
-  return differenceInCalendarDays(parseISO(dateStr), EPOCH_REFERENCE);
-}
-
-function getTugasBerkala(today) {
-  const date = parseISO(today);
-  const dow = date.getDay();
-  const days = daysSinceEpoch(today);
-  const tasks = [];
-
-  if (dow === 1) {
-    const weekIndex = Math.floor(days / 7);
-    if (weekIndex % 2 === 0) {
-      tasks.push({ id: "pupuk_asola", label: "Ganti pupuk asola", waktu: "Saat ada waktu", icon: "🌱", keterangan: "2 minggu sekali", badge: "2 mingguan", badgeColor: "bg-purple-100 text-purple-700" });
-    }
-  }
-
-  if ([1, 3, 5].includes(dow)) {
-    tasks.push({ id: "bersih_kura_pagi", label: "Pembersihan kura (sesi pagi)", waktu: "Pagi", icon: "🛁", keterangan: "Senin / Rabu / Jumat", badge: "3x seminggu", badgeColor: "bg-blue-100 text-blue-700" });
-    tasks.push({ id: "bersih_kura_sore", label: "Pembersihan kura (sesi sore)", waktu: "Sore", icon: "🛁", keterangan: "Senin / Rabu / Jumat", badge: "3x seminggu", badgeColor: "bg-blue-100 text-blue-700" });
-  }
-
-  if (days % 2 === 0) {
-    tasks.push({ id: "bersih_kaktus", label: "Pembersihan kaktus DT2", waktu: "Saat ada waktu", icon: "🌵", keterangan: "DT2", badge: "2 hari sekali", badgeColor: "bg-green-100 text-green-700" });
-  }
-
-  return tasks;
-}
+const CATEGORY_ICON = {
+  pakan: "🐢", kebersihan: "🏠", pemeriksaan: "❤️",
+  breeding: "🥚", administrasi: "📝", lainnya: "✅",
+};
+const CATEGORY_BADGE = {
+  pakan: "bg-green-100 text-green-700",
+  kebersihan: "bg-blue-100 text-blue-700",
+  pemeriksaan: "bg-amber-100 text-amber-700",
+  breeding: "bg-purple-100 text-purple-700",
+  administrasi: "bg-gray-100 text-gray-700",
+  lainnya: "bg-muted text-muted-foreground",
+};
 
 // ── MAIN ──
 export default function TugasHariIni({ user, showTeamView = false }) {
@@ -79,10 +48,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const today = format(new Date(), "yyyy-MM-dd");
   const now = new Date();
   const dow = now.getDay();
+  const dom = now.getDate();
   const todayLabel = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
   const isMinggu = dow === 0;
-  const jadwalTetap = isMinggu ? JADWAL_MINGGU : JADWAL_SENIN_SABTU;
-  const tugasBerkala = getTugasBerkala(today);
 
   const [checkedIds, setCheckedIds] = useState(new Set());
   const [savingId, setSavingId] = useState(null);
@@ -92,7 +60,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
 
-  // ── Queries ──
+  // ── SOPTask: SUMBER TUNGGAL (baca langsung, is_active=true) ──
+  const { data: sopTasks = [] } = useQuery({
+    queryKey: ["sop-tasks-active-tugas-hari-ini"],
+    queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
+    staleTime: 30 * 1000,
+  });
+
   const { data: myLogs = [], refetch: refetchLogs } = useQuery({
     queryKey: ["tugas-hari-ini-logs", user?.email, today],
     queryFn: () => base44.entities.MaintenanceLog.filter({ done_by_email: user.email, period_key: today }),
@@ -105,12 +79,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today }),
     enabled: showTeamView,
     staleTime: 60 * 1000,
-  });
-
-  const { data: treatmentSchedules = [] } = useQuery({
-    queryKey: ["treatment-schedules-active"],
-    queryFn: () => base44.entities.TreatmentSchedule.filter({ is_active: true }),
-    staleTime: 10 * 60 * 1000,
   });
 
   const { data: tortoises = [] } = useQuery({
@@ -139,14 +107,17 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 60 * 1000,
   });
 
-  // Photo map: item_id → photo_url (from saved logs)
+  // Photo map: item_id → photo_url
   const photoMap = useMemo(() => {
     const map = {};
     myLogs.forEach(l => { if (l.photo_url) map[l.item_id] = l.photo_url; });
     return map;
   }, [myLogs]);
 
-  // Extra tasks from allLogsToday (for team view) or myLogs
+  // Set item_id yang sudah ada log hari ini (anti-dobel)
+  const existingLogItemIds = useMemo(() => new Set(myLogs.map(l => l.item_id).filter(Boolean)), [myLogs]);
+
+  // Extra tasks
   const extraTasks = useMemo(() => {
     const source = showTeamView ? allLogsToday : myLogs;
     return source.filter(l => l.is_extra);
@@ -159,19 +130,28 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     }
   }, [myLogs.length]);
 
-  // Treatment hari ini
-  const todayDow = now.getDay();
-  const treatmentHariIni = treatmentSchedules.filter(ts => {
-    if (!ts.is_active) return false;
-    if (ts.frequency === "harian") return true;
-    if (ts.frequency === "mingguan" && Array.isArray(ts.weekly_days)) return ts.weekly_days.includes(todayDow);
-    if (ts.frequency === "dua_mingguan" && Array.isArray(ts.weekly_days)) {
-      if (!ts.weekly_days.includes(todayDow)) return false;
-      const weekIdx = Math.floor(daysSinceEpoch(today) / 7);
-      return weekIdx % 2 === 0;
-    }
-    return false;
-  });
+  // ── Bangun task dari SOPTask (hormati frequency + weekly_days + monthly_dates) ──
+  const sopTaskItems = useMemo(() => {
+    return sopTasks
+      .filter(t => {
+        if (!t.is_active) return false;
+        const freq = t.frequency;
+        if (freq === "harian") return true;
+        if (freq === "mingguan") return Array.isArray(t.weekly_days) && t.weekly_days.includes(dow);
+        if (freq === "bulanan") return Array.isArray(t.monthly_dates) && t.monthly_dates.includes(dom);
+        return false;
+      })
+      .map(t => ({
+        id: `sop_${t.id}`,
+        label: t.title,
+        waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+        icon: CATEGORY_ICON[t.category] || "✅",
+        keterangan: t.description || "",
+        points: t.points || 0,
+        badge: t.category,
+        badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
+      }));
+  }, [sopTasks, dow, dom]);
 
   // Reminder timbang
   const timbangToday = tortoises.filter(t => {
@@ -179,21 +159,14 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     return differenceInCalendarDays(now, parseISO(t.last_weighed_date)) >= t.weighing_interval_days;
   }).slice(0, 5);
 
-  // Build full task list
-  const allTasks = [
-    ...jadwalTetap,
-    ...tugasBerkala,
-    ...treatmentHariIni.map(ts => ({
-      id: `treatment_${ts.id}`, label: ts.title, waktu: ts.deadline_time || "Saat ada waktu",
-      icon: "💊", keterangan: ts.dose || ts.notes || "",
-      badge: "Treatment", badgeColor: "bg-orange-100 text-orange-700",
-    })),
-    ...timbangToday.map(t => ({
-      id: `timbang_${t.id}`, label: `Timbang: ${t.name}`, waktu: "Saat ada waktu",
-      icon: "⚖️", keterangan: t.enclosure || "",
-      badge: "Timbang", badgeColor: "bg-sky-100 text-sky-700",
-    })),
-  ];
+  const timbangItems = timbangToday.map(t => ({
+    id: `timbang_${t.id}`, label: `Timbang: ${t.name}`, waktu: "Saat ada waktu",
+    icon: "⚖️", keterangan: t.enclosure || "", points: 5,
+    badge: "Timbang", badgeColor: "bg-sky-100 text-sky-700",
+  }));
+
+  // Full task list: struktural + SOPTask + timbang
+  const allTasks = [...STRUCTURAL, ...sopTaskItems, ...timbangItems];
 
   const checkableTasks = allTasks.filter(t => !t.noCheck && !ABSENSI_IDS.has(t.id));
   const absChecked = { abs_masuk: !!attendance?.check_in, abs_pulang: !!attendance?.check_out };
@@ -215,27 +188,48 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // ── Handlers ──
   const handleCheck = async (task) => {
     if (task.noCheck || ABSENSI_IDS.has(task.id)) return;
+    if (savingId) return; // anti double-tap
+
     const alreadyDone = checkedIds.has(task.id);
-    setCheckedIds(p => { const n = new Set(p); alreadyDone ? n.delete(task.id) : n.add(task.id); return n; });
-    setSavingId(task.id);
-    try {
-      if (alreadyDone) {
+
+    if (alreadyDone) {
+      // Uncheck - hapus log
+      setCheckedIds(p => { const n = new Set(p); n.delete(task.id); return n; });
+      setSavingId(task.id);
+      try {
         const existing = myLogs.find(l => l.item_id === task.id);
         if (existing) await base44.entities.MaintenanceLog.delete(existing.id);
-      } else {
-        await base44.entities.MaintenanceLog.create({
-          check_key: `${user.email}__tugas__${task.id}__${today}`,
-          enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
-          freq: "harian", item_id: task.id, item_label: task.label,
-          period_key: today, is_done: true,
-          done_at: format(new Date(), "HH:mm"),
-          done_by: user.full_name || user.email,
-          done_by_email: user.email, poin_earned: 10,
-        });
+        refetchLogs();
+      } catch {
+        setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+      } finally {
+        setSavingId(null);
       }
+      return;
+    }
+
+    // ANTI-DOBEL: jika sudah ada log untuk item_id ini hari ini, jangan tambah lagi
+    if (existingLogItemIds.has(task.id)) {
+      setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+      return;
+    }
+
+    setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+    setSavingId(task.id);
+    try {
+      await base44.entities.MaintenanceLog.create({
+        check_key: `${user.email}__tugas__${task.id}__${today}`,
+        enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
+        freq: "harian", item_id: task.id, item_label: task.label,
+        period_key: today, is_done: true,
+        done_at: format(new Date(), "HH:mm"),
+        done_by: user.full_name || user.email,
+        done_by_email: user.email,
+        poin_earned: task.points || 0,
+      });
       refetchLogs();
     } catch {
-      setCheckedIds(p => { const n = new Set(p); alreadyDone ? n.add(task.id) : n.delete(task.id); return n; });
+      setCheckedIds(p => { const n = new Set(p); n.delete(task.id); return n; });
     } finally {
       setSavingId(null);
     }
@@ -354,6 +348,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
           />
         ))}
+        {sopTaskItems.length === 0 && (
+          <div className="text-center text-sm text-gray-400 py-6">
+            Belum ada SOPTask aktif untuk hari ini. Tambah/aktifkan task di menu SOP.
+          </div>
+        )}
       </div>
 
       {/* Extra Tasks */}
@@ -394,10 +393,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 // ── Task Row Component ──
 function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, onCheck, onPhotoUpload }) {
   const isIstirahat = task.noCheck;
+  const poin = task.points || 0;
 
   return (
     <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isChecked ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm`}>
-      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={() => !isIstirahat && !isAbsensi && onCheck()}>
+      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={() => !isIstirahat && !isAbsensi && !isSaving && onCheck()}>
         <span className="text-xs font-bold text-gray-400 w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
@@ -405,7 +405,7 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
             <p className={`text-sm font-semibold ${isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
             {task.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${task.badgeColor}`}>{task.badge}</span>}
             {!isIstirahat && !isAbsensi && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">+10 poin</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">+{poin} poin</span>
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -451,7 +451,7 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
 
           {/* Checkbox */}
           {!isIstirahat && (
-            <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${isChecked ? "bg-green-500 border-green-500" : isAbsensi ? "border-gray-200 bg-gray-50" : "border-gray-300 hover:border-green-400"} ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi) onCheck(); }}>
+            <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${isChecked ? "bg-green-500 border-green-500" : isAbsensi ? "border-gray-200 bg-gray-50" : "border-gray-300 hover:border-green-400"} ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving) onCheck(); }}>
               {isChecked && <CheckCircle2 className="w-4 h-4 text-white" />}
             </div>
           )}

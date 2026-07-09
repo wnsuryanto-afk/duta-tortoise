@@ -186,8 +186,16 @@ export default function GuidedHariIni({ user }) {
   const farmRadius = settings?.farm_location_radius || 200;
   const farmConfigured = !!(farmLat && farmLng);
 
-  // Suplemen dari TreatmentSchedule
+  // Suplemen dari TreatmentSchedule (sumber tunggal — TugasHariIni tidak injeksi treatment)
   const todayDayOfWeek = new Date().getDay();
+  const { data: babyCount = 0 } = useQuery({
+    queryKey: ["baby-count-active"],
+    queryFn: async () => {
+      const res = await base44.entities.Tortoise.filter({ status: "baby" });
+      return res.length;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
   const supplemenHariIni = treatmentSchedules.filter(ts => {
     if (!ts.is_active) return false;
     if (ts.frequency === "harian") return true;
@@ -195,6 +203,11 @@ export default function GuidedHariIni({ user }) {
       return ts.weekly_days.includes(todayDayOfWeek);
     }
     return false;
+  }).filter(ts => {
+    // ATURAN JEMUR: hanya muncul jika ada kura aktif kategori baby
+    const isJemur = (ts.title || "").toLowerCase().includes("jemur");
+    if (isJemur && babyCount === 0) return false;
+    return true;
   });
 
   const flashPoin = (label, poin) => {
@@ -312,7 +325,7 @@ export default function GuidedHariIni({ user }) {
     queryFn: () => base44.entities.SOPTask.filter({ category: "kebersihan" }),
     staleTime: 10 * 60 * 1000,
   });
-  const poinKebersihan = sopTasksKebersihan.find(t => t.is_active !== false)?.points ?? 10;
+  const poinKebersihan = sopTasksKebersihan.find(t => t.is_active === true)?.points ?? 5;
 
   // Poin hari ini (dideklarasikan setelah poinKebersihan)
   const poinKandang = kandangSaved.size * poinKebersihan;
@@ -324,6 +337,13 @@ export default function GuidedHariIni({ user }) {
     const alreadySaved = kandangSaved.has(k);
     if (alreadySaved) {
       setKandangDone(p => { const n = new Set(p); n.delete(k); return n; });
+      return;
+    }
+    // ANTI-DOBEL: cek apakah sudah ada log kebersihan untuk kandang ini hari ini
+    const dupLog = maintenanceLogs.find(l => l.enclosure_id === k && l.item_id === "kebersihan" && l.period_key === today);
+    if (dupLog) {
+      setKandangDone(p => { const n = new Set(p); n.add(k); return n; });
+      setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
       return;
     }
     setKandangDone(p => { const n = new Set(p); n.add(k); return n; });
@@ -786,11 +806,29 @@ export default function GuidedHariIni({ user }) {
 function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
   const [done, setDone] = useState(new Set());
   const [saved, setSaved] = useState(new Set());
+  const [processingId, setProcessingId] = useState(null);
+
+  // Restore state dari log yang sudah tersimpan hari ini (anti duplikat & tampil benar)
+  const { data: suplemenLogs = [] } = useQuery({
+    queryKey: ["suplemen-logs-today", user?.email, today],
+    queryFn: () => base44.entities.MaintenanceLog.filter({ done_by_email: user.email, period_key: today, enclosure_id: "suplemen" }),
+    enabled: !!user?.email,
+    staleTime: 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (suplemenLogs.length > 0) {
+      const ids = new Set(suplemenLogs.map(l => l.item_id).filter(Boolean));
+      setDone(ids);
+      setSaved(ids);
+    }
+  }, [suplemenLogs.length]);
 
   const handleToggle = async (item) => {
-    if (saved.has(item.id)) return; // sudah tersimpan
+    if (saved.has(item.id) || processingId) return; // sudah tersimpan / sedang proses (anti double-tap)
     const nowVal = format(new Date(), "HH:mm");
     setDone(p => { const n = new Set(p); n.add(item.id); return n; });
+    setProcessingId(item.id);
     try {
       await base44.entities.MaintenanceLog.create({
         check_key: `${user.email}__harian__suplemen_${item.id}__${today}`,
@@ -808,9 +846,12 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
       });
       setSaved(p => { const n = new Set(p); n.add(item.id); return n; });
       qc.invalidateQueries({ queryKey: ["maintenance-today"] });
+      qc.invalidateQueries({ queryKey: ["suplemen-logs-today"] });
       flashPoin(item.title, 5);
     } catch {
       setSaved(p => { const n = new Set(p); n.add(item.id); return n; });
+    } finally {
+      setProcessingId(null);
     }
   };
 
