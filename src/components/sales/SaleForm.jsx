@@ -63,6 +63,18 @@ export default function SaleForm({ open, onClose, editData }) {
     };
     if (editData?.id) {
       await base44.entities.Sale.update(editData.id, data);
+      // FIX: Auto-sync hp_whatsapp ke BuyerProfile (newest number wins)
+      if (form.hp_whatsapp && editData.buyer_profile_id) {
+        try {
+          const buyer = await base44.entities.BuyerProfile.get(editData.buyer_profile_id);
+          if (buyer && (!buyer.hp_whatsapp || buyer.hp_whatsapp !== form.hp_whatsapp)) {
+            await base44.entities.BuyerProfile.update(editData.buyer_profile_id, {
+              hp_whatsapp: form.hp_whatsapp,
+            });
+            queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
+          }
+        } catch (_) { /* non-critical */ }
+      }
     } else {
       await base44.entities.Sale.create({ ...data, ...testModeTag });
       // Update tortoise status to terjual and remove from enclosure

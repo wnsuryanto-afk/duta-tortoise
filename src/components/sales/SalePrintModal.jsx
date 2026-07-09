@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Printer, FileText, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { normalizePhone } from "@/lib/normalizePhone";
 
 function formatRp(v) {
   return "Rp " + (v || 0).toLocaleString("id-ID");
@@ -266,6 +269,14 @@ function WASection({ sale }) {
   const saleDate = sale?.sale_date ? format(new Date(sale.sale_date), "d MMMM yyyy", { locale: id }) : "—";
   const formatRpLocal = (v) => "Rp " + (v || 0).toLocaleString("id-ID");
 
+  // FIX: Fallback BuyerProfile.hp_whatsapp jika Sale.hp_whatsapp kosong
+  const { data: buyerProfile } = useQuery({
+    queryKey: ["buyer-profile-wa", sale?.buyer_profile_id],
+    queryFn: () => base44.entities.BuyerProfile.get(sale.buyer_profile_id),
+    enabled: !!sale?.buyer_profile_id && !sale?.hp_whatsapp,
+    staleTime: 60 * 1000,
+  });
+
   const message = `Halo ${sale?.buyer_name} 👋
 
 Terima kasih sudah mempercayai *Duta Tortoise* 🐢
@@ -281,8 +292,10 @@ Jika ada pertanyaan, jangan ragu menghubungi kami ya.
 
 _Duta Tortoise Farm_`;
 
-  const phone = (sale?.buyer_phone || "").replace(/\D/g, "").replace(/^0/, "62");
-  const waLink = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  // FIX: Sumber ganda — Sale.hp_whatsapp DULU, fallback BuyerProfile.hp_whatsapp
+  const rawPhone = sale?.hp_whatsapp || buyerProfile?.hp_whatsapp || "";
+  const { waUrl, isValid } = normalizePhone(rawPhone);
+  const waLink = isValid ? `${waUrl}?text=${encodeURIComponent(message)}` : "";
 
   return (
     <div className="space-y-4">
@@ -292,12 +305,12 @@ _Duta Tortoise Farm_`;
       <Button
         className="w-full gap-2 bg-green-600 hover:bg-green-700"
         onClick={() => window.open(waLink, "_blank")}
-        disabled={!sale?.buyer_phone}
+        disabled={!isValid}
       >
         <MessageCircle className="w-4 h-4" />
         Kirim via WhatsApp
       </Button>
-      {!sale?.buyer_phone && <p className="text-xs text-destructive text-center">Nomor HP pembeli belum diisi</p>}
+      {!isValid && <p className="text-xs text-destructive text-center">Nomor HP pembeli belum diisi</p>}
     </div>
   );
 }
