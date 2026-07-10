@@ -44,14 +44,17 @@ export default function SalarySlipPage() {
 
   const employees = users.filter(u => ["keeper", "admin", "kepala_feeder"].includes(u.role));
 
+  const isManagerRole = ["owner", "admin", "manajer"].includes(role);
   const filtered = useMemo(() => {
     return slips.filter(s => {
       if (s.employee_role === "owner" || s.employee_role === "manajer") return false; // owner & manajer tidak digaji
+      // Non-manager (keeper/kepala_feeder) hanya lihat slip sendiri
+      if (!isManagerRole && s.employee_email !== user?.email) return false;
       const empMatch = filterEmployee === "all" || s.employee_email === filterEmployee;
       const periodMatch = !filterPeriod || s.period === filterPeriod;
       return empMatch && periodMatch;
     });
-  }, [slips, filterEmployee, filterPeriod]);
+  }, [slips, filterEmployee, filterPeriod, isManagerRole, user]);
 
   // Group by period for monthly stats
   const byPeriod = useMemo(() => {
@@ -66,7 +69,7 @@ export default function SalarySlipPage() {
   const totalPaid = filtered.filter(s => s.status === "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
   const totalPending = filtered.filter(s => s.status !== "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
 
-  if (!canAccess(role, "payroll")) return <AccessDenied />;
+  if (!canAccess(role, "payroll") && !canAccess(role, "salary-slip")) return <AccessDenied />;
 
   return (
     <div className="space-y-6">
@@ -132,6 +135,7 @@ export default function SalarySlipPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <Filter className="w-4 h-4 text-muted-foreground" />
+        {isManagerRole && (
         <Select value={filterEmployee} onValueChange={setFilterEmployee}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Semua Karyawan" />
@@ -143,6 +147,7 @@ export default function SalarySlipPage() {
             ))}
           </SelectContent>
         </Select>
+        )}
         <Input
           type="month"
           value={filterPeriod}

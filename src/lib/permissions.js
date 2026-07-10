@@ -68,13 +68,13 @@ export const NAV_ACCESS = {
     "health", "sop", "treatment",
     "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran",
     "petty-cash", "stock-gudang", "warehouse", "feed-stock", "panduan-penyakit",
-    "kasbon",
+    "kasbon", "salary-slip",
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "enclosure",
     "health", "sop", "treatment",
     "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran", "panduan-penyakit",
-    "kasbon",
+    "kasbon", "salary-slip",
   ],
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",
