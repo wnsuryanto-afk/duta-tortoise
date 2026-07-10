@@ -10,6 +10,7 @@ import {
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import TugasHariIni from "@/components/sop/TugasHariIni";
+import IncidentalTaskList from "@/components/incidental/IncidentalTaskList";
 import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -466,6 +467,7 @@ export default function GuidedHariIni({ user }) {
 
         {/* ══ TUGAS HARI INI — JADWAL KERJA ════════════════════════ */}
         <WidgetErrorBoundary widgetName="Tugas Hari Ini">
+          <IncidentalTaskList user={user} />
           <TugasHariIni user={user} showTeamView={false} />
         </WidgetErrorBoundary>
 

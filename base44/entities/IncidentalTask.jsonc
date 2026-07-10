@@ -1,0 +1,82 @@
+{
+  "name": "IncidentalTask",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul tugas insidentil"
+    },
+    "assigned_to_email": {
+      "type": "string",
+      "description": "Email karyawan yang ditugaskan; kosong = siapa saja (keeper/kepala_feeder)"
+    },
+    "assigned_to_name": {
+      "type": "string",
+      "description": "Nama karyawan yang ditugaskan"
+    },
+    "points": {
+      "type": "number",
+      "default": 10,
+      "description": "Poin untuk tugas ini"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tenggat: hari ini atau tanggal tertentu"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan/instruksi singkat (opsional)"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto acuan (opsional, misal foto kran rusak)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "done",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "pending = belum dikerjakan, done = sudah dikerjakan, cancelled = dibatalkan"
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "created_by_name": {
+      "type": "string"
+    },
+    "done_at": {
+      "type": "string",
+      "description": "Waktu dikerjakan (HH:mm)"
+    },
+    "done_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal dikerjakan"
+    },
+    "done_by_email": {
+      "type": "string"
+    },
+    "done_by_name": {
+      "type": "string"
+    },
+    "daily_checklist_id": {
+      "type": "string",
+      "description": "ID DailyChecklist tempat poin tugas ini diklaim (ikuti alur approval yang sudah ada)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "false jika dibatalkan"
+    }
+  },
+  "required": [
+    "title",
+    "points",
+    "due_date",
+    "status"
+  ]
+}

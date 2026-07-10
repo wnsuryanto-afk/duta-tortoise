@@ -110,6 +110,7 @@ const NAV_GROUPS = [
       { path: "/hr",            section: "hr",           label: "Absensi & SDM",     icon: Users },
       { path: "/sop",           section: "sop",          label: "Checklist Harian",  icon: ClipboardCheck },
       { path: "/approval-poin", section: "approval-poin", label: "Approval Poin",    icon: ShieldAlert },
+      { path: "/tugas-insidentil", section: "tugas-insidentil", label: "Tugas Insidentil", icon: Zap },
       { path: "/salary",        section: "salary",       label: "Gaji Bulanan",      icon: Calculator },
       { path: "/salary-slip",   section: "salary-slip",  label: "Slip Gaji",         icon: FileText },
       { path: "/kasbon",        section: "kasbon",       label: "Kasbon",            icon: Wallet },

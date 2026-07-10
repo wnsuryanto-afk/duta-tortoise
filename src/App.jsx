@@ -17,6 +17,7 @@ import OperationalCostsPage from '@/pages/OperationalCostsPage';
 import SalarySlipPage from '@/pages/SalarySlipPage';
 import IncubatorReadingPage from '@/pages/IncubatorReadingPage';
 import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
+import IncidentalTaskPage from '@/pages/IncidentalTaskPage';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -135,6 +136,7 @@ const AuthenticatedApp = () => {
         <Route path="/operational-costs" element={<OperationalCostsPage />} />
         <Route path="/salary-slip" element={<SalarySlipPage />} />
         <Route path="/approval-poin" element={<ApprovalPoinPage />} />
+        <Route path="/tugas-insidentil" element={<IncidentalTaskPage />} />
         <Route path="/incubator-readings" element={<IncubatorReadingPage />} />
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
         <Route path="/stock-gudang" element={<StockGudangPage />} />
