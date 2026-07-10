@@ -158,6 +158,16 @@ export default function IncidentalTaskPage() {
                       <Badge variant="outline" className="text-[11px] text-amber-600">
                         +{t.points} poin
                       </Badge>
+                      {t.material_status === "waiting_materials" && (
+                        <Badge variant="outline" className="text-[11px] bg-amber-50 text-amber-700 border-amber-200">
+                          ⏳ Menunggu Barang
+                        </Badge>
+                      )}
+                      {t.material_status === "ready" && t.required_items?.length > 0 && (
+                        <Badge variant="outline" className="text-[11px] bg-green-50 text-green-700 border-green-200">
+                          ✅ Siap Dikerjakan
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5 text-xs text-muted-foreground">
                       <span>
@@ -169,6 +179,23 @@ export default function IncidentalTaskPage() {
                     {t.notes && <p className="text-xs text-muted-foreground mt-1">{t.notes}</p>}
                     {t.photo_url && (
                       <img src={t.photo_url} alt="Acuan" className="mt-1.5 h-16 w-24 object-cover rounded border" />
+                    )}
+                    {t.required_items?.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {t.required_items.map((ri, i) => (
+                          <span
+                            key={i}
+                            className={`text-[11px] px-2 py-0.5 rounded-full border ${
+                              ri.is_available
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : "bg-red-50 text-red-700 border-red-200"
+                            }`}
+                          >
+                            {ri.is_available ? "✓" : "⏳"} {ri.item_name} ({ri.quantity}
+                            {ri.unit ? ` ${ri.unit}` : ""})
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
                   {canCancel && (

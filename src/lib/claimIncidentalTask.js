@@ -13,6 +13,9 @@ import { format } from "date-fns";
 
 export async function claimIncidentalTask(task, user) {
   if (task.status === "done") return; // anti-dobel
+  if (task.material_status === "waiting_materials") {
+    throw new Error("Tugas masih menunggu barang tersedia");
+  }
 
   const today = format(new Date(), "yyyy-MM-dd");
   const taskId = `incidental_${task.id}`;

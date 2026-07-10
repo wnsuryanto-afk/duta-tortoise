@@ -1,14 +1,14 @@
 /**
  * IncidentalTaskList — tampil di ATAS "Tugas Hari Ini" keeper/kepala_feeder.
- * Menampilkan tugas insidentil yang ditugaskan kepadanya (atau "siapa saja")
- * dengan badge oranye "📌 Tugas dari Owner". Centang → klaim poin via
- * DailyChecklist (claimIncidentalTask). Anti double-tap.
+ * Tugas "Menunggu Barang" tampil abu-abu & tidak bisa dicentang (dengan keterangan
+ * barang yang ditunggu). Tugas "Siap Dikerjakan" tampil normal & bisa diklaim poin.
+ * Centang → klaim poin via DailyChecklist (claimIncidentalTask). Anti double-tap.
  */
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { claimIncidentalTask } from "@/lib/claimIncidentalTask";
 
@@ -50,48 +50,81 @@ export default function IncidentalTaskList({ user }) {
 
   return (
     <div className="space-y-2 mb-3">
-      {myTasks.map((task) => (
-        <div
-          key={task.id}
-          className="rounded-2xl border-2 border-orange-300 bg-orange-50 shadow-sm p-3.5 flex items-start gap-3"
-        >
-          <span className="text-lg flex-shrink-0">📌</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-semibold text-gray-800">{task.title}</p>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-200 text-orange-800">
-                Tugas dari Owner
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                +{task.points} poin
-              </span>
+      {myTasks.map((task) => {
+        const isWaiting = task.material_status === "waiting_materials";
+        const missingItems = (task.required_items || []).filter((i) => !i.is_available);
+        return (
+          <div
+            key={task.id}
+            className={`rounded-2xl border-2 shadow-sm p-3.5 flex items-start gap-3 ${
+              isWaiting ? "border-gray-200 bg-gray-50 opacity-70" : "border-orange-300 bg-orange-50"
+            }`}
+          >
+            <span className="text-lg flex-shrink-0">{isWaiting ? "⏳" : "📌"}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className={`text-sm font-semibold ${isWaiting ? "text-gray-500" : "text-gray-800"}`}>
+                  {task.title}
+                </p>
+                {isWaiting ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                    Menunggu Barang
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-200 text-orange-800">
+                    Tugas dari Owner
+                  </span>
+                )}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                  +{task.points} poin
+                </span>
+              </div>
+              {task.notes && <p className="text-xs text-gray-600 mt-0.5">{task.notes}</p>}
+              {isWaiting && missingItems.length > 0 && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Menunggu:{" "}
+                  {missingItems
+                    .map((i) => `${i.item_name} (${i.quantity}${i.unit ? ` ${i.unit}` : ""})`)
+                    .join(", ")}
+                </p>
+              )}
+              {task.due_date && (
+                <p className={`text-xs mt-0.5 ${isWaiting ? "text-gray-400" : "text-orange-600"}`}>
+                  Tenggat: {task.due_date}
+                </p>
+              )}
+              {task.photo_url && (
+                <img
+                  src={task.photo_url}
+                  alt="Acuan"
+                  className="w-16 h-12 rounded-lg object-cover border border-gray-200 mt-1.5"
+                />
+              )}
             </div>
-            {task.notes && <p className="text-xs text-gray-600 mt-0.5">{task.notes}</p>}
-            {task.due_date && (
-              <p className="text-xs text-orange-600 mt-0.5">Tenggat: {task.due_date}</p>
-            )}
-            {task.photo_url && (
-              <img
-                src={task.photo_url}
-                alt="Acuan"
-                className="w-16 h-12 rounded-lg object-cover border border-orange-200 mt-1.5"
-              />
+            {isWaiting ? (
+              <div
+                className="flex-shrink-0 w-8 h-8 rounded-xl border-2 border-gray-300 bg-gray-100 flex items-center justify-center"
+                title="Menunggu barang tersedia"
+              >
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+            ) : (
+              <button
+                onClick={() => handleCheck(task)}
+                disabled={processingId === task.id}
+                className="flex-shrink-0 w-8 h-8 rounded-xl border-2 border-orange-400 bg-white flex items-center justify-center active:scale-95 disabled:opacity-50 transition-transform"
+                title="Tandai selesai"
+              >
+                {processingId === task.id ? (
+                  <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-5 h-5 text-orange-500" />
+                )}
+              </button>
             )}
           </div>
-          <button
-            onClick={() => handleCheck(task)}
-            disabled={processingId === task.id}
-            className="flex-shrink-0 w-8 h-8 rounded-xl border-2 border-orange-400 bg-white flex items-center justify-center active:scale-95 disabled:opacity-50 transition-transform"
-            title="Tandai selesai"
-          >
-            {processingId === task.id ? (
-              <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
-            ) : (
-              <CheckCircle2 className="w-5 h-5 text-orange-500" />
-            )}
-          </button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

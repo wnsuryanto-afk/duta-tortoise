@@ -42,6 +42,59 @@
       "default": "pending",
       "description": "pending = belum dikerjakan, done = sudah dikerjakan, cancelled = dibatalkan"
     },
+    "required_items": {
+      "type": "array",
+      "description": "Daftar barang yang dibutuhkan untuk tugas ini (opsional)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_name": {
+            "type": "string",
+            "description": "Nama barang"
+          },
+          "warehouse_item_id": {
+            "type": "string",
+            "description": "ID WarehouseItem jika dipilih dari katalog (opsional)"
+          },
+          "quantity": {
+            "type": "number",
+            "default": 1,
+            "description": "Jumlah dibutuhkan"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Satuan (pcs, buah, kg, dll)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Catatan khusus untuk barang ini"
+          },
+          "is_available": {
+            "type": "boolean",
+            "default": false,
+            "description": "Apakah barang sudah tersedia/beli"
+          },
+          "marked_available_by": {
+            "type": "string",
+            "description": "Nama yang menandai barang sudah tersedia"
+          },
+          "marked_available_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Waktu ditandai tersedia"
+          }
+        }
+      }
+    },
+    "material_status": {
+      "type": "string",
+      "enum": [
+        "ready",
+        "waiting_materials"
+      ],
+      "default": "ready",
+      "description": "ready = siap dikerjakan (semua barang tersedia/tidak butuh barang), waiting_materials = ada barang belum tersedia"
+    },
     "created_by_email": {
       "type": "string"
     },
