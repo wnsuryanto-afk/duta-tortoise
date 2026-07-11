@@ -319,7 +319,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1.5 px-3 py-2 border rounded-lg cursor-pointer hover:bg-muted text-xs text-muted-foreground bg-background">
               <Upload className="w-3.5 h-3.5" /> {uploading ? "Uploading..." : "Pilih / Ambil Foto"}
-              <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" capture="environment" className="hidden" onChange={handlePhoto} disabled={uploading || saving} />
+              <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" className="hidden" onChange={handlePhoto} disabled={uploading || saving} />
             </label>
             {proofPhoto && (
               <div className="relative">

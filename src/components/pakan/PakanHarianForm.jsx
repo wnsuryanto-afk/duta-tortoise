@@ -160,7 +160,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
               <label className="mt-1 flex flex-col items-center justify-center gap-1 h-28 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 text-muted-foreground">
                 <Camera className="w-6 h-6" />
                 <span className="text-xs">Buka kamera / pilih foto</span>
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])} />
+                <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])} />
               </label>
             )}
           </div>

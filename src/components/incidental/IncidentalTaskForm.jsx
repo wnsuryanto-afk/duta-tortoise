@@ -310,7 +310,6 @@ export default function IncidentalTaskForm({ open, onClose, user }) {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     onChange={(e) => e.target.files?.[0] && handlePhoto(e.target.files[0])}
                   />
