@@ -8,6 +8,7 @@ import {
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
 import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
+import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -191,6 +192,9 @@ export default function AdminDashboard({ user }) {
           </>
         )}
       </div>
+
+      {/* ── TUGAS INSIDENTIL ── */}
+      <IncidentalTaskCard />
 
       {/* ── SECTION 2: STATUS HARI INI ── */}
       <div>

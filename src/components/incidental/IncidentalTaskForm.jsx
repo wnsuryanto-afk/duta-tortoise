@@ -15,7 +15,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Camera, Image as ImageIcon, X, Plus, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
-import MicButton from "@/components/incidental/MicButton";
 
 const TEMPLATES = [
   "Bersihkan sarang semut",
@@ -24,6 +23,34 @@ const TEMPLATES = [
 ];
 
 const EMPTY_ITEM = { item_name: "", quantity: 1, unit: "", notes: "", is_available: false };
+
+// Pecah transkrip suara: klausa pertama (sampai koma/titik, maks ±8 kata) → judul, sisanya → catatan
+function splitTranscript(text) {
+  const trimmed = (text || "").trim();
+  if (!trimmed) return { title: "", notes: "" };
+
+  let cutIdx = -1;
+  for (let i = 0; i < trimmed.length; i++) {
+    const ch = trimmed[i];
+    if (ch === "," || ch === ";") { cutIdx = i; break; }
+    if (ch === "." && (i + 1 >= trimmed.length || trimmed[i + 1] === " ")) { cutIdx = i; break; }
+  }
+
+  let firstPart = cutIdx >= 0 ? trimmed.slice(0, cutIdx).trim() : trimmed;
+  let rest = cutIdx >= 0 ? trimmed.slice(cutIdx + 1).trim() : "";
+
+  const words = firstPart.split(/\s+/);
+  if (words.length > 8) {
+    const overflow = words.slice(8).join(" ");
+    rest = rest ? `${overflow} ${rest}` : overflow;
+    firstPart = words.slice(0, 8).join(" ");
+  }
+
+  return {
+    title: firstPart.charAt(0).toUpperCase() + firstPart.slice(1),
+    notes: rest,
+  };
+}
 
 export default function IncidentalTaskForm({ open, onClose, user }) {
   const qc = useQueryClient();
@@ -37,22 +64,15 @@ export default function IncidentalTaskForm({ open, onClose, user }) {
   const [saving, setSaving] = useState(false);
   const [requiredItems, setRequiredItems] = useState([]);
 
-  const titleVoice = useVoiceInput({
+  const voice = useVoiceInput({
     onResult: (text) => {
       if (text === "__MIC_DENIED__") {
         toast.error("Izin mikrofon ditolak. Aktifkan di pengaturan browser untuk pakai input suara.");
         return;
       }
-      setTitle((prev) => (prev ? prev.replace(/\s+$/, "") + " " + text : text));
-    },
-  });
-  const notesVoice = useVoiceInput({
-    onResult: (text) => {
-      if (text === "__MIC_DENIED__") {
-        toast.error("Izin mikrofon ditolak. Aktifkan di pengaturan browser untuk pakai input suara.");
-        return;
-      }
-      setNotes((prev) => (prev ? prev.replace(/\s+$/, "") + " " + text : text));
+      const { title: t, notes: n } = splitTranscript(text);
+      setTitle(t);
+      setNotes(n);
     },
   });
 
@@ -199,18 +219,32 @@ export default function IncidentalTaskForm({ open, onClose, user }) {
             </div>
           </div>
 
+          {/* Bicara Tugas — satu kali bicara, otomatis pecah judul + catatan */}
+          {voice.supported && (
+            <div className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={voice.toggle}
+                className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold border-2 transition-all active:scale-[0.98] ${
+                  voice.listening
+                    ? "bg-red-500 text-white border-red-500 animate-pulse"
+                    : "bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100"
+                }`}
+              >
+                {voice.listening ? "Mendengarkan... ketuk untuk berhenti" : "🎤 Bicara Tugas"}
+              </button>
+              {voice.listening && voice.interim && (
+                <p className="text-[11px] text-red-600 italic px-1">…{voice.interim}</p>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Ucapkan judul lalu catatan dalam satu kalimat. Bagian pertama → judul, sisanya → catatan.
+              </p>
+            </div>
+          )}
+
           {/* Judul */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="title">Judul Tugas *</Label>
-              <MicButton
-                supported={titleVoice.supported}
-                listening={titleVoice.listening}
-                interim={titleVoice.interim}
-                onToggle={titleVoice.toggle}
-                label="🎤 Dikte judul"
-              />
-            </div>
+            <Label htmlFor="title">Judul Tugas *</Label>
             <Input
               id="title"
               value={title}
@@ -265,16 +299,7 @@ export default function IncidentalTaskForm({ open, onClose, user }) {
 
           {/* Catatan */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="notes">Catatan / Instruksi (opsional)</Label>
-              <MicButton
-                supported={notesVoice.supported}
-                listening={notesVoice.listening}
-                interim={notesVoice.interim}
-                onToggle={notesVoice.toggle}
-                label="🎤 Dikte catatan"
-              />
-            </div>
+            <Label htmlFor="notes">Catatan / Instruksi (opsional)</Label>
             <Textarea
               id="notes"
               value={notes}

@@ -3,7 +3,7 @@
  * Daftar semua tugas insidentil + status (belum/dikerjakan/di-approve/dibatalkan).
  * Buat tugas baru (dialog) & batalkan tugas yang belum dikerjakan.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -24,6 +24,14 @@ export default function IncidentalTaskPage() {
   const [showForm, setShowForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [cancelingId, setCancelingId] = useState(null);
+
+  // Auto-open form jika ada ?buat=1 (dari tombol dashboard)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("buat") === "1") setShowForm(true);
+  }, []);
+
+  const today = format(new Date(), "yyyy-MM-dd");
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["incidental-tasks-all"],
@@ -145,8 +153,9 @@ export default function IncidentalTaskPage() {
           {filtered.map((t) => {
             const st = deriveStatus(t);
             const canCancel = t.status === "pending";
+            const isOverdue = t.status === "pending" && t.due_date && t.due_date < today;
             return (
-              <Card key={t.id} className="p-4">
+              <Card key={t.id} className={`p-4 ${isOverdue ? "border-red-300 bg-red-50" : ""}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -168,12 +177,22 @@ export default function IncidentalTaskPage() {
                           ✅ Siap Dikerjakan
                         </Badge>
                       )}
+                      {isOverdue && (
+                        <Badge variant="outline" className="text-[11px] bg-red-50 text-red-700 border-red-200">
+                          ⚠ Terlambat
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5 text-xs text-muted-foreground">
                       <span>
                         Ditugaskan: <strong className="text-foreground">{t.assigned_to_name || "Siapa saja"}</strong>
                       </span>
-                      <span>· Tenggat: {t.due_date ? format(new Date(t.due_date + "T00:00:00"), "d MMM yyyy", { locale: id }) : "-"}</span>
+                      {t.created_date && (
+                        <span>· Sejak: {format(new Date(t.created_date), "d MMM yyyy", { locale: id })}</span>
+                      )}
+                      <span className={isOverdue ? "text-red-600 font-medium" : ""}>
+                        · Tenggat: {t.due_date ? format(new Date(t.due_date + "T00:00:00"), "d MMM yyyy", { locale: id }) : "-"}
+                      </span>
                       {t.done_by_name && <span>· Dikerjakan: {t.done_by_name} ({t.done_at})</span>}
                     </div>
                     {t.notes && <p className="text-xs text-muted-foreground mt-1">{t.notes}</p>}
