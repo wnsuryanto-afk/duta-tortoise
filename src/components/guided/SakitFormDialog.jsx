@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { X, Loader2 } from "lucide-react";
+import SickTortoisePicker from "@/components/health/SickTortoisePicker";
 
 const GEJALA_LIST = [
   { id: "tidak_makan",  label: "Tidak mau makan",  icon: "🍃" },
@@ -25,10 +26,20 @@ export default function SakitFormDialog({ open, onClose, user }) {
   const [done, setDone] = useState(false);
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoise-names-sakit-dialog"],
-    queryFn: () => base44.entities.Tortoise.list("-name", 200),
+  const {
+    data: tortoises = [],
+    isLoading: tortoisesLoading,
+    error: tortoisesError,
+    refetch: refetchTortoises,
+  } = useQuery({
+    queryKey: ["active-tortoises-picker"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getActiveTortoisesForPicker");
+      return res.data?.tortoises || [];
+    },
     enabled: open,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   if (!open) return null;
@@ -75,16 +86,15 @@ export default function SakitFormDialog({ open, onClose, user }) {
           </div>
         ) : (
           <div className="p-5 space-y-4">
-            <select
+            <SickTortoisePicker
+              tortoises={tortoises}
+              loading={tortoisesLoading}
+              error={tortoisesError}
+              onRetry={refetchTortoises}
               value={kura}
-              onChange={e => setKura(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-red-400"
-            >
-              <option value="">-- Pilih kura --</option>
-              {tortoises.map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({t.enclosure || "?"})</option>
-              ))}
-            </select>
+              onChange={setKura}
+              accent="red"
+            />
             <div className="grid grid-cols-3 gap-2">
               {GEJALA_LIST.map(g => {
                 const sel = gejala.has(g.id);

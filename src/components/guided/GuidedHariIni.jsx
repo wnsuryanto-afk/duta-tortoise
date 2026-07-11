@@ -12,6 +12,7 @@ import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import TugasHariIni from "@/components/sop/TugasHariIni";
 import IncidentalTaskList from "@/components/incidental/IncidentalTaskList";
 import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
+import SickTortoisePicker from "@/components/health/SickTortoisePicker";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -133,12 +134,21 @@ export default function GuidedHariIni({ user }) {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Tortoise dimuat lazy (hanya saat showSakitForm dibuka)
-  const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoise-names-keeper"],
-    queryFn: () => base44.entities.Tortoise.list("-name", 50), // limit 50, bukan 200
-    enabled: showSakitForm, // load HANYA saat form laporan dibuka
+  // Tortoise dimuat lazy via backend function (bypass RLS — semua role bisa baca)
+  const {
+    data: tortoises = [],
+    isLoading: tortoisesLoading,
+    error: tortoisesError,
+    refetch: refetchTortoises,
+  } = useQuery({
+    queryKey: ["active-tortoises-picker"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getActiveTortoisesForPicker");
+      return res.data?.tortoises || [];
+    },
+    enabled: showSakitForm,
     staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 
   const { data: maintenanceLogs = [], refetch: refetchML } = useQuery({
@@ -674,16 +684,14 @@ export default function GuidedHariIni({ user }) {
                   <p className="font-semibold text-gray-700 text-sm">Laporan Kura Sakit</p>
                   <button onClick={() => setShowSakitForm(false)}><X className="w-4 h-4 text-gray-400" /></button>
                 </div>
-                <select
+                <SickTortoisePicker
+                  tortoises={tortoises}
+                  loading={tortoisesLoading}
+                  error={tortoisesError}
+                  onRetry={refetchTortoises}
                   value={sakitForm.kura}
-                  onChange={e => setSakitForm(p => ({ ...p, kura: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:ring-2 focus:ring-green-400 outline-none"
-                >
-                  <option value="">-- Pilih kura --</option>
-                  {tortoises.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.enclosure || "?"})</option>
-                  ))}
-                </select>
+                  onChange={(id) => setSakitForm(p => ({ ...p, kura: id }))}
+                />
                 <div className="grid grid-cols-3 gap-2">
                   {GEJALA_LIST.map(g => {
                     const sel = sakitForm.gejala.has(g.id);
