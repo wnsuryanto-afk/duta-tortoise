@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
@@ -13,6 +13,8 @@ import TugasHariIni from "@/components/sop/TugasHariIni";
 import IncidentalTaskList from "@/components/incidental/IncidentalTaskList";
 import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
 import SickTortoisePicker from "@/components/health/SickTortoisePicker";
+import { compressImage } from "@/lib/useImageCompression";
+import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -337,6 +339,9 @@ export default function GuidedHariIni({ user }) {
     staleTime: 10 * 60 * 1000,
   });
   const poinKebersihan = sopTasksKebersihan.find(t => t.is_active === true)?.points ?? 5;
+  const requirePhotoKebersihan = sopTasksKebersihan.find(t => t.is_active === true)?.require_photo ?? false;
+  const kandangCameraRef = useRef(null);
+  const [pendingKandang, setPendingKandang] = useState(null);
 
   // Poin hari ini (dideklarasikan setelah poinKebersihan)
   const poinKandang = kandangSaved.size * poinKebersihan;
@@ -357,9 +362,19 @@ export default function GuidedHariIni({ user }) {
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
       return;
     }
+    // Jika kebersihan wajib foto, buka kamera dulu (kamera langsung, anti galeri)
+    if (requirePhotoKebersihan) {
+      setPendingKandang(k);
+      kandangCameraRef.current?.click();
+      return;
+    }
+    await saveKandangDone(k, null);
+  };
+
+  const saveKandangDone = async (k, photoUrl) => {
     setKandangDone(p => { const n = new Set(p); n.add(k); return n; });
     try {
-      await base44.entities.MaintenanceLog.create({
+      const logData = {
         check_key: `${user.email}__harian__${k}__${today}`,
         enclosure_id: k,
         enclosure_name: k,
@@ -372,12 +387,36 @@ export default function GuidedHariIni({ user }) {
         done_by: user.full_name || user.email,
         done_by_email: user.email,
         poin_earned: poinKebersihan,
-      });
+      };
+      if (photoUrl) logData.photo_url = photoUrl;
+      await base44.entities.MaintenanceLog.create(logData);
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
       refetchML();
       flashPoin(k, poinKebersihan);
+      if (photoUrl) {
+        syncPhotoToChecklist({
+          employeeEmail: user.email, date: today,
+          taskTitle: `Kebersihan ${k}`, enclosure: k,
+          photoUrl, takenAt: nowStr(),
+        });
+      }
     } catch {
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
+    } finally {
+      setPendingKandang(null);
+    }
+  };
+
+  const handleKandangPhoto = async (file) => {
+    if (!pendingKandang) return;
+    const k = pendingKandang;
+    try {
+      const compressed = await compressImage(file);
+      if (!compressed) { setPendingKandang(null); return; }
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
+      await saveKandangDone(k, file_url);
+    } catch {
+      setPendingKandang(null);
     }
   };
 
@@ -599,17 +638,18 @@ export default function GuidedHariIni({ user }) {
                 style={{ width: `${(kandangSaved.size / KANDANG_LIST.length) * 100}%` }} />
             </div>
 
-            <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span></p>
+            <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>
 
             <div className="grid grid-cols-5 gap-2">
               {KANDANG_LIST.map(k => {
                 const done = kandangDone.has(k);
+                const isPending = pendingKandang === k;
                 return (
                   <button
                     key={k}
                     onClick={() => handleToggleKandang(k)}
                     className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all active:scale-90 ${
-                      done ? "bg-green-500 text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      done ? "bg-green-500 text-white shadow-md" : isPending ? "bg-amber-100 text-amber-600 animate-pulse" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     {done && <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" />}
@@ -622,6 +662,15 @@ export default function GuidedHariIni({ user }) {
             {kandangSaved.size === KANDANG_LIST.length && (
               <p className="text-center text-sm font-semibold text-green-700 mt-3">✓ Semua kandang sudah dibersihkan!</p>
             )}
+
+            <input
+              ref={kandangCameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={e => { if (e.target.files?.[0]) handleKandangPhoto(e.target.files[0]); e.target.value = ""; }}
+            />
           </div>
         </Widget>
         </WidgetErrorBoundary>

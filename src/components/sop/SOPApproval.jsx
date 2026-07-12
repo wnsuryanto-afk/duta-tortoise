@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { logActivity } from "@/lib/logActivity";
+import PhotoPreviewModal from "./PhotoPreviewModal";
 
 const statusConfig = {
   submitted: { label: "Menunggu", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -35,6 +36,7 @@ export default function SOPApproval() {
   const [rejectReason, setRejectReason] = useState({});
   const [processing, setProcessing] = useState({});
   const [filterStatus, setFilterStatus] = useState("submitted");
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   const { data: checklists = [], isLoading } = useQuery({
     queryKey: ["checklists-all", filterStatus],
@@ -50,6 +52,31 @@ export default function SOPApproval() {
     staleTime: 30 * 1000,
   });
   const pendingCount = pendingList.length;
+
+  const { data: sopTasksAll = [] } = useQuery({
+    queryKey: ["sop-tasks-require-photo"],
+    queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const requirePhotoTitles = useMemo(() => {
+    const s = new Set();
+    let kebersihanWajib = false;
+    sopTasksAll.forEach(t => {
+      if (t.require_photo) {
+        s.add(norm(t.title));
+        if (t.category === "kebersihan") kebersihanWajib = true;
+      }
+    });
+    return { titles: s, kebersihanWajib };
+  }, [sopTasksAll]);
+
+  const taskRequiresPhoto = (taskTitle) => {
+    const nt = norm(taskTitle);
+    if (requirePhotoTitles.titles.has(nt)) return true;
+    if (requirePhotoTitles.kebersihanWajib && nt.startsWith("kebersihan ")) return true;
+    return false;
+  };
 
   const getCheckedMap = (c) => {
     const stored = taskChecked[c.id] || {};
@@ -282,9 +309,16 @@ export default function SOPApproval() {
                                   </p>
                                 )}
                                 {t.notes && <p className="text-[11px] text-muted-foreground mt-0.5">{t.notes}</p>}
-                                {t.photo_url && (
-                                  <img src={t.photo_url} alt="Bukti" className="mt-1.5 h-16 w-24 object-cover rounded border" />
-                                )}
+                                {t.photo_url ? (
+                                  <button onClick={() => setPhotoPreview({ url: t.photo_url, takenAt: t.photo_taken_at, title: t.task_title })} className="mt-1.5 block">
+                                    <img src={t.photo_url} alt="Bukti" className="h-16 w-24 object-cover rounded border hover:opacity-80 transition-opacity" />
+                                    {t.photo_taken_at && <span className="text-[10px] text-muted-foreground block mt-0.5">🕐 {t.photo_taken_at}</span>}
+                                  </button>
+                                ) : taskRequiresPhoto(t.task_title) ? (
+                                  <p className="mt-1.5 text-[11px] text-amber-600 font-semibold flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" /> ⚠️ tanpa foto
+                                  </p>
+                                ) : null}
                               </div>
                             </div>
                           );
@@ -370,6 +404,16 @@ export default function SOPApproval() {
             );
           })}
         </div>
+      )}
+
+      {photoPreview && (
+        <PhotoPreviewModal
+          open={!!photoPreview}
+          onClose={() => setPhotoPreview(null)}
+          photoUrl={photoPreview.url}
+          takenAt={photoPreview.takenAt}
+          taskTitle={photoPreview.title}
+        />
       )}
     </div>
   );

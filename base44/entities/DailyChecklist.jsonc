@@ -35,6 +35,14 @@
           },
           "notes": {
             "type": "string"
+          },
+          "photo_url": {
+            "type": "string",
+            "description": "URL bukti foto penyelesaian task"
+          },
+          "photo_taken_at": {
+            "type": "string",
+            "description": "Jam pengambilan foto (HH:mm)"
           }
         }
       },
@@ -50,6 +58,10 @@
           },
           "photo_url": {
             "type": "string"
+          },
+          "taken_at": {
+            "type": "string",
+            "description": "Jam pengambilan foto (HH:mm)"
           }
         }
       },

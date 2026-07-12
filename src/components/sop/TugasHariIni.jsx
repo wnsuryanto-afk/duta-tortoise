@@ -9,7 +9,7 @@
  * Anti-dobel: penambahan task dicek terhadap log hari ini (item_id unik);
  * tombol centang kebal double-tap (disabled saat proses).
  */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
@@ -19,6 +19,9 @@ import {
   Camera, Plus, Loader2, Check, X, Star, Salad
 } from "lucide-react";
 import ExtraTaskForm from "./ExtraTaskForm";
+import { compressImage } from "@/lib/useImageCompression";
+import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
+import PhotoPreviewModal from "./PhotoPreviewModal";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
@@ -150,6 +153,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         points: t.points || 0,
         badge: t.category,
         badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
+        require_photo: t.require_photo || false,
       }));
   }, [sopTasks, dow, dom]);
 
@@ -238,14 +242,54 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const handlePhotoUpload = async (taskId, file) => {
     setUploadingPhotoId(taskId);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const compressed = await compressImage(file);
+      if (!compressed) { setUploadingPhotoId(null); return; }
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
+      const takenAt = format(new Date(), "HH:mm");
       const existing = myLogs.find(l => l.item_id === taskId);
       if (existing) {
         await base44.entities.MaintenanceLog.update(existing.id, { photo_url: file_url });
+        syncPhotoToChecklist({
+          employeeEmail: user.email, date: today,
+          taskTitle: existing.item_label, enclosure: existing.enclosure_name || "Tugas Harian",
+          photoUrl: file_url, takenAt,
+        });
       }
       refetchLogs();
     } catch {}
     setUploadingPhotoId(null);
+  };
+
+  const handlePhotoCheck = async (task, file) => {
+    if (savingId) return;
+    setSavingId(task.id);
+    try {
+      const compressed = await compressImage(file);
+      if (!compressed) { setSavingId(null); return; }
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
+      const takenAt = format(new Date(), "HH:mm");
+      await base44.entities.MaintenanceLog.create({
+        check_key: `${user.email}__tugas__${task.id}__${today}`,
+        enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
+        freq: "harian", item_id: task.id, item_label: task.label,
+        period_key: today, is_done: true,
+        done_at: takenAt,
+        done_by: user.full_name || user.email,
+        done_by_email: user.email,
+        poin_earned: task.points || 0,
+        photo_url: file_url,
+      });
+      setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+      refetchLogs();
+      syncPhotoToChecklist({
+        employeeEmail: user.email, date: today,
+        taskTitle: task.label, enclosure: "Tugas Harian",
+        photoUrl: file_url, takenAt,
+      });
+    } catch {
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const handleApproveExtra = async (log, poin) => {
@@ -344,8 +388,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             uploadingPhoto={uploadingPhotoId === task.id}
             teamWho={showTeam ? (teamCheckMap[task.id] || []) : []}
             showTeam={showTeam}
+            requirePhoto={task.require_photo}
             onCheck={() => handleCheck(task)}
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
+            onPhotoCheck={(file) => handlePhotoCheck(task, file)}
           />
         ))}
         {sopTaskItems.length === 0 && (
@@ -391,18 +437,32 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, onCheck, onPhotoUpload }) {
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, onCheck, onPhotoUpload, onPhotoCheck }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
+  const cameraRef = useRef(null);
+  const [showPhoto, setShowPhoto] = useState(false);
+
+  const handleClick = () => {
+    if (isIstirahat || isAbsensi || isSaving) return;
+    if (requirePhoto && !isChecked) {
+      cameraRef.current?.click();
+    } else {
+      onCheck();
+    }
+  };
 
   return (
     <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isChecked ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm`}>
-      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={() => !isIstirahat && !isAbsensi && !isSaving && onCheck()}>
+      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
         <span className="text-xs font-bold text-gray-400 w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
             <p className={`text-sm font-semibold ${isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
+            {requirePhoto && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex-shrink-0">📷 Wajib Foto</span>
+            )}
             {task.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${task.badgeColor}`}>{task.badge}</span>}
             {!isIstirahat && !isAbsensi && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">+{poin} poin</span>
@@ -422,11 +482,14 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
             </p>
           )}
 
-          {/* Photo thumbnail */}
+          {/* Photo thumbnail — clickable to enlarge */}
           {photoUrl && (
-            <div className="mt-1.5">
-              <img src={photoUrl} alt="Dokumentasi" className="w-16 h-12 rounded-lg object-cover border border-green-200" />
-            </div>
+            <button onClick={(e) => { e.stopPropagation(); setShowPhoto(true); }} className="mt-1.5 block">
+              <img src={photoUrl} alt="Dokumentasi" className="w-16 h-12 rounded-lg object-cover border border-green-200 hover:opacity-80 transition-opacity" />
+            </button>
+          )}
+          {showPhoto && (
+            <PhotoPreviewModal open={showPhoto} onClose={() => setShowPhoto(false)} photoUrl={photoUrl} taskTitle={task.label} />
           )}
 
           {/* Team view */}
@@ -441,22 +504,32 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-          {/* Photo button (only for checked non-absensi tasks) */}
-          {!isIstirahat && !isAbsensi && isChecked && !photoUrl && (
+          {/* Optional photo button (non-require_photo, checked, no photo yet) — camera or gallery */}
+          {!requirePhoto && !isIstirahat && !isAbsensi && isChecked && !photoUrl && (
             <label className={`w-7 h-7 rounded-xl border-2 border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-all ${uploadingPhoto ? "opacity-50" : ""}`}>
               {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin" /> : <Camera className="w-3.5 h-3.5 text-gray-400" />}
-              <input type="file" accept="image/*" capture="environment" onChange={e => { if (e.target.files?.[0]) onPhotoUpload(e.target.files[0]); }} className="hidden" />
+              <input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) onPhotoUpload(e.target.files[0]); e.target.value = ""; }} className="hidden" />
             </label>
           )}
 
           {/* Checkbox */}
           {!isIstirahat && (
-            <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${isChecked ? "bg-green-500 border-green-500" : isAbsensi ? "border-gray-200 bg-gray-50" : "border-gray-300 hover:border-green-400"} ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving) onCheck(); }}>
+            <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${isChecked ? "bg-green-500 border-green-500" : isAbsensi ? "border-gray-200 bg-gray-50" : requirePhoto ? "border-red-300 hover:border-red-400" : "border-gray-300 hover:border-green-400"} ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving) handleClick(); }}>
               {isChecked && <CheckCircle2 className="w-4 h-4 text-white" />}
             </div>
           )}
         </div>
       </div>
+
+      {/* Hidden camera input for require_photo tasks (camera only, no gallery) */}
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={e => { if (e.target.files?.[0]) onPhotoCheck(e.target.files[0]); e.target.value = ""; }}
+      />
     </div>
   );
 }

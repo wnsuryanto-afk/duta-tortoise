@@ -36,6 +36,7 @@ const DEFAULT_FORM = {
   deadline_time: "", is_active: true,
   weekly_days: [], monthly_dates: [],
   target_enclosures: [], target_tortoise_ids: [], target_tortoise_names: [],
+  require_photo: false,
 };
 
 function ToggleChip({ label, selected, onClick }) {
@@ -214,6 +215,14 @@ export default function SOPTaskManager() {
     queryClient.invalidateQueries({ queryKey: ["sop-tasks-all"] });
   };
 
+  const handleToggleRequirePhoto = async (task) => {
+    await base44.entities.SOPTask.update(task.id, { require_photo: !task.require_photo });
+    queryClient.invalidateQueries({ queryKey: ["sop-tasks-all"] });
+    queryClient.invalidateQueries({ queryKey: ["sop-tasks-require-photo"] });
+    queryClient.invalidateQueries({ queryKey: ["sop-tasks-active-tugas-hari-ini"] });
+    queryClient.invalidateQueries({ queryKey: ["sop-tasks-kebersihan"] });
+  };
+
   const filteredTortoises = form.target_enclosures.length > 0
     ? tortoises.filter(t => form.target_enclosures.includes(t.enclosure))
     : tortoises;
@@ -278,6 +287,17 @@ export default function SOPTaskManager() {
                 </div>
                 {canEdit && (
                   <div className="flex items-center gap-2 shrink-0">
+                    {role === "owner" ? (
+                      <button
+                        onClick={() => handleToggleRequirePhoto(t)}
+                        className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors ${t.require_photo ? "bg-red-50 text-red-600 border-red-300" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
+                        title="Wajib Foto"
+                      >
+                        📷 {t.require_photo ? "Wajib Foto" : "Foto Opsional"}
+                      </button>
+                    ) : t.require_photo && (
+                      <span className="text-[11px] font-medium px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-300">📷 Wajib Foto</span>
+                    )}
                     <Switch checked={t.is_active} onCheckedChange={() => handleToggleActive(t)} />
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}>
                       <Pencil className="w-3.5 h-3.5" />
@@ -354,6 +374,16 @@ export default function SOPTaskManager() {
                   </div>
                 </div>
               )}
+
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border">
+                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  <Switch
+                    checked={form.require_photo || false}
+                    onCheckedChange={(v) => setForm(p => ({ ...p, require_photo: v }))}
+                  />
+                  📷 Wajib Foto (kamera langsung saat centang)
+                </label>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
