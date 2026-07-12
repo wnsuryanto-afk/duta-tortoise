@@ -46,6 +46,7 @@ const NAV_GROUPS = [
       { path: "/family-tree", section: "family-tree",label: "Silsilah",           icon: GitBranch },
       { path: "/treatment",   section: "treatment",  label: "Jadwal Treatment",   icon: Stethoscope },
       { path: "/death-records",section:"death-records",label:"Catatan Kematian",  icon: Skull },
+      { path: "/kura-diam",    section: "kura-diam",   label: "Deteksi Kura Diam", icon: Clock },
     ],
   },
 

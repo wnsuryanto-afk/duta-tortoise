@@ -68,6 +68,12 @@ export default function RingkasanPagi() {
     queryFn: () => base44.entities.Breeding.list("-created_date", 50),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: kuraDiamResp } = useQuery({
+    queryKey: ["kura-diam-report"],
+    queryFn: () => base44.functions.invoke("getKuraDiamReport", {}),
+    staleTime: 5 * 60 * 1000,
+  });
+  const kuraDiamMerah = kuraDiamResp?.data?.counts?.merah || 0;
   const { data: users = [] } = useQuery({
     queryKey: ["ringkasan-staff-users"],
     queryFn: () => base44.entities.User.list(),
@@ -101,6 +107,7 @@ export default function RingkasanPagi() {
     { count: sickTortoises.length, icon: "🤒", label: "Kura sakit", href: "/health" },
     { count: waitingMaterials, icon: "⏳", label: "Menunggu barang", href: "/daftar-belanja" },
     { count: lowStock.length, icon: "⚠️", label: "Stok di bawah min", href: "/dashboard-stok" },
+    { count: kuraDiamMerah, icon: "🔍", label: "Kura diam >90 hari", href: "/kura-diam" },
   ].filter(a => a.count > 0);
 
   const todayLabel = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
