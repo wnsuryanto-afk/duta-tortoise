@@ -22,6 +22,7 @@ import ExtraTaskForm from "./ExtraTaskForm";
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import PhotoPreviewModal from "./PhotoPreviewModal";
+import UkurFormDialog from "./UkurFormDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
@@ -60,6 +61,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [showTeam, setShowTeam] = useState(false);
   const [showExtraForm, setShowExtraForm] = useState(false);
   const [showPakanForm, setShowPakanForm] = useState(false);
+  const [ukurTarget, setUkurTarget] = useState(null);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
 
@@ -88,6 +90,15 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     queryKey: ["tortoises-timbang-reminder", today],
     queryFn: () => base44.entities.Tortoise.list("-name", 500),
     staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: rotasiUkur = [] } = useQuery({
+    queryKey: ["rotasi-ukur", today],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getRotasiUkur", { date: today });
+      return res.data?.tortoises || [];
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: attendance } = useQuery({
@@ -135,7 +146,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 
   // ── Bangun task dari SOPTask (hormati frequency + weekly_days + monthly_dates) ──
   const sopTaskItems = useMemo(() => {
-    return sopTasks
+    const items = [];
+    sopTasks
       .filter(t => {
         if (!t.is_active) return false;
         const freq = t.frequency;
@@ -144,18 +156,42 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         if (freq === "bulanan") return Array.isArray(t.monthly_dates) && t.monthly_dates.includes(dom);
         return false;
       })
-      .map(t => ({
-        id: `sop_${t.id}`,
-        label: t.title,
-        waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
-        icon: CATEGORY_ICON[t.category] || "✅",
-        keterangan: t.description || "",
-        points: t.points || 0,
-        badge: t.category,
-        badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
-        require_photo: t.require_photo || false,
-      }));
-  }, [sopTasks, dow, dom]);
+      .forEach(t => {
+        // EXPAND: anchor "ROTASI OTOMATIS" → 2 task per-kura (pola sama dgn kebersihan-per-kandang)
+        if ((t.title || "").toUpperCase().includes("ROTASI OTOMATIS")) {
+          rotasiUkur.forEach(tor => {
+            items.push({
+              id: `ukur_rotasi_${tor.id}`,
+              label: `Timbang & ukur ${tor.code} (${tor.enclosure})`,
+              waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+              icon: "⚖️",
+              keterangan: tor.species || "",
+              points: t.points || 0,
+              badge: "Ukur Rotasi",
+              badgeColor: "bg-sky-100 text-sky-700",
+              isUkurRotasi: true,
+              tortoiseId: tor.id,
+              tortoiseCode: tor.code,
+              tortoiseName: tor.name,
+              tortoiseEnclosure: tor.enclosure,
+            });
+          });
+          return;
+        }
+        items.push({
+          id: `sop_${t.id}`,
+          label: t.title,
+          waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+          icon: CATEGORY_ICON[t.category] || "✅",
+          keterangan: t.description || "",
+          points: t.points || 0,
+          badge: t.category,
+          badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
+          require_photo: t.require_photo || false,
+        });
+      });
+    return items;
+  }, [sopTasks, dow, dom, rotasiUkur]);
 
   // Reminder timbang
   const timbangToday = tortoises.filter(t => {
@@ -292,6 +328,44 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     }
   };
 
+  const handleUkurSubmit = async ({ weight_grams, length_cm }) => {
+    if (!ukurTarget || savingId) return;
+    const task = ukurTarget;
+    setSavingId(task.id);
+    try {
+      // 1. Simpan MeasurementHistory (trigger onMeasurementSaved → update Tortoise otomatis)
+      await base44.entities.MeasurementHistory.create({
+        tortoise_id: task.tortoiseId,
+        tortoise_name: task.tortoiseName || task.tortoiseCode,
+        date: today,
+        weight_grams,
+        shell_length_cm: length_cm,
+        measured_by: user.full_name || user.email,
+        notes: "Rotasi otomatis timbang & ukur",
+      });
+      // 2. Buat MaintenanceLog (centang) — anti-dobel via existingLogItemIds
+      if (!existingLogItemIds.has(task.id)) {
+        await base44.entities.MaintenanceLog.create({
+          check_key: `${user.email}__tugas__${task.id}__${today}`,
+          enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
+          freq: "harian", item_id: task.id, item_label: task.label,
+          period_key: today, is_done: true,
+          done_at: format(new Date(), "HH:mm"),
+          done_by: user.full_name || user.email,
+          done_by_email: user.email,
+          poin_earned: task.points || 0,
+        });
+      }
+      setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+      refetchLogs();
+      setUkurTarget(null);
+    } catch {
+      // error — biarkan dialog terbuka, user bisa retry
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const handleApproveExtra = async (log, poin) => {
     await base44.entities.MaintenanceLog.update(log.id, {
       approval_status: "approved",
@@ -389,7 +463,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             teamWho={showTeam ? (teamCheckMap[task.id] || []) : []}
             showTeam={showTeam}
             requirePhoto={task.require_photo}
+            isUkurRotasi={task.isUkurRotasi}
             onCheck={() => handleCheck(task)}
+            onUkurCheck={() => setUkurTarget(task)}
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
             onPhotoCheck={(file) => handlePhotoCheck(task, file)}
           />
@@ -432,12 +508,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           onSaved={() => qc.invalidateQueries({ queryKey: ["pakan-harian-today"] })}
         />
       )}
+
+      <UkurFormDialog
+        open={!!ukurTarget}
+        tortoise={ukurTarget ? { code: ukurTarget.tortoiseCode, enclosure: ukurTarget.tortoiseEnclosure } : null}
+        saving={savingId === ukurTarget?.id}
+        onClose={() => setUkurTarget(null)}
+        onSubmit={handleUkurSubmit}
+      />
     </div>
   );
 }
 
 // ── Task Row Component ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, onCheck, onPhotoUpload, onPhotoCheck }) {
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
@@ -445,6 +529,10 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
 
   const handleClick = () => {
     if (isIstirahat || isAbsensi || isSaving) return;
+    if (isUkurRotasi && !isChecked) {
+      onUkurCheck();
+      return;
+    }
     if (requirePhoto && !isChecked) {
       cameraRef.current?.click();
     } else {
