@@ -28,8 +28,21 @@ Deno.serve(async (req) => {
       employee_name: log.done_by,
     });
 
+    // ── Normalisasi kunci deduplikasi: trim(judul) + kandang ──
+    // null/undefined/"" dan placeholder kandang ("Tugas Harian", "Suplemen",
+    // "tugas_harian") dianggap SAMA (kandang kosong). Mencegah dobel pada task
+    // TANPA kandang yang sebelumnya bocor karena task_id memakai log.id (unik
+    // per record) sehingga tidak pernah cocok.
+    const PH_ENC = new Set(["", "tugas harian", "suplemen", "tugas_harian"]);
+    const normEnc = (e) => {
+      const v = (e || "").toString().trim().toLowerCase();
+      return PH_ENC.has(v) ? "" : v;
+    };
+    const normTitle = (t) => (t || "").toString().trim().toLowerCase();
+    const dedupKey = (title, enc) => `${normTitle(title)}__${normEnc(enc)}`;
+
     const taskEntry = {
-      task_id: log.id || log.check_key,
+      task_id: log.check_key || log.id, // check_key stabil per (user, task, hari)
       task_title: log.item_label || log.item_id,
       points: poinEarned,
       notes: log.enclosure_name || "",
@@ -37,13 +50,41 @@ Deno.serve(async (req) => {
 
     if (existing && existing.length > 0) {
       const checklist = existing[0];
-      const currentTasks = checklist.completed_tasks || [];
-      // Cek apakah task sudah ada (hindari duplikat)
-      const alreadyExists = currentTasks.some(t => t.task_id === taskEntry.task_id);
+      const currentTasks = (checklist.completed_tasks || []).slice();
+
+      // Anti-dobel: cek berdasarkan judul+kandang yang dinormalisasi
+      const newKey = dedupKey(taskEntry.task_title, taskEntry.notes);
+      const alreadyExists = currentTasks.some(t => dedupKey(t.task_title, t.notes) === newKey);
       if (!alreadyExists) {
+        currentTasks.push(taskEntry);
+      }
+
+      // Pembersihan: sisakan SATU task per kunci (judul+kandang).
+      // Prioritaskan entri yang lebih lengkap (ada photo_url/notes) — setara
+      // "yang tercentang diprioritaskan".
+      const seen = new Map();
+      const deduped = [];
+      for (const t of currentTasks) {
+        const k = dedupKey(t.task_title, t.notes);
+        if (!seen.has(k)) {
+          seen.set(k, deduped.length);
+          deduped.push(t);
+        } else {
+          const idx = seen.get(k);
+          const kept = deduped[idx];
+          const keptRich = !!(kept.photo_url || kept.notes);
+          const tRich = !!(t.photo_url || t.notes);
+          if (tRich && !keptRich) deduped[idx] = t;
+        }
+      }
+
+      const newTotal = deduped.reduce((s, t) => s + (t.points || 0), 0);
+      const prevTasks = checklist.completed_tasks || [];
+      const prevTotal = checklist.total_points_claimed || 0;
+      if (deduped.length !== prevTasks.length || newTotal !== prevTotal) {
         await base44.asServiceRole.entities.DailyChecklist.update(checklist.id, {
-          completed_tasks: [...currentTasks, taskEntry],
-          total_points_claimed: (checklist.total_points_claimed || 0) + poinEarned,
+          completed_tasks: deduped,
+          total_points_claimed: newTotal,
         });
       }
     } else {
