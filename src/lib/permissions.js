@@ -39,7 +39,7 @@ export const NAV_ACCESS = {
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
     "operational-costs", "kritik-saran", "stock-gudang",
     "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
-    "approval-poin", "tugas-insidentil", "daftar-belanja", "kura-diam",
+    "approval-poin", "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -51,7 +51,7 @@ export const NAV_ACCESS = {
     "vet-contacts", "maintenance", "printer-config",
     "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
     "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
-    "tugas-insidentil", "daftar-belanja", "kura-diam",
+    "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar",
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -63,7 +63,7 @@ export const NAV_ACCESS = {
     "vet-contacts", "maintenance", "activity-log",
     "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
     "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
-    "tugas-insidentil", "daftar-belanja", "kura-diam",
+    "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar",
   ],
   kepala_feeder: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",

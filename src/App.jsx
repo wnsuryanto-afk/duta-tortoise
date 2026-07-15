@@ -70,6 +70,7 @@ import PanduanPakanPage from '@/pages/PanduanPakanPage';
 import PanduanPenyakitPage from '@/pages/PanduanPenyakitPage';
 import PanduanPenyakitDetailPage from '@/pages/PanduanPenyakitDetailPage';
 import KuraDiamPage from '@/pages/KuraDiamPage';
+import BreedingCalendarPage from '@/pages/BreedingCalendarPage';
 import PakanHarianPage from '@/pages/PakanHarianPage';
 import TortoisePassport from '@/pages/TortoisePassport';
 
@@ -154,6 +155,7 @@ const AuthenticatedApp = () => {
         <Route path="/panduan-penyakit" element={<PanduanPenyakitPage />} />
         <Route path="/panduan-penyakit/:id" element={<PanduanPenyakitDetailPage />} />
         <Route path="/kura-diam" element={<KuraDiamPage />} />
+        <Route path="/breeding-calendar" element={<BreedingCalendarPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

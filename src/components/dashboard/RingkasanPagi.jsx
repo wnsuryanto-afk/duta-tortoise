@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { isBatchSegera, getNextMilestone } from "@/lib/breedingCalendarUtils";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -110,6 +111,8 @@ export default function RingkasanPagi() {
     { count: kuraDiamMerah, icon: "🔍", label: "Kura diam >90 hari", href: "/kura-diam" },
   ].filter(a => a.count > 0);
 
+  const segeraBatches = breedings.filter(b => isBatchSegera(b, now));
+
   const todayLabel = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
 
   return (
@@ -139,6 +142,29 @@ export default function RingkasanPagi() {
             </Link>
           ))}
         </div>
+      )}
+
+      {/* 1.5 BATCH BREEDING SEGERA */}
+      {segeraBatches.length > 0 && (
+        <Link to="/breeding-calendar" className="block bg-amber-50 border border-amber-300 rounded-xl p-3 hover:bg-amber-100 transition-colors">
+          <p className="text-sm font-bold text-amber-800">
+            🥚 Perkiraan menetas/bertelur dalam 2 minggu: {segeraBatches.length} batch
+          </p>
+          <div className="mt-1.5 space-y-0.5">
+            {segeraBatches.slice(0, 3).map(b => {
+              const next = getNextMilestone(b, now);
+              return (
+                <p key={b.id} className="text-xs text-amber-700">
+                  ♀ {b.female_name} × ♂ {b.male_name}
+                  {next?.start ? ` — ${next.label} ±${format(next.start, "d MMM", { locale: idLocale })}` : ""}
+                </p>
+              );
+            })}
+            {segeraBatches.length > 3 && (
+              <p className="text-[10px] text-amber-600 italic">+{segeraBatches.length - 3} batch lainnya</p>
+            )}
+          </div>
+        </Link>
       )}
 
       {/* 2. OPERASIONAL HARI INI */}
