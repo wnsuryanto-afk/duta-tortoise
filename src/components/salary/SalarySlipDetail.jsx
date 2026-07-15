@@ -12,6 +12,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatRole } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
 import PaymentProofDialog from "@/components/salary/PaymentProofDialog";
+import { formatWeekLabel } from "@/lib/weeklySalaryUtils";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -38,9 +39,10 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const conf = statusConfig[slip.status] || statusConfig.draft;
   const StatusIcon = conf.icon;
 
-  const periodLabel = slip.period
-    ? format(new Date(slip.period + "-01"), "MMMM yyyy", { locale: id })
-    : slip.period;
+  const isWeekly = slip.period_type === "weekly";
+  const periodLabel = isWeekly && slip.week_start
+    ? formatWeekLabel(slip.week_start)
+    : (slip.period ? format(new Date(slip.period + "-01"), "MMMM yyyy", { locale: id }) : (slip.period || "-"));
 
   const handleApprove = async () => {
     await base44.entities.SalarySlip.update(slip.id, {
@@ -214,20 +216,27 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
             </thead>
             <tbody>
               <tr>
-                <td className="p-2 border border-border">Gaji Pokok</td>
+                <td className="p-2 border border-border">
+                  Gaji Pokok
+                  {isWeekly && slip.attend_days != null && (
+                    <span className="text-xs text-muted-foreground ml-1">({slip.attend_days} hari hadir)</span>
+                  )}
+                </td>
                 <td className="p-2 border border-border text-right font-medium">{fmt(slip.base_salary)}</td>
               </tr>
-              <tr className="bg-amber-50/40">
-                <td className="p-2 border border-border">
-                  Total Poin KPI
-                  <span className="text-xs text-muted-foreground ml-1">({slip.total_poin || 0} poin · Target: {targetPoin} poin)</span>
-                </td>
-                <td className="p-2 border border-border text-right">
-                  <span className={`text-xs font-medium ${(slip.total_poin || 0) >= targetPoin ? "text-green-600" : "text-red-600"}`}>
-                    {(slip.total_poin || 0) >= targetPoin ? "✓ Tercapai" : `✗ ${slip.poin_status || ""}`}
-                  </span>
-                </td>
-              </tr>
+              {!isWeekly && (
+                <tr className="bg-amber-50/40">
+                  <td className="p-2 border border-border">
+                    Total Poin KPI
+                    <span className="text-xs text-muted-foreground ml-1">({slip.total_poin || 0} poin · Target: {targetPoin} poin)</span>
+                  </td>
+                  <td className="p-2 border border-border text-right">
+                    <span className={`text-xs font-medium ${(slip.total_poin || 0) >= targetPoin ? "text-green-600" : "text-red-600"}`}>
+                      {(slip.total_poin || 0) >= targetPoin ? "✓ Tercapai" : `✗ ${slip.poin_status || ""}`}
+                    </span>
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td className="p-2 border border-border">Bonus Poin ({slip.total_poin || 0} poin)</td>
                 <td className="p-2 border border-border text-right text-green-600 font-medium">+{fmt(slip.poin_bonus)}</td>

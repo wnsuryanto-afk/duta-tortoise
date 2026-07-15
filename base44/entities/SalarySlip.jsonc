@@ -18,9 +18,33 @@
       "type": "string",
       "description": "Role karyawan"
     },
+    "period_type": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "monthly"
+      ],
+      "default": "monthly",
+      "description": "Jenis periode slip: weekly (Minggu\u2013Sabtu) atau bulanan"
+    },
     "period": {
       "type": "string",
-      "description": "Periode gaji format YYYY-MM"
+      "description": "Periode gaji: YYYY-MM (bulanan) atau YYYY-MM-DD = week_start (mingguan)"
+    },
+    "week_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal Minggu (awal minggu) untuk slip mingguan"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal Sabtu (akhir minggu) untuk slip mingguan"
+    },
+    "attend_days": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah hari hadir dalam periode (untuk slip mingguan)"
     },
     "base_salary": {
       "type": "number",
@@ -111,6 +135,19 @@
         "paid"
       ],
       "default": "draft"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Nama yang menyetujui"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal disetujui"
+    },
+    "generated_by": {
+      "type": "string",
+      "description": "Nama yang membuat slip"
     },
     "paid_date": {
       "type": "string",

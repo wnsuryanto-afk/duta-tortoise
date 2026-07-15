@@ -11,9 +11,17 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
     const fmtRp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
-    const bulan = slip.period
-      ? new Date(slip.period + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" })
-      : slip.period;
+    let bulan;
+    if (slip.period_type === "weekly") {
+      const ws = slip.week_start ? new Date(slip.week_start) : new Date(slip.period);
+      const we = slip.week_end ? new Date(slip.week_end) : new Date(ws.getTime() + 6 * 86400000);
+      const fmtD = (d) => d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+      bulan = `${fmtD(ws)} – ${fmtD(we)}`;
+    } else {
+      bulan = slip.period
+        ? new Date(slip.period + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" })
+        : slip.period;
+    }
 
     // ── CREATE: slip baru dibuat (draft) ──
     if (event?.type === "create") {
