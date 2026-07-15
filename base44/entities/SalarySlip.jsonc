@@ -121,6 +121,19 @@
       "type": "string",
       "description": "Dibayarkan oleh"
     },
+    "payment_proof_url": {
+      "type": "string",
+      "description": "URL bukti transfer gaji (screenshot m-banking)"
+    },
+    "payment_proof_uploaded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu upload bukti transfer"
+    },
+    "payment_proof_uploaded_by": {
+      "type": "string",
+      "description": "Nama yang mengupload bukti transfer"
+    },
     "finance_tx_id": {
       "type": "string",
       "description": "ID FinanceTransaction otomatis saat paid"

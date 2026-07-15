@@ -4,13 +4,14 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Printer, CheckCircle2, XCircle, Clock, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Printer, CheckCircle2, XCircle, Clock, X, ChevronDown, ChevronRight, ImagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatRole } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
+import PaymentProofDialog from "@/components/salary/PaymentProofDialog";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -25,10 +26,14 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const qc = useQueryClient();
   const printRef = useRef(null);
   const [vegExpanded, setVegExpanded] = useState(false);
+  const [showProofDialog, setShowProofDialog] = useState(false);
+  const [proofMode, setProofMode] = useState("pay");
+  const [showProofLightbox, setShowProofLightbox] = useState(false);
 
   if (!slip) return null;
 
   const canManage = ["owner", "manajer", "admin"].includes(role);
+  const canPay = ["owner", "manajer"].includes(role);
   const settings = companySettings || {};
   const conf = statusConfig[slip.status] || statusConfig.draft;
   const StatusIcon = conf.icon;
@@ -55,23 +60,59 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
     onClose();
   };
 
-  const handleMarkPaid = async () => {
+  const handleOpenPayDialog = () => {
+    setProofMode("pay");
+    setShowProofDialog(true);
+  };
+
+  const handleOpenAddProofDialog = () => {
+    setProofMode("add_proof");
+    setShowProofDialog(true);
+  };
+
+  const handlePaySlip = async (proofData) => {
     const paidDate = format(new Date(), "yyyy-MM-dd");
-    await base44.entities.SalarySlip.update(slip.id, {
+    const updateData = {
       status: "paid",
       paid_date: paidDate,
       paid_by: user?.full_name || user?.email,
-    });
+      ...proofData,
+    };
+    if (proofData.payment_proof_url) {
+      updateData.payment_proof_uploaded_at = new Date().toISOString();
+      updateData.payment_proof_uploaded_by = user?.full_name || user?.email;
+    }
+    await base44.entities.SalarySlip.update(slip.id, updateData);
     await logActivity({
       action: "update",
       entity_type: "SalarySlip",
       entity_id: slip.id,
       entity_name: `${slip.employee_name} — ${slip.period}`,
-      changes_summary: `Menandai slip gaji ${slip.employee_name} periode ${slip.period} sebagai dibayar`,
+      changes_summary: `Menandai slip gaji ${slip.employee_name} periode ${slip.period} sebagai dibayar${proofData.payment_proof_url ? " (dengan bukti transfer)" : ""}`,
     });
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
-    toast.success("Slip gaji ditandai dibayar");
+    toast.success(proofData.payment_proof_url ? "Slip gaji ditandai dibayar dengan bukti" : "Slip gaji ditandai dibayar");
+    setShowProofDialog(false);
     onClose();
+  };
+
+  const handleSaveProof = async (proofData) => {
+    const updateData = {
+      payment_proof_url: proofData.payment_proof_url,
+      payment_proof_uploaded_at: new Date().toISOString(),
+      payment_proof_uploaded_by: user?.full_name || user?.email,
+    };
+    await base44.entities.SalarySlip.update(slip.id, updateData);
+    await logActivity({
+      action: "update",
+      entity_type: "SalarySlip",
+      entity_id: slip.id,
+      entity_name: `${slip.employee_name} — ${slip.period}`,
+      changes_summary: `Menambahkan bukti transfer untuk slip gaji ${slip.employee_name} periode ${slip.period}`,
+    });
+    qc.invalidateQueries({ queryKey: ["salary-slips"] });
+    toast.success("Bukti transfer tersimpan");
+    setShowProofDialog(false);
   };
 
   const handlePrint = () => {
@@ -126,6 +167,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const targetPoin = settings.min_poin_bulanan || 300;
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -259,12 +301,46 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
             </tbody>
           </table>
 
-          {/* Status info */}
-          {slip.paid_date && (
-            <p className="text-xs text-muted-foreground mb-2">
-              Dibayarkan: {format(new Date(slip.paid_date), "d MMMM yyyy", { locale: id })}
-              {slip.paid_by && ` oleh ${slip.paid_by}`}
-            </p>
+          {/* Status info + bukti transfer */}
+          {slip.status === "paid" && (
+            <div className="mb-3 space-y-2">
+              <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Sudah dibayar {slip.paid_date ? format(new Date(slip.paid_date), "d MMM yyyy", { locale: id }) : ""}
+                {slip.paid_by && <span className="font-normal text-green-600">· {slip.paid_by}</span>}
+              </div>
+              {/* Bukti transfer thumbnail / actions */}
+              {slip.payment_proof_url ? (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={slip.payment_proof_url}
+                    alt="Bukti transfer"
+                    className="w-20 h-20 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setShowProofLightbox(true)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">Bukti Transfer</p>
+                    {slip.payment_proof_uploaded_at && (
+                      <p className="text-[10px] text-muted-foreground">
+                        Diupload {format(new Date(slip.payment_proof_uploaded_at), "d MMM yyyy HH:mm", { locale: id })}
+                        {slip.payment_proof_uploaded_by && ` · ${slip.payment_proof_uploaded_by}`}
+                      </p>
+                    )}
+                    {canPay && (
+                      <Button size="sm" variant="outline" className="mt-1 h-7 text-xs gap-1" onClick={handleOpenAddProofDialog}>
+                        <ImagePlus className="w-3 h-3" /> Ganti Bukti
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : canPay ? (
+                <Button size="sm" variant="outline" className="gap-1" onClick={handleOpenAddProofDialog}>
+                  <ImagePlus className="w-3.5 h-3.5" /> Tambah Bukti Transfer
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">Belum ada bukti transfer</p>
+              )}
+            </div>
           )}
 
           {/* Tanda tangan */}
@@ -304,8 +380,8 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
               <CheckCircle2 className="w-4 h-4" /> Approve
             </Button>
           )}
-          {canManage && slip.status !== "paid" && (
-            <Button onClick={handleMarkPaid} className="gap-2">
+          {canPay && slip.status !== "paid" && (
+            <Button onClick={handleOpenPayDialog} className="gap-2">
               <CheckCircle2 className="w-4 h-4" /> Tandai Dibayar
             </Button>
           )}
@@ -315,5 +391,25 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
         </div>
       </DialogContent>
     </Dialog>
+
+      {/* Proof upload dialog */}
+      {showProofDialog && (
+        <PaymentProofDialog
+          slip={slip}
+          mode={proofMode}
+          onClose={() => setShowProofDialog(false)}
+          onSuccess={proofMode === "pay" ? handlePaySlip : handleSaveProof}
+        />
+      )}
+
+      {/* Proof lightbox */}
+      {showProofLightbox && slip.payment_proof_url && (
+        <Dialog open onOpenChange={() => setShowProofLightbox(false)}>
+          <DialogContent className="max-w-2xl p-2">
+            <img src={slip.payment_proof_url} alt="Bukti transfer" className="w-full rounded-lg" />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
