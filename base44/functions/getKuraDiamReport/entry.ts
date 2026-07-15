@@ -85,11 +85,17 @@ Deno.serve(async (req) => {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const groups = { merah: [], kuning: [], hijau: [], abu: [] };
 
+    // Ambang "diam" lebih ketat untuk baby: merah >30, kuning 15-30, hijau <15.
+    // Dewasa tetap: merah >90, kuning 60-90, hijau <60.
+    const isBaby = (t) =>
+      t.age_category === 'baby' || ((t.code || t.name || '').startsWith('BB-'));
+
     activeTortoises.forEach(t => {
       const act = activityMap[t.id];
       const daysAgo = act
         ? Math.floor((today.getTime() - new Date(act.date).getTime()) / MS_PER_DAY)
         : null;
+      const baby = isBaby(t);
       const item = {
         id: t.id,
         code: t.code || t.name,
@@ -98,18 +104,23 @@ Deno.serve(async (req) => {
         species: t.species,
         gender: t.gender,
         age_category: t.age_category,
+        is_baby: baby,
         lastActivityDate: act ? act.date : null,
         lastActivityType: act ? act.type : null,
         daysAgo,
       };
       if (!act) {
         groups.abu.push(item);
-      } else if (daysAgo > 90) {
-        groups.merah.push(item);
-      } else if (daysAgo >= 60) {
-        groups.kuning.push(item);
       } else {
-        groups.hijau.push(item);
+        const redThreshold = baby ? 30 : 90;
+        const yellowThreshold = baby ? 15 : 60;
+        if (daysAgo > redThreshold) {
+          groups.merah.push(item);
+        } else if (daysAgo >= yellowThreshold) {
+          groups.kuning.push(item);
+        } else {
+          groups.hijau.push(item);
+        }
       }
     });
 

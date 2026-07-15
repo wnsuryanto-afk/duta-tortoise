@@ -49,11 +49,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4. Kandidat: exclude yang diukur < 60 hari lalu
+    // 4. Deteksi baby: age_category='baby' ATAU kode berawalan 'BB-'
+    const isBaby = (t) =>
+      t.age_category === 'baby' || ((t.code || t.name || '').startsWith('BB-'));
+
+    // 5. Bangun kandidat dengan ambang per kelompok (baby=14 hari, dewasa=60 hari)
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const todayMs = new Date(targetDate + 'T00:00:00').getTime();
-    const candidates = active
-      .map(t => {
+
+    const buildCandidates = (pool, thresholdDays) =>
+      pool.map(t => {
         const lastDate = lastMeas[t.id] || null;
         const daysAgo = lastDate
           ? Math.floor((todayMs - new Date(lastDate + 'T00:00:00').getTime()) / MS_PER_DAY)
@@ -68,20 +73,33 @@ Deno.serve(async (req) => {
           daysAgo,
         };
       })
-      .filter(t => t.daysAgo === null || t.daysAgo >= 60);
+      .filter(t => t.daysAgo === null || t.daysAgo >= thresholdDays);
 
-    // 5. Urut: belum pernah diukur (null) pertama, lalu paling lama, tiebreak kode
-    candidates.sort((a, b) => {
-      if (a.daysAgo === null && b.daysAgo !== null) return -1;
-      if (a.daysAgo !== null && b.daysAgo === null) return 1;
-      if (a.daysAgo !== null && b.daysAgo !== null && a.daysAgo !== b.daysAgo) {
-        return b.daysAgo - a.daysAgo;
-      }
-      return (a.code || '').localeCompare(b.code || '');
+    // 6. Urut: belum pernah diukur (null) pertama, lalu paling lama, tiebreak kode
+    const sortCandidates = (arr) =>
+      arr.sort((a, b) => {
+        if (a.daysAgo === null && b.daysAgo !== null) return -1;
+        if (a.daysAgo !== null && b.daysAgo === null) return 1;
+        if (a.daysAgo !== null && b.daysAgo !== null && a.daysAgo !== b.daysAgo) {
+          return b.daysAgo - a.daysAgo;
+        }
+        return (a.code || '').localeCompare(b.code || '');
+      });
+
+    const babyCandidates = sortCandidates(buildCandidates(active.filter(isBaby), 14));
+    const dewasaCandidates = sortCandidates(buildCandidates(active.filter(t => !isBaby(t)), 60));
+
+    // 7. Ambil 2 teratas per kelompok (boleh kosong jika tidak ada yang jatuh tempo)
+    const babies = babyCandidates.slice(0, 2);
+    const dewasa = dewasaCandidates.slice(0, 2);
+
+    return Response.json({
+      date: targetDate,
+      babies,
+      dewasa,
+      totalBabyCandidates: babyCandidates.length,
+      totalAdultCandidates: dewasaCandidates.length,
     });
-
-    const selected = candidates.slice(0, 2);
-    return Response.json({ date: targetDate, tortoises: selected, totalCandidates: candidates.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

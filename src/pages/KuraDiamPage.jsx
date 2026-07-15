@@ -11,10 +11,10 @@ import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 const GROUPS = [
-  { key: "merah",  label: "Diam >90 hari",        dot: "bg-red-500",    card: "border-red-200 bg-red-50",     text: "text-red-700",    badge: "bg-red-100 text-red-700" },
-  { key: "kuning", label: "Diam 60-90 hari",      dot: "bg-amber-500",  card: "border-amber-200 bg-amber-50", text: "text-amber-700",  badge: "bg-amber-100 text-amber-700" },
-  { key: "hijau",  label: "Terpantau (<60 hari)", dot: "bg-green-500",  card: "border-green-200 bg-green-50", text: "text-green-700",  badge: "bg-green-100 text-green-700" },
-  { key: "abu",    label: "Belum pernah tercatat", dot: "bg-slate-400",  card: "border-slate-200 bg-slate-50", text: "text-slate-600",  badge: "bg-slate-100 text-slate-600" },
+  { key: "merah",  label: "Diam >90hr (baby >30hr)",        dot: "bg-red-500",    card: "border-red-200 bg-red-50",     text: "text-red-700",    badge: "bg-red-100 text-red-700" },
+  { key: "kuning", label: "Diam 60-90hr (baby 15-30hr)",    dot: "bg-amber-500",  card: "border-amber-200 bg-amber-50", text: "text-amber-700",  badge: "bg-amber-100 text-amber-700" },
+  { key: "hijau",  label: "Terpantau (<60hr / baby <15hr)", dot: "bg-green-500",  card: "border-green-200 bg-green-50", text: "text-green-700",  badge: "bg-green-100 text-green-700" },
+  { key: "abu",    label: "Belum pernah tercatat",          dot: "bg-slate-400",  card: "border-slate-200 bg-slate-50", text: "text-slate-600",  badge: "bg-slate-100 text-slate-600" },
 ];
 
 const SPECIES_LABEL = {

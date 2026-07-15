@@ -92,11 +92,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: rotasiUkur = [] } = useQuery({
+  const { data: rotasiUkur = { babies: [], dewasa: [] } } = useQuery({
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {
       const res = await base44.functions.invoke("getRotasiUkur", { date: today });
-      return res.data?.tortoises || [];
+      return { babies: res.data?.babies || [], dewasa: res.data?.dewasa || [] };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -157,9 +157,26 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         return false;
       })
       .forEach(t => {
-        // EXPAND: anchor "ROTASI OTOMATIS" → 2 task per-kura (pola sama dgn kebersihan-per-kandang)
+        // EXPAND: anchor "ROTASI OTOMATIS" → baby (2/hari, >14hr) + dewasa (2/hari, >60hr)
         if ((t.title || "").toUpperCase().includes("ROTASI OTOMATIS")) {
-          rotasiUkur.forEach(tor => {
+          (rotasiUkur.babies || []).forEach(tor => {
+            items.push({
+              id: `ukur_rotasi_${tor.id}`,
+              label: `Timbang & ukur ${tor.code} (BABY)`,
+              waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+              icon: "⚖️",
+              keterangan: tor.species || "",
+              points: t.points || 0,
+              badge: "Ukur Rotasi Baby",
+              badgeColor: "bg-pink-100 text-pink-700",
+              isUkurRotasi: true,
+              tortoiseId: tor.id,
+              tortoiseCode: tor.code,
+              tortoiseName: tor.name,
+              tortoiseEnclosure: tor.enclosure,
+            });
+          });
+          (rotasiUkur.dewasa || []).forEach(tor => {
             items.push({
               id: `ukur_rotasi_${tor.id}`,
               label: `Timbang & ukur ${tor.code} (${tor.enclosure})`,
