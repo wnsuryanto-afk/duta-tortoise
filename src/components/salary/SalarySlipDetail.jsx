@@ -12,7 +12,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatRole } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
 import PaymentProofDialog from "@/components/salary/PaymentProofDialog";
-import { formatWeekLabel } from "@/lib/weeklySalaryUtils";
+import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -42,7 +42,9 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const isWeekly = slip.period_type === "weekly";
   const periodLabel = isWeekly && slip.week_start
     ? formatWeekLabel(slip.week_start)
-    : (slip.period ? format(new Date(slip.period + "-01"), "MMMM yyyy", { locale: id }) : (slip.period || "-"));
+    : (isMonthPeriod(slip.period)
+        ? safeFormatDate(slip.period + "-01", "MMMM yyyy", slip.period || "—")
+        : (slip.period || "—"));
 
   const handleApprove = async () => {
     await base44.entities.SalarySlip.update(slip.id, {
@@ -203,7 +205,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
             <div className="flex gap-2"><span className="text-muted-foreground w-28">Nama</span><span className="font-medium">: {slip.employee_name}</span></div>
             <div className="flex gap-2"><span className="text-muted-foreground w-28">Jabatan</span><span className="font-medium">: {formatRole(slip.employee_role)}</span></div>
             <div className="flex gap-2"><span className="text-muted-foreground w-28">Periode</span><span className="font-medium">: {periodLabel}</span></div>
-            <div className="flex gap-2"><span className="text-muted-foreground w-28">Tgl. Dibuat</span><span className="font-medium">: {slip.generated_date ? format(new Date(slip.generated_date), "d MMM yyyy", { locale: id }) : "-"}</span></div>
+            <div className="flex gap-2"><span className="text-muted-foreground w-28">Tgl. Dibuat</span><span className="font-medium">: {slip.generated_date ? safeFormatDate(slip.generated_date, "d MMM yyyy", "-") : "-"}</span></div>
           </div>
 
           {/* Tabel rincian */}
@@ -315,7 +317,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
             <div className="mb-3 space-y-2">
               <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Sudah dibayar {slip.paid_date ? format(new Date(slip.paid_date), "d MMM yyyy", { locale: id }) : ""}
+                Sudah dibayar {slip.paid_date ? safeFormatDate(slip.paid_date, "d MMM yyyy", "") : ""}
                 {slip.paid_by && <span className="font-normal text-green-600">· {slip.paid_by}</span>}
               </div>
               {/* Bukti transfer thumbnail / actions */}
@@ -331,7 +333,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                     <p className="text-xs font-medium">Bukti Transfer</p>
                     {slip.payment_proof_uploaded_at && (
                       <p className="text-[10px] text-muted-foreground">
-                        Diupload {format(new Date(slip.payment_proof_uploaded_at), "d MMM yyyy HH:mm", { locale: id })}
+                        Diupload {safeFormatDate(slip.payment_proof_uploaded_at, "d MMM yyyy HH:mm", "—")}
                         {slip.payment_proof_uploaded_by && ` · ${slip.payment_proof_uploaded_by}`}
                       </p>
                     )}

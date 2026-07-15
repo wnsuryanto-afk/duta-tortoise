@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { formatRole } from "@/lib/permissions";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
-import { getWeekOptions, formatWeekLabel, getWeekEnd } from "@/lib/weeklySalaryUtils";
+import { getWeekOptions, formatWeekLabel, getWeekEnd, safeParseDate } from "@/lib/weeklySalaryUtils";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -21,7 +21,8 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
   const [generating, setGenerating] = useState(null);
   const [viewSlip, setViewSlip] = useState(null);
 
-  const weekEnd = weekStart ? format(getWeekEnd(new Date(weekStart)), "yyyy-MM-dd") : "";
+  const weekStartObj = safeParseDate(weekStart);
+  const weekEnd = weekStartObj ? format(getWeekEnd(weekStartObj), "yyyy-MM-dd") : "";
 
   const { data: users = [] } = useQuery({
     queryKey: ["users"],

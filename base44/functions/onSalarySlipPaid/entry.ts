@@ -11,16 +11,23 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
     const fmtRp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
+    const fmtD = (d) => {
+      const dt = d instanceof Date && !isNaN(d.getTime()) ? d : null;
+      return dt ? dt.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "—";
+    };
     let bulan;
     if (slip.period_type === "weekly") {
-      const ws = slip.week_start ? new Date(slip.week_start) : new Date(slip.period);
-      const we = slip.week_end ? new Date(slip.week_end) : new Date(ws.getTime() + 6 * 86400000);
-      const fmtD = (d) => d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-      bulan = `${fmtD(ws)} – ${fmtD(we)}`;
+      const ws = slip.week_start ? new Date(slip.week_start) : (slip.period ? new Date(slip.period) : null);
+      if (!ws || isNaN(ws.getTime())) {
+        bulan = slip.week_start || slip.period || "periode mingguan";
+      } else {
+        const we = slip.week_end ? new Date(slip.week_end) : new Date(ws.getTime() + 6 * 86400000);
+        bulan = `${fmtD(ws)} – ${fmtD(we)}`;
+      }
+    } else if (slip.period && /^\d{4}-\d{2}$/.test(slip.period)) {
+      bulan = new Date(slip.period + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" });
     } else {
-      bulan = slip.period
-        ? new Date(slip.period + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" })
-        : slip.period;
+      bulan = slip.period || "periode ini";
     }
 
     // ── CREATE: slip baru dibuat (draft) ──

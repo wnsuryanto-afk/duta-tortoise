@@ -15,7 +15,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import WeeklySlipManager from "@/components/salary/WeeklySlipManager";
 import { useCompanySettings } from "@/lib/useCompanySettings";
-import { formatWeekLabel } from "@/lib/weeklySalaryUtils";
+import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 
 const statusConfig = {
   draft:    { label: "Draft",     color: "bg-gray-100 text-gray-700" },
@@ -51,7 +51,11 @@ export default function SalarySlipPage() {
     if (s.period_type === "weekly" && s.week_start) {
       return formatWeekLabel(s.week_start);
     }
-    return s.period ? format(new Date(s.period + "-01"), "MMMM yyyy", { locale: id }) : (s.period || "-");
+    // Slip bulanan / lama: turunkan dari period "YYYY-MM"
+    if (isMonthPeriod(s.period)) {
+      return safeFormatDate(s.period + "-01", "MMMM yyyy", s.period);
+    }
+    return s.period || "—";
   };
 
   // Monthly mode: hanya slip bulanan (period_type !== "weekly")
@@ -147,7 +151,7 @@ export default function SalarySlipPage() {
                 {byPeriod.map(([per, total]) => (
                   <div key={per} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {format(new Date(per + "-01"), "MMMM yyyy", { locale: id })}
+                      {isMonthPeriod(per) ? safeFormatDate(per + "-01", "MMMM yyyy", per) : per}
                     </span>
                     <span className="font-semibold">{fmt(total)}</span>
                   </div>
@@ -252,7 +256,7 @@ export default function SalarySlipPage() {
                         )}
                         {slip.paid_date && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Dibayar: {format(new Date(slip.paid_date), "d MMMM yyyy", { locale: id })}
+                            Dibayar: {safeFormatDate(slip.paid_date, "d MMMM yyyy", "—")}
                             {slip.paid_by && ` oleh ${slip.paid_by}`}
                           </p>
                         )}
