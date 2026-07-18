@@ -8,9 +8,9 @@ import { base44 } from "@/api/base44Client";
  */
 export function useEmployeeUsers() {
   return useQuery({
-    queryKey: ["employee-users"],
+    queryKey: ["daily-employees"],
     queryFn: async () => {
-      const res = await base44.functions.invoke("getEmployeeUsers", {});
+      const res = await base44.functions.invoke("getDailyEmployees", {});
       return res.employees || [];
     },
     staleTime: 60 * 1000,
