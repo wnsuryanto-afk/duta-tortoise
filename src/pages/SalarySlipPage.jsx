@@ -16,6 +16,7 @@ import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import WeeklySlipManager from "@/components/salary/WeeklySlipManager";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
+import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 
 const statusConfig = {
   draft:    { label: "Draft",     color: "bg-gray-100 text-gray-700" },
@@ -38,10 +39,7 @@ export default function SalarySlipPage() {
     queryFn: () => base44.entities.SalarySlip.list("-period", 200),
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useEmployeeUsers();
 
   const settings = useCompanySettings();
   const employees = users.filter(u => ["keeper", "admin", "kepala_feeder"].includes(u.role));

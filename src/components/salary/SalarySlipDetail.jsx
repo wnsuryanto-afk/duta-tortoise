@@ -33,7 +33,9 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
 
   if (!slip) return null;
 
-  const canManage = ["owner", "manajer", "admin"].includes(role);
+  // Approve slip: HANYA owner. Tandai dibayar + bukti transfer: owner & manajer.
+  // Admin boleh melihat & generate slip, tetapi TIDAK boleh approve/membayar.
+  const canApprove = role === "owner";
   const canPay = ["owner", "manajer"].includes(role);
   const settings = companySettings || {};
   const conf = statusConfig[slip.status] || statusConfig.draft;
@@ -386,7 +388,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
           <Button variant="outline" onClick={handlePrint} className="gap-2">
             <Printer className="w-4 h-4" /> Cetak / Export PDF
           </Button>
-          {canManage && slip.status === "draft" && (
+          {canApprove && slip.status === "draft" && (
             <Button variant="outline" onClick={handleApprove} className="gap-2 text-blue-600 border-blue-300 hover:bg-blue-50">
               <CheckCircle2 className="w-4 h-4" /> Approve
             </Button>

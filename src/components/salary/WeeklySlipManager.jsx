@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { formatRole } from "@/lib/permissions";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { getWeekOptions, formatWeekLabel, getWeekEnd, safeParseDate } from "@/lib/weeklySalaryUtils";
+import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -24,10 +25,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
   const weekStartObj = safeParseDate(weekStart);
   const weekEnd = weekStartObj ? format(getWeekEnd(weekStartObj), "yyyy-MM-dd") : "";
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useEmployeeUsers();
   const { data: salaryConfigs = [] } = useQuery({
     queryKey: ["salary-configs"],
     queryFn: () => base44.entities.SalaryConfig.list(),
