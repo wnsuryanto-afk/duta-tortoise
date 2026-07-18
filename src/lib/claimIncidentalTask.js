@@ -11,7 +11,7 @@
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 
-export async function claimIncidentalTask(task, user) {
+export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhotoReason } = {}) {
   if (task.status === "done") return; // anti-dobel
   if (task.material_status === "waiting_materials") {
     throw new Error("Tugas masih menunggu barang tersedia");
@@ -19,11 +19,15 @@ export async function claimIncidentalTask(task, user) {
 
   const today = format(new Date(), "yyyy-MM-dd");
   const taskId = `incidental_${task.id}`;
+  const keeperNote = notes ? `📌 ${notes}` : "📌 Tugas dari Owner";
   const taskEntry = {
     task_id: taskId,
     task_title: task.title,
     points: task.points || 0,
     notes: "📌 Tugas dari Owner",
+    photo_url: photoUrl || undefined,
+    photo_taken_at: photoUrl ? format(new Date(), "HH:mm") : undefined,
+    photo_notes: keeperNote,
   };
 
   const existing = await base44.entities.DailyChecklist.filter({
@@ -65,5 +69,7 @@ export async function claimIncidentalTask(task, user) {
     done_by_email: user.email,
     done_by_name: user.full_name || user.email,
     daily_checklist_id: dailyChecklistId,
+    done_photo_url: photoUrl || undefined,
+    done_notes: notes || (noPhotoReason ? `(Tanpa foto) ${noPhotoReason}` : undefined),
   });
 }

@@ -43,6 +43,10 @@
           "photo_taken_at": {
             "type": "string",
             "description": "Jam pengambilan foto (HH:mm)"
+          },
+          "photo_notes": {
+            "type": "string",
+            "description": "Catatan keeper saat upload foto bukti (opsional)"
           }
         }
       },

@@ -15,7 +15,7 @@ const normEnc = (e) => {
 const normTitle = (t) => (t || "").toString().trim().toLowerCase();
 const dedupKey = (title, enc) => `${normTitle(title)}__${normEnc(enc)}`;
 
-export async function syncPhotoToChecklist({ employeeEmail, date, taskTitle, enclosure, photoUrl, takenAt }) {
+export async function syncPhotoToChecklist({ employeeEmail, date, taskTitle, enclosure, photoUrl, takenAt, photoNotes }) {
   const key = dedupKey(taskTitle, enclosure);
 
   const trySync = async () => {
@@ -25,7 +25,10 @@ export async function syncPhotoToChecklist({ employeeEmail, date, taskTitle, enc
     const tasks = (checklist.completed_tasks || []).slice();
     const idx = tasks.findIndex(t => dedupKey(t.task_title, t.notes) === key);
     if (idx === -1) return false;
-    tasks[idx] = { ...tasks[idx], photo_url: photoUrl, photo_taken_at: takenAt };
+    const updated = { ...tasks[idx] };
+    if (photoUrl !== undefined) { updated.photo_url = photoUrl; updated.photo_taken_at = takenAt; }
+    if (photoNotes !== undefined) updated.photo_notes = photoNotes;
+    tasks[idx] = updated;
     await base44.entities.DailyChecklist.update(checklist.id, { completed_tasks: tasks });
     return true;
   };

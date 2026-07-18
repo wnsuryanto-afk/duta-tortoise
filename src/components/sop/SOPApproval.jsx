@@ -309,6 +309,9 @@ export default function SOPApproval() {
                                   </p>
                                 )}
                                 {t.notes && <p className="text-[11px] text-muted-foreground mt-0.5">{t.notes}</p>}
+                                {t.photo_notes && (
+                                  <p className="text-[11px] text-blue-700 mt-0.5 bg-blue-50 rounded px-1.5 py-0.5 border border-blue-100">📝 {t.photo_notes}</p>
+                                )}
                                 {t.photo_url ? (
                                   <button onClick={() => setPhotoPreview({ url: t.photo_url, takenAt: t.photo_taken_at, title: t.task_title })} className="mt-1.5 block">
                                     <img src={t.photo_url} alt="Bukti" className="h-16 w-24 object-cover rounded border hover:opacity-80 transition-opacity" />

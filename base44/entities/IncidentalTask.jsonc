@@ -116,6 +116,14 @@
     "done_by_name": {
       "type": "string"
     },
+    "done_photo_url": {
+      "type": "string",
+      "description": "URL foto bukti penyelesaian tugas (dari keeper)"
+    },
+    "done_notes": {
+      "type": "string",
+      "description": "Catatan keeper saat menyelesaikan tugas"
+    },
     "daily_checklist_id": {
       "type": "string",
       "description": "ID DailyChecklist tempat poin tugas ini diklaim (ikuti alur approval yang sudah ada)"

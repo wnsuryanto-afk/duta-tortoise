@@ -63,6 +63,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [showPakanForm, setShowPakanForm] = useState(false);
   const [ukurTarget, setUkurTarget] = useState(null);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
+
+  // Catatan foto per task (dari MaintenanceLog.notes)
+  const photoNotesMap = useMemo(() => {
+    const m = {};
+    myLogs.forEach(l => { if (l.notes) m[l.item_id] = l.notes; });
+    return m;
+  }, [myLogs]);
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
 
   // ── SOPTask: SUMBER TUNGGAL (baca langsung, is_active=true) ──
@@ -313,6 +320,19 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     setUploadingPhotoId(null);
   };
 
+  const handlePhotoNotes = async (taskId, photoNotes) => {
+    const existing = myLogs.find(l => l.item_id === taskId);
+    if (!existing) return;
+    try {
+      await base44.entities.MaintenanceLog.update(existing.id, { notes: photoNotes });
+      syncPhotoToChecklist({
+        employeeEmail: user.email, date: today,
+        taskTitle: existing.item_label, enclosure: existing.enclosure_name || "Tugas Harian",
+        photoNotes,
+      });
+    } catch {}
+  };
+
   const handlePhotoCheck = async (task, file) => {
     if (savingId) return;
     setSavingId(task.id);
@@ -485,6 +505,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             onUkurCheck={() => setUkurTarget(task)}
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
             onPhotoCheck={(file) => handlePhotoCheck(task, file)}
+            onPhotoNotes={(notes) => handlePhotoNotes(task.id, notes)}
+            photoNotes={photoNotesMap[task.id] || ""}
           />
         ))}
         {sopTaskItems.length === 0 && (
@@ -538,7 +560,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck }) {
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
@@ -589,9 +611,18 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
 
           {/* Photo thumbnail — clickable to enlarge */}
           {photoUrl && (
-            <button onClick={(e) => { e.stopPropagation(); setShowPhoto(true); }} className="mt-1.5 block">
-              <img src={photoUrl} alt="Dokumentasi" className="w-16 h-12 rounded-lg object-cover border border-green-200 hover:opacity-80 transition-opacity" />
-            </button>
+            <div className="mt-1.5 flex items-start gap-2" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowPhoto(true)} className="block flex-shrink-0">
+                <img src={photoUrl} alt="Dokumentasi" className="w-16 h-12 rounded-lg object-cover border border-green-200 hover:opacity-80 transition-opacity" />
+              </button>
+              <input
+                type="text"
+                placeholder="Catatan foto (opsional)..."
+                defaultValue={photoNotes}
+                onBlur={e => { if (e.target.value !== photoNotes) onPhotoNotes(e.target.value); }}
+                className="flex-1 min-w-0 h-8 text-xs rounded-lg border border-gray-200 px-2 bg-gray-50/50 focus:bg-white focus:border-blue-300 outline-none"
+              />
+            </div>
           )}
           {showPhoto && (
             <PhotoPreviewModal open={showPhoto} onClose={() => setShowPhoto(false)} photoUrl={photoUrl} taskTitle={task.label} />

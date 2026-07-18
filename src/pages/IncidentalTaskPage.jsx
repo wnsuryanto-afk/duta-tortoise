@@ -199,6 +199,14 @@ export default function IncidentalTaskPage() {
                     {t.photo_url && (
                       <img src={t.photo_url} alt="Acuan" className="mt-1.5 h-16 w-24 object-cover rounded border" />
                     )}
+                    {t.done_notes && (
+                      <p className="text-xs text-blue-700 mt-1.5 bg-blue-50 rounded-lg px-2 py-1 border border-blue-100">
+                        📝 {t.done_notes}
+                      </p>
+                    )}
+                    {t.done_photo_url && (
+                      <img src={t.done_photo_url} alt="Bukti selesai" className="mt-1.5 h-20 w-28 object-cover rounded border border-green-200" />
+                    )}
                     {t.required_items?.length > 0 && (
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {t.required_items.map((ri, i) => (
