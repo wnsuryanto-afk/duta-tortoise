@@ -18,6 +18,7 @@
         "pemeriksaan",
         "breeding",
         "administrasi",
+        "suplemen",
         "lainnya"
       ],
       "default": "lainnya",
@@ -76,6 +77,11 @@
     "deadline_time": {
       "type": "string",
       "description": "Batas waktu pengerjaan (HH:mm)"
+    },
+    "require_photo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah task wajib disertai foto bukti"
     },
     "is_active": {
       "type": "boolean",

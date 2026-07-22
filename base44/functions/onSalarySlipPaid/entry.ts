@@ -64,6 +64,51 @@ Deno.serve(async (req) => {
       if (isPaid && !wasPaid) {
         const hasProof = !!slip.payment_proof_url;
 
+        // ── Proses potongan kasbon saat slip ditandai dibayar ──
+        // Tulis deduction_log & update total_paid HANYA saat slip → paid (bukan saat draft)
+        if (Array.isArray(slip.kasbon_ids) && slip.kasbon_ids.length > 0) {
+          for (const kasbonId of slip.kasbon_ids) {
+            try {
+              const kasbon = await base44.asServiceRole.entities.Kasbon.get(kasbonId);
+              if (!kasbon) continue;
+
+              // Anti-dobel: skip jika deduction_log sudah ada entry untuk slip ini
+              const alreadyLogged = (kasbon.deduction_log || []).some(
+                d => d.salary_slip_id === slip.id
+              );
+              if (alreadyLogged) continue;
+
+              const sisaK = (kasbon.amount || 0) - (kasbon.total_paid || 0);
+              if (sisaK <= 0) continue;
+
+              const ded = Math.min(kasbon.weekly_deduction || 100000, sisaK);
+              const newPaid = (kasbon.total_paid || 0) + ded;
+              const newStatus = newPaid >= (kasbon.amount || 0) ? "lunas" : kasbon.status;
+              const periodKey = slip.period_type === "weekly"
+                ? (slip.week_start || slip.period)
+                : slip.period;
+
+              const newLog = [...(kasbon.deduction_log || []), {
+                amount: ded,
+                date: new Date().toISOString().split('T')[0],
+                method: "salary_slip",
+                salary_period: periodKey,
+                salary_slip_id: slip.id,
+                recorded_by: "system (auto on paid)",
+                notes: "Auto-deducted saat slip ditandai dibayar",
+              }];
+
+              await base44.asServiceRole.entities.Kasbon.update(kasbonId, {
+                total_paid: newPaid,
+                status: newStatus,
+                deduction_log: newLog,
+              });
+            } catch {
+              // Lanjut ke kasbon berikutnya jika satu gagal
+            }
+          }
+        }
+
         // Dedup: cek apakah notifikasi "ditransfer" sudah pernah dibuat untuk slip ini
         const existing = await base44.asServiceRole.entities.Notification.filter({
           recipient_email: slip.employee_email,

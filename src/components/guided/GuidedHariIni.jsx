@@ -338,8 +338,11 @@ export default function GuidedHariIni({ user }) {
     queryFn: () => base44.entities.SOPTask.filter({ category: "kebersihan" }),
     staleTime: 10 * 60 * 1000,
   });
-  const poinKebersihan = sopTasksKebersihan.find(t => t.is_active === true)?.points ?? 5;
-  const requirePhotoKebersihan = sopTasksKebersihan.find(t => t.is_active === true)?.require_photo ?? false;
+  const kebersihanAnchor = sopTasksKebersihan.find(t =>
+    t.is_active === true && (t.title || "").toLowerCase().includes("all kandang")
+  ) || sopTasksKebersihan.find(t => t.is_active === true);
+  const poinKebersihan = kebersihanAnchor?.points ?? 5;
+  const requirePhotoKebersihan = kebersihanAnchor?.require_photo ?? false;
   const kandangCameraRef = useRef(null);
   const [pendingKandang, setPendingKandang] = useState(null);
 

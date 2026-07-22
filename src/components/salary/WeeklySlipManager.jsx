@@ -105,6 +105,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
       const vegTripDates = [...vegDatesSet].sort();
 
       // Kasbon: potongan mingguan, anti-dobel per minggu (weekStart sebagai period key)
+      // Hanya dianggap "sudah dipotong" jika slip terkait berstatus "paid"
       const empKasbons = kasbons.filter(k => k.employee_email === emp.email && k.status === "approved");
       let kasbonDeduction = 0;
       let kasbonRemaining = 0;
@@ -112,9 +113,12 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
       empKasbons.forEach(k => {
         const sisaK = (k.amount || 0) - (k.total_paid || 0);
         if (sisaK <= 0) return;
-        const alreadyDeducted = (k.deduction_log || []).some(
-          d => d.salary_period === weekStart && d.salary_slip_id
-        );
+        // Cek apakah kasbon ini sudah dipotong untuk minggu ini DAN slip-nya sudah paid
+        const alreadyDeducted = (k.deduction_log || []).some(d => {
+          if (d.salary_period !== weekStart || !d.salary_slip_id) return false;
+          const linkedSlip = slips.find(s => s.id === d.salary_slip_id);
+          return linkedSlip?.status === "paid";
+        });
         if (alreadyDeducted) { kasbonRemaining += sisaK; return; }
         const ded = Math.min(k.weekly_deduction || 100000, sisaK);
         kasbonDeduction += ded;
@@ -171,48 +175,17 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
     generated_date: format(new Date(), "yyyy-MM-dd"),
   });
 
-  const updateKasbonLogs = async (row, slipId) => {
-    for (const kasbonId of row.kasbonIdsToDeduct || []) {
-      const k = kasbons.find(kk => kk.id === kasbonId);
-      if (!k) continue;
-      const sisaK = (k.amount || 0) - (k.total_paid || 0);
-      if (sisaK <= 0) continue;
-      const ded = Math.min(k.weekly_deduction || 100000, sisaK);
-      const newPaid = (k.total_paid || 0) + ded;
-      const newStatus = newPaid >= k.amount ? "lunas" : "approved";
-      const newLog = [...(k.deduction_log || []), {
-        amount: ded,
-        date: format(new Date(), "yyyy-MM-dd"),
-        method: "salary_slip",
-        salary_period: weekStart,
-        salary_slip_id: slipId,
-        recorded_by: user?.full_name || user?.email,
-      }];
-      await base44.entities.Kasbon.update(k.id, {
-        total_paid: newPaid,
-        status: newStatus,
-        deduction_log: newLog,
-      });
-    }
-    if ((row.kasbonIdsToDeduct || []).length > 0) {
-      qc.invalidateQueries({ queryKey: ["kasbons-active-week"] });
-    }
-  };
-
   const handleGenerate = async (row) => {
     setGenerating(row.emp.id);
     const slipData = buildSlipData(row);
-    let slipId;
     if (row.existingSlip) {
       await base44.entities.SalarySlip.update(row.existingSlip.id, slipData);
-      slipId = row.existingSlip.id;
       toast.success(`Slip mingguan ${row.emp.full_name || row.emp.email} diperbarui`);
     } else {
-      const created = await base44.entities.SalarySlip.create(slipData);
-      slipId = created.id;
+      await base44.entities.SalarySlip.create(slipData);
       toast.success(`Slip mingguan ${row.emp.full_name || row.emp.email} dibuat`);
     }
-    await updateKasbonLogs(row, slipId);
+    // Kasbon deduction_log & total_paid diupdate saat slip ditandai "paid" (via onSalarySlipPaid)
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
     setGenerating(null);
   };
@@ -221,16 +194,13 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
     setGenerating("all");
     for (const row of rekapData) {
       const slipData = buildSlipData(row);
-      let slipId;
       if (row.existingSlip) {
         await base44.entities.SalarySlip.update(row.existingSlip.id, slipData);
-        slipId = row.existingSlip.id;
       } else {
-        const created = await base44.entities.SalarySlip.create(slipData);
-        slipId = created.id;
+        await base44.entities.SalarySlip.create(slipData);
       }
-      await updateKasbonLogs(row, slipId);
     }
+    // Kasbon deduction_log & total_paid diupdate saat slip ditandai "paid" (via onSalarySlipPaid)
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
     toast.success(`${rekapData.length} slip mingguan berhasil dibuat/diperbarui`);
     setGenerating(null);

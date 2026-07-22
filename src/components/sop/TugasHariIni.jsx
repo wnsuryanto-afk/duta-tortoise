@@ -35,7 +35,7 @@ const ABSENSI_IDS = new Set(["abs_masuk", "abs_pulang"]);
 
 const CATEGORY_ICON = {
   pakan: "🐢", kebersihan: "🏠", pemeriksaan: "❤️",
-  breeding: "🥚", administrasi: "📝", lainnya: "✅",
+  breeding: "🥚", administrasi: "📝", suplemen: "💊", lainnya: "✅",
 };
 const CATEGORY_BADGE = {
   pakan: "bg-green-100 text-green-700",
@@ -43,6 +43,7 @@ const CATEGORY_BADGE = {
   pemeriksaan: "bg-amber-100 text-amber-700",
   breeding: "bg-purple-100 text-purple-700",
   administrasi: "bg-gray-100 text-gray-700",
+  suplemen: "bg-teal-100 text-teal-700",
   lainnya: "bg-muted text-muted-foreground",
 };
 
@@ -75,7 +76,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // ── SOPTask: SUMBER TUNGGAL (baca langsung, is_active=true) ──
   const { data: sopTasks = [] } = useQuery({
     queryKey: ["sop-tasks-active-tugas-hari-ini"],
-    queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
+    queryFn: () => base44.entities.SOPTask.filter({ is_active: true }, "title", 200),
     staleTime: 30 * 1000,
   });
 
@@ -154,18 +155,30 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // ── Bangun task dari SOPTask (hormati frequency + weekly_days + monthly_dates) ──
   const sopTaskItems = useMemo(() => {
     const items = [];
+    // Cari anchor kebersihan (title mengandung "all kandang") untuk override points per-kandang
+    const kebersihanAnchor = sopTasks.find(t =>
+      t.is_active && (t.title || "").toLowerCase().includes("all kandang")
+    );
+    const kebersihanPoints = kebersihanAnchor?.points ?? 10;
+
     sopTasks
       .filter(t => {
         if (!t.is_active) return false;
-        const freq = t.frequency;
+        const freq = String(t.frequency || "").toLowerCase();
         if (freq === "harian") return true;
         if (freq === "mingguan") return Array.isArray(t.weekly_days) && t.weekly_days.includes(dow);
         if (freq === "bulanan") return Array.isArray(t.monthly_dates) && t.monthly_dates.includes(dom);
         return false;
       })
       .forEach(t => {
+        const titleLower = (t.title || "").toLowerCase();
+
+        // SKIP anchor "all kandang" / "semua kandang" — kebersihan per-kandang
+        // sudah ditangani oleh widget Kebersihan Kandang di GuidedHariIni
+        if (titleLower.includes("all kandang") || titleLower.includes("semua kandang")) return;
+
         // EXPAND: anchor "ROTASI OTOMATIS" → baby (2/hari, >14hr) + dewasa (2/hari, >60hr)
-        if ((t.title || "").toUpperCase().includes("ROTASI OTOMATIS")) {
+        if (titleLower.includes("rotasi otomatis")) {
           (rotasiUkur.babies || []).forEach(tor => {
             items.push({
               id: `ukur_rotasi_${tor.id}`,
@@ -202,13 +215,15 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           });
           return;
         }
+        // Kebersihan per-kandang: gunakan points dari anchor task (bukan hard-code)
+        const isKebersihan = t.category === "kebersihan";
         items.push({
           id: `sop_${t.id}`,
           label: t.title,
           waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
           icon: CATEGORY_ICON[t.category] || "✅",
           keterangan: t.description || "",
-          points: t.points || 0,
+          points: isKebersihan && kebersihanAnchor ? kebersihanPoints : (t.points || 0),
           badge: t.category,
           badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
           require_photo: t.require_photo || false,
