@@ -973,10 +973,6 @@ export default function BreedingAndEggs() {
             jantanList={jantanList}
             betinaList={betinaList}
             incubators={incubators}
-            generateKodeLabel={generateKodeLabel}
-            hatchEstimateLabel={hatchEstimateLabel}
-            LabelPreviewInline={LabelPreviewInline}
-            handlePrintLabel={handlePrintLabel}
           />
         </DialogContent>
       </Dialog>
