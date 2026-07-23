@@ -381,23 +381,10 @@ export default function BreedingAndEggs() {
   const jantanList = (tortoises || []).filter(t => t.gender === "jantan");
   const betinaList = (tortoises || []).filter(t => t.gender === "betina");
 
-  function generateKodeLabel(jCode, bCode, tgl) {
-    if (!jCode || !bCode || !tgl) return "";
-    const d = new Date(tgl);
-    const dd = String(d.getDate()).padStart(2,"0");
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const yy = String(d.getFullYear()).slice(2);
-    return `K-${dd}${mm}${yy}-${jCode}-${bCode}`;
-  }
+  // (helpers moved to module level)
 
-  function hatchEstimateLabel(tgl) {
-    if (!tgl) return "-";
-    const d = new Date(tgl);
-    d.setDate(d.getDate() + 90);
-    return format(d, "d MMMM yyyy", { locale: id });
-  }
-
-  function LabelPreviewInline({ jantan, betina, tglBertelur, jumlahTelur, inkubatorLabel, kode }) {
+  // eslint-disable-next-line no-unused-vars
+  function _unused_placeholder() {
     const tglStr = tglBertelur ? format(new Date(tglBertelur), "dd MMM yyyy", { locale: id }) : "-";
     const tglLong = tglBertelur ? format(new Date(tglBertelur), "dd MMMM yyyy", { locale: id }) : "-";
     const hatch = hatchEstimateLabel(tglBertelur);
