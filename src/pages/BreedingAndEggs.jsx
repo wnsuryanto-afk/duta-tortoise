@@ -293,70 +293,108 @@ export default function BreedingAndEggs() {
     return format(d, "d MMMM yyyy", { locale: id });
   }
 
-  function LabelBarcode({ value, width=200, height=48 }) {
-    if (!value) return null;
-    const bars = [];
-    let x = 0;
-    const seed = [3,1,2,3,1,2,1,3,2,1,1,3,2,2,1,2,3,1,2,2,2,1,3,1,4,1,1,3,4,2];
-    for (let i=0; i<value.length; i++) {
-      const c = value.charCodeAt(i);
-      const w = seed[c % seed.length]+1;
-      if (i%2===0) bars.push({x,w});
-      x += w*3+1;
-    }
-    const totalW = x+8||1;
-    const scale = width/totalW;
-    return (
-      <svg width={width} height={height}>
-        {bars.map((b,i) => (
-          <rect key={i} x={b.x*scale} y={0} width={Math.max(b.w*scale-0.5,1)} height={height-12} fill="#000"/>
-        ))}
-        <text x={width/2} y={height} textAnchor="middle" fontSize="7" fill="#555" fontFamily="monospace">{value}</text>
-      </svg>
-    );
+  function QRCodeBox({ value, size=90 }) {
+    const canvasRef = useState(null);
+    const ref = { current: null };
+    const [svg, setSvg] = useState("");
+    useEffect(()=>{
+      if (!value) return;
+      import("qrcode").then(QRCode=>{
+        QRCode.toString(value,{type:"svg",width:size,margin:1,color:{dark:"#166534",light:"#ffffff"}},
+          (err,str)=>{ if (!err) setSvg(str); }
+        );
+      });
+    },[value,size]);
+    if (!svg) return <div style={{width:size,height:size,background:"#f0fdf4",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#aaa"}}>QR</div>;
+    return <div dangerouslySetInnerHTML={{__html:svg}} style={{width:size,height:size}} />;
   }
 
   function LabelPreviewInline({ jantan, betina, tglBertelur, jumlahTelur, inkubatorLabel, kode }) {
-    const tglStr = tglBertelur ? format(new Date(tglBertelur), "dd MMMM yyyy", { locale: id }) : "-";
+    const tglStr = tglBertelur ? format(new Date(tglBertelur), "dd MMM yyyy", { locale: id }) : "-";
+    const tglLong = tglBertelur ? format(new Date(tglBertelur), "dd MMMM yyyy", { locale: id }) : "-";
+    const hatch = hatchEstimateLabel(tglBertelur);
+    // Warna tema pastel hijau-kuning
+    const bgGrad = "linear-gradient(135deg, #f0fdf4 0%, #fefce8 100%)";
     return (
-      <div id="label-print-area" style={{width:"370px",minHeight:"210px",border:"2px solid #166534",borderRadius:"10px",fontFamily:"Arial,sans-serif",background:"#fff",overflow:"hidden"}}>
-        <div style={{background:"#166534",color:"#fff",padding:"7px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>
-            <div style={{fontWeight:"bold",fontSize:"13px"}}>🐢 DUTA TORTOISE</div>
-            <div style={{fontSize:"8px",opacity:0.7}}>Label Kotak Telur Inkubasi</div>
+      <div id="label-print-area" style={{
+        width:"400px", fontFamily:"'Segoe UI',Arial,sans-serif",
+        background:bgGrad, borderRadius:"16px",
+        border:"2.5px solid #16a34a", overflow:"hidden",
+        boxShadow:"0 4px 20px rgba(22,163,74,0.15)"
+      }}>
+        {/* Header strip */}
+        <div style={{
+          background:"linear-gradient(90deg,#15803d,#16a34a,#22c55e)",
+          padding:"10px 14px", display:"flex", alignItems:"center", gap:"10px"
+        }}>
+          <div style={{fontSize:"28px",lineHeight:1}}>🐢</div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:"800",fontSize:"15px",color:"#fff",letterSpacing:"0.5px",textShadow:"0 1px 2px rgba(0,0,0,0.2)"}}>DUTA TORTOISE</div>
+            <div style={{fontSize:"9px",color:"#bbf7d0",marginTop:"1px"}}>Sulcata Breeding Farm · Probolinggo</div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{fontSize:"8px",opacity:0.85}}>{tglStr}</div>
-            <div style={{fontSize:"8px",fontWeight:"bold",background:"#fff",color:"#166534",borderRadius:"4px",padding:"1px 6px",marginTop:"2px"}}>{kode||"—"}</div>
+            <div style={{background:"rgba(255,255,255,0.2)",borderRadius:"20px",padding:"2px 10px",fontSize:"8px",color:"#fff",fontWeight:"bold",letterSpacing:"0.3px"}}>📦 {inkubatorLabel||"—"}</div>
+            <div style={{fontSize:"8px",color:"#d1fae5",marginTop:"3px"}}>{tglStr}</div>
           </div>
         </div>
-        <div style={{display:"flex",padding:"9px 11px",gap:"9px"}}>
+
+        {/* Kode kopling banner */}
+        <div style={{background:"#fef08a",borderBottom:"1.5px dashed #ca8a04",padding:"5px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontSize:"8px",color:"#78350f",fontWeight:"600"}}>🔖 KODE KOPLING</div>
+          <div style={{fontWeight:"800",fontSize:"11px",color:"#78350f",letterSpacing:"0.5px"}}>{kode||"—"}</div>
+        </div>
+
+        {/* Body */}
+        <div style={{display:"flex",padding:"10px 14px",gap:"10px",alignItems:"flex-start"}}>
+          {/* Left: pasangan + info */}
           <div style={{flex:1}}>
-            <div style={{display:"flex",gap:"5px",marginBottom:"7px"}}>
-              <div style={{flex:1,background:"#EFF6FF",borderRadius:"6px",padding:"4px 7px",border:"1px solid #BFDBFE"}}>
-                <div style={{fontSize:"7px",color:"#1D4ED8",fontWeight:"bold"}}>♂ JANTAN</div>
-                <div style={{fontSize:"18px",fontWeight:"bold",color:"#1E3A8A",lineHeight:1.1}}>{jantan?.code||"—"}</div>
-                <div style={{fontSize:"7px",color:"#64748b"}}>Kandang {jantan?.enclosure||"—"}</div>
+            {/* Pasangan */}
+            <div style={{display:"flex",gap:"6px",marginBottom:"8px"}}>
+              <div style={{flex:1,background:"linear-gradient(135deg,#dbeafe,#eff6ff)",borderRadius:"10px",padding:"6px 8px",border:"1.5px solid #93c5fd",position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",top:-4,right:-4,fontSize:"28px",opacity:0.08}}>♂</div>
+                <div style={{fontSize:"7px",color:"#1d4ed8",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px"}}>♂ Jantan</div>
+                <div style={{fontSize:"20px",fontWeight:"900",color:"#1e3a8a",lineHeight:1.1,marginTop:"1px"}}>{jantan?.code||"—"}</div>
+                <div style={{fontSize:"7px",color:"#3b82f6",marginTop:"1px"}}>📍 {jantan?.enclosure||"—"}</div>
               </div>
-              <div style={{flex:1,background:"#FFF1F2",borderRadius:"6px",padding:"4px 7px",border:"1px solid #FECDD3"}}>
-                <div style={{fontSize:"7px",color:"#BE123C",fontWeight:"bold"}}>♀ BETINA</div>
-                <div style={{fontSize:"18px",fontWeight:"bold",color:"#881337",lineHeight:1.1}}>{betina?.code||"—"}</div>
-                <div style={{fontSize:"7px",color:"#64748b"}}>Kandang {betina?.enclosure||"—"}</div>
+              <div style={{display:"flex",alignItems:"center",fontSize:"14px"}}>💕</div>
+              <div style={{flex:1,background:"linear-gradient(135deg,#fce7f3,#fff1f2)",borderRadius:"10px",padding:"6px 8px",border:"1.5px solid #f9a8d4",position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",top:-4,right:-4,fontSize:"28px",opacity:0.08}}>♀</div>
+                <div style={{fontSize:"7px",color:"#be123c",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px"}}>♀ Betina</div>
+                <div style={{fontSize:"20px",fontWeight:"900",color:"#881337",lineHeight:1.1,marginTop:"1px"}}>{betina?.code||"—"}</div>
+                <div style={{fontSize:"7px",color:"#f43f5e",marginTop:"1px"}}>📍 {betina?.enclosure||"—"}</div>
               </div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3px"}}>
-              {[["🥚 Jumlah Telur", jumlahTelur?`${jumlahTelur} butir`:"—"],["📦 Inkubator",inkubatorLabel||"—"],["📅 Bertelur",tglStr],["🐣 Est. Menetas",hatchEstimateLabel(tglBertelur)]].map(([lbl,val])=>(
-                <div key={lbl} style={{background:"#F8FAFC",borderRadius:"4px",padding:"3px 5px",border:"1px solid #E2E8F0"}}>
-                  <div style={{fontSize:"6px",color:"#94A3B8"}}>{lbl}</div>
-                  <div style={{fontSize:"8px",fontWeight:"bold",color:"#1E293B"}}>{val}</div>
+
+            {/* Info grid */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+              {[
+                ["🥚","Jumlah Telur", jumlahTelur?`${jumlahTelur} butir`:"—","#fef9c3","#713f12"],
+                ["📅","Tgl Bertelur", tglStr,"#f0fdf4","#14532d"],
+                ["🐣","Est. Menetas", hatch,"#fff7ed","#7c2d12"],
+                ["🌡","Status","Inkubasi 🔄","#f0f9ff","#0c4a6e"],
+              ].map(([icon,lbl,val,bg,col])=>(
+                <div key={lbl} style={{background:bg,borderRadius:"7px",padding:"4px 6px",border:`1px solid ${col}22`}}>
+                  <div style={{fontSize:"7px",color:"#94a3b8",fontWeight:"500"}}>{icon} {lbl}</div>
+                  <div style={{fontSize:"8.5px",fontWeight:"700",color:col,marginTop:"1px"}}>{val}</div>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:"90px",gap:"3px"}}>
-            <LabelBarcode value={kode||"DUTATORTO"} width={82} height={54}/>
-            <div style={{background:"#166534",color:"#fff",borderRadius:"4px",padding:"2px 7px",fontSize:"7px",fontWeight:"bold"}}>F2 · Captive-bred</div>
+
+          {/* Right: QR */}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"5px",flexShrink:0}}>
+            <div style={{background:"#fff",borderRadius:"10px",padding:"5px",border:"2px solid #16a34a",boxShadow:"0 2px 8px rgba(22,163,74,0.15)"}}>
+              <QRCodeBox value={kode||"DUTATORTO"} size={78}/>
+            </div>
+            <div style={{background:"#15803d",color:"#fff",borderRadius:"20px",padding:"2px 8px",fontSize:"7px",fontWeight:"700",letterSpacing:"0.3px"}}>F2 · Captive-bred</div>
+            <div style={{fontSize:"6px",color:"#6b7280",textAlign:"center",lineHeight:1.3}}>Scan untuk<br/>info kura</div>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{background:"linear-gradient(90deg,#15803d,#16a34a)",padding:"4px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:"7px",color:"#bbf7d0"}}>🌿 Sulcata geochelone sulcata</div>
+          <div style={{fontSize:"7px",color:"#bbf7d0"}}>dutatortoises.com</div>
         </div>
       </div>
     );
