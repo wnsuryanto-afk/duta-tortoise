@@ -178,7 +178,7 @@ export default function BreedingForm({ open, onClose, editData }) {
       if ((form.status === "bertelur" || form.status === "inkubasi") && form.egg_laying_date && form.male_name && form.female_name) {
         const male = males.find(t => t.id === form.male_id);
         const female = females.find(t => t.id === form.female_id);
-        autoDownloadLabel({
+        downloadLabel({
           maleCode: form.male_name,
           femaleCode: form.female_name,
           maleEnclosure: male?.enclosure || "",
