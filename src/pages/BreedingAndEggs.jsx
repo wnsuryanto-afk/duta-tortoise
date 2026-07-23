@@ -348,7 +348,7 @@ function LabelDialogContent({ jantanList, betinaList, incubators }) {
             <div className="text-xs text-gray-400 mt-0.5">Est. menetas: {hatchEstimateLabel(tglBertelur)}</div>
           </div>
         )}
-        <Button onClick={()=>handlePrintLabelFn(kode)}
+        <Button onClick={()=>handlePrintLabelFn({jantan,betina,tglBertelur,jumlahTelur,inkubatorLabel,kode})}
           disabled={!ready} className="w-full bg-green-800 hover:bg-green-700">
           <Printer className="w-4 h-4 mr-2" /> Print Label
         </Button>
