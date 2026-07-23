@@ -383,15 +383,7 @@ export default function BreedingAndEggs() {
 
   // (helpers moved to module level)
 
-  function handlePrintLabel(jCode, bCode, tglBertelur, jumlahTelur, inkubatorLabel, kode) {
-    const el = document.getElementById("label-print-area");
-    if (!el) return;
-    const w = window.open("","_blank","width=520,height=400");
-    w.document.write(`<!DOCTYPE html><html><head><title>Label-${kode}</title><style>body{margin:8mm;background:white;}@media print{body{margin:3mm;}@page{size:105mm 62mm;margin:0;}}</style></head><body>${el.outerHTML}</body></html>`);
-    w.document.close();
-    w.focus();
-    setTimeout(()=>w.print(),400);
-  }
+
 
   return (
     <div className="space-y-6">
