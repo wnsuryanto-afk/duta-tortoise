@@ -96,6 +96,8 @@ async function autoDownloadLabel({ maleCode, femaleCode, maleEnclosure, femaleEn
     console.error("Label download error:", e);
   }
 }
+
+export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
