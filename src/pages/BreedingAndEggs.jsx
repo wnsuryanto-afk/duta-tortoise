@@ -113,6 +113,21 @@ function IncubatorForm({ incubator, onClose, onSaved }) {
   );
 }
 
+function QRCodeBox({ value, size=90 }) {
+  const [svg, setSvg] = useState("");
+  useEffect(()=>{
+    if (!value) return;
+    setSvg("");
+    import("qrcode").then(QRCode=>{
+      QRCode.toString(value,{type:"svg",width:size,margin:1,color:{dark:"#166534",light:"#ffffff"}},
+        (err,str)=>{ if (!err) setSvg(str); }
+      );
+    });
+  },[value,size]);
+  if (!svg) return <div style={{width:size,height:size,background:"#f0fdf4",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#aaa"}}>QR...</div>;
+  return <div dangerouslySetInnerHTML={{__html:svg}} style={{width:size,height:size}} />;
+}
+
 function LabelDialogContent({ jantanList, betinaList, incubators, generateKodeLabel, hatchEstimateLabel, LabelPreviewInline, handlePrintLabel }) {
   const [jantanId, setJantanId] = useState("");
   const [betinaId, setBetinaId] = useState("");
@@ -291,22 +306,6 @@ export default function BreedingAndEggs() {
     const d = new Date(tgl);
     d.setDate(d.getDate() + 90);
     return format(d, "d MMMM yyyy", { locale: id });
-  }
-
-  function QRCodeBox({ value, size=90 }) {
-    const canvasRef = useState(null);
-    const ref = { current: null };
-    const [svg, setSvg] = useState("");
-    useEffect(()=>{
-      if (!value) return;
-      import("qrcode").then(QRCode=>{
-        QRCode.toString(value,{type:"svg",width:size,margin:1,color:{dark:"#166534",light:"#ffffff"}},
-          (err,str)=>{ if (!err) setSvg(str); }
-        );
-      });
-    },[value,size]);
-    if (!svg) return <div style={{width:size,height:size,background:"#f0fdf4",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#aaa"}}>QR</div>;
-    return <div dangerouslySetInnerHTML={{__html:svg}} style={{width:size,height:size}} />;
   }
 
   function LabelPreviewInline({ jantan, betina, tglBertelur, jumlahTelur, inkubatorLabel, kode }) {
