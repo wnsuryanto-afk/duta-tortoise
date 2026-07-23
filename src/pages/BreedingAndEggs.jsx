@@ -567,7 +567,7 @@ export default function BreedingAndEggs() {
                           {b.egg_laying_date && (
                             <button
                               title="Download Label Kotak Telur"
-                              onClick={() => autoDownloadLabel({
+                              onClick={() => downloadLabel({
                                 maleCode: b.male_name,
                                 femaleCode: b.female_name,
                                 maleEnclosure: b.male_enclosure || "",
