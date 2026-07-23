@@ -270,7 +270,11 @@ function LabelPreviewCard({ jantan, betina, tglBertelur, jumlahTelur, inkubatorL
 
 async function handlePrintLabelFn(data) {
   const { jantan, betina, tglBertelur, jumlahTelur, inkubatorLabel, kode } = data;
-  // Generate QR dataURL dulu
+  // Buka window DULU (sinkron, dari user gesture) sebelum await apapun
+  const w = window.open("","_blank","width=480,height=380");
+  if (!w) { alert("Popup diblokir browser. Izinkan popup untuk halaman ini lalu coba lagi."); return; }
+  w.document.write(`<html><head><title>Loading...</title></head><body style="font-family:Arial;display:flex;align-items:center;justify-content:center;height:100vh;color:#555">Menyiapkan label...</body></html>`);
+  // Generate QR async
   let qrDataUrl = "";
   try {
     const QRCode = await import("qrcode");
@@ -278,14 +282,13 @@ async function handlePrintLabelFn(data) {
       QRCode.toDataURL(kode||"DUTATORTO",{width:160,margin:2,color:{dark:"#166534",light:"#ffffff"}},
         (err,url)=>err?rej(err):res(url));
     });
-  } catch(e) { console.error(e); }
+  } catch(e) { console.error("QR error:",e); }
   const html = buildLabelHTML({ jantan, betina, tglBertelur, jumlahTelur, inkubatorLabel, kode, qrDataUrl });
-  const w = window.open("","_blank","width=480,height=380");
-  if (!w) return;
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label-${kode||"kopling"}</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#f5f5f5;padding:10mm;font-family:'Segoe UI',Arial,sans-serif;}@media print{body{background:white;padding:3mm;}@page{size:110mm 72mm;margin:0;}}</style></head><body>${html}</body></html>`);
+  w.document.open();
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label-${kode||"kopling"}</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#f0fdf4;padding:10mm;font-family:'Segoe UI',Arial,sans-serif;}@media print{body{background:white;padding:3mm;}@page{size:110mm 72mm;margin:0;}}</style></head><body>${html}</body></html>`);
   w.document.close();
   w.focus();
-  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 800);
+  setTimeout(()=>{ try{ w.print(); }catch(e){ console.error(e); } }, 800);
 }
 
 function LabelDialogContent({ jantanList, betinaList, incubators }) {
