@@ -136,6 +136,11 @@ export default function BreedingAndEggs() {
     queryFn: () => base44.entities.Incubator.list("-created_date", 200),
   });
 
+  const { data: tortoises = [] } = useQuery({
+    queryKey: ["tortoises-breeding-label"],
+    queryFn: () => base44.entities.Tortoise.list("code", 500),
+  });
+
   if (!canAccess(role, "breeding")) return <AccessDenied />;
 
   const handleDelete = async (breeding) => {
