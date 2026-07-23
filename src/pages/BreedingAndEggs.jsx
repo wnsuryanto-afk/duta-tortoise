@@ -277,15 +277,15 @@ function LabelDialogContent({ jantanList, betinaList, incubators }) {
             <div className="text-xs text-gray-400 mt-0.5">Est. menetas: {hatchEstimateLabel(tglBertelur)}</div>
           </div>
         )}
-        <Button onClick={()=>handlePrintLabel(jantan?.code,betina?.code,tglBertelur,jumlahTelur,inkubatorLabel,kode)}
+        <Button onClick={()=>handlePrintLabelFn(kode)}
           disabled={!ready} className="w-full bg-green-800 hover:bg-green-700">
           <Printer className="w-4 h-4 mr-2" /> Print Label
         </Button>
       </div>
       {/* Preview kanan */}
-      <div className="flex-1 min-w-0">
-        <div className="text-xs font-semibold text-green-800 mb-2">👁️ Preview Label (10×6 cm)</div>
-        <LabelPreviewInline jantan={jantan} betina={betina} tglBertelur={tglBertelur}
+      <div className="flex-1 min-w-0 overflow-auto">
+        <div className="text-xs font-semibold text-green-800 mb-2">👁️ Preview Label</div>
+        <LabelPreviewCard jantan={jantan} betina={betina} tglBertelur={tglBertelur}
           jumlahTelur={jumlahTelur} inkubatorLabel={inkubatorLabel} kode={kode} />
         {!ready && <p className="text-xs text-gray-400 mt-2">← Pilih jantan & betina dulu.</p>}
       </div>
