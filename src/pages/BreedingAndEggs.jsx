@@ -785,6 +785,24 @@ export default function BreedingAndEggs() {
         breeding={hatchBreeding}
       />
 
+      {/* ── DIALOG LABEL TELUR ── */}
+      <Dialog open={showLabelDialog} onOpenChange={setShowLabelDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>🖨️ Cetak Label Kotak Telur</DialogTitle>
+          </DialogHeader>
+          <LabelDialogContent
+            jantanList={jantanList}
+            betinaList={betinaList}
+            incubators={incubators}
+            generateKodeLabel={generateKodeLabel}
+            hatchEstimateLabel={hatchEstimateLabel}
+            LabelPreviewInline={LabelPreviewInline}
+            handlePrintLabel={handlePrintLabel}
+          />
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showIncubatorForm} onOpenChange={() => setShowIncubatorForm(false)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
