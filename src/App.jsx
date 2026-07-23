@@ -73,6 +73,7 @@ import KuraDiamPage from '@/pages/KuraDiamPage';
 import BreedingCalendarPage from '@/pages/BreedingCalendarPage';
 import PakanHarianPage from '@/pages/PakanHarianPage';
 import TortoisePassport from '@/pages/TortoisePassport';
+import LabelTelurPage from '@/pages/LabelTelurPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -156,6 +157,7 @@ const AuthenticatedApp = () => {
         <Route path="/panduan-penyakit/:id" element={<PanduanPenyakitDetailPage />} />
         <Route path="/kura-diam" element={<KuraDiamPage />} />
         <Route path="/breeding-calendar" element={<BreedingCalendarPage />} />
+        <Route path="/label-telur" element={<LabelTelurPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />
