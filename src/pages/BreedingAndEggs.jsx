@@ -113,6 +113,23 @@ function IncubatorForm({ incubator, onClose, onSaved }) {
   );
 }
 
+// ── Label Telur helpers (module-level) ──────────────────────────
+function generateKodeLabel(jCode, bCode, tgl) {
+  if (!jCode || !bCode || !tgl) return "";
+  const d = new Date(tgl);
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yy = String(d.getFullYear()).slice(2);
+  return `K-${dd}${mm}${yy}-${jCode}-${bCode}`;
+}
+
+function hatchEstimateLabel(tgl) {
+  if (!tgl) return "-";
+  const d = new Date(tgl);
+  d.setDate(d.getDate() + 90);
+  return format(d, "d MMMM yyyy", { locale: id });
+}
+
 function QRCodeBox({ value, size=90 }) {
   const [svg, setSvg] = useState("");
   useEffect(()=>{
@@ -128,7 +145,79 @@ function QRCodeBox({ value, size=90 }) {
   return <div dangerouslySetInnerHTML={{__html:svg}} style={{width:size,height:size}} />;
 }
 
-function LabelDialogContent({ jantanList, betinaList, incubators, generateKodeLabel, hatchEstimateLabel, LabelPreviewInline, handlePrintLabel }) {
+function LabelPreviewCard({ jantan, betina, tglBertelur, jumlahTelur, inkubatorLabel, kode }) {
+  const tglStr = tglBertelur ? format(new Date(tglBertelur), "dd MMM yyyy", { locale: id }) : "-";
+  const hatch = hatchEstimateLabel(tglBertelur);
+  return (
+    <div id="label-print-area" style={{width:"400px",fontFamily:"'Segoe UI',Arial,sans-serif",background:"linear-gradient(135deg,#f0fdf4 0%,#fefce8 100%)",borderRadius:"16px",border:"2.5px solid #16a34a",overflow:"hidden",boxShadow:"0 4px 20px rgba(22,163,74,0.15)"}}>
+      <div style={{background:"linear-gradient(90deg,#15803d,#16a34a,#22c55e)",padding:"10px 14px",display:"flex",alignItems:"center",gap:"10px"}}>
+        <div style={{fontSize:"28px",lineHeight:1}}>🐢</div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:"800",fontSize:"15px",color:"#fff",letterSpacing:"0.5px"}}>DUTA TORTOISE</div>
+          <div style={{fontSize:"9px",color:"#bbf7d0",marginTop:"1px"}}>Sulcata Breeding Farm · Probolinggo</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{background:"rgba(255,255,255,0.2)",borderRadius:"20px",padding:"2px 10px",fontSize:"8px",color:"#fff",fontWeight:"bold"}}>📦 {inkubatorLabel||"—"}</div>
+          <div style={{fontSize:"8px",color:"#d1fae5",marginTop:"3px"}}>{tglStr}</div>
+        </div>
+      </div>
+      <div style={{background:"#fef08a",borderBottom:"1.5px dashed #ca8a04",padding:"5px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{fontSize:"8px",color:"#78350f",fontWeight:"600"}}>🔖 KODE KOPLING</div>
+        <div style={{fontWeight:"800",fontSize:"11px",color:"#78350f",letterSpacing:"0.5px"}}>{kode||"—"}</div>
+      </div>
+      <div style={{display:"flex",padding:"10px 14px",gap:"10px",alignItems:"flex-start"}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",gap:"6px",marginBottom:"8px"}}>
+            <div style={{flex:1,background:"linear-gradient(135deg,#dbeafe,#eff6ff)",borderRadius:"10px",padding:"6px 8px",border:"1.5px solid #93c5fd",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:-4,right:-4,fontSize:"28px",opacity:0.08}}>♂</div>
+              <div style={{fontSize:"7px",color:"#1d4ed8",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px"}}>♂ Jantan</div>
+              <div style={{fontSize:"20px",fontWeight:"900",color:"#1e3a8a",lineHeight:1.1,marginTop:"1px"}}>{jantan?.code||"—"}</div>
+              <div style={{fontSize:"7px",color:"#3b82f6",marginTop:"1px"}}>📍 {jantan?.enclosure||"—"}</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",fontSize:"14px"}}>💕</div>
+            <div style={{flex:1,background:"linear-gradient(135deg,#fce7f3,#fff1f2)",borderRadius:"10px",padding:"6px 8px",border:"1.5px solid #f9a8d4",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:-4,right:-4,fontSize:"28px",opacity:0.08}}>♀</div>
+              <div style={{fontSize:"7px",color:"#be123c",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.5px"}}>♀ Betina</div>
+              <div style={{fontSize:"20px",fontWeight:"900",color:"#881337",lineHeight:1.1,marginTop:"1px"}}>{betina?.code||"—"}</div>
+              <div style={{fontSize:"7px",color:"#f43f5e",marginTop:"1px"}}>📍 {betina?.enclosure||"—"}</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+            {[["🥚","Jumlah Telur",jumlahTelur?`${jumlahTelur} butir`:"—","#fef9c3","#713f12"],["📅","Tgl Bertelur",tglStr,"#f0fdf4","#14532d"],["🐣","Est. Menetas",hatch,"#fff7ed","#7c2d12"],["🌡","Status","Inkubasi 🔄","#f0f9ff","#0c4a6e"]].map(([icon,lbl,val,bg,col])=>(
+              <div key={lbl} style={{background:bg,borderRadius:"7px",padding:"4px 6px",border:`1px solid ${col}22`}}>
+                <div style={{fontSize:"7px",color:"#94a3b8",fontWeight:"500"}}>{icon} {lbl}</div>
+                <div style={{fontSize:"8.5px",fontWeight:"700",color:col,marginTop:"1px"}}>{val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"5px",flexShrink:0}}>
+          <div style={{background:"#fff",borderRadius:"10px",padding:"5px",border:"2px solid #16a34a",boxShadow:"0 2px 8px rgba(22,163,74,0.15)"}}>
+            <QRCodeBox value={kode||"DUTATORTO"} size={78}/>
+          </div>
+          <div style={{background:"#15803d",color:"#fff",borderRadius:"20px",padding:"2px 8px",fontSize:"7px",fontWeight:"700"}}>F2 · Captive-bred</div>
+          <div style={{fontSize:"6px",color:"#6b7280",textAlign:"center",lineHeight:1.3}}>Scan untuk<br/>info kura</div>
+        </div>
+      </div>
+      <div style={{background:"linear-gradient(90deg,#15803d,#16a34a)",padding:"4px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:"7px",color:"#bbf7d0"}}>🌿 Sulcata geochelone sulcata</div>
+        <div style={{fontSize:"7px",color:"#bbf7d0"}}>dutatortoises.com</div>
+      </div>
+    </div>
+  );
+}
+
+function handlePrintLabelFn(kode) {
+  const el = document.getElementById("label-print-area");
+  if (!el) return;
+  const w = window.open("","_blank","width=520,height=420");
+  w.document.write(`<!DOCTYPE html><html><head><title>Label-${kode}</title><style>body{margin:6mm;background:white;}@media print{body{margin:2mm;}@page{size:110mm 70mm;margin:0;}}</style></head><body>${el.outerHTML}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),500);
+}
+
+function LabelDialogContent({ jantanList, betinaList, incubators }) {
   const [jantanId, setJantanId] = useState("");
   const [betinaId, setBetinaId] = useState("");
   const [tglBertelur, setTglBertelur] = useState(new Date().toISOString().split("T")[0]);
