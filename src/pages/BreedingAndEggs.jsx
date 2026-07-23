@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical } from "lucide-react";
 import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
 import { format, differenceInDays, parseISO, addDays } from "date-fns";
 import { id } from "date-fns/locale";
@@ -395,7 +395,7 @@ export default function BreedingAndEggs() {
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [hatchBreeding, setHatchBreeding] = useState(null);
-  const [showLabelDialog, setShowLabelDialog] = useState(false);
+  const [showLabelDialog, setShowLabelDialog] = useState(false); // kept for removal
   const [editIncubator, setEditIncubator] = useState(null);
   const [showIncubatorForm, setShowIncubatorForm] = useState(false);
   const [activeTab, setActiveTab] = useState("pembiakan");
@@ -491,10 +491,6 @@ export default function BreedingAndEggs() {
           <p className="text-muted-foreground mt-1">Kelola pembiakan, inkubasi telur, dan penetasan</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowLabelDialog(true)}>
-            <Printer className="w-4 h-4 mr-2" />
-            Label Telur
-          </Button>
           {perms.canCreate && (
             <Button onClick={() => { setEditData(null); setShowForm(true); }}>
               <Plus className="w-4 h-4 mr-2" />
@@ -969,19 +965,7 @@ export default function BreedingAndEggs() {
         breeding={hatchBreeding}
       />
 
-      {/* ── DIALOG LABEL TELUR ── */}
-      <Dialog open={showLabelDialog} onOpenChange={setShowLabelDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>🖨️ Cetak Label Kotak Telur</DialogTitle>
-          </DialogHeader>
-          <LabelDialogContent
-            jantanList={jantanList}
-            betinaList={betinaList}
-            incubators={incubators}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* DIALOG LABEL DIHAPUS - download otomatis dari BreedingForm */}
 
       <Dialog open={showIncubatorForm} onOpenChange={() => setShowIncubatorForm(false)}>
         <DialogContent className="max-w-md">
