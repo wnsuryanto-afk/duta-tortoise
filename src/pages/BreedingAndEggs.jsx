@@ -19,6 +19,7 @@ import BreedingForm from "@/components/breeding/BreedingForm";
 import HatchDialog from "@/components/breeding/HatchDialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms } from "@/lib/permissions";
+import { downloadLabel } from "@/lib/labelUtils";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
