@@ -113,6 +113,82 @@ function IncubatorForm({ incubator, onClose, onSaved }) {
   );
 }
 
+function LabelDialogContent({ jantanList, betinaList, incubators, generateKodeLabel, hatchEstimateLabel, LabelPreviewInline, handlePrintLabel }) {
+  const [jantanId, setJantanId] = useState("");
+  const [betinaId, setBetinaId] = useState("");
+  const [tglBertelur, setTglBertelur] = useState(new Date().toISOString().split("T")[0]);
+  const [jumlahTelur, setJumlahTelur] = useState("");
+  const [inkubatorLabel, setInkubatorLabel] = useState("");
+
+  const jantan = jantanList.find(t => t.id === jantanId);
+  const betina = betinaList.find(t => t.id === betinaId);
+  const kode = generateKodeLabel(jantan?.code, betina?.code, tglBertelur);
+  const ready = jantanId && betinaId && tglBertelur;
+
+  const inkOpts = incubators.length > 0
+    ? incubators.map(i => i.name)
+    : ["Inkubator 1","Inkubator 2","Inkubator 3","Inkubator 4"];
+
+  return (
+    <div className="flex gap-4 flex-wrap">
+      {/* Form kiri */}
+      <div className="flex-none w-56 space-y-3">
+        <div>
+          <Label className="text-xs text-blue-700 font-semibold">♂ Pilih Jantan</Label>
+          <select value={jantanId} onChange={e=>setJantanId(e.target.value)}
+            className="w-full mt-1 text-sm border rounded-md px-2 py-1.5 bg-white">
+            <option value="">-- Pilih Jantan --</option>
+            {jantanList.map(t=><option key={t.id} value={t.id}>{t.code} ({t.enclosure})</option>)}
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs text-rose-700 font-semibold">♀ Pilih Betina</Label>
+          <select value={betinaId} onChange={e=>setBetinaId(e.target.value)}
+            className="w-full mt-1 text-sm border rounded-md px-2 py-1.5 bg-white">
+            <option value="">-- Pilih Betina --</option>
+            {betinaList.map(t=><option key={t.id} value={t.id}>{t.code} ({t.enclosure})</option>)}
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs">📅 Tanggal Bertelur</Label>
+          <Input type="date" value={tglBertelur} onChange={e=>setTglBertelur(e.target.value)} className="mt-1 text-sm" />
+        </div>
+        <div>
+          <Label className="text-xs">🥚 Jumlah Telur</Label>
+          <Input type="number" min={1} max={30} placeholder="Contoh: 8" value={jumlahTelur}
+            onChange={e=>setJumlahTelur(e.target.value)} className="mt-1 text-sm" />
+        </div>
+        <div>
+          <Label className="text-xs">📦 Inkubator</Label>
+          <select value={inkubatorLabel} onChange={e=>setInkubatorLabel(e.target.value)}
+            className="w-full mt-1 text-sm border rounded-md px-2 py-1.5 bg-white">
+            <option value="">-- Pilih --</option>
+            {inkOpts.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        {kode && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+            <div className="text-xs text-gray-500">Kode Kopling:</div>
+            <div className="font-bold text-green-800 text-sm">{kode}</div>
+            <div className="text-xs text-gray-400 mt-0.5">Est. menetas: {hatchEstimateLabel(tglBertelur)}</div>
+          </div>
+        )}
+        <Button onClick={()=>handlePrintLabel(jantan?.code,betina?.code,tglBertelur,jumlahTelur,inkubatorLabel,kode)}
+          disabled={!ready} className="w-full bg-green-800 hover:bg-green-700">
+          <Printer className="w-4 h-4 mr-2" /> Print Label
+        </Button>
+      </div>
+      {/* Preview kanan */}
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-semibold text-green-800 mb-2">👁️ Preview Label (10×6 cm)</div>
+        <LabelPreviewInline jantan={jantan} betina={betina} tglBertelur={tglBertelur}
+          jumlahTelur={jumlahTelur} inkubatorLabel={inkubatorLabel} kode={kode} />
+        {!ready && <p className="text-xs text-gray-400 mt-2">← Pilih jantan & betina dulu.</p>}
+      </div>
+    </div>
+  );
+}
+
 export default function BreedingAndEggs() {
   const queryClient = useQueryClient();
   const { role } = useCurrentUser();
