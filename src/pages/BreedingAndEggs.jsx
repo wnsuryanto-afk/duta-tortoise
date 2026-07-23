@@ -383,7 +383,8 @@ export default function BreedingAndEggs() {
 
   // (helpers moved to module level)
 
-  function _removed() {
+  // eslint-disable-next-line no-unused-vars
+  function _unused_placeholder() {
     const tglStr = tglBertelur ? format(new Date(tglBertelur), "dd MMM yyyy", { locale: id }) : "-";
     const tglLong = tglBertelur ? format(new Date(tglBertelur), "dd MMMM yyyy", { locale: id }) : "-";
     const hatch = hatchEstimateLabel(tglBertelur);
@@ -472,6 +473,16 @@ export default function BreedingAndEggs() {
         </div>
       </div>
     );
+  }
+
+  function handlePrintLabel(jCode, bCode, tglBertelur, jumlahTelur, inkubatorLabel, kode) {
+    const el = document.getElementById("label-print-area");
+    if (!el) return;
+    const w = window.open("","_blank","width=520,height=400");
+    w.document.write(`<!DOCTYPE html><html><head><title>Label-${kode}</title><style>body{margin:8mm;background:white;}@media print{body{margin:3mm;}@page{size:105mm 62mm;margin:0;}}</style></head><body>${el.outerHTML}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(()=>w.print(),400);
   }
 
   return (
