@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical, Printer } from "lucide-react";
 import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
 import { format, differenceInDays, parseISO, addDays } from "date-fns";
 import { id } from "date-fns/locale";
@@ -120,6 +120,7 @@ export default function BreedingAndEggs() {
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [hatchBreeding, setHatchBreeding] = useState(null);
+  const [showLabelDialog, setShowLabelDialog] = useState(false);
   const [editIncubator, setEditIncubator] = useState(null);
   const [showIncubatorForm, setShowIncubatorForm] = useState(false);
   const [activeTab, setActiveTab] = useState("pembiakan");
@@ -191,6 +192,105 @@ export default function BreedingAndEggs() {
   // Riwayat: hanya yang sudah selesai difinalisasi
   const historyBreedings = breedings.filter(b => b.status === "selesai");
 
+  // ── Label Telur helpers ──────────────────────────────────────
+  const jantanList = (tortoises || []).filter(t => t.gender === "jantan");
+  const betinaList = (tortoises || []).filter(t => t.gender === "betina");
+
+  function generateKodeLabel(jCode, bCode, tgl) {
+    if (!jCode || !bCode || !tgl) return "";
+    const d = new Date(tgl);
+    const dd = String(d.getDate()).padStart(2,"0");
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const yy = String(d.getFullYear()).slice(2);
+    return `K-${dd}${mm}${yy}-${jCode}-${bCode}`;
+  }
+
+  function hatchEstimateLabel(tgl) {
+    if (!tgl) return "-";
+    const d = new Date(tgl);
+    d.setDate(d.getDate() + 90);
+    return format(d, "d MMMM yyyy", { locale: id });
+  }
+
+  function LabelBarcode({ value, width=200, height=48 }) {
+    if (!value) return null;
+    const bars = [];
+    let x = 0;
+    const seed = [3,1,2,3,1,2,1,3,2,1,1,3,2,2,1,2,3,1,2,2,2,1,3,1,4,1,1,3,4,2];
+    for (let i=0; i<value.length; i++) {
+      const c = value.charCodeAt(i);
+      const w = seed[c % seed.length]+1;
+      if (i%2===0) bars.push({x,w});
+      x += w*3+1;
+    }
+    const totalW = x+8||1;
+    const scale = width/totalW;
+    return (
+      <svg width={width} height={height}>
+        {bars.map((b,i) => (
+          <rect key={i} x={b.x*scale} y={0} width={Math.max(b.w*scale-0.5,1)} height={height-12} fill="#000"/>
+        ))}
+        <text x={width/2} y={height} textAnchor="middle" fontSize="7" fill="#555" fontFamily="monospace">{value}</text>
+      </svg>
+    );
+  }
+
+  function LabelPreviewInline({ jantan, betina, tglBertelur, jumlahTelur, inkubatorLabel, kode }) {
+    const tglStr = tglBertelur ? format(new Date(tglBertelur), "dd MMMM yyyy", { locale: id }) : "-";
+    return (
+      <div id="label-print-area" style={{width:"370px",minHeight:"210px",border:"2px solid #166534",borderRadius:"10px",fontFamily:"Arial,sans-serif",background:"#fff",overflow:"hidden"}}>
+        <div style={{background:"#166534",color:"#fff",padding:"7px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontWeight:"bold",fontSize:"13px"}}>🐢 DUTA TORTOISE</div>
+            <div style={{fontSize:"8px",opacity:0.7}}>Label Kotak Telur Inkubasi</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:"8px",opacity:0.85}}>{tglStr}</div>
+            <div style={{fontSize:"8px",fontWeight:"bold",background:"#fff",color:"#166534",borderRadius:"4px",padding:"1px 6px",marginTop:"2px"}}>{kode||"—"}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",padding:"9px 11px",gap:"9px"}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",gap:"5px",marginBottom:"7px"}}>
+              <div style={{flex:1,background:"#EFF6FF",borderRadius:"6px",padding:"4px 7px",border:"1px solid #BFDBFE"}}>
+                <div style={{fontSize:"7px",color:"#1D4ED8",fontWeight:"bold"}}>♂ JANTAN</div>
+                <div style={{fontSize:"18px",fontWeight:"bold",color:"#1E3A8A",lineHeight:1.1}}>{jantan?.code||"—"}</div>
+                <div style={{fontSize:"7px",color:"#64748b"}}>Kandang {jantan?.enclosure||"—"}</div>
+              </div>
+              <div style={{flex:1,background:"#FFF1F2",borderRadius:"6px",padding:"4px 7px",border:"1px solid #FECDD3"}}>
+                <div style={{fontSize:"7px",color:"#BE123C",fontWeight:"bold"}}>♀ BETINA</div>
+                <div style={{fontSize:"18px",fontWeight:"bold",color:"#881337",lineHeight:1.1}}>{betina?.code||"—"}</div>
+                <div style={{fontSize:"7px",color:"#64748b"}}>Kandang {betina?.enclosure||"—"}</div>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3px"}}>
+              {[["🥚 Jumlah Telur", jumlahTelur?`${jumlahTelur} butir`:"—"],["📦 Inkubator",inkubatorLabel||"—"],["📅 Bertelur",tglStr],["🐣 Est. Menetas",hatchEstimateLabel(tglBertelur)]].map(([lbl,val])=>(
+                <div key={lbl} style={{background:"#F8FAFC",borderRadius:"4px",padding:"3px 5px",border:"1px solid #E2E8F0"}}>
+                  <div style={{fontSize:"6px",color:"#94A3B8"}}>{lbl}</div>
+                  <div style={{fontSize:"8px",fontWeight:"bold",color:"#1E293B"}}>{val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:"90px",gap:"3px"}}>
+            <LabelBarcode value={kode||"DUTATORTO"} width={82} height={54}/>
+            <div style={{background:"#166534",color:"#fff",borderRadius:"4px",padding:"2px 7px",fontSize:"7px",fontWeight:"bold"}}>F2 · Captive-bred</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function handlePrintLabel(jCode, bCode, tglBertelur, jumlahTelur, inkubatorLabel, kode) {
+    const el = document.getElementById("label-print-area");
+    if (!el) return;
+    const w = window.open("","_blank","width=520,height=400");
+    w.document.write(`<!DOCTYPE html><html><head><title>Label-${kode}</title><style>body{margin:8mm;background:white;}@media print{body{margin:3mm;}@page{size:105mm 62mm;margin:0;}}</style></head><body>${el.outerHTML}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(()=>w.print(),400);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -201,12 +301,18 @@ export default function BreedingAndEggs() {
           </div>
           <p className="text-muted-foreground mt-1">Kelola pembiakan, inkubasi telur, dan penetasan</p>
         </div>
-        {perms.canCreate && (
-          <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah Data
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowLabelDialog(true)}>
+            <Printer className="w-4 h-4 mr-2" />
+            Label Telur
           </Button>
-        )}
+          {perms.canCreate && (
+            <Button onClick={() => { setEditData(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Tambah Data
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
