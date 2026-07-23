@@ -18,8 +18,20 @@ export default function BreedingForm({ open, onClose, editData }) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [previewQR, setPreviewQR] = useState("");
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  // Generate QR saat kode kopling berubah
+  const previewKode = generateKodeLabel(form.male_name, form.female_name, form.egg_laying_date);
+  useEffect(() => {
+    if (!previewKode) { setPreviewQR(""); return; }
+    import("qrcode").then(QRCode => {
+      QRCode.toDataURL(previewKode, { width: 120, margin: 1, color: { dark: "#166534", light: "#ffffff" } },
+        (err, url) => { if (!err) setPreviewQR(url); }
+      );
+    });
+  }, [previewKode]);
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],
