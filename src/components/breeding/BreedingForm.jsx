@@ -8,10 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { logActivity } from "@/lib/logActivity";
-import { Loader2, Camera, X, ImagePlus, AlertTriangle } from "lucide-react";
+import { Loader2, Camera, X, ImagePlus, AlertTriangle, Download } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { downloadLabel } from "@/lib/labelUtils";
+import { downloadLabel, generateKodeLabel } from "@/lib/labelUtils";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
