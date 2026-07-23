@@ -22,6 +22,19 @@ export default function BreedingForm({ open, onClose, editData }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
+  const [form, setForm] = useState(editData || {
+    male_name: "", female_name: "", male_id: "", female_id: "",
+    egg_laying_date: "", egg_count: "",
+    estimated_hatch_date_start: "",
+    estimated_hatch_date_end: "",
+    estimated_hatch_start: "",
+    estimated_hatch_end: "",
+    estimated_hatch_date: "",
+    incubator_name: "",
+    tray_number: "",
+    status: "bertelur", incubation_temp: "", notes: "", photos: [],
+  });
+
   // Generate QR saat kode kopling berubah
   const previewKode = generateKodeLabel(form.male_name, form.female_name, form.egg_laying_date);
   useEffect(() => {
@@ -50,19 +63,6 @@ export default function BreedingForm({ open, onClose, editData }) {
 
   const males = tortoises.filter((t) => t.gender === "jantan" && (t.status === "aktif" || t.status === "breeding"));
   const females = tortoises.filter((t) => t.gender === "betina" && (t.status === "aktif" || t.status === "breeding"));
-
-  const [form, setForm] = useState(editData || {
-    male_name: "", female_name: "", male_id: "", female_id: "",
-    egg_laying_date: "", egg_count: "",
-    estimated_hatch_date_start: "",
-    estimated_hatch_date_end: "",
-    estimated_hatch_start: "",
-    estimated_hatch_end: "",
-    estimated_hatch_date: "",
-    incubator_name: "",
-    tray_number: "",
-    status: "bertelur", incubation_temp: "", notes: "", photos: [],
-  });
 
   const handlePhotoUpload = async (file) => {
     if (!file) return;
