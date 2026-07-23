@@ -258,6 +258,20 @@ export default function BreedingForm({ open, onClose, editData }) {
         entity_name: `${form.male_name} × ${form.female_name}`,
         notes: "Data breeding baru ditambahkan",
       });
+      // ✔ Auto-download label jika status bertelur/inkubasi
+      if ((form.status === "bertelur" || form.status === "inkubasi") && form.egg_laying_date && form.male_name && form.female_name) {
+        const male = males.find(t => t.id === form.male_id);
+        const female = females.find(t => t.id === form.female_id);
+        autoDownloadLabel({
+          maleCode: form.male_name,
+          femaleCode: form.female_name,
+          maleEnclosure: male?.enclosure || "",
+          femaleEnclosure: female?.enclosure || "",
+          tglBertelur: form.egg_laying_date,
+          eggCount: form.egg_count,
+          inkubatorName: form.incubator_name,
+        });
+      }
     }
 
     // Update current_eggs di inkubator jika dipilih
