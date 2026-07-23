@@ -563,6 +563,23 @@ export default function BreedingAndEggs() {
                             onDelete={() => handleDelete(b)}
                             onHatch={() => setHatchBreeding(b)}
                           />
+                          {b.egg_laying_date && (
+                            <button
+                              title="Download Label Kotak Telur"
+                              onClick={() => autoDownloadLabel({
+                                maleCode: b.male_name,
+                                femaleCode: b.female_name,
+                                maleEnclosure: b.male_enclosure || "",
+                                femaleEnclosure: b.female_enclosure || "",
+                                tglBertelur: b.egg_laying_date,
+                                eggCount: b.egg_count,
+                                inkubatorName: b.incubator_name,
+                              })}
+                              className="p-1.5 rounded-lg hover:bg-green-100 text-green-700 transition-colors"
+                            >
+                              🏷️
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
