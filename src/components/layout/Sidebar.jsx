@@ -48,6 +48,7 @@ const NAV_GROUPS = [
       { path: "/treatment",   section: "treatment",  label: "Jadwal Treatment",   icon: Stethoscope },
       { path: "/death-records",section:"death-records",label:"Catatan Kematian",  icon: Skull },
       { path: "/kura-diam",    section: "kura-diam",   label: "Deteksi Kura Diam", icon: Clock },
+      { path: "/label-telur",  section: "label-telur", label: "Label Kotak Telur",  icon: Printer },
     ],
   },
 
