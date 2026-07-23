@@ -311,6 +311,7 @@ function LabelDialogContent({ jantanList, betinaList, incubators }) {
   const [tglBertelur, setTglBertelur] = useState(new Date().toISOString().split("T")[0]);
   const [jumlahTelur, setJumlahTelur] = useState("");
   const [inkubatorLabel, setInkubatorLabel] = useState("");
+  const [downloading, setDownloading] = useState(false);
 
   const jantan = jantanList.find(t => t.id === jantanId);
   const betina = betinaList.find(t => t.id === betinaId);
