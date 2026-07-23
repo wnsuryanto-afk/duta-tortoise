@@ -378,6 +378,80 @@ export default function BreedingForm({ open, onClose, editData }) {
             <Textarea value={form.notes} onChange={(e) => handleChange("notes", e.target.value)} rows={3} />
           </div>
 
+          {/* Preview Label Telur - muncul saat data cukup */}
+          {form.male_name && form.female_name && form.egg_laying_date && (() => {
+            const kode = generateKodeLabel(form.male_name, form.female_name, form.egg_laying_date);
+            const d = new Date(form.egg_laying_date);
+            const tglStr = d.toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" });
+            const hatch = new Date(d.getTime()+90*86400000).toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+            const male = males.find(t => t.id === form.male_id);
+            const female = females.find(t => t.id === form.female_id);
+            return (
+              <div className="border-2 border-green-200 rounded-xl overflow-hidden bg-gradient-to-br from-green-50 to-yellow-50">
+                {/* Mini label preview */}
+                <div className="bg-gradient-to-r from-green-800 to-green-600 px-3 py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🐢</span>
+                    <div>
+                      <div className="text-white font-bold text-xs">DUTA TORTOISE</div>
+                      <div className="text-green-200 text-[9px]">Label Kotak Telur</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="bg-white/20 rounded-full px-2 py-0.5 text-white text-[9px] font-bold">{form.incubator_name || "—"}</div>
+                    <div className="text-green-200 text-[9px] mt-0.5">{tglStr}</div>
+                  </div>
+                </div>
+                <div className="bg-yellow-100 border-b border-dashed border-yellow-400 px-3 py-1 flex justify-between items-center">
+                  <span className="text-[9px] text-yellow-800 font-semibold">🔖 KODE KOPLING</span>
+                  <span className="text-[10px] font-black text-yellow-900">{kode}</span>
+                </div>
+                <div className="px-3 py-2 grid grid-cols-2 gap-1.5">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1.5">
+                    <div className="text-[8px] text-blue-600 font-bold">♂ Jantan</div>
+                    <div className="text-sm font-black text-blue-900 leading-tight">{form.male_name}</div>
+                    <div className="text-[8px] text-blue-500">📍 {male?.enclosure || "—"}</div>
+                  </div>
+                  <div className="bg-pink-50 border border-pink-200 rounded-lg px-2 py-1.5">
+                    <div className="text-[8px] text-pink-600 font-bold">♀ Betina</div>
+                    <div className="text-sm font-black text-pink-900 leading-tight">{form.female_name}</div>
+                    <div className="text-[8px] text-pink-500">📍 {female?.enclosure || "—"}</div>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg px-2 py-1">
+                    <div className="text-[8px] text-gray-400">🥚 Jumlah Telur</div>
+                    <div className="text-[10px] font-bold text-yellow-800">{form.egg_count ? form.egg_count+" butir" : "—"}</div>
+                  </div>
+                  <div className="bg-green-50 rounded-lg px-2 py-1">
+                    <div className="text-[8px] text-gray-400">📅 Bertelur</div>
+                    <div className="text-[10px] font-bold text-green-800">{tglStr}</div>
+                  </div>
+                  <div className="col-span-2 bg-orange-50 rounded-lg px-2 py-1">
+                    <div className="text-[8px] text-gray-400">🐣 Est. Menetas</div>
+                    <div className="text-[10px] font-bold text-orange-800">{hatch}</div>
+                  </div>
+                </div>
+                <div className="px-3 pb-3">
+                  <Button
+                    type="button"
+                    onClick={() => downloadLabel({
+                      maleCode: form.male_name,
+                      femaleCode: form.female_name,
+                      maleEnclosure: male?.enclosure || "",
+                      femaleEnclosure: female?.enclosure || "",
+                      tglBertelur: form.egg_laying_date,
+                      eggCount: form.egg_count,
+                      inkubatorName: form.incubator_name,
+                    })}
+                    className="w-full bg-green-700 hover:bg-green-600 text-white text-sm"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Label (PNG)
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={saving || !form.male_name?.trim() || !form.female_name?.trim() || !form.egg_laying_date || !form.egg_count || !form.status || !form.incubator_name}>
