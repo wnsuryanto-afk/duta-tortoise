@@ -11,9 +11,7 @@ import { logActivity } from "@/lib/logActivity";
 import { Loader2, Camera, X, ImagePlus, AlertTriangle } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-
-// ── Auto-download label saat bertelur ──
-async function autoDownloadLabel({ maleCode, femaleCode, maleEnclosure, femaleEnclosure, tglBertelur, eggCount, inkubatorName }) {
+import { downloadLabel } from "@/lib/labelUtils";{ maleCode, femaleCode, maleEnclosure, femaleEnclosure, tglBertelur, eggCount, inkubatorName }) {
   try {
     const d = new Date(tglBertelur);
     const dd = String(d.getDate()).padStart(2,"0");
