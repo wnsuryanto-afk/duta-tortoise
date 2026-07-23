@@ -114,8 +114,10 @@ function IncubatorForm({ incubator, onClose, onSaved }) {
   );
 }
 
-// ── Label Telur helpers (module-level) ──────────────────────────
-function generateKodeLabel(jCode, bCode, tgl) {
+  );
+}
+
+export default function BreedingAndEggs() {jCode, bCode, tgl) {
   if (!jCode || !bCode || !tgl) return "";
   const d = new Date(tgl);
   const dd = String(d.getDate()).padStart(2,"0");
