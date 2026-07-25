@@ -13,6 +13,7 @@ import TugasHariIni from "@/components/sop/TugasHariIni";
 import IncidentalTaskList from "@/components/incidental/IncidentalTaskList";
 import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
 import SickTortoisePicker from "@/components/health/SickTortoisePicker";
+import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel";
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 
@@ -67,6 +68,15 @@ const GEJALA_LIST = [
   { id: "lainnya",      label: "Lainnya",            icon: "❓" },
 ];
 
+const SEVERITIES = [
+  { value: "ringan", label: "🟡 Ringan" },
+  { value: "sedang", label: "🟠 Sedang" },
+  { value: "berat",  label: "🔴 Berat" },
+  { value: "kritis", label: "🚨 Kritis" },
+];
+
+const TRIGGER_SEVERITIES = ["sedang", "berat", "kritis"];
+
 // ── Poin flash animation ──────────────────────────────────────────────
 function PoinFlash({ poin }) {
   return (
@@ -94,7 +104,8 @@ export default function GuidedHariIni({ user }) {
   const [kandangDone, setKandangDone]   = useState(new Set());
   const [kandangSaved, setKandangSaved] = useState(new Set()); // already persisted
   const [kondisiOk, setKondisiOk]       = useState(null);
-  const [sakitForm, setSakitForm]       = useState({ kura: "", gejala: new Set() });
+  const [sakitForm, setSakitForm]       = useState({ kura: "", diagnosis: [], severity: "", description: "" });
+  const [savedSakit, setSavedSakit]     = useState(null);
   const [sakitReports, setSakitReports] = useState([]);
   const [loading, setLoading]           = useState(false);
   const [msg, setMsg]                   = useState(null);
@@ -163,6 +174,12 @@ export default function GuidedHariIni({ user }) {
   const { data: treatmentSchedules = [] } = useQuery({
     queryKey: ["treatment-schedules-active"],
     queryFn: () => base44.entities.TreatmentSchedule.filter({ is_active: true }),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: diagnosisProtocols = [] } = useQuery({
+    queryKey: ["diagnosis-protocols"],
+    queryFn: () => base44.entities.DiagnosisProtocol.filter({ is_active: true }),
     staleTime: 10 * 60 * 1000,
   });
 
@@ -426,23 +443,43 @@ export default function GuidedHariIni({ user }) {
   // pakanDone & pakanSaved sekarang dikelola dalam WidgetPakan (self-contained)
 
   const handleLaporKura = async () => {
-    if (!sakitForm.kura || sakitForm.gejala.size === 0) {
-      showMsg("warn", "Pilih kura dan gejalanya dulu ya.");
+    if (!sakitForm.kura || sakitForm.diagnosis.length === 0 || !sakitForm.severity) {
+      showMsg("warn", "Pilih kura, diagnosis, dan tingkat keparahan dulu ya.");
       return;
     }
     setLoading(true);
     const kura = tortoises.find(t => t.id === sakitForm.kura);
+    const diagNames = sakitForm.diagnosis
+      .map(c => diagnosisProtocols.find(p => p.diagnosis_code === c)?.diagnosis_name || c)
+      .join(", ");
     await base44.entities.HealthRecord.create({
       tortoise_id: sakitForm.kura,
       tortoise_name: kura?.name || sakitForm.kura,
       date: today,
       type: "sakit",
-      description: `Dilaporkan oleh ${user.full_name || user.email}. Gejala: ${[...sakitForm.gejala].join(", ")}`,
-      diagnosis_notes: [...sakitForm.gejala].join(", "),
+      diagnosis: sakitForm.diagnosis,
+      severity: sakitForm.severity,
+      description: `Dilaporkan oleh ${user.full_name || user.email}. Diagnosis: ${diagNames}${sakitForm.description ? `. Catatan: ${sakitForm.description}` : ""}`,
+      diagnosis_notes: diagNames,
     });
+    // Set is_currently_sick=true pada Tortoise
+    try {
+      await base44.entities.Tortoise.update(sakitForm.kura, { is_currently_sick: true, status: "sakit" });
+    } catch {}
+    qc.invalidateQueries({ queryKey: ["health-records"] });
+    qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
     setSakitReports(p => [...p, kura?.name || sakitForm.kura]);
     flashPoin("Laporan kura", 15);
-    setSakitForm({ kura: "", gejala: new Set() });
+    // Tampilkan CareTaskSuggestionPanel jika severity sedang/berat/kritis
+    if (TRIGGER_SEVERITIES.includes(sakitForm.severity)) {
+      setSavedSakit({
+        tortoise_name: kura?.name || sakitForm.kura,
+        tortoise_code: kura?.code,
+        diagnosis: sakitForm.diagnosis,
+        severity: sakitForm.severity,
+      });
+    }
+    setSakitForm({ kura: "", diagnosis: [], severity: "", description: "" });
     setShowSakitForm(false);
     setLoading(false);
   };
@@ -720,8 +757,18 @@ export default function GuidedHariIni({ user }) {
                     <span className="text-sm font-medium text-orange-800">🐢 {n} — sudah dilaporkan ✓</span>
                   </div>
                 ))}
+                {savedSakit && (
+                  <CareTaskSuggestionPanel
+                    diagnoses={savedSakit.diagnosis}
+                    severity={savedSakit.severity}
+                    type="sakit"
+                    tortoiseName={savedSakit.tortoise_name}
+                    tortoiseCode={savedSakit.tortoise_code}
+                    protocols={diagnosisProtocols}
+                  />
+                )}
                 <button
-                  onClick={() => setShowSakitForm(true)}
+                  onClick={() => { setShowSakitForm(true); setSavedSakit(null); }}
                   className="w-full text-sm text-red-600 border border-red-200 rounded-xl py-2 hover:bg-red-50"
                 >
                   + Lapor kura lain
@@ -744,32 +791,68 @@ export default function GuidedHariIni({ user }) {
                   value={sakitForm.kura}
                   onChange={(id) => setSakitForm(p => ({ ...p, kura: id }))}
                 />
-                <div className="grid grid-cols-3 gap-2">
-                  {GEJALA_LIST.map(g => {
-                    const sel = sakitForm.gejala.has(g.id);
-                    return (
-                      <button
-                        key={g.id}
-                        onClick={() => setSakitForm(p => {
-                          const n = new Set(p.gejala);
-                          sel ? n.delete(g.id) : n.add(g.id);
-                          return { ...p, gejala: n };
-                        })}
-                        className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 text-xs font-medium transition-all ${
-                          sel ? "bg-red-100 border-red-400 text-red-800" : "bg-gray-50 border-gray-200 text-gray-600"
-                        }`}
-                      >
-                        <span className="text-xl">{g.icon}</span>
-                        <span className="text-center leading-tight">{g.label}</span>
-                      </button>
-                    );
-                  })}
+                <div>
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: "#1B4332" }}>Diagnosis * (pilih yang sesuai)</p>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+                    {diagnosisProtocols.map(p => {
+                      const sel = sakitForm.diagnosis.includes(p.diagnosis_code);
+                      return (
+                        <button
+                          key={p.diagnosis_code}
+                          onClick={() => setSakitForm(prev => {
+                            const isSel = prev.diagnosis.includes(p.diagnosis_code);
+                            const next = isSel
+                              ? prev.diagnosis.filter(d => d !== p.diagnosis_code)
+                              : [...prev.diagnosis, p.diagnosis_code];
+                            let nextSeverity = prev.severity;
+                            if (!nextSeverity && !isSel && p.severity_default) {
+                              nextSeverity = p.severity_default;
+                            }
+                            return { ...prev, diagnosis: next, severity: nextSeverity };
+                          })}
+                          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                            sel ? "text-white border-[#1B4332]" : "bg-gray-50 border-gray-200 text-gray-600"
+                          }`}
+                          style={sel ? { backgroundColor: "#1B4332" } : {}}
+                        >
+                          {p.diagnosis_name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+                <div>
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: "#1B4332" }}>Tingkat Keparahan *</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {SEVERITIES.map(s => (
+                      <button
+                        key={s.value}
+                        onClick={() => setSakitForm(prev => ({ ...prev, severity: s.value }))}
+                        className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          sakitForm.severity === s.value
+                            ? "text-white border-[#1B4332]"
+                            : "bg-gray-50 border-gray-200 text-gray-600"
+                        }`}
+                        style={sakitForm.severity === s.value ? { backgroundColor: "#1B4332" } : {}}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <textarea
+                  rows={2}
+                  value={sakitForm.description}
+                  onChange={e => setSakitForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Catatan tambahan (opsional)..."
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
+                />
                 <p className="text-xs text-green-600 font-semibold text-center">+15 poin untuk laporan ini</p>
                 <button
                   onClick={handleLaporKura}
-                  disabled={loading || !sakitForm.kura || sakitForm.gejala.size === 0}
-                  className="w-full bg-red-600 text-white font-bold py-3 rounded-xl disabled:opacity-40 active:scale-95"
+                  disabled={loading || !sakitForm.kura || sakitForm.diagnosis.length === 0 || !sakitForm.severity}
+                  className="w-full text-white font-bold py-3 rounded-xl disabled:opacity-40 active:scale-95"
+                  style={{ backgroundColor: "#E76F00" }}
                 >
                   {loading ? "Menyimpan..." : "📋 Laporkan"}
                 </button>
