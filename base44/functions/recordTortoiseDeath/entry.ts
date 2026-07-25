@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
     // 3. Update status tortoise ke "mati"
     await base44.asServiceRole.entities.Tortoise.update(tortoise_id, {
       status: 'mati',
+      is_currently_sick: false,
       previous_status: tortoiseBefore?.status || 'aktif',
       last_status_change: death_data.death_date || new Date().toISOString().split("T")[0],
     });

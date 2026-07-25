@@ -12,6 +12,7 @@ import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import DiagnosisPanel, { DIAGNOSIS_CATEGORIES } from "./DiagnosisPanel";
 import DiagnosisProtocolPanel from "./DiagnosisProtocolPanel";
+import CareTaskSuggestionPanel from "./CareTaskSuggestionPanel";
 import DosisKalkulator from "./DosisKalkulator";
 import TreatmentItemsPicker from "./TreatmentItemsPicker";
 import TortoiseSearchSelect from "./TortoiseSearchSelect";
@@ -274,6 +275,16 @@ export default function HealthForm({ open, onClose, editData }) {
 
           {/* Panduan Penanganan otomatis berdasarkan diagnosis */}
           <DiagnosisProtocolPanel diagnoses={selectedDiagnoses} protocols={diagnosisProtocols} />
+
+          {/* Saran tugas perawatan untuk keeper (semi-otomatis) */}
+          <CareTaskSuggestionPanel
+            diagnoses={selectedDiagnoses}
+            severity={form.severity}
+            type={form.type}
+            tortoiseName={form.tortoise_name}
+            tortoiseCode={tortoises.find((t) => t.id === form.tortoise_id)?.code}
+            protocols={diagnosisProtocols}
+          />
 
           {/* Tingkat Keparahan */}
           <div className="space-y-2">

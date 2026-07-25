@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, X, RotateCcw, Heart, CalendarDays, BookOpen } from "lucide-react";
 import DiagnosisProtocolPanel from "@/components/health/DiagnosisProtocolPanel";
+import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { id } from "date-fns/locale";
 import HealthForm from "@/components/health/HealthForm";
@@ -265,8 +266,15 @@ export default function HealthList() {
                       Panduan Penanganan {expandedGuide === r.id ? "▲" : "▼"}
                     </button>
                     {expandedGuide === r.id && (
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-2">
                         <DiagnosisProtocolPanel diagnoses={r.diagnosis || r.diagnoses} />
+                        <CareTaskSuggestionPanel
+                          diagnoses={r.diagnosis || r.diagnoses}
+                          severity={r.severity}
+                          type={r.type}
+                          tortoiseName={r.tortoise_name}
+                          tortoiseCode={tortoises.find((t) => t.id === r.tortoise_id)?.code}
+                        />
                       </div>
                     )}
                   </div>
