@@ -1,0 +1,80 @@
+{
+  "name": "ToolLoan",
+  "type": "object",
+  "properties": {
+    "tool_name": {
+      "type": "string",
+      "description": "Nama alat yang dipinjam"
+    },
+    "warehouse_item_id": {
+      "type": "string",
+      "description": "ID WarehouseItem jika dipilih dari katalog (opsional)"
+    },
+    "warehouse_item_sku": {
+      "type": "string",
+      "description": "SKU WarehouseItem jika dipilih dari katalog"
+    },
+    "borrower_name": {
+      "type": "string",
+      "description": "Nama peminjam"
+    },
+    "borrower_email": {
+      "type": "string",
+      "description": "Email peminjam"
+    },
+    "loan_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pinjam"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Keperluan pinjam"
+    },
+    "return_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kembali (kosong = masih dipinjam)"
+    },
+    "return_condition": {
+      "type": "string",
+      "enum": [
+        "baik",
+        "rusak",
+        "hilang"
+      ],
+      "description": "Kondisi alat saat dikembalikan"
+    },
+    "return_notes": {
+      "type": "string",
+      "description": "Catatan saat pengembalian"
+    },
+    "return_photo_url": {
+      "type": "string",
+      "description": "Foto kondisi alat saat dikembalikan (opsional)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "dipinjam",
+        "dikembalikan"
+      ],
+      "default": "dipinjam"
+    },
+    "shopping_list_id": {
+      "type": "string",
+      "description": "ID ShoppingList jika dikembalikan rusak/hilang (auto-create)"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool_name",
+    "borrower_name",
+    "borrower_email",
+    "loan_date",
+    "purpose",
+    "status"
+  ]
+}

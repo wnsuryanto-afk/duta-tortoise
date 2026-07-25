@@ -25,12 +25,17 @@ export default function HarusDibeliWidget() {
     queryFn: () => base44.entities.ShoppingList.filter({ status: "belum_dibeli" }, "-priority", 200),
     staleTime: 60 * 1000,
   });
+  const { data: toolRequests = [] } = useQuery({
+    queryKey: ["tool-requests-approved"],
+    queryFn: () => base44.entities.ToolRequest.filter({ status: "disetujui" }, "-request_date", 200),
+    staleTime: 60 * 1000,
+  });
 
-  const { sopCount, stokCount, tugasCount, total } = useMemo(() => {
+  const { sopCount, obatCount, stokCount, tugasCount, pengajuanCount, total } = useMemo(() => {
     const skuMap = {};
     warehouse.forEach((w) => { if (w.sku) skuMap[w.sku] = w; });
 
-    // SOP terganggu: SKU dibutuhkan task aktif tapi stok 0 / tidak ditemukan
+    // SOP terganggu
     const neededSkus = new Set();
     sopTasks.forEach((t) => (t.required_skus || []).forEach((sku) => neededSkus.add(sku)));
     const sopIds = new Set();
@@ -43,14 +48,24 @@ export default function HarusDibeliWidget() {
       }
     });
 
-    // Stok menipis: current < minimum (tidak termasuk yang sudah di sopIds)
+    // Obat menipis: obat/vitamin/suplemen, current <= minimum
+    const obatIds = new Set();
+    const om = warehouse.filter((w) =>
+      ["obat", "vitamin", "suplemen"].includes(w.category) &&
+      (w.current_stock || 0) <= (w.minimum_stock || 0) &&
+      !sopIds.has(w.id)
+    );
+    om.forEach((w) => obatIds.add(w.id));
+
+    // Stok menipis: non-medical, current < minimum
     const sm = warehouse.filter((w) =>
-      (w.current_stock || 0) < (w.minimum_stock || 0) && !sopIds.has(w.id)
+      (w.current_stock || 0) < (w.minimum_stock || 0) && !sopIds.has(w.id) && !obatIds.has(w.id)
     ).length;
 
     const tm = shoppingList.length;
-    return { sopCount: sc, stokCount: sm, tugasCount: tm, total: sc + sm + tm };
-  }, [warehouse, sopTasks, shoppingList]);
+    const pk = toolRequests.length;
+    return { sopCount: sc, obatCount: om.length, stokCount: sm, tugasCount: tm, pengajuanCount: pk, total: sc + om.length + sm + tm + pk };
+  }, [warehouse, sopTasks, shoppingList, toolRequests]);
 
   if (total === 0) return null;
 
@@ -72,8 +87,10 @@ export default function HarusDibeliWidget() {
       </p>
       <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
         {sopCount > 0 && <span className="text-red-700">🔴 SOP: {sopCount}</span>}
+        {obatCount > 0 && <span className="text-orange-700">💊 Obat: {obatCount}</span>}
         {stokCount > 0 && <span className="text-amber-700">⚠️ Menipis: {stokCount}</span>}
         {tugasCount > 0 && <span className="text-blue-700">📋 Menunggu: {tugasCount}</span>}
+        {pengajuanCount > 0 && <span className="text-indigo-700">🛠️ Pengajuan: {pengajuanCount}</span>}
       </div>
     </Link>
   );

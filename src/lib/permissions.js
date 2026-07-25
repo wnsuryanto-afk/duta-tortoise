@@ -39,7 +39,7 @@ export const NAV_ACCESS = {
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
     "operational-costs", "kritik-saran", "stock-gudang",
     "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
-    "approval-poin", "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli",
+    "approval-poin", "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -51,7 +51,7 @@ export const NAV_ACCESS = {
     "vet-contacts", "maintenance", "printer-config",
     "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
     "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
-    "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli",
+    "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja",
   ],
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
@@ -63,20 +63,20 @@ export const NAV_ACCESS = {
     "vet-contacts", "maintenance", "activity-log",
     "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
     "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
-    "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli",
+    "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja",
   ],
   kepala_feeder: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "sop", "treatment",
     "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran",
     "petty-cash", "stock-gudang", "warehouse", "feed-stock", "panduan-penyakit",
-    "kasbon", "salary-slip",
+    "kasbon", "salary-slip", "alat-kerja",
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "enclosure",
     "health", "sop", "treatment",
     "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran", "panduan-penyakit",
-    "kasbon", "salary-slip",
+    "kasbon", "salary-slip", "alat-kerja",
   ],
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",

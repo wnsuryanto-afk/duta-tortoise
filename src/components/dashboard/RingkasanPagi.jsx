@@ -10,6 +10,8 @@ import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { isBatchSegera, getNextMilestone } from "@/lib/breedingCalendarUtils";
 import HarusDibeliWidget from "@/components/dashboard/HarusDibeliWidget";
+import ToolLoanWidget from "@/components/dashboard/ToolLoanWidget";
+import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -145,8 +147,10 @@ export default function RingkasanPagi() {
         </div>
       )}
 
-      {/* 1.5 HARUS DIBELI */}
+      {/* 1.5 HARUS DIBELI + ALAT */}
       <HarusDibeliWidget />
+      <ToolLoanWidget />
+      <ToolRequestWidget />
 
       {/* 1.6 BATCH BREEDING SEGERA */}
       {segeraBatches.length > 0 && (

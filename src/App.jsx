@@ -20,6 +20,7 @@ import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
 import IncidentalTaskPage from '@/pages/IncidentalTaskPage';
 import DaftarBelanjaPage from '@/pages/DaftarBelanjaPage';
 import HarusDibeliPage from '@/pages/HarusDibeliPage';
+import AlatKerjaPage from '@/pages/AlatKerjaPage';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -143,6 +144,7 @@ const AuthenticatedApp = () => {
         <Route path="/tugas-insidentil" element={<IncidentalTaskPage />} />
         <Route path="/daftar-belanja" element={<DaftarBelanjaPage />} />
         <Route path="/harus-dibeli" element={<HarusDibeliPage />} />
+        <Route path="/alat-kerja" element={<AlatKerjaPage />} />
         <Route path="/incubator-readings" element={<IncubatorReadingPage />} />
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
         <Route path="/stock-gudang" element={<StockGudangPage />} />

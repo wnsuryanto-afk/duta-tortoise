@@ -38,6 +38,11 @@ export default function HarusDibeliPage() {
     queryFn: () => base44.entities.ShoppingList.filter({ status: "belum_dibeli" }, "-priority", 200),
     staleTime: 60 * 1000,
   });
+  const { data: toolRequests = [] } = useQuery({
+    queryKey: ["tool-requests-approved"],
+    queryFn: () => base44.entities.ToolRequest.filter({ status: "disetujui" }, "-request_date", 200),
+    staleTime: 60 * 1000,
+  });
 
   const skuMap = useMemo(() => {
     const m = {};
@@ -77,11 +82,40 @@ export default function HarusDibeliPage() {
     return items;
   }, [sopTasks, skuMap]);
 
-  // ── Source a: Stok menipis (current < minimum) ──
-  const stokMenipis = useMemo(() => {
+  // ── Source a1: Obat menipis (obat/vitamin/suplemen, current <= minimum) ──
+  const obatMenipis = useMemo(() => {
     const sopIds = new Set(sopTerganggu.map((i) => i.item_id).filter(Boolean));
     return warehouse
-      .filter((w) => (w.current_stock || 0) < (w.minimum_stock || 0) && !sopIds.has(w.id))
+      .filter((w) =>
+        ["obat", "vitamin", "suplemen"].includes(w.category) &&
+        (w.current_stock || 0) <= (w.minimum_stock || 0) &&
+        !sopIds.has(w.id)
+      )
+      .map((w) => ({
+        type: "warehouse",
+        item_id: w.id,
+        name: w.name,
+        sku: w.sku,
+        current_stock: w.current_stock || 0,
+        minimum_stock: w.minimum_stock || 0,
+        unit: w.unit,
+        category: w.category,
+        source: "obat_menipis",
+        source_label: "Obat menipis",
+        not_found: false,
+      }));
+  }, [warehouse, sopTerganggu]);
+
+  // ── Source a2: Stok menipis (non-medical, current < minimum) ──
+  const stokMenipis = useMemo(() => {
+    const sopIds = new Set(sopTerganggu.map((i) => i.item_id).filter(Boolean));
+    const obatIds = new Set(obatMenipis.map((i) => i.item_id).filter(Boolean));
+    return warehouse
+      .filter((w) =>
+        (w.current_stock || 0) < (w.minimum_stock || 0) &&
+        !sopIds.has(w.id) &&
+        !obatIds.has(w.id)
+      )
       .map((w) => ({
         type: "warehouse",
         item_id: w.id,
@@ -95,7 +129,7 @@ export default function HarusDibeliPage() {
         source_label: "Stok menipis",
         not_found: false,
       }));
-  }, [warehouse, sopTerganggu]);
+  }, [warehouse, sopTerganggu, obatMenipis]);
 
   // ── Source c: Tugas menunggu (ShoppingList belum_dibeli) ──
   const tugasMenunggu = useMemo(() => {
@@ -113,9 +147,27 @@ export default function HarusDibeliPage() {
     }));
   }, [shoppingList]);
 
-  // ── Combined: SOP terganggu → Stok menipis → Tugas menunggu ──
-  const allItems = [...sopTerganggu, ...stokMenipis, ...tugasMenunggu];
+  // ── Source d: Pengajuan karyawan (ToolRequest disetujui) ──
+  const pengajuanKaryawan = useMemo(() => {
+    return toolRequests.map((r) => ({
+      type: "tool_request",
+      tool_request_id: r.id,
+      name: r.tool_name,
+      jumlah: r.quantity || 1,
+      reason: r.reason,
+      requester: r.requester_name,
+      photo_url: r.photo_url,
+      source: "pengajuan_karyawan",
+      source_label: "Pengajuan karyawan",
+      not_found: false,
+    }));
+  }, [toolRequests]);
+
+  // ── Combined: SOP terganggu → Obat menipis → Stok menipis → Tugas menunggu → Pengajuan karyawan ──
+  const allItems = [...sopTerganggu, ...obatMenipis, ...stokMenipis, ...tugasMenunggu, ...pengajuanKaryawan];
   const sopCount = sopTerganggu.length;
+  const obatCount = obatMenipis.length;
+  const pengajuanCount = pengajuanKaryawan.length;
 
   if (!isManagerLevel(role)) return <AccessDenied />;
 
@@ -138,19 +190,37 @@ export default function HarusDibeliPage() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center">
-          <p className="text-2xl font-bold text-red-600 leading-none">{sopCount}</p>
-          <p className="text-[10px] text-red-700 mt-1">🔴 SOP terganggu</p>
-        </div>
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-center">
-          <p className="text-2xl font-bold text-amber-600 leading-none">{stokMenipis.length}</p>
-          <p className="text-[10px] text-amber-700 mt-1">⚠️ Stok menipis</p>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-center">
-          <p className="text-2xl font-bold text-blue-600 leading-none">{tugasMenunggu.length}</p>
-          <p className="text-[10px] text-blue-700 mt-1">📋 Tugas menunggu</p>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        {sopCount > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center min-w-[80px]">
+            <p className="text-2xl font-bold text-red-600 leading-none">{sopCount}</p>
+            <p className="text-[10px] text-red-700 mt-1">🔴 SOP terganggu</p>
+          </div>
+        )}
+        {obatCount > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-2.5 text-center min-w-[80px]">
+            <p className="text-2xl font-bold text-orange-600 leading-none">{obatCount}</p>
+            <p className="text-[10px] text-orange-700 mt-1">💊 Obat menipis</p>
+          </div>
+        )}
+        {stokMenipis.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-center min-w-[80px]">
+            <p className="text-2xl font-bold text-amber-600 leading-none">{stokMenipis.length}</p>
+            <p className="text-[10px] text-amber-700 mt-1">⚠️ Stok menipis</p>
+          </div>
+        )}
+        {tugasMenunggu.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-center min-w-[80px]">
+            <p className="text-2xl font-bold text-blue-600 leading-none">{tugasMenunggu.length}</p>
+            <p className="text-[10px] text-blue-700 mt-1">📋 Tugas menunggu</p>
+          </div>
+        )}
+        {pengajuanCount > 0 && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 text-center min-w-[80px]">
+            <p className="text-2xl font-bold text-indigo-600 leading-none">{pengajuanCount}</p>
+            <p className="text-[10px] text-indigo-700 mt-1">🛠️ Pengajuan</p>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -187,7 +257,7 @@ export default function HarusDibeliPage() {
                 qc.invalidateQueries({ queryKey: ["owner-warehouse"] });
                 qc.invalidateQueries({ queryKey: ["sop-tasks"] });
                 qc.invalidateQueries({ queryKey: ["shopping-list-belum"] });
-                qc.invalidateQueries({ queryKey: ["harus-dibeli-count"] });
+                qc.invalidateQueries({ queryKey: ["tool-requests-approved"] });
               }}
             />
           )}
@@ -199,21 +269,25 @@ export default function HarusDibeliPage() {
 
 function HarusDibeliRow({ item, onBought }) {
   const isSopGangguan = item.source === "sop_terganggu";
+  const isObatMenipis = item.source === "obat_menipis";
   const isStokMenipis = item.source === "stok_menipis";
+  const isPengajuan = item.source === "pengajuan_karyawan";
   const isNotFound = item.not_found;
 
   return (
-    <Card className={`p-3 ${isSopGangguan ? "border-red-300 bg-red-50/50" : isStokMenipis ? "border-amber-200 bg-amber-50/30" : "border-blue-200 bg-blue-50/30"}`}>
+    <Card className={`p-3 ${isSopGangguan ? "border-red-300 bg-red-50/50" : isObatMenipis ? "border-orange-300 bg-orange-50/50" : isStokMenipis ? "border-amber-200 bg-amber-50/30" : isPengajuan ? "border-indigo-200 bg-indigo-50/30" : "border-blue-200 bg-blue-50/30"}`}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-semibold text-sm">{item.name}</span>
             <Badge variant="outline" className={`text-[10px] ${
               isSopGangguan ? "bg-red-100 text-red-700 border-red-300" :
+              isObatMenipis ? "bg-orange-100 text-orange-700 border-orange-300" :
               isStokMenipis ? "bg-amber-100 text-amber-700 border-amber-300" :
+              isPengajuan ? "bg-indigo-100 text-indigo-700 border-indigo-300" :
               "bg-blue-100 text-blue-700 border-blue-300"
             }`}>
-              {isSopGangguan && "🔴 "}{item.source_label}
+              {isSopGangguan && "🔴 "}{isObatMenipis && "💊 "}{item.source_label}
             </Badge>
           </div>
 
@@ -223,7 +297,7 @@ function HarusDibeliRow({ item, onBought }) {
                 Stok: <span className={isNotFound ? "text-red-600 font-semibold" : "text-red-600 font-semibold"}>
                   {isNotFound ? "SKU tidak ditemukan" : `${item.current_stock} ${item.unit}`}
                 </span>
-                {isStokMenipis && ` / Min: ${item.minimum_stock} ${item.unit}`}
+                {(isStokMenipis || isObatMenipis) && ` / Min: ${item.minimum_stock} ${item.unit}`}
               </p>
               {isNotFound && (
                 <p className="text-amber-600">⚠️ Buat item ini di gudang dengan SKU {item.sku}</p>
@@ -236,6 +310,12 @@ function HarusDibeliRow({ item, onBought }) {
                   ))}
                 </div>
               )}
+            </div>
+          ) : item.type === "tool_request" ? (
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p>Jumlah: {item.jumlah} pcs</p>
+              <p>Alasan: {item.reason}</p>
+              <p>Diajukan oleh: {item.requester}</p>
             </div>
           ) : (
             <div className="text-xs text-muted-foreground space-y-0.5">

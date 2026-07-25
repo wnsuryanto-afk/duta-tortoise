@@ -97,6 +97,11 @@
       "type": "string",
       "format": "date-time",
       "description": "Waktu terakhir edit"
+    },
+    "last_restocked_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir kali stok diisi/restock"
     }
   },
   "required": [

@@ -1,0 +1,79 @@
+{
+  "name": "ToolRequest",
+  "type": "object",
+  "properties": {
+    "tool_name": {
+      "type": "string",
+      "description": "Nama alat yang diajukan"
+    },
+    "requester_name": {
+      "type": "string",
+      "description": "Nama pengaju"
+    },
+    "requester_email": {
+      "type": "string",
+      "description": "Email pengaju"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "rusak",
+        "hilang",
+        "perlu_tambahan"
+      ],
+      "description": "Alasan: rusak/hilang/perlu tambahan"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1,
+      "description": "Jumlah yang diajukan"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto alat rusak/hilang (WAJIB)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan"
+    },
+    "request_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "menunggu",
+        "disetujui",
+        "dibeli",
+        "ditolak"
+      ],
+      "default": "menunggu"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Nama yang menyetujui/menolak"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Alasan penolakan"
+    },
+    "shopping_list_id": {
+      "type": "string",
+      "description": "ID ShoppingList saat disetujui (auto-create)"
+    }
+  },
+  "required": [
+    "tool_name",
+    "requester_name",
+    "requester_email",
+    "reason",
+    "quantity",
+    "request_date",
+    "status"
+  ]
+}

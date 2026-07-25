@@ -29,15 +29,24 @@ export default function BoughtItemDialog({ item, onClose, onSaved }) {
           setSaving(false);
           return;
         }
-        await base44.entities.WarehouseItem.update(item.item_id, {
+        const updateData = {
           current_stock: val,
           last_edited_at: new Date().toISOString(),
-        });
+        };
+        if (val > (item.current_stock || 0)) {
+          updateData.last_restocked_date = format(new Date(), "yyyy-MM-dd");
+        }
+        await base44.entities.WarehouseItem.update(item.item_id, updateData);
         toast.success(`Stok ${item.name} diperbarui ke ${val} ${item.unit || ""}`);
       } else if (item.type === "shopping") {
         await base44.entities.ShoppingList.update(item.shopping_list_id, {
           status: "sudah_dibeli",
           tanggal_dibeli: format(new Date(), "yyyy-MM-dd"),
+        });
+        toast.success(`${item.name} ditandai sudah dibeli`);
+      } else if (item.type === "tool_request") {
+        await base44.entities.ToolRequest.update(item.tool_request_id, {
+          status: "dibeli",
         });
         toast.success(`${item.name} ditandai sudah dibeli`);
       }
@@ -56,6 +65,10 @@ export default function BoughtItemDialog({ item, onClose, onSaved }) {
         {item.type === "warehouse" ? (
           <p className="text-muted-foreground text-xs">
             Stok saat ini: <span className="font-medium text-red-600">{item.current_stock} {item.unit}</span>
+          </p>
+        ) : item.type === "tool_request" ? (
+          <p className="text-muted-foreground text-xs">
+            Jumlah: {item.jumlah} pcs · {item.reason || ""}
           </p>
         ) : (
           <p className="text-muted-foreground text-xs">
