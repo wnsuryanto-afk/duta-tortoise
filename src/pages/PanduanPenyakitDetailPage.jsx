@@ -9,6 +9,8 @@ import { ArrowLeft, Pencil, Package } from "lucide-react";
 import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "./PanduanPenyakitPage";
 import DiagnosisProtocolForm from "@/components/health/DiagnosisProtocolForm";
 import DiseaseImageGallery from "@/components/health/DiseaseImageGallery";
+import FotoPenyakitRequestButton from "@/components/health/FotoPenyakitRequestButton";
+import FotoPenyakitVerificationPanel from "@/components/health/FotoPenyakitVerificationPanel";
 
 export default function PanduanPenyakitDetailPage() {
   const { id } = useParams();
@@ -76,9 +78,12 @@ export default function PanduanPenyakitDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Katalog
         </Button>
         {canEdit && (
-          <Button variant="outline" onClick={() => setShowForm(true)} className="gap-2">
-            <Pencil className="w-4 h-4" /> Edit
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowForm(true)} className="gap-2">
+              <Pencil className="w-4 h-4" /> Edit
+            </Button>
+            <FotoPenyakitRequestButton protocol={protocol} />
+          </div>
         )}
       </div>
 
@@ -100,6 +105,9 @@ export default function PanduanPenyakitDetailPage() {
       <Card className="overflow-hidden">
         <DiseaseImageGallery protocol={protocol} />
       </Card>
+
+      {/* Verifikasi Foto Penyakit (owner only) */}
+      {canEdit && <FotoPenyakitVerificationPanel protocol={protocol} />}
 
       {/* Gejala */}
       {protocol.gejala_utama?.length > 0 && (
