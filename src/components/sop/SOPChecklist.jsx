@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, Clock, XCircle, Star, Send, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Star, Send, AlertTriangle, PackageX } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PhotoUploadWithWatermark from "./PhotoUploadWithWatermark";
@@ -33,11 +33,37 @@ export default function SOPChecklist() {
   const [taskPhotos, setTaskPhotos] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [generalNotes, setGeneralNotes] = useState("");
+  const [skipped, setSkipped] = useState({});
 
   const { data: tasks = [] } = useQuery({
     queryKey: ["sop-tasks"],
     queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
   });
+
+  const { data: warehouseItems = [] } = useQuery({
+    queryKey: ["owner-warehouse"],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 200),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const skuMap = useMemo(() => {
+    const m = {};
+    warehouseItems.forEach((w) => { if (w.sku) m[w.sku] = w; });
+    return m;
+  }, [warehouseItems]);
+
+  // Cek stok untuk task dengan required_skus
+  const getStockStatus = (task) => {
+    if (!task.required_skus || task.required_skus.length === 0) return null;
+    const emptyItems = [];
+    task.required_skus.forEach((sku) => {
+      const w = skuMap[sku];
+      if (!w || (w.current_stock || 0) <= 0) {
+        emptyItems.push(w?.name || sku);
+      }
+    });
+    return emptyItems.length > 0 ? { empty: true, items: emptyItems } : { empty: false };
+  };
 
   const { data: todayChecklist } = useQuery({
     queryKey: ["checklist-today", user?.email, today],
@@ -70,14 +96,16 @@ export default function SOPChecklist() {
     if (!user) return;
     setSubmitting(true);
     const completedTasks = tasks
-      .filter((t) => checked[t.id])
+      .filter((t) => checked[t.id] || skipped[t.id])
       .map((t) => ({
         task_id: t.id,
         task_title: t.title,
-        points: getTaskPoints(t),
+        points: skipped[t.id] ? 0 : getTaskPoints(t),
         notes: taskNotes[t.id] || "",
         photo_url: taskPhotos[t.id] || null,
         deadline_passed: isDeadlinePassed(t),
+        status: skipped[t.id] ? "skipped_no_stock" : "completed",
+        skip_reason: skipped[t.id] ? "Stok kosong" : null,
       }));
 
     await base44.entities.DailyChecklist.create({
@@ -187,7 +215,10 @@ export default function SOPChecklist() {
                     <Checkbox
                       id={task.id}
                       checked={!!checked[task.id]}
-                      onCheckedChange={(v) => setChecked((p) => ({ ...p, [task.id]: v }))}
+                      onCheckedChange={(v) => {
+                        setChecked((p) => ({ ...p, [task.id]: v }));
+                        if (v) setSkipped((p) => ({ ...p, [task.id]: false }));
+                      }}
                       className="mt-0.5"
                     />
                     <label htmlFor={task.id} className="flex-1 cursor-pointer">
@@ -211,7 +242,40 @@ export default function SOPChecklist() {
                       {task.deadline_time && isDeadlinePassed(task) && (
                         <p className="text-[11px] text-red-500 mt-0.5">⚠️ Batas waktu {task.deadline_time} sudah lewat — task ini tidak mendapat poin</p>
                       )}
+                      {(() => {
+                        const ss = getStockStatus(task);
+                        if (!ss || !ss.empty) return null;
+                        return (
+                          <p className="text-[11px] text-red-600 mt-0.5 flex items-center gap-1 font-medium">
+                            <PackageX className="w-3 h-3" /> ⏳ Stok kosong: {ss.items.join(", ")}
+                          </p>
+                        );
+                      })()}
                     </label>
+                    {(() => {
+                      const ss = getStockStatus(task);
+                      if (!ss || !ss.empty) return null;
+                      if (skipped[task.id]) {
+                        return (
+                          <span className="text-[11px] text-orange-600 font-medium flex items-center gap-1">
+                            <PackageX className="w-3 h-3" /> ⏭️ Dilewati - stok kosong
+                          </span>
+                        );
+                      }
+                      return (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-[11px] h-7 gap-1 text-orange-600 border-orange-300 hover:bg-orange-50"
+                          onClick={() => {
+                            setSkipped((p) => ({ ...p, [task.id]: true }));
+                            setChecked((p) => ({ ...p, [task.id]: false }));
+                          }}
+                        >
+                          <PackageX className="w-3 h-3" /> Dilewati - stok kosong
+                        </Button>
+                      );
+                    })()}
                   </div>
                   {checked[task.id] && (
                     <div className="ml-7 space-y-2">
@@ -261,11 +325,11 @@ export default function SOPChecklist() {
           />
           <Button
             onClick={handleSubmit}
-            disabled={submitting || Object.values(checked).filter(Boolean).length === 0}
+            disabled={submitting || (Object.values(checked).filter(Boolean).length === 0 && Object.values(skipped).filter(Boolean).length === 0)}
             className="w-full"
           >
             <Send className="w-4 h-4 mr-2" />
-            {submitting ? "Menyimpan..." : `Submit Checklist (${totalPoints} poin)`}
+            {submitting ? "Menyimpan..." : `Submit Checklist (${totalPoints} poin${Object.values(skipped).filter(Boolean).length > 0 ? `, ${Object.values(skipped).filter(Boolean).length} dilewati` : ""})`}
           </Button>
         </Card>
       )}

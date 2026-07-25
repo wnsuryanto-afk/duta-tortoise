@@ -47,6 +47,19 @@
           "photo_notes": {
             "type": "string",
             "description": "Catatan keeper saat upload foto bukti (opsional)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "skipped_no_stock"
+            ],
+            "default": "completed",
+            "description": "completed = task dikerjakan, skipped_no_stock = dilewati karena stok kosong"
+          },
+          "skip_reason": {
+            "type": "string",
+            "description": "Alasan skip (mis: Stok kosong)"
           }
         }
       },

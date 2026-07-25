@@ -84,6 +84,7 @@ const NAV_GROUPS = [
     color: "text-blue-500",
     items: [
       { path: "/stok-unified",  section: "stock-gudang", label: "Inventaris & Pergerakan", icon: LayoutGrid },
+      { path: "/harus-dibeli",  section: "harus-dibeli", label: "🛒 Harus Dibeli",         icon: ShoppingCart },
       { path: "/supplier",      section: "supplier",     label: "Pemasok",                icon: Truck },
     ],
   },

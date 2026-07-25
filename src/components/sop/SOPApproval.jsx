@@ -280,11 +280,12 @@ export default function SOPApproval() {
                         {tasks.map((t, i) => {
                           const isDup = dupSet.has(norm(t.task_title));
                           const checked = cm[i];
+                          const isSkipped = t.status === "skipped_no_stock";
                           return (
                             <div
                               key={i}
                               className={`flex items-start gap-3 p-2.5 rounded-lg border ${
-                                isDup ? "bg-amber-50 border-amber-300" : "bg-muted/30 border-border"
+                                isSkipped ? "bg-orange-50 border-orange-300" : isDup ? "bg-amber-50 border-amber-300" : "bg-muted/30 border-border"
                               }`}
                             >
                               {c.status === "submitted" && isOwner ? (
@@ -302,6 +303,9 @@ export default function SOPApproval() {
                                 <div className="flex items-center justify-between gap-2 flex-wrap">
                                   <span className="text-sm font-medium">{t.task_title || t.task_id}</span>
                                   <Badge variant="outline" className="text-amber-600 text-[11px]">+{t.points || 0} poin</Badge>
+                                  {isSkipped && (
+                                    <Badge className="bg-orange-100 text-orange-700 text-[10px]">⏭️ Dilewati - stok kosong</Badge>
+                                  )}
                                 </div>
                                 {isDup && (
                                   <p className="text-[11px] text-amber-700 font-semibold mt-0.5 flex items-center gap-1">

@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { isBatchSegera, getNextMilestone } from "@/lib/breedingCalendarUtils";
+import HarusDibeliWidget from "@/components/dashboard/HarusDibeliWidget";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -144,7 +145,10 @@ export default function RingkasanPagi() {
         </div>
       )}
 
-      {/* 1.5 BATCH BREEDING SEGERA */}
+      {/* 1.5 HARUS DIBELI */}
+      <HarusDibeliWidget />
+
+      {/* 1.6 BATCH BREEDING SEGERA */}
       {segeraBatches.length > 0 && (
         <Link to="/breeding-calendar" className="block bg-amber-50 border border-amber-300 rounded-xl p-3 hover:bg-amber-100 transition-colors">
           <p className="text-sm font-bold text-amber-800">

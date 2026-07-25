@@ -1,0 +1,274 @@
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { isManagerLevel } from "@/lib/permissions";
+import AccessDenied from "@/components/common/AccessDenied";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  ShoppingCart, PackageX, AlertTriangle, Clock, Loader2, CheckCircle2,
+} from "lucide-react";
+import BoughtItemDialog from "@/components/pettycash/BoughtItemDialog";
+
+const fmtRp = (n) => "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
+
+export default function HarusDibeliPage() {
+  const { role } = useCurrentUser();
+  const qc = useQueryClient();
+  const [boughtItem, setBoughtItem] = useState(null);
+
+  const { data: warehouse = [], isLoading: wLoading } = useQuery({
+    queryKey: ["owner-warehouse"],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 200),
+    staleTime: 2 * 60 * 1000,
+  });
+  const { data: sopTasks = [], isLoading: tLoading } = useQuery({
+    queryKey: ["sop-tasks"],
+    queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
+    staleTime: 2 * 60 * 1000,
+  });
+  const { data: shoppingList = [], isLoading: sLoading } = useQuery({
+    queryKey: ["shopping-list-belum"],
+    queryFn: () => base44.entities.ShoppingList.filter({ status: "belum_dibeli" }, "-priority", 200),
+    staleTime: 60 * 1000,
+  });
+
+  const skuMap = useMemo(() => {
+    const m = {};
+    warehouse.forEach((w) => { if (w.sku) m[w.sku] = w; });
+    return m;
+  }, [warehouse]);
+
+  // ── Source b: SOP terganggu (prioritas tertinggi) ──
+  const sopTerganggu = useMemo(() => {
+    const skuToTasks = {};
+    sopTasks.forEach((task) => {
+      (task.required_skus || []).forEach((sku) => {
+        if (!skuToTasks[sku]) skuToTasks[sku] = [];
+        skuToTasks[sku].push(task.title);
+      });
+    });
+    const items = [];
+    Object.entries(skuToTasks).forEach(([sku, titles]) => {
+      const w = skuMap[sku];
+      if (!w || (w.current_stock || 0) <= 0) {
+        items.push({
+          type: "warehouse",
+          item_id: w?.id,
+          name: w?.name || `SKU: ${sku}`,
+          sku,
+          current_stock: w?.current_stock || 0,
+          minimum_stock: w?.minimum_stock || 0,
+          unit: w?.unit || "",
+          category: w?.category,
+          source: "sop_terganggu",
+          source_label: "SOP terganggu",
+          task_titles: titles,
+          not_found: !w,
+        });
+      }
+    });
+    return items;
+  }, [sopTasks, skuMap]);
+
+  // ── Source a: Stok menipis (current < minimum) ──
+  const stokMenipis = useMemo(() => {
+    const sopIds = new Set(sopTerganggu.map((i) => i.item_id).filter(Boolean));
+    return warehouse
+      .filter((w) => (w.current_stock || 0) < (w.minimum_stock || 0) && !sopIds.has(w.id))
+      .map((w) => ({
+        type: "warehouse",
+        item_id: w.id,
+        name: w.name,
+        sku: w.sku,
+        current_stock: w.current_stock || 0,
+        minimum_stock: w.minimum_stock || 0,
+        unit: w.unit,
+        category: w.category,
+        source: "stok_menipis",
+        source_label: "Stok menipis",
+        not_found: false,
+      }));
+  }, [warehouse, sopTerganggu]);
+
+  // ── Source c: Tugas menunggu (ShoppingList belum_dibeli) ──
+  const tugasMenunggu = useMemo(() => {
+    return shoppingList.map((s) => ({
+      type: "shopping",
+      shopping_list_id: s.id,
+      name: s.nama_barang,
+      jumlah: s.jumlah,
+      satuan: s.satuan,
+      priority: s.priority,
+      harga_est: s.total_est || s.harga_est_per_unit || 0,
+      source: "tugas_menunggu",
+      source_label: "Tugas menunggu",
+      not_found: false,
+    }));
+  }, [shoppingList]);
+
+  // ── Combined: SOP terganggu → Stok menipis → Tugas menunggu ──
+  const allItems = [...sopTerganggu, ...stokMenipis, ...tugasMenunggu];
+  const sopCount = sopTerganggu.length;
+
+  if (!isManagerLevel(role)) return <AccessDenied />;
+
+  const loading = wLoading || tLoading || sLoading;
+
+  return (
+    <div className="max-w-3xl space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <ShoppingCart className="w-6 h-6 text-primary" />
+          <div>
+            <h1 className="text-lg font-bold font-heading">🛒 Harus Dibeli</h1>
+            <p className="text-xs text-muted-foreground">
+              {allItems.length} barang perlu dibeli
+              {sopCount > 0 && ` · ${sopCount} mengganggu SOP`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center">
+          <p className="text-2xl font-bold text-red-600 leading-none">{sopCount}</p>
+          <p className="text-[10px] text-red-700 mt-1">🔴 SOP terganggu</p>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-center">
+          <p className="text-2xl font-bold text-amber-600 leading-none">{stokMenipis.length}</p>
+          <p className="text-[10px] text-amber-700 mt-1">⚠️ Stok menipis</p>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-center">
+          <p className="text-2xl font-bold text-blue-600 leading-none">{tugasMenunggu.length}</p>
+          <p className="text-[10px] text-blue-700 mt-1">📋 Tugas menunggu</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-7 h-7 text-primary animate-spin" />
+        </div>
+      ) : allItems.length === 0 ? (
+        <Card className="p-8 text-center">
+          <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-500" />
+          <p className="font-semibold text-green-700">Semua aman!</p>
+          <p className="text-sm text-muted-foreground mt-1">Tidak ada barang yang perlu dibeli sekarang.</p>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {allItems.map((item, idx) => (
+            <HarusDibeliRow key={idx} item={item} onBought={() => setBoughtItem(item)} />
+          ))}
+        </div>
+      )}
+
+      {/* Bought Item Dialog */}
+      <Dialog open={!!boughtItem} onOpenChange={(v) => !v && setBoughtItem(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-primary" /> Sudah Dibeli
+            </DialogTitle>
+          </DialogHeader>
+          {boughtItem && (
+            <BoughtItemDialog
+              item={boughtItem}
+              onClose={() => setBoughtItem(null)}
+              onSaved={() => {
+                qc.invalidateQueries({ queryKey: ["owner-warehouse"] });
+                qc.invalidateQueries({ queryKey: ["sop-tasks"] });
+                qc.invalidateQueries({ queryKey: ["shopping-list-belum"] });
+                qc.invalidateQueries({ queryKey: ["harus-dibeli-count"] });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function HarusDibeliRow({ item, onBought }) {
+  const isSopGangguan = item.source === "sop_terganggu";
+  const isStokMenipis = item.source === "stok_menipis";
+  const isNotFound = item.not_found;
+
+  return (
+    <Card className={`p-3 ${isSopGangguan ? "border-red-300 bg-red-50/50" : isStokMenipis ? "border-amber-200 bg-amber-50/30" : "border-blue-200 bg-blue-50/30"}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="font-semibold text-sm">{item.name}</span>
+            <Badge variant="outline" className={`text-[10px] ${
+              isSopGangguan ? "bg-red-100 text-red-700 border-red-300" :
+              isStokMenipis ? "bg-amber-100 text-amber-700 border-amber-300" :
+              "bg-blue-100 text-blue-700 border-blue-300"
+            }`}>
+              {isSopGangguan && "🔴 "}{item.source_label}
+            </Badge>
+          </div>
+
+          {item.type === "warehouse" ? (
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p>
+                Stok: <span className={isNotFound ? "text-red-600 font-semibold" : "text-red-600 font-semibold"}>
+                  {isNotFound ? "SKU tidak ditemukan" : `${item.current_stock} ${item.unit}`}
+                </span>
+                {isStokMenipis && ` / Min: ${item.minimum_stock} ${item.unit}`}
+              </p>
+              {isNotFound && (
+                <p className="text-amber-600">⚠️ Buat item ini di gudang dengan SKU {item.sku}</p>
+              )}
+              {isSopGangguan && item.task_titles && (
+                <div className="mt-1">
+                  <p className="text-red-600 font-medium">Dibutuhkan task:</p>
+                  {item.task_titles.map((t, i) => (
+                    <p key={i} className="text-[11px] text-red-700 ml-2">• {t}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p>Jumlah: {item.jumlah} {item.satuan}</p>
+              {item.priority && (
+                <p className={item.priority === "segera" ? "text-red-600 font-medium" : ""}>
+                  Prioritas: {item.priority}
+                </p>
+              )}
+              {item.harga_est > 0 && <p>Estimasi: {fmtRp(item.harga_est)}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Checkbox "Sudah dibeli" */}
+        <div className="flex flex-col items-center gap-1">
+          {isNotFound ? (
+            <Button size="sm" variant="outline" className="text-xs gap-1" onClick={onBought}>
+              <PackageX className="w-3.5 h-3.5" /> Buat
+            </Button>
+          ) : (
+            <label className="flex flex-col items-center gap-1 cursor-pointer">
+              <Checkbox
+                checked={false}
+                onCheckedChange={(v) => v && onBought()}
+              />
+              <span className="text-[10px] text-muted-foreground text-center leading-tight">
+                Sudah<br />dibeli
+              </span>
+            </label>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
