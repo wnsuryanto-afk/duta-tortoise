@@ -8,6 +8,7 @@ import { Loader2, ClipboardPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
+import { getCareIcon } from "@/lib/careIconUtils";
 
 const TRIGGER_SEVERITIES = ["sedang", "berat", "kritis"];
 
@@ -140,23 +141,30 @@ export default function CareTaskSuggestionPanel({
         Kura: <strong>{tortoiseCode || tortoiseName}</strong> · Severity: {severity}
       </p>
 
-      <div className="space-y-1">
-        {items.map((it) => (
-          <label
-            key={it.key}
-            className="flex items-start gap-2 cursor-pointer hover:bg-white/40 rounded-lg p-1.5"
-          >
-            <Checkbox
-              checked={!unchecked[it.key]}
-              onCheckedChange={() => toggle(it.key)}
-              className="mt-0.5"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs">{it.item}</p>
-              <p className="text-[10px] text-muted-foreground">{it.diagnosisName}</p>
-            </div>
-          </label>
-        ))}
+      <div className="space-y-1.5">
+        {items.map((it, idx) => {
+          const icon = getCareIcon(it.item);
+          return (
+            <label
+              key={it.key}
+              className="flex items-start gap-2.5 cursor-pointer hover:bg-white/50 rounded-lg p-2 border border-transparent hover:border-border transition-colors"
+            >
+              <Checkbox
+                checked={!unchecked[it.key]}
+                onCheckedChange={() => toggle(it.key)}
+                className="mt-0.5 flex-shrink-0"
+              />
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1B4332]/10 text-[#1B4332] flex items-center justify-center text-xs font-bold">
+                {idx + 1}
+              </span>
+              <span className="text-lg flex-shrink-0 leading-tight">{icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs leading-relaxed">{it.item}</p>
+                <p className="text-[10px] text-muted-foreground">{it.diagnosisName}</p>
+              </div>
+            </label>
+          );
+        })}
       </div>
 
       <Button
