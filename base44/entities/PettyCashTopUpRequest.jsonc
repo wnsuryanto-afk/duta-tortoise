@@ -1,0 +1,70 @@
+{
+  "name": "PettyCashTopUpRequest",
+  "type": "object",
+  "properties": {
+    "requester_email": {
+      "type": "string",
+      "description": "Email yang mengajukan top-up"
+    },
+    "requester_name": {
+      "type": "string",
+      "description": "Nama yang mengajukan"
+    },
+    "amount_requested": {
+      "type": "number",
+      "description": "Nominal top-up yang diminta (Rp)"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Alasan singkat (mis: kas menipis, sisa 150rb)"
+    },
+    "request_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "transfer_proof_url": {
+      "type": "string",
+      "description": "URL bukti transfer (screenshot m-banking)"
+    },
+    "transfer_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal transfer"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Nama owner yang menyetujui/menolak"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Alasan penolakan"
+    },
+    "ledger_entry_id": {
+      "type": "string",
+      "description": "ID PettyCashLedger top_up entry (anti-dobel)"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "requester_email",
+    "requester_name",
+    "amount_requested",
+    "reason",
+    "request_date"
+  ]
+}

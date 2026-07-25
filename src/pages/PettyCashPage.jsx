@@ -20,6 +20,8 @@ import TopUpForm from "@/components/pettycash/TopUpForm";
 import PemakaianForm from "@/components/pettycash/PemakaianForm";
 import RekonsiliasiForm from "@/components/pettycash/RekonsiliasiForm";
 import LedgerHistory from "@/components/pettycash/LedgerHistory";
+import TopUpRequestForm from "@/components/pettycash/TopUpRequestForm";
+import TopUpRequestList from "@/components/pettycash/TopUpRequestList";
 
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
@@ -133,10 +135,17 @@ export default function PettyCashPage() {
     queryFn: () => base44.entities.User.list(),
   });
 
+  const { data: topupRequests = [] } = useQuery({
+    queryKey: ["petty-cash-topup-requests"],
+    queryFn: () => base44.entities.PettyCashTopUpRequest.list("-request_date", 200),
+  });
+  const topupPendingCount = topupRequests.filter(r => r.status === "pending").length;
+
   const [showTopUp, setShowTopUp] = useState(false);
   const [showPemakaian, setShowPemakaian] = useState(false);
   const [showRekonsiliasi, setShowRekonsiliasi] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showTopUpRequestForm, setShowTopUpRequestForm] = useState(false);
 
   const currentSaldo = useMemo(() => {
     if (ledger.length === 0) return 0;
@@ -151,6 +160,7 @@ export default function PettyCashPage() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["petty-cash-ledger"] });
     qc.invalidateQueries({ queryKey: ["petty-cash-requests"] });
+    qc.invalidateQueries({ queryKey: ["petty-cash-topup-requests"] });
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });
   };
 
@@ -239,6 +249,11 @@ export default function PettyCashPage() {
               <Button onClick={() => setShowTopUp(true)} className="gap-2 bg-green-600 hover:bg-green-700">
                 <Plus className="w-4 h-4" /> Isi Saldo
               </Button>
+              {(role === "admin" || role === "manajer") && (
+                <Button onClick={() => setShowTopUpRequestForm(true)} variant="outline" className="gap-2">
+                  <Banknote className="w-4 h-4" /> Request Top-up
+                </Button>
+              )}
               <Button onClick={() => setShowPemakaian(true)} variant="destructive" className="gap-2">
                 <Minus className="w-4 h-4" /> Catat Pemakaian
               </Button>
@@ -260,6 +275,12 @@ export default function PettyCashPage() {
             Request Dana
             {waitingCount > 0 && <span className="ml-1.5 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">{waitingCount}</span>}
           </TabsTrigger>
+          {isOwnerAdminManajer && (
+            <TabsTrigger value="topup-request">
+              Top-up Request
+              {topupPendingCount > 0 && <span className="ml-1.5 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">{topupPendingCount}</span>}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* LEDGER TAB */}
@@ -316,6 +337,13 @@ export default function PettyCashPage() {
             </>
           )}
         </TabsContent>
+
+        {/* TOPUP REQUEST TAB */}
+        {isOwnerAdminManajer && (
+          <TabsContent value="topup-request" className="mt-4">
+            <TopUpRequestList isOwner={role === "owner"} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* ── DIALOGS ── */}
@@ -344,6 +372,13 @@ export default function PettyCashPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><Wallet className="w-5 h-5 text-primary" /> Request Kas Kecil</DialogTitle></DialogHeader>
           <RequestForm user={user} role={role} users={users} onClose={() => setShowRequestForm(false)} onSaved={invalidate} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showTopUpRequestForm} onOpenChange={setShowTopUpRequestForm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Banknote className="w-5 h-5 text-primary" /> Request Top-up Kas</DialogTitle></DialogHeader>
+          <TopUpRequestForm user={user} onClose={() => setShowTopUpRequestForm(false)} onSaved={invalidate} />
         </DialogContent>
       </Dialog>
     </div>

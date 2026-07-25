@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/useImageCompression";
 
 const QUICK_AMOUNTS = [500000, 1000000, 2000000];
 
@@ -13,6 +14,24 @@ export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [proofUrl, setProofUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const compressed = await compressImage(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1280, quality: 0.8 });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
+      setProofUrl(file_url);
+    } catch (err) {
+      toast.error("Gagal upload: " + (err?.message || ""));
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSave = async () => {
     const amt = Number(amount);
@@ -26,6 +45,7 @@ export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }
         balance_after: balanceAfter,
         entry_date: entryDate,
         description: description || "Top up kas kecil",
+        proof_photo: proofUrl || undefined,
         recorded_by_name: user?.full_name || user?.email,
         recorded_by_email: user?.email,
         recorded_by_role: role,
@@ -63,9 +83,27 @@ export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }
         <Label className="text-xs">Sumber / Keterangan</Label>
         <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="cth: Tarik dari rekening BCA" className="mt-1" />
       </div>
+      <div>
+        <Label className="text-xs">Bukti Transfer (opsional)</Label>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+        {proofUrl ? (
+          <div className="relative mt-1 inline-block w-full">
+            <img src={proofUrl} alt="bukti transfer" className="w-full max-h-40 object-contain rounded-lg border" />
+            <button type="button" onClick={() => setProofUrl("")} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+            className="mt-1 w-full border-2 border-dashed border-border rounded-lg p-3 text-center hover:border-primary/40 hover:bg-primary/5 transition-colors">
+            {uploading ? <Loader2 className="w-5 h-5 mx-auto animate-spin text-muted-foreground" /> : <ImagePlus className="w-5 h-5 mx-auto text-muted-foreground" />}
+            <p className="text-xs text-muted-foreground mt-1">{uploading ? "Mengupload..." : "Upload bukti (opsional)"}</p>
+          </button>
+        )}
+      </div>
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button className="flex-1" onClick={handleSave} disabled={saving || !amount}>
+        <Button className="flex-1" onClick={handleSave} disabled={saving || uploading || !amount}>
           {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Isi Saldo
         </Button>
       </div>
