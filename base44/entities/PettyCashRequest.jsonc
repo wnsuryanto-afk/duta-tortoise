@@ -68,6 +68,27 @@
       "type": "string",
       "format": "date"
     },
+    "disbursement_method": {
+      "type": "string",
+      "enum": [
+        "transfer",
+        "tunai"
+      ],
+      "description": "Metode pencairan: transfer (dengan bukti) atau tunai"
+    },
+    "disbursement_proof_url": {
+      "type": "string",
+      "description": "URL bukti transfer (screenshot m-banking)"
+    },
+    "disbursement_proof_uploaded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu upload bukti transfer"
+    },
+    "disbursement_proof_uploaded_by": {
+      "type": "string",
+      "description": "Nama yang mengupload bukti transfer"
+    },
     "notes": {
       "type": "string"
     }

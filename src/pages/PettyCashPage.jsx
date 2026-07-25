@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Wallet, Plus, Minus, Scale, Clock, CheckCircle2, XCircle, Banknote, TrendingDown } from "lucide-react";
+import { Wallet, Plus, Minus, Scale, Clock, CheckCircle2, XCircle, Banknote, TrendingDown, ImagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -22,6 +22,7 @@ import RekonsiliasiForm from "@/components/pettycash/RekonsiliasiForm";
 import LedgerHistory from "@/components/pettycash/LedgerHistory";
 import TopUpRequestForm from "@/components/pettycash/TopUpRequestForm";
 import TopUpRequestList from "@/components/pettycash/TopUpRequestList";
+import DisburseProofDialog from "@/components/pettycash/DisburseProofDialog";
 
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
@@ -146,6 +147,9 @@ export default function PettyCashPage() {
   const [showRekonsiliasi, setShowRekonsiliasi] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showTopUpRequestForm, setShowTopUpRequestForm] = useState(false);
+  const [disburseTarget, setDisburseTarget] = useState(null);
+  const [addProofTarget, setAddProofTarget] = useState(null);
+  const [proofPreview, setProofPreview] = useState(null);
 
   const currentSaldo = useMemo(() => {
     if (ledger.length === 0) return 0;
@@ -164,14 +168,9 @@ export default function PettyCashPage() {
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });
   };
 
-  // Disburse: update status only, NO FinanceTransaction (cegah dobel — pemakaian resmi lewat ledger)
-  const handleDisburse = async (req) => {
-    await base44.entities.PettyCashRequest.update(req.id, {
-      status: "dicairkan",
-      disbursement_date: new Date().toISOString().split("T")[0],
-    });
-    invalidate();
-    toast.success("Dicairkan. Catat sebagai pemakaian di Kas Kecil untuk masuk Laba Rugi.");
+  // Disburse: buka dialog upload bukti transfer (owner wajib ditawarkan, boleh lewati untuk tunai)
+  const handleDisburse = (req) => {
+    setDisburseTarget(req);
   };
 
   const handleApprove = async (req, approved) => {
@@ -221,6 +220,31 @@ export default function PettyCashPage() {
             </div>
           )}
         </div>
+        {req.status === "dicairkan" && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+            {req.disbursement_proof_url ? (
+              <>
+                <button type="button" onClick={() => setProofPreview({ url: req.disbursement_proof_url, uploaded_at: req.disbursement_proof_uploaded_at, by: req.disbursement_proof_uploaded_by })}>
+                  <img src={req.disbursement_proof_url} alt="bukti transfer" className="w-12 h-12 rounded-lg object-cover border hover:opacity-80 transition-opacity" />
+                </button>
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground">Bukti transfer</p>
+                  <p>{req.disbursement_method === "tunai" ? "Tunai" : "Transfer"}{req.disbursement_proof_uploaded_by ? ` · ${req.disbursement_proof_uploaded_by}` : ""}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                {canApproveRequest ? (
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setAddProofTarget(req)}>
+                    <ImagePlus className="w-3.5 h-3.5" /> Tambah bukti transfer
+                  </Button>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">Belum ada bukti transfer</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </Card>
     );
   };
@@ -379,6 +403,55 @@ export default function PettyCashPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><Banknote className="w-5 h-5 text-primary" /> Request Top-up Kas</DialogTitle></DialogHeader>
           <TopUpRequestForm user={user} onClose={() => setShowTopUpRequestForm(false)} onSaved={invalidate} />
+        </DialogContent>
+      </Dialog>
+
+      {/* DISBURSE WITH PROOF DIALOG */}
+      <Dialog open={!!disburseTarget} onOpenChange={(v) => !v && setDisburseTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Banknote className="w-5 h-5 text-primary" /> Cairkan Dana</DialogTitle></DialogHeader>
+          {disburseTarget && (
+            <DisburseProofDialog
+              request={disburseTarget}
+              mode="disburse"
+              user={user}
+              onClose={() => setDisburseTarget(null)}
+              onSaved={invalidate}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ADD PROOF TO ALREADY-DISBURSED REQUEST */}
+      <Dialog open={!!addProofTarget} onOpenChange={(v) => !v && setAddProofTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><ImagePlus className="w-5 h-5 text-primary" /> Tambah Bukti Transfer</DialogTitle></DialogHeader>
+          {addProofTarget && (
+            <DisburseProofDialog
+              request={addProofTarget}
+              mode="add_proof"
+              user={user}
+              onClose={() => setAddProofTarget(null)}
+              onSaved={invalidate}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* PROOF PHOTO PREVIEW (large image + upload date) */}
+      <Dialog open={!!proofPreview} onOpenChange={(v) => !v && setProofPreview(null)}>
+        <DialogContent className="max-w-md p-2">
+          {proofPreview && (
+            <div className="space-y-2">
+              <img src={proofPreview.url} alt="bukti transfer" className="w-full rounded-lg" />
+              <p className="text-xs text-muted-foreground text-center">
+                Diunggah: {proofPreview.uploaded_at
+                  ? format(new Date(proofPreview.uploaded_at), "d MMM yyyy, HH:mm", { locale: id })
+                  : "—"}
+                {proofPreview.by ? ` · ${proofPreview.by}` : ""}
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
