@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, X, RotateCcw, Heart, CalendarDays } from "lucide-react";
+import { Plus, Search, Filter, X, RotateCcw, Heart, CalendarDays, BookOpen } from "lucide-react";
+import DiagnosisProtocolPanel from "@/components/health/DiagnosisProtocolPanel";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { id } from "date-fns/locale";
 import HealthForm from "@/components/health/HealthForm";
@@ -29,6 +30,7 @@ export default function HealthList() {
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedGuide, setExpandedGuide] = useState(null);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("semua");
@@ -253,6 +255,22 @@ export default function HealthList() {
                     {perms.canDelete && <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive" onClick={() => handleDelete(r)}>Hapus</Button>}
                   </div>
                 </div>
+                {(r.diagnosis || r.diagnoses)?.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-border">
+                    <button
+                      onClick={() => setExpandedGuide(expandedGuide === r.id ? null : r.id)}
+                      className="text-xs text-[#1B4332] font-medium hover:underline flex items-center gap-1"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      Panduan Penanganan {expandedGuide === r.id ? "▲" : "▼"}
+                    </button>
+                    {expandedGuide === r.id && (
+                      <div className="mt-2">
+                        <DiagnosisProtocolPanel diagnoses={r.diagnosis || r.diagnoses} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </Card>
             );
           })}

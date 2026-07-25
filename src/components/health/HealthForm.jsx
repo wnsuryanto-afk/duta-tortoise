@@ -11,6 +11,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import DiagnosisPanel, { DIAGNOSIS_CATEGORIES } from "./DiagnosisPanel";
+import DiagnosisProtocolPanel from "./DiagnosisProtocolPanel";
 import DosisKalkulator from "./DosisKalkulator";
 import TreatmentItemsPicker from "./TreatmentItemsPicker";
 import TortoiseSearchSelect from "./TortoiseSearchSelect";
@@ -270,6 +271,9 @@ export default function HealthForm({ open, onClose, editData }) {
               </div>
             )}
           </div>
+
+          {/* Panduan Penanganan otomatis berdasarkan diagnosis */}
+          <DiagnosisProtocolPanel diagnoses={selectedDiagnoses} protocols={diagnosisProtocols} />
 
           {/* Tingkat Keparahan */}
           <div className="space-y-2">
