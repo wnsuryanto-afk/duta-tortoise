@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { waitUntil } from "base44:runtime";
+import {
+  sendWhatsAppNotification,
+  getEmployeePhone,
+} from "../../shared/whatsapp.ts";
 
 // Dipanggil via entity automation saat SalarySlip dibuat atau status berubah
 Deno.serve(async (req) => {
@@ -134,6 +139,26 @@ Deno.serve(async (req) => {
           is_dismissed: false,
           created_at: now,
         });
+
+        // ── WhatsApp notification ke karyawan ──
+        waitUntil(
+          (async () => {
+            const phone = await getEmployeePhone(base44, slip.employee_email);
+            if (!phone) return;
+            const waMessage =
+              `💸 *Gaji Ditransfer*\n\n` +
+              `Periode: ${bulan}\n` +
+              `Jumlah: ${fmtRp(slip.net_total)}\n` +
+              (slip.payment_proof_url ? `Bukti transfer tersedia di aplikasi.\n` : '') +
+              `\nBuka aplikasi → menu *Slip Gaji* untuk detail.`;
+            await sendWhatsAppNotification(base44, {
+              targets: [phone],
+              message: waMessage,
+              notificationType: 'salary_paid',
+              relatedEntityId: slip.id,
+            });
+          })()
+        );
       }
     }
 

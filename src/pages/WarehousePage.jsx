@@ -13,7 +13,9 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { formatRp } from "@/lib/skuUtils";
 import StockItemForm from "@/components/stock/StockItemForm";
-import StockTransactionDialog from "@/components/stock/StockTransactionDialog";
+import BarangMasukDialog from "@/components/stock/BarangMasukDialog";
+import BarangKeluarDialog from "@/components/stock/BarangKeluarDialog";
+import RiwayatTransaksiTab from "@/components/stock/RiwayatTransaksiTab";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import NiimbotLabelGenerator from "@/components/stock/NiimbotLabelGenerator";
 import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
@@ -54,6 +56,7 @@ export default function WarehousePage() {
   const isAdmin = ["admin", "owner", "manajer"].includes(role);
   const isKeeperOnly = role === "keeper";
   const canReportBroken = ["keeper", "kepala_feeder"].includes(role);
+  const canTransact = ["owner", "manajer", "admin", "kepala_feeder", "keeper"].includes(role);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["warehouse-items"],
@@ -83,8 +86,9 @@ export default function WarehousePage() {
   const [generatingSKU, setGeneratingSKU] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [txItem, setTxItem] = useState(null);
-  const [txInitialType, setTxInitialType] = useState("masuk");
+  const [txPresetItem, setTxPresetItem] = useState(null);
+  const [showBarangMasuk, setShowBarangMasuk] = useState(false);
+  const [showBarangKeluar, setShowBarangKeluar] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
   const [labelItems, setLabelItems] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
@@ -96,6 +100,7 @@ export default function WarehousePage() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+    qc.invalidateQueries({ queryKey: ["stock-movements"] });
     qc.invalidateQueries({ queryKey: ["warehouse-transactions"] });
   };
 
@@ -130,8 +135,8 @@ export default function WarehousePage() {
     const found = items.find((i) => (i.sku || "").toUpperCase() === sku.toUpperCase());
     if (found) {
       setScanResult(null);
-      setTxItem(found);
-      setTxInitialType("keluar");
+      setTxPresetItem(found);
+      setShowBarangKeluar(true);
     } else {
       setScanResult({ notFound: true, sku });
     }
@@ -147,6 +152,16 @@ export default function WarehousePage() {
           <p className="text-xs text-muted-foreground mt-0.5">💡 Untuk pakan harian, gunakan menu <span className="font-medium">Stok Pakan</span></p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {canTransact && (
+            <Button onClick={() => { setTxPresetItem(null); setShowBarangMasuk(true); }} className="gap-2 bg-green-600 hover:bg-green-700">
+              <ArrowUpCircle className="w-4 h-4" /> 📥 Barang Masuk
+            </Button>
+          )}
+          {canTransact && (
+            <Button onClick={() => { setTxPresetItem(null); setShowBarangKeluar(true); }} className="gap-2 bg-red-500 hover:bg-red-600">
+              <ArrowDownCircle className="w-4 h-4" /> 📤 Barang Keluar
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowScanner(true)} className="gap-2">
             <QrCode className="w-4 h-4" /> Scan Barang
           </Button>
@@ -281,16 +296,18 @@ export default function WarehousePage() {
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}>
-                        {!isKeeperOnly && (
+                        {canTransact && (
                           <Button size="sm" variant="outline" className="h-8 text-xs gap-1"
-                            onClick={() => { setTxItem(item); setTxInitialType("masuk"); }}>
+                            onClick={() => { setTxPresetItem(item); setShowBarangMasuk(true); }}>
                             <ArrowUpCircle className="w-3.5 h-3.5 text-green-600" />
                           </Button>
                         )}
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1"
-                          onClick={() => { setTxItem(item); setTxInitialType("keluar"); }}>
-                          <ArrowDownCircle className="w-3.5 h-3.5 text-red-500" />
-                        </Button>
+                        {canTransact && (
+                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1"
+                            onClick={() => { setTxPresetItem(item); setShowBarangKeluar(true); }}>
+                            <ArrowDownCircle className="w-3.5 h-3.5 text-red-500" />
+                          </Button>
+                        )}
                         {isAdmin && incomplete && (
                           <Button size="sm" variant="outline" className="h-8 text-xs gap-1 border-yellow-400 text-yellow-700 hover:bg-yellow-50"
                             onClick={() => { setEditItem(item); setShowForm(true); }}>
@@ -337,34 +354,8 @@ export default function WarehousePage() {
           )}
         </TabsContent>
 
-        <TabsContent value="riwayat" className="mt-4 space-y-3">
-          {movements.length === 0 ? (
-            <p className="text-center py-10 text-muted-foreground">Belum ada transaksi</p>
-          ) : (
-            <div className="space-y-2">
-              {movements.slice(0, 100).map((tx) => (
-                <Card key={tx.id} className="p-3 flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tx.type === "masuk" ? "bg-green-100" : "bg-red-100"}`}>
-                    {tx.type === "masuk" ? <ArrowUpCircle className="w-4 h-4 text-green-600" /> : <ArrowDownCircle className="w-4 h-4 text-red-500" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{tx.item_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {tx.quantity} {tx.unit}{tx.notes ? ` · ${tx.notes}` : ""}{tx.by_name ? ` · ${tx.by_name}` : ""}
-                    </p>
-                    {tx.status === "menunggu_approval" && <span className="text-[10px] text-orange-700 font-semibold">⏳ Menunggu Approval</span>}
-                    {tx.status === "ditolak" && <span className="text-[10px] text-red-600 font-semibold">❌ Ditolak</span>}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className={`text-sm font-semibold ${tx.type === "masuk" ? "text-green-600" : "text-red-500"}`}>
-                      {tx.type === "masuk" ? "+" : "-"}{tx.quantity} {tx.unit}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{tx.date && format(new Date(tx.date), "d MMM", { locale: id })}</p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+        <TabsContent value="riwayat" className="mt-4">
+          <RiwayatTransaksiTab movements={movements} items={items} role={role} onRefresh={invalidate} />
         </TabsContent>
       </Tabs>
 
@@ -376,17 +367,35 @@ export default function WarehousePage() {
           onClose={() => { setShowForm(false); setEditItem(null); }} />
       )}
 
-      {txItem && (
-        <StockTransactionDialog item={txItem} itemType="warehouse" user={user} role={role}
-          threshold={threshold} initialType={txInitialType}
-          onClose={(refreshed) => { setTxItem(null); if (refreshed) invalidate(); }} />
+      {showBarangMasuk && (
+        <BarangMasukDialog
+          items={items}
+          user={user}
+          role={role}
+          presetItem={txPresetItem}
+          onAddNew={() => { setShowBarangMasuk(false); setEditItem(null); setShowForm(true); }}
+          onScan={() => { setShowBarangMasuk(false); setShowScanner(true); }}
+          onClose={(refreshed) => { setShowBarangMasuk(false); setTxPresetItem(null); if (refreshed) invalidate(); }}
+        />
+      )}
+
+      {showBarangKeluar && (
+        <BarangKeluarDialog
+          items={items}
+          user={user}
+          role={role}
+          presetItem={txPresetItem}
+          onAddNew={() => { setShowBarangKeluar(false); setEditItem(null); setShowForm(true); }}
+          onScan={() => { setShowBarangKeluar(false); setShowScanner(true); }}
+          onClose={(refreshed) => { setShowBarangKeluar(false); setTxPresetItem(null); if (refreshed) invalidate(); }}
+        />
       )}
 
       {detailItem && (
         <ItemDetailDialog item={detailItem} itemType="warehouse" role={role} open={!!detailItem}
           onClose={() => setDetailItem(null)}
           onEdit={() => { setEditItem(detailItem); setDetailItem(null); setShowForm(true); }}
-          onTransaction={() => { setTxItem(detailItem); setTxInitialType("masuk"); setDetailItem(null); }}
+          onTransaction={() => { setTxPresetItem(detailItem); setShowBarangMasuk(true); setDetailItem(null); }}
           onLabel={() => { setLabelItems([detailItem]); setDetailItem(null); }} />
       )}
 

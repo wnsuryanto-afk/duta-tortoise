@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { waitUntil } from "base44:runtime";
+import {
+  sendWhatsAppNotification,
+  getPhoneNumbersForRoles,
+} from "../../shared/whatsapp.ts";
 
 // Dipanggil otomatis via entity automation saat HealthRecord baru dibuat
 Deno.serve(async (req) => {
@@ -59,6 +64,27 @@ Deno.serve(async (req) => {
         created_at: now,
       });
     }
+
+    // ── WhatsApp notification ke Owner + Manajer ──
+    waitUntil(
+      (async () => {
+        const phones = await getPhoneNumbersForRoles(base44, ['owner', 'manajer']);
+        if (phones.length === 0) return;
+        const waMessage =
+          `🤒 *Laporan Kura Sakit*\n\n` +
+          `Kura: ${record.tortoise_name}\n` +
+          `Kandang: ${record.enclosure || '?'}\n` +
+          `Pelapor: ${reporterName}\n` +
+          `Gejala: ${gejalaText}\n\n` +
+          `Buka aplikasi → menu *Rekam Kesehatan* untuk detail.`;
+        await sendWhatsAppNotification(base44, {
+          targets: phones,
+          message: waMessage,
+          notificationType: 'sick_report',
+          relatedEntityId: record.id,
+        });
+      })()
+    );
 
     return Response.json({ success: true, notified: targets.length });
   } catch (error) {

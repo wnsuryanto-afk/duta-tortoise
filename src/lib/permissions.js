@@ -40,6 +40,7 @@ export const NAV_ACCESS = {
     "operational-costs", "kritik-saran", "stock-gudang",
     "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
     "approval-poin", "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja",
+    "pengaturan-whatsapp", "log-whatsapp",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",

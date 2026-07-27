@@ -8,7 +8,7 @@ import {
   LayoutGrid, GitBranch, Skull, Home,
   TrendingUp, Zap, AlertTriangle, Truck, ClipboardCheck,
   Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight, Leaf, Salad,
-  ShoppingCart, Wrench
+  ShoppingCart, Wrench, MessageCircle
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -164,6 +164,8 @@ const NAV_GROUPS = [
       { path: "/users",              section: "users",              label: "Manajemen User",      icon: Users },
       { path: "/users",              section: "users-readonly",     label: "Direktori User",      icon: Users },
       { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem", icon: Settings },
+      { path: "/pengaturan-whatsapp", section: "pengaturan-whatsapp", label: "Pengaturan WhatsApp", icon: MessageCircle },
+      { path: "/log-whatsapp", section: "log-whatsapp", label: "Log WhatsApp", icon: MessageCircle },
     ],
   },
 ];

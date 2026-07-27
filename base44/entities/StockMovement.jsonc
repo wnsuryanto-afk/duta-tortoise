@@ -46,6 +46,38 @@
       "default": 0,
       "description": "Nilai total (qty x harga)"
     },
+    "total_purchase_price": {
+      "type": "number",
+      "default": 0,
+      "description": "Harga beli total (untuk barang masuk)"
+    },
+    "stock_after": {
+      "type": "number",
+      "description": "Sisa stok setelah transaksi ini"
+    },
+    "keperluan": {
+      "type": "string",
+      "enum": [
+        "pemberian_pakan",
+        "pengobatan_kura",
+        "kebersihan",
+        "perbaikan",
+        "lainnya"
+      ],
+      "description": "Keperluan pengambilan (untuk barang keluar)"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Sumber/supplier barang (untuk barang masuk)"
+    },
+    "enclosure_name": {
+      "type": "string",
+      "description": "Kandang tujuan (opsional, untuk barang keluar)"
+    },
+    "tortoise_code": {
+      "type": "string",
+      "description": "Kode kura tujuan (opsional, untuk barang keluar)"
+    },
     "by_email": {
       "type": "string",
       "description": "Email user yang melakukan"
@@ -87,7 +119,8 @@
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Foto nota/bukti transaksi"
     },
     "migrated_from_item_usage": {
       "type": "boolean",

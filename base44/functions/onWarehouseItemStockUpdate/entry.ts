@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { waitUntil } from "base44:runtime";
+import {
+  sendWhatsAppNotification,
+  getPhoneNumbersForRoles,
+} from "../../shared/whatsapp.ts";
 
 // Dipanggil via entity automation saat WarehouseItem diupdate.
 // Deteksi saat item obat/vitamin/suplemen MELINTASI batas minimum (dari atas ke bawah)
@@ -69,6 +74,25 @@ Deno.serve(async (req) => {
         created_at: now,
       });
     }
+
+    // ── WhatsApp notification ke Owner + Manajer + Admin ──
+    waitUntil(
+      (async () => {
+        const phones = await getPhoneNumbersForRoles(base44, ['owner', 'manajer', 'admin']);
+        if (phones.length === 0) return;
+        const waMessage =
+          `💊 *Stok ${statusLabel}*\n\n` +
+          `Barang: ${item.name}${item.sku ? ` (${item.sku})` : ''}\n` +
+          `Stok: ${newStock} ${unit} (min: ${minStock} ${unit})\n\n` +
+          `Buka aplikasi → menu *Harus Dibeli* untuk restock.`;
+        await sendWhatsAppNotification(base44, {
+          targets: phones,
+          message: waMessage,
+          notificationType: 'low_stock',
+          relatedEntityId: item.id,
+        });
+      })()
+    );
 
     return Response.json({ success: true, recipients: recipients.length });
   } catch (error) {

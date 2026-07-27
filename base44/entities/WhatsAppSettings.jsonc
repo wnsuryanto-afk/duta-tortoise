@@ -1,0 +1,113 @@
+{
+  "name": "WhatsAppSettings",
+  "type": "object",
+  "properties": {
+    "setting_key": {
+      "type": "string",
+      "default": "main",
+      "description": "Key unik (selalu 'main') untuk single-record pattern"
+    },
+    "fonnte_token": {
+      "type": "string",
+      "description": "Token API Fonnte \u2014 dibaca server-side oleh backend function"
+    },
+    "phone_owner": {
+      "type": "string",
+      "description": "Nomor WhatsApp Owner (format 08xxx atau 62xxx)"
+    },
+    "phone_manajer": {
+      "type": "string",
+      "description": "Nomor WhatsApp Manajer"
+    },
+    "phone_admin": {
+      "type": "string",
+      "description": "Nomor WhatsApp Admin"
+    },
+    "employee_phones": {
+      "type": "array",
+      "description": "Daftar nomor WhatsApp per karyawan",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notif_daily_approval": {
+      "type": "boolean",
+      "default": true,
+      "description": "Pengingat harian checklist menunggu approval (17:30)"
+    },
+    "notif_sick_report": {
+      "type": "boolean",
+      "default": true,
+      "description": "Laporan kura sakit baru \u2192 Owner + Manajer"
+    },
+    "notif_low_stock": {
+      "type": "boolean",
+      "default": true,
+      "description": "Stok obat/suplemen menyentuh minimum \u2192 Owner + Manajer + Admin"
+    },
+    "notif_salary_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Gaji ditandai dibayar \u2192 karyawan ybs"
+    },
+    "notif_incidental_task": {
+      "type": "boolean",
+      "default": false,
+      "description": "Tugas insidentil baru \u2192 karyawan yang ditugaskan"
+    },
+    "notif_tool_request": {
+      "type": "boolean",
+      "default": false,
+      "description": "Laporan alat rusak / pengajuan barang \u2192 Owner + Manajer"
+    },
+    "daily_reminder_last_sent": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir pengingat harian dikirim (anti dobel)"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "Email user terakhir edit"
+    }
+  },
+  "required": [
+    "setting_key"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

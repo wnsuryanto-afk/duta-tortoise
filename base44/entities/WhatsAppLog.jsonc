@@ -1,0 +1,80 @@
+{
+  "name": "WhatsAppLog",
+  "type": "object",
+  "properties": {
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu pesan dikirim/dicoba"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Daftar nomor tujuan"
+    },
+    "notification_type": {
+      "type": "string",
+      "enum": [
+        "daily_approval",
+        "sick_report",
+        "low_stock",
+        "salary_paid",
+        "incidental_task",
+        "tool_request",
+        "test_send"
+      ],
+      "description": "Jenis notifikasi"
+    },
+    "message_preview": {
+      "type": "string",
+      "description": "Isi pesan (dipotong 200 karakter)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "terkirim",
+        "gagal",
+        "skipped"
+      ],
+      "default": "gagal",
+      "description": "Status pengiriman"
+    },
+    "error_reason": {
+      "type": "string",
+      "description": "Alasan gagal/skipped (kosong jika terkirim)"
+    },
+    "related_entity_id": {
+      "type": "string",
+      "description": "ID entity terkait untuk anti-spam"
+    }
+  },
+  "required": [
+    "sent_at",
+    "notification_type",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}
