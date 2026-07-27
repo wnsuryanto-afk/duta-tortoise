@@ -78,6 +78,37 @@ export default function SOPChecklist() {
     enabled: !!user?.email,
   });
 
+  // Semua log hari ini (semua karyawan) untuk penguncian task "bersama"
+  const { data: allLogsToday = [] } = useQuery({
+    queryKey: ["sop-checklist-all-logs", today],
+    queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today }),
+    staleTime: 30 * 1000,
+  });
+
+  const allDoneMap = useMemo(() => {
+    const m = {};
+    (allLogsToday || []).forEach(l => {
+      if (l.item_id && l.is_done !== false) {
+        m[l.item_id] = { done_by: l.done_by, done_at: l.done_at, done_by_email: l.done_by_email };
+      }
+    });
+    return m;
+  }, [allLogsToday]);
+
+  const getLockInfo = (task) => {
+    if (task.assigned_to_email && task.assigned_to_email !== user?.email) {
+      return { type: "assigned", name: task.assigned_to_name || task.assigned_to_email };
+    }
+    const scope = task.task_scope || "bersama";
+    if (scope === "bersama") {
+      const done = allDoneMap[`sop_${task.id}`];
+      if (done && done.done_by_email !== user?.email) {
+        return { type: "done", name: done.done_by || "karyawan lain", time: done.done_at || "" };
+      }
+    }
+    return null;
+  };
+
   // Check if a task's deadline has passed
   const isDeadlinePassed = (task) => {
     if (!task.deadline_time) return false;
@@ -89,15 +120,15 @@ export default function SOPChecklist() {
 
   const totalPoints = useMemo(() => {
     return tasks
-      .filter((t) => checked[t.id])
+      .filter((t) => checked[t.id] && !getLockInfo(t))
       .reduce((sum, t) => sum + getTaskPoints(t), 0);
-  }, [tasks, checked]);
+  }, [tasks, checked, allDoneMap]);
 
   const handleSubmit = async () => {
     if (!user) return;
     setSubmitting(true);
     const completedTasks = tasks
-      .filter((t) => checked[t.id] || skipped[t.id])
+      .filter((t) => (checked[t.id] || skipped[t.id]) && !getLockInfo(t))
       .map((t) => ({
         task_id: t.id,
         task_title: t.title,
@@ -210,17 +241,22 @@ export default function SOPChecklist() {
               </CardTitle>
             </CardHeader>
             <CardContent className="px-5 pb-4 space-y-3">
-              {catTasks.map((task) => (
+              {catTasks.map((task) => {
+                const lockInfo = getLockInfo(task);
+                const isLocked = !!lockInfo;
+                return (
                 <div key={task.id} className="space-y-1.5">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id={task.id}
                       checked={!!checked[task.id]}
+                      disabled={isLocked}
                       onCheckedChange={(v) => {
+                        if (isLocked) return;
                         setChecked((p) => ({ ...p, [task.id]: v }));
                         if (v) setSkipped((p) => ({ ...p, [task.id]: false }));
                       }}
-                      className="mt-0.5"
+                      className={`mt-0.5 ${isLocked ? "opacity-40" : ""}`}
                     />
                     <label htmlFor={task.id} className="flex-1 cursor-pointer">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -242,6 +278,14 @@ export default function SOPChecklist() {
                       )}
                       {task.deadline_time && isDeadlinePassed(task) && (
                         <p className="text-[11px] text-red-500 mt-0.5">⚠️ Batas waktu {task.deadline_time} sudah lewat — task ini tidak mendapat poin</p>
+                      )}
+                      {isLocked && (
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {lockInfo.type === "done"
+                            ? `✅ Sudah dikerjakan ${lockInfo.name}${lockInfo.time ? ` · ${lockInfo.time}` : ""}`
+                            : `👤 Tugas ${lockInfo.name}`
+                          }
+                        </p>
                       )}
                       {(() => {
                         const ss = getStockStatus(task);
@@ -304,7 +348,8 @@ export default function SOPChecklist() {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         );

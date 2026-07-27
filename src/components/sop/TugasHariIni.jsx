@@ -16,8 +16,9 @@ import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   CheckCircle2, Clock, Users, ChevronDown, ChevronUp,
-  Camera, Plus, Loader2, Check, X, Star, Salad
+  Camera, Plus, Loader2, Check, X, Star, Salad, Lock
 } from "lucide-react";
+import { toast } from "sonner";
 import ExtraTaskForm from "./ExtraTaskForm";
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
@@ -90,9 +91,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const { data: allLogsToday = [], refetch: refetchAllLogs } = useQuery({
     queryKey: ["tugas-hari-ini-all-logs", today],
     queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today }),
-    enabled: showTeamView,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
   });
+
+  // Map: item_id → { done_by, done_at, done_by_email } dari SEMUA karyawan hari ini
+  // Untuk penguncian task "bersama" — siapa cepat dia dapat, terkunci untuk yang lain
+  const allDoneMap = useMemo(() => {
+    const m = {};
+    (allLogsToday || []).forEach(l => {
+      if (l.item_id && l.is_done !== false) {
+        m[l.item_id] = { done_by: l.done_by, done_at: l.done_at, done_by_email: l.done_by_email };
+      }
+    });
+    return m;
+  }, [allLogsToday]);
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-timbang-reminder", today],
@@ -227,6 +239,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           badge: t.category,
           badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
           require_photo: t.require_photo || false,
+          task_scope: t.task_scope || "bersama",
+          assigned_to_email: t.assigned_to_email || "",
+          assigned_to_name: t.assigned_to_name || "",
         });
       });
     return items;
@@ -264,10 +279,42 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     return m;
   }, [showTeam, allLogsToday]);
 
+  // Cek apakah task terkunci untuk user ini (dikerjakan orang lain / ditugaskan ke orang lain)
+  const getLockInfo = (task) => {
+    // Structural tasks (absensi) tidak pernah terkunci
+    if (task.structural || ABSENSI_IDS.has(task.id) || task.noCheck) return null;
+    // Penugasan khusus: hanya orang yang ditugaskan yang bisa centang
+    if (task.assigned_to_email && task.assigned_to_email !== user?.email) {
+      return { type: "assigned", name: task.assigned_to_name || task.assigned_to_email };
+    }
+    // Task "bersama": siapa cepat dia dapat — terkunci jika sudah dikerjakan orang lain
+    const scope = task.task_scope || "bersama";
+    if (scope === "bersama") {
+      const done = allDoneMap[task.id];
+      if (done && done.done_by_email !== user?.email) {
+        return { type: "done", name: done.done_by || "karyawan lain", time: done.done_at || "" };
+      }
+    }
+    return null;
+  };
+
   // ── Handlers ──
   const handleCheck = async (task) => {
     if (task.noCheck || ABSENSI_IDS.has(task.id)) return;
     if (savingId) return; // anti double-tap
+
+    // Validasi penguncian (race condition protection — dua orang menekan bersamaan)
+    const lock = getLockInfo(task);
+    if (lock) {
+      if (lock.type === "done") {
+        toast.error(`Tidak bisa: sudah dikerjakan ${lock.name}${lock.time ? ` · ${lock.time}` : ""}`);
+      } else {
+        toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
+      }
+      // Refresh data agar locking terbaru terlihat
+      refetchAllLogs();
+      return;
+    }
 
     const alreadyDone = checkedIds.has(task.id);
 
@@ -516,6 +563,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             showTeam={showTeam}
             requirePhoto={task.require_photo}
             isUkurRotasi={task.isUkurRotasi}
+            lockInfo={getLockInfo(task)}
             onCheck={() => handleCheck(task)}
             onUkurCheck={() => setUkurTarget(task)}
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
@@ -575,14 +623,15 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes }) {
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, lockInfo, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
   const [showPhoto, setShowPhoto] = useState(false);
+  const isLocked = !!lockInfo;
 
   const handleClick = () => {
-    if (isIstirahat || isAbsensi || isSaving) return;
+    if (isIstirahat || isAbsensi || isSaving || isLocked) return;
     if (isUkurRotasi && !isChecked) {
       onUkurCheck();
       return;
@@ -595,13 +644,18 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
   };
 
   return (
-    <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isChecked ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm`}>
-      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
+    <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isLocked ? "border-gray-200 bg-gray-50" : isChecked ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm`}>
+      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi && !isLocked ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
         <span className="text-xs font-bold text-gray-400 w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <p className={`text-sm font-semibold ${isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
+            <p className={`text-sm font-semibold ${isLocked ? "text-gray-400" : isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
+            {isLocked && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-500 flex-shrink-0">
+                {lockInfo.type === "done" ? "🔒 Terkunci" : "👤 Ditugaskan"}
+              </span>
+            )}
             {requirePhoto && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex-shrink-0">📷 Wajib Foto</span>
             )}
@@ -651,6 +705,16 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
               ))}
             </div>
           )}
+
+          {/* Lock info — "Sudah dikerjakan [Nama] · [jam]" atau "Tugas [Nama]" */}
+          {isLocked && (
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              {lockInfo.type === "done"
+                ? `✅ Sudah dikerjakan ${lockInfo.name}${lockInfo.time ? ` · ${lockInfo.time}` : ""}`
+                : `👤 Tugas ${lockInfo.name}`
+              }
+            </p>
+          )}
         </div>
 
         {/* Actions */}
@@ -665,8 +729,14 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
 
           {/* Checkbox */}
           {!isIstirahat && (
-            <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${isChecked ? "bg-green-500 border-green-500" : isAbsensi ? "border-gray-200 bg-gray-50" : requirePhoto ? "border-red-300 hover:border-red-400" : "border-gray-300 hover:border-green-400"} ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving) handleClick(); }}>
-              {isChecked && <CheckCircle2 className="w-4 h-4 text-white" />}
+            <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
+              isLocked ? "border-gray-200 bg-gray-100"
+              : isChecked ? "bg-green-500 border-green-500"
+              : isAbsensi ? "border-gray-200 bg-gray-50"
+              : requirePhoto ? "border-red-300 hover:border-red-400"
+              : "border-gray-300 hover:border-green-400"
+            } ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving && !isLocked) handleClick(); }}>
+              {isLocked ? <Lock className="w-3.5 h-3.5 text-gray-400" /> : isChecked ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
             </div>
           )}
         </div>

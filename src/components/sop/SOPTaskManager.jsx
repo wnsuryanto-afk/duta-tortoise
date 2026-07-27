@@ -37,6 +37,7 @@ const DEFAULT_FORM = {
   weekly_days: [], monthly_dates: [],
   target_enclosures: [], target_tortoise_ids: [], target_tortoise_names: [],
   require_photo: false,
+  assigned_to_email: "", assigned_to_name: "",
 };
 
 function ToggleChip({ label, selected, onClick }) {
@@ -140,6 +141,13 @@ export default function SOPTaskManager() {
 
   const enclosures = [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort();
 
+  const { data: employees = [] } = useQuery({
+    queryKey: ["sop-task-employees"],
+    queryFn: () => base44.entities.User.list(),
+    staleTime: 10 * 60 * 1000,
+  });
+  const staffEmployees = employees.filter(u => ["keeper", "kepala_feeder", "admin", "manajer"].includes(u.role));
+
   const openNew = () => { setForm(DEFAULT_FORM); setEditData(null); setShowForm(true); };
   const openEdit = (t) => {
     setForm({
@@ -149,6 +157,8 @@ export default function SOPTaskManager() {
       target_enclosures: t.target_enclosures || [],
       target_tortoise_ids: t.target_tortoise_ids || [],
       target_tortoise_names: t.target_tortoise_names || [],
+      assigned_to_email: t.assigned_to_email || "",
+      assigned_to_name: t.assigned_to_name || "",
     });
     setEditData(t);
     setShowForm(true);
@@ -274,6 +284,11 @@ export default function SOPTaskManager() {
                     )}
                     {t.deadline_time && (
                       <span className="text-[11px] text-red-500 font-medium">⏰ {t.deadline_time}</span>
+                    )}
+                    {t.assigned_to_name && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                        👤 {t.assigned_to_name}
+                      </span>
                     )}
                   </div>
                   {t.description && <p className="text-xs text-muted-foreground mt-1">{t.description}</p>}
@@ -440,6 +455,31 @@ export default function SOPTaskManager() {
                 {(form.target_tortoise_ids || []).length > 0 && (
                   <p className="text-xs text-primary mt-1">{form.target_tortoise_ids.length} kura-kura dipilih</p>
                 )}
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1 block">Ditugaskan khusus ke (kosong = siapa saja)</label>
+                <Select
+                  value={form.assigned_to_email || "__anyone__"}
+                  onValueChange={v => {
+                    if (v === "__anyone__") {
+                      setForm(p => ({ ...p, assigned_to_email: "", assigned_to_name: "" }));
+                    } else {
+                      const emp = employees.find(e => e.email === v);
+                      setForm(p => ({ ...p, assigned_to_email: v, assigned_to_name: emp?.full_name || emp?.email || "" }));
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__anyone__">Siapa saja (rebutan sehat)</SelectItem>
+                    {staffEmployees.map(e => (
+                      <SelectItem key={e.id} value={e.email}>
+                        {e.full_name || e.email} ({e.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex gap-2 pt-2">

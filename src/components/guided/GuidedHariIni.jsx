@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   MapPin, Leaf, Heart, LogOut, CheckCircle2, AlertTriangle,
-  Smile, Star, Bell, X, Package, ChevronDown, ChevronUp, ClipboardList
+  Smile, Star, Bell, X, Package, ChevronDown, ChevronUp, ClipboardList, Lock
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
@@ -170,6 +170,22 @@ export default function GuidedHariIni({ user }) {
     enabled: !!user?.email,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Semua log kebersihan hari ini (semua karyawan) — untuk penguncian per-kandang
+  const { data: allKebersihanLogs = [] } = useQuery({
+    queryKey: ["kebersihan-all-logs", today],
+    queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today, item_id: "kebersihan" }),
+    staleTime: 30 * 1000,
+  });
+  const allKandangDoneMap = useMemo(() => {
+    const m = {};
+    allKebersihanLogs.forEach(l => {
+      if (l.enclosure_id && l.is_done !== false) {
+        m[l.enclosure_id] = { done_by: l.done_by, done_at: l.done_at, done_by_email: l.done_by_email };
+      }
+    });
+    return m;
+  }, [allKebersihanLogs]);
 
   const { data: treatmentSchedules = [] } = useQuery({
     queryKey: ["treatment-schedules-active"],
@@ -373,6 +389,12 @@ export default function GuidedHariIni({ user }) {
     const alreadySaved = kandangSaved.has(k);
     if (alreadySaved) {
       setKandangDone(p => { const n = new Set(p); n.delete(k); return n; });
+      return;
+    }
+    // VALIDASI PENGEKUNCIAN: cek apakah kandang ini sudah dikerjakan orang lain
+    const lockByOther = allKandangDoneMap[k];
+    if (lockByOther && lockByOther.done_by_email !== user.email) {
+      showMsg("warn", `${k} sudah dibersihkan ${lockByOther.done_by}${lockByOther.done_at ? ` · ${lockByOther.done_at}` : ""}`);
       return;
     }
     // ANTI-DOBEL: cek apakah sudah ada log kebersihan untuk kandang ini hari ini
@@ -684,16 +706,23 @@ export default function GuidedHariIni({ user }) {
               {KANDANG_LIST.map(k => {
                 const done = kandangDone.has(k);
                 const isPending = pendingKandang === k;
+                const lockByOther = allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email && !done;
                 return (
                   <button
                     key={k}
                     onClick={() => handleToggleKandang(k)}
-                    className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all active:scale-90 ${
-                      done ? "bg-green-500 text-white shadow-md" : isPending ? "bg-amber-100 text-amber-600 animate-pulse" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    disabled={lockByOther}
+                    title={lockByOther ? `Sudah dibersihkan ${allKandangDoneMap[k].done_by} · ${allKandangDoneMap[k].done_at || ""}` : ""}
+                    className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all ${
+                      done ? "bg-green-500 text-white shadow-md active:scale-90"
+                      : lockByOther ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : isPending ? "bg-amber-100 text-amber-600 animate-pulse active:scale-90"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-90"
                     }`}
                   >
-                    {done && <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" />}
-                    {k}
+                    {done ? <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" /> : lockByOther ? <Lock className="w-3 h-3 mb-0.5" /> : null}
+                    <span>{k}</span>
+                    {lockByOther && <span className="text-[7px] font-normal mt-0.5 truncate w-full text-center px-0.5">{(allKandangDoneMap[k].done_by || "").split(" ")[0]}</span>}
                   </button>
                 );
               })}

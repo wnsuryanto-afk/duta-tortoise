@@ -12,8 +12,12 @@ import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 
 export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhotoReason } = {}) {
-  if (task.status === "done") return; // anti-dobel
-  if (task.material_status === "waiting_materials") {
+  // Re-fetch untuk race condition protection (dua orang klaim bersamaan)
+  const fresh = await base44.entities.IncidentalTask.get(task.id);
+  if (fresh.status === "done") {
+    throw new Error(`sudah dikerjakan ${fresh.done_by_name || "karyawan lain"}`);
+  }
+  if (fresh.material_status === "waiting_materials") {
     throw new Error("Tugas masih menunggu barang tersedia");
   }
 

@@ -170,6 +170,26 @@ export default function SOPApproval() {
     setProcessing((p) => ({ ...p, [c.id]: false }));
   };
 
+  // Ringkasan beban per karyawan dari checklist yang tampil
+  const employeeStats = useMemo(() => {
+    const stats = {};
+    checklists.forEach(c => {
+      const key = c.employee_email || c.employee_name;
+      if (!stats[key]) {
+        stats[key] = { name: c.employee_name, email: c.employee_email, tasks: 0, points: 0 };
+      }
+      stats[key].tasks += (c.completed_tasks || []).length;
+      stats[key].points += c.status === "approved" ? (c.approved_points || 0) : (c.total_points_claimed || 0);
+    });
+    const arr = Object.values(stats);
+    const totalPoints = arr.reduce((s, e) => s + e.points, 0);
+    return arr.map(e => ({ ...e, percentage: totalPoints > 0 ? Math.round((e.points / totalPoints) * 100) : 0 }));
+  }, [checklists]);
+
+  const maxPoints = Math.max(...employeeStats.map(e => e.points), 0);
+  const hasImbalance = employeeStats.length > 1 && maxPoints > 0 &&
+    employeeStats.some(e => e.points > 0 && e.points < maxPoints * 0.7);
+
   const filters = [["submitted", "Menunggu"], ["approved", "Disetujui"], ["rejected", "Ditolak"], ["all", "Semua"]];
 
   return (
@@ -211,6 +231,28 @@ export default function SOPApproval() {
           </Button>
         ))}
       </div>
+
+      {/* Ringkasan beban per karyawan */}
+      {employeeStats.length > 0 && (
+        <div className={`rounded-xl border p-3 space-y-2 ${hasImbalance ? "bg-yellow-50 border-yellow-300" : "bg-muted/30 border-border"}`}>
+          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+            <ListChecks className="w-3 h-3" /> Ringkasan Beban Periode Berjalan
+            {hasImbalance && <span className="text-yellow-700 ml-1">⚠ Selisih &gt;30%</span>}
+          </p>
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(employeeStats.length, 3)}, minmax(0, 1fr))` }}>
+            {employeeStats.map(e => {
+              const isImbalanced = hasImbalance && e.points > 0 && e.points < maxPoints * 0.7;
+              return (
+                <div key={e.email || e.name} className={`rounded-lg border p-2.5 text-center ${isImbalanced ? "bg-yellow-100 border-yellow-400" : "bg-background border-border"}`}>
+                  <p className="text-xs font-semibold truncate">{e.name}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{e.tasks} task · {e.points} poin · {e.percentage}%</p>
+                  {isImbalanced && <p className="text-[10px] text-yellow-700 mt-0.5">⚠ Beban rendah</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* List */}
       {isLoading ? (
