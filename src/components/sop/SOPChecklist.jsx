@@ -58,7 +58,8 @@ export default function SOPChecklist() {
     const emptyItems = [];
     task.required_skus.forEach((sku) => {
       const w = skuMap[sku];
-      if (!w || (w.current_stock || 0) <= 0) {
+      const isUnavailable = !w || (w.current_stock || 0) <= 0 || w.condition === "rusak_berat" || w.condition === "hilang";
+      if (isUnavailable) {
         emptyItems.push(w?.name || sku);
       }
     });

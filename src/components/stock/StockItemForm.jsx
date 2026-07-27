@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { generateSKU, getPrefix } from "@/lib/skuUtils";
@@ -62,12 +63,13 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
     notes: "",
     supplier: "",
     is_mandatory: false,
-    ...(isFeed ? { daily_ideal: 0, storage_location: "gudang", conversion_notes: "" } : { location: "gudang_utama" }),
+    ...(isFeed ? { daily_ideal: 0, storage_location: "gudang", conversion_notes: "" } : { location: "gudang_utama", condition: "baik", condition_note: "", condition_photo_url: "", needs_replacement: false }),
   };
 
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingCondPhoto, setUploadingCondPhoto] = useState(false);
   const [dupWarning, setDupWarning] = useState(null); // "exact" | "similar" | null
   const [dupItems, setDupItems] = useState([]);
   const [pakanWarning, setPakanWarning] = useState(false);
@@ -131,6 +133,15 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
     setUploadingPhoto(false);
   };
 
+  const handleCondPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCondPhoto(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    set("condition_photo_url", file_url);
+    setUploadingCondPhoto(false);
+  };
+
   const handleRegenerateSKU = () => {
     const prefix = getPrefix(form.category);
     set("sku", generateSKU(prefix, allSkus));
@@ -150,6 +161,10 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
       last_edited_by: user?.email || "",
       last_edited_at: now,
     };
+    if (!isFeed && form.condition && form.condition !== "baik") {
+      payload.condition_reported_by = user?.full_name || user?.email || "";
+      payload.condition_reported_at = new Date().toISOString().split("T")[0];
+    }
     if (isFeed) {
       payload.price_per_unit = Number(form.price_per_unit) || 0;
       payload.daily_ideal = Number(form.daily_ideal) || 0;
@@ -353,6 +368,65 @@ export default function StockItemForm({ open, itemType, editData, user, allSkus 
             <Input value={form.notes || ""} onChange={(e) => set("notes", e.target.value)}
               placeholder="Opsional…" />
           </div>
+
+          {/* Kondisi Barang (warehouse only) */}
+          {!isFeed && (
+            <div className="border-t border-border pt-3 space-y-2.5">
+              <Label className="text-xs font-semibold block">Kondisi Barang</Label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { v: "baik", l: "✅ Baik" },
+                  { v: "rusak_ringan", l: "⚠️ Rusak ringan" },
+                  { v: "rusak_berat", l: "🔴 Rusak berat" },
+                  { v: "hilang", l: "❓ Hilang" },
+                ].map((c) => (
+                  <button key={c.v} type="button" onClick={() => set("condition", c.v)}
+                    className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      (form.condition || "baik") === c.v
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-background hover:bg-muted"
+                    }`}>
+                    {c.l}
+                  </button>
+                ))}
+              </div>
+
+              {form.condition && form.condition !== "baik" && (
+                <div className="space-y-2 bg-orange-50/50 border border-orange-200 rounded-lg p-2.5">
+                  <div>
+                    <Label className="text-xs mb-1 block">Keterangan Kerusakan</Label>
+                    <Textarea value={form.condition_note || ""} onChange={(e) => set("condition_note", e.target.value)}
+                      placeholder="Apa yang rusak, sejak kapan, dll." className="h-14 text-xs resize-none" maxLength={300} />
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block">Foto Kondisi</Label>
+                    <div className="flex items-center gap-2">
+                      {form.condition_photo_url ? (
+                        <div className="relative">
+                          <img src={form.condition_photo_url} alt="kondisi" className="w-16 h-16 rounded-lg object-cover border" />
+                          <button type="button" onClick={() => set("condition_photo_url", "")}
+                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">×</button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer">
+                          <span className="text-xs px-3 py-1.5 border rounded-md bg-background hover:bg-muted transition-colors flex items-center gap-1">
+                            {uploadingCondPhoto ? "Mengupload..." : "📷 Pilih Foto"}
+                          </span>
+                          <input type="file" accept="image/*" className="hidden" onChange={handleCondPhotoUpload} disabled={uploadingCondPhoto} />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!form.needs_replacement}
+                      onChange={(e) => set("needs_replacement", e.target.checked)}
+                      className="w-4 h-4 accent-red-500" />
+                    <span className="text-xs">Perlu diganti/beli baru (masuk "Harus Dibeli")</span>
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>

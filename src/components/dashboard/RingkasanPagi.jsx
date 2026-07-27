@@ -83,6 +83,11 @@ export default function RingkasanPagi() {
     queryFn: () => base44.entities.User.list(),
     staleTime: 10 * 60 * 1000,
   });
+  const { data: pendingToolReqs = [] } = useQuery({
+    queryKey: ["tool-requests-pending"],
+    queryFn: () => base44.entities.ToolRequest.filter({ status: "menunggu" }, "-request_date", 200),
+    staleTime: 60 * 1000,
+  });
 
   // ── Calcs ──
   const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
@@ -109,6 +114,7 @@ export default function RingkasanPagi() {
   const attentionLoading = tLoading || wLoading || iLoading;
   const attention = [
     { count: sickTortoises.length, icon: "🤒", label: "Kura sakit", href: "/health" },
+    { count: pendingToolReqs.length, icon: "🔴", label: "Barang rusak", href: "/alat-kerja" },
     { count: waitingMaterials, icon: "⏳", label: "Menunggu barang", href: "/daftar-belanja" },
     { count: lowStock.length, icon: "⚠️", label: "Stok di bawah min", href: "/dashboard-stok" },
     { count: kuraDiamMerah, icon: "🔍", label: "Kura diam >90 hari", href: "/kura-diam" },

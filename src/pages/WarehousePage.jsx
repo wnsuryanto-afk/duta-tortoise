@@ -20,6 +20,7 @@ import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
 import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
 import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
+import LaporRusakDialog from "@/components/warehouse/LaporRusakDialog";
 
 const CATEGORIES = [
   { value: "obat", label: "💊 Obat", color: "bg-red-100 text-red-700" },
@@ -36,11 +37,23 @@ function StockBadge({ item }) {
   return <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Aman</Badge>;
 }
 
+function ConditionBadge({ item }) {
+  if (!item.condition || item.condition === "baik") return null;
+  const config = {
+    rusak_ringan: { label: "⚠️ Rusak ringan", cls: "bg-orange-100 text-orange-700 border-orange-200" },
+    rusak_berat: { label: "🔴 Rusak berat", cls: "bg-red-100 text-red-700 border-red-200" },
+    hilang: { label: "❓ Hilang", cls: "bg-gray-200 text-gray-700 border-gray-300" },
+  };
+  const c = config[item.condition] || config.rusak_ringan;
+  return <Badge className={`text-[10px] ${c.cls}`}>{c.label}</Badge>;
+}
+
 export default function WarehousePage() {
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
   const isAdmin = ["admin", "owner", "manajer"].includes(role);
   const isKeeperOnly = role === "keeper";
+  const canReportBroken = ["keeper", "kepala_feeder"].includes(role);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["warehouse-items"],
@@ -76,6 +89,8 @@ export default function WarehousePage() {
   const [labelItems, setLabelItems] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanResult, setScanResult] = useState(null);
+  const [condFilter, setCondFilter] = useState("semua");
+  const [laporRusakItem, setLaporRusakItem] = useState(null);
 
   const allSkus = items.map((i) => i.sku).filter(Boolean);
 
@@ -97,7 +112,11 @@ export default function WarehousePage() {
     const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || (i.sku || "").toLowerCase().includes(search.toLowerCase());
     const inc = isItemIncomplete(i, "warehouse");
     const matchLengkap = lengkapFilter === "semua" || (lengkapFilter === "belum" ? inc : !inc);
-    return matchCat && matchLow && matchSearch && matchLengkap;
+    const matchCond = condFilter === "semua" ||
+      (condFilter === "baik" && (!i.condition || i.condition === "baik")) ||
+      (condFilter === "rusak" && i.condition && i.condition !== "baik") ||
+      (condFilter === "perlu_ganti" && i.needs_replacement);
+    return matchCat && matchLow && matchSearch && matchLengkap && matchCond;
   }).sort((a, b) => {
     if (lengkapFilter !== "belum") return 0;
     const scoreA = [!a.photo_url, !a.sku, !(a.purchase_price > 0), !a.unit].filter(Boolean).length;
@@ -189,6 +208,17 @@ export default function WarehousePage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${lowFilter ? "bg-orange-500 text-white border-orange-500" : "bg-background border-border hover:bg-muted"}`}>
               ⚠️ Stok Menipis
             </button>
+            {[
+              { v: "semua", l: "Semua" },
+              { v: "baik", l: "✅ Baik" },
+              { v: "rusak", l: "⚠️ Rusak" },
+              { v: "perlu_ganti", l: "🔄 Perlu ganti" },
+            ].map((c) => (
+              <button key={c.v} onClick={() => setCondFilter(c.v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${condFilter === c.v ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}>
+                {c.l}
+              </button>
+            ))}
             <DataLengkapFilter
               items={items}
               isIncomplete={(i) => isItemIncomplete(i, "warehouse")}
@@ -232,6 +262,7 @@ export default function WarehousePage() {
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cat.color}`}>{cat.label}</span>
                           {item.sku && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1 rounded">{item.sku}</span>}
                           {item.is_mandatory && <Badge className="text-[10px] bg-red-500 text-white px-1 py-0">WAJIB</Badge>}
+                          <ConditionBadge item={item} />
                         </div>
                         {incomplete && <IncompleteBadges item={item} itemType="warehouse" />}
                       </div>
@@ -292,6 +323,13 @@ export default function WarehousePage() {
                         style={{ width: `${Math.min(100, (item.current_stock / (item.minimum_stock * 3 || 1)) * 100)}%` }} />
                     </div>
                     {item.location && <p className="text-xs text-muted-foreground mt-2">📍 {item.location}</p>}
+
+                    {canReportBroken && (
+                      <Button size="sm" variant="outline" className="w-full mt-2 h-8 text-xs gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={(e) => { e.stopPropagation(); setLaporRusakItem(item); }}>
+                        🔴 Lapor Rusak
+                      </Button>
+                    )}
                   </Card>
                 );
               })}
@@ -357,6 +395,10 @@ export default function WarehousePage() {
       )}
 
       <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />
+
+      {laporRusakItem && (
+        <LaporRusakDialog item={laporRusakItem} onClose={() => setLaporRusakItem(null)} onSaved={invalidate} />
+      )}
 
       {/* Not found */}
       <Dialog open={!!scanResult?.notFound} onOpenChange={() => setScanResult(null)}>

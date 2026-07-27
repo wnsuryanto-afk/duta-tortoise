@@ -82,14 +82,35 @@ export default function HarusDibeliPage() {
     return items;
   }, [sopTasks, skuMap]);
 
+  // ── Source: Barang rusak (needs_replacement) ──
+  const barangRusak = useMemo(() => {
+    return warehouse
+      .filter((w) => w.needs_replacement === true)
+      .map((w) => ({
+        type: "warehouse",
+        item_id: w.id,
+        name: w.name,
+        sku: w.sku,
+        current_stock: w.current_stock || 0,
+        minimum_stock: w.minimum_stock || 0,
+        unit: w.unit,
+        category: w.category,
+        source: "barang_rusak",
+        source_label: "Barang rusak",
+        not_found: false,
+      }));
+  }, [warehouse]);
+
   // ── Source a1: Obat menipis (obat/vitamin/suplemen, current <= minimum) ──
   const obatMenipis = useMemo(() => {
     const sopIds = new Set(sopTerganggu.map((i) => i.item_id).filter(Boolean));
+    const rusakIds = new Set(barangRusak.map((i) => i.item_id).filter(Boolean));
     return warehouse
       .filter((w) =>
         ["obat", "vitamin", "suplemen"].includes(w.category) &&
         (w.current_stock || 0) <= (w.minimum_stock || 0) &&
-        !sopIds.has(w.id)
+        !sopIds.has(w.id) &&
+        !rusakIds.has(w.id)
       )
       .map((w) => ({
         type: "warehouse",
@@ -110,11 +131,13 @@ export default function HarusDibeliPage() {
   const stokMenipis = useMemo(() => {
     const sopIds = new Set(sopTerganggu.map((i) => i.item_id).filter(Boolean));
     const obatIds = new Set(obatMenipis.map((i) => i.item_id).filter(Boolean));
+    const rusakIds = new Set(barangRusak.map((i) => i.item_id).filter(Boolean));
     return warehouse
       .filter((w) =>
         (w.current_stock || 0) < (w.minimum_stock || 0) &&
         !sopIds.has(w.id) &&
-        !obatIds.has(w.id)
+        !obatIds.has(w.id) &&
+        !rusakIds.has(w.id)
       )
       .map((w) => ({
         type: "warehouse",
@@ -164,10 +187,11 @@ export default function HarusDibeliPage() {
   }, [toolRequests]);
 
   // ── Combined: SOP terganggu → Obat menipis → Stok menipis → Tugas menunggu → Pengajuan karyawan ──
-  const allItems = [...sopTerganggu, ...obatMenipis, ...stokMenipis, ...tugasMenunggu, ...pengajuanKaryawan];
+  const allItems = [...sopTerganggu, ...barangRusak, ...obatMenipis, ...stokMenipis, ...tugasMenunggu, ...pengajuanKaryawan];
   const sopCount = sopTerganggu.length;
   const obatCount = obatMenipis.length;
   const pengajuanCount = pengajuanKaryawan.length;
+  const rusakCount = barangRusak.length;
 
   if (!isManagerLevel(role)) return <AccessDenied />;
 
@@ -221,6 +245,12 @@ export default function HarusDibeliPage() {
             <p className="text-[10px] text-indigo-700 mt-1">🛠️ Pengajuan</p>
           </div>
         )}
+        {rusakCount > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center min-w-[80px]">
+            <p className="text-2xl font-bold text-red-600 leading-none">{rusakCount}</p>
+            <p className="text-[10px] text-red-700 mt-1">🔴 Barang rusak</p>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -269,25 +299,27 @@ export default function HarusDibeliPage() {
 
 function HarusDibeliRow({ item, onBought }) {
   const isSopGangguan = item.source === "sop_terganggu";
+  const isBarangRusak = item.source === "barang_rusak";
   const isObatMenipis = item.source === "obat_menipis";
   const isStokMenipis = item.source === "stok_menipis";
   const isPengajuan = item.source === "pengajuan_karyawan";
   const isNotFound = item.not_found;
 
   return (
-    <Card className={`p-3 ${isSopGangguan ? "border-red-300 bg-red-50/50" : isObatMenipis ? "border-orange-300 bg-orange-50/50" : isStokMenipis ? "border-amber-200 bg-amber-50/30" : isPengajuan ? "border-indigo-200 bg-indigo-50/30" : "border-blue-200 bg-blue-50/30"}`}>
+    <Card className={`p-3 ${isSopGangguan ? "border-red-300 bg-red-50/50" : isBarangRusak ? "border-red-300 bg-red-50/30" : isObatMenipis ? "border-orange-300 bg-orange-50/50" : isStokMenipis ? "border-amber-200 bg-amber-50/30" : isPengajuan ? "border-indigo-200 bg-indigo-50/30" : "border-blue-200 bg-blue-50/30"}`}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-semibold text-sm">{item.name}</span>
             <Badge variant="outline" className={`text-[10px] ${
               isSopGangguan ? "bg-red-100 text-red-700 border-red-300" :
+              isBarangRusak ? "bg-red-100 text-red-700 border-red-300" :
               isObatMenipis ? "bg-orange-100 text-orange-700 border-orange-300" :
               isStokMenipis ? "bg-amber-100 text-amber-700 border-amber-300" :
               isPengajuan ? "bg-indigo-100 text-indigo-700 border-indigo-300" :
               "bg-blue-100 text-blue-700 border-blue-300"
             }`}>
-              {isSopGangguan && "🔴 "}{isObatMenipis && "💊 "}{item.source_label}
+              {isSopGangguan && "🔴 "}{isBarangRusak && "🔴 "}{isObatMenipis && "💊 "}{item.source_label}
             </Badge>
           </div>
 
