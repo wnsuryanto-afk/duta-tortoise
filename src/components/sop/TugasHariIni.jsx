@@ -66,12 +66,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [ukurTarget, setUkurTarget] = useState(null);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
 
-  // Catatan foto per task (dari MaintenanceLog.notes)
-  const photoNotesMap = useMemo(() => {
-    const m = {};
-    myLogs.forEach(l => { if (l.notes) m[l.item_id] = l.notes; });
-    return m;
-  }, [myLogs]);
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
 
   // ── SOPTask: SUMBER TUNGGAL (baca langsung, is_active=true) ──
@@ -146,6 +140,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     const map = {};
     myLogs.forEach(l => { if (l.photo_url) map[l.item_id] = l.photo_url; });
     return map;
+  }, [myLogs]);
+
+  // Catatan foto per task (dari MaintenanceLog.notes) — harus setelah myLogs dideklarasikan
+  const photoNotesMap = useMemo(() => {
+    const m = {};
+    myLogs.forEach(l => { if (l.notes) m[l.item_id] = l.notes; });
+    return m;
   }, [myLogs]);
 
   // Set item_id yang sudah ada log hari ini (anti-dobel)
