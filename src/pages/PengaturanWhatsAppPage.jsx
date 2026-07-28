@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/components/ui/use-toast";
 import AccessDenied from "@/components/common/AccessDenied";
 import {
@@ -49,6 +51,9 @@ export default function PengaturanWhatsAppPage() {
   const [groupError, setGroupError] = useState("");
   const [lastFetchTime, setLastFetchTime] = useState(null);
   const [copiedId, setCopiedId] = useState("");
+  const [summaryDestination, setSummaryDestination] = useState("individuals");
+  const [recipients, setRecipients] = useState({});
+  const [summaryResults, setSummaryResults] = useState(null);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["wa-settings"],
@@ -94,6 +99,17 @@ export default function PengaturanWhatsAppPage() {
     setSummaryEnabled(settings.daily_summary_enabled === true);
     setShowPoints(settings.daily_summary_show_points === true);
     setWeeklyEnabled(settings.weekly_summary_enabled === true);
+    setSummaryDestination(settings.summary_destination || "individuals");
+    setSummaryResults(null);
+    const rcMap = {};
+    if (Array.isArray(settings.summary_recipients) && settings.summary_recipients.length > 0) {
+      settings.summary_recipients.forEach((r) => {
+        if (r.email) rcMap[r.email] = true;
+      });
+    } else {
+      rcMap["role:owner"] = true;
+    }
+    setRecipients(rcMap);
   };
 
   // Initialize when settings first load
@@ -116,6 +132,22 @@ export default function PengaturanWhatsAppPage() {
         }))
         .filter((e) => e.phone);
 
+      const availRecips = [];
+      if (phones.owner) availRecips.push({ key: "role:owner", name: "Owner", phone: phones.owner });
+      if (phones.manajer) availRecips.push({ key: "role:manajer", name: "Manajer", phone: phones.manajer });
+      if (phones.admin) availRecips.push({ key: "role:admin", name: "Admin", phone: phones.admin });
+      (users || []).filter((u) => !["owner", "investor"].includes(u.role)).forEach((u) => {
+        const ph = empPhones[u.email];
+        if (ph) availRecips.push({ key: u.email, name: u.full_name || u.email, phone: ph });
+      });
+      const summaryRecipients = availRecips
+        .filter((r) => recipients[r.key])
+        .map((r) => ({
+          name: r.name,
+          phone: normalizePhoneInput(r.phone),
+          email: r.key,
+        }));
+
       const payload = {
         setting_key: "main",
         phone_owner: normalizePhoneInput(phones.owner),
@@ -129,6 +161,8 @@ export default function PengaturanWhatsAppPage() {
         notif_incidental_task: toggles.notif_incidental_task ?? false,
         notif_tool_request: toggles.notif_tool_request ?? false,
         group_id: groupId,
+        summary_destination: summaryDestination,
+        summary_recipients: summaryRecipients,
         daily_summary_time: summaryTime || "17:00",
         daily_summary_enabled: summaryEnabled,
         daily_summary_show_points: showPoints,
@@ -179,14 +213,15 @@ export default function PengaturanWhatsAppPage() {
 
   const handleFetchGroups = async () => {
     if (!checkTokenSaved()) return;
-    // Anti-spam: jeda minimal 1 menit antar panggilan
+    // Anti-spam: jeda minimal 30 menit antar panggilan
+    const COOLDOWN_MS = 30 * 60 * 1000;
     if (lastFetchTime) {
       const elapsed = Date.now() - lastFetchTime;
-      if (elapsed < 60000) {
-        const waitSec = Math.ceil((60000 - elapsed) / 1000);
+      if (elapsed < COOLDOWN_MS) {
+        const waitMin = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
         toast({
           title: "⏳ Tunggu sebentar",
-          description: `Tunggu ${waitSec} detik sebelum mengambil daftar grup lagi (mencegah pemblokiran nomor).`,
+          description: `Tunggu ${waitMin} menit lagi sebelum mengambil daftar grup. Pemanggilan berlebihan bisa memicu pemblokiran nomor oleh Meta.`,
           variant: "destructive",
         });
         return;
@@ -238,13 +273,37 @@ export default function PengaturanWhatsAppPage() {
   const handleSendSummaryNow = async () => {
     if (!checkTokenSaved()) return;
     setSendingSummary(true);
+    setSummaryResults(null);
     try {
       const res = await base44.functions.invoke("sendDailySummary", { force: true });
       const data = res.data || res;
-      if (data.success) {
+      if (data.results && Array.isArray(data.results)) {
+        setSummaryResults(data.results);
+        const okCount = data.results.filter((r) => r.success).length;
+        const failCount = data.results.length - okCount;
+        if (okCount > 0 && failCount === 0) {
+          toast({
+            title: "✅ Ringkasan terkirim",
+            description: `Berhasil ke ${okCount} tujuan.`,
+            className: "bg-green-50 border-green-200",
+          });
+        } else if (okCount > 0) {
+          toast({
+            title: "⚠️ Sebagian terkirim",
+            description: `${okCount} berhasil, ${failCount} gagal. Lihat detail di bawah.`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "❌ Gagal mengirim",
+            description: "Semua pengiriman gagal. Lihat detail di bawah.",
+            variant: "destructive",
+          });
+        }
+      } else if (data.success) {
         toast({
           title: "✅ Ringkasan terkirim",
-          description: data.message || "Ringkasan harian telah dikirim ke grup WhatsApp.",
+          description: data.message || "Ringkasan harian telah dikirim.",
           className: "bg-green-50 border-green-200",
         });
       } else {
@@ -309,6 +368,21 @@ export default function PengaturanWhatsAppPage() {
 
   const savedToken = !!(settings?.fonnte_token);
   const tokenUnsaved = tokenDirty && !!token.trim();
+
+  const availableRecipients = [];
+  if (phones.owner) availableRecipients.push({ key: "role:owner", name: "Owner", phone: phones.owner });
+  if (phones.manajer) availableRecipients.push({ key: "role:manajer", name: "Manajer", phone: phones.manajer });
+  if (phones.admin) availableRecipients.push({ key: "role:admin", name: "Admin", phone: phones.admin });
+  (users || []).filter((u) => !["owner", "investor"].includes(u.role)).forEach((u) => {
+    const ph = empPhones[u.email];
+    if (ph) availableRecipients.push({ key: u.email, name: u.full_name || u.email, phone: ph });
+  });
+
+  const needsGroup = summaryDestination === "group" || summaryDestination === "both";
+  const needsIndividuals = summaryDestination === "individuals" || summaryDestination === "both";
+  const canSendSummary = savedToken &&
+    (!needsIndividuals || availableRecipients.some((r) => recipients[r.key])) &&
+    (!needsGroup || !!groupId.trim());
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-4 animate-fade-in">
@@ -490,57 +564,131 @@ export default function PengaturanWhatsAppPage() {
         </CardContent>
       </Card>
 
-      {/* Ringkasan Harian ke Grup */}
+      {/* Ringkasan Harian */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Users className="w-4 h-4 text-green-600" />
-            Ringkasan Harian ke Grup WhatsApp
+            Ringkasan Harian
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Tujuan Pengiriman */}
           <div>
-            <Label>ID Grup WhatsApp</Label>
-            <Input
-              className="mt-1"
-              placeholder="Contoh: 120363xxx@g.us"
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Klik "Ambil Daftar Grup" di bawah untuk memilih otomatis, atau isi manual.
-            </p>
-          </div>
-
-          {/* Tombol Ambil Daftar Grup */}
-          <div>
-            <Button
-              onClick={handleFetchGroups}
-              disabled={fetchingGroups || (!savedToken && !token.trim())}
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
+            <Label className="mb-2">Kirim ringkasan harian ke:</Label>
+            <RadioGroup
+              value={summaryDestination}
+              onValueChange={setSummaryDestination}
+              className="space-y-2"
             >
-              {fetchingGroups ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengambil daftar grup (±8 detik)...</>
-              ) : (
-                <><RefreshCw className="w-3.5 h-3.5" /> 🔄 Ambil Daftar Grup</>
-              )}
-            </Button>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Memanggil API Fonnte untuk mengambil daftar grup. Beri jeda 1 menit antar panggilan.
-            </p>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="individuals" id="dest-individuals" />
+                <Label htmlFor="dest-individuals" className="font-normal cursor-pointer">
+                  Nomor perorangan (dicentang di bawah)
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="group" id="dest-group" />
+                <Label htmlFor="dest-group" className="font-normal cursor-pointer">
+                  Grup WhatsApp (memakai ID grup)
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="both" id="dest-both" />
+                <Label htmlFor="dest-both" className="font-normal cursor-pointer">
+                  Keduanya
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
 
-          {/* Daftar Grup */}
-          {groupError && (
-            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700 flex items-start gap-2">
-              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span className="whitespace-pre-line">{groupError}</span>
+          {/* Checkbox Penerima (individu / both) */}
+          {(summaryDestination === "individuals" || summaryDestination === "both") && (
+            <div className="space-y-2">
+              <Label>Pilih Penerima:</Label>
+              {availableRecipients.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  Isi nomor WhatsApp di bagian "Nomor WhatsApp per Role" / "Karyawan" di atas terlebih dahulu.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {availableRecipients.map((r) => (
+                    <label
+                      key={r.key}
+                      className="flex items-center gap-2 p-2 rounded-lg border bg-background hover:bg-muted/50 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={!!recipients[r.key]}
+                        onCheckedChange={(v) =>
+                          setRecipients((prev) => ({ ...prev, [r.key]: v }))
+                        }
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{r.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{r.phone}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {groupList.length > 0 && (
+          {/* Group ID + Ambil Daftar Grup (group / both) */}
+          {needsGroup && (
+            <div>
+              <Label>ID Grup WhatsApp</Label>
+              <Input
+                className="mt-1"
+                placeholder="Contoh: 120363xxx@g.us"
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Isi manual, atau tekan "Ambil Daftar Grup" di bawah.
+              </p>
+            </div>
+          )}
+
+          {needsGroup && (
+            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>⚠️ <strong>Jangan tekan berulang kali.</strong> Pemanggilan berlebihan bisa memicu pemblokiran nomor WhatsApp oleh Meta.</span>
+            </div>
+          )}
+
+          {needsGroup && (
+            <div>
+              <Button
+                onClick={handleFetchGroups}
+                disabled={fetchingGroups || (!savedToken && !token.trim())}
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+              >
+                {fetchingGroups ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengambil daftar grup (±8 detik)...</>
+                ) : (
+                  <><RefreshCw className="w-3.5 h-3.5" /> 🔄 Ambil Daftar Grup</>
+                )}
+              </Button>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Hanya bisa ditekan 1 kali per 30 menit.
+              </p>
+            </div>
+          )}
+
+          {needsGroup && groupError && (
+            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <div className="whitespace-pre-line">
+                {groupError}
+                <p className="mt-1 font-medium">💡 Saran: Coba lagi besok, isi ID grup manual, atau gunakan pilihan "Nomor perorangan".</p>
+              </div>
+            </div>
+          )}
+
+          {needsGroup && groupList.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-xs font-semibold text-muted-foreground">Pilih Grup Tujuan:</p>
               {groupList.map((g, i) => (
@@ -588,7 +736,7 @@ export default function PengaturanWhatsAppPage() {
           <div className="flex items-center justify-between gap-3 py-2 border-b">
             <div className="flex-1">
               <p className="text-sm font-medium">Aktifkan Ringkasan Harian</p>
-              <p className="text-xs text-muted-foreground">Kirim otomatis ke grup setiap hari pada jam di atas</p>
+              <p className="text-xs text-muted-foreground">Kirim otomatis ke tujuan terpilih setiap hari pada jam di atas</p>
             </div>
             <Switch checked={summaryEnabled} onCheckedChange={setSummaryEnabled} />
           </div>
@@ -606,9 +754,31 @@ export default function PengaturanWhatsAppPage() {
             </div>
             <Switch checked={weeklyEnabled} onCheckedChange={setWeeklyEnabled} />
           </div>
+          {summaryResults && summaryResults.length > 0 && (
+            <div className="space-y-1.5 p-3 rounded-lg bg-muted/50 border">
+              <p className="text-xs font-semibold text-muted-foreground">Hasil Pengiriman:</p>
+              {summaryResults.map((r, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs">
+                  {r.success ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <span className="font-medium">{r.target}</span>
+                    {r.success ? (
+                      <span className="text-green-600 ml-1">— terkirim</span>
+                    ) : (
+                      <span className="text-red-500 ml-1">— gagal: {r.reason}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <Button
             onClick={handleSendSummaryNow}
-            disabled={sendingSummary || (!savedToken && !token.trim()) || !groupId.trim()}
+            disabled={sendingSummary || (!savedToken && !token.trim()) || !canSendSummary}
             variant="outline"
             className="w-full gap-1.5"
           >

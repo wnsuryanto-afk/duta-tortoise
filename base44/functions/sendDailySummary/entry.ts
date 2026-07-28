@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { getSettings } from "../../shared/whatsapp.ts";
+import { getSettings, normalizePhone } from "../../shared/whatsapp.ts";
 
 /**
  * sendDailySummary — kirim ringkasan harian / mingguan ke grup WhatsApp.
@@ -31,60 +31,82 @@ async function logWhatsApp(base44, data) {
   } catch {}
 }
 
-async function sendToGroup(base44, token, groupId, message, notificationType) {
+async function sendFonnteMessage(token: string, target: string, message: string) {
+  const body = new URLSearchParams();
+  body.append("target", target);
+  body.append("message", message);
+  const res = await fetch(FONNTE_API_URL, {
+    method: "POST",
+    headers: { Authorization: token, "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+  const text = await res.text();
+  let result: any;
+  try { result = JSON.parse(text); } catch { result = { raw: text }; }
+  if (result.status === true || result.status === "success") {
+    return { success: true };
+  }
+  return { success: false, reason: result.reason || result.message || text };
+}
+
+async function sendAndLog(base44, token, target, label, message, notificationType) {
   const nowIso = new Date().toISOString();
   const preview = (message || "").slice(0, 200);
-
+  let result;
   try {
-    const body = new URLSearchParams();
-    body.append("target", groupId);
-    body.append("message", message);
-
-    const res = await fetch(FONNTE_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: body.toString(),
-    });
-
-    const result = await res.json();
-
-    if (result.status === true || result.status === "success") {
-      await logWhatsApp(base44, {
-        sent_at: nowIso,
-        targets: [groupId],
-        notification_type: notificationType,
-        message_preview: preview,
-        status: "terkirim",
-        error_reason: "",
-      });
-      return { success: true };
-    } else {
-      const errMsg = result.reason || result.message || JSON.stringify(result);
-      await logWhatsApp(base44, {
-        sent_at: nowIso,
-        targets: [groupId],
-        notification_type: notificationType,
-        message_preview: preview,
-        status: "gagal",
-        error_reason: String(errMsg).slice(0, 500),
-      });
-      return { success: false, reason: String(errMsg) };
-    }
+    result = await sendFonnteMessage(token, target, message);
   } catch (err) {
-    const errMsg = (err && err.message) ? err.message : String(err);
-    await logWhatsApp(base44, {
-      sent_at: nowIso,
-      targets: [groupId],
-      notification_type: notificationType,
-      message_preview: preview,
-      status: "gagal",
-      error_reason: errMsg.slice(0, 500),
-    });
-    return { success: false, reason: errMsg };
+    result = { success: false, reason: (err && err.message) ? err.message : String(err) };
   }
+  await logWhatsApp(base44, {
+    sent_at: nowIso,
+    targets: [target],
+    notification_type: notificationType,
+    message_preview: preview,
+    status: result.success ? "terkirim" : "gagal",
+    error_reason: result.success ? "" : String(result.reason || "").slice(0, 500),
+  });
+  return { target: label || target, success: result.success, reason: result.success ? "" : String(result.reason || "") };
+}
+
+/**
+ * Kirim ringkasan ke tujuan terpilih (individu / grup / keduanya).
+ * Mengembalikan { success, results } — results berisi per-recipient.
+ */
+async function sendSummaryToDestinations(base44, settings, message, notificationType) {
+  const token = settings.fonnte_token;
+  const destination = settings.summary_destination || "individuals";
+  const results: any[] = [];
+
+  const sendToIndividuals = destination === "individuals" || destination === "both";
+  const sendToGroup = (destination === "group" || destination === "both") && settings.group_id && settings.group_id.trim();
+
+  // ── Kirim ke nomor perorangan (satu per satu, jeda 500ms) ──
+  if (sendToIndividuals) {
+    const recipients = Array.isArray(settings.summary_recipients)
+      ? settings.summary_recipients.filter((r) => r && r.phone)
+      : [];
+    for (const r of recipients) {
+      const phone = normalizePhone(r.phone);
+      if (!phone) {
+        results.push({ target: r.name || r.phone, success: false, reason: "Nomor tidak valid" });
+        continue;
+      }
+      const res = await sendAndLog(base44, token, phone, r.name || phone, message, notificationType);
+      results.push(res);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
+  // ── Kirim ke grup ──
+  if (sendToGroup) {
+    const groupId = settings.group_id.trim();
+    const res = await sendAndLog(base44, token, groupId, "Grup WhatsApp", message, notificationType);
+    results.push(res);
+  }
+
+  const anySuccess = results.some((r) => r.success);
+  return { success: anySuccess, results };
 }
 
 function isTaskScheduledToday(task, now) {
@@ -315,23 +337,25 @@ export default async function(req: Request): Promise<Response> {
     if (!settings.fonnte_token) {
       return Response.json({ success: false, error: "Token Fonnte belum diisi" });
     }
-    if (!settings.group_id || !settings.group_id.trim()) {
-      return Response.json({ success: false, error: "ID Grup WhatsApp belum diisi" });
+
+    const destination = settings.summary_destination || "individuals";
+    const needsGroup = destination === "group" || destination === "both";
+    if (needsGroup && (!settings.group_id || !settings.group_id.trim())) {
+      return Response.json({ success: false, error: "ID Grup WhatsApp belum diisi. Pilih tujuan 'Nomor perorangan' atau isi ID grup." });
     }
 
     const now = new Date();
     const today = getTodayStr(now);
-    const groupId = settings.group_id.trim();
 
     // ── Manual: send immediately ──
     if (force) {
       if (type === "weekly") {
         const message = await buildWeeklySummary(base44, today, now);
-        const result = await sendToGroup(base44, settings.fonnte_token, groupId, message, "weekly_summary");
+        const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
         return Response.json(result);
       }
       const message = await buildDailySummary(base44, today, now, settings.daily_summary_show_points === true);
-      const result = await sendToGroup(base44, settings.fonnte_token, groupId, message, "daily_summary");
+      const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
       return Response.json(result);
     }
 
@@ -345,7 +369,7 @@ export default async function(req: Request): Promise<Response> {
     // Daily summary
     if (settings.daily_summary_enabled && timeReached && settings.daily_summary_last_sent !== today) {
       const message = await buildDailySummary(base44, today, now, settings.daily_summary_show_points === true);
-      const result = await sendToGroup(base44, settings.fonnte_token, groupId, message, "daily_summary");
+      const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
       if (result.success) {
         try {
           await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
@@ -359,7 +383,7 @@ export default async function(req: Request): Promise<Response> {
     const isSaturday = now.getUTCDay() === 6;
     if (settings.weekly_summary_enabled && isSaturday && timeReached && settings.weekly_summary_last_sent !== today) {
       const message = await buildWeeklySummary(base44, today, now);
-      const result = await sendToGroup(base44, settings.fonnte_token, groupId, message, "weekly_summary");
+      const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
       if (result.success) {
         try {
           await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
