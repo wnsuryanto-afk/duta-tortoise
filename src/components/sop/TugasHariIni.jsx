@@ -22,6 +22,8 @@ import ExtraTaskForm from "./ExtraTaskForm";
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { detectPhotoAge, checkDeadlineTime, runPhotoVerificationInBackground } from "@/lib/photoVerification";
+import AICatatanCard from "./AICatatanCard";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 import PhotoPreviewModal from "./PhotoPreviewModal";
 import UkurFormDialog from "./UkurFormDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
@@ -67,6 +69,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
 
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
+  const companySettings = useCompanySettings();
+  const aiSaranEnabled = companySettings.ai_saran_enabled !== false;
 
   // ── SOPTask: SUMBER TUNGGAL (baca langsung, is_active=true) ──
   const { data: sopTasks = [] } = useQuery({
@@ -131,6 +135,24 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     enabled: !!user?.email,
     staleTime: 60 * 1000,
   });
+
+  // ── Map saran AI dari checklist hari ini (keyed by normalized task title) ──
+  const aiSaranMap = useMemo(() => {
+    const map = {};
+    const tasks = myChecklistStatus?.completed_tasks || [];
+    tasks.forEach(t => {
+      const key = (t.task_title || "").trim().toLowerCase();
+      if (key && (t.ai_apresiasi || t.ai_saran || t.owner_note)) {
+        map[key] = {
+          apresiasi: t.ai_apresiasi || "",
+          saran: t.ai_saran || "",
+          keyakinan: t.ai_confidence,
+          ownerNote: t.owner_note || "",
+        };
+      }
+    });
+    return map;
+  }, [myChecklistStatus]);
 
   // ── Derived data (semua setelah myLogs dideklarasikan) ──
   const photoMap = useMemo(() => {
@@ -455,6 +477,14 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         photoUrl: file_url, task, user, today,
         ageWarning: ageInfo.warning || "",
         timeWarning: timeWarning || "",
+        onSuggestionReady: (result) => {
+          if (!aiSaranEnabled) return;
+          if (result.keyakinan >= 60 && (result.apresiasi || result.saran)) {
+            toast("💬 Catatan baru untuk kamu", {
+              description: result.apresiasi || result.saran,
+            });
+          }
+        },
       });
     } catch {
     } finally {
@@ -617,6 +647,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             onPhotoCheck={(file) => handlePhotoCheck(task, file)}
             onPhotoNotes={(notes) => handlePhotoNotes(task.id, notes)}
             photoNotes={photoNotesMap[task.id] || ""}
+            aiSaran={aiSaranMap[(task.label || "").trim().toLowerCase()]}
+            aiSaranEnabled={aiSaranEnabled}
           />
         ))}
         {sopTaskItems.length === 0 && (
@@ -670,7 +702,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component (sederhana, tanpa lock UI) ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes }) {
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
@@ -737,6 +769,9 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
           {showPhoto && (
             <PhotoPreviewModal open={showPhoto} onClose={() => setShowPhoto(false)} photoUrl={photoUrl} taskTitle={task.label} />
           )}
+
+          {/* AI Catatan untuk keeper — apresiasi + saran (bukan penilaian teknis) */}
+          <AICatatanCard aiSaran={aiSaran} enabled={aiSaranEnabled} />
 
           {/* Team view */}
           {showTeam && teamWho.length > 0 && (

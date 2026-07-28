@@ -55,21 +55,35 @@ export function checkDeadlineTime(deadlineTime, uploadTime) {
 }
 
 /**
- * AI Vision: periksa apakah foto sesuai dengan task.
+ * AI Vision: periksa foto + berikan apresiasi, saran membangun, dan temuan untuk owner.
  * Hanya dipanggil untuk task require_photo=true.
+ * Gaya bahasa: hangat & sopan, seperti rekan kerja senior yang membantu.
  */
 export async function verifyPhotoWithAI(photoUrl, taskTitle, taskDescription) {
   try {
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Foto ini diklaim sebagai bukti tugas: "${taskTitle}". Rincian tugas: ${taskDescription || "tidak ada deskripsi tambahan"}. Apakah isi foto memang menunjukkan pekerjaan tersebut sudah dilakukan? Jawab HANYA dengan JSON.`,
+      prompt: `Anda adalah rekan kerja senior yang membantu meninjau foto bukti pekerjaan. Foto ini diklaim sebagai bukti tugas: "${taskTitle}". Rincian tugas: ${taskDescription || "tidak ada deskripsi tambahan"}.
+
+Tugas Anda:
+1. Periksa apakah foto menunjukkan pekerjaan tersebut sudah dilakukan.
+2. Berikan apresiasi singkat tentang yang sudah baik.
+3. Berikan 1-2 saran praktis & sopan untuk perbaikan (atau kosongkan jika sudah bagus).
+4. Catat temuan penting untuk owner (misal: kandang becek, tempat minum kosong, kura terlihat lesu) — kosongkan jika tidak ada.
+
+Gaya bahasa: Bahasa Indonesia sehari-hari yang HANGAT dan SOPAN, seperti rekan kerja senior yang membantu — bukan atasan yang menegur. SELALU sebutkan dulu yang sudah baik, baru saran. Saran harus konkret & bisa langsung dikerjakan. Maksimal 2 kalimat.
+
+DILARANG: menuduh, menyindir, kata kasar, membandingkan antar karyawan, menyebut soal poin atau gaji. Jika pekerjaan sudah bagus: cukup apresiasi, saran dikosongkan.
+
+Jawab HANYA dengan JSON.`,
       file_urls: [photoUrl],
       response_json_schema: {
         type: "object",
         properties: {
           sesuai: { type: "boolean" },
           keyakinan: { type: "number" },
-          alasan: { type: "string" },
-          temuan: { type: "string" },
+          apresiasi: { type: "string" },
+          saran: { type: "string" },
+          temuan_penting: { type: "string" },
         },
       },
     });
@@ -98,8 +112,9 @@ export async function syncAIVerification({ employeeEmail, date, taskTitle, enclo
     if (aiResult) {
       updated.ai_verified = aiResult.sesuai;
       updated.ai_confidence = aiResult.keyakinan;
-      updated.ai_reason = aiResult.alasan;
-      updated.ai_findings = aiResult.temuan;
+      updated.ai_apresiasi = aiResult.apresiasi;
+      updated.ai_saran = aiResult.saran;
+      updated.ai_temuan_penting = aiResult.temuan_penting;
     }
     if (ageWarning !== undefined) updated.photo_age_warning = ageWarning || "";
     if (timeWarning !== undefined) updated.photo_time_warning = timeWarning || "";
@@ -120,8 +135,9 @@ export async function syncAIVerification({ employeeEmail, date, taskTitle, enclo
  * 1. Sync peringatan waktu (usia foto + jam tugas) segera
  * 2. Jalankan AI Vision (hanya untuk require_photo=true) di background
  * 3. Sync hasil AI ke checklist setelah selesai
+ * 4. Panggil onSuggestionReady (untuk notifikasi lembut ke keeper)
  */
-export function runPhotoVerificationInBackground({ photoUrl, task, user, today, ageWarning, timeWarning }) {
+export function runPhotoVerificationInBackground({ photoUrl, task, user, today, ageWarning, timeWarning, onSuggestionReady }) {
   // Step 1: sync peringatan waktu segera
   syncAIVerification({
     employeeEmail: user.email,
@@ -143,6 +159,8 @@ export function runPhotoVerificationInBackground({ photoUrl, task, user, today, 
             taskTitle: task.label,
             enclosure: "Tugas Harian",
             aiResult,
+          }).then(() => {
+            if (onSuggestionReady) onSuggestionReady(aiResult);
           });
         }
       })

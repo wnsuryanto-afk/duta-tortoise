@@ -71,11 +71,23 @@
           },
           "ai_reason": {
             "type": "string",
-            "description": "Alasan singkat dari AI (bahasa Indonesia)"
+            "description": "Alasan singkat dari AI (legacy, untuk owner badge)"
+          },
+          "ai_apresiasi": {
+            "type": "string",
+            "description": "Apresiasi positif dari AI untuk keeper (hangat & sopan)"
+          },
+          "ai_saran": {
+            "type": "string",
+            "description": "Saran membangun dari AI untuk keeper (1-2 kalimat, atau kosong jika sudah bagus)"
+          },
+          "ai_temuan_penting": {
+            "type": "string",
+            "description": "Temuan penting untuk owner (mis: kandang becek, kura lesu) \u2014 kosong jika tidak ada"
           },
           "ai_findings": {
             "type": "string",
-            "description": "Temuan penting dari AI (mis: kandang masih kotor, tempat minum kosong)"
+            "description": "Legacy field \u2014 gunakan ai_temuan_penting"
           },
           "photo_age_warning": {
             "type": "string",
@@ -84,6 +96,10 @@
           "photo_time_warning": {
             "type": "string",
             "description": "Peringatan jika foto diambil di luar jam tugas"
+          },
+          "owner_note": {
+            "type": "string",
+            "description": "Catatan pribadi dari owner ke keeper (teks bebas)"
           }
         }
       },

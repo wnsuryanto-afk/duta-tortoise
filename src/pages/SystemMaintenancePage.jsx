@@ -9,6 +9,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
 import TestModeSettings from "@/components/owner/TestModeSettings";
+import AISaranToggle from "@/components/settings/AISaranToggle";
 
 export default function SystemMaintenancePage() {
   const { role } = useCurrentUser();
@@ -69,6 +70,9 @@ export default function SystemMaintenancePage() {
 
       {/* Target & Poin */}
       <TargetPoinSettings />
+
+      {/* Saran AI untuk Keeper */}
+      <AISaranToggle />
 
       {lastRun && (
         <Alert className="bg-blue-50 border-blue-200">

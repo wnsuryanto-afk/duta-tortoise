@@ -63,6 +63,7 @@ import VetContactPage from '@/pages/VetContactPage.jsx';
 import MaintenanceSchedulePage from '@/pages/MaintenanceSchedulePage.jsx';
 import PrinterConfigPage from '@/pages/PrinterConfigPage';
 import KritikSaranPage from '@/pages/KritikSaranPage';
+import CatatanSaranPage from '@/pages/CatatanSaranPage';
 import StockGudangPage from '@/pages/StockGudangPage';
 import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
 import DuplikatStokPage from '@/pages/DuplikatStokPage';
@@ -151,6 +152,7 @@ const AuthenticatedApp = () => {
         <Route path="/log-whatsapp" element={<WhatsAppLogPage />} />
         <Route path="/incubator-readings" element={<IncubatorReadingPage />} />
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
+        <Route path="/catatan-saran" element={<CatatanSaranPage />} />
         <Route path="/stock-gudang" element={<StockGudangPage />} />
         <Route path="/rekap-poin-gaji" element={<RekapPoinGajiPage />} />
         <Route path="/duplikat-stok" element={<DuplikatStokPage />} />

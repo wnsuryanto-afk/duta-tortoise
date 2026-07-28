@@ -113,6 +113,7 @@ const NAV_GROUPS = [
     items: [
       { path: "/hr",            section: "hr",           label: "Absensi & SDM",     icon: Users },
       { path: "/sop",           section: "sop",          label: "Checklist Harian",  icon: ClipboardCheck },
+      { path: "/catatan-saran", section: "catatan-saran", label: "💬 Catatan & Saran", icon: MessageCircle },
       { path: "/alat-kerja",   section: "alat-kerja",   label: "🔧 Alat Kerja",     icon: Wrench },
       { path: "/approval-poin", section: "approval-poin", label: "Approval Poin",    icon: ShieldAlert },
       { path: "/tugas-insidentil", section: "tugas-insidentil", label: "Tugas Insidentil", icon: Zap },

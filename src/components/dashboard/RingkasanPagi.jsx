@@ -96,8 +96,8 @@ export default function RingkasanPagi() {
 
   const aiFindings = (todayChecklists || []).flatMap(cl =>
     (cl.completed_tasks || [])
-      .filter(t => t.ai_findings && (t.ai_verified === false || (t.ai_confidence != null && t.ai_confidence < 70) || t.photo_age_warning || t.photo_time_warning))
-      .map(t => ({ employee: cl.employee_name, task: t.task_title, finding: t.ai_findings }))
+      .filter(t => t.ai_temuan_penting && (t.ai_verified === false || (t.ai_confidence != null && t.ai_confidence < 70) || t.photo_age_warning || t.photo_time_warning))
+      .map(t => ({ employee: cl.employee_name, task: t.task_title, finding: t.ai_temuan_penting }))
   );
 
   // ── Calcs ──

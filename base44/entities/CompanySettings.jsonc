@@ -91,6 +91,11 @@
       "type": "boolean",
       "default": true,
       "description": "Sertakan gaji dalam perhitungan biaya per ekor untuk HPP"
+    },
+    "ai_saran_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Saran AI (apresiasi + saran membangun) ditampilkan ke keeper. Jika false, keeper tidak melihat saran AI (penilaian teknis tetap untuk owner)."
     }
   },
   "required": [

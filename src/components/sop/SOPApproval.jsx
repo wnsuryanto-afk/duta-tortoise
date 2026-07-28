@@ -52,10 +52,23 @@ export default function SOPApproval() {
     if (t.ai_verified === true) {
       return { icon: "✅", text: `Sesuai (keyakinan ${t.ai_confidence || 0}%)`, color: "bg-green-100 text-green-700 border-green-200" };
     }
+    const reasonText = t.ai_temuan_penting || t.ai_reason || "";
     if (t.ai_confidence != null && t.ai_confidence >= 50) {
-      return { icon: "⚠️", text: `Meragukan — ${t.ai_reason || ""}`, color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
+      return { icon: "⚠️", text: `Meragukan — ${reasonText}`, color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
     }
-    return { icon: "❌", text: `Tidak sesuai — ${t.ai_reason || ""}`, color: "bg-red-100 text-red-700 border-red-200" };
+    return { icon: "❌", text: `Tidak sesuai — ${reasonText}`, color: "bg-red-100 text-red-700 border-red-200" };
+  };
+
+  const handleSaveOwnerNote = async (c, taskIdx, note) => {
+    try {
+      const tasks = (c.completed_tasks || []).slice();
+      tasks[taskIdx] = { ...tasks[taskIdx], owner_note: note };
+      await base44.entities.DailyChecklist.update(c.id, { completed_tasks: tasks });
+      toast.success("Catatan untuk keeper tersimpan");
+      qc.invalidateQueries({ queryKey: ["checklists-all"] });
+    } catch (e) {
+      toast.error("Gagal: " + (e.message || e));
+    }
   };
 
   const { data: checklists = [], isLoading } = useQuery({
@@ -416,8 +429,30 @@ export default function SOPApproval() {
                                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-orange-100 text-orange-700 border-orange-200">{t.photo_time_warning}</span>
                                       )}
                                     </div>
-                                    {t.ai_findings && (
-                                      <p className="text-[10px] text-blue-700 bg-blue-50 rounded px-1.5 py-0.5 border border-blue-100">🔎 {t.ai_findings}</p>
+                                    {t.ai_temuan_penting && (
+                                      <p className="text-[10px] text-red-700 bg-red-50 rounded px-1.5 py-0.5 border border-red-100">🔎 Temuan: {t.ai_temuan_penting}</p>
+                                    )}
+                                    {(t.ai_apresiasi || t.ai_saran) && (
+                                      <div className="rounded bg-blue-50 px-1.5 py-1 border border-blue-100 space-y-0.5">
+                                        <p className="text-[10px] font-bold text-blue-600">💬 Dikirim ke keeper:</p>
+                                        {t.ai_apresiasi && <p className="text-[10px] text-blue-800">{t.ai_apresiasi}</p>}
+                                        {t.ai_saran && <p className="text-[10px] text-blue-700 italic">{t.ai_saran}</p>}
+                                      </div>
+                                    )}
+                                    {t.owner_note && (
+                                      <p className="text-[10px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200">📣 Owner: {t.owner_note}</p>
+                                    )}
+                                    {c.status === "submitted" && isOwner && (
+                                      <input
+                                        type="text"
+                                        placeholder="Tulis catatan untuk keeper..."
+                                        defaultValue={t.owner_note || ""}
+                                        onBlur={(e) => {
+                                          const val = e.target.value.trim();
+                                          if (val !== (t.owner_note || "").trim()) handleSaveOwnerNote(c, i, val);
+                                        }}
+                                        className="w-full h-7 text-xs rounded border border-amber-200 px-2 bg-amber-50/50 focus:bg-white focus:border-amber-400 outline-none"
+                                      />
                                     )}
                                   </div>
                                 ) : taskRequiresPhoto(t.task_title) ? (
