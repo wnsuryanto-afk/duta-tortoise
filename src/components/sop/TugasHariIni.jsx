@@ -1,13 +1,12 @@
 /**
  * TugasHariIni — Jadwal Kerja Harian Duta Tortoise
  *
- * SUMBER TUNGGAL & SEGAR: SOPTask (is_active=true). Hormati frequency,
- * weekly_days, monthly_dates, points, dan title terkini. Task nonaktif
- * TIDAK muncul. TreatmentSchedule TIDAK diinjeksi di sini (anti dobel
- * dengan WidgetSuplemen) — suplemen/vitamin hanya muncul via Suplemen.
+ * SEDERHANA & STABIL: ambil checklist hari ini milik user → tampilkan daftar
+ * task → centang → simpan. Tidak ada perhitungan lintas-karyawan saat render.
  *
- * Anti-dobel: penambahan task dicek terhadap log hari ini (item_id unik);
- * tombol centang kebal double-tap (disabled saat proses).
+ * Penguncian task "bersama" dilakukan SAAT SIMPAN (bukan saat render):
+ * saat user menekan centang, sistem query DB untuk cek apakah task itu
+ * sudah dikerjakan orang lain pada tanggal yang sama. Jika ya → tolak simpan.
  */
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,7 +15,7 @@ import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   CheckCircle2, Clock, Users, ChevronDown, ChevronUp,
-  Camera, Plus, Loader2, Check, X, Star, Salad, Lock
+  Camera, Plus, Loader2, Check, X, Star, Salad,
 } from "lucide-react";
 import { toast } from "sonner";
 import ExtraTaskForm from "./ExtraTaskForm";
@@ -75,6 +74,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 30 * 1000,
   });
 
+  // ── Log hari ini MILIK USER (bukan lintas-karyawan) ──
   const { data: myLogs = [], refetch: refetchLogs } = useQuery({
     queryKey: ["tugas-hari-ini-logs", user?.email, today],
     queryFn: () => base44.entities.MaintenanceLog.filter({ done_by_email: user.email, period_key: today }),
@@ -82,23 +82,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 2 * 60 * 1000,
   });
 
+  // ── Semua log hari ini — HANYA untuk team view (owner/manajer), bukan untuk locking ──
   const { data: allLogsToday = [], refetch: refetchAllLogs } = useQuery({
     queryKey: ["tugas-hari-ini-all-logs", today],
     queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today }),
+    enabled: showTeamView,
     staleTime: 30 * 1000,
   });
-
-  // Map: item_id → { done_by, done_at, done_by_email } dari SEMUA karyawan hari ini
-  // Untuk penguncian task "bersama" — siapa cepat dia dapat, terkunci untuk yang lain
-  const allDoneMap = useMemo(() => {
-    const m = {};
-    (allLogsToday || []).forEach(l => {
-      if (l.item_id && l.is_done !== false) {
-        m[l.item_id] = { done_by: l.done_by, done_at: l.done_at, done_by_email: l.done_by_email };
-      }
-    });
-    return m;
-  }, [allLogsToday]);
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-timbang-reminder", today],
@@ -135,24 +125,21 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 60 * 1000,
   });
 
-  // Photo map: item_id → photo_url
+  // ── Derived data (semua setelah myLogs dideklarasikan) ──
   const photoMap = useMemo(() => {
     const map = {};
     myLogs.forEach(l => { if (l.photo_url) map[l.item_id] = l.photo_url; });
     return map;
   }, [myLogs]);
 
-  // Catatan foto per task (dari MaintenanceLog.notes) — harus setelah myLogs dideklarasikan
   const photoNotesMap = useMemo(() => {
     const m = {};
     myLogs.forEach(l => { if (l.notes) m[l.item_id] = l.notes; });
     return m;
   }, [myLogs]);
 
-  // Set item_id yang sudah ada log hari ini (anti-dobel)
   const existingLogItemIds = useMemo(() => new Set(myLogs.map(l => l.item_id).filter(Boolean)), [myLogs]);
 
-  // Extra tasks
   const extraTasks = useMemo(() => {
     const source = showTeamView ? allLogsToday : myLogs;
     return source.filter(l => l.is_extra);
@@ -168,7 +155,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // ── Bangun task dari SOPTask (hormati frequency + weekly_days + monthly_dates) ──
   const sopTaskItems = useMemo(() => {
     const items = [];
-    // Cari anchor kebersihan (title mengandung "all kandang") untuk override points per-kandang
     const kebersihanAnchor = sopTasks.find(t =>
       t.is_active && (t.title || "").toLowerCase().includes("all kandang")
     );
@@ -185,12 +171,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       })
       .forEach(t => {
         const titleLower = (t.title || "").toLowerCase();
-
-        // SKIP anchor "all kandang" / "semua kandang" — kebersihan per-kandang
-        // sudah ditangani oleh widget Kebersihan Kandang di GuidedHariIni
         if (titleLower.includes("all kandang") || titleLower.includes("semua kandang")) return;
 
-        // EXPAND: anchor "ROTASI OTOMATIS" → baby (2/hari, >14hr) + dewasa (2/hari, >60hr)
         if (titleLower.includes("rotasi otomatis")) {
           (rotasiUkur.babies || []).forEach(tor => {
             items.push({
@@ -228,7 +210,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           });
           return;
         }
-        // Kebersihan per-kandang: gunakan points dari anchor task (bukan hard-code)
         const isKebersihan = t.category === "kebersihan";
         items.push({
           id: `sop_${t.id}`,
@@ -251,7 +232,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // Reminder timbang
   const timbangToday = tortoises.filter(t => {
     if (!["aktif", "baby"].includes(t.status) || !t.last_weighed_date || !t.weighing_interval_days) return false;
-    return differenceInCalendarDays(now, parseISO(t.last_weighed_date)) >= t.weighing_interval_days;
+    try { return differenceInCalendarDays(now, parseISO(t.last_weighed_date)) >= t.weighing_interval_days; }
+    catch { return false; }
   }).slice(0, 5);
 
   const timbangItems = timbangToday.map(t => ({
@@ -269,32 +251,38 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const doneProgress = checkableTasks.filter(t => checkedIds.has(t.id)).length + (absChecked.abs_masuk ? 1 : 0) + (absChecked.abs_pulang ? 1 : 0);
   const progressPct = totalProgress > 0 ? Math.round((doneProgress / totalProgress) * 100) : 0;
 
-  // Team view map
+  // Team view map (hanya untuk owner/manajer — allLogsToday hanya fetch saat showTeamView)
   const teamCheckMap = useMemo(() => {
     if (!showTeam) return {};
     const m = {};
-    allLogsToday.forEach(l => {
+    (allLogsToday || []).forEach(l => {
       if (!m[l.item_id]) m[l.item_id] = [];
       m[l.item_id].push({ name: l.done_by, time: l.done_at, photo: l.photo_url });
     });
     return m;
   }, [showTeam, allLogsToday]);
 
-  // Cek apakah task terkunci untuk user ini (dikerjakan orang lain / ditugaskan ke orang lain)
-  const getLockInfo = (task) => {
+  // ── PENGUNCIAN SAAT SIMPAN (bukan saat render) ──
+  // Query DB saat user menekan centang untuk cek apakah task sudah dikerjakan orang lain
+  const checkTaskLock = async (task) => {
     // Structural tasks (absensi) tidak pernah terkunci
     if (task.structural || ABSENSI_IDS.has(task.id) || task.noCheck) return null;
     // Penugasan khusus: hanya orang yang ditugaskan yang bisa centang
     if (task.assigned_to_email && task.assigned_to_email !== user?.email) {
       return { type: "assigned", name: task.assigned_to_name || task.assigned_to_email };
     }
-    // Task "bersama": siapa cepat dia dapat — terkunci jika sudah dikerjakan orang lain
+    // Task "bersama": cek DB apakah sudah dikerjakan orang lain hari ini
     const scope = task.task_scope || "bersama";
     if (scope === "bersama") {
-      const done = allDoneMap[task.id];
-      if (done && done.done_by_email !== user?.email) {
-        return { type: "done", name: done.done_by || "karyawan lain", time: done.done_at || "" };
-      }
+      try {
+        const existing = await base44.entities.MaintenanceLog.filter({
+          item_id: task.id, period_key: today, is_done: true,
+        });
+        const byOther = existing.find(l => l.done_by_email !== user?.email);
+        if (byOther) {
+          return { type: "done", name: byOther.done_by || "karyawan lain", time: byOther.done_at || "" };
+        }
+      } catch { /* jika query gagal, izinkan simpan */ }
     }
     return null;
   };
@@ -303,19 +291,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const handleCheck = async (task) => {
     if (task.noCheck || ABSENSI_IDS.has(task.id)) return;
     if (savingId) return; // anti double-tap
-
-    // Validasi penguncian (race condition protection — dua orang menekan bersamaan)
-    const lock = getLockInfo(task);
-    if (lock) {
-      if (lock.type === "done") {
-        toast.error(`Tidak bisa: sudah dikerjakan ${lock.name}${lock.time ? ` · ${lock.time}` : ""}`);
-      } else {
-        toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
-      }
-      // Refresh data agar locking terbaru terlihat
-      refetchAllLogs();
-      return;
-    }
 
     const alreadyDone = checkedIds.has(task.id);
 
@@ -335,15 +310,28 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       return;
     }
 
-    // ANTI-DOBEL: jika sudah ada log untuk item_id ini hari ini, jangan tambah lagi
+    // ANTI-DOBEL: jika sudah ada log milik user untuk item_id ini hari ini
     if (existingLogItemIds.has(task.id)) {
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       return;
     }
 
-    setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+    // ── CEK PENGUNCIAN SAAT AKAN SIMPAN ──
     setSavingId(task.id);
     try {
+      const lock = await checkTaskLock(task);
+      if (lock) {
+        if (lock.type === "done") {
+          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
+        } else {
+          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
+        }
+        refetchLogs();
+        return; // jangan simpan, jangan centang
+      }
+
+      // Simpan
+      setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       await base44.entities.MaintenanceLog.create({
         check_key: `${user.email}__tugas__${task.id}__${today}`,
         enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
@@ -400,8 +388,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     if (savingId) return;
     setSavingId(task.id);
     try {
+      // ── CEK PENGUNCIAN SEBELUM SIMPAN ──
+      const lock = await checkTaskLock(task);
+      if (lock) {
+        if (lock.type === "done") {
+          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
+        } else {
+          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
+        }
+        refetchLogs();
+        return;
+      }
+
       const compressed = await compressImage(file);
-      if (!compressed) { setSavingId(null); return; }
+      if (!compressed) return;
       const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
       const takenAt = format(new Date(), "HH:mm");
       await base44.entities.MaintenanceLog.create({
@@ -433,6 +433,19 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     const task = ukurTarget;
     setSavingId(task.id);
     try {
+      // ── CEK PENGUNCIAN SEBELUM SIMPAN ──
+      const lock = await checkTaskLock(task);
+      if (lock) {
+        if (lock.type === "done") {
+          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
+        } else {
+          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
+        }
+        refetchLogs();
+        setUkurTarget(null);
+        return;
+      }
+
       // 1. Simpan MeasurementHistory (trigger onMeasurementSaved → update Tortoise otomatis)
       await base44.entities.MeasurementHistory.create({
         tortoise_id: task.tortoiseId,
@@ -443,7 +456,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         measured_by: user.full_name || user.email,
         notes: "Rotasi otomatis timbang & ukur",
       });
-      // 2. Buat MaintenanceLog (centang) — anti-dobel via existingLogItemIds
+      // 2. Buat MaintenanceLog (centang)
       if (!existingLogItemIds.has(task.id)) {
         await base44.entities.MaintenanceLog.create({
           check_key: `${user.email}__tugas__${task.id}__${today}`,
@@ -564,7 +577,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             showTeam={showTeam}
             requirePhoto={task.require_photo}
             isUkurRotasi={task.isUkurRotasi}
-            lockInfo={getLockInfo(task)}
             onCheck={() => handleCheck(task)}
             onUkurCheck={() => setUkurTarget(task)}
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
@@ -623,16 +635,15 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   );
 }
 
-// ── Task Row Component ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, lockInfo, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes }) {
+// ── Task Row Component (sederhana, tanpa lock UI) ──
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
   const [showPhoto, setShowPhoto] = useState(false);
-  const isLocked = !!lockInfo;
 
   const handleClick = () => {
-    if (isIstirahat || isAbsensi || isSaving || isLocked) return;
+    if (isIstirahat || isAbsensi || isSaving) return;
     if (isUkurRotasi && !isChecked) {
       onUkurCheck();
       return;
@@ -645,18 +656,13 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
   };
 
   return (
-    <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isLocked ? "border-gray-200 bg-gray-50" : isChecked ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm`}>
-      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi && !isLocked ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
+    <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isChecked ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm`}>
+      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
         <span className="text-xs font-bold text-gray-400 w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <p className={`text-sm font-semibold ${isLocked ? "text-gray-400" : isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
-            {isLocked && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-500 flex-shrink-0">
-                {lockInfo.type === "done" ? "🔒 Terkunci" : "👤 Ditugaskan"}
-              </span>
-            )}
+            <p className={`text-sm font-semibold ${isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
             {requirePhoto && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex-shrink-0">📷 Wajib Foto</span>
             )}
@@ -706,16 +712,6 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
               ))}
             </div>
           )}
-
-          {/* Lock info — "Sudah dikerjakan [Nama] · [jam]" atau "Tugas [Nama]" */}
-          {isLocked && (
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              {lockInfo.type === "done"
-                ? `✅ Sudah dikerjakan ${lockInfo.name}${lockInfo.time ? ` · ${lockInfo.time}` : ""}`
-                : `👤 Tugas ${lockInfo.name}`
-              }
-            </p>
-          )}
         </div>
 
         {/* Actions */}
@@ -731,13 +727,12 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
           {/* Checkbox */}
           {!isIstirahat && (
             <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
-              isLocked ? "border-gray-200 bg-gray-100"
-              : isChecked ? "bg-green-500 border-green-500"
+              isChecked ? "bg-green-500 border-green-500"
               : isAbsensi ? "border-gray-200 bg-gray-50"
               : requirePhoto ? "border-red-300 hover:border-red-400"
               : "border-gray-300 hover:border-green-400"
-            } ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving && !isLocked) handleClick(); }}>
-              {isLocked ? <Lock className="w-3.5 h-3.5 text-gray-400" /> : isChecked ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
+            } ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving) handleClick(); }}>
+              {isChecked ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
             </div>
           )}
         </div>
