@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { claimIncidentalTask } from "@/lib/claimIncidentalTask";
 import IncidentalTaskCompleteDialog from "./IncidentalTaskCompleteDialog";
@@ -18,6 +19,22 @@ export default function IncidentalTaskList({ user }) {
   const today = format(new Date(), "yyyy-MM-dd");
   const [processingId, setProcessingId] = useState(null);
   const [confirmTask, setConfirmTask] = useState(null);
+  const [subStepSaving, setSubStepSaving] = useState(null);
+
+  const handleToggleSubStep = async (task, stepIdx) => {
+    const newSteps = (task.sub_steps || []).map((s, i) =>
+      i === stepIdx ? { ...s, is_checked: !s.is_checked } : s
+    );
+    setSubStepSaving(`${task.id}_${stepIdx}`);
+    try {
+      await base44.entities.IncidentalTask.update(task.id, { sub_steps: newSteps });
+      qc.invalidateQueries({ queryKey: ["incidental-tasks-mine"] });
+      qc.invalidateQueries({ queryKey: ["incidental-tasks-done-today"] });
+    } catch (e) {
+      toast.error("Gagal: " + (e.message || e));
+    }
+    setSubStepSaving(null);
+  };
 
   const { data: tasks = [] } = useQuery({
     queryKey: ["incidental-tasks-mine", user?.email, today],
@@ -94,6 +111,10 @@ export default function IncidentalTaskList({ user }) {
       {myTasks.map((task) => {
         const isWaiting = task.material_status === "waiting_materials";
         const missingItems = (task.required_items || []).filter((i) => !i.is_available);
+        const subSteps = task.sub_steps || [];
+        const hasSubSteps = subSteps.length > 0;
+        const subChecked = subSteps.filter(s => s.is_checked).length;
+        const allSubDone = !hasSubSteps || subChecked === subSteps.length;
         return (
           <div
             key={task.id}
@@ -121,6 +142,23 @@ export default function IncidentalTaskList({ user }) {
                 </span>
               </div>
               {task.notes && <p className="text-xs text-gray-600 mt-0.5">{task.notes}</p>}
+              {hasSubSteps && (
+                <div className="mt-1.5 space-y-1">
+                  {subSteps.map((step, si) => (
+                    <label key={si} className="flex items-start gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={step.is_checked}
+                        onCheckedChange={() => handleToggleSubStep(task, si)}
+                        disabled={subStepSaving === `${task.id}_${si}` || task.status === "done"}
+                        className="mt-0.5"
+                      />
+                      <span className={`text-xs ${step.is_checked ? "line-through text-gray-400" : "text-gray-700"}`}>
+                        {step.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
               {isWaiting && missingItems.length > 0 && (
                 <p className="text-xs text-gray-500 mt-0.5">
                   Menunggu:{" "}
@@ -150,18 +188,27 @@ export default function IncidentalTaskList({ user }) {
                 <Lock className="w-4 h-4 text-gray-400" />
               </div>
             ) : (
-              <button
-                onClick={() => setConfirmTask(task)}
-                disabled={processingId === task.id}
-                className="flex-shrink-0 w-8 h-8 rounded-xl border-2 border-orange-400 bg-white flex items-center justify-center active:scale-95 disabled:opacity-50 transition-transform"
-                title="Tandai selesai"
-              >
-                {processingId === task.id ? (
-                  <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-5 h-5 text-orange-500" />
+              <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                <button
+                  onClick={() => setConfirmTask(task)}
+                  disabled={processingId === task.id || (hasSubSteps && !allSubDone)}
+                  className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center active:scale-95 disabled:opacity-50 transition-transform ${
+                    allSubDone ? "border-orange-400 bg-white" : "border-gray-300 bg-gray-100"
+                  }`}
+                  title={allSubDone ? "Tandai selesai" : `Centang semua langkah dulu (${subChecked}/${subSteps.length})`}
+                >
+                  {processingId === task.id ? (
+                    <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className={`w-5 h-5 ${allSubDone ? "text-orange-500" : "text-gray-300"}`} />
+                  )}
+                </button>
+                {hasSubSteps && (
+                  <span className={`text-[9px] font-semibold ${allSubDone ? "text-green-600" : "text-gray-400"}`}>
+                    {subChecked}/{subSteps.length}
+                  </span>
                 )}
-              </button>
+              </div>
             )}
           </div>
         );

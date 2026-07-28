@@ -42,6 +42,23 @@
       "default": "pending",
       "description": "pending = belum dikerjakan, done = sudah dikerjakan, cancelled = dibatalkan"
     },
+    "sub_steps": {
+      "type": "array",
+      "description": "Daftar sub-langkah untuk tugas perawatan protokol penyakit. Tugas dianggap selesai bila semua sub-langkah dicentang. Poin diberikan sekali.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Instruksi langkah perawatan"
+          },
+          "is_checked": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
     "required_items": {
       "type": "array",
       "description": "Daftar barang yang dibutuhkan untuk tugas ini (opsional)",

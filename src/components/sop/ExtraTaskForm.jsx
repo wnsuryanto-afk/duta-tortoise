@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +16,13 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const { data: existingTasks = [] } = useQuery({
+    queryKey: ["incidental-tasks-today", today],
+    queryFn: () => base44.entities.IncidentalTask.filter({ status: "pending", due_date: today }),
+    enabled: open,
+    staleTime: 30 * 1000,
+  });
+
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -27,6 +36,21 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
 
   const handleSave = async () => {
     if (!form.title.trim()) return;
+    const extractCodes = (text) => {
+      const matches = (text || "").toLowerCase().match(/([a-z]{1,5}[-]?\d{1,5})/g);
+      return matches || [];
+    };
+    const newCodes = extractCodes(form.title);
+    if (newCodes.length > 0) {
+      const dup = existingTasks.find(t => {
+        const existingCodes = extractCodes(t.title);
+        return newCodes.some(c => existingCodes.includes(c));
+      });
+      if (dup) {
+        toast.warning(`Sudah ada tugas "${dup.title}" untuk kura ini hari ini — kerjakan tugas tersebut saja ya`);
+        return;
+      }
+    }
     setSaving(true);
     try {
       await base44.entities.MaintenanceLog.create({

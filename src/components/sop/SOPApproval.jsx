@@ -407,6 +407,14 @@ export default function SOPApproval() {
           {checklists.map((c) => {
             const tasks = c.completed_tasks || [];
             const totalClaimed = c.total_points_claimed || tasks.reduce((s, t) => s + (t.points || 0), 0);
+            const isHighClaim = totalClaimed > 250;
+            const topSources = isHighClaim ? Object.entries(
+              tasks.reduce((m, t) => {
+                const k = t.task_title || "?";
+                m[k] = (m[k] || 0) + (t.points || 0);
+                return m;
+              }, {})
+            ).sort((a, b) => b[1] - a[1]).slice(0, 3) : [];
             const dupSet = getDupSet(c);
             const isOpen = !!expanded[c.id];
             const willApprove = getWillApprove(c);
@@ -444,6 +452,18 @@ export default function SOPApproval() {
                         <span className="text-green-600 font-bold ml-auto">✓ Disetujui: {c.approved_points} poin</span>
                       )}
                     </div>
+                    {isHighClaim && (
+                      <div className="mt-2 p-2 rounded-lg bg-red-50 border border-red-200">
+                        <p className="text-xs font-bold text-red-700 flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" /> Klaim harian tinggi — periksa kembali
+                        </p>
+                        <div className="mt-1 space-y-0.5">
+                          {topSources.map(([title, points]) => (
+                            <p key={title} className="text-[10px] text-red-600">{title}: {points} poin</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <span className="text-muted-foreground mt-1">
                     {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

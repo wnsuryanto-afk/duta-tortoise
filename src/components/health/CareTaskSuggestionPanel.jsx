@@ -1,22 +1,24 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ClipboardPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
 import { getCareIcon } from "@/lib/careIconUtils";
 
 const TRIGGER_SEVERITIES = ["sedang", "berat", "kritis"];
+const CARE_TASK_POINTS = 15;
 
 /**
  * CareTaskSuggestionPanel — Alur 1 (semi-otomatis).
  * Muncul saat type="sakit" AND severity in [sedang, berat, kritis] AND
  * ada DiagnosisProtocol dengan perawatan_pendukung untuk diagnosis terpilih.
- * User klik tombol untuk membuat IncidentalTask per item yang tercentang.
+ *
+ * PERBAIKAN: Buat SATU tugas per kura per diagnosis (15 poin), dengan seluruh
+ * langkah perawatan sebagai sub-langkah (daftar centang di dalam tugas),
+ * bukan 5-6 tugas terpisah @10 poin.
  */
 export default function CareTaskSuggestionPanel({
   diagnoses,
@@ -27,7 +29,6 @@ export default function CareTaskSuggestionPanel({
   protocols: prefetched,
 }) {
   const qc = useQueryClient();
-  const [unchecked, setUnchecked] = useState({});
   const [creating, setCreating] = useState(false);
 
   const { data: fetched = [] } = useQuery({
@@ -58,58 +59,49 @@ export default function CareTaskSuggestionPanel({
     );
   }
 
-  const items = matched.flatMap(({ protocol }) =>
-    (protocol.perawatan_pendukung || []).map((item, i) => ({
-      key: `${protocol.diagnosis_code || protocol.diagnosis_name}-${i}`,
-      diagnosisName: protocol.diagnosis_name,
-      item,
-    }))
-  );
-
-  const toggle = (key) =>
-    setUnchecked((prev) => ({ ...prev, [key]: !prev[key] }));
-
   const handleCreate = async () => {
-    const tortoiseLabel = tortoiseCode || tortoiseName || "Kura";
-    const selectedItems = items.filter((it) => !unchecked[it.key]);
-
-    if (selectedItems.length === 0) {
-      toast.error("Pilih minimal 1 tugas perawatan");
-      return;
-    }
-
     setCreating(true);
     try {
       const today = format(new Date(), "yyyy-MM-dd");
       const me = await base44.auth.me().catch(() => null);
+      const tortoiseLabel = tortoiseCode || tortoiseName || "Kura";
 
-      // Cek duplikat: fetch pending IncidentalTask due_date=today
       const existing = await base44.entities.IncidentalTask.filter({
         status: "pending",
         due_date: today,
       });
-      const existingTitles = existing.map((t) => (t.title || "").toLowerCase());
+      const existingTitles = new Set(existing.map((t) => (t.title || "").toLowerCase()));
 
       let createdCount = 0;
       let skippedCount = 0;
 
-      for (const it of selectedItems) {
-        const title = `${tortoiseLabel} — ${it.item}`;
-        if (existingTitles.includes(title.toLowerCase())) {
+      for (const { protocol } of matched) {
+        const diagnosisName = protocol.diagnosis_name || protocol.diagnosis_code;
+        const title = `Perawatan ${tortoiseLabel} — ${diagnosisName}`;
+
+        if (existingTitles.has(title.toLowerCase())) {
           skippedCount++;
           continue;
         }
+
+        const subSteps = (protocol.perawatan_pendukung || []).map((item) => ({
+          label: item,
+          is_checked: false,
+        }));
+
         await base44.entities.IncidentalTask.create({
           title,
           due_date: today,
-          points: 10,
+          points: CARE_TASK_POINTS,
           status: "pending",
-          notes: `Auto dari diagnosis ${it.diagnosisName} pada ${tortoiseLabel}. Wajib foto kondisi kura.`,
+          notes: `Auto dari diagnosis ${diagnosisName}. Wajib foto kondisi kura. Tandai selesai bila semua langkah dikerjakan.`,
+          sub_steps: subSteps,
           created_by_email: me?.email,
           created_by_name: me?.full_name || me?.email,
           is_active: true,
           material_status: "ready",
         });
+        existingTitles.add(title.toLowerCase());
         createdCount++;
       }
 
@@ -117,19 +109,24 @@ export default function CareTaskSuggestionPanel({
       qc.invalidateQueries({ queryKey: ["harus-dibeli"] });
 
       if (createdCount > 0) {
-        toast.success(`${createdCount} tugas perawatan dibuat untuk ${tortoiseLabel}`);
+        toast.success(`${createdCount} tugas perawatan dibuat untuk ${tortoiseLabel} (@${CARE_TASK_POINTS} poin per tugas)`);
       }
       if (skippedCount > 0) {
         toast.info(`${skippedCount} tugas dilewati (sudah ada)`);
-      }
-      if (createdCount === 0 && skippedCount > 0) {
-        toast.info("Semua tugas sudah ada, tidak ada yang baru dibuat.");
       }
     } catch (err) {
       toast.error("Gagal: " + (err?.message || ""));
     }
     setCreating(false);
   };
+
+  const previewItems = matched.flatMap(({ protocol }) =>
+    (protocol.perawatan_pendukung || []).map((item, i) => ({
+      key: `${protocol.diagnosis_code || protocol.diagnosis_name}-${i}`,
+      diagnosisName: protocol.diagnosis_name,
+      item,
+    }))
+  );
 
   return (
     <Card className="p-3 border-l-4 border-l-[#1B4332] bg-[#F0F7F2]/40">
@@ -141,19 +138,23 @@ export default function CareTaskSuggestionPanel({
         Kura: <strong>{tortoiseCode || tortoiseName}</strong> · Severity: {severity}
       </p>
 
+      <div className="bg-white/50 rounded-lg p-2 mb-2 border border-border">
+        <p className="text-[11px] font-semibold text-[#1B4332] mb-0.5">
+          Akan dibuat: {matched.length} tugas (@{CARE_TASK_POINTS} poin per tugas)
+        </p>
+        <p className="text-[10px] text-muted-foreground">
+          Tiap tugas berisi daftar langkah perawatan sebagai centangan. Poin diberikan sekali per tugas, bukan per langkah.
+        </p>
+      </div>
+
       <div className="space-y-1.5">
-        {items.map((it, idx) => {
+        {previewItems.map((it, idx) => {
           const icon = getCareIcon(it.item);
           return (
-            <label
+            <div
               key={it.key}
-              className="flex items-start gap-2.5 cursor-pointer hover:bg-white/50 rounded-lg p-2 border border-transparent hover:border-border transition-colors"
+              className="flex items-start gap-2.5 rounded-lg p-2 border border-transparent bg-white/30"
             >
-              <Checkbox
-                checked={!unchecked[it.key]}
-                onCheckedChange={() => toggle(it.key)}
-                className="mt-0.5 flex-shrink-0"
-              />
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1B4332]/10 text-[#1B4332] flex items-center justify-center text-xs font-bold">
                 {idx + 1}
               </span>
@@ -162,7 +163,7 @@ export default function CareTaskSuggestionPanel({
                 <p className="text-xs leading-relaxed">{it.item}</p>
                 <p className="text-[10px] text-muted-foreground">{it.diagnosisName}</p>
               </div>
-            </label>
+            </div>
           );
         })}
       </div>
@@ -178,7 +179,7 @@ export default function CareTaskSuggestionPanel({
         ) : (
           <ClipboardPlus className="w-4 h-4" />
         )}
-        Buat Tugas Perawatan
+        Buat Tugas Perawatan (@{CARE_TASK_POINTS} poin)
       </Button>
     </Card>
   );
