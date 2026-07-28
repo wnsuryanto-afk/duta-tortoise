@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   CheckCircle2, XCircle, Star, ChevronDown, ChevronUp,
-  AlertTriangle, UserCheck, Loader2, ListChecks
+  AlertTriangle, UserCheck, Loader2, ListChecks, Sparkles, Clock
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -37,6 +37,26 @@ export default function SOPApproval() {
   const [processing, setProcessing] = useState({});
   const [filterStatus, setFilterStatus] = useState("submitted");
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [filterNeedsReview, setFilterNeedsReview] = useState(false);
+
+  const taskNeedsReview = (t) => {
+    if (t.ai_verified === false) return true;
+    if (t.ai_confidence != null && t.ai_confidence < 70) return true;
+    if (t.photo_age_warning) return true;
+    if (t.photo_time_warning) return true;
+    return false;
+  };
+
+  const getAIBadge = (t) => {
+    if (t.ai_verified === undefined || t.ai_verified === null) return null;
+    if (t.ai_verified === true) {
+      return { icon: "✅", text: `Sesuai (keyakinan ${t.ai_confidence || 0}%)`, color: "bg-green-100 text-green-700 border-green-200" };
+    }
+    if (t.ai_confidence != null && t.ai_confidence >= 50) {
+      return { icon: "⚠️", text: `Meragukan — ${t.ai_reason || ""}`, color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
+    }
+    return { icon: "❌", text: `Tidak sesuai — ${t.ai_reason || ""}`, color: "bg-red-100 text-red-700 border-red-200" };
+  };
 
   const { data: checklists = [], isLoading } = useQuery({
     queryKey: ["checklists-all", filterStatus],
@@ -219,7 +239,7 @@ export default function SOPApproval() {
       )}
 
       {/* Filter */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         {filters.map(([val, label]) => (
           <Button
             key={val}
@@ -230,6 +250,15 @@ export default function SOPApproval() {
             {label}
           </Button>
         ))}
+        <Button
+          variant={filterNeedsReview ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFilterNeedsReview(v => !v)}
+          className="gap-1.5"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          {filterNeedsReview ? "✓ Hanya perlu diperiksa" : "Hanya perlu diperiksa"}
+        </Button>
       </div>
 
       {/* Ringkasan beban per karyawan */}
@@ -320,6 +349,7 @@ export default function SOPApproval() {
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-muted-foreground">Daftar task yang diklaim:</p>
                         {tasks.map((t, i) => {
+                          if (filterNeedsReview && !taskNeedsReview(t)) return null;
                           const isDup = dupSet.has(norm(t.task_title));
                           const checked = cm[i];
                           const isSkipped = t.status === "skipped_no_stock";
@@ -359,10 +389,37 @@ export default function SOPApproval() {
                                   <p className="text-[11px] text-blue-700 mt-0.5 bg-blue-50 rounded px-1.5 py-0.5 border border-blue-100">📝 {t.photo_notes}</p>
                                 )}
                                 {t.photo_url ? (
-                                  <button onClick={() => setPhotoPreview({ url: t.photo_url, takenAt: t.photo_taken_at, title: t.task_title })} className="mt-1.5 block">
-                                    <img src={t.photo_url} alt="Bukti" className="h-16 w-24 object-cover rounded border hover:opacity-80 transition-opacity" />
-                                    {t.photo_taken_at && <span className="text-[10px] text-muted-foreground block mt-0.5">🕐 {t.photo_taken_at}</span>}
-                                  </button>
+                                  <div className="mt-1.5 space-y-1">
+                                    <button onClick={() => setPhotoPreview({ url: t.photo_url, takenAt: t.photo_taken_at, title: t.task_title })} className="block">
+                                      <img src={t.photo_url} alt="Bukti" className="h-16 w-24 object-cover rounded border hover:opacity-80 transition-opacity" />
+                                      {t.photo_taken_at && <span className="text-[10px] text-muted-foreground block mt-0.5">🕐 {t.photo_taken_at}</span>}
+                                    </button>
+                                    <div className="flex flex-wrap gap-1">
+                                      {t.ai_verified === true && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-green-100 text-green-700 border-green-200">✅ Sesuai (keyakinan {t.ai_confidence || 0}%)</span>
+                                      )}
+                                      {t.ai_verified === false && t.ai_confidence != null && t.ai_confidence >= 50 && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200">⚠️ Meragukan — {t.ai_reason || ""}</span>
+                                      )}
+                                      {t.ai_verified === false && (t.ai_confidence == null || t.ai_confidence < 50) && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200">❌ Tidak sesuai — {t.ai_reason || ""}</span>
+                                      )}
+                                      {t.ai_verified == null && taskRequiresPhoto(t.task_title) && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-gray-100 text-gray-500 border-gray-200">⏳ belum diperiksa AI</span>
+                                      )}
+                                      {t.photo_age_warning && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-orange-100 text-orange-700 border-orange-200 flex items-center gap-0.5">
+                                          <Clock className="w-2.5 h-2.5" /> {t.photo_age_warning}
+                                        </span>
+                                      )}
+                                      {t.photo_time_warning && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-orange-100 text-orange-700 border-orange-200">{t.photo_time_warning}</span>
+                                      )}
+                                    </div>
+                                    {t.ai_findings && (
+                                      <p className="text-[10px] text-blue-700 bg-blue-50 rounded px-1.5 py-0.5 border border-blue-100">🔎 {t.ai_findings}</p>
+                                    )}
+                                  </div>
                                 ) : taskRequiresPhoto(t.task_title) ? (
                                   <p className="mt-1.5 text-[11px] text-amber-600 font-semibold flex items-center gap-1">
                                     <AlertTriangle className="w-3 h-3" /> ⚠️ tanpa foto
@@ -380,6 +437,9 @@ export default function SOPApproval() {
                     {/* Approval actions — owner only, only for submitted */}
                     {c.status === "submitted" && isOwner && (
                       <div className="space-y-3 pt-2 border-t">
+                        <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> Penilaian AI bisa keliru, gunakan sebagai bantuan.
+                        </p>
                         {/* Ringkasan koreksi */}
                         <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs space-y-1">
                           <div className="flex justify-between">

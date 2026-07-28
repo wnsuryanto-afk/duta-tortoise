@@ -60,6 +60,30 @@
           "skip_reason": {
             "type": "string",
             "description": "Alasan skip (mis: Stok kosong)"
+          },
+          "ai_verified": {
+            "type": "boolean",
+            "description": "Hasil AI Vision: true=foto sesuai task, false=tidak sesuai"
+          },
+          "ai_confidence": {
+            "type": "number",
+            "description": "Tingkat keyakinan AI (0-100)"
+          },
+          "ai_reason": {
+            "type": "string",
+            "description": "Alasan singkat dari AI (bahasa Indonesia)"
+          },
+          "ai_findings": {
+            "type": "string",
+            "description": "Temuan penting dari AI (mis: kandang masih kotor, tempat minum kosong)"
+          },
+          "photo_age_warning": {
+            "type": "string",
+            "description": "Peringatan jika foto berusia >2 jam (kemungkinan bukan diambil saat itu)"
+          },
+          "photo_time_warning": {
+            "type": "string",
+            "description": "Peringatan jika foto diambil di luar jam tugas"
           }
         }
       },

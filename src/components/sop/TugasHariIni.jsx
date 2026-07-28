@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import ExtraTaskForm from "./ExtraTaskForm";
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
+import { detectPhotoAge, checkDeadlineTime, runPhotoVerificationInBackground } from "@/lib/photoVerification";
 import PhotoPreviewModal from "./PhotoPreviewModal";
 import UkurFormDialog from "./UkurFormDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
@@ -444,6 +445,16 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         employeeEmail: user.email, date: today,
         taskTitle: task.label, enclosure: "Tugas Harian",
         photoUrl: file_url, takenAt,
+      });
+
+      // ── BACKGROUND: AI Vision + deteksi foto lama (non-blocking, jangan tunggu keeper) ──
+      const ageInfo = detectPhotoAge(file);
+      const deadlineTime = task.waktu?.startsWith("≤ ") ? task.waktu.replace("≤ ", "") : null;
+      const timeWarning = checkDeadlineTime(deadlineTime, new Date());
+      runPhotoVerificationInBackground({
+        photoUrl: file_url, task, user, today,
+        ageWarning: ageInfo.warning || "",
+        timeWarning: timeWarning || "",
       });
     } catch {
     } finally {

@@ -88,6 +88,17 @@ export default function RingkasanPagi() {
     queryFn: () => base44.entities.ToolRequest.filter({ status: "menunggu" }, "-request_date", 200),
     staleTime: 60 * 1000,
   });
+  const { data: todayChecklists = [] } = useQuery({
+    queryKey: ["ringkasan-today-checklists", today],
+    queryFn: () => base44.entities.DailyChecklist.filter({ date: today }),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const aiFindings = (todayChecklists || []).flatMap(cl =>
+    (cl.completed_tasks || [])
+      .filter(t => t.ai_findings && (t.ai_verified === false || (t.ai_confidence != null && t.ai_confidence < 70) || t.photo_age_warning || t.photo_time_warning))
+      .map(t => ({ employee: cl.employee_name, task: t.task_title, finding: t.ai_findings }))
+  );
 
   // ── Calcs ──
   const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
@@ -151,6 +162,23 @@ export default function RingkasanPagi() {
             </Link>
           ))}
         </div>
+      )}
+
+      {/* 1.4 TEMUAN AI DARI FOTO */}
+      {aiFindings.length > 0 && (
+        <Link to="/approval-poin" className="block bg-purple-50 border border-purple-200 rounded-xl p-3 hover:bg-purple-100 transition-colors">
+          <p className="text-sm font-bold text-purple-800">
+            🔎 Temuan dari foto: {aiFindings.length} hal perlu diperiksa
+          </p>
+          <div className="mt-1 space-y-0.5">
+            {aiFindings.slice(0, 3).map((f, i) => (
+              <p key={i} className="text-xs text-purple-700">
+                {f.employee} — {f.task}: {f.finding}
+              </p>
+            ))}
+            {aiFindings.length > 3 && <p className="text-[10px] text-purple-600 italic">+{aiFindings.length - 3} temuan lainnya</p>}
+          </div>
+        </Link>
       )}
 
       {/* 1.5 HARUS DIBELI + ALAT */}
