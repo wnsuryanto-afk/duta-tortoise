@@ -96,6 +96,12 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 10 * 60 * 1000,
   });
 
+  const { data: enclosures = [] } = useQuery({
+    queryKey: ["enclosures-kebersihan", today],
+    queryFn: () => base44.entities.Enclosure.filter({ is_active: true }, "name", 50),
+    staleTime: 10 * 60 * 1000,
+  });
+
   const { data: rotasiUkur = { babies: [], dewasa: [] } } = useQuery({
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {
@@ -156,9 +162,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const sopTaskItems = useMemo(() => {
     const items = [];
     const kebersihanAnchor = sopTasks.find(t =>
-      t.is_active && (t.title || "").toLowerCase().includes("all kandang")
+      t.is_active && t.category === "kebersihan" && (t.title || "").toLowerCase().includes("all kandang")
     );
-    const kebersihanPoints = kebersihanAnchor?.points ?? 10;
+    const kebersihanPoints = kebersihanAnchor?.points ?? 0;
 
     sopTasks
       .filter(t => {
@@ -171,7 +177,25 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       })
       .forEach(t => {
         const titleLower = (t.title || "").toLowerCase();
-        if (titleLower.includes("all kandang") || titleLower.includes("semua kandang")) return;
+        if (titleLower.includes("all kandang") || titleLower.includes("semua kandang")) {
+          if (t.category === "kebersihan") {
+            const activeEnclosures = enclosures.filter(e => !e.is_archived);
+            activeEnclosures.forEach(enc => {
+              items.push({
+                id: `kebersihan_kandang_${enc.name}`,
+                label: `Kebersihan ${enc.name}`,
+                waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+                icon: "🏠",
+                keterangan: "",
+                points: kebersihanPoints,
+                badge: "kebersihan",
+                badgeColor: CATEGORY_BADGE.kebersihan,
+                task_scope: "bersama",
+              });
+            });
+          }
+          return;
+        }
 
         if (titleLower.includes("rotasi otomatis")) {
           (rotasiUkur.babies || []).forEach(tor => {
@@ -210,14 +234,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           });
           return;
         }
-        const isKebersihan = t.category === "kebersihan";
         items.push({
           id: `sop_${t.id}`,
           label: t.title,
           waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
           icon: CATEGORY_ICON[t.category] || "✅",
           keterangan: t.description || "",
-          points: isKebersihan && kebersihanAnchor ? kebersihanPoints : (t.points || 0),
+          points: t.points || 0,
           badge: t.category,
           badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
           require_photo: t.require_photo || false,
@@ -227,7 +250,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         });
       });
     return items;
-  }, [sopTasks, dow, dom, rotasiUkur]);
+  }, [sopTasks, dow, dom, rotasiUkur, enclosures]);
 
   // Reminder timbang
   const timbangToday = tortoises.filter(t => {

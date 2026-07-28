@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     }
 
     const log = data;
-    const poinEarned = log.poin_earned || 5; // default 5 poin per task
+    const poinEarned = log.poin_earned ?? 0;
 
     // Tentukan tanggal berdasarkan freq
     let taskDate;
