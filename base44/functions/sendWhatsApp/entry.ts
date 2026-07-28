@@ -49,7 +49,7 @@ export default async function(req: Request): Promise<Response> {
       if (!settings || !settings.fonnte_token) {
         return Response.json({
           success: false,
-          error: 'Token Fonnte belum diisi. Isi token di kolom di atas, lalu Simpan.',
+          error: 'Token Fonnte belum tersimpan. Isi token di halaman pengaturan, lalu tekan 💾 Simpan Pengaturan.',
         });
       }
       const ownerPhone = settings.phone_owner
@@ -80,7 +80,7 @@ export default async function(req: Request): Promise<Response> {
       } else {
         return Response.json({
           success: false,
-          error: result.reason || 'Gagal mengirim pesan uji',
+          error: `Pengiriman gagal — ${result.reason || 'Gagal mengirim pesan uji'}`,
         });
       }
     }

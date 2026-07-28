@@ -112,15 +112,15 @@ export default function PengaturanWhatsAppPage() {
         .map((u) => ({
           email: u.email,
           name: u.full_name || u.email,
-          phone: empPhones[u.email] || "",
+          phone: normalizePhone(empPhones[u.email] || ""),
         }))
         .filter((e) => e.phone.trim());
 
       const payload = {
         setting_key: "main",
-        phone_owner: phones.owner,
-        phone_manajer: phones.manajer,
-        phone_admin: phones.admin,
+        phone_owner: normalizePhone(phones.owner),
+        phone_manajer: normalizePhone(phones.manajer),
+        phone_admin: normalizePhone(phones.admin),
         employee_phones: empArray,
         notif_daily_approval: toggles.notif_daily_approval ?? true,
         notif_sick_report: toggles.notif_sick_report ?? true,
@@ -149,9 +149,10 @@ export default function PengaturanWhatsAppPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wa-settings"] });
       setTokenDirty(false);
+      setInitialized(false);
       toast({
         title: "✅ Pengaturan tersimpan",
-        description: "Konfigurasi WhatsApp berhasil disimpan.",
+        description: "Token & nomor WhatsApp berhasil disimpan ke server.",
         className: "bg-green-50 border-green-200",
       });
     },
@@ -164,7 +165,20 @@ export default function PengaturanWhatsAppPage() {
     },
   });
 
+  const checkTokenSaved = () => {
+    if (tokenDirty || !savedToken) {
+      toast({
+        title: "⚠️ Token belum disimpan",
+        description: "Tekan 💾 Simpan Pengaturan dulu sebelum menggunakan fitur ini.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleFetchGroups = async () => {
+    if (!checkTokenSaved()) return;
     // Anti-spam: jeda minimal 1 menit antar panggilan
     if (lastFetchTime) {
       const elapsed = Date.now() - lastFetchTime;
@@ -219,6 +233,7 @@ export default function PengaturanWhatsAppPage() {
   };
 
   const handleSendSummaryNow = async () => {
+    if (!checkTokenSaved()) return;
     setSendingSummary(true);
     try {
       const res = await base44.functions.invoke("sendDailySummary", { force: true });
@@ -248,6 +263,7 @@ export default function PengaturanWhatsAppPage() {
   };
 
   const handleTestSend = async () => {
+    if (!checkTokenSaved()) return;
     setTesting(true);
     try {
       const res = await base44.functions.invoke("sendWhatsApp", { action: "test_send" });
@@ -288,7 +304,8 @@ export default function PengaturanWhatsAppPage() {
     return <AccessDenied message="Halaman ini hanya dapat diakses oleh Owner." />;
   }
 
-  const hasToken = !!(token && token.trim());
+  const savedToken = !!(settings?.fonnte_token);
+  const tokenUnsaved = tokenDirty && !!token.trim();
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-4 animate-fade-in">
@@ -350,9 +367,13 @@ export default function PengaturanWhatsAppPage() {
               . Token disimpan aman dan hanya dipanggil server-side.
             </p>
           </div>
-          {hasToken ? (
+          {savedToken ? (
             <Badge className="bg-green-100 text-green-700 border-green-200">
-              <CheckCircle2 className="w-3 h-3 mr-1" /> Token aktif
+              <CheckCircle2 className="w-3 h-3 mr-1" /> Token aktif (tersimpan)
+            </Badge>
+          ) : tokenUnsaved ? (
+            <Badge className="bg-amber-100 text-amber-700 border-amber-300">
+              <AlertCircle className="w-3 h-3 mr-1" /> ⚠️ Belum disimpan
             </Badge>
           ) : (
             <Badge variant="outline" className="text-amber-600 border-amber-300">
@@ -492,7 +513,7 @@ export default function PengaturanWhatsAppPage() {
           <div>
             <Button
               onClick={handleFetchGroups}
-              disabled={fetchingGroups || !hasToken}
+              disabled={fetchingGroups || (!savedToken && !token.trim())}
               variant="outline"
               size="sm"
               className="gap-1.5"
@@ -584,7 +605,7 @@ export default function PengaturanWhatsAppPage() {
           </div>
           <Button
             onClick={handleSendSummaryNow}
-            disabled={sendingSummary || !hasToken || !groupId.trim()}
+            disabled={sendingSummary || (!savedToken && !token.trim()) || !groupId.trim()}
             variant="outline"
             className="w-full gap-1.5"
           >
@@ -599,6 +620,7 @@ export default function PengaturanWhatsAppPage() {
         <Button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
+          size="lg"
           className="flex-1"
         >
           {saveMutation.isPending ? (
@@ -610,7 +632,7 @@ export default function PengaturanWhatsAppPage() {
         </Button>
         <Button
           onClick={handleTestSend}
-          disabled={testing || !hasToken}
+          disabled={testing || (!savedToken && !token.trim())}
           variant="outline"
           className="flex-1"
         >
