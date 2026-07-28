@@ -30,6 +30,7 @@ const STATUS_STYLES = {
   terkirim: "bg-green-100 text-green-700 border-green-200",
   gagal: "bg-red-100 text-red-700 border-red-200",
   skipped: "bg-slate-100 text-slate-600 border-slate-200",
+  pending_ai: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
 export default function WhatsAppLogPage() {
@@ -40,6 +41,16 @@ export default function WhatsAppLogPage() {
   const { data: logs, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["wa-logs"],
     queryFn: () => base44.entities.WhatsAppLog.list("-sent_at", 100),
+    enabled: !!user && user.role === "owner",
+    staleTime: 30000,
+  });
+
+  const { data: waSettings } = useQuery({
+    queryKey: ["wa-settings-log"],
+    queryFn: async () => {
+      const list = await base44.entities.WhatsAppSettings.filter({ setting_key: "main" });
+      return list[0] || null;
+    },
     enabled: !!user && user.role === "owner",
     staleTime: 30000,
   });
@@ -83,6 +94,30 @@ export default function WhatsAppLogPage() {
         </Button>
       </div>
 
+      {/* AI Call Counter */}
+      {waSettings && (
+        <Card>
+          <CardContent className="p-3 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">🤖 Panggilan AI Hari Ini</p>
+              <p className="text-xs text-muted-foreground">
+                Pantau biaya — AI dipakai untuk sorotan, analisis mingguan, & saring peringatan
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-primary">
+                {(() => {
+                  const now = new Date();
+                  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+                  return waSettings.ai_calls_count_date === todayStr ? (waSettings.ai_calls_today || 0) : 0;
+                })()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">panggilan hari ini</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -105,6 +140,7 @@ export default function WhatsAppLogPage() {
             <SelectItem value="terkirim">✅ Terkirim</SelectItem>
             <SelectItem value="gagal">❌ Gagal</SelectItem>
             <SelectItem value="skipped">⏭️ Dilewati</SelectItem>
+            <SelectItem value="pending_ai">⏳ Tertunda (AI)</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -140,7 +176,7 @@ export default function WhatsAppLogPage() {
                         variant="outline"
                         className={`text-[11px] ${STATUS_STYLES[log.status] || ""}`}
                       >
-                        {log.status === "terkirim" ? "✅" : log.status === "gagal" ? "❌" : "⏭️"}
+                        {log.status === "terkirim" ? "✅" : log.status === "gagal" ? "❌" : log.status === "pending_ai" ? "⏳" : "⏭️"}
                         {" "}{log.status}
                       </Badge>
                     </div>

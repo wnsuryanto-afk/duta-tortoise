@@ -25,8 +25,7 @@
         "tool_request",
         "test_send",
         "daily_summary",
-        "weekly_summary",
-        "morning_summary"
+        "weekly_summary"
       ],
       "description": "Jenis notifikasi"
     },
@@ -39,14 +38,15 @@
       "enum": [
         "terkirim",
         "gagal",
-        "skipped"
+        "skipped",
+        "pending_ai"
       ],
       "default": "gagal",
-      "description": "Status pengiriman"
+      "description": "Status pengiriman: terkirim/gagal/skipped/pending_ai (ditahan AI untuk ringkasan berikutnya)"
     },
     "error_reason": {
       "type": "string",
-      "description": "Alasan gagal/skipped (kosong jika terkirim)"
+      "description": "Alasan gagal/skipped/pending_ai (kosong jika terkirim)"
     },
     "related_entity_id": {
       "type": "string",

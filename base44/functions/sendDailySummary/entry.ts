@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { getSettings, normalizePhone } from "../../shared/whatsapp.ts";
+import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.ts";
 
 /**
  * sendDailySummary — kirim ringkasan harian / mingguan ke grup WhatsApp.
@@ -109,6 +109,59 @@ async function sendSummaryToDestinations(base44, settings, message, notification
   return { success: anySuccess, results };
 }
 
+// ── AI helpers (InvokeLLM with template fallback) ──
+
+async function buildAISorotan(base44, settings, ctx) {
+  if (settings.ai_sorotan_enabled === false) return "";
+  try {
+    await trackAICall(base44, settings);
+    const prompt = `Kamu asisten manajer peternakan kura sulcata. Tulis 3-4 kalimat bahasa Indonesia yang HANGAT dan LANGSUNG ke inti untuk pemilik farm: apa yang paling penting hari ini, apa yang perlu perhatian besok, dan satu apresiasi bila ada yang patut dipuji. Sebutkan angka konkret. Jangan mengulang seluruh daftar (daftar rinci sudah ada di bawah). Jangan menyebut gaji/uang. Jangan menggurui.
+
+Data hari ini (${ctx.tanggal}):
+- Kehadiran: ${ctx.kehadiran || "tidak ada data"}
+- Tugas: ${ctx.tugas || "tidak ada data"}
+- Belum selesai: ${ctx.belumSelesai || "tidak ada"}
+- Perlu dibeli: ${ctx.perluDibeli || "tidak ada"}
+- Kesehatan kura: ${ctx.kesehatan || "tidak ada laporan"}
+- Pakan: ${ctx.pakan || "tidak ada data"}`;
+
+    const res = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt });
+    const text = typeof res === "string" ? res : (res?.response || res?.text || "");
+    return String(text || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+async function buildWeeklyAIAnalysis(base44, settings, ctx) {
+  if (settings.ai_weekly_enabled === false) return null;
+  try {
+    await trackAICall(base44, settings);
+    const prompt = `Buat analisis mingguan untuk pemilik peternakan kura. Bandingkan dengan minggu lalu, sebutkan tren (membaik/menurun) dengan ANGKA, temukan POLA yang berulang, dan beri 3 saran konkret yang bisa dikerjakan minggu depan. Bahasa Indonesia, jujur tapi tidak menyalahkan orang, maksimal 8 kalimat + 3 saran. Jangan menyebut gaji atau nominal uang.
+
+Data minggu ini vs minggu lalu:
+${ctx}`;
+
+    const res = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          analysis: { type: "string", description: "Analisis 5-8 kalimat" },
+          suggestions: {
+            type: "array",
+            items: { type: "string" },
+            description: "3 saran konkret untuk minggu depan"
+          }
+        }
+      }
+    });
+    return res;
+  } catch {
+    return null;
+  }
+}
+
 function isTaskScheduledToday(task, now) {
   if (task.is_active === false) return false;
   const freq = task.frequency || "harian";
@@ -141,145 +194,7 @@ function isTaskScheduledForDate(task, date) {
   return true;
 }
 
-// ── Schedule pattern: should we send today based on pattern + last sent? ──
-function shouldSendByPattern(settings, now, today, lastSentField) {
-  const pattern = settings.summary_schedule_pattern || "daily";
-  const lastSent = settings[lastSentField];
-  if (lastSent === today) return false; // anti-dobel
-
-  if (pattern === "daily") return true;
-
-  if (pattern === "every_2_days" || pattern === "every_3_days") {
-    if (!lastSent) return true;
-    const N = pattern === "every_2_days" ? 2 : 3;
-    const lastDate = new Date(lastSent + "T00:00:00Z");
-    if (isNaN(lastDate.getTime())) return true;
-    const nextDate = new Date(lastDate);
-    nextDate.setUTCDate(nextDate.getUTCDate() + N);
-    return today >= getTodayStr(nextDate);
-  }
-
-  if (pattern === "weekdays") {
-    return now.getUTCDay() !== 0; // Sen–Sab
-  }
-
-  if (pattern === "specific_days") {
-    const dow = now.getUTCDay();
-    const days = Array.isArray(settings.summary_selected_days) ? settings.summary_selected_days : [];
-    return days.length > 0 && days.includes(dow);
-  }
-
-  if (pattern === "weekly") {
-    return now.getUTCDay() === 6; // Sabtu
-  }
-
-  return true;
-}
-
-// ── Notify owner in-app when WhatsApp send fails ──
-async function notifyOwnerFailure(base44, message) {
-  try {
-    const users = await base44.asServiceRole.entities.User.list();
-    const owners = users.filter((u) => u.role === "owner");
-    for (const owner of owners) {
-      try {
-        await base44.asServiceRole.entities.Notification.create({
-          recipient_email: owner.email,
-          recipient_role: "owner",
-          title: "⚠️ Ringkasan WhatsApp Gagal",
-          message: message,
-          type: "warning",
-          priority: "sedang",
-          category: "sistem",
-          is_read: false,
-          created_at: new Date().toISOString(),
-          action_url: "/pengaturan-whatsapp",
-          action_label: "Cek Pengaturan",
-        });
-      } catch {}
-    }
-  } catch {}
-}
-
-// ── Send with retry: device disconnect → retry 30 min later, max 2x ──
-async function trySendWithRetry(base44, settings, message, notificationType, now, today, type) {
-  const lastSentField = type === "morning" ? "morning_summary_last_sent" : "daily_summary_last_sent";
-  const retryCountField = type === "morning" ? "morning_retry_count" : "summary_retry_count";
-  const lastAttemptField = type === "morning" ? "morning_last_attempt" : "summary_last_attempt";
-
-  const maxRetries = 2;
-  const retryDelayMs = 30 * 60 * 1000; // 30 minutes
-
-  const retryCount = settings[retryCountField] || 0;
-  const lastAttempt = settings[lastAttemptField] ? new Date(settings[lastAttemptField]) : null;
-
-  // Maxed out retries → give up, notify owner
-  if (retryCount >= maxRetries) {
-    await notifyOwnerFailure(base44, `Ringkasan ${type === "morning" ? "pagi" : "sore"} gagal terkirim setelah ${maxRetries}x percobaan — perangkat WhatsApp terputus.`);
-    try {
-      await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-        [lastSentField]: today,
-        [retryCountField]: 0,
-        [lastAttemptField]: null,
-      });
-    } catch {}
-    return { success: false, gave_up: true };
-  }
-
-  // Retry spacing: wait 30 min between attempts
-  if (retryCount > 0 && lastAttempt) {
-    const elapsed = now.getTime() - lastAttempt.getTime();
-    if (elapsed < retryDelayMs) {
-      return { success: false, waiting: true };
-    }
-  }
-
-  // Attempt send
-  const result = await sendSummaryToDestinations(base44, settings, message, notificationType);
-
-  if (result.success) {
-    try {
-      await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-        [lastSentField]: today,
-        [retryCountField]: 0,
-        [lastAttemptField]: null,
-      });
-    } catch {}
-    return { success: true, results: result.results };
-  }
-
-  // Failed — check if device disconnect error
-  const isDeviceError = (result.results || []).some((r) => {
-    const reason = String(r.reason || "").toLowerCase();
-    return reason.includes("disconnect") || reason.includes("device");
-  });
-
-  if (isDeviceError) {
-    const newRetryCount = retryCount + 1;
-    try {
-      await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-        [retryCountField]: newRetryCount,
-        [lastAttemptField]: now.toISOString(),
-      });
-    } catch {}
-    if (newRetryCount === 1) {
-      await notifyOwnerFailure(base44, `Ringkasan ${type === "morning" ? "pagi" : "sore"} gagal terkirim — perangkat WhatsApp terputus. Akan coba lagi otomatis.`);
-    }
-    return { success: false, retrying: true, retryCount: newRetryCount, results: result.results };
-  }
-
-  // Non-device error — mark as sent to avoid spam
-  try {
-    await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-      [lastSentField]: today,
-      [retryCountField]: 0,
-      [lastAttemptField]: null,
-    });
-  } catch {}
-  return { success: false, results: result.results };
-}
-
-async function buildDailySummary(base44, today, now, showPoints) {
+async function buildDailySummary(base44, settings, today, now) {
   const lines: string[] = [];
   const dateLabel = formatDateID(now);
   const timeLabel = `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`;
@@ -402,7 +317,7 @@ async function buildDailySummary(base44, today, now, showPoints) {
     const Y = Math.max(Y_sop + myIncidental, X);
     const pct = Y > 0 ? Math.min(100, Math.round((X / Y) * 100)) : 0;
     let line = `• ${cl.employee_name}: ${X}/${Y} selesai (${pct}%)`;
-    if (showPoints) {
+    if (settings.daily_summary_show_points === true) {
       line += ` (${cl.total_points_claimed || 0} poin)`;
     }
     taskLines.push(line);
@@ -541,177 +456,129 @@ async function buildDailySummary(base44, today, now, showPoints) {
     lines.push("");
   }
 
+  // ── AI SOROTAN (prepend after header) ──
+  if (settings.ai_sorotan_enabled !== false) {
+    const aiContext = {
+      tanggal: dateLabel,
+      kehadiran: attLines.join("; "),
+      tugas: taskLines.join("; "),
+      belumSelesai: belumSelesai.join(", "),
+      perluDibeli: buyLines.join("; "),
+      kesehatan: healthLines.join("; "),
+      pakan: pakanLines.join("; "),
+    };
+    const sorotan = await buildAISorotan(base44, settings, aiContext);
+    if (sorotan) {
+      lines.splice(2, 0, "💡 *SOROTAN HARI INI*", sorotan, "");
+    }
+  }
+
+  // ── PERINGATAN TERTUNDA (dari smart alerts berstatus BIASA/RENDAH) ──
+  try {
+    const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
+    if (pendingAlerts.length > 0) {
+      const alertLines = pendingAlerts.slice(0, 5).map(a => {
+        const icon = a.notification_type === "sick_report" ? "🤒" : a.notification_type === "low_stock" ? "📦" : "🔴";
+        return `${icon} ${(a.message_preview || "").slice(0, 80)}`;
+      });
+      lines.push("⚠️ *PERINGATAN TERTUNDA*");
+      lines.push(...alertLines);
+      lines.push("");
+    }
+  } catch {}
+
   lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel}_`);
 
   return lines.join("\n");
 }
 
-// ── Morning summary: rencana hari, bukan laporan ──
-async function buildMorningSummary(base44, today, now) {
+async function buildWeeklySummary(base44, settings, today, now) {
   const lines: string[] = [];
   const dateLabel = formatDateID(now);
-
-  lines.push(`🌅 *DUTA TORTOISE — Rencana ${dateLabel}*`);
-  lines.push("");
-
-  const yesterday = new Date(now);
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const yesterdayStr = getTodayStr(yesterday);
-
-  const [sopTasks, tortoises, healthRecords, yesterdayChecklists, warehouseItems, feedStocks, incidentalTasks] = await Promise.all([
-    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
-    base44.asServiceRole.entities.Tortoise.list("-name", 200),
-    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }),
-    base44.asServiceRole.entities.DailyChecklist.filter({ date: yesterdayStr }),
-    base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
-    base44.asServiceRole.entities.FeedStock.list("-name", 100),
-    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
-  ]);
-
-  // TUGAS HARI INI
-  const scheduledToday = sopTasks.filter((t) => isTaskScheduledToday(t, now));
-  const khususToday = scheduledToday
-    .filter((t) => t.frequency !== "harian")
-    .map((t) => t.title)
-    .filter(Boolean)
-    .slice(0, 5);
-  if (scheduledToday.length > 0) {
-    lines.push(`📋 *TUGAS HARI INI*: ${scheduledToday.length} tugas terjadwal`);
-  }
-  if (khususToday.length > 0) {
-    lines.push(`⭐ *Khusus hari ini*: ${khususToday.join(", ")}`);
-  }
-  if (scheduledToday.length > 0 || khususToday.length > 0) {
-    lines.push("");
-  }
-
-  // PERLU PERHATIAN — kura dalam perawatan
-  const sickTortoises = tortoises.filter(
-    (t) => (t.is_currently_sick === true || t.status === "sakit") && !t.is_archived
-  );
-  if (sickTortoises.length > 0) {
-    lines.push("🤒 *Perlu perhatian*");
-    for (const t of sickTortoises.slice(0, 3)) {
-      const latestHealth = healthRecords
-        .filter((r) => r.tortoise_id === t.id || r.tortoise_name === t.name)
-        .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
-      const diag =
-        latestHealth && Array.isArray(latestHealth.diagnosis) && latestHealth.diagnosis.length > 0
-          ? latestHealth.diagnosis.join(", ")
-          : latestHealth?.description || "tanpa diagnosa";
-      lines.push(`• ${t.code || t.name} — ${diag}`);
-    }
-    lines.push("");
-  }
-
-  // TERTUNDA KEMARIN
-  const allCompletedYesterday = new Set();
-  for (const cl of yesterdayChecklists) {
-    (cl.completed_tasks || []).forEach((t) => {
-      if (t.task_title) allCompletedYesterday.add(t.task_title.toLowerCase());
-    });
-  }
-  const scheduledYesterday = sopTasks.filter((t) => isTaskScheduledForDate(t, yesterday));
-  const tertunda = scheduledYesterday
-    .filter((t) => !allCompletedYesterday.has((t.title || "").toLowerCase()))
-    .map((t) => t.title)
-    .filter(Boolean)
-    .slice(0, 4);
-  if (tertunda.length > 0) {
-    lines.push(`⏳ *Tertunda kemarin*: ${tertunda.join(", ")}`);
-    lines.push("");
-  }
-
-  // BELUM DIBELI
-  const catPriority: Record<string, number> = { obat: 0, vitamin: 1, suplemen: 2 };
-  const lowStockItems = [
-    ...warehouseItems
-      .filter((i) => (i.current_stock || 0) < (i.minimum_stock || 0))
-      .map((i) => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
-    ...feedStocks
-      .filter((i) => (i.current_stock || 0) < (i.minimum_stock || 0))
-      .map((i) => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
-  ];
-  lowStockItems.sort((a, b) => {
-    const pa = catPriority[a.category] ?? 9;
-    const pb = catPriority[b.category] ?? 9;
-    if (pa !== pb) return pa - pb;
-    return a.stock - b.stock;
-  });
-  const buyLines: string[] = [];
-  for (const item of lowStockItems.slice(0, 4)) {
-    if (item.stock <= 0) {
-      buyLines.push(`• ${item.name} — HABIS`);
-    } else {
-      buyLines.push(`• ${item.name} — sisa ${item.stock} ${item.unit}`);
-    }
-  }
-  if (buyLines.length > 0) {
-    lines.push("🛒 *Belum dibeli*");
-    lines.push(...buyLines);
-    lines.push("");
-  }
-
-  // TUGAS DARI OWNER
-  const pendingIncidental = incidentalTasks.filter((t) => t.status === "pending" && t.is_active !== false);
-  if (pendingIncidental.length > 0) {
-    lines.push("📌 *Tugas dari owner*");
-    for (const t of pendingIncidental.slice(0, 3)) {
-      lines.push(`• ${t.title}`);
-    }
-    lines.push("");
-  }
-
-  lines.push("_Semangat pagi! 💪_");
-
-  return lines.join("\n");
-}
-
-async function buildWeeklySummary(base44, today, now) {
-  const lines = [];
-  const dateLabel = formatDateID(now);
-
-  lines.push(`🐢 *DUTA TORTOISE — Ringkasan Mingguan*`);
-  lines.push(`_${dateLabel}_`);
-  lines.push("");
 
   const weekAgo = new Date(now);
   weekAgo.setUTCDate(weekAgo.getUTCDate() - 6);
   const weekAgoStr = getTodayStr(weekAgo);
+  const weekStartLabel = formatDateID(weekAgo);
 
-  const [users, allAttendances, allChecklists] = await Promise.all([
+  const twoWeeksAgo = new Date(now);
+  twoWeeksAgo.setUTCDate(twoWeeksAgo.getUTCDate() - 13);
+  const twoWeeksAgoStr = getTodayStr(twoWeeksAgo);
+
+  const [users, allAttendances, allChecklists, sickRecords, incidentalTasks, pakanRecords, photoFindings] = await Promise.all([
     base44.asServiceRole.entities.User.list(),
     base44.asServiceRole.entities.Attendance.list("-date", 500),
     base44.asServiceRole.entities.DailyChecklist.list("-date", 500),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }),
+    base44.asServiceRole.entities.IncidentalTask.list("-due_date", 500),
+    base44.asServiceRole.entities.PakanHarian.list("-log_date", 500),
+    base44.asServiceRole.entities.PhotoFinding.list("-date", 500),
   ]);
 
-  const staff = users.filter(u => ["keeper", "kepala_feeder", "admin"].includes(u.role));
-  const weekAttendances = allAttendances.filter(a =>
-    a.date >= weekAgoStr && a.date <= today && a.status === "hadir"
-  );
-  const weekChecklists = allChecklists.filter(cl =>
-    cl.date >= weekAgoStr && cl.date <= today
-  );
+  const staff = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
 
-  lines.push("📊 *Rekap Minggu Ini*");
+  // This week vs last week
+  const thisWeekAtt = allAttendances.filter(a => a.date >= weekAgoStr && a.date <= today && a.status === "hadir");
+  const lastWeekAtt = allAttendances.filter(a => a.date >= twoWeeksAgoStr && a.date < weekAgoStr && a.status === "hadir");
+  const thisWeekCl = allChecklists.filter(cl => cl.date >= weekAgoStr && cl.date <= today);
+  const lastWeekCl = allChecklists.filter(cl => cl.date >= twoWeeksAgoStr && cl.date < weekAgoStr);
+  const thisWeekSick = sickRecords.filter(r => r.date >= weekAgoStr && r.date <= today);
+  const lastWeekSick = sickRecords.filter(r => r.date >= twoWeeksAgoStr && r.date < weekAgoStr);
+  const thisWeekPakan = pakanRecords.filter(p => p.log_date >= weekAgoStr && p.log_date <= today);
+  const lastWeekPakan = pakanRecords.filter(p => p.log_date >= twoWeeksAgoStr && p.log_date < weekAgoStr);
+  const thisWeekInc = incidentalTasks.filter(t => t.due_date >= weekAgoStr && t.due_date <= today);
+  const lastWeekInc = incidentalTasks.filter(t => t.due_date >= twoWeeksAgoStr && t.due_date < weekAgoStr);
+  const thisWeekFindings = photoFindings.filter(f => f.date >= weekAgoStr && f.date <= today && f.status === "active");
+  const lastWeekFindings = photoFindings.filter(f => f.date >= twoWeeksAgoStr && f.date < weekAgoStr && f.status === "active");
+
+  // Build comparison context for AI
+  let ctx = `Periode: ${weekStartLabel} s/d ${dateLabel}\n\n`;
   for (const s of staff) {
-    const attDays = weekAttendances.filter(a => a.employee_email === s.email).length;
-    const myChecklists = weekChecklists.filter(cl => cl.employee_email === s.email);
-    const totalTasks = myChecklists.reduce((sum, cl) => sum + ((cl.completed_tasks || []).length), 0);
-    lines.push(`• ${s.full_name || s.email}: hadir ${attDays} hari, ${totalTasks} tugas selesai`);
+    const attThis = thisWeekAtt.filter(a => a.employee_email === s.email).length;
+    const attLast = lastWeekAtt.filter(a => a.employee_email === s.email).length;
+    const tasksThis = thisWeekCl.filter(cl => cl.employee_email === s.email).reduce((sum, cl) => sum + ((cl.completed_tasks || []).length), 0);
+    const tasksLast = lastWeekCl.filter(cl => cl.employee_email === s.email).reduce((sum, cl) => sum + ((cl.completed_tasks || []).length), 0);
+    ctx += `${s.full_name || s.email}: hadir ${attThis} hari (minggu lalu ${attLast}), ${tasksThis} tugas selesai (minggu lalu ${tasksLast})\n`;
   }
+  ctx += `\nLaporan sakit: ${thisWeekSick.length} (minggu lalu ${lastWeekSick.length})\n`;
+  ctx += `Temuan foto aktif: ${thisWeekFindings.length} (minggu lalu ${lastWeekFindings.length})\n`;
+  ctx += `Pakan: ${thisWeekPakan.reduce((s, p) => s + (p.basket_count || 0), 0)} keranjang (minggu lalu ${lastWeekPakan.reduce((s, p) => s + (p.basket_count || 0), 0)})\n`;
+  ctx += `Tugas insidentil: ${thisWeekInc.filter(t => t.status === "done").length} selesai, ${thisWeekInc.filter(t => t.status === "pending").length} tertunda (minggu lalu: ${lastWeekInc.filter(t => t.status === "done").length} selesai)\n`;
+
+  lines.push(`📊 *LAPORAN MINGGU INI — ${weekStartLabel} s/d ${dateLabel}*`);
   lines.push("");
 
-  // Sick reports this week
-  const sickRecords = await base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" });
-  const weekSick = sickRecords.filter(r => r.date >= weekAgoStr && r.date <= today);
-  if (weekSick.length > 0) {
-    lines.push(`🤒 *Kura sakit minggu ini*: ${weekSick.length} laporan`);
+  // Try AI analysis (fallback to template if AI fails or disabled)
+  const aiResult = await buildWeeklyAIAnalysis(base44, settings, ctx);
+
+  if (aiResult && aiResult.analysis) {
+    lines.push(aiResult.analysis);
+    lines.push("");
+    if (Array.isArray(aiResult.suggestions) && aiResult.suggestions.length > 0) {
+      lines.push("📌 *3 SARAN MINGGU DEPAN*");
+      aiResult.suggestions.slice(0, 3).forEach((s, i) => {
+        lines.push(`${i + 1}. ${s}`);
+      });
+      lines.push("");
+    }
+  } else {
+    // Fallback: template version
+    lines.push("📊 *Rekap Minggu Ini*");
+    for (const s of staff) {
+      const attDays = thisWeekAtt.filter(a => a.employee_email === s.email).length;
+      const myChecklists = thisWeekCl.filter(cl => cl.employee_email === s.email);
+      const totalTasks = myChecklists.reduce((sum, cl) => sum + ((cl.completed_tasks || []).length), 0);
+      lines.push(`• ${s.full_name || s.email}: hadir ${attDays} hari, ${totalTasks} tugas selesai`);
+    }
+    lines.push("");
+    if (thisWeekSick.length > 0) {
+      lines.push(`🤒 *Kura sakit minggu ini*: ${thisWeekSick.length} laporan`);
+      lines.push("");
+    }
+    lines.push("🙏 Terima kasih atas kerja keras minggu ini!");
     lines.push("");
   }
 
-  lines.push("🙏 Terima kasih atas kerja keras minggu ini!");
-  lines.push("");
   lines.push("_Ringkasan otomatis dari aplikasi Duta Tortoise_");
 
   return lines.join("\n");
@@ -738,69 +605,61 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const now = new Date();
-    if (isNaN(now.getTime())) {
-      return Response.json({ success: false, error: "Tanggal tidak valid" });
-    }
     const today = getTodayStr(now);
 
     // ── Manual: send immediately ──
     if (force) {
       if (type === "weekly") {
-        const message = await buildWeeklySummary(base44, today, now);
+        const message = await buildWeeklySummary(base44, settings, today, now);
         const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
         return Response.json(result);
       }
-      if (type === "morning") {
-        const message = await buildMorningSummary(base44, today, now);
-        const result = await sendSummaryToDestinations(base44, settings, message, "morning_summary");
-        return Response.json(result);
-      }
-      const message = await buildDailySummary(base44, today, now, settings.daily_summary_show_points === true);
+      const message = await buildDailySummary(base44, settings, today, now);
       const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
       return Response.json(result);
     }
 
     // ── Scheduled check ──
+    const configuredTime = settings.daily_summary_time || "17:00";
+    const [cfgHour, cfgMin] = configuredTime.split(":").map(Number);
+    const configuredMinutes = (cfgHour || 17) * 60 + (cfgMin || 0);
     const currentMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const timeReached = currentMinutes >= configuredMinutes;
 
-    // Morning summary
-    if (settings.morning_summary_enabled) {
-      const morningTime = settings.morning_summary_time || "07:00";
-      const [mHour, mMin] = morningTime.split(":").map(Number);
-      const morningMinutes = (mHour || 7) * 60 + (mMin || 0);
-      if (currentMinutes >= morningMinutes && shouldSendByPattern(settings, now, today, "morning_summary_last_sent")) {
-        const message = await buildMorningSummary(base44, today, now);
-        await trySendWithRetry(base44, settings, message, "morning_summary", now, today, "morning");
-      }
-    }
-
-    // Evening summary
-    if (settings.daily_summary_enabled) {
-      const eveningTime = settings.daily_summary_time || "17:00";
-      const [eHour, eMin] = eveningTime.split(":").map(Number);
-      const eveningMinutes = (eHour || 17) * 60 + (eMin || 0);
-      if (currentMinutes >= eveningMinutes && shouldSendByPattern(settings, now, today, "daily_summary_last_sent")) {
-        const message = await buildDailySummary(base44, today, now, settings.daily_summary_show_points === true);
-        await trySendWithRetry(base44, settings, message, "daily_summary", now, today, "evening");
+    // Daily summary
+    if (settings.daily_summary_enabled && timeReached && settings.daily_summary_last_sent !== today) {
+      const message = await buildDailySummary(base44, settings, today, now);
+      const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
+      if (result.success) {
+        try {
+          await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+            daily_summary_last_sent: today,
+          });
+        } catch {}
+        // Mark pending_ai alerts as processed (included in this summary)
+        try {
+          const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
+          for (const alert of pendingAlerts) {
+            await base44.asServiceRole.entities.WhatsAppLog.update(alert.id, {
+              status: "terkirim",
+              error_reason: "Dimasukkan ke ringkasan harian",
+            });
+          }
+        } catch {}
       }
     }
 
     // Weekly summary (Saturday = 6)
     const isSaturday = now.getUTCDay() === 6;
-    if (settings.weekly_summary_enabled && isSaturday) {
-      const eveningTime = settings.daily_summary_time || "17:00";
-      const [eHour, eMin] = eveningTime.split(":").map(Number);
-      const eveningMinutes = (eHour || 17) * 60 + (eMin || 0);
-      if (currentMinutes >= eveningMinutes && settings.weekly_summary_last_sent !== today) {
-        const message = await buildWeeklySummary(base44, today, now);
-        const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
-        if (result.success) {
-          try {
-            await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-              weekly_summary_last_sent: today,
-            });
-          } catch {}
-        }
+    if (settings.weekly_summary_enabled && isSaturday && timeReached && settings.weekly_summary_last_sent !== today) {
+      const message = await buildWeeklySummary(base44, settings, today, now);
+      const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
+      if (result.success) {
+        try {
+          await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+            weekly_summary_last_sent: today,
+          });
+        } catch {}
       }
     }
 

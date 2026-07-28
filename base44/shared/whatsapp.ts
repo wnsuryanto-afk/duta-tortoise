@@ -74,6 +74,69 @@ export async function getEmployeePhone(base44, email) {
 }
 
 /**
+ * Track AI call count per day (for cost monitoring on Log page).
+ */
+export async function trackAICall(base44, settings) {
+  try {
+    const now = new Date();
+    const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+    const updates: any = {};
+    if (settings.ai_calls_count_date !== todayStr) {
+      updates.ai_calls_count_date = todayStr;
+      updates.ai_calls_today = 1;
+    } else {
+      updates.ai_calls_today = (settings.ai_calls_today || 0) + 1;
+    }
+    await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, updates);
+  } catch {
+    // tracking failure must not break the main flow
+  }
+}
+
+/**
+ * Assess notification urgency using AI.
+ * Falls back to MENDESAK on any error (safety: never block alerts due to AI failure).
+ * Safety override: severe sick reports (berat/darurat/kritis) ALWAYS MENDESAK.
+ */
+async function assessUrgency(base44, settings, notificationType, message) {
+  // Safety override: severe sick reports always urgent
+  if (notificationType === "sick_report") {
+    const lowerMsg = (message || "").toLowerCase();
+    if (lowerMsg.includes("berat") || lowerMsg.includes("darurat") || lowerMsg.includes("kritis")) {
+      return "MENDESAK";
+    }
+  }
+  try {
+    await trackAICall(base44, settings);
+    const prompt = `Nilai tingkat urgensi notifikasi peternakan kura. Jawab HANYA dengan "MENDESAK", "BIASA", atau "RENDAH".
+
+Kriteria:
+- Kesehatan kura & keselamatan hewan = MENDESAK
+- Stok bahan yang menghentikan SOP = MENDESAK
+- Stok umum menipis = BIASA
+- Hal kosmetik/kualitas foto = RENDAH
+- Kejadian yang berulang (>=3 kali seminggu) naik satu tingkat
+
+Jenis notifikasi: ${notificationType}
+Pesan: ${(message || "").slice(0, 300)}`;
+
+    const res = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          urgency: { type: "string", enum: ["MENDESAK", "BIASA", "RENDAH"] }
+        }
+      }
+    });
+    const urgency = res?.urgency || "MENDESAK";
+    return ["MENDESAK", "BIASA", "RENDAH"].includes(urgency) ? urgency : "MENDESAK";
+  } catch {
+    return "MENDESAK";
+  }
+}
+
+/**
  * Write a WhatsAppLog entry. Never throws.
  */
 async function logEntry(base44, data) {
@@ -131,6 +194,19 @@ export async function sendWhatsAppNotification(base44, params) {
         error_reason: "Notifikasi ini dimatikan",
       });
       return { success: false, reason: "disabled" };
+    }
+  }
+
+  // 2.5. Smart alert filtering (AI urgency assessment)
+  if (settings.ai_smart_alerts_enabled === true && ["sick_report", "low_stock", "tool_request"].includes(notificationType)) {
+    const urgency = await assessUrgency(base44, settings, notificationType, message);
+    if (urgency === "RENDAH" || urgency === "BIASA") {
+      await logEntry(base44, {
+        ...logBase,
+        status: "pending_ai",
+        error_reason: `AI: ${urgency} — ditahan untuk ringkasan berikutnya`,
+      });
+      return { success: false, reason: `ai_${urgency.toLowerCase()}` };
     }
   }
 

@@ -88,7 +88,7 @@
         "both"
       ],
       "default": "individuals",
-      "description": "Tujuan pengiriman ringkasan: individuals = nomor perorangan, group = grup WhatsApp, both = keduanya"
+      "description": "Tujuan pengiriman ringkasan harian: individuals = nomor perorangan, group = grup WhatsApp, both = keduanya"
     },
     "summary_recipients": {
       "type": "array",
@@ -111,87 +111,57 @@
     "daily_summary_time": {
       "type": "string",
       "default": "17:00",
-      "description": "Jam kirim ringkasan sore (HH:mm, UTC)"
+      "description": "Jam kirim ringkasan harian (HH:mm, UTC)"
     },
     "daily_summary_enabled": {
       "type": "boolean",
       "default": false,
-      "description": "Aktifkan kirim ringkasan sore ke tujuan terpilih"
+      "description": "Aktifkan kirim ringkasan harian ke tujuan terpilih"
     },
     "daily_summary_show_points": {
       "type": "boolean",
       "default": false,
       "description": "Tampilkan poin per orang di ringkasan. Default nonaktif \u2014 hindari perbandingan poin antar karyawan."
     },
-    "summary_schedule_pattern": {
-      "type": "string",
-      "enum": [
-        "daily",
-        "every_2_days",
-        "every_3_days",
-        "weekdays",
-        "specific_days",
-        "weekly"
-      ],
-      "default": "daily",
-      "description": "Pola jadwal kirim ringkasan: daily, every_2_days, every_3_days, weekdays (Sen-Sab), specific_days (hari terpilih), weekly (Sabtu)"
-    },
-    "summary_selected_days": {
-      "type": "array",
-      "items": {
-        "type": "number"
-      },
-      "description": "Hari terpilih untuk pola specific_days (0=Min, 1=Sen, ..., 6=Sab)"
-    },
-    "daily_summary_last_sent": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir ringkasan sore terkirim (anti dobel)"
-    },
-    "summary_retry_count": {
-      "type": "number",
-      "default": 0,
-      "description": "Jumlah retry untuk siklus pengiriman sore saat ini"
-    },
-    "summary_last_attempt": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Waktu percobaan kirim sore terakhir (untuk retry spacing)"
-    },
-    "morning_summary_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Aktifkan ringkasan pagi (rencana hari)"
-    },
-    "morning_summary_time": {
-      "type": "string",
-      "default": "07:00",
-      "description": "Jam kirim ringkasan pagi (HH:mm, UTC)"
-    },
-    "morning_summary_last_sent": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir ringkasan pagi terkirim (anti dobel)"
-    },
-    "morning_retry_count": {
-      "type": "number",
-      "default": 0,
-      "description": "Jumlah retry untuk siklus pengiriman pagi saat ini"
-    },
-    "morning_last_attempt": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Waktu percobaan kirim pagi terakhir (untuk retry spacing)"
-    },
     "weekly_summary_enabled": {
       "type": "boolean",
       "default": false,
       "description": "Kirim ringkasan mingguan setiap Sabtu pada jam yang sama"
     },
+    "daily_summary_last_sent": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir ringkasan harian terkirim (anti dobel)"
+    },
     "weekly_summary_last_sent": {
       "type": "string",
       "format": "date",
       "description": "Tanggal terakhir ringkasan mingguan terkirim (anti dobel)"
+    },
+    "ai_sorotan_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Sorotan AI di bagian atas ringkasan harian (3-4 kalimat). Bila AI gagal, ringkasan tetap terkirim tanpa sorotan."
+    },
+    "ai_weekly_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Laporan mingguan analitis AI (analisis + 3 saran). Bila AI gagal, fallback ke template biasa."
+    },
+    "ai_smart_alerts_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Peringatan cerdas \u2014 saring notifikasi seketika dengan AI. Bila nonaktif, semua notifikasi dikirim seperti biasa."
+    },
+    "ai_calls_today": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah panggilan AI hari ini (reset harian untuk pantau biaya)"
+    },
+    "ai_calls_count_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir counter ai_calls_today direset"
     },
     "updated_at": {
       "type": "string",
