@@ -26,7 +26,8 @@
         "ikat",
         "buah",
         "liter",
-        "keranjang"
+        "keranjang",
+        "karung"
       ],
       "default": "kg"
     },

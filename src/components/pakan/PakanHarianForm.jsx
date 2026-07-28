@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [addToStock, setAddToStock] = useState(true);
+  const qc = useQueryClient();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -87,7 +90,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
         trip_finance_tx_id = tx.id;
       }
 
-      await base44.entities.PakanHarian.create({
+      const pakanHarian = await base44.entities.PakanHarian.create({
         log_date: form.log_date,
         session: "pagi",
         feed_source: form.feed_source,
@@ -102,7 +105,78 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
         trip_finance_tx_id,
       });
 
-      toast.success("Pengambilan pakan tercatat");
+      // ── INTEGRASI STOK PAKAN (anti-dobel via linked_pakan_harian_id) ──
+      if (addToStock && pakanHarian?.id) {
+        try {
+          const existingMove = await base44.entities.StockMovement.filter({
+            linked_pakan_harian_id: pakanHarian.id,
+          });
+          if (existingMove.length === 0) {
+            const SOURCE_MAP = {
+              rumput: { name: "Rumput", category: "rumput", feed_source: "kebun_sendiri" },
+              sayur_pasar: { name: "Sayur Pasar", category: "sayuran", feed_source: "beli_pasar" },
+              campur: { name: "Pakan Campur", category: "lainnya", feed_source: "beli_pasar" },
+              lainnya: { name: "Pakan Lainnya", category: "lainnya", feed_source: "lainnya" },
+            };
+            const mapping = SOURCE_MAP[form.feed_source] || SOURCE_MAP.lainnya;
+
+            const allFeed = await base44.entities.FeedStock.list("-created_date", 200);
+            let feedItem = allFeed.find(s =>
+              s.name?.toLowerCase() === mapping.name.toLowerCase() && s.unit === "keranjang"
+            );
+            if (!feedItem) {
+              feedItem = await base44.entities.FeedStock.create({
+                name: mapping.name,
+                category: mapping.category,
+                unit: "keranjang",
+                current_stock: 0,
+                minimum_stock: 1,
+                price_per_unit: 0,
+                notes: "Auto-created dari Pakan Harian",
+                last_edited_by: user?.email || "",
+                last_edited_at: new Date().toISOString(),
+              });
+            }
+
+            const qtyKeranjang = Number(form.basket_count) || 0;
+            const newStock = (feedItem.current_stock || 0) + qtyKeranjang;
+
+            await base44.entities.StockMovement.create({
+              item_id: feedItem.id,
+              item_type: "feedstock",
+              item_name: feedItem.name,
+              item_sku: feedItem.sku || "",
+              type: "masuk",
+              quantity: qtyKeranjang,
+              unit: "keranjang",
+              stock_after: newStock,
+              feed_source: mapping.feed_source,
+              by_email: user?.email || "",
+              by_name: user?.full_name || user?.email || "",
+              notes: `Auto dari Pakan Harian (${form.feed_source})${form.feed_type_detail ? ` - ${form.feed_type_detail}` : ""}`,
+              date: form.log_date,
+              status: "selesai",
+              photo_urls: photo_url ? [photo_url] : [],
+              linked_pakan_harian_id: pakanHarian.id,
+            });
+
+            await base44.entities.FeedStock.update(feedItem.id, {
+              current_stock: newStock,
+              last_restocked_date: form.log_date,
+              last_restocked_qty: qtyKeranjang,
+              last_edited_by: user?.email || "",
+              last_edited_at: new Date().toISOString(),
+            });
+
+            qc.invalidateQueries({ queryKey: ["feedstocks"] });
+            qc.invalidateQueries({ queryKey: ["feed-movements"] });
+          }
+        } catch (e) {
+          console.error("Stock integration error:", e);
+        }
+      }
+
+      toast.success("Pengambilan pakan tercatat" + (addToStock ? " & stok diperbarui" : ""));
       onSaved?.();
       setForm(EMPTY);
       clearPhoto();
@@ -186,6 +260,16 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
             <Label className="text-xs">Catatan (opsional)</Label>
             <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} className="mt-1" rows={2} />
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={addToStock}
+              onChange={e => setAddToStock(e.target.checked)}
+              className="w-4 h-4 rounded border-border"
+            />
+            <span className="text-xs">Masukkan ke stok pakan? (otomatis tercatat sebagai Pakan Masuk)</span>
+          </label>
 
           <div className="flex gap-2 pt-1">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={saving}>Batal</Button>

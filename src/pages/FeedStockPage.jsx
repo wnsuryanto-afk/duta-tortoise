@@ -17,6 +17,11 @@ import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
 import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import PakanMasukDialog from "@/components/pakan/PakanMasukDialog";
+import PakanKeluarDialog from "@/components/pakan/PakanKeluarDialog";
+import RiwayatPakanTab from "@/components/pakan/RiwayatPakanTab";
+import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { format } from "date-fns";
 
 const CATEGORIES = [
@@ -88,6 +93,19 @@ export default function FeedStockPage() {
   const [detailItem, setDetailItem] = useState(null);
   const [labelItems, setLabelItems] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [activeTab, setActiveTab] = useState("stok");
+  const [showPakanMasuk, setShowPakanMasuk] = useState(false);
+  const [showPakanKeluar, setShowPakanKeluar] = useState(false);
+
+  const { data: feedMovements = [] } = useQuery({
+    queryKey: ["feed-movements"],
+    queryFn: () => base44.entities.StockMovement.filter({ item_type: "feedstock" }, "-created_date", 200),
+    staleTime: 30 * 1000,
+  });
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const masukToday = feedMovements.filter(m => m.type === "masuk" && m.date === todayStr);
+  const keluarToday = feedMovements.filter(m => m.type === "keluar" && m.date === todayStr);
   const [showSeed, setShowSeed] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [scanResult, setScanResult] = useState(null);
@@ -156,6 +174,12 @@ export default function FeedStockPage() {
           <Button variant="outline" onClick={() => setShowScanner(true)} className="gap-2">
             <QrCode className="w-4 h-4" /> Scan Barang
           </Button>
+          <Button variant="outline" onClick={() => setShowPakanMasuk(true)} className="gap-2 bg-green-50 border-green-300 text-green-700 hover:bg-green-100">
+            <ArrowUpCircle className="w-4 h-4" /> Pakan Masuk
+          </Button>
+          <Button variant="outline" onClick={() => setShowPakanKeluar(true)} className="gap-2 bg-red-50 border-red-300 text-red-700 hover:bg-red-100">
+            <ArrowDownCircle className="w-4 h-4" /> Pakan Keluar
+          </Button>
           {isAdmin && filtered.length > 0 && (
             <Button variant="outline" onClick={() => setLabelItems(filtered)} className="gap-2">
               <Printer className="w-4 h-4" /> Label Massal
@@ -195,8 +219,22 @@ export default function FeedStockPage() {
           <p className="text-xs text-muted-foreground mb-1">Nilai Total Stok</p>
           <p className="text-sm font-bold text-primary">{formatRp(totalValue)}</p>
         </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-green-100"><ArrowUpCircle className="w-5 h-5 text-green-600" /></div>
+          <div><p className="text-2xl font-bold text-green-700">{masukToday.length}</p><p className="text-xs text-muted-foreground">Pakan Masuk Hari Ini</p></div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-red-100"><ArrowDownCircle className="w-5 h-5 text-red-500" /></div>
+          <div><p className="text-2xl font-bold text-red-600">{keluarToday.length}</p><p className="text-xs text-muted-foreground">Pakan Keluar Hari Ini</p></div>
+        </Card>
       </div>
 
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="stok">📦 Stok Pakan</TabsTrigger>
+          <TabsTrigger value="riwayat">📋 Riwayat Transaksi</TabsTrigger>
+        </TabsList>
+        <TabsContent value="stok" className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
         <Input placeholder="Cari nama / SKU…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-44 h-9" />
@@ -335,6 +373,12 @@ export default function FeedStockPage() {
         </div>
       )}
 
+        </TabsContent>
+        <TabsContent value="riwayat">
+          <RiwayatPakanTab movements={feedMovements} items={stocks} role={role} onRefresh={() => { invalidate(); qc.invalidateQueries({ queryKey: ["feed-movements"] }); }} />
+        </TabsContent>
+      </Tabs>
+
       {/* Forms & Dialogs */}
       {showForm && (
         <StockItemForm open={showForm} itemType="feedstock" editData={editItem} user={user}
@@ -362,6 +406,22 @@ export default function FeedStockPage() {
           onClose={() => setLabelItems(null)} />
       )}
 
+      {showPakanMasuk && (
+        <PakanMasukDialog
+          items={stocks}
+          user={user}
+          role={role}
+          onClose={(refreshed) => { setShowPakanMasuk(false); if (refreshed) { invalidate(); qc.invalidateQueries({ queryKey: ["feed-movements"] }); } }}
+        />
+      )}
+      {showPakanKeluar && (
+        <PakanKeluarDialog
+          items={stocks}
+          user={user}
+          role={role}
+          onClose={(refreshed) => { setShowPakanKeluar(false); if (refreshed) { invalidate(); qc.invalidateQueries({ queryKey: ["feed-movements"] }); } }}
+        />
+      )}
       <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />
 
       {/* Not found dialog after scan */}

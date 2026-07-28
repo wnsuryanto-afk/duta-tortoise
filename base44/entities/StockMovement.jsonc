@@ -59,12 +59,27 @@
       "type": "string",
       "enum": [
         "pemberian_pakan",
+        "pakan_pagi",
+        "pakan_siang",
+        "pakan_iguana",
+        "pakan_baby",
         "pengobatan_kura",
         "kebersihan",
         "perbaikan",
         "lainnya"
       ],
       "description": "Keperluan pengambilan (untuk barang keluar)"
+    },
+    "feed_source": {
+      "type": "string",
+      "enum": [
+        "beli_pasar",
+        "kebun_sendiri",
+        "panen_azola",
+        "kiriman_supplier",
+        "lainnya"
+      ],
+      "description": "Sumber pakan masuk (untuk feedstock masuk)"
     },
     "supplier": {
       "type": "string",
@@ -77,6 +92,10 @@
     "tortoise_code": {
       "type": "string",
       "description": "Kode kura tujuan (opsional, untuk barang keluar)"
+    },
+    "linked_pakan_harian_id": {
+      "type": "string",
+      "description": "ID PakanHarian jika transaksi ini auto-generated dari pencatatan pakan harian (anti-dobel)"
     },
     "by_email": {
       "type": "string",
