@@ -72,38 +72,38 @@ export default function PengaturanWhatsAppPage() {
     staleTime: 60000,
   });
 
-  // Sync settings → local state when loaded
-  const syncFromSettings = () => {
-    if (!settings) return;
-    setToken(settings.fonnte_token || "");
+  // Sync from a data object (not closure) — avoids stale-data race condition
+  const syncFromData = (data) => {
+    if (!data) return;
+    setToken(data.fonnte_token || "");
     setTokenDirty(false);
     setPhones({
-      owner: settings.phone_owner || "",
-      manajer: settings.phone_manajer || "",
-      admin: settings.phone_admin || "",
+      owner: data.phone_owner || "",
+      manajer: data.phone_manajer || "",
+      admin: data.phone_admin || "",
     });
     const epMap = {};
-    if (Array.isArray(settings.employee_phones)) {
-      settings.employee_phones.forEach((e) => {
+    if (Array.isArray(data.employee_phones)) {
+      data.employee_phones.forEach((e) => {
         if (e.email) epMap[e.email] = e.phone || "";
       });
     }
     setEmpPhones(epMap);
     const tg = {};
     NOTIF_CONFIG.forEach((c) => {
-      tg[c.key] = settings[c.key] !== false;
+      tg[c.key] = data[c.key] !== false;
     });
     setToggles(tg);
-    setGroupId(settings.group_id || "");
-    setSummaryTime(settings.daily_summary_time || "17:00");
-    setSummaryEnabled(settings.daily_summary_enabled === true);
-    setShowPoints(settings.daily_summary_show_points === true);
-    setWeeklyEnabled(settings.weekly_summary_enabled === true);
-    setSummaryDestination(settings.summary_destination || "individuals");
+    setGroupId(data.group_id || "");
+    setSummaryTime(data.daily_summary_time || "17:00");
+    setSummaryEnabled(data.daily_summary_enabled === true);
+    setShowPoints(data.daily_summary_show_points === true);
+    setWeeklyEnabled(data.weekly_summary_enabled === true);
+    setSummaryDestination(data.summary_destination || "individuals");
     setSummaryResults(null);
     const rcMap = {};
-    if (Array.isArray(settings.summary_recipients) && settings.summary_recipients.length > 0) {
-      settings.summary_recipients.forEach((r) => {
+    if (Array.isArray(data.summary_recipients) && data.summary_recipients.length > 0) {
+      data.summary_recipients.forEach((r) => {
         if (r.email) rcMap[r.email] = true;
       });
     } else {
@@ -116,7 +116,7 @@ export default function PengaturanWhatsAppPage() {
   const [initialized, setInitialized] = useState(false);
   useEffect(() => {
     if (settings && !initialized) {
-      syncFromSettings();
+      syncFromData(settings);
       setInitialized(true);
     }
   }, [settings, initialized]);
@@ -174,16 +174,38 @@ export default function PengaturanWhatsAppPage() {
         payload.fonnte_token = token;
       }
 
-      if (settings?.id) {
-        return base44.entities.WhatsAppSettings.update(settings.id, payload);
+      // Robust upsert: always look up by fixed key (don't rely on possibly-stale closure)
+      const existing = await base44.entities.WhatsAppSettings.filter({ setting_key: "main" });
+      const existingRecord = existing[0];
+
+      if (existingRecord?.id) {
+        // Dedup: if multiple records exist, keep the newest and delete the rest
+        if (existing.length > 1) {
+          const sorted = [...existing].sort(
+            (a, b) => new Date(b.updated_date || b.created_date) - new Date(a.updated_date || a.created_date)
+          );
+          const newest = sorted[0];
+          payload.fonnte_token = payload.fonnte_token || newest.fonnte_token || "";
+          for (const dup of sorted.slice(1)) {
+            try { await base44.entities.WhatsAppSettings.delete(dup.id); } catch {}
+          }
+          return base44.entities.WhatsAppSettings.update(newest.id, payload);
+        }
+        return base44.entities.WhatsAppSettings.update(existingRecord.id, payload);
       }
       payload.fonnte_token = token || payload.fonnte_token || "";
       return base44.entities.WhatsAppSettings.create(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Fetch fresh data from server and sync — NOT from stale cache
+      try {
+        const freshList = await base44.entities.WhatsAppSettings.filter({ setting_key: "main" });
+        if (freshList[0]) {
+          syncFromData(freshList[0]);
+        }
+      } catch {}
       queryClient.invalidateQueries({ queryKey: ["wa-settings"] });
       setTokenDirty(false);
-      setInitialized(false);
       toast({
         title: "✅ Pengaturan tersimpan",
         description: "Token & nomor WhatsApp berhasil disimpan ke server.",
