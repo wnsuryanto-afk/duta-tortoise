@@ -19,6 +19,7 @@
         "breeding",
         "administrasi",
         "suplemen",
+        "perawatan",
         "lainnya"
       ],
       "default": "lainnya",
@@ -91,6 +92,32 @@
       "type": "boolean",
       "default": true,
       "description": "Task aktif atau tidak"
+    },
+    "task_scope": {
+      "type": "string",
+      "enum": [
+        "bersama",
+        "pribadi",
+        "per_kandang",
+        "per_kura"
+      ],
+      "default": "bersama",
+      "description": "Scope penguncian: bersama = sekali untuk semua orang, pribadi = masing-masing karyawan, per_kandang = per kandang (perlu target_enclosures), per_kura = per kura-kura (perlu target_tortoise_ids)"
+    },
+    "assigned_to_email": {
+      "type": "string",
+      "description": "Email karyawan khusus (kosong = siapa saja)"
+    },
+    "assigned_to_name": {
+      "type": "string",
+      "description": "Nama karyawan khusus"
+    },
+    "required_skus": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "SKU item gudang yang dibutuhkan (untuk cek stok)"
     }
   },
   "required": [
