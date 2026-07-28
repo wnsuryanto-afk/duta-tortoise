@@ -203,11 +203,12 @@ export default function PengaturanWhatsAppPage() {
       const data = res.data || res;
       if (data.success && Array.isArray(data.groups)) {
         setGroupList(data.groups);
-        if (data.groups.length === 0) {
-          setGroupError("Belum ada grup terdeteksi. Pastikan nomor pengirim sudah menjadi anggota grup, lalu tekan Ambil Daftar Grup lagi.");
-        }
       } else {
-        setGroupError(data.error || "Gagal mengambil daftar grup.");
+        let errMsg = data.error || "Gagal mengambil daftar grup.";
+        if (data.rawResponse) {
+          errMsg += `\n\nFonnte menjawab: ${data.rawResponse}`;
+        }
+        setGroupError(errMsg);
       }
     } catch (err) {
       setGroupError(err.message || "Gagal memanggil fungsi.");
@@ -521,7 +522,7 @@ export default function PengaturanWhatsAppPage() {
               className="gap-1.5"
             >
               {fetchingGroups ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengambil daftar grup...</>
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengambil daftar grup (±8 detik)...</>
               ) : (
                 <><RefreshCw className="w-3.5 h-3.5" /> 🔄 Ambil Daftar Grup</>
               )}
@@ -535,7 +536,7 @@ export default function PengaturanWhatsAppPage() {
           {groupError && (
             <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700 flex items-start gap-2">
               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span>{groupError}</span>
+              <span className="whitespace-pre-line">{groupError}</span>
             </div>
           )}
 

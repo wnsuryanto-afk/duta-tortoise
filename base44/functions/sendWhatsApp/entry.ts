@@ -91,78 +91,107 @@ export default async function(req: Request): Promise<Response> {
       if (!settings || !settings.fonnte_token) {
         return Response.json({
           success: false,
-          error: 'Token Fonnte belum diisi atau tidak valid.',
+          error: 'Token Fonnte belum diisi atau belum tersimpan. Tekan 💾 Simpan Pengaturan dulu.',
         });
       }
 
       const token = settings.fonnte_token;
 
-      // Anti-spam 1 menit dihandle di frontend (lastFetchTime)
+      // Helper: safely parse response body (JSON or raw text)
+      async function safeParse(res: Response) {
+        const text = await res.text();
+        let body: any = null;
+        try { body = JSON.parse(text); } catch { body = { raw: text }; }
+        return { ok: res.ok, httpStatus: res.status, body, text };
+      }
+
+      // Helper: translate common Fonnte errors to Indonesian
+      function translateFonnteError(detail: string): string {
+        const d = (detail || '').toLowerCase();
+        if (d.includes('you have no whatsapp group')) {
+          return 'Belum ada grup terdeteksi. Pastikan nomor sudah menjadi anggota grup, lalu coba lagi 1 menit kemudian.';
+        }
+        if (d.includes('device') && (d.includes('disconnect') || d.includes('offline') || d.includes('not connect'))) {
+          return 'Perangkat WhatsApp terputus. Buka dashboard Fonnte lalu tekan Reconnect.';
+        }
+        if (d.includes('invalid token') || d.includes('unauthorized') || d.includes('token is invalid')) {
+          return 'Token tidak valid, periksa kembali.';
+        }
+        return detail || '';
+      }
 
       // Langkah 1: fetch-group (perbarui daftar grup di server Fonnte)
-      let fetchOk = false;
+      // Spec: POST, hanya header Authorization, TANPA body
       let fetchErr = '';
       try {
         const fetchRes = await fetch('https://api.fonnte.com/fetch-group', {
           method: 'POST',
           headers: { Authorization: token },
         });
-        const fetchResult = await fetchRes.json();
-        if (fetchResult.status === true || fetchResult.status === 'success') {
-          fetchOk = true;
-        } else {
-          fetchErr = fetchResult.reason || fetchResult.message || JSON.stringify(fetchResult);
-          // Bisa jadi device terputus — tetap lanjut ke get-whatsapp-group untuk ambil data cache
+        const parsed = await safeParse(fetchRes);
+        if (!parsed.ok) {
+          const detail = parsed.body?.detail || parsed.body?.reason || parsed.body?.message || parsed.text || '';
+          fetchErr = translateFonnteError(detail) || detail || `HTTP ${parsed.httpStatus}`;
         }
-      } catch (e) {
+      } catch (e: any) {
         fetchErr = e.message || String(e);
       }
 
-      // Langkah 2: get-whatsapp-group (ambil daftar grup)
+      // Langkah 2: tunggu 4 detik — Fonnte butuh waktu memproses fetch-group
+      await new Promise((r) => setTimeout(r, 4000));
+
+      // Langkah 3: get-whatsapp-group (ambil daftar grup)
+      // Spec: POST, hanya header Authorization, TANPA body
       try {
         const groupRes = await fetch('https://api.fonnte.com/get-whatsapp-group', {
           method: 'POST',
           headers: { Authorization: token },
         });
-        const groupResult = await groupRes.json();
+        const parsed = await safeParse(groupRes);
+        const body = parsed.body || {};
 
-        // Deteksi device terputus
-        const reasonStr = String(groupResult.reason || groupResult.message || '').toLowerCase();
+        // Deteksi device terputus / token invalid
+        const detailStr = String(body.detail || body.reason || body.message || parsed.text || '').toLowerCase();
         const isDeviceDisconnected =
-          !groupResult.status ||
-          reasonStr.includes('disconnected') ||
-          reasonStr.includes('offline') ||
-          reasonStr.includes('not connected') ||
-          reasonStr.includes('device');
+          detailStr.includes('disconnect') ||
+          detailStr.includes('offline') ||
+          detailStr.includes('not connected') ||
+          (detailStr.includes('device') && !Array.isArray(body.data));
+        const isInvalidToken =
+          detailStr.includes('invalid token') ||
+          detailStr.includes('unauthorized') ||
+          detailStr.includes('token is invalid');
 
-        if (isDeviceDisconnected && !(Array.isArray(groupResult.data) && groupResult.data.length > 0)) {
-          await logFetchGroups(base44, settings, [], 'gagal', 'Perangkat WhatsApp terputus');
-          return Response.json({
-            success: false,
-            error: 'Perangkat WhatsApp sedang terputus. Buka dashboard Fonnte lalu tekan Reconnect.',
-            fetchError: fetchErr,
-          });
+        if (isInvalidToken) {
+          const msg = 'Token tidak valid, periksa kembali.';
+          await logFetchGroups(base44, settings, [], 'gagal', msg);
+          return Response.json({ success: false, error: msg, rawResponse: parsed.text, fetchError: fetchErr });
         }
 
-        const groups = Array.isArray(groupResult.data) ? groupResult.data : [];
+        if (isDeviceDisconnected && !(Array.isArray(body.data) && body.data.length > 0)) {
+          const msg = 'Perangkat WhatsApp terputus. Buka dashboard Fonnte lalu tekan Reconnect.';
+          await logFetchGroups(base44, settings, [], 'gagal', msg);
+          return Response.json({ success: false, error: msg, rawResponse: parsed.text, fetchError: fetchErr });
+        }
+
+        const groups = Array.isArray(body.data) ? body.data : [];
 
         if (groups.length === 0) {
-          await logFetchGroups(base44, settings, [], 'skipped', 'Belum ada grup terdeteksi');
-          return Response.json({
-            success: false,
-            error: 'Belum ada grup terdeteksi. Pastikan nomor pengirim sudah menjadi anggota grup, lalu tekan Ambil Daftar Grup lagi.',
-            fetchError: fetchErr,
-          });
+          const rawDetail = body.detail || body.reason || body.message || 'you have no whatsapp group yet';
+          const msg = translateFonnteError(rawDetail) || 'Belum ada grup terdeteksi.';
+          await logFetchGroups(base44, settings, [], 'skipped', msg);
+          return Response.json({ success: false, error: msg, rawResponse: parsed.text, fetchError: fetchErr });
         }
 
         await logFetchGroups(base44, settings, groups, 'terkirim', '');
-        return Response.json({ success: true, groups, fetchOk, fetchError: fetchErr });
-      } catch (e) {
+        return Response.json({ success: true, groups, fetchError: fetchErr });
+      } catch (e: any) {
         await logFetchGroups(base44, settings, [], 'gagal', e.message || String(e));
         return Response.json({
           success: false,
           error: 'Gagal menghubungi server Fonnte. Coba lagi dalam beberapa saat.',
           detail: e.message || String(e),
+          fetchError: fetchErr,
         });
       }
     }
