@@ -16,6 +16,7 @@ import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/comp
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
+import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 
 function getMinutesUntil(timeStr) {
   if (!timeStr) return null;
@@ -331,6 +332,9 @@ export default function KeeperDashboard() {
           </div>
         )}
       </Card>
+
+      {/* ── MOTIVASI HARIAN ── */}
+      <MotivasiHarianCard />
 
       {/* ── 2. TARGET SOP HARI INI ── */}
       <Card className="p-5">

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
+import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
@@ -173,6 +174,9 @@ export default function KepalaFeederDashboard({ user }) {
           <span className="text-sm font-semibold text-green-700">{myTodayPoin} poin hari ini</span>
         </div>
       </div>
+
+      {/* ── MOTIVASI HARIAN ── */}
+      <MotivasiHarianCard />
 
       {/* ── SECTION 1: STATUS TIM ── */}
       <div className="bg-card rounded-xl border border-border p-4">
