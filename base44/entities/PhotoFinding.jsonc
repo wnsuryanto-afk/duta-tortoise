@@ -1,0 +1,90 @@
+{
+  "name": "PhotoFinding",
+  "type": "object",
+  "properties": {
+    "finding_key": {
+      "type": "string",
+      "description": "Key unik: employee_email + date + task_title_normalized (untuk dedup resolusi)"
+    },
+    "checklist_id": {
+      "type": "string",
+      "description": "ID DailyChecklist asal temuan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal checklist"
+    },
+    "task_title": {
+      "type": "string",
+      "description": "Judul task asal"
+    },
+    "employee_email": {
+      "type": "string"
+    },
+    "employee_name": {
+      "type": "string"
+    },
+    "enclosure": {
+      "type": "string",
+      "description": "Kandang dari task notes"
+    },
+    "tortoise_code": {
+      "type": "string",
+      "description": "Kode kura jika diketahui"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "finding_text": {
+      "type": "string",
+      "description": "Isi ai_temuan_penting dari AI Vision"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "kesehatan_kura",
+        "kondisi_kandang",
+        "tanaman_kolam",
+        "sarana",
+        "kualitas_foto"
+      ],
+      "description": "Kategori temuan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "resolved",
+        "ignored"
+      ],
+      "default": "active"
+    },
+    "resolution_action": {
+      "type": "string",
+      "enum": [
+        "sick_report",
+        "incidental_task",
+        "manual"
+      ],
+      "description": "Tindakan yang dilakukan"
+    },
+    "resolution_notes": {
+      "type": "string"
+    },
+    "resolved_by": {
+      "type": "string"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "finding_key",
+    "date",
+    "task_title",
+    "finding_text",
+    "category"
+  ]
+}

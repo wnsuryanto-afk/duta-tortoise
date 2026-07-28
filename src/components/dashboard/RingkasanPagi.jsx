@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { isBatchSegera, getNextMilestone } from "@/lib/breedingCalendarUtils";
+import { categorizeFinding } from "@/lib/temuanCategorize";
 import HarusDibeliWidget from "@/components/dashboard/HarusDibeliWidget";
 import ToolLoanWidget from "@/components/dashboard/ToolLoanWidget";
 import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
@@ -96,9 +97,15 @@ export default function RingkasanPagi() {
 
   const aiFindings = (todayChecklists || []).flatMap(cl =>
     (cl.completed_tasks || [])
-      .filter(t => t.ai_temuan_penting && (t.ai_verified === false || (t.ai_confidence != null && t.ai_confidence < 70) || t.photo_age_warning || t.photo_time_warning))
-      .map(t => ({ employee: cl.employee_name, task: t.task_title, finding: t.ai_temuan_penting }))
+      .filter(t => t.ai_temuan_penting && t.ai_temuan_penting.trim())
+      .map(t => ({
+        employee: cl.employee_name,
+        task: t.task_title,
+        finding: t.ai_temuan_penting,
+        category: categorizeFinding(t.ai_temuan_penting),
+      }))
   );
+  const temuanKesehatanCount = aiFindings.filter(f => f.category === "kesehatan_kura").length;
 
   // ── Calcs ──
   const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
@@ -166,17 +173,18 @@ export default function RingkasanPagi() {
 
       {/* 1.4 TEMUAN AI DARI FOTO */}
       {aiFindings.length > 0 && (
-        <Link to="/approval-poin" className="block bg-purple-50 border border-purple-200 rounded-xl p-3 hover:bg-purple-100 transition-colors">
+        <Link to="/temuan-foto" className="block bg-purple-50 border border-purple-200 rounded-xl p-3 hover:bg-purple-100 transition-colors">
           <p className="text-sm font-bold text-purple-800">
-            🔎 Temuan dari foto: {aiFindings.length} hal perlu diperiksa
+            🔎 Temuan baru dari foto: {aiFindings.length}
+            {temuanKesehatanCount > 0 && ` (${temuanKesehatanCount} soal kesehatan kura)`}
           </p>
           <div className="mt-1 space-y-0.5">
-            {aiFindings.slice(0, 3).map((f, i) => (
+            {aiFindings.slice(0, 2).map((f, i) => (
               <p key={i} className="text-xs text-purple-700">
                 {f.employee} — {f.task}: {f.finding}
               </p>
             ))}
-            {aiFindings.length > 3 && <p className="text-[10px] text-purple-600 italic">+{aiFindings.length - 3} temuan lainnya</p>}
+            {aiFindings.length > 2 && <p className="text-[10px] text-purple-600 italic">+{aiFindings.length - 2} temuan lainnya</p>}
           </div>
         </Link>
       )}

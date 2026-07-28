@@ -8,7 +8,7 @@ import {
   LayoutGrid, GitBranch, Skull, Home,
   TrendingUp, Zap, AlertTriangle, Truck, ClipboardCheck,
   Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight, Leaf, Salad,
-  ShoppingCart, Wrench, MessageCircle
+  ShoppingCart, Wrench, MessageCircle, ScanSearch
 } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -116,6 +116,7 @@ const NAV_GROUPS = [
       { path: "/catatan-saran", section: "catatan-saran", label: "💬 Catatan & Saran", icon: MessageCircle },
       { path: "/alat-kerja",   section: "alat-kerja",   label: "🔧 Alat Kerja",     icon: Wrench },
       { path: "/approval-poin", section: "approval-poin", label: "Approval Poin",    icon: ShieldAlert },
+      { path: "/temuan-foto",   section: "temuan-foto",   label: "🔎 Temuan dari Foto", icon: ScanSearch },
       { path: "/tugas-insidentil", section: "tugas-insidentil", label: "Tugas Insidentil", icon: Zap },
       { path: "/daftar-belanja",   section: "daftar-belanja",   label: "Daftar Belanja",   icon: ShoppingCart },
       { path: "/salary",        section: "salary",       label: "Gaji Bulanan",      icon: Calculator },
