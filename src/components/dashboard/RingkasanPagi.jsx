@@ -124,8 +124,20 @@ export default function RingkasanPagi() {
   const activeBreedings = breedings.filter(b => ["bertelur", "inkubasi"].includes(b.status));
   const pakanBaskets = pakan.reduce((s, p) => s + (p.basket_count || 0), 0);
 
-  const staff = users.filter(u => ["keeper", "kepala_feeder", "admin"].includes(u.role));
-  const checkedIn = attendances.filter(a => a.check_in && a.status === "hadir");
+  // Penyebut "Hadir X/Y" hanya karyawan harian (keeper & kepala_feeder).
+  // Admin/manajer/owner tidak dihitung sebagai "belum masuk".
+  const staff = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
+  const staffEmails = new Set(staff.map(u => u.email));
+  // Dedup absensi per orang — ambil jam masuk paling awal, hindari hitung ganda.
+  const checkedInRaw = attendances.filter(a => a.check_in && a.status === "hadir" && staffEmails.has(a.employee_email));
+  const checkedInMap = new Map();
+  for (const a of checkedInRaw) {
+    const key = a.employee_email;
+    if (!checkedInMap.has(key) || (a.check_in || "").localeCompare(checkedInMap.get(key).check_in || "") < 0) {
+      checkedInMap.set(key, a);
+    }
+  }
+  const checkedIn = Array.from(checkedInMap.values());
   const checkedInEmails = new Set(checkedIn.map(a => a.employee_email).filter(Boolean));
   const belumMasuk = staff.filter(u => !checkedInEmails.has(u.email));
 

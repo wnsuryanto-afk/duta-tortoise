@@ -173,22 +173,71 @@ async function buildDailySummary(base44, today, now, showPoints) {
   ]);
 
   // ── KEHADIRAN ──
-  const staff = users.filter(u => ["keeper", "kepala_feeder", "admin"].includes(u.role));
-  const attLines: string[] = [];
+  // Hanya karyawan harian (keeper & kepala_feeder) yang ditampilkan "tidak hadir".
+  // Admin/manajer/owner hanya muncul bila absen masuk, tanpa status "tidak hadir".
+  const dailyStaff = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
+  const nonDailyStaff = users.filter(u => ["admin", "manajer", "owner"].includes(u.role));
+
+  // Kelompokkan absensi per orang (key = email, fallback ke nama)
+  const attByKey = new Map();
   for (const a of attendances) {
-    if (a.status === "hadir" && a.check_in) {
-      const out = a.check_out ? a.check_out : "belum pulang";
-      attLines.push(`• ${a.employee_name}: masuk ${a.check_in} – ${out}`);
-    } else if (a.status === "izin" || a.status === "sakit") {
-      attLines.push(`• ${a.employee_name}: ${a.status}`);
-    }
+    const key = a.employee_email || a.employee_name;
+    if (!key) continue;
+    if (!attByKey.has(key)) attByKey.set(key, []);
+    attByKey.get(key).push(a);
   }
-  const attEmails = new Set(attendances.map(a => a.employee_email).filter(Boolean));
-  for (const s of staff) {
-    if (!attEmails.has(s.email)) {
+
+  // Ambil jam masuk paling awal & jam pulang paling akhir; tandai bila absen masuk >1x
+  function summarizeAttendance(records) {
+    const hadir = records.filter(r => r.status === "hadir" && r.check_in);
+    if (hadir.length === 0) return null;
+    hadir.sort((a, b) => (a.check_in || "").localeCompare(b.check_in || ""));
+    const earliest = hadir[0];
+    const checkOuts = hadir.filter(r => r.check_out)
+      .sort((a, b) => (b.check_out || "").localeCompare(a.check_out || ""));
+    const out = checkOuts.length > 0 ? checkOuts[0].check_out : "belum pulang";
+    const dupMark = hadir.length > 1 ? " (absen masuk 2x)" : "";
+    return { earliest, out, dupMark };
+  }
+
+  const attLines: string[] = [];
+  const processedKeys = new Set();
+
+  // Karyawan harian: satu baris per orang (hadir / izin / sakit / tidak hadir)
+  for (const s of dailyStaff) {
+    processedKeys.add(s.email);
+    const records = attByKey.get(s.email) || [];
+    if (records.length === 0) {
       attLines.push(`• ${s.full_name || s.email}: tidak hadir`);
+      continue;
+    }
+    const summary = summarizeAttendance(records);
+    if (summary) {
+      attLines.push(`• ${s.full_name || s.email}: masuk ${summary.earliest.check_in} – ${summary.out}${summary.dupMark}`);
+    } else {
+      const izinSakit = records.find(r => r.status === "izin" || r.status === "sakit");
+      attLines.push(`• ${s.full_name || s.email}: ${izinSakit ? izinSakit.status : "tidak hadir"}`);
     }
   }
+
+  // Admin/manajer/owner: hanya tampil bila absen masuk, tanpa "tidak hadir"
+  for (const s of nonDailyStaff) {
+    processedKeys.add(s.email);
+    const records = attByKey.get(s.email) || [];
+    const summary = summarizeAttendance(records);
+    if (!summary) continue;
+    const roleLabel = s.role === "owner" ? "Owner" : s.role === "manajer" ? "Manajer" : "Admin";
+    attLines.push(`• ${roleLabel} ${s.full_name || s.email}: masuk ${summary.earliest.check_in} – ${summary.out}${summary.dupMark}`);
+  }
+
+  // Absensi tanpa match user (email tidak terdaftar) — tampilkan apa adanya
+  for (const [key, records] of attByKey) {
+    if (processedKeys.has(key)) continue;
+    const summary = summarizeAttendance(records);
+    if (!summary) continue;
+    attLines.push(`• ${summary.earliest.employee_name || key}: masuk ${summary.earliest.check_in} – ${summary.out}${summary.dupMark}`);
+  }
+
   if (attLines.length > 0) {
     lines.push("👥 *KEHADIRAN*");
     lines.push(...attLines);
@@ -196,8 +245,11 @@ async function buildDailySummary(base44, today, now, showPoints) {
   }
 
   // ── TUGAS HARI INI ──
+  // Pembilang (X) = tugas dicentang; penyebut (Y) = SOP terjadwal + tugas insidentil
+  // yang ditugaskan ke karyawan ini hari itu. Y selalu >= X supaya persentase <= 100%.
   const scheduledToday = sopTasks.filter(t => isTaskScheduledToday(t, now));
-  const Y = scheduledToday.length;
+  const Y_sop = scheduledToday.length;
+  const todayIncidental = incidentalTasks.filter(t => t.due_date === today && t.status !== "cancelled");
   const allCompletedTitles = new Set();
   const taskLines: string[] = [];
   for (const cl of checklists) {
@@ -206,7 +258,11 @@ async function buildDailySummary(base44, today, now, showPoints) {
     tasks.forEach(t => {
       if (t.task_title) allCompletedTitles.add(t.task_title.toLowerCase());
     });
-    const pct = Y > 0 ? Math.round((X / Y) * 100) : 0;
+    const myIncidental = todayIncidental.filter(t =>
+      !t.assigned_to_email || t.assigned_to_email === cl.employee_email
+    ).length;
+    const Y = Math.max(Y_sop + myIncidental, X);
+    const pct = Y > 0 ? Math.min(100, Math.round((X / Y) * 100)) : 0;
     let line = `• ${cl.employee_name}: ${X}/${Y} selesai (${pct}%)`;
     if (showPoints) {
       line += ` (${cl.total_points_claimed || 0} poin)`;
