@@ -125,135 +125,191 @@ function isTaskScheduledToday(task, now) {
   return true;
 }
 
-async function buildDailySummary(base44, today, now, showPoints) {
-  const lines = [];
-  const dateLabel = formatDateID(now);
+function isTaskScheduledForDate(task, date) {
+  if (task.is_active === false) return false;
+  const freq = task.frequency || "harian";
+  if (freq === "harian") return true;
+  const dow = date.getUTCDay();
+  if (freq === "mingguan") {
+    if (!Array.isArray(task.weekly_days) || task.weekly_days.length === 0) return true;
+    return task.weekly_days.includes(dow);
+  }
+  if (freq === "bulanan") {
+    if (!Array.isArray(task.monthly_dates) || task.monthly_dates.length === 0) return true;
+    return task.monthly_dates.includes(date.getUTCDate());
+  }
+  return true;
+}
 
-  lines.push(`🐢 *DUTA TORTOISE — Ringkasan ${dateLabel}*`);
+async function buildDailySummary(base44, today, now, showPoints) {
+  const lines: string[] = [];
+  const dateLabel = formatDateID(now);
+  const timeLabel = `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`;
+
+  lines.push(`🐢 *DUTA TORTOISE — ${dateLabel}*`);
   lines.push("");
 
-  // ── Kehadiran ──
-  const [users, attendances] = await Promise.all([
+  // ── Fetch all data in parallel ──
+  const [
+    users, attendances, checklists, sopTasks,
+    warehouseItems, feedStocks, incidentalTasks, toolRequests,
+    sickRecords, photoFindings, pakanRecords, treatmentSchedules,
+    stockMovements, tortoises,
+  ] = await Promise.all([
     base44.asServiceRole.entities.User.list(),
     base44.asServiceRole.entities.Attendance.filter({ date: today }),
+    base44.asServiceRole.entities.DailyChecklist.filter({ date: today }),
+    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
+    base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
+    base44.asServiceRole.entities.FeedStock.list("-name", 100),
+    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
+    base44.asServiceRole.entities.ToolRequest.filter({ status: "menunggu" }),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit", date: today }),
+    base44.asServiceRole.entities.PhotoFinding.filter({ date: today }),
+    base44.asServiceRole.entities.PakanHarian.filter({ log_date: today }),
+    base44.asServiceRole.entities.TreatmentSchedule.filter({ is_active: true }),
+    base44.asServiceRole.entities.StockMovement.filter({ date: today }),
+    base44.asServiceRole.entities.Tortoise.list("-name", 200),
   ]);
 
+  // ── KEHADIRAN ──
   const staff = users.filter(u => ["keeper", "kepala_feeder", "admin"].includes(u.role));
-  const attLines = [];
-
+  const attLines: string[] = [];
   for (const a of attendances) {
     if (a.status === "hadir" && a.check_in) {
       const out = a.check_out ? a.check_out : "belum pulang";
-      attLines.push(`• ${a.employee_name} masuk ${a.check_in} – ${out}`);
+      attLines.push(`• ${a.employee_name}: masuk ${a.check_in} – ${out}`);
     } else if (a.status === "izin" || a.status === "sakit") {
       attLines.push(`• ${a.employee_name}: ${a.status}`);
     }
   }
-
   const attEmails = new Set(attendances.map(a => a.employee_email).filter(Boolean));
   for (const s of staff) {
     if (!attEmails.has(s.email)) {
       attLines.push(`• ${s.full_name || s.email}: tidak hadir`);
     }
   }
-
   if (attLines.length > 0) {
-    lines.push("👥 *Kehadiran*");
+    lines.push("👥 *KEHADIRAN*");
     lines.push(...attLines);
     lines.push("");
   }
 
-  // ── Tugas Hari Ini ──
-  const [checklists, sopTasks] = await Promise.all([
-    base44.asServiceRole.entities.DailyChecklist.filter({ date: today }),
-    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
-  ]);
-
+  // ── TUGAS HARI INI ──
   const scheduledToday = sopTasks.filter(t => isTaskScheduledToday(t, now));
   const Y = scheduledToday.length;
   const allCompletedTitles = new Set();
-  const taskLines = [];
-
+  const taskLines: string[] = [];
   for (const cl of checklists) {
     const tasks = cl.completed_tasks || [];
     const X = tasks.length;
     tasks.forEach(t => {
       if (t.task_title) allCompletedTitles.add(t.task_title.toLowerCase());
     });
-
-    let line = `• ${cl.employee_name}: ${X} dari ${Y} tugas selesai`;
+    const pct = Y > 0 ? Math.round((X / Y) * 100) : 0;
+    let line = `• ${cl.employee_name}: ${X}/${Y} selesai (${pct}%)`;
     if (showPoints) {
       line += ` (${cl.total_points_claimed || 0} poin)`;
     }
     taskLines.push(line);
   }
-
   const belumSelesai = scheduledToday
     .filter(t => !allCompletedTitles.has((t.title || "").toLowerCase()))
     .map(t => t.title)
     .filter(Boolean)
-    .slice(0, 5);
-
-  if (taskLines.length > 0) {
-    lines.push("✅ *Tugas Hari Ini*");
+    .slice(0, 6);
+  if (taskLines.length > 0 || belumSelesai.length > 0) {
+    lines.push("✅ *TUGAS HARI INI*");
     lines.push(...taskLines);
     if (belumSelesai.length > 0) {
-      lines.push(`• Belum selesai: ${belumSelesai.join(", ")}`);
+      lines.push(`⚠️ Belum selesai: ${belumSelesai.join(", ")}`);
     }
     lines.push("");
   }
 
-  // ── Pakan ──
-  const pakanRecords = await base44.asServiceRole.entities.PakanHarian.filter({ log_date: today });
-  const pakanBaskets = pakanRecords.reduce((s, p) => s + (p.basket_count || 0), 0);
-  if (pakanBaskets > 0) {
-    lines.push(`🥬 *Pakan*: ${pakanBaskets} keranjang tercatat`);
-  }
+  // ── PERLU DIBELI ──
+  const catPriority: Record<string, number> = { obat: 0, vitamin: 1, suplemen: 2 };
+  const lowStockItems = [
+    ...warehouseItems
+      .filter(i => (i.current_stock || 0) < (i.minimum_stock || 0))
+      .map(i => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
+    ...feedStocks
+      .filter(i => (i.current_stock || 0) < (i.minimum_stock || 0))
+      .map(i => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
+  ];
+  lowStockItems.sort((a, b) => {
+    const pa = catPriority[a.category] ?? 9;
+    const pb = catPriority[b.category] ?? 9;
+    if (pa !== pb) return pa - pb;
+    return a.stock - b.stock;
+  });
 
-  // ── Kura Sakit ──
-  const sickRecords = await base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit", date: today });
-  if (sickRecords.length > 0) {
-    const names = sickRecords.map(r => r.tortoise_name).filter(Boolean);
-    const namesStr = names.length > 0 ? ` (${names.join(", ")})` : "";
-    lines.push(`🤒 *Kura sakit*: ${sickRecords.length} laporan baru hari ini${namesStr}`);
-  }
-
-  // ── Temuan dari Foto ──
-  let temuanCount = 0;
-  for (const cl of checklists) {
-    for (const t of (cl.completed_tasks || [])) {
-      if (t.ai_temuan_penting && String(t.ai_temuan_penting).trim()) {
-        temuanCount++;
-      }
+  const buyLines: string[] = [];
+  for (const item of lowStockItems.slice(0, 10)) {
+    if (item.stock <= 0) {
+      buyLines.push(`• ${item.name} — HABIS`);
+    } else {
+      buyLines.push(`• ${item.name} — sisa ${item.stock} ${item.unit} (min ${item.min})`);
     }
   }
-  if (temuanCount > 0) {
-    lines.push(`🔎 *Temuan dari foto*: ${temuanCount} hal perlu diperiksa`);
+  if (lowStockItems.length > 10) {
+    buyLines.push(`…dan ${lowStockItems.length - 10} barang lain`);
   }
 
-  // ── Stok Kritis ──
-  const [warehouse, feedStock] = await Promise.all([
-    base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
-    base44.asServiceRole.entities.FeedStock.list("-name", 100),
-  ]);
-  const lowStockItems = [
-    ...warehouse.filter(i => i.is_mandatory && (i.current_stock || 0) < (i.minimum_stock || 0)),
-    ...feedStock.filter(i => i.is_mandatory && (i.current_stock || 0) < (i.minimum_stock || 0)),
-  ];
-  if (lowStockItems.length > 0) {
-    lines.push(`📦 *Stok kritis*: ${lowStockItems.length} item perlu dibeli`);
+  // Tugas menunggu barang
+  const waitingTasks = incidentalTasks.filter(t => t.material_status === "waiting_materials" && t.status === "pending");
+  for (const wt of waitingTasks.slice(0, 3)) {
+    const missing = (wt.required_items || []).filter(r => !r.is_available).map(r => r.item_name).filter(Boolean);
+    if (missing.length > 0) {
+      buyLines.push(`⏳ ${wt.title}: butuh ${missing.join(", ")}`);
+    }
+  }
+  // Pengajuan alat
+  for (const tr of toolRequests.slice(0, 3)) {
+    buyLines.push(`🔴 ${tr.tool_name} dari ${tr.requester_name}`);
+  }
+  if (buyLines.length > 0) {
+    lines.push("🛒 *PERLU DIBELI*");
+    lines.push(...buyLines);
+    lines.push("");
   }
 
-  // ── Vitamin Betina ──
-  const treatmentSchedules = await base44.asServiceRole.entities.TreatmentSchedule.filter({ is_active: true });
+  // ── KURA & KESEHATAN ──
+  const healthLines: string[] = [];
+  for (const r of sickRecords) {
+    const name = r.tortoise_name || "—";
+    const diag = Array.isArray(r.diagnosis) && r.diagnosis.length > 0
+      ? r.diagnosis.join(", ")
+      : (r.description || "tanpa gejala terperinci");
+    healthLines.push(`• Sakit baru: ${name} — ${diag}`);
+  }
+  const inTreatment = tortoises.filter(t => t.is_currently_sick === true || t.status === "sakit");
+  if (inTreatment.length > 0) {
+    healthLines.push(`• Dalam perawatan: ${inTreatment.length} ekor`);
+  }
+  // Temuan dari foto
+  const activeFindings = photoFindings.filter(f => f.status === "active" && f.finding_text);
+  for (const f of activeFindings.slice(0, 3)) {
+    healthLines.push(`🔎 ${String(f.finding_text).slice(0, 80)}`);
+  }
+  if (healthLines.length > 0) {
+    lines.push("🤒 *KURA & KESEHATAN*");
+    lines.push(...healthLines);
+    lines.push("");
+  }
+
+  // ── PAKAN & LAIN-LAIN ──
+  const pakanLines: string[] = [];
+  const pakanBaskets = pakanRecords.reduce((s, p) => s + (p.basket_count || 0), 0);
+  if (pakanBaskets > 0) {
+    pakanLines.push(`• Pakan tercatat: ${pakanBaskets} keranjang`);
+  }
+  // Vitamin betina
   const vitBetinaSchedules = treatmentSchedules.filter(s =>
     s.mod_type === "vitamin" && (s.gender_filter === "betina" || (s.title || "").toLowerCase().includes("betina"))
   );
   if (vitBetinaSchedules.length > 0) {
-    const vitTaskTitles = vitBetinaSchedules
-      .map(s => (s.sop_task_title || s.title || "").toLowerCase())
-      .filter(Boolean);
-
+    const vitTaskTitles = vitBetinaSchedules.map(s => (s.sop_task_title || s.title || "").toLowerCase()).filter(Boolean);
     let vitDone = false;
     for (const cl of checklists) {
       for (const t of (cl.completed_tasks || [])) {
@@ -265,11 +321,33 @@ async function buildDailySummary(base44, today, now, showPoints) {
       }
       if (vitDone) break;
     }
-    lines.push(`💊 *Vitamin betina*: ${vitDone ? "sudah" : "belum"} diberikan`);
+    pakanLines.push(`• Vitamin betina: ${vitDone ? "sudah" : "belum"} diberikan`);
+  }
+  // Azolla dipanen
+  const azollaHarvested = stockMovements.some(m => m.feed_source === "panen_azola" && m.type === "masuk");
+  if (azollaHarvested) {
+    pakanLines.push(`• Azolla dipanen: ya`);
+  }
+  if (pakanLines.length > 0) {
+    lines.push("🥬 *PAKAN & LAIN-LAIN*");
+    lines.push(...pakanLines);
+    lines.push("");
   }
 
-  lines.push("");
-  lines.push("_Ringkasan otomatis dari aplikasi Duta Tortoise_");
+  // ── BESOK ──
+  const tomorrow = new Date(now);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const tomorrowTasks = sopTasks.filter(t => t.frequency !== "harian" && isTaskScheduledForDate(t, tomorrow));
+  const tomorrowTitles = tomorrowTasks.map(t => t.title).filter(Boolean).slice(0, 4);
+  if (tomorrowTitles.length > 0) {
+    lines.push("📅 *BESOK*");
+    for (const title of tomorrowTitles) {
+      lines.push(`• ${title}`);
+    }
+    lines.push("");
+  }
+
+  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel}_`);
 
   return lines.join("\n");
 }
