@@ -83,6 +83,10 @@
       "default": false,
       "description": "Apakah task wajib disertai foto bukti"
     },
+    "ai_check_points": {
+      "type": "string",
+      "description": "Daftar hal yang diperiksa AI pada foto task ini (panduan per task). Kosong = penilaian umum."
+    },
     "is_active": {
       "type": "boolean",
       "default": true,

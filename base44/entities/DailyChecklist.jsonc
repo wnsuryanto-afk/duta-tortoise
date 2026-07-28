@@ -89,6 +89,20 @@
             "type": "string",
             "description": "Legacy field \u2014 gunakan ai_temuan_penting"
           },
+          "ai_status": {
+            "type": "string",
+            "enum": [
+              "belum_diperiksa",
+              "sedang_diproses",
+              "selesai",
+              "gagal"
+            ],
+            "description": "Status pemeriksaan AI: belum_diperiksa / sedang_diproses / selesai / gagal"
+          },
+          "ai_error": {
+            "type": "string",
+            "description": "Alasan jika analisis AI gagal (mis: gambar tidak terbaca / layanan sibuk)"
+          },
           "photo_age_warning": {
             "type": "string",
             "description": "Peringatan jika foto berusia >2 jam (kemungkinan bukan diambil saat itu)"

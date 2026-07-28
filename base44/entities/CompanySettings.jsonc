@@ -92,6 +92,11 @@
       "default": true,
       "description": "Sertakan gaji dalam perhitungan biaya per ekor untuk HPP"
     },
+    "ai_vision_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Aktifkan AI Vision keseluruhan untuk verifikasi foto task. Jika false, foto tidak dianalisis AI."
+    },
     "ai_saran_enabled": {
       "type": "boolean",
       "default": true,

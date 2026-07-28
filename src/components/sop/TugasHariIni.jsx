@@ -267,6 +267,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           badge: t.category,
           badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
           require_photo: t.require_photo || false,
+          ai_check_points: t.ai_check_points || "",
           task_scope: t.task_scope || "bersama",
           assigned_to_email: t.assigned_to_email || "",
           assigned_to_name: t.assigned_to_name || "",

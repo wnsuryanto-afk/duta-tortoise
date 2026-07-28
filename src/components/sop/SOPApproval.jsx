@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   CheckCircle2, XCircle, Star, ChevronDown, ChevronUp,
-  AlertTriangle, UserCheck, Loader2, ListChecks, Sparkles, Clock
+  AlertTriangle, UserCheck, Loader2, ListChecks, Sparkles, Clock, Search, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { logActivity } from "@/lib/logActivity";
+import { reverifySinglePhoto } from "@/lib/photoVerification";
 import PhotoPreviewModal from "./PhotoPreviewModal";
 
 const statusConfig = {
@@ -38,6 +39,8 @@ export default function SOPApproval() {
   const [filterStatus, setFilterStatus] = useState("submitted");
   const [photoPreview, setPhotoPreview] = useState(null);
   const [filterNeedsReview, setFilterNeedsReview] = useState(false);
+  const [reverifyLoading, setReverifyLoading] = useState({});
+  const [bulkReverifyLoading, setBulkReverifyLoading] = useState(false);
 
   const taskNeedsReview = (t) => {
     if (t.ai_verified === false) return true;
@@ -57,6 +60,76 @@ export default function SOPApproval() {
       return { icon: "⚠️", text: `Meragukan — ${reasonText}`, color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
     }
     return { icon: "❌", text: `Tidak sesuai — ${reasonText}`, color: "bg-red-100 text-red-700 border-red-200" };
+  };
+
+  const aiStatusConfig = {
+    belum_diperiksa: { label: "⏳ Belum diperiksa", color: "bg-gray-100 text-gray-500 border-gray-200" },
+    sedang_diproses: { label: "🔄 Sedang diproses", color: "bg-blue-100 text-blue-600 border-blue-200" },
+    selesai: { label: "✅ Diperiksa", color: "bg-green-100 text-green-700 border-green-200" },
+    gagal: { label: "❌ Gagal", color: "bg-red-100 text-red-600 border-red-200" },
+  };
+
+  const getAIStatus = (t) => {
+    if (t.ai_status) return t.ai_status;
+    if (t.ai_verified === true || t.ai_verified === false) return "selesai";
+    if (t.photo_url && taskRequiresPhoto(t.task_title)) return "belum_diperiksa";
+    return null;
+  };
+
+  const getAiCheckPoints = (taskTitle) => sopTaskByTitle[norm(taskTitle)]?.ai_check_points || "";
+
+  const handleReverify = async (c, taskIdx, t) => {
+    const key = `${c.id}_${taskIdx}`;
+    setReverifyLoading(p => ({ ...p, [key]: true }));
+    try {
+      const { success, error } = await reverifySinglePhoto({
+        photoUrl: t.photo_url,
+        taskTitle: t.task_title,
+        taskDescription: "",
+        aiCheckPoints: getAiCheckPoints(t.task_title),
+        employeeEmail: c.employee_email,
+        date: c.date,
+        enclosure: t.notes || "",
+      });
+      if (success) toast.success("Foto berhasil diperiksa AI");
+      else toast.error("Gagal: " + (error || "tidak diketahui"));
+      qc.invalidateQueries({ queryKey: ["checklists-all"] });
+    } catch (e) {
+      toast.error("Gagal: " + (e.message || e));
+    }
+    setReverifyLoading(p => ({ ...p, [key]: false }));
+  };
+
+  const handleReverifyAllPending = async () => {
+    const pending = [];
+    checklists.forEach(c => {
+      (c.completed_tasks || []).forEach((t, i) => {
+        if (t.photo_url && taskRequiresPhoto(t.task_title) && getAIStatus(t) !== "selesai" && getAIStatus(t) !== "sedang_diproses") {
+          pending.push({ c, t, i });
+        }
+      });
+    });
+    if (pending.length === 0) { toast.info("Tidak ada foto tertunda"); return; }
+    setBulkReverifyLoading(true);
+    let ok = 0, fail = 0;
+    for (const { c, t, i } of pending) {
+      try {
+        const res = await reverifySinglePhoto({
+          photoUrl: t.photo_url,
+          taskTitle: t.task_title,
+          taskDescription: "",
+          aiCheckPoints: getAiCheckPoints(t.task_title),
+          employeeEmail: c.employee_email,
+          date: c.date,
+          enclosure: t.notes || "",
+        });
+        if (res.success) ok++; else fail++;
+      } catch { fail++; }
+    }
+    setBulkReverifyLoading(false);
+    qc.invalidateQueries({ queryKey: ["checklists-all"] });
+    if (fail === 0) toast.success(`${ok} foto berhasil diperiksa`);
+    else toast.warning(`${ok} berhasil, ${fail} gagal`);
   };
 
   const handleSaveOwnerNote = async (c, taskIdx, note) => {
@@ -102,6 +175,12 @@ export default function SOPApproval() {
       }
     });
     return { titles: s, kebersihanWajib };
+  }, [sopTasksAll]);
+
+  const sopTaskByTitle = useMemo(() => {
+    const m = {};
+    sopTasksAll.forEach(t => { m[norm(t.title)] = t; });
+    return m;
   }, [sopTasksAll]);
 
   const taskRequiresPhoto = (taskTitle) => {
@@ -219,6 +298,11 @@ export default function SOPApproval() {
     return arr.map(e => ({ ...e, percentage: totalPoints > 0 ? Math.round((e.points / totalPoints) * 100) : 0 }));
   }, [checklists]);
 
+  const pendingAIPhotos = checklists.reduce((n, c) =>
+    n + (c.completed_tasks || []).filter(t =>
+      t.photo_url && taskRequiresPhoto(t.task_title) && getAIStatus(t) !== "selesai" && getAIStatus(t) !== "sedang_diproses"
+    ).length, 0);
+
   const maxPoints = Math.max(...employeeStats.map(e => e.points), 0);
   const hasImbalance = employeeStats.length > 1 && maxPoints > 0 &&
     employeeStats.some(e => e.points > 0 && e.points < maxPoints * 0.7);
@@ -272,6 +356,18 @@ export default function SOPApproval() {
           <Sparkles className="w-3.5 h-3.5" />
           {filterNeedsReview ? "✓ Hanya perlu diperiksa" : "Hanya perlu diperiksa"}
         </Button>
+        {isOwner && pendingAIPhotos > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReverifyAllPending}
+            disabled={bulkReverifyLoading}
+            className="gap-1.5 ml-auto"
+          >
+            {bulkReverifyLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+            Periksa semua tertunda ({pendingAIPhotos})
+          </Button>
+        )}
       </div>
 
       {/* Ringkasan beban per karyawan */}
@@ -412,13 +508,30 @@ export default function SOPApproval() {
                                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-green-100 text-green-700 border-green-200">✅ Sesuai (keyakinan {t.ai_confidence || 0}%)</span>
                                       )}
                                       {t.ai_verified === false && t.ai_confidence != null && t.ai_confidence >= 50 && (
-                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200">⚠️ Meragukan — {t.ai_reason || ""}</span>
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200">⚠️ Meragukan — {t.ai_temuan_penting || t.ai_reason || ""}</span>
                                       )}
                                       {t.ai_verified === false && (t.ai_confidence == null || t.ai_confidence < 50) && (
-                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200">❌ Tidak sesuai — {t.ai_reason || ""}</span>
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200">❌ Tidak sesuai — {t.ai_temuan_penting || t.ai_reason || ""}</span>
                                       )}
-                                      {t.ai_verified == null && taskRequiresPhoto(t.task_title) && (
-                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-gray-100 text-gray-500 border-gray-200">⏳ belum diperiksa AI</span>
+                                      {(() => {
+                                        const status = getAIStatus(t);
+                                        const sc = status ? aiStatusConfig[status] : null;
+                                        return sc ? (
+                                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${sc.color}`}>{sc.label}</span>
+                                        ) : null;
+                                      })()}
+                                      {t.ai_error && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-red-100 text-red-600 border-red-200" title={t.ai_error}>⚠ {t.ai_error}</span>
+                                      )}
+                                      {isOwner && t.photo_url && taskRequiresPhoto(t.task_title) && getAIStatus(t) !== "sedang_diproses" && (
+                                        <button
+                                          onClick={() => handleReverify(c, i, t)}
+                                          disabled={!!reverifyLoading[`${c.id}_${i}`]}
+                                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 disabled:opacity-50 flex items-center gap-0.5"
+                                        >
+                                          {reverifyLoading[`${c.id}_${i}`] ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Search className="w-2.5 h-2.5" />}
+                                          Periksa sekarang
+                                        </button>
                                       )}
                                       {t.photo_age_warning && (
                                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-orange-100 text-orange-700 border-orange-200 flex items-center gap-0.5">

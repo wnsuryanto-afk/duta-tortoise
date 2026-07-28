@@ -37,6 +37,7 @@ const DEFAULT_FORM = {
   weekly_days: [], monthly_dates: [],
   target_enclosures: [], target_tortoise_ids: [], target_tortoise_names: [],
   require_photo: false,
+  ai_check_points: "",
   assigned_to_email: "", assigned_to_name: "",
 };
 
@@ -159,6 +160,7 @@ export default function SOPTaskManager() {
       target_tortoise_names: t.target_tortoise_names || [],
       assigned_to_email: t.assigned_to_email || "",
       assigned_to_name: t.assigned_to_name || "",
+      ai_check_points: t.ai_check_points || "",
     });
     setEditData(t);
     setShowForm(true);
@@ -399,6 +401,21 @@ export default function SOPTaskManager() {
                   📷 Wajib Foto (kamera langsung saat centang)
                 </label>
               </div>
+
+              {form.require_photo && (
+                <div>
+                  <label className="text-xs font-medium mb-1 block">
+                    Panduan Pemeriksaan AI <span className="text-muted-foreground font-normal">(hal yang diperiksa AI pada foto task ini)</span>
+                  </label>
+                  <Textarea
+                    value={form.ai_check_points || ""}
+                    onChange={e => setForm(p => ({ ...p, ai_check_points: e.target.value }))}
+                    placeholder={"Contoh:\n- Tempat minum terisi dan bersih\n- Tidak ada sisa pakan lama\n- Lantai kandang relatif kering\n- Foto diambil dari jarak yang menampilkan seluruh kandang"}
+                    className="resize-none h-24 text-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">AI akan memeriksa foto sesuai daftar di atas. Kosongkan untuk penilaian umum.</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
