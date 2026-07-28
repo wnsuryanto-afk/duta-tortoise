@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import AccessDenied from "@/components/common/AccessDenied";
 import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
-  AlertCircle, MessageCircle, Phone, Users,
+  AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy,
 } from "lucide-react";
 
 const NOTIF_CONFIG = [
@@ -44,6 +44,11 @@ export default function PengaturanWhatsAppPage() {
   const [showPoints, setShowPoints] = useState(false);
   const [weeklyEnabled, setWeeklyEnabled] = useState(false);
   const [sendingSummary, setSendingSummary] = useState(false);
+  const [fetchingGroups, setFetchingGroups] = useState(false);
+  const [groupList, setGroupList] = useState([]);
+  const [groupError, setGroupError] = useState("");
+  const [lastFetchTime, setLastFetchTime] = useState(null);
+  const [copiedId, setCopiedId] = useState("");
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["wa-settings"],
@@ -158,6 +163,60 @@ export default function PengaturanWhatsAppPage() {
       });
     },
   });
+
+  const handleFetchGroups = async () => {
+    // Anti-spam: jeda minimal 1 menit antar panggilan
+    if (lastFetchTime) {
+      const elapsed = Date.now() - lastFetchTime;
+      if (elapsed < 60000) {
+        const waitSec = Math.ceil((60000 - elapsed) / 1000);
+        toast({
+          title: "⏳ Tunggu sebentar",
+          description: `Tunggu ${waitSec} detik sebelum mengambil daftar grup lagi (mencegah pemblokiran nomor).`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setFetchingGroups(true);
+    setGroupError("");
+    setGroupList([]);
+    setLastFetchTime(Date.now());
+
+    try {
+      const res = await base44.functions.invoke("sendWhatsApp", { action: "fetch_groups" });
+      const data = res.data || res;
+      if (data.success && Array.isArray(data.groups)) {
+        setGroupList(data.groups);
+        if (data.groups.length === 0) {
+          setGroupError("Belum ada grup terdeteksi. Pastikan nomor pengirim sudah menjadi anggota grup, lalu tekan Ambil Daftar Grup lagi.");
+        }
+      } else {
+        setGroupError(data.error || "Gagal mengambil daftar grup.");
+      }
+    } catch (err) {
+      setGroupError(err.message || "Gagal memanggil fungsi.");
+    } finally {
+      setFetchingGroups(false);
+    }
+  };
+
+  const handleSelectGroup = (g) => {
+    setGroupId(g.id);
+    toast({
+      title: "✅ Grup dipilih",
+      description: `${g.name} — ID terisi otomatis.`,
+      className: "bg-green-50 border-green-200",
+    });
+  };
+
+  const handleCopyId = (id) => {
+    navigator.clipboard.writeText(id).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(""), 2000);
+    });
+  };
 
   const handleSendSummaryNow = async () => {
     setSendingSummary(true);
@@ -425,9 +484,74 @@ export default function PengaturanWhatsAppPage() {
               onChange={(e) => setGroupId(e.target.value)}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Ambil dari dashboard Fonnte bagian daftar grup. Pastikan nomor pengirim sudah tergabung di grup tersebut.
+              Klik "Ambil Daftar Grup" di bawah untuk memilih otomatis, atau isi manual.
             </p>
           </div>
+
+          {/* Tombol Ambil Daftar Grup */}
+          <div>
+            <Button
+              onClick={handleFetchGroups}
+              disabled={fetchingGroups || !hasToken}
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+            >
+              {fetchingGroups ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengambil daftar grup...</>
+              ) : (
+                <><RefreshCw className="w-3.5 h-3.5" /> 🔄 Ambil Daftar Grup</>
+              )}
+            </Button>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Memanggil API Fonnte untuk mengambil daftar grup. Beri jeda 1 menit antar panggilan.
+            </p>
+          </div>
+
+          {/* Daftar Grup */}
+          {groupError && (
+            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>{groupError}</span>
+            </div>
+          )}
+
+          {groupList.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground">Pilih Grup Tujuan:</p>
+              {groupList.map((g, i) => (
+                <div
+                  key={g.id || i}
+                  className={`flex items-center justify-between gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                    groupId === g.id
+                      ? "bg-green-50 border-green-400"
+                      : "bg-background border-border hover:bg-muted/50"
+                  }`}
+                  onClick={() => handleSelectGroup(g)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{g.name || "(tanpa nama)"}</p>
+                    <p className="text-[10px] text-muted-foreground truncate font-mono">{g.id}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyId(g.id);
+                    }}
+                    className="flex-shrink-0 p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+                    title="Salin ID"
+                  >
+                    {copiedId === g.id ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div>
             <Label>Jam Kirim Ringkasan Harian</Label>
             <Input
