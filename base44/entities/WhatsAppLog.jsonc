@@ -23,7 +23,9 @@
         "salary_paid",
         "incidental_task",
         "tool_request",
-        "test_send"
+        "test_send",
+        "daily_summary",
+        "weekly_summary"
       ],
       "description": "Jenis notifikasi"
     },

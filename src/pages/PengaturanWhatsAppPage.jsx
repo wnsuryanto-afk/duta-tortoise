@@ -38,6 +38,12 @@ export default function PengaturanWhatsAppPage() {
   const [empPhones, setEmpPhones] = useState({});
   const [toggles, setToggles] = useState({});
   const [testing, setTesting] = useState(false);
+  const [groupId, setGroupId] = useState("");
+  const [summaryTime, setSummaryTime] = useState("17:00");
+  const [summaryEnabled, setSummaryEnabled] = useState(false);
+  const [showPoints, setShowPoints] = useState(false);
+  const [weeklyEnabled, setWeeklyEnabled] = useState(false);
+  const [sendingSummary, setSendingSummary] = useState(false);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["wa-settings"],
@@ -78,6 +84,11 @@ export default function PengaturanWhatsAppPage() {
       tg[c.key] = settings[c.key] !== false;
     });
     setToggles(tg);
+    setGroupId(settings.group_id || "");
+    setSummaryTime(settings.daily_summary_time || "17:00");
+    setSummaryEnabled(settings.daily_summary_enabled === true);
+    setShowPoints(settings.daily_summary_show_points === true);
+    setWeeklyEnabled(settings.weekly_summary_enabled === true);
   };
 
   // Initialize when settings first load
@@ -112,6 +123,11 @@ export default function PengaturanWhatsAppPage() {
         notif_salary_paid: toggles.notif_salary_paid ?? false,
         notif_incidental_task: toggles.notif_incidental_task ?? false,
         notif_tool_request: toggles.notif_tool_request ?? false,
+        group_id: groupId,
+        daily_summary_time: summaryTime || "17:00",
+        daily_summary_enabled: summaryEnabled,
+        daily_summary_show_points: showPoints,
+        weekly_summary_enabled: weeklyEnabled,
         updated_at: new Date().toISOString(),
         updated_by: user?.email || "",
       };
@@ -142,6 +158,35 @@ export default function PengaturanWhatsAppPage() {
       });
     },
   });
+
+  const handleSendSummaryNow = async () => {
+    setSendingSummary(true);
+    try {
+      const res = await base44.functions.invoke("sendDailySummary", { force: true });
+      const data = res.data || res;
+      if (data.success) {
+        toast({
+          title: "✅ Ringkasan terkirim",
+          description: data.message || "Ringkasan harian telah dikirim ke grup WhatsApp.",
+          className: "bg-green-50 border-green-200",
+        });
+      } else {
+        toast({
+          title: "❌ Gagal mengirim",
+          description: data.error || data.reason || "Gagal mengirim ringkasan.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "❌ Error",
+        description: err.message || "Gagal memanggil fungsi",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingSummary(false);
+    }
+  };
 
   const handleTestSend = async () => {
     setTesting(true);
@@ -359,6 +404,69 @@ export default function PengaturanWhatsAppPage() {
               />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Ringkasan Harian ke Grup */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="w-4 h-4 text-green-600" />
+            Ringkasan Harian ke Grup WhatsApp
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <Label>ID Grup WhatsApp</Label>
+            <Input
+              className="mt-1"
+              placeholder="Contoh: 120363xxx@g.us"
+              value={groupId}
+              onChange={(e) => setGroupId(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Ambil dari dashboard Fonnte bagian daftar grup. Pastikan nomor pengirim sudah tergabung di grup tersebut.
+            </p>
+          </div>
+          <div>
+            <Label>Jam Kirim Ringkasan Harian</Label>
+            <Input
+              type="time"
+              className="mt-1 w-32"
+              value={summaryTime}
+              onChange={(e) => setSummaryTime(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2 border-b">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Aktifkan Ringkasan Harian</p>
+              <p className="text-xs text-muted-foreground">Kirim otomatis ke grup setiap hari pada jam di atas</p>
+            </div>
+            <Switch checked={summaryEnabled} onCheckedChange={setSummaryEnabled} />
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2 border-b">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Tampilkan Poin di Ringkasan</p>
+              <p className="text-xs text-muted-foreground">Nonaktif default — hindari perbandingan poin antar karyawan di grup</p>
+            </div>
+            <Switch checked={showPoints} onCheckedChange={setShowPoints} />
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Ringkasan Mingguan (Sabtu)</p>
+              <p className="text-xs text-muted-foreground">Kirim rekap mingguan setiap Sabtu pada jam yang sama</p>
+            </div>
+            <Switch checked={weeklyEnabled} onCheckedChange={setWeeklyEnabled} />
+          </div>
+          <Button
+            onClick={handleSendSummaryNow}
+            disabled={sendingSummary || !hasToken || !groupId.trim()}
+            variant="outline"
+            className="w-full gap-1.5"
+          >
+            {sendingSummary ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            🧪 Kirim Ringkasan Sekarang
+          </Button>
         </CardContent>
       </Card>
 

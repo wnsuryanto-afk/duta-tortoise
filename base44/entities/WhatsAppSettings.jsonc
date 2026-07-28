@@ -76,6 +76,40 @@
       "format": "date",
       "description": "Tanggal terakhir pengingat harian dikirim (anti dobel)"
     },
+    "group_id": {
+      "type": "string",
+      "description": "ID Grup WhatsApp untuk kirim ringkasan harian (format: 120363xxx@g.us)"
+    },
+    "daily_summary_time": {
+      "type": "string",
+      "default": "17:00",
+      "description": "Jam kirim ringkasan harian ke grup (HH:mm, UTC)"
+    },
+    "daily_summary_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Aktifkan kirim ringkasan harian ke grup WhatsApp"
+    },
+    "daily_summary_show_points": {
+      "type": "boolean",
+      "default": false,
+      "description": "Tampilkan poin per orang di ringkasan grup. Default nonaktif \u2014 hindari perbandingan poin antar karyawan."
+    },
+    "weekly_summary_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Kirim ringkasan mingguan setiap Sabtu pada jam yang sama"
+    },
+    "daily_summary_last_sent": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir ringkasan harian terkirim (anti dobel)"
+    },
+    "weekly_summary_last_sent": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal terakhir ringkasan mingguan terkirim (anti dobel)"
+    },
     "updated_at": {
       "type": "string",
       "format": "date-time"
