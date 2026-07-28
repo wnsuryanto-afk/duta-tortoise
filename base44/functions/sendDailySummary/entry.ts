@@ -141,6 +141,144 @@ function isTaskScheduledForDate(task, date) {
   return true;
 }
 
+// ── Schedule pattern: should we send today based on pattern + last sent? ──
+function shouldSendByPattern(settings, now, today, lastSentField) {
+  const pattern = settings.summary_schedule_pattern || "daily";
+  const lastSent = settings[lastSentField];
+  if (lastSent === today) return false; // anti-dobel
+
+  if (pattern === "daily") return true;
+
+  if (pattern === "every_2_days" || pattern === "every_3_days") {
+    if (!lastSent) return true;
+    const N = pattern === "every_2_days" ? 2 : 3;
+    const lastDate = new Date(lastSent + "T00:00:00Z");
+    if (isNaN(lastDate.getTime())) return true;
+    const nextDate = new Date(lastDate);
+    nextDate.setUTCDate(nextDate.getUTCDate() + N);
+    return today >= getTodayStr(nextDate);
+  }
+
+  if (pattern === "weekdays") {
+    return now.getUTCDay() !== 0; // Sen–Sab
+  }
+
+  if (pattern === "specific_days") {
+    const dow = now.getUTCDay();
+    const days = Array.isArray(settings.summary_selected_days) ? settings.summary_selected_days : [];
+    return days.length > 0 && days.includes(dow);
+  }
+
+  if (pattern === "weekly") {
+    return now.getUTCDay() === 6; // Sabtu
+  }
+
+  return true;
+}
+
+// ── Notify owner in-app when WhatsApp send fails ──
+async function notifyOwnerFailure(base44, message) {
+  try {
+    const users = await base44.asServiceRole.entities.User.list();
+    const owners = users.filter((u) => u.role === "owner");
+    for (const owner of owners) {
+      try {
+        await base44.asServiceRole.entities.Notification.create({
+          recipient_email: owner.email,
+          recipient_role: "owner",
+          title: "⚠️ Ringkasan WhatsApp Gagal",
+          message: message,
+          type: "warning",
+          priority: "sedang",
+          category: "sistem",
+          is_read: false,
+          created_at: new Date().toISOString(),
+          action_url: "/pengaturan-whatsapp",
+          action_label: "Cek Pengaturan",
+        });
+      } catch {}
+    }
+  } catch {}
+}
+
+// ── Send with retry: device disconnect → retry 30 min later, max 2x ──
+async function trySendWithRetry(base44, settings, message, notificationType, now, today, type) {
+  const lastSentField = type === "morning" ? "morning_summary_last_sent" : "daily_summary_last_sent";
+  const retryCountField = type === "morning" ? "morning_retry_count" : "summary_retry_count";
+  const lastAttemptField = type === "morning" ? "morning_last_attempt" : "summary_last_attempt";
+
+  const maxRetries = 2;
+  const retryDelayMs = 30 * 60 * 1000; // 30 minutes
+
+  const retryCount = settings[retryCountField] || 0;
+  const lastAttempt = settings[lastAttemptField] ? new Date(settings[lastAttemptField]) : null;
+
+  // Maxed out retries → give up, notify owner
+  if (retryCount >= maxRetries) {
+    await notifyOwnerFailure(base44, `Ringkasan ${type === "morning" ? "pagi" : "sore"} gagal terkirim setelah ${maxRetries}x percobaan — perangkat WhatsApp terputus.`);
+    try {
+      await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+        [lastSentField]: today,
+        [retryCountField]: 0,
+        [lastAttemptField]: null,
+      });
+    } catch {}
+    return { success: false, gave_up: true };
+  }
+
+  // Retry spacing: wait 30 min between attempts
+  if (retryCount > 0 && lastAttempt) {
+    const elapsed = now.getTime() - lastAttempt.getTime();
+    if (elapsed < retryDelayMs) {
+      return { success: false, waiting: true };
+    }
+  }
+
+  // Attempt send
+  const result = await sendSummaryToDestinations(base44, settings, message, notificationType);
+
+  if (result.success) {
+    try {
+      await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+        [lastSentField]: today,
+        [retryCountField]: 0,
+        [lastAttemptField]: null,
+      });
+    } catch {}
+    return { success: true, results: result.results };
+  }
+
+  // Failed — check if device disconnect error
+  const isDeviceError = (result.results || []).some((r) => {
+    const reason = String(r.reason || "").toLowerCase();
+    return reason.includes("disconnect") || reason.includes("device");
+  });
+
+  if (isDeviceError) {
+    const newRetryCount = retryCount + 1;
+    try {
+      await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+        [retryCountField]: newRetryCount,
+        [lastAttemptField]: now.toISOString(),
+      });
+    } catch {}
+    if (newRetryCount === 1) {
+      await notifyOwnerFailure(base44, `Ringkasan ${type === "morning" ? "pagi" : "sore"} gagal terkirim — perangkat WhatsApp terputus. Akan coba lagi otomatis.`);
+    }
+    return { success: false, retrying: true, retryCount: newRetryCount, results: result.results };
+  }
+
+  // Non-device error — mark as sent to avoid spam
+  try {
+    await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+      [lastSentField]: today,
+      [retryCountField]: 0,
+      [lastAttemptField]: null,
+    });
+  } catch {}
+  return { success: false, results: result.results };
+}
+
 async function buildDailySummary(base44, today, now, showPoints) {
   const lines: string[] = [];
   const dateLabel = formatDateID(now);
@@ -408,6 +546,127 @@ async function buildDailySummary(base44, today, now, showPoints) {
   return lines.join("\n");
 }
 
+// ── Morning summary: rencana hari, bukan laporan ──
+async function buildMorningSummary(base44, today, now) {
+  const lines: string[] = [];
+  const dateLabel = formatDateID(now);
+
+  lines.push(`🌅 *DUTA TORTOISE — Rencana ${dateLabel}*`);
+  lines.push("");
+
+  const yesterday = new Date(now);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayStr = getTodayStr(yesterday);
+
+  const [sopTasks, tortoises, healthRecords, yesterdayChecklists, warehouseItems, feedStocks, incidentalTasks] = await Promise.all([
+    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
+    base44.asServiceRole.entities.Tortoise.list("-name", 200),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }),
+    base44.asServiceRole.entities.DailyChecklist.filter({ date: yesterdayStr }),
+    base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
+    base44.asServiceRole.entities.FeedStock.list("-name", 100),
+    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
+  ]);
+
+  // TUGAS HARI INI
+  const scheduledToday = sopTasks.filter((t) => isTaskScheduledToday(t, now));
+  const khususToday = scheduledToday
+    .filter((t) => t.frequency !== "harian")
+    .map((t) => t.title)
+    .filter(Boolean)
+    .slice(0, 5);
+  if (scheduledToday.length > 0) {
+    lines.push(`📋 *TUGAS HARI INI*: ${scheduledToday.length} tugas terjadwal`);
+  }
+  if (khususToday.length > 0) {
+    lines.push(`⭐ *Khusus hari ini*: ${khususToday.join(", ")}`);
+  }
+  if (scheduledToday.length > 0 || khususToday.length > 0) {
+    lines.push("");
+  }
+
+  // PERLU PERHATIAN — kura dalam perawatan
+  const sickTortoises = tortoises.filter(
+    (t) => (t.is_currently_sick === true || t.status === "sakit") && !t.is_archived
+  );
+  if (sickTortoises.length > 0) {
+    lines.push("🤒 *Perlu perhatian*");
+    for (const t of sickTortoises.slice(0, 3)) {
+      const latestHealth = healthRecords
+        .filter((r) => r.tortoise_id === t.id || r.tortoise_name === t.name)
+        .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+      const diag =
+        latestHealth && Array.isArray(latestHealth.diagnosis) && latestHealth.diagnosis.length > 0
+          ? latestHealth.diagnosis.join(", ")
+          : latestHealth?.description || "tanpa diagnosa";
+      lines.push(`• ${t.code || t.name} — ${diag}`);
+    }
+    lines.push("");
+  }
+
+  // TERTUNDA KEMARIN
+  const allCompletedYesterday = new Set();
+  for (const cl of yesterdayChecklists) {
+    (cl.completed_tasks || []).forEach((t) => {
+      if (t.task_title) allCompletedYesterday.add(t.task_title.toLowerCase());
+    });
+  }
+  const scheduledYesterday = sopTasks.filter((t) => isTaskScheduledForDate(t, yesterday));
+  const tertunda = scheduledYesterday
+    .filter((t) => !allCompletedYesterday.has((t.title || "").toLowerCase()))
+    .map((t) => t.title)
+    .filter(Boolean)
+    .slice(0, 4);
+  if (tertunda.length > 0) {
+    lines.push(`⏳ *Tertunda kemarin*: ${tertunda.join(", ")}`);
+    lines.push("");
+  }
+
+  // BELUM DIBELI
+  const catPriority: Record<string, number> = { obat: 0, vitamin: 1, suplemen: 2 };
+  const lowStockItems = [
+    ...warehouseItems
+      .filter((i) => (i.current_stock || 0) < (i.minimum_stock || 0))
+      .map((i) => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
+    ...feedStocks
+      .filter((i) => (i.current_stock || 0) < (i.minimum_stock || 0))
+      .map((i) => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
+  ];
+  lowStockItems.sort((a, b) => {
+    const pa = catPriority[a.category] ?? 9;
+    const pb = catPriority[b.category] ?? 9;
+    if (pa !== pb) return pa - pb;
+    return a.stock - b.stock;
+  });
+  const buyLines: string[] = [];
+  for (const item of lowStockItems.slice(0, 4)) {
+    if (item.stock <= 0) {
+      buyLines.push(`• ${item.name} — HABIS`);
+    } else {
+      buyLines.push(`• ${item.name} — sisa ${item.stock} ${item.unit}`);
+    }
+  }
+  if (buyLines.length > 0) {
+    lines.push("🛒 *Belum dibeli*");
+    lines.push(...buyLines);
+    lines.push("");
+  }
+
+  // TUGAS DARI OWNER
+  const pendingIncidental = incidentalTasks.filter((t) => t.status === "pending" && t.is_active !== false);
+  if (pendingIncidental.length > 0) {
+    lines.push("📌 *Tugas dari owner*");
+    for (const t of pendingIncidental.slice(0, 3)) {
+      lines.push(`• ${t.title}`);
+    }
+    lines.push("");
+  }
+
+  lines.push("_Semangat pagi! 💪_");
+
+  return lines.join("\n");
+}
+
 async function buildWeeklySummary(base44, today, now) {
   const lines = [];
   const dateLabel = formatDateID(now);
@@ -479,6 +738,9 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const now = new Date();
+    if (isNaN(now.getTime())) {
+      return Response.json({ success: false, error: "Tanggal tidak valid" });
+    }
     const today = getTodayStr(now);
 
     // ── Manual: send immediately ──
@@ -488,42 +750,57 @@ export default async function(req: Request): Promise<Response> {
         const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
         return Response.json(result);
       }
+      if (type === "morning") {
+        const message = await buildMorningSummary(base44, today, now);
+        const result = await sendSummaryToDestinations(base44, settings, message, "morning_summary");
+        return Response.json(result);
+      }
       const message = await buildDailySummary(base44, today, now, settings.daily_summary_show_points === true);
       const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
       return Response.json(result);
     }
 
     // ── Scheduled check ──
-    const configuredTime = settings.daily_summary_time || "17:00";
-    const [cfgHour, cfgMin] = configuredTime.split(":").map(Number);
-    const configuredMinutes = (cfgHour || 17) * 60 + (cfgMin || 0);
     const currentMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    const timeReached = currentMinutes >= configuredMinutes;
 
-    // Daily summary
-    if (settings.daily_summary_enabled && timeReached && settings.daily_summary_last_sent !== today) {
-      const message = await buildDailySummary(base44, today, now, settings.daily_summary_show_points === true);
-      const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
-      if (result.success) {
-        try {
-          await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-            daily_summary_last_sent: today,
-          });
-        } catch {}
+    // Morning summary
+    if (settings.morning_summary_enabled) {
+      const morningTime = settings.morning_summary_time || "07:00";
+      const [mHour, mMin] = morningTime.split(":").map(Number);
+      const morningMinutes = (mHour || 7) * 60 + (mMin || 0);
+      if (currentMinutes >= morningMinutes && shouldSendByPattern(settings, now, today, "morning_summary_last_sent")) {
+        const message = await buildMorningSummary(base44, today, now);
+        await trySendWithRetry(base44, settings, message, "morning_summary", now, today, "morning");
+      }
+    }
+
+    // Evening summary
+    if (settings.daily_summary_enabled) {
+      const eveningTime = settings.daily_summary_time || "17:00";
+      const [eHour, eMin] = eveningTime.split(":").map(Number);
+      const eveningMinutes = (eHour || 17) * 60 + (eMin || 0);
+      if (currentMinutes >= eveningMinutes && shouldSendByPattern(settings, now, today, "daily_summary_last_sent")) {
+        const message = await buildDailySummary(base44, today, now, settings.daily_summary_show_points === true);
+        await trySendWithRetry(base44, settings, message, "daily_summary", now, today, "evening");
       }
     }
 
     // Weekly summary (Saturday = 6)
     const isSaturday = now.getUTCDay() === 6;
-    if (settings.weekly_summary_enabled && isSaturday && timeReached && settings.weekly_summary_last_sent !== today) {
-      const message = await buildWeeklySummary(base44, today, now);
-      const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
-      if (result.success) {
-        try {
-          await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-            weekly_summary_last_sent: today,
-          });
-        } catch {}
+    if (settings.weekly_summary_enabled && isSaturday) {
+      const eveningTime = settings.daily_summary_time || "17:00";
+      const [eHour, eMin] = eveningTime.split(":").map(Number);
+      const eveningMinutes = (eHour || 17) * 60 + (eMin || 0);
+      if (currentMinutes >= eveningMinutes && settings.weekly_summary_last_sent !== today) {
+        const message = await buildWeeklySummary(base44, today, now);
+        const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
+        if (result.success) {
+          try {
+            await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+              weekly_summary_last_sent: today,
+            });
+          } catch {}
+        }
       }
     }
 

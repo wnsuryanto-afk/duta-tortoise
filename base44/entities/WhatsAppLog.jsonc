@@ -25,7 +25,8 @@
         "tool_request",
         "test_send",
         "daily_summary",
-        "weekly_summary"
+        "weekly_summary",
+        "morning_summary"
       ],
       "description": "Jenis notifikasi"
     },

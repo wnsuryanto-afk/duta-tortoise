@@ -18,6 +18,47 @@ import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
   AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const PATTERN_LABELS = {
+  daily: "setiap hari",
+  every_2_days: "setiap 2 hari",
+  every_3_days: "setiap 3 hari",
+  weekdays: "hari kerja (Sen–Sab)",
+  specific_days: "hari tertentu",
+  weekly: "mingguan (Sabtu)",
+};
+
+function getNextSendEstimate(pattern, lastSentStr, selectedDays, now) {
+  if (isNaN(now.getTime())) return "—";
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+
+  if (pattern === "daily") {
+    return lastSentStr === todayStr ? "besok" : "hari ini";
+  }
+  if (pattern === "every_2_days" || pattern === "every_3_days") {
+    if (!lastSentStr) return "hari ini";
+    const N = pattern === "every_2_days" ? 2 : 3;
+    const last = new Date(lastSentStr + "T00:00:00Z");
+    if (isNaN(last.getTime())) return "hari ini";
+    const next = new Date(last);
+    next.setUTCDate(next.getUTCDate() + N);
+    const nextStr = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
+    return nextStr <= todayStr ? "hari ini" : safeFormatDate(nextStr, "d MMM");
+  }
+  // weekdays / specific_days / weekly — find next eligible day
+  const check = new Date(now);
+  if (lastSentStr === todayStr) check.setUTCDate(check.getUTCDate() + 1);
+  for (let i = 0; i < 8; i++) {
+    const dow = check.getUTCDay();
+    if (pattern === "weekdays" && dow !== 0) break;
+    if (pattern === "weekly" && dow === 6) break;
+    if (pattern === "specific_days" && Array.isArray(selectedDays) && selectedDays.includes(dow)) break;
+    check.setUTCDate(check.getUTCDate() + 1);
+  }
+  const checkStr = `${check.getUTCFullYear()}-${String(check.getUTCMonth() + 1).padStart(2, "0")}-${String(check.getUTCDate()).padStart(2, "0")}`;
+  return checkStr === todayStr ? "hari ini" : safeFormatDate(checkStr, "d MMM");
+}
 
 const NOTIF_CONFIG = [
   { key: "notif_daily_approval", label: "⏰ Pengingat Harian (17:30)", desc: "Jumlah checklist menunggu approval → Owner" },
@@ -54,6 +95,11 @@ export default function PengaturanWhatsAppPage() {
   const [summaryDestination, setSummaryDestination] = useState("individuals");
   const [recipients, setRecipients] = useState({});
   const [summaryResults, setSummaryResults] = useState(null);
+  const [summaryPattern, setSummaryPattern] = useState("daily");
+  const [selectedDays, setSelectedDays] = useState([]);
+  const [morningEnabled, setMorningEnabled] = useState(false);
+  const [morningTime, setMorningTime] = useState("07:00");
+  const [sendingMorning, setSendingMorning] = useState(false);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["wa-settings"],
@@ -100,6 +146,10 @@ export default function PengaturanWhatsAppPage() {
     setShowPoints(data.daily_summary_show_points === true);
     setWeeklyEnabled(data.weekly_summary_enabled === true);
     setSummaryDestination(data.summary_destination || "individuals");
+    setSummaryPattern(data.summary_schedule_pattern || "daily");
+    setSelectedDays(Array.isArray(data.summary_selected_days) ? data.summary_selected_days : []);
+    setMorningEnabled(data.morning_summary_enabled === true);
+    setMorningTime(data.morning_summary_time || "07:00");
     setSummaryResults(null);
     const rcMap = {};
     if (Array.isArray(data.summary_recipients) && data.summary_recipients.length > 0) {
@@ -167,6 +217,10 @@ export default function PengaturanWhatsAppPage() {
         daily_summary_enabled: summaryEnabled,
         daily_summary_show_points: showPoints,
         weekly_summary_enabled: weeklyEnabled,
+        summary_schedule_pattern: summaryPattern,
+        summary_selected_days: selectedDays,
+        morning_summary_enabled: morningEnabled,
+        morning_summary_time: morningTime || "07:00",
         updated_at: new Date().toISOString(),
         updated_by: user?.email || "",
       };
@@ -343,6 +397,36 @@ export default function PengaturanWhatsAppPage() {
       });
     } finally {
       setSendingSummary(false);
+    }
+  };
+
+  const handleSendMorningNow = async () => {
+    if (!checkTokenSaved()) return;
+    setSendingMorning(true);
+    setSummaryResults(null);
+    try {
+      const res = await base44.functions.invoke("sendDailySummary", { force: true, type: "morning" });
+      const data = res.data || res;
+      if (data.results && Array.isArray(data.results)) {
+        setSummaryResults(data.results);
+        const okCount = data.results.filter((r) => r.success).length;
+        const failCount = data.results.length - okCount;
+        if (okCount > 0 && failCount === 0) {
+          toast({ title: "✅ Ringkasan pagi terkirim", description: `Berhasil ke ${okCount} tujuan.`, className: "bg-green-50 border-green-200" });
+        } else if (okCount > 0) {
+          toast({ title: "⚠️ Sebagian terkirim", description: `${okCount} berhasil, ${failCount} gagal.`, variant: "destructive" });
+        } else {
+          toast({ title: "❌ Gagal mengirim", description: "Semua pengiriman gagal. Lihat detail di bawah.", variant: "destructive" });
+        }
+      } else if (data.success) {
+        toast({ title: "✅ Ringkasan pagi terkirim", description: data.message || "Ringkasan pagi telah dikirim.", className: "bg-green-50 border-green-200" });
+      } else {
+        toast({ title: "❌ Gagal mengirim", description: data.error || data.reason || "Gagal mengirim ringkasan.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "❌ Error", description: err.message || "Gagal memanggil fungsi", variant: "destructive" });
+    } finally {
+      setSendingMorning(false);
     }
   };
 
@@ -586,12 +670,12 @@ export default function PengaturanWhatsAppPage() {
         </CardContent>
       </Card>
 
-      {/* Ringkasan Harian */}
+      {/* Ringkasan WhatsApp */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Users className="w-4 h-4 text-green-600" />
-            Ringkasan Harian
+            Ringkasan WhatsApp
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -746,36 +830,135 @@ export default function PengaturanWhatsAppPage() {
               ))}
             </div>
           )}
-          <div>
-            <Label>Jam Kirim Ringkasan Harian</Label>
-            <Input
-              type="time"
-              className="mt-1 w-32"
-              value={summaryTime}
-              onChange={(e) => setSummaryTime(e.target.value)}
-            />
+          {/* Pola Jadwal */}
+          <div className="space-y-2 pt-2 border-t">
+            <Label>Pola Jadwal Kirim</Label>
+            <Select value={summaryPattern} onValueChange={setSummaryPattern}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Setiap hari</SelectItem>
+                <SelectItem value="every_2_days">Setiap 2 hari</SelectItem>
+                <SelectItem value="every_3_days">Setiap 3 hari</SelectItem>
+                <SelectItem value="weekdays">Hari kerja (Senin–Sabtu)</SelectItem>
+                <SelectItem value="specific_days">Hari tertentu</SelectItem>
+                <SelectItem value="weekly">Mingguan (Sabtu)</SelectItem>
+              </SelectContent>
+            </Select>
+            {summaryPattern === "specific_days" && (
+              <div className="flex flex-wrap gap-3 pt-1">
+                {[
+                  { d: 1, l: "Sen" }, { d: 2, l: "Sel" }, { d: 3, l: "Rab" },
+                  { d: 4, l: "Kam" }, { d: 5, l: "Jum" }, { d: 6, l: "Sab" }, { d: 0, l: "Min" },
+                ].map((day) => (
+                  <label key={day.d} className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox
+                      checked={selectedDays.includes(day.d)}
+                      onCheckedChange={(v) => {
+                        setSelectedDays((prev) =>
+                          v ? [...prev, day.d] : prev.filter((x) => x !== day.d)
+                        );
+                      }}
+                    />
+                    <span className="text-xs">{day.l}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between gap-3 py-2 border-b">
-            <div className="flex-1">
-              <p className="text-sm font-medium">Aktifkan Ringkasan Harian</p>
-              <p className="text-xs text-muted-foreground">Kirim otomatis ke tujuan terpilih setiap hari pada jam di atas</p>
+
+          {/* Ringkasan Sore */}
+          <div className="space-y-2 pt-3 border-t">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">🌇 Ringkasan Sore</p>
+              <Switch checked={summaryEnabled} onCheckedChange={setSummaryEnabled} />
             </div>
-            <Switch checked={summaryEnabled} onCheckedChange={setSummaryEnabled} />
-          </div>
-          <div className="flex items-center justify-between gap-3 py-2 border-b">
-            <div className="flex-1">
-              <p className="text-sm font-medium">Tampilkan Poin di Ringkasan</p>
-              <p className="text-xs text-muted-foreground">Nonaktif default — hindari perbandingan poin antar karyawan di grup</p>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">Jam:</Label>
+              <Input
+                type="time"
+                className="w-28"
+                value={summaryTime}
+                onChange={(e) => setSummaryTime(e.target.value)}
+              />
             </div>
-            <Switch checked={showPoints} onCheckedChange={setShowPoints} />
+            <p className="text-[11px] text-muted-foreground">
+              Status: {summaryEnabled ? "aktif" : "nonaktif"}
+              {summaryEnabled ? `, ${PATTERN_LABELS[summaryPattern] || "setiap hari"}` : ""}
+              {settings?.daily_summary_last_sent
+                ? ` · terakhir: ${safeFormatDate(settings.daily_summary_last_sent, "d MMM yyyy")}`
+                : " · belum pernah terkirim"}
+              {summaryEnabled ? ` · berikutnya: ${getNextSendEstimate(summaryPattern, settings?.daily_summary_last_sent, selectedDays, new Date())}` : ""}
+            </p>
+            <Button
+              onClick={handleSendSummaryNow}
+              disabled={sendingSummary || (!savedToken && !token.trim()) || !canSendSummary}
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5"
+            >
+              {sendingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              Kirim Sekarang (Sore)
+            </Button>
           </div>
-          <div className="flex items-center justify-between gap-3 py-2">
-            <div className="flex-1">
-              <p className="text-sm font-medium">Ringkasan Mingguan (Sabtu)</p>
-              <p className="text-xs text-muted-foreground">Kirim rekap mingguan setiap Sabtu pada jam yang sama</p>
+
+          {/* Ringkasan Pagi */}
+          <div className="space-y-2 pt-3 border-t">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">🌅 Ringkasan Pagi</p>
+              <Switch checked={morningEnabled} onCheckedChange={setMorningEnabled} />
             </div>
-            <Switch checked={weeklyEnabled} onCheckedChange={setWeeklyEnabled} />
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">Jam:</Label>
+              <Input
+                type="time"
+                className="w-28"
+                value={morningTime}
+                onChange={(e) => setMorningTime(e.target.value)}
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Rencana hari ini: tugas terjadwal, kura sakit, barang belum dibeli
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Status: {morningEnabled ? "aktif" : "nonaktif"}
+              {morningEnabled ? `, ${PATTERN_LABELS[summaryPattern] || "setiap hari"}` : ""}
+              {settings?.morning_summary_last_sent
+                ? ` · terakhir: ${safeFormatDate(settings.morning_summary_last_sent, "d MMM yyyy")}`
+                : " · belum pernah terkirim"}
+              {morningEnabled ? ` · berikutnya: ${getNextSendEstimate(summaryPattern, settings?.morning_summary_last_sent, selectedDays, new Date())}` : ""}
+            </p>
+            <Button
+              onClick={handleSendMorningNow}
+              disabled={sendingMorning || (!savedToken && !token.trim()) || !canSendSummary}
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5"
+            >
+              {sendingMorning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              Kirim Sekarang (Pagi)
+            </Button>
           </div>
+
+          {/* Lain-lain */}
+          <div className="space-y-2 pt-3 border-t">
+            <div className="flex items-center justify-between gap-3 py-1">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Tampilkan Poin di Ringkasan</p>
+                <p className="text-xs text-muted-foreground">Nonaktif default — hindari perbandingan poin antar karyawan</p>
+              </div>
+              <Switch checked={showPoints} onCheckedChange={setShowPoints} />
+            </div>
+            <div className="flex items-center justify-between gap-3 py-1">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Ringkasan Mingguan (Sabtu)</p>
+                <p className="text-xs text-muted-foreground">Rekap mingguan setiap Sabtu pada jam yang sama dengan sore</p>
+              </div>
+              <Switch checked={weeklyEnabled} onCheckedChange={setWeeklyEnabled} />
+            </div>
+          </div>
+
           {summaryResults && summaryResults.length > 0 && (
             <div className="space-y-1.5 p-3 rounded-lg bg-muted/50 border">
               <p className="text-xs font-semibold text-muted-foreground">Hasil Pengiriman:</p>
@@ -798,15 +981,6 @@ export default function PengaturanWhatsAppPage() {
               ))}
             </div>
           )}
-          <Button
-            onClick={handleSendSummaryNow}
-            disabled={sendingSummary || (!savedToken && !token.trim()) || !canSendSummary}
-            variant="outline"
-            className="w-full gap-1.5"
-          >
-            {sendingSummary ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            🧪 Kirim Ringkasan Sekarang
-          </Button>
         </CardContent>
       </Card>
 
