@@ -112,15 +112,15 @@ export default function PengaturanWhatsAppPage() {
         .map((u) => ({
           email: u.email,
           name: u.full_name || u.email,
-          phone: normalizePhone(empPhones[u.email] || ""),
+          phone: normalizePhoneInput(empPhones[u.email] || ""),
         }))
-        .filter((e) => e.phone.trim());
+        .filter((e) => e.phone);
 
       const payload = {
         setting_key: "main",
-        phone_owner: normalizePhone(phones.owner),
-        phone_manajer: normalizePhone(phones.manajer),
-        phone_admin: normalizePhone(phones.admin),
+        phone_owner: normalizePhoneInput(phones.owner),
+        phone_manajer: normalizePhoneInput(phones.manajer),
+        phone_admin: normalizePhoneInput(phones.admin),
         employee_phones: empArray,
         notif_daily_approval: toggles.notif_daily_approval ?? true,
         notif_sick_report: toggles.notif_sick_report ?? true,
@@ -217,7 +217,7 @@ export default function PengaturanWhatsAppPage() {
   };
 
   const handleSelectGroup = (g) => {
-    setGroupId(g.id);
+    setGroupId(String(g.id || ""));
     toast({
       title: "✅ Grup dipilih",
       description: `${g.name} — ID terisi otomatis.`,
@@ -226,7 +226,9 @@ export default function PengaturanWhatsAppPage() {
   };
 
   const handleCopyId = (id) => {
-    navigator.clipboard.writeText(id).then(() => {
+    const idStr = String(id || "");
+    if (!idStr) return;
+    navigator.clipboard.writeText(idStr).then(() => {
       setCopiedId(id);
       setTimeout(() => setCopiedId(""), 2000);
     });

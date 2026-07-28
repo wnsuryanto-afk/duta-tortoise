@@ -7,10 +7,13 @@
  * Returns { normalized, display, isValid, waUrl }
  */
 export function normalizePhone(raw) {
-  if (!raw) return { normalized: "", display: "", isValid: false, waUrl: "" };
+  // Aman untuk semua tipe: null, undefined, number, "", dll
+  if (raw === null || raw === undefined) return { normalized: "", display: "", isValid: false, waUrl: "" };
+  const str = String(raw).trim();
+  if (!str) return { normalized: "", display: "", isValid: false, waUrl: "" };
 
   // Bersihkan semua karakter non-digit kecuali +
-  let cleaned = raw.replace(/[\s\-().]/g, "");
+  let cleaned = str.replace(/[\s\-().]/g, "");
   // Hapus + di depan
   cleaned = cleaned.replace(/^\+/, "");
 
@@ -27,17 +30,17 @@ export function normalizePhone(raw) {
   const isValid = digitsOnly && validLength;
 
   // Format tampilan: 628xxx → 08xxx
-  const display = isValid ? "0" + cleaned.slice(2) : raw;
+  const display = isValid ? "0" + cleaned.slice(2) : str;
   const waUrl = isValid ? `https://wa.me/${cleaned}` : "";
 
-  return { normalized: isValid ? cleaned : raw, display, isValid, waUrl };
+  return { normalized: isValid ? cleaned : str, display, isValid, waUrl };
 }
 
 /**
  * Hook-free input handler: normalisasi on blur
- * Usage: onBlur={e => onBlur(normalizePhoneInput(e.target.value))}
+ * Returns a plain string ("" if invalid), safe for all input types.
  */
 export function normalizePhoneInput(value) {
   const { normalized } = normalizePhone(value);
-  return normalized;
+  return normalized || "";
 }
