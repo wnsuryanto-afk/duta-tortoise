@@ -2,27 +2,45 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.ts";
 
 /**
- * sendDailySummary — kirim ringkasan harian / mingguan ke grup WhatsApp.
+ * sendDailySummary — kirim ringkasan harian / mingguan / pagi ke grup WhatsApp.
+ *
+ * Semua waktu disimpan & ditampilkan dalam WIB (Asia/Jakarta, UTC+7).
+ * Konversi ke UTC dilakukan di sini saat membandingkan waktu server.
  *
  * Payload:
- *   { force: true }            → kirim ringkasan HARIAN sekarang (manual test)
- *   { force: true, type: "weekly" } → kirim ringkasan MINGGUAN sekarang
- *   {}                          → scheduled check (kirim bila waktunya tiba)
+ *   { force: true }                    → kirim ringkasan SORE sekarang (manual test)
+ *   { force: true, type: "weekly" }    → kirim ringkasan MINGGUAN sekarang
+ *   { force: true, type: "morning" }   → kirim ringkasan PAGI sekarang
+ *   {}                                 → scheduled check (kirim bila waktunya tiba)
  *
- * Anti-doBEL: catat daily_summary_last_sent / weekly_summary_last_sent di settings.
- * Tidak menampilkan nominal gaji/kasbon/saldo kas.
+ * Anti-dobel: catat *_last_sent di settings menggunakan tanggal WIB.
  */
 const FONNTE_API_URL = "https://api.fonnte.com/send";
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-function getTodayStr(now) {
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+// ── WIB helpers ──
+// Semua memakai Date yang sudah digeser +7 jam, lalu baca dengan getUTC* agar konsisten.
+function getWIBNow(now: Date): Date {
+  return new Date(now.getTime() + WIB_OFFSET_MS);
 }
 
-function formatDateID(now) {
-  return `${DAY_NAMES[now.getUTCDay()]}, ${now.getUTCDate()} ${MONTH_NAMES[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+function wibDateToStr(wib: Date): string {
+  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
+}
+
+function formatDateID(wib: Date): string {
+  return `${DAY_NAMES[wib.getUTCDay()]}, ${wib.getUTCDate()} ${MONTH_NAMES[wib.getUTCMonth()]} ${wib.getUTCFullYear()}`;
+}
+
+/** Konversi jam WIB (HH:mm) ke menit UTC untuk perbandingan dengan waktu server. */
+function wibTimeToUtcMinutes(wibTime: string): number {
+  const [h, m] = (wibTime || "17:30").split(":").map(Number);
+  let utcMin = (h * 60 + m) - (7 * 60);
+  if (utcMin < 0) utcMin += 24 * 60;
+  return utcMin;
 }
 
 async function logWhatsApp(base44, data) {
@@ -69,10 +87,7 @@ async function sendAndLog(base44, token, target, label, message, notificationTyp
   return { target: label || target, success: result.success, reason: result.success ? "" : String(result.reason || "") };
 }
 
-/**
- * Kirim ringkasan ke tujuan terpilih (individu / grup / keduanya).
- * Mengembalikan { success, results } — results berisi per-recipient.
- */
+/** Kirim ringkasan SORE ke tujuan terpilih (individu / grup / keduanya). */
 async function sendSummaryToDestinations(base44, settings, message, notificationType) {
   const token = settings.fonnte_token;
   const destination = settings.summary_destination || "individuals";
@@ -81,7 +96,6 @@ async function sendSummaryToDestinations(base44, settings, message, notification
   const sendToIndividuals = destination === "individuals" || destination === "both";
   const sendToGroup = (destination === "group" || destination === "both") && settings.group_id && settings.group_id.trim();
 
-  // ── Kirim ke nomor perorangan (satu per satu, jeda 500ms) ──
   if (sendToIndividuals) {
     const recipients = Array.isArray(settings.summary_recipients)
       ? settings.summary_recipients.filter((r) => r && r.phone)
@@ -98,7 +112,6 @@ async function sendSummaryToDestinations(base44, settings, message, notification
     }
   }
 
-  // ── Kirim ke grup ──
   if (sendToGroup) {
     const groupId = settings.group_id.trim();
     const res = await sendAndLog(base44, token, groupId, "Grup WhatsApp", message, notificationType);
@@ -109,7 +122,42 @@ async function sendSummaryToDestinations(base44, settings, message, notification
   return { success: anySuccess, results };
 }
 
-// ── AI helpers (InvokeLLM with template fallback) ──
+/** Kirim ringkasan PAGI ke tujuan terpilih (memakai morning_* fields). */
+async function sendMorningSummaryToDestinations(base44, settings, message, notificationType) {
+  const token = settings.fonnte_token;
+  const destination = settings.morning_summary_destination || "group";
+  const results: any[] = [];
+
+  const sendToIndividuals = destination === "individuals" || destination === "both";
+  const sendToGroup = (destination === "group" || destination === "both") && settings.morning_group_id && settings.morning_group_id.trim();
+
+  if (sendToIndividuals) {
+    const recipients = Array.isArray(settings.summary_recipients)
+      ? settings.summary_recipients.filter((r) => r && r.phone)
+      : [];
+    for (const r of recipients) {
+      const phone = normalizePhone(r.phone);
+      if (!phone) {
+        results.push({ target: r.name || r.phone, success: false, reason: "Nomor tidak valid" });
+        continue;
+      }
+      const res = await sendAndLog(base44, token, phone, r.name || phone, message, notificationType);
+      results.push(res);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
+  if (sendToGroup) {
+    const groupId = settings.morning_group_id.trim();
+    const res = await sendAndLog(base44, token, groupId, "Grup Pagi", message, notificationType);
+    results.push(res);
+  }
+
+  const anySuccess = results.some((r) => r.success);
+  return { success: anySuccess, results };
+}
+
+// ── AI helpers ──
 
 async function buildAISorotan(base44, settings, ctx) {
   if (settings.ai_sorotan_enabled === false) return "";
@@ -162,47 +210,47 @@ ${ctx}`;
   }
 }
 
-function isTaskScheduledToday(task, now) {
+function isTaskScheduledToday(task, wib: Date) {
   if (task.is_active === false) return false;
   const freq = task.frequency || "harian";
   if (freq === "harian") return true;
-  const todayDow = now.getUTCDay();
+  const todayDow = wib.getUTCDay();
   if (freq === "mingguan") {
     if (!Array.isArray(task.weekly_days) || task.weekly_days.length === 0) return true;
     return task.weekly_days.includes(todayDow);
   }
   if (freq === "bulanan") {
     if (!Array.isArray(task.monthly_dates) || task.monthly_dates.length === 0) return true;
-    return task.monthly_dates.includes(now.getUTCDate());
+    return task.monthly_dates.includes(wib.getUTCDate());
   }
   return true;
 }
 
-function isTaskScheduledForDate(task, date) {
+function isTaskScheduledForDate(task, wib: Date) {
   if (task.is_active === false) return false;
   const freq = task.frequency || "harian";
   if (freq === "harian") return true;
-  const dow = date.getUTCDay();
+  const dow = wib.getUTCDay();
   if (freq === "mingguan") {
     if (!Array.isArray(task.weekly_days) || task.weekly_days.length === 0) return true;
     return task.weekly_days.includes(dow);
   }
   if (freq === "bulanan") {
     if (!Array.isArray(task.monthly_dates) || task.monthly_dates.length === 0) return true;
-    return task.monthly_dates.includes(date.getUTCDate());
+    return task.monthly_dates.includes(wib.getUTCDate());
   }
   return true;
 }
 
-async function buildDailySummary(base44, settings, today, now) {
+// ── RINGKASAN SORE ──
+async function buildDailySummary(base44, settings, wibToday: string, wibNow: Date) {
   const lines: string[] = [];
-  const dateLabel = formatDateID(now);
-  const timeLabel = `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`;
+  const dateLabel = formatDateID(wibNow);
+  const timeLabel = `${String(wibNow.getUTCHours()).padStart(2, "0")}:${String(wibNow.getUTCMinutes()).padStart(2, "0")}`;
 
   lines.push(`🐢 *DUTA TORTOISE — ${dateLabel}*`);
   lines.push("");
 
-  // ── Fetch all data in parallel ──
   const [
     users, attendances, checklists, sopTasks,
     warehouseItems, feedStocks, incidentalTasks, toolRequests,
@@ -210,28 +258,25 @@ async function buildDailySummary(base44, settings, today, now) {
     stockMovements, tortoises,
   ] = await Promise.all([
     base44.asServiceRole.entities.User.list(),
-    base44.asServiceRole.entities.Attendance.filter({ date: today }),
-    base44.asServiceRole.entities.DailyChecklist.filter({ date: today }),
+    base44.asServiceRole.entities.Attendance.filter({ date: wibToday }),
+    base44.asServiceRole.entities.DailyChecklist.filter({ date: wibToday }),
     base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
     base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
     base44.asServiceRole.entities.FeedStock.list("-name", 100),
     base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
     base44.asServiceRole.entities.ToolRequest.filter({ status: "menunggu" }),
-    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit", date: today }),
-    base44.asServiceRole.entities.PhotoFinding.filter({ date: today }),
-    base44.asServiceRole.entities.PakanHarian.filter({ log_date: today }),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit", date: wibToday }),
+    base44.asServiceRole.entities.PhotoFinding.filter({ date: wibToday }),
+    base44.asServiceRole.entities.PakanHarian.filter({ log_date: wibToday }),
     base44.asServiceRole.entities.TreatmentSchedule.filter({ is_active: true }),
-    base44.asServiceRole.entities.StockMovement.filter({ date: today }),
+    base44.asServiceRole.entities.StockMovement.filter({ date: wibToday }),
     base44.asServiceRole.entities.Tortoise.list("-name", 200),
   ]);
 
   // ── KEHADIRAN ──
-  // Hanya karyawan harian (keeper & kepala_feeder) yang ditampilkan "tidak hadir".
-  // Admin/manajer/owner hanya muncul bila absen masuk, tanpa status "tidak hadir".
   const dailyStaff = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
   const nonDailyStaff = users.filter(u => ["admin", "manajer", "owner"].includes(u.role));
 
-  // Kelompokkan absensi per orang (key = email, fallback ke nama)
   const attByKey = new Map();
   for (const a of attendances) {
     const key = a.employee_email || a.employee_name;
@@ -240,7 +285,6 @@ async function buildDailySummary(base44, settings, today, now) {
     attByKey.get(key).push(a);
   }
 
-  // Ambil jam masuk paling awal & jam pulang paling akhir; tandai bila absen masuk >1x
   function summarizeAttendance(records) {
     const hadir = records.filter(r => r.status === "hadir" && r.check_in);
     if (hadir.length === 0) return null;
@@ -256,7 +300,6 @@ async function buildDailySummary(base44, settings, today, now) {
   const attLines: string[] = [];
   const processedKeys = new Set();
 
-  // Karyawan harian: satu baris per orang (hadir / izin / sakit / tidak hadir)
   for (const s of dailyStaff) {
     processedKeys.add(s.email);
     const records = attByKey.get(s.email) || [];
@@ -273,7 +316,6 @@ async function buildDailySummary(base44, settings, today, now) {
     }
   }
 
-  // Admin/manajer/owner: hanya tampil bila absen masuk, tanpa "tidak hadir"
   for (const s of nonDailyStaff) {
     processedKeys.add(s.email);
     const records = attByKey.get(s.email) || [];
@@ -283,7 +325,6 @@ async function buildDailySummary(base44, settings, today, now) {
     attLines.push(`• ${roleLabel} ${s.full_name || s.email}: masuk ${summary.earliest.check_in} – ${summary.out}${summary.dupMark}`);
   }
 
-  // Absensi tanpa match user (email tidak terdaftar) — tampilkan apa adanya
   for (const [key, records] of attByKey) {
     if (processedKeys.has(key)) continue;
     const summary = summarizeAttendance(records);
@@ -298,11 +339,9 @@ async function buildDailySummary(base44, settings, today, now) {
   }
 
   // ── TUGAS HARI INI ──
-  // Pembilang (X) = tugas dicentang; penyebut (Y) = SOP terjadwal + tugas insidentil
-  // yang ditugaskan ke karyawan ini hari itu. Y selalu >= X supaya persentase <= 100%.
-  const scheduledToday = sopTasks.filter(t => isTaskScheduledToday(t, now));
+  const scheduledToday = sopTasks.filter(t => isTaskScheduledToday(t, wibNow));
   const Y_sop = scheduledToday.length;
-  const todayIncidental = incidentalTasks.filter(t => t.due_date === today && t.status !== "cancelled");
+  const todayIncidental = incidentalTasks.filter(t => t.due_date === wibToday && t.status !== "cancelled");
   const allCompletedTitles = new Set();
   const taskLines: string[] = [];
   for (const cl of checklists) {
@@ -365,7 +404,6 @@ async function buildDailySummary(base44, settings, today, now) {
     buyLines.push(`…dan ${lowStockItems.length - 10} barang lain`);
   }
 
-  // Tugas menunggu barang
   const waitingTasks = incidentalTasks.filter(t => t.material_status === "waiting_materials" && t.status === "pending");
   for (const wt of waitingTasks.slice(0, 3)) {
     const missing = (wt.required_items || []).filter(r => !r.is_available).map(r => r.item_name).filter(Boolean);
@@ -373,7 +411,6 @@ async function buildDailySummary(base44, settings, today, now) {
       buyLines.push(`⏳ ${wt.title}: butuh ${missing.join(", ")}`);
     }
   }
-  // Pengajuan alat
   for (const tr of toolRequests.slice(0, 3)) {
     buyLines.push(`🔴 ${tr.tool_name} dari ${tr.requester_name}`);
   }
@@ -396,7 +433,6 @@ async function buildDailySummary(base44, settings, today, now) {
   if (inTreatment.length > 0) {
     healthLines.push(`• Dalam perawatan: ${inTreatment.length} ekor`);
   }
-  // Temuan dari foto
   const activeFindings = photoFindings.filter(f => f.status === "active" && f.finding_text);
   for (const f of activeFindings.slice(0, 3)) {
     healthLines.push(`🔎 ${String(f.finding_text).slice(0, 80)}`);
@@ -413,7 +449,6 @@ async function buildDailySummary(base44, settings, today, now) {
   if (pakanBaskets > 0) {
     pakanLines.push(`• Pakan tercatat: ${pakanBaskets} keranjang`);
   }
-  // Vitamin betina
   const vitBetinaSchedules = treatmentSchedules.filter(s =>
     s.mod_type === "vitamin" && (s.gender_filter === "betina" || (s.title || "").toLowerCase().includes("betina"))
   );
@@ -432,7 +467,6 @@ async function buildDailySummary(base44, settings, today, now) {
     }
     pakanLines.push(`• Vitamin betina: ${vitDone ? "sudah" : "belum"} diberikan`);
   }
-  // Azolla dipanen
   const azollaHarvested = stockMovements.some(m => m.feed_source === "panen_azola" && m.type === "masuk");
   if (azollaHarvested) {
     pakanLines.push(`• Azolla dipanen: ya`);
@@ -444,7 +478,7 @@ async function buildDailySummary(base44, settings, today, now) {
   }
 
   // ── BESOK ──
-  const tomorrow = new Date(now);
+  const tomorrow = new Date(wibNow);
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const tomorrowTasks = sopTasks.filter(t => t.frequency !== "harian" && isTaskScheduledForDate(t, tomorrow));
   const tomorrowTitles = tomorrowTasks.map(t => t.title).filter(Boolean).slice(0, 4);
@@ -456,7 +490,7 @@ async function buildDailySummary(base44, settings, today, now) {
     lines.push("");
   }
 
-  // ── AI SOROTAN (prepend after header) ──
+  // ── AI SOROTAN ──
   if (settings.ai_sorotan_enabled !== false) {
     const aiContext = {
       tanggal: dateLabel,
@@ -473,7 +507,7 @@ async function buildDailySummary(base44, settings, today, now) {
     }
   }
 
-  // ── PERINGATAN TERTUNDA (dari smart alerts berstatus BIASA/RENDAH) ──
+  // ── PERINGATAN TERTUNDA ──
   try {
     const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
     if (pendingAlerts.length > 0) {
@@ -487,23 +521,139 @@ async function buildDailySummary(base44, settings, today, now) {
     }
   } catch {}
 
-  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel}_`);
+  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB_`);
 
   return lines.join("\n");
 }
 
-async function buildWeeklySummary(base44, settings, today, now) {
+// ── RINGKASAN PAGI ──
+// Grup ini berisi keeper → orientasi PERINTAH KERJA, bukan daftar lengkap / poin.
+async function buildMorningSummary(base44, settings, wibToday: string, wibNow: Date) {
   const lines: string[] = [];
-  const dateLabel = formatDateID(now);
+  const dateLabel = formatDateID(wibNow);
 
-  const weekAgo = new Date(now);
+  lines.push(`🌅 *DUTA TORTOISE — RENCANA KERJA HARI INI*`);
+  lines.push(`📅 ${dateLabel}`);
+  lines.push("");
+
+  // Yesterday WIB date
+  const wibYesterday = new Date(wibNow);
+  wibYesterday.setUTCDate(wibYesterday.getUTCDate() - 1);
+  const wibYesterdayStr = wibDateToStr(wibYesterday);
+
+  const [
+    sopTasks, checklistsYesterday, sickRecords, diagnosisProtocols,
+    warehouseItems, feedStocks, tortoises, incidentalTasks,
+  ] = await Promise.all([
+    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
+    base44.asServiceRole.entities.DailyChecklist.filter({ date: wibYesterdayStr }),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }),
+    base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true }),
+    base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
+    base44.asServiceRole.entities.FeedStock.list("-name", 100),
+    base44.asServiceRole.entities.Tortoise.list("-name", 200),
+    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
+  ]);
+
+  // ── 1. CARRY-OVER (tugas kemarin belum selesai) ──
+  const yesterdayScheduled = sopTasks.filter(t => isTaskScheduledForDate(t, wibYesterday));
+  const yesterdayCompletedTitles = new Set();
+  for (const cl of checklistsYesterday) {
+    for (const t of (cl.completed_tasks || [])) {
+      if (t.task_title) yesterdayCompletedTitles.add(t.task_title.toLowerCase());
+    }
+  }
+  const carryOver = yesterdayScheduled
+    .filter(t => !yesterdayCompletedTitles.has((t.title || "").toLowerCase()))
+    .map(t => t.title)
+    .filter(Boolean);
+  const yesterdayIncidental = incidentalTasks.filter(t =>
+    t.due_date === wibYesterdayStr && t.status === "pending"
+  );
+
+  if (carryOver.length > 0 || yesterdayIncidental.length > 0) {
+    lines.push("📋 *TUGAS KEMARIN BELUM SELESAI*");
+    for (const title of carryOver.slice(0, 8)) {
+      lines.push(`• ${title}`);
+    }
+    for (const t of yesterdayIncidental.slice(0, 4)) {
+      const assignee = t.assigned_to_name ? ` → ${t.assigned_to_name}` : "";
+      lines.push(`• ${t.title}${assignee}`);
+    }
+    lines.push("");
+  }
+
+  // ── 2. BAHAN/STOK HABIS YANG MEMBLOKIR TUGAS ──
+  const blockedTasks = sopTasks.filter(t => {
+    if (!t.required_skus || t.required_skus.length === 0) return false;
+    return t.required_skus.some(sku => {
+      const item = warehouseItems.find(w => w.sku === sku);
+      return item && (item.current_stock || 0) <= 0;
+    });
+  });
+
+  if (blockedTasks.length > 0) {
+    lines.push("🚫 *TUGAS TERBLOKIR (STOK HABIS)*");
+    for (const t of blockedTasks.slice(0, 6)) {
+      const missingItems = (t.required_skus || []).map(sku => {
+        const item = warehouseItems.find(w => w.sku === sku);
+        return item && (item.current_stock || 0) <= 0 ? item.name : null;
+      }).filter(Boolean);
+      lines.push(`• ${t.title} — butuh: ${missingItems.join(", ")}`);
+    }
+    lines.push("");
+  }
+
+  // ── 3. KURA SAKIT + LANGKAH PERAWATAN ──
+  const sickTortoises = tortoises.filter(t => t.is_currently_sick === true || t.status === "sakit");
+  if (sickTortoises.length > 0) {
+    lines.push("🤒 *KURA SAKIT — PERAWATAN HARI INI*");
+    for (const t of sickTortoises.slice(0, 8)) {
+      const label = t.code || t.name;
+      const records = sickRecords.filter(r => r.tortoise_id === t.id)
+        .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      const latest = records[0];
+      const diagCodes = latest?.diagnosis || [];
+      const protocols = diagCodes.map(c => diagnosisProtocols.find(p => p.diagnosis_code === c)).filter(Boolean);
+      const steps = protocols.flatMap(p => p.perawatan_pendukung || []);
+      lines.push(`• ${label}${diagCodes.length > 0 ? ` (${diagCodes.join(", ")})` : ""}`);
+      for (const step of steps.slice(0, 4)) {
+        lines.push(`  → ${step}`);
+      }
+    }
+    lines.push("");
+  }
+
+  // ── 4. TUGAS MINGGUAN/BULANAN JATUH TEMPO HARI INI ──
+  const dueToday = sopTasks.filter(t =>
+    t.frequency !== "harian" && isTaskScheduledToday(t, wibNow)
+  );
+  if (dueToday.length > 0) {
+    lines.push("📅 *TUGAS KHUSUS HARI INI*");
+    for (const t of dueToday.slice(0, 8)) {
+      lines.push(`• ${t.title}`);
+    }
+    lines.push("");
+  }
+
+  lines.push("_Perintah kerja otomatis Duta Tortoise_");
+
+  return lines.join("\n");
+}
+
+// ── RINGKASAN MINGGUAN ──
+async function buildWeeklySummary(base44, settings, wibToday: string, wibNow: Date) {
+  const lines: string[] = [];
+  const dateLabel = formatDateID(wibNow);
+
+  const weekAgo = new Date(wibNow);
   weekAgo.setUTCDate(weekAgo.getUTCDate() - 6);
-  const weekAgoStr = getTodayStr(weekAgo);
+  const weekAgoStr = wibDateToStr(weekAgo);
   const weekStartLabel = formatDateID(weekAgo);
 
-  const twoWeeksAgo = new Date(now);
+  const twoWeeksAgo = new Date(wibNow);
   twoWeeksAgo.setUTCDate(twoWeeksAgo.getUTCDate() - 13);
-  const twoWeeksAgoStr = getTodayStr(twoWeeksAgo);
+  const twoWeeksAgoStr = wibDateToStr(twoWeeksAgo);
 
   const [users, allAttendances, allChecklists, sickRecords, incidentalTasks, pakanRecords, photoFindings] = await Promise.all([
     base44.asServiceRole.entities.User.list(),
@@ -517,21 +667,19 @@ async function buildWeeklySummary(base44, settings, today, now) {
 
   const staff = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
 
-  // This week vs last week
-  const thisWeekAtt = allAttendances.filter(a => a.date >= weekAgoStr && a.date <= today && a.status === "hadir");
+  const thisWeekAtt = allAttendances.filter(a => a.date >= weekAgoStr && a.date <= wibToday && a.status === "hadir");
   const lastWeekAtt = allAttendances.filter(a => a.date >= twoWeeksAgoStr && a.date < weekAgoStr && a.status === "hadir");
-  const thisWeekCl = allChecklists.filter(cl => cl.date >= weekAgoStr && cl.date <= today);
+  const thisWeekCl = allChecklists.filter(cl => cl.date >= weekAgoStr && cl.date <= wibToday);
   const lastWeekCl = allChecklists.filter(cl => cl.date >= twoWeeksAgoStr && cl.date < weekAgoStr);
-  const thisWeekSick = sickRecords.filter(r => r.date >= weekAgoStr && r.date <= today);
+  const thisWeekSick = sickRecords.filter(r => r.date >= weekAgoStr && r.date <= wibToday);
   const lastWeekSick = sickRecords.filter(r => r.date >= twoWeeksAgoStr && r.date < weekAgoStr);
-  const thisWeekPakan = pakanRecords.filter(p => p.log_date >= weekAgoStr && p.log_date <= today);
+  const thisWeekPakan = pakanRecords.filter(p => p.log_date >= weekAgoStr && p.log_date <= wibToday);
   const lastWeekPakan = pakanRecords.filter(p => p.log_date >= twoWeeksAgoStr && p.log_date < weekAgoStr);
-  const thisWeekInc = incidentalTasks.filter(t => t.due_date >= weekAgoStr && t.due_date <= today);
+  const thisWeekInc = incidentalTasks.filter(t => t.due_date >= weekAgoStr && t.due_date <= wibToday);
   const lastWeekInc = incidentalTasks.filter(t => t.due_date >= twoWeeksAgoStr && t.due_date < weekAgoStr);
-  const thisWeekFindings = photoFindings.filter(f => f.date >= weekAgoStr && f.date <= today && f.status === "active");
+  const thisWeekFindings = photoFindings.filter(f => f.date >= weekAgoStr && f.date <= wibToday && f.status === "active");
   const lastWeekFindings = photoFindings.filter(f => f.date >= twoWeeksAgoStr && f.date < weekAgoStr && f.status === "active");
 
-  // Build comparison context for AI
   let ctx = `Periode: ${weekStartLabel} s/d ${dateLabel}\n\n`;
   for (const s of staff) {
     const attThis = thisWeekAtt.filter(a => a.employee_email === s.email).length;
@@ -548,7 +696,6 @@ async function buildWeeklySummary(base44, settings, today, now) {
   lines.push(`📊 *LAPORAN MINGGU INI — ${weekStartLabel} s/d ${dateLabel}*`);
   lines.push("");
 
-  // Try AI analysis (fallback to template if AI fails or disabled)
   const aiResult = await buildWeeklyAIAnalysis(base44, settings, ctx);
 
   if (aiResult && aiResult.analysis) {
@@ -562,7 +709,6 @@ async function buildWeeklySummary(base44, settings, today, now) {
       lines.push("");
     }
   } else {
-    // Fallback: template version
     lines.push("📊 *Rekap Minggu Ini*");
     for (const s of staff) {
       const attDays = thisWeekAtt.filter(a => a.employee_email === s.email).length;
@@ -584,6 +730,7 @@ async function buildWeeklySummary(base44, settings, today, now) {
   return lines.join("\n");
 }
 
+// ── MAIN HANDLER ──
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
@@ -598,66 +745,95 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ success: false, error: "Token Fonnte belum diisi" });
     }
 
-    const destination = settings.summary_destination || "individuals";
-    const needsGroup = destination === "group" || destination === "both";
-    if (needsGroup && (!settings.group_id || !settings.group_id.trim())) {
-      return Response.json({ success: false, error: "ID Grup WhatsApp belum diisi. Pilih tujuan 'Nomor perorangan' atau isi ID grup." });
-    }
-
     const now = new Date();
-    const today = getTodayStr(now);
+    const wibNow = getWIBNow(now);
+    const wibToday = wibDateToStr(wibNow);
 
     // ── Manual: send immediately ──
     if (force) {
+      if (type === "morning") {
+        if (!settings.morning_group_id || !settings.morning_group_id.trim()) {
+          return Response.json({ success: false, error: "ID Grup Pagi belum diisi. Isi di Pengaturan WhatsApp → Ringkasan Pagi." });
+        }
+        const message = await buildMorningSummary(base44, settings, wibToday, wibNow);
+        const result = await sendMorningSummaryToDestinations(base44, settings, message, "daily_summary");
+        return Response.json(result);
+      }
       if (type === "weekly") {
-        const message = await buildWeeklySummary(base44, settings, today, now);
+        const message = await buildWeeklySummary(base44, settings, wibToday, wibNow);
         const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
         return Response.json(result);
       }
-      const message = await buildDailySummary(base44, settings, today, now);
+      const message = await buildDailySummary(base44, settings, wibToday, wibNow);
       const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
       return Response.json(result);
     }
 
-    // ── Scheduled check ──
-    const configuredTime = settings.daily_summary_time || "17:00";
-    const [cfgHour, cfgMin] = configuredTime.split(":").map(Number);
-    const configuredMinutes = (cfgHour || 17) * 60 + (cfgMin || 0);
-    const currentMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    const timeReached = currentMinutes >= configuredMinutes;
+    // ── Scheduled checks (semua waktu & tanggal dalam WIB) ──
+    const currentUtcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
-    // Daily summary
-    if (settings.daily_summary_enabled && timeReached && settings.daily_summary_last_sent !== today) {
-      const message = await buildDailySummary(base44, settings, today, now);
-      const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
+    // 1. Ringkasan PAGI
+    const morningWibTime = settings.morning_summary_time || "07:00";
+    const morningUtcMinutes = wibTimeToUtcMinutes(morningWibTime);
+    const morningTimeReached = currentUtcMinutes >= morningUtcMinutes;
+
+    if (
+      settings.morning_summary_enabled === true &&
+      morningTimeReached &&
+      settings.morning_summary_last_sent !== wibToday &&
+      settings.morning_group_id && settings.morning_group_id.trim()
+    ) {
+      const message = await buildMorningSummary(base44, settings, wibToday, wibNow);
+      const result = await sendMorningSummaryToDestinations(base44, settings, message, "daily_summary");
       if (result.success) {
         try {
           await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-            daily_summary_last_sent: today,
+            morning_summary_last_sent: wibToday,
           });
-        } catch {}
-        // Mark pending_ai alerts as processed (included in this summary)
-        try {
-          const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
-          for (const alert of pendingAlerts) {
-            await base44.asServiceRole.entities.WhatsAppLog.update(alert.id, {
-              status: "terkirim",
-              error_reason: "Dimasukkan ke ringkasan harian",
-            });
-          }
         } catch {}
       }
     }
 
-    // Weekly summary (Saturday = 6)
-    const isSaturday = now.getUTCDay() === 6;
-    if (settings.weekly_summary_enabled && isSaturday && timeReached && settings.weekly_summary_last_sent !== today) {
-      const message = await buildWeeklySummary(base44, settings, today, now);
+    // 2. Ringkasan SORE
+    const dailyWibTime = settings.daily_summary_time || "17:30";
+    const dailyUtcMinutes = wibTimeToUtcMinutes(dailyWibTime);
+    const dailyTimeReached = currentUtcMinutes >= dailyUtcMinutes;
+
+    if (settings.daily_summary_enabled && dailyTimeReached && settings.daily_summary_last_sent !== wibToday) {
+      const destination = settings.summary_destination || "individuals";
+      const needsGroup = destination === "group" || destination === "both";
+      if (!needsGroup || (settings.group_id && settings.group_id.trim())) {
+        const message = await buildDailySummary(base44, settings, wibToday, wibNow);
+        const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
+        if (result.success) {
+          try {
+            await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+              daily_summary_last_sent: wibToday,
+            });
+          } catch {}
+          // Mark pending_ai alerts as processed
+          try {
+            const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
+            for (const alert of pendingAlerts) {
+              await base44.asServiceRole.entities.WhatsAppLog.update(alert.id, {
+                status: "terkirim",
+                error_reason: "Dimasukkan ke ringkasan harian",
+              });
+            }
+          } catch {}
+        }
+      }
+    }
+
+    // 3. Ringkasan MINGGUAN (Sabtu WIB)
+    const isSaturdayWib = wibNow.getUTCDay() === 6;
+    if (settings.weekly_summary_enabled && isSaturdayWib && dailyTimeReached && settings.weekly_summary_last_sent !== wibToday) {
+      const message = await buildWeeklySummary(base44, settings, wibToday, wibNow);
       const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
       if (result.success) {
         try {
           await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-            weekly_summary_last_sent: today,
+            weekly_summary_last_sent: wibToday,
           });
         } catch {}
       }

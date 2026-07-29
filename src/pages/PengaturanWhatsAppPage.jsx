@@ -16,7 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 import AccessDenied from "@/components/common/AccessDenied";
 import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
-  AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy,
+  AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy, Sunrise,
 } from "lucide-react";
 
 const NOTIF_CONFIG = [
@@ -57,6 +57,13 @@ export default function PengaturanWhatsAppPage() {
   const [summaryDestination, setSummaryDestination] = useState("individuals");
   const [recipients, setRecipients] = useState({});
   const [summaryResults, setSummaryResults] = useState(null);
+  // Morning summary
+  const [morningEnabled, setMorningEnabled] = useState(false);
+  const [morningTime, setMorningTime] = useState("07:00");
+  const [morningGroupId, setMorningGroupId] = useState("");
+  const [morningDestination, setMorningDestination] = useState("group");
+  const [morningShowPoints, setMorningShowPoints] = useState(false);
+  const [sendingMorning, setSendingMorning] = useState(false);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["wa-settings"],
@@ -106,6 +113,11 @@ export default function PengaturanWhatsAppPage() {
     setAiWeekly(data.ai_weekly_enabled !== false);
     setAiSmartAlerts(data.ai_smart_alerts_enabled === true);
     setSummaryDestination(data.summary_destination || "individuals");
+    setMorningEnabled(data.morning_summary_enabled === true);
+    setMorningTime(data.morning_summary_time || "07:00");
+    setMorningGroupId(data.morning_group_id || "");
+    setMorningDestination(data.morning_summary_destination || "group");
+    setMorningShowPoints(data.morning_summary_show_points === true);
     setSummaryResults(null);
     const rcMap = {};
     if (Array.isArray(data.summary_recipients) && data.summary_recipients.length > 0) {
@@ -169,10 +181,15 @@ export default function PengaturanWhatsAppPage() {
         group_id: groupId,
         summary_destination: summaryDestination,
         summary_recipients: summaryRecipients,
-        daily_summary_time: summaryTime || "17:00",
+        daily_summary_time: summaryTime || "17:30",
         daily_summary_enabled: summaryEnabled,
         daily_summary_show_points: showPoints,
         weekly_summary_enabled: weeklyEnabled,
+        morning_summary_enabled: morningEnabled,
+        morning_summary_time: morningTime || "07:00",
+        morning_group_id: morningGroupId,
+        morning_summary_destination: morningDestination,
+        morning_summary_show_points: morningShowPoints,
         ai_sorotan_enabled: aiSorotan,
         ai_weekly_enabled: aiWeekly,
         ai_smart_alerts_enabled: aiSmartAlerts,
@@ -352,6 +369,24 @@ export default function PengaturanWhatsAppPage() {
       });
     } finally {
       setSendingSummary(false);
+    }
+  };
+
+  const handleSendMorningNow = async () => {
+    if (!checkTokenSaved()) return;
+    setSendingMorning(true);
+    try {
+      const res = await base44.functions.invoke("sendDailySummary", { force: true, type: "morning" });
+      const data = res.data || res;
+      if (data.success) {
+        toast({ title: "✅ Ringkasan pagi terkirim", description: data.message || "Ringkasan pagi telah dikirim.", className: "bg-green-50 border-green-200" });
+      } else {
+        toast({ title: "❌ Gagal", description: data.error || data.reason || "Gagal mengirim.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "❌ Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingMorning(false);
     }
   };
 
@@ -756,7 +791,7 @@ export default function PengaturanWhatsAppPage() {
             </div>
           )}
           <div>
-            <Label>Jam Kirim Ringkasan Harian</Label>
+            <Label>Jam Kirim Ringkasan Harian (WIB)</Label>
             <Input
               type="time"
               className="mt-1 w-32"
@@ -841,6 +876,62 @@ export default function PengaturanWhatsAppPage() {
           >
             {sendingSummary ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             🧪 Kirim Ringkasan Sekarang
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Ringkasan Pagi */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sunrise className="w-4 h-4 text-amber-600" />
+            Ringkasan Pagi (Perintah Kerja)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between gap-3 py-2 border-b">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Aktifkan Ringkasan Pagi</p>
+              <p className="text-xs text-muted-foreground">Kirim perintah kerja harian ke grup pagi (keeper). Isi ID Grup Pagi di bawah lebih dulu.</p>
+            </div>
+            <Switch checked={morningEnabled} onCheckedChange={setMorningEnabled} />
+          </div>
+          <div>
+            <Label>Jam Kirim Ringkasan Pagi (WIB)</Label>
+            <Input type="time" className="mt-1 w-32" value={morningTime} onChange={(e) => setMorningTime(e.target.value)} />
+          </div>
+          <div>
+            <Label>ID Grup WhatsApp Pagi (Keeper)</Label>
+            <Input className="mt-1" placeholder="Contoh: 120363xxx@g.us" value={morningGroupId} onChange={(e) => setMorningGroupId(e.target.value)} />
+            <p className="text-xs text-muted-foreground mt-1">Grup ini berisi keeper. Ringkasan pagi berisi perintah kerja, bukan daftar tugas lengkap atau poin.</p>
+          </div>
+          <div>
+            <Label className="mb-2">Kirim ringkasan pagi ke:</Label>
+            <RadioGroup value={morningDestination} onValueChange={setMorningDestination} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="group" id="morn-dest-group" />
+                <Label htmlFor="morn-dest-group" className="font-normal cursor-pointer">Grup Pagi saja</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="individuals" id="morn-dest-indiv" />
+                <Label htmlFor="morn-dest-indiv" className="font-normal cursor-pointer">Nomor perorangan saja</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="both" id="morn-dest-both" />
+                <Label htmlFor="morn-dest-both" className="font-normal cursor-pointer">Keduanya</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Tampilkan Poin (TIDAK disarankan)</p>
+              <p className="text-xs text-muted-foreground">Grup pagi berisi keeper — menampilkan poin memicu perbandingan antar karyawan.</p>
+            </div>
+            <Switch checked={morningShowPoints} onCheckedChange={setMorningShowPoints} />
+          </div>
+          <Button onClick={handleSendMorningNow} disabled={sendingMorning || (!savedToken && !token.trim()) || !morningGroupId.trim()} variant="outline" className="w-full gap-1.5">
+            {sendingMorning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            🧪 Kirim Ringkasan Pagi Sekarang
           </Button>
         </CardContent>
       </Card>

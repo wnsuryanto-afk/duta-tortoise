@@ -13,7 +13,10 @@ import {
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
-    const today = new Date().toISOString().split('T')[0];
+    // Gunakan tanggal WIB (UTC+7) untuk anti-dobel-kirim
+    const _now = new Date();
+    const _wib = new Date(_now.getTime() + 7 * 60 * 60 * 1000);
+    const today = `${_wib.getUTCFullYear()}-${String(_wib.getUTCMonth() + 1).padStart(2, "0")}-${String(_wib.getUTCDate()).padStart(2, "0")}`;
 
     // 1. Get settings
     const settings = await getSettings(base44);
