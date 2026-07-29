@@ -1,33 +1,59 @@
 {
   "name": "WhatsAppSettings",
-  "type": "object",
   "properties": {
-    "setting_key": {
-      "type": "string",
-      "default": "main",
-      "description": "Key unik (selalu 'main') untuk single-record pattern"
+    "ai_calls_count_date": {
+      "description": "Tanggal terakhir counter ai_calls_today direset",
+      "format": "date",
+      "type": "string"
     },
-    "fonnte_token": {
-      "type": "string",
-      "description": "Token API Fonnte \u2014 dibaca server-side oleh backend function"
+    "ai_calls_today": {
+      "default": 0,
+      "description": "Jumlah panggilan AI hari ini (reset harian untuk pantau biaya)",
+      "type": "number"
     },
-    "phone_owner": {
-      "type": "string",
-      "description": "Nomor WhatsApp Owner (format 08xxx atau 62xxx)"
+    "ai_smart_alerts_enabled": {
+      "default": false,
+      "description": "Peringatan cerdas \u2014 saring notifikasi seketika dengan AI. Bila nonaktif, semua notifikasi dikirim seperti biasa.",
+      "type": "boolean"
     },
-    "phone_manajer": {
-      "type": "string",
-      "description": "Nomor WhatsApp Manajer"
+    "ai_sorotan_enabled": {
+      "default": true,
+      "description": "Sorotan AI di bagian atas ringkasan harian (3-4 kalimat). Bila AI gagal, ringkasan tetap terkirim tanpa sorotan.",
+      "type": "boolean"
     },
-    "phone_admin": {
-      "type": "string",
-      "description": "Nomor WhatsApp Admin"
+    "ai_weekly_enabled": {
+      "default": true,
+      "description": "Laporan mingguan analitis AI (analisis + 3 saran). Bila AI gagal, fallback ke template biasa.",
+      "type": "boolean"
+    },
+    "daily_reminder_last_sent": {
+      "description": "Tanggal terakhir pengingat harian dikirim (anti dobel) \u2014 dalam WIB",
+      "format": "date",
+      "type": "string"
+    },
+    "daily_summary_enabled": {
+      "default": false,
+      "description": "Aktifkan kirim ringkasan sore ke tujuan terpilih",
+      "type": "boolean"
+    },
+    "daily_summary_last_sent": {
+      "description": "Tanggal terakhir ringkasan sore terkirim (anti dobel) \u2014 dalam WIB",
+      "format": "date",
+      "type": "string"
+    },
+    "daily_summary_show_points": {
+      "default": false,
+      "description": "Tampilkan poin per orang di ringkasan SORE. Aman aktif karena grup sore tidak berisi keeper.",
+      "type": "boolean"
+    },
+    "daily_summary_time": {
+      "default": "17:30",
+      "description": "Jam kirim ringkasan sore dalam WIB (Asia/Jakarta, UTC+7). Contoh: 17:30 = jam 5 sore WIB. Konversi ke UTC dilakukan otomatis di dalam kode.",
+      "type": "string"
     },
     "employee_phones": {
-      "type": "array",
       "description": "Daftar nomor WhatsApp per karyawan",
       "items": {
-        "type": "object",
         "properties": {
           "email": {
             "type": "string"
@@ -38,63 +64,113 @@
           "phone": {
             "type": "string"
           }
-        }
-      }
+        },
+        "type": "object"
+      },
+      "type": "array"
     },
-    "notif_daily_approval": {
-      "type": "boolean",
-      "default": true,
-      "description": "Pengingat harian checklist menunggu approval (17:30)"
-    },
-    "notif_sick_report": {
-      "type": "boolean",
-      "default": true,
-      "description": "Laporan kura sakit baru \u2192 Owner + Manajer"
-    },
-    "notif_low_stock": {
-      "type": "boolean",
-      "default": true,
-      "description": "Stok obat/suplemen menyentuh minimum \u2192 Owner + Manajer + Admin"
-    },
-    "notif_salary_paid": {
-      "type": "boolean",
-      "default": false,
-      "description": "Gaji ditandai dibayar \u2192 karyawan ybs"
-    },
-    "notif_incidental_task": {
-      "type": "boolean",
-      "default": false,
-      "description": "Tugas insidentil baru \u2192 karyawan yang ditugaskan"
-    },
-    "notif_tool_request": {
-      "type": "boolean",
-      "default": false,
-      "description": "Laporan alat rusak / pengajuan barang \u2192 Owner + Manajer"
-    },
-    "daily_reminder_last_sent": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir pengingat harian dikirim (anti dobel)"
+    "fonnte_token": {
+      "description": "Token API Fonnte \u2014 dibaca server-side oleh backend function",
+      "type": "string"
     },
     "group_id": {
-      "type": "string",
-      "description": "ID Grup WhatsApp untuk kirim ringkasan harian (format: 120363xxx@g.us)"
+      "description": "ID Grup WhatsApp SORE (manajemen, tanpa keeper) untuk ringkasan hasil (format: 120363xxx@g.us)",
+      "type": "string"
     },
-    "summary_destination": {
-      "type": "string",
+    "morning_group_id": {
+      "description": "ID Grup WhatsApp PAGI (berisi keeper) untuk perintah kerja harian (format: 120363xxx@g.us)",
+      "type": "string"
+    },
+    "morning_summary_destination": {
+      "default": "group",
+      "description": "Tujuan ringkasan pagi",
       "enum": [
         "individuals",
         "group",
         "both"
       ],
+      "type": "string"
+    },
+    "morning_summary_enabled": {
+      "default": false,
+      "description": "Aktifkan ringkasan PAGI (perintah kerja) ke grup pagi. Butuh morning_group_id terisi lebih dulu.",
+      "type": "boolean"
+    },
+    "morning_summary_last_sent": {
+      "description": "Tanggal terakhir ringkasan pagi terkirim (anti dobel) \u2014 dalam WIB",
+      "format": "date",
+      "type": "string"
+    },
+    "morning_summary_show_points": {
+      "default": false,
+      "description": "JANGAN aktifkan \u2014 grup pagi berisi keeper, menampilkan poin memicu perbandingan antar karyawan",
+      "type": "boolean"
+    },
+    "morning_summary_time": {
+      "default": "07:00",
+      "description": "Jam kirim ringkasan pagi dalam WIB (Asia/Jakarta, UTC+7). Contoh: 07:00 = jam 7 pagi WIB. Konversi ke UTC dilakukan otomatis di dalam kode.",
+      "type": "string"
+    },
+    "notif_daily_approval": {
+      "default": true,
+      "description": "Pengingat harian checklist menunggu approval (17:30)",
+      "type": "boolean"
+    },
+    "notif_incidental_task": {
+      "default": false,
+      "description": "Tugas insidentil baru \u2192 karyawan yang ditugaskan",
+      "type": "boolean"
+    },
+    "notif_low_stock": {
+      "default": true,
+      "description": "Stok obat/suplemen menyentuh minimum \u2192 Owner + Manajer + Admin",
+      "type": "boolean"
+    },
+    "notif_salary_paid": {
+      "default": false,
+      "description": "Gaji ditandai dibayar \u2192 karyawan ybs",
+      "type": "boolean"
+    },
+    "notif_sick_report": {
+      "default": true,
+      "description": "Laporan kura sakit baru \u2192 Owner + Manajer",
+      "type": "boolean"
+    },
+    "notif_tool_request": {
+      "default": false,
+      "description": "Laporan alat rusak / pengajuan barang \u2192 Owner + Manajer",
+      "type": "boolean"
+    },
+    "phone_admin": {
+      "description": "Nomor WhatsApp Admin",
+      "type": "string"
+    },
+    "phone_manajer": {
+      "description": "Nomor WhatsApp Manajer",
+      "type": "string"
+    },
+    "phone_owner": {
+      "description": "Nomor WhatsApp Owner (format 08xxx atau 62xxx)",
+      "type": "string"
+    },
+    "setting_key": {
+      "default": "main",
+      "description": "Key unik (selalu 'main') untuk single-record pattern",
+      "type": "string"
+    },
+    "summary_destination": {
       "default": "individuals",
-      "description": "Tujuan pengiriman ringkasan harian: individuals = nomor perorangan, group = grup WhatsApp, both = keduanya"
+      "description": "Tujuan pengiriman ringkasan sore: individuals = nomor perorangan, group = grup WhatsApp, both = keduanya",
+      "enum": [
+        "individuals",
+        "group",
+        "both"
+      ],
+      "type": "string"
     },
     "summary_recipients": {
-      "type": "array",
       "description": "Daftar penerima ringkasan (nomor perorangan) \u2014 dipilih owner via checkbox",
       "items": {
-        "type": "object",
         "properties": {
           "email": {
             "type": "string"
@@ -105,76 +181,34 @@
           "phone": {
             "type": "string"
           }
-        }
-      }
-    },
-    "daily_summary_time": {
-      "type": "string",
-      "default": "17:00",
-      "description": "Jam kirim ringkasan harian (HH:mm, UTC)"
-    },
-    "daily_summary_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Aktifkan kirim ringkasan harian ke tujuan terpilih"
-    },
-    "daily_summary_show_points": {
-      "type": "boolean",
-      "default": false,
-      "description": "Tampilkan poin per orang di ringkasan. Default nonaktif \u2014 hindari perbandingan poin antar karyawan."
-    },
-    "weekly_summary_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Kirim ringkasan mingguan setiap Sabtu pada jam yang sama"
-    },
-    "daily_summary_last_sent": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir ringkasan harian terkirim (anti dobel)"
-    },
-    "weekly_summary_last_sent": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir ringkasan mingguan terkirim (anti dobel)"
-    },
-    "ai_sorotan_enabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "Sorotan AI di bagian atas ringkasan harian (3-4 kalimat). Bila AI gagal, ringkasan tetap terkirim tanpa sorotan."
-    },
-    "ai_weekly_enabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "Laporan mingguan analitis AI (analisis + 3 saran). Bila AI gagal, fallback ke template biasa."
-    },
-    "ai_smart_alerts_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Peringatan cerdas \u2014 saring notifikasi seketika dengan AI. Bila nonaktif, semua notifikasi dikirim seperti biasa."
-    },
-    "ai_calls_today": {
-      "type": "number",
-      "default": 0,
-      "description": "Jumlah panggilan AI hari ini (reset harian untuk pantau biaya)"
-    },
-    "ai_calls_count_date": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir counter ai_calls_today direset"
+        },
+        "type": "object"
+      },
+      "type": "array"
     },
     "updated_at": {
-      "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "type": "string"
     },
     "updated_by": {
-      "type": "string",
-      "description": "Email user terakhir edit"
+      "description": "Email user terakhir edit",
+      "type": "string"
+    },
+    "weekly_summary_enabled": {
+      "default": false,
+      "description": "Kirim ringkasan mingguan setiap Sabtu pada jam yang sama",
+      "type": "boolean"
+    },
+    "weekly_summary_last_sent": {
+      "description": "Tanggal terakhir ringkasan mingguan terkirim (anti dobel) \u2014 dalam WIB",
+      "format": "date",
+      "type": "string"
     }
   },
   "required": [
     "setting_key"
   ],
+  "type": "object",
   "rls": {
     "read": {
       "user_condition": {
