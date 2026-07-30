@@ -17,6 +17,7 @@ export default async function(req: Request): Promise<Response> {
     const _now = new Date();
     const _wib = new Date(_now.getTime() + 7 * 60 * 60 * 1000);
     const today = `${_wib.getUTCFullYear()}-${String(_wib.getUTCMonth() + 1).padStart(2, "0")}-${String(_wib.getUTCDate()).padStart(2, "0")}`;
+    const wibSentAt = `${today} ${String(_wib.getUTCHours()).padStart(2, "0")}:${String(_wib.getUTCMinutes()).padStart(2, "0")} WIB`;
 
     // 1. Get settings
     const settings = await getSettings(base44);
@@ -25,7 +26,7 @@ export default async function(req: Request): Promise<Response> {
     }
 
     // 2. Already sent today?
-    if (settings.daily_reminder_last_sent === today) {
+    if ((settings.daily_reminder_last_sent || "").slice(0, 10) === today) {
       return Response.json({ skipped: 'already_sent_today' });
     }
 
@@ -33,7 +34,7 @@ export default async function(req: Request): Promise<Response> {
     if (settings.notif_daily_approval === false) {
       // Mark as sent to avoid repeated checks when disabled
       await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-        daily_reminder_last_sent: today,
+        daily_reminder_last_sent: wibSentAt,
       });
       return Response.json({ skipped: 'disabled' });
     }
@@ -47,7 +48,7 @@ export default async function(req: Request): Promise<Response> {
     // 5. No pending — mark as sent, don't message
     if (count === 0) {
       await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-        daily_reminder_last_sent: today,
+        daily_reminder_last_sent: wibSentAt,
       });
       return Response.json({ skipped: 'no_pending', count: 0 });
     }
@@ -56,7 +57,7 @@ export default async function(req: Request): Promise<Response> {
     const phones = await getPhoneNumbersForRoles(base44, ['owner']);
     if (phones.length === 0) {
       await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-        daily_reminder_last_sent: today,
+        daily_reminder_last_sent: wibSentAt,
       });
       return Response.json({ skipped: 'no_owner_phone' });
     }
@@ -75,7 +76,7 @@ export default async function(req: Request): Promise<Response> {
 
     // 7. Mark as sent today regardless of WA result (avoid retry spam)
     await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-      daily_reminder_last_sent: today,
+      daily_reminder_last_sent: wibSentAt,
     });
 
     return Response.json({

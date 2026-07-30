@@ -41,7 +41,7 @@ export default function PengaturanWhatsAppPage() {
   const [toggles, setToggles] = useState({});
   const [testing, setTesting] = useState(false);
   const [groupId, setGroupId] = useState("");
-  const [summaryTime, setSummaryTime] = useState("17:00");
+  const [summaryTime, setSummaryTime] = useState("16:30");
   const [summaryEnabled, setSummaryEnabled] = useState(false);
   const [showPoints, setShowPoints] = useState(false);
   const [weeklyEnabled, setWeeklyEnabled] = useState(false);
@@ -105,7 +105,7 @@ export default function PengaturanWhatsAppPage() {
     });
     setToggles(tg);
     setGroupId(data.group_id || "");
-    setSummaryTime(data.daily_summary_time || "17:00");
+    setSummaryTime(data.daily_summary_time || "16:30");
     setSummaryEnabled(data.daily_summary_enabled === true);
     setShowPoints(data.daily_summary_show_points === true);
     setWeeklyEnabled(data.weekly_summary_enabled === true);
@@ -181,7 +181,7 @@ export default function PengaturanWhatsAppPage() {
         group_id: groupId,
         summary_destination: summaryDestination,
         summary_recipients: summaryRecipients,
-        daily_summary_time: summaryTime || "17:30",
+        daily_summary_time: summaryTime || "16:30",
         daily_summary_enabled: summaryEnabled,
         daily_summary_show_points: showPoints,
         weekly_summary_enabled: weeklyEnabled,
@@ -799,6 +799,16 @@ export default function PengaturanWhatsAppPage() {
               onChange={(e) => setSummaryTime(e.target.value)}
             />
           </div>
+          {settings?.daily_summary_last_sent && (
+            <p className="text-xs text-muted-foreground">
+              📤 Pengiriman terakhir (sore): {settings.daily_summary_last_sent}
+            </p>
+          )}
+          {settings?.weekly_summary_last_sent && settings.weekly_summary_enabled && (
+            <p className="text-xs text-muted-foreground">
+              📤 Pengiriman terakhir (mingguan): {settings.weekly_summary_last_sent}
+            </p>
+          )}
           <div className="flex items-center justify-between gap-3 py-2 border-b">
             <div className="flex-1">
               <p className="text-sm font-medium">Aktifkan Ringkasan Harian</p>
@@ -900,6 +910,11 @@ export default function PengaturanWhatsAppPage() {
             <Label>Jam Kirim Ringkasan Pagi (WIB)</Label>
             <Input type="time" className="mt-1 w-32" value={morningTime} onChange={(e) => setMorningTime(e.target.value)} />
           </div>
+          {settings?.morning_summary_last_sent && (
+            <p className="text-xs text-muted-foreground">
+              📤 Pengiriman terakhir (pagi): {settings.morning_summary_last_sent}
+            </p>
+          )}
           <div>
             <Label>ID Grup WhatsApp Pagi (Keeper)</Label>
             <Input className="mt-1" placeholder="Contoh: 120363xxx@g.us" value={morningGroupId} onChange={(e) => setMorningGroupId(e.target.value)} />

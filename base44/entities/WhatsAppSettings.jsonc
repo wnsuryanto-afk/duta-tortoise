@@ -27,8 +27,7 @@
       "type": "boolean"
     },
     "daily_reminder_last_sent": {
-      "description": "Tanggal terakhir pengingat harian dikirim (anti dobel) \u2014 dalam WIB",
-      "format": "date",
+      "description": "Tanggal & jam WIB terakhir pengingat harian dikirim (anti dobel). Format: 'YYYY-MM-DD HH:mm WIB'. Anti-dobel membandingkan 10 karakter pertama (tanggal) dengan tanggal WIB hari ini.",
       "type": "string"
     },
     "daily_summary_enabled": {
@@ -37,8 +36,7 @@
       "type": "boolean"
     },
     "daily_summary_last_sent": {
-      "description": "Tanggal terakhir ringkasan sore terkirim (anti dobel) \u2014 dalam WIB",
-      "format": "date",
+      "description": "Tanggal & jam WIB terakhir ringkasan sore terkirim (anti dobel). Format: 'YYYY-MM-DD HH:mm WIB'. Anti-dobel membandingkan 10 karakter pertama (tanggal) dengan tanggal WIB hari ini.",
       "type": "string"
     },
     "daily_summary_show_points": {
@@ -47,8 +45,8 @@
       "type": "boolean"
     },
     "daily_summary_time": {
-      "default": "17:30",
-      "description": "Jam kirim ringkasan sore dalam WIB (Asia/Jakarta, UTC+7). Contoh: 17:30 = jam 5 sore WIB. Konversi ke UTC dilakukan otomatis di dalam kode.",
+      "default": "16:30",
+      "description": "Jam kirim ringkasan sore dalam WIB (Asia/Jakarta, UTC+7). Contoh: 16:30 = jam 4 sore WIB. Backend membandingkan jam WIB sekarang dengan jam ini \u2014 tidak ada konversi UTC.",
       "type": "string"
     },
     "employee_phones": {
@@ -97,8 +95,7 @@
       "type": "boolean"
     },
     "morning_summary_last_sent": {
-      "description": "Tanggal terakhir ringkasan pagi terkirim (anti dobel) \u2014 dalam WIB",
-      "format": "date",
+      "description": "Tanggal & jam WIB terakhir ringkasan pagi terkirim (anti dobel). Format: 'YYYY-MM-DD HH:mm WIB'. Anti-dobel membandingkan 10 karakter pertama (tanggal) dengan tanggal WIB hari ini.",
       "type": "string"
     },
     "morning_summary_show_points": {
@@ -108,7 +105,7 @@
     },
     "morning_summary_time": {
       "default": "07:00",
-      "description": "Jam kirim ringkasan pagi dalam WIB (Asia/Jakarta, UTC+7). Contoh: 07:00 = jam 7 pagi WIB. Konversi ke UTC dilakukan otomatis di dalam kode.",
+      "description": "Jam kirim ringkasan pagi dalam WIB (Asia/Jakarta, UTC+7). Contoh: 07:00 = jam 7 pagi WIB. Backend membandingkan jam WIB sekarang dengan jam ini \u2014 tidak ada konversi UTC.",
       "type": "string"
     },
     "notif_daily_approval": {
@@ -200,8 +197,7 @@
       "type": "boolean"
     },
     "weekly_summary_last_sent": {
-      "description": "Tanggal terakhir ringkasan mingguan terkirim (anti dobel) \u2014 dalam WIB",
-      "format": "date",
+      "description": "Tanggal & jam WIB terakhir ringkasan mingguan terkirim (anti dobel). Format: 'YYYY-MM-DD HH:mm WIB'. Anti-dobel membandingkan 10 karakter pertama (tanggal) dengan tanggal WIB hari ini.",
       "type": "string"
     }
   },

@@ -31,6 +31,10 @@ function wibDateToStr(wib: Date): string {
   return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}-${String(wib.getUTCDate()).padStart(2, "0")}`;
 }
 
+function wibDateTimeStr(wib: Date): string {
+  return `${wibDateToStr(wib)} ${String(wib.getUTCHours()).padStart(2, "0")}:${String(wib.getUTCMinutes()).padStart(2, "0")} WIB`;
+}
+
 function formatDateID(wib: Date): string {
   return `${DAY_NAMES[wib.getUTCDay()]}, ${wib.getUTCDate()} ${MONTH_NAMES[wib.getUTCMonth()]} ${wib.getUTCFullYear()}`;
 }
@@ -769,73 +773,87 @@ export default async function(req: Request): Promise<Response> {
       return Response.json(result);
     }
 
-    // ── Scheduled checks (semua waktu & tanggal dalam WIB) ──
-    const currentUtcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    // ── Scheduled checks — SEMUA dalam WIB, dari objek yang sama ──
+    // wibMinutes DAN wibToday keduanya dari wibNow. Tidak ada pencampuran zona waktu.
+    const wibMinutes = wibNow.getUTCHours() * 60 + wibNow.getUTCMinutes();
+    const wibSentAt = wibDateTimeStr(wibNow); // untuk disimpan ke *_last_sent
+
+    function parseWibMinutes(t: string): number {
+      const [h, m] = (t || "00:00").split(":").map(Number);
+      return (h || 0) * 60 + (m || 0);
+    }
+    // Ambil bagian tanggal "YYYY-MM-DD" dari nilai *_last_sent (10 karakter pertama)
+    function lastSentDate(s: string): string {
+      return (s || "").slice(0, 10);
+    }
 
     // 1. Ringkasan PAGI
-    const morningWibTime = settings.morning_summary_time || "07:00";
-    const morningUtcMinutes = wibTimeToUtcMinutes(morningWibTime);
-    const morningTimeReached = currentUtcMinutes >= morningUtcMinutes;
-
     if (
       settings.morning_summary_enabled === true &&
-      morningTimeReached &&
-      settings.morning_summary_last_sent !== wibToday &&
-      settings.morning_group_id && settings.morning_group_id.trim()
+      settings.morning_group_id && settings.morning_group_id.trim() &&
+      lastSentDate(settings.morning_summary_last_sent) !== wibToday
     ) {
-      const message = await buildMorningSummary(base44, settings, wibToday, wibNow);
-      const result = await sendMorningSummaryToDestinations(base44, settings, message, "daily_summary");
-      if (result.success) {
-        try {
-          await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-            morning_summary_last_sent: wibToday,
-          });
-        } catch {}
+      const scheduledMin = parseWibMinutes(settings.morning_summary_time || "07:00");
+      const diff = wibMinutes - scheduledMin; // menit setelah jadwal (negatif = belum saatnya)
+      if (diff >= 0 && diff <= 90) { // guard 90 menit — cegah kiriman susulan liar
+        const message = await buildMorningSummary(base44, settings, wibToday, wibNow);
+        const result = await sendMorningSummaryToDestinations(base44, settings, message, "daily_summary");
+        if (result.success) {
+          try {
+            await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+              morning_summary_last_sent: wibSentAt,
+            });
+          } catch {}
+        }
       }
     }
 
     // 2. Ringkasan SORE
-    const dailyWibTime = settings.daily_summary_time || "17:30";
-    const dailyUtcMinutes = wibTimeToUtcMinutes(dailyWibTime);
-    const dailyTimeReached = currentUtcMinutes >= dailyUtcMinutes;
-
-    if (settings.daily_summary_enabled && dailyTimeReached && settings.daily_summary_last_sent !== wibToday) {
-      const destination = settings.summary_destination || "individuals";
-      const needsGroup = destination === "group" || destination === "both";
-      if (!needsGroup || (settings.group_id && settings.group_id.trim())) {
-        const message = await buildDailySummary(base44, settings, wibToday, wibNow);
-        const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
-        if (result.success) {
-          try {
-            await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-              daily_summary_last_sent: wibToday,
-            });
-          } catch {}
-          // Mark pending_ai alerts as processed
-          try {
-            const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
-            for (const alert of pendingAlerts) {
-              await base44.asServiceRole.entities.WhatsAppLog.update(alert.id, {
-                status: "terkirim",
-                error_reason: "Dimasukkan ke ringkasan harian",
+    if (settings.daily_summary_enabled && lastSentDate(settings.daily_summary_last_sent) !== wibToday) {
+      const scheduledMin = parseWibMinutes(settings.daily_summary_time || "16:30");
+      const diff = wibMinutes - scheduledMin;
+      if (diff >= 0 && diff <= 90) {
+        const destination = settings.summary_destination || "individuals";
+        const needsGroup = destination === "group" || destination === "both";
+        if (!needsGroup || (settings.group_id && settings.group_id.trim())) {
+          const message = await buildDailySummary(base44, settings, wibToday, wibNow);
+          const result = await sendSummaryToDestinations(base44, settings, message, "daily_summary");
+          if (result.success) {
+            try {
+              await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+                daily_summary_last_sent: wibSentAt,
               });
-            }
-          } catch {}
+            } catch {}
+            // Mark pending_ai alerts as processed
+            try {
+              const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
+              for (const alert of pendingAlerts) {
+                await base44.asServiceRole.entities.WhatsAppLog.update(alert.id, {
+                  status: "terkirim",
+                  error_reason: "Dimasukkan ke ringkasan harian",
+                });
+              }
+            } catch {}
+          }
         }
       }
     }
 
     // 3. Ringkasan MINGGUAN (Sabtu WIB)
     const isSaturdayWib = wibNow.getUTCDay() === 6;
-    if (settings.weekly_summary_enabled && isSaturdayWib && dailyTimeReached && settings.weekly_summary_last_sent !== wibToday) {
-      const message = await buildWeeklySummary(base44, settings, wibToday, wibNow);
-      const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
-      if (result.success) {
-        try {
-          await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
-            weekly_summary_last_sent: wibToday,
-          });
-        } catch {}
+    if (settings.weekly_summary_enabled && isSaturdayWib && lastSentDate(settings.weekly_summary_last_sent) !== wibToday) {
+      const scheduledMin = parseWibMinutes(settings.daily_summary_time || "16:30");
+      const diff = wibMinutes - scheduledMin;
+      if (diff >= 0 && diff <= 90) {
+        const message = await buildWeeklySummary(base44, settings, wibToday, wibNow);
+        const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
+        if (result.success) {
+          try {
+            await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, {
+              weekly_summary_last_sent: wibSentAt,
+            });
+          } catch {}
+        }
       }
     }
 
