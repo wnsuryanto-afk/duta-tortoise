@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { normalizePhone, normalizePhoneInput } from "@/lib/normalizePhone";
@@ -75,12 +76,7 @@ export default function PengaturanWhatsAppPage() {
     staleTime: 30000,
   });
 
-  const { data: users } = useQuery({
-    queryKey: ["all-users-wa"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: !!user && user.role === "owner",
-    staleTime: 60000,
-  });
+  const { data: users } = useActiveUsers({ enabled: !!user && user.role === "owner" });
 
   // Sync from a data object (not closure) — avoids stale-data race condition
   const syncFromData = (data) => {

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +16,7 @@ export default function AttendanceDashboardBanner() {
     queryFn: () => base44.entities.Attendance.filter({ date: today }),
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users-keeper"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useActiveUsers();
 
   // Filter hanya user dengan role keeper
   const feeders = users.filter(u => u.role === "keeper");

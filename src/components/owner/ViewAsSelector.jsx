@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,11 +25,7 @@ export default function ViewAsSelector({ open, onClose }) {
   const [showUserMode, setShowUserMode] = useState(false);
   const navigate = useNavigate();
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users-list"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: open,
-  });
+  const { data: users = [] } = useActiveUsers({ enabled: open });
 
   const nonOwners = users.filter(u => u.role !== "owner");
 

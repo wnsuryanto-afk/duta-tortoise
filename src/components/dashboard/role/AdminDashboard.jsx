@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
@@ -53,11 +54,7 @@ export default function AdminDashboard({ user }) {
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: () => base44.entities.User.list(),
-    staleTime: 10 * 60 * 1000,
-  });
+  const { data: allUsers = [] } = useActiveUsers();
 
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["admin-warehouse"],

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Send, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 
 export default function SendNotifDialog({ open, onClose }) {
   const queryClient = useQueryClient();
@@ -18,10 +19,7 @@ export default function SendNotifDialog({ open, onClose }) {
   });
   const [saving, setSaving] = useState(false);
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users-list"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useActiveUsers();
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 

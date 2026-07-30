@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
@@ -43,11 +44,7 @@ export default function KasbonPage() {
     queryFn: () => base44.entities.Kasbon.list("-request_date", 200),
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: isAdmin,
-  });
+  const { data: users = [] } = useActiveUsers({ enabled: isAdmin });
 
   // Role-based filtering
   const visibleKasbons = useMemo(() => {

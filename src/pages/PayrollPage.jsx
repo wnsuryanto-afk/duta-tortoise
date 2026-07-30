@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -544,10 +545,7 @@ export default function PayrollPage() {
   const monthStart = format(startOfMonth(new Date(selectedMonth + "-01")), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(new Date(selectedMonth + "-01")), "yyyy-MM-dd");
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useActiveUsers();
   const { data: salaryConfigs = [] } = useQuery({
     queryKey: ["salary-configs"],
     queryFn: () => base44.entities.SalaryConfig.list(),

@@ -217,6 +217,8 @@ export default function UserDetailPage({ userId, onBack }) {
   const canView = ["owner", "admin", "manajer"].includes(myRole);
 
   // ── Queries — MUST be before any early return ──
+  // Detail page: pakai User.list() langsung (termasuk kicked) supaya
+  // owner bisa membuka riwayat absensi/gaji karyawan yang sudah dinonaktifkan.
   const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => base44.entities.User.list("-created_date", 100) });
   const { data: profiles = [] } = useQuery({ queryKey: ["user-profiles"], queryFn: () => base44.entities.UserProfile.list() });
   const { data: salaryConfigs = [] } = useQuery({ queryKey: ["salary-configs"], queryFn: () => base44.entities.SalaryConfig.list() });

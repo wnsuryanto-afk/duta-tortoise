@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -142,11 +143,7 @@ export default function SOPTaskManager() {
 
   const enclosures = [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort();
 
-  const { data: employees = [] } = useQuery({
-    queryKey: ["sop-task-employees"],
-    queryFn: () => base44.entities.User.list(),
-    staleTime: 10 * 60 * 1000,
-  });
+  const { data: employees = [] } = useActiveUsers();
   const staffEmployees = employees.filter(u => ["keeper", "kepala_feeder", "admin", "manajer"].includes(u.role));
 
   const openNew = () => { setForm(DEFAULT_FORM); setEditData(null); setShowForm(true); };

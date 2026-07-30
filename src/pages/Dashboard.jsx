@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useViewAs } from "@/lib/ViewAsContext";
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { UserPlus, AlertTriangle } from "lucide-react";
@@ -116,12 +117,7 @@ export default function Dashboard() {
   const effectiveRole = isViewingAs && viewAsRole ? viewAsRole : realRole;
 
   // Cek apakah ada user dengan role ini
-  const { data: users = [] } = useQuery({
-    queryKey: ["users-list-for-preview"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: isViewingAs && !!viewAsRole,
-    staleTime: 60 * 1000,
-  });
+  const { data: users = [] } = useActiveUsers({ enabled: isViewingAs && !!viewAsRole });
 
   const hasUserForRole = !isViewingAs || users.some(u => u.role === effectiveRole);
   const showNoUserBanner = isViewingAs && viewAsRole && !hasUserForRole;

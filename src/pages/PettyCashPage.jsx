@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,10 +132,7 @@ export default function PettyCashPage() {
     queryFn: () => base44.entities.PettyCashRequest.list("-request_date", 200),
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users-all"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useActiveUsers();
 
   const { data: topupRequests = [] } = useQuery({
     queryKey: ["petty-cash-topup-requests"],

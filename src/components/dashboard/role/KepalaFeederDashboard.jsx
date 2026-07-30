@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -20,11 +21,7 @@ export default function KepalaFeederDashboard({ user }) {
   const thisMonthKey = format(now, "yyyy-MM");
   const todayLabel = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ["kf-users"],
-    queryFn: () => base44.entities.User.list(),
-    staleTime: 10 * 60 * 1000,
-  });
+  const { data: allUsers = [] } = useActiveUsers();
 
   const { data: attendances = [] } = useQuery({
     queryKey: ["kf-attendance", today],

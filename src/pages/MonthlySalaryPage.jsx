@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useVegTrips } from "@/hooks/useVegTrips";
@@ -39,11 +40,7 @@ export default function MonthlySalaryPage() {
     enabled: isAdmin,
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: isAdmin,
-  });
+  const { data: users = [] } = useActiveUsers({ enabled: isAdmin });
 
   const roleLabel = (r) => ({
     kepala_feeder: "Kepala Feeder",

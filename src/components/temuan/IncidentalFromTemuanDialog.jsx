@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,12 +23,7 @@ export default function IncidentalFromTemuanDialog({ finding, user, onClose, onR
   const [dueDate, setDueDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [submitting, setSubmitting] = useState(false);
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["staff-users"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: !!finding,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: users = [] } = useActiveUsers({ enabled: !!finding });
 
   if (!finding) return null;
 

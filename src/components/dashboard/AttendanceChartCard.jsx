@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Users, CheckCircle2, Clock, AlertCircle } from "lucide-react";
@@ -16,10 +17,7 @@ export default function AttendanceChartCard() {
     select: (data) => data.filter(a => a.date >= sevenDaysAgo && a.date <= today),
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users-all"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useActiveUsers();
 
   const todayAttendances = attendances.filter(a => a.date === today);
   const hadir = todayAttendances.filter(a => a.status === "hadir");

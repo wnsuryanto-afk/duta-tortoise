@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Pill, Wallet, Activity, Star, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
@@ -32,10 +33,7 @@ export default function OperationalSummaryWidget() {
     queryFn: () => base44.entities.DailyChecklist.list("-date", 500),
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["users-all"],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const { data: users = [] } = useActiveUsers();
 
   // ── Keuangan bulan ini ──
   const monthTx = transactions.filter(t => t.date >= MONTH_START && t.date <= MONTH_END);

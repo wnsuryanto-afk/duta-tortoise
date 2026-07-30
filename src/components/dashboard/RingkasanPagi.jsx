@@ -4,6 +4,7 @@
  * HANYA MEMBACA data — tidak mengubah logika modul lain.
  */
 import { useQuery } from "@tanstack/react-query";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { format, subDays } from "date-fns";
@@ -79,11 +80,7 @@ export default function RingkasanPagi() {
     staleTime: 5 * 60 * 1000,
   });
   const kuraDiamMerah = kuraDiamResp?.data?.counts?.merah || 0;
-  const { data: users = [] } = useQuery({
-    queryKey: ["ringkasan-staff-users"],
-    queryFn: () => base44.entities.User.list(),
-    staleTime: 10 * 60 * 1000,
-  });
+  const { data: users = [] } = useActiveUsers();
   const { data: pendingToolReqs = [] } = useQuery({
     queryKey: ["tool-requests-pending"],
     queryFn: () => base44.entities.ToolRequest.filter({ status: "menunggu" }, "-request_date", 200),
