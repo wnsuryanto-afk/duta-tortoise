@@ -316,19 +316,13 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
               </span>
             )}
           </div>
-          {/* Harga - hanya untuk owner/admin/manajer */}
-          {(tortoise.purchase_price || tortoise.hpp) && (
+          {/* HPP - hanya untuk owner/admin/manajer */}
+          {tortoise.hpp && (
             <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {tortoise.purchase_price && (
-                showPrice
-                  ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Beli: Rp {tortoise.purchase_price.toLocaleString("id-ID")}</span>
-                  : <PriceField label="Harga Beli" />
-              )}
-              {tortoise.hpp && (
-                showPrice
-                  ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">HPP: Rp {tortoise.hpp.toLocaleString("id-ID")}</span>
-                  : <PriceField label="HPP" />
-              )}
+              {showPrice
+                ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">HPP: Rp {tortoise.hpp.toLocaleString("id-ID")}</span>
+                : <PriceField label="HPP" />
+              }
             </div>
           )}
           {/* Tags */}
@@ -340,6 +334,12 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
                 </span>
               ))}
             </div>
+          )}
+          {/* Harga beli — kecil & samar di bawah kartu */}
+          {tortoise.purchase_price > 0 && (
+            <p className="text-[10px] text-gray-400 mt-1.5">
+              Beli: {showPrice ? `Rp ${tortoise.purchase_price.toLocaleString("id-ID")}` : "🔒"}
+            </p>
           )}
         </div>
 

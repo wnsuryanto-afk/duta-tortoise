@@ -1,0 +1,153 @@
+{
+  "name": "Purchase",
+  "properties": {
+    "dp_amount": {
+      "description": "Nominal DP jika belum lunas",
+      "type": "number"
+    },
+    "enclosure": {
+      "description": "Kandang tujuan penempatan kura",
+      "type": "string"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)",
+      "type": "boolean"
+    },
+    "finance_tx_id": {
+      "description": "ID FinanceTransaction pengeluaran yang dibuat otomatis",
+      "type": "string"
+    },
+    "hp_whatsapp": {
+      "description": "No. HP / WhatsApp penjual",
+      "type": "string"
+    },
+    "is_test_data": {
+      "default": false,
+      "description": "Ditandai sebagai data test",
+      "type": "boolean"
+    },
+    "item_id": {
+      "description": "ID WarehouseItem/FeedStock terkait",
+      "type": "string"
+    },
+    "item_name": {
+      "description": "Nama barang (jika purchase_type=barang)",
+      "type": "string"
+    },
+    "item_quantity": {
+      "description": "Jumlah barang dibeli",
+      "type": "number"
+    },
+    "item_unit": {
+      "description": "Satuan barang",
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "payment_proof_url": {
+      "description": "URL bukti transfer/pembayaran",
+      "type": "string"
+    },
+    "payment_status": {
+      "default": "lunas",
+      "enum": [
+        "lunas",
+        "dp",
+        "belum_bayar"
+      ],
+      "type": "string"
+    },
+    "platform": {
+      "description": "Sumber/platform pembelian",
+      "enum": [
+        "Instagram",
+        "Tokopedia",
+        "Shopee",
+        "WhatsApp",
+        "Facebook",
+        "Referral",
+        "Langsung",
+        "Lainnya"
+      ],
+      "type": "string"
+    },
+    "price": {
+      "description": "Harga beli total (Rp)",
+      "type": "number"
+    },
+    "purchase_date": {
+      "description": "Tanggal pembelian",
+      "format": "date",
+      "type": "string"
+    },
+    "purchase_type": {
+      "default": "kura",
+      "description": "Jenis pembelian: kura atau barang/pakan/obat",
+      "enum": [
+        "kura",
+        "barang"
+      ],
+      "type": "string"
+    },
+    "remaining_balance": {
+      "description": "Sisa yang harus dibayar",
+      "type": "number"
+    },
+    "seller_address": {
+      "description": "Alamat penjual",
+      "type": "string"
+    },
+    "seller_name": {
+      "description": "Nama penjual/supplier",
+      "type": "string"
+    },
+    "shipping_cost": {
+      "default": 0,
+      "description": "Ongkos kirim",
+      "type": "number"
+    },
+    "tortoise_code": {
+      "description": "Kode kura",
+      "type": "string"
+    },
+    "tortoise_gender": {
+      "default": "belum_diketahui",
+      "enum": [
+        "jantan",
+        "betina",
+        "belum_diketahui"
+      ],
+      "type": "string"
+    },
+    "tortoise_id": {
+      "description": "ID Tortoise yang dibuat otomatis (jika purchase_type=kura)",
+      "type": "string"
+    },
+    "tortoise_name": {
+      "description": "Nama kura yang dibeli",
+      "type": "string"
+    },
+    "tortoise_species": {
+      "description": "Spesies kura",
+      "type": "string"
+    },
+    "tortoise_weight": {
+      "description": "Berat kura saat dibeli (gram)",
+      "type": "number"
+    },
+    "total_cost": {
+      "description": "Total = price + shipping_cost",
+      "type": "number"
+    }
+  },
+  "required": [
+    "purchase_type",
+    "seller_name",
+    "purchase_date",
+    "price",
+    "payment_status"
+  ],
+  "type": "object"
+}
