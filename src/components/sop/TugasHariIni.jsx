@@ -15,7 +15,7 @@ import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   CheckCircle2, Clock, Users, ChevronDown, ChevronUp,
-  Camera, Plus, Loader2, Check, X, Star, Salad,
+  Camera, Plus, Loader2, Check, X, Star, Salad, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import ExtraTaskForm from "./ExtraTaskForm";
@@ -67,6 +67,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [showPakanForm, setShowPakanForm] = useState(false);
   const [ukurTarget, setUkurTarget] = useState(null);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
+  const [photoSavedIds, setPhotoSavedIds] = useState(new Set());
+  const [refreshing, setRefreshing] = useState(false);
 
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
   const companySettings = useCompanySettings();
@@ -309,6 +311,29 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     return m;
   }, [showTeam, allLogsToday]);
 
+  // ── Umpan balik visual foto tersimpan (tahan 3 dtk) ──
+  const markPhotoSaved = (taskId) => {
+    setPhotoSavedIds(p => { const n = new Set(p); n.add(taskId); return n; });
+    setTimeout(() => {
+      setPhotoSavedIds(p => { const n = new Set(p); n.delete(taskId); return n; });
+    }, 3000);
+  };
+
+  // ── Refresh manual: muat ulang data checklist terbaru ──
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    qc.invalidateQueries({ queryKey: ["tugas-hari-ini-logs"] });
+    qc.invalidateQueries({ queryKey: ["tugas-hari-ini-all-logs"] });
+    qc.invalidateQueries({ queryKey: ["sop-tasks-active-tugas-hari-ini"] });
+    qc.invalidateQueries({ queryKey: ["my-checklist-today"] });
+    qc.invalidateQueries({ queryKey: ["attendance-today"] });
+    qc.invalidateQueries({ queryKey: ["rotasi-ukur"] });
+    qc.invalidateQueries({ queryKey: ["tortoises-timbang-reminder"] });
+    qc.invalidateQueries({ queryKey: ["enclosures-kebersihan"] });
+    await Promise.all([refetchLogs(), refetchAllLogs()]);
+    setTimeout(() => setRefreshing(false), 600);
+  };
+
   // ── PENGUNCIAN SAAT SIMPAN (bukan saat render) ──
   // Query DB saat user menekan centang untuk cek apakah task sudah dikerjakan orang lain
   const checkTaskLock = async (task) => {
@@ -414,6 +439,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         });
       }
       refetchLogs();
+      markPhotoSaved(taskId);
     } catch {}
     setUploadingPhotoId(null);
   };
@@ -464,6 +490,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       });
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       refetchLogs();
+      markPhotoSaved(task.id);
       syncPhotoToChecklist({
         employeeEmail: user.email, date: today,
         taskTitle: task.label, enclosure: "Tugas Harian",
@@ -579,6 +606,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         {progressPct === 100 && <p className="text-center text-sm font-bold text-green-700 mt-2">🏆 Semua tugas selesai!</p>}
 
         <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-60">
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} /> {refreshing ? "Memuat..." : "Refresh"}
+          </button>
           {showTeamView && (
             <button onClick={() => setShowTeam(v => !v)} className="flex items-center gap-1.5 text-xs font-medium text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/5">
               <Users className="w-3.5 h-3.5" /> {showTeam ? "Sembunyikan Tim" : "Lihat Progress Tim"}
@@ -638,6 +668,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             attendance={attendance}
             photoUrl={photoMap[task.id]}
             uploadingPhoto={uploadingPhotoId === task.id}
+            photoSaved={photoSavedIds.has(task.id)}
             teamWho={showTeam ? (teamCheckMap[task.id] || []) : []}
             showTeam={showTeam}
             requirePhoto={task.require_photo}
@@ -703,7 +734,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component (sederhana, tanpa lock UI) ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
@@ -769,6 +800,18 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
           )}
           {showPhoto && (
             <PhotoPreviewModal open={showPhoto} onClose={() => setShowPhoto(false)} photoUrl={photoUrl} taskTitle={task.label} />
+          )}
+
+          {/* Umpan balik visual foto: menyimpan / tersimpan */}
+          {(uploadingPhoto || (isSaving && requirePhoto && !isChecked)) && (
+            <p className="mt-1 text-[11px] text-blue-600 font-medium flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> Menyimpan foto...
+            </p>
+          )}
+          {photoSaved && (
+            <p className="mt-1 text-[11px] text-green-600 font-semibold flex items-center gap-1 animate-fade-in">
+              <CheckCircle2 className="w-3 h-3" /> Foto tersimpan ✓
+            </p>
           )}
 
           {/* AI Catatan untuk keeper — apresiasi + saran (bukan penilaian teknis) */}
