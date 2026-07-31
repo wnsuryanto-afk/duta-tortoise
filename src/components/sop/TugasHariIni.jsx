@@ -26,6 +26,7 @@ import AICatatanCard from "./AICatatanCard";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import PhotoPreviewModal from "./PhotoPreviewModal";
 import UkurFormDialog from "./UkurFormDialog";
+import TimbangBabyDialog from "./TimbangBabyDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
@@ -66,6 +67,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [showExtraForm, setShowExtraForm] = useState(false);
   const [showPakanForm, setShowPakanForm] = useState(false);
   const [ukurTarget, setUkurTarget] = useState(null);
+  const [timbangBabyTask, setTimbangBabyTask] = useState(null);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
   const [photoSavedIds, setPhotoSavedIds] = useState(new Set());
   const [refreshing, setRefreshing] = useState(false);
@@ -259,6 +261,25 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           });
           return;
         }
+        if (titleLower.includes("semua baby")) {
+          items.push({
+            id: `sop_${t.id}`,
+            label: t.title,
+            waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+            icon: "⚖️",
+            keterangan: t.description || "",
+            points: t.points || 0,
+            badge: "Timbang Baby",
+            badgeColor: "bg-pink-100 text-pink-700",
+            require_photo: t.require_photo || false,
+            ai_check_points: t.ai_check_points || "",
+            task_scope: t.task_scope || "bersama",
+            assigned_to_email: t.assigned_to_email || "",
+            assigned_to_name: t.assigned_to_name || "",
+            isTimbangBaby: true,
+          });
+          return;
+        }
         items.push({
           id: `sop_${t.id}`,
           label: t.title,
@@ -290,6 +311,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     icon: "⚖️", keterangan: t.enclosure || "", points: 5,
     badge: "Timbang", badgeColor: "bg-sky-100 text-sky-700",
   }));
+
+  // Daftar baby untuk task "Timbang semua baby (2 minggu sekali)"
+  const babyTortoises = useMemo(() => tortoises.filter(t =>
+    (t.age_category === "baby" || t.status === "baby") && t.status !== "mati" && t.status !== "terjual"
+  ), [tortoises]);
 
   // Full task list: struktural + SOPTask + timbang
   const allTasks = [...STRUCTURAL, ...sopTaskItems, ...timbangItems];
@@ -571,6 +597,46 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     }
   };
 
+  // ── Selesai & centang task "Timbang semua baby" ──
+  const handleTimbangBabyDone = async () => {
+    const task = timbangBabyTask;
+    if (!task || savingId) return;
+    setSavingId(task.id);
+    try {
+      const lock = await checkTaskLock(task);
+      if (lock) {
+        if (lock.type === "done") {
+          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
+        } else {
+          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
+        }
+        refetchLogs();
+        setTimbangBabyTask(null);
+        return;
+      }
+      if (!existingLogItemIds.has(task.id)) {
+        await base44.entities.MaintenanceLog.create({
+          check_key: `${user.email}__tugas__${task.id}__${today}`,
+          enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
+          freq: "harian", item_id: task.id, item_label: task.label,
+          period_key: today, is_done: true,
+          done_at: format(new Date(), "HH:mm"),
+          done_by: user.full_name || user.email,
+          done_by_email: user.email,
+          poin_earned: task.points || 0,
+        });
+      }
+      setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+      refetchLogs();
+      setTimbangBabyTask(null);
+      qc.invalidateQueries({ queryKey: ["tortoises-timbang-reminder"] });
+      qc.invalidateQueries({ queryKey: ["tortoises-lineage"] });
+    } catch {
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const handleApproveExtra = async (log, poin) => {
     await base44.entities.MaintenanceLog.update(log.id, {
       approval_status: "approved",
@@ -673,8 +739,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             showTeam={showTeam}
             requirePhoto={task.require_photo}
             isUkurRotasi={task.isUkurRotasi}
+            isTimbangBaby={task.isTimbangBaby}
             onCheck={() => handleCheck(task)}
             onUkurCheck={() => setUkurTarget(task)}
+            onTimbangBabyCheck={() => setTimbangBabyTask(task)}
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
             onPhotoCheck={(file) => handlePhotoCheck(task, file)}
             onPhotoNotes={(notes) => handlePhotoNotes(task.id, notes)}
@@ -729,12 +797,23 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         onClose={() => setUkurTarget(null)}
         onSubmit={handleUkurSubmit}
       />
+
+      <TimbangBabyDialog
+        open={!!timbangBabyTask}
+        task={timbangBabyTask}
+        user={user}
+        today={today}
+        babies={babyTortoises}
+        saving={savingId === timbangBabyTask?.id}
+        onClose={() => setTimbangBabyTask(null)}
+        onDone={handleTimbangBabyDone}
+      />
     </div>
   );
 }
 
 // ── Task Row Component (sederhana, tanpa lock UI) ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, onCheck, onUkurCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
+function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, isTimbangBaby, onCheck, onUkurCheck, onTimbangBabyCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
@@ -742,6 +821,10 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
 
   const handleClick = () => {
     if (isIstirahat || isAbsensi || isSaving) return;
+    if (isTimbangBaby && !isChecked) {
+      onTimbangBabyCheck();
+      return;
+    }
     if (isUkurRotasi && !isChecked) {
       onUkurCheck();
       return;

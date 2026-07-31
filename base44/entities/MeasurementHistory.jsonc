@@ -24,6 +24,10 @@
     "notes": {
       "type": "string"
     },
+    "photo_url": {
+      "type": "string",
+      "description": "URL foto bukti timbang (opsional). Otomatis didorong ke galeri profil Tortoise oleh trigger onMeasurementSaved."
+    },
     "excluded_from_reports": {
       "type": "boolean",
       "default": false,
