@@ -4,10 +4,9 @@
  * onChange(photos, primaryUrl)
  */
 import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
-import { Camera, ImagePlus, Star, Trash2, Share2, X, Loader2, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Camera, ImagePlus, Star, X, Loader2 } from "lucide-react";
+import TortoisePhotoLightbox from "./TortoisePhotoLightbox";
 
 const MAX_PHOTOS = 5;
 
@@ -24,11 +23,10 @@ function migratePrimary(photos) {
   return photos.map((p, i) => ({ ...p, is_primary: i === 0 }));
 }
 
-export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnailUrl, tortoiseName = "", onChange }) {
+export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnailUrl, tortoiseName = "", tortoiseCode = "", onChange }) {
   const photos = migratePrimary(rawPhotos);
   const [uploading, setUploading] = useState(false);
   const [lightbox, setLightbox]   = useState(null);
-  const [downloadError, setDownloadError] = useState("");
   const fileRef   = useRef();
   const cameraRef = useRef();
 
@@ -70,69 +68,12 @@ export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnail
     }
     const nextPrimary = getPrimaryUrl(newNext);
     onChange(newNext, nextPrimary);
-    if (lightbox === idx) setLightbox(null);
-    else if (lightbox !== null && lightbox > idx) setLightbox(lightbox - 1);
+    setLightbox(null);
   };
 
   const shareWA = (url) => {
     const text = encodeURIComponent(`Foto kura-kura ${tortoiseName}: ${url}`);
     window.open(`https://wa.me/?text=${text}`, "_blank");
-  };
-
-  const [downloading, setDownloading] = useState(false);
-
-  const downloadPhoto = async (url, idx) => {
-    setDownloadError("");
-    setDownloading(true);
-    const dateStr = new Date().toISOString().slice(0, 10);
-    const filename = `${tortoiseName || "tortoise"}_${dateStr}_foto${idx + 1}.jpg`;
-    try {
-      // Fetch image dengan mode cors
-      const response = await fetch(url, { mode: "cors" });
-      const blob = await response.blob();
-
-      // Resize via Canvas → max 800px width
-      const resized = await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const MAX_W = 800;
-          let { width, height } = img;
-          if (width > MAX_W) {
-            height = Math.round((height * MAX_W) / width);
-            width = MAX_W;
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob(b => b ? resolve(b) : reject(new Error("Canvas toBlob failed")), "image/jpeg", 0.85);
-        };
-        img.onerror = reject;
-        img.src = URL.createObjectURL(blob);
-      });
-
-      // Web Share API — iOS native "Save to Photos"
-      if (navigator.canShare && navigator.canShare({ files: [new File([resized], filename, { type: "image/jpeg" })] })) {
-        const file = new File([resized], filename, { type: "image/jpeg" });
-        await navigator.share({ files: [file], title: tortoiseName || "Foto Kura" });
-        setDownloading(false);
-        return;
-      }
-
-      // Fallback: anchor download
-      const objectUrl = URL.createObjectURL(resized);
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-    } catch (_) {
-      setDownloadError("Gagal download. Tekan & tahan foto, lalu pilih Simpan Gambar.");
-    }
-    setDownloading(false);
   };
 
   return (
@@ -188,62 +129,18 @@ export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnail
       </div>
       <p className="text-[11px] text-muted-foreground">⭐ = foto utama (tampil di card). Maks. {MAX_PHOTOS} foto.</p>
 
-      {/* Lightbox */}
+      {/* Lightbox fullscreen */}
       {lightbox !== null && photos[lightbox] && (
-        <Dialog open={lightbox !== null} onOpenChange={() => setLightbox(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{tortoiseName} — Foto {lightbox + 1}/{photos.length} {photos[lightbox].is_primary ? "⭐" : ""}</DialogTitle>
-            </DialogHeader>
-            <div className="relative">
-              <img src={photos[lightbox].url} alt="foto" className="w-full rounded-xl object-contain max-h-[60vh]" />
-              {photos.length > 1 && (
-                <>
-                  <button type="button" onClick={() => setLightbox((lightbox - 1 + photos.length) % photos.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button type="button" onClick={() => setLightbox((lightbox + 1) % photos.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Thumbnail strip */}
-            {photos.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto py-1">
-                {photos.map((p, i) => (
-                  <button key={i} type="button" onClick={() => setLightbox(i)}
-                    className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all relative ${i === lightbox ? "border-primary" : "border-transparent"}`}>
-                    <img src={p.url} alt="" className="w-full h-full object-cover" />
-                    {p.is_primary && <span className="absolute top-0.5 left-0.5 text-[9px]">⭐</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {downloadError && <p className="text-xs text-orange-600 bg-orange-50 border border-orange-200 rounded-lg p-2">{downloadError}</p>}
-
-            <div className="flex gap-2 mt-1">
-              <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => setPrimary(lightbox)}>
-                <Star className="w-3.5 h-3.5 text-yellow-500" />
-                {photos[lightbox].is_primary ? "Ini Foto Utama" : "Set Foto Utama"}
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="gap-2 flex-1" onClick={() => downloadPhoto(photos[lightbox].url, lightbox)} disabled={downloading}>
-                {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-blue-600" />}
-                {downloading ? "Mendownload..." : "Download"}
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => shareWA(photos[lightbox].url)}>
-                <Share2 className="w-3.5 h-3.5 text-green-600" />
-              </Button>
-              <Button type="button" variant="destructive" size="sm" onClick={() => removePhoto(lightbox)}>
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <TortoisePhotoLightbox
+          photos={photos}
+          startIndex={lightbox}
+          tortoiseCode={tortoiseCode}
+          tortoiseName={tortoiseName}
+          onClose={() => setLightbox(null)}
+          onSetPrimary={(i) => setPrimary(i)}
+          onRemove={(i) => removePhoto(i)}
+          onShare={(url) => shareWA(url)}
+        />
       )}
     </div>
   );

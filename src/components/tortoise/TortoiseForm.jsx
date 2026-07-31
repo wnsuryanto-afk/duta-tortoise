@@ -445,6 +445,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
               photos={photos}
               thumbnailUrl={thumbnailUrl}
               tortoiseName={form.name || "Tortoise"}
+              tortoiseCode={form.code || ""}
               onChange={handlePhotosChange}
             />
           </div>
