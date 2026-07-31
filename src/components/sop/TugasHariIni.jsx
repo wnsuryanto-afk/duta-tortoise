@@ -301,6 +301,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 
   // Reminder timbang
   const timbangToday = tortoises.filter(t => {
+    // Baby ditangani oleh task tunggal "Timbang, ukur & foto SEMUA baby (2 minggu sekali)"
+    // — jangan buat task per-baby di sini.
+    if (t.age_category === "baby" || t.status === "baby") return false;
     if (!["aktif", "baby"].includes(t.status) || !t.last_weighed_date || !t.weighing_interval_days) return false;
     try { return differenceInCalendarDays(now, parseISO(t.last_weighed_date)) >= t.weighing_interval_days; }
     catch { return false; }
