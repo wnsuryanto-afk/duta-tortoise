@@ -21,6 +21,7 @@ const TEST_ENTITIES = [
   { key: "BonusReward", label: "Bonus" },
   { key: "Kasbon", label: "Kasbon" },
   { key: "MeasurementHistory", label: "Pengukuran" },
+  { key: "MaintenanceLog", label: "Log Tugas Harian" },
 ];
 
 async function fetchAllTestData() {

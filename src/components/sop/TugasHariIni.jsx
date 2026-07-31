@@ -11,7 +11,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { format, parseISO, differenceInCalendarDays } from "date-fns";
+import { format, parseISO, differenceInCalendarDays, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   CheckCircle2, Clock, Users, ChevronDown, ChevronUp,
@@ -24,6 +24,7 @@ import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { detectPhotoAge, checkDeadlineTime, runPhotoVerificationInBackground } from "@/lib/photoVerification";
 import AICatatanCard from "./AICatatanCard";
 import { useCompanySettings } from "@/lib/useCompanySettings";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import PhotoPreviewModal from "./PhotoPreviewModal";
 import UkurFormDialog from "./UkurFormDialog";
 import TimbangBabyDialog from "./TimbangBabyDialog";
@@ -51,9 +52,49 @@ const CATEGORY_BADGE = {
   lainnya: "bg-muted text-muted-foreground",
 };
 
+// ── Carry-over: tanggal jatuh tempo terakhir (terbaru <= hari ini) ──
+function computeLastDueDate(t, todayStr) {
+  const today = new Date(todayStr + "T00:00:00");
+  const freq = String(t.frequency || "").toLowerCase();
+  if (freq === "harian") return todayStr;
+  if (freq === "mingguan") {
+    const days = Array.isArray(t.weekly_days) ? t.weekly_days : [];
+    if (!days.length) return null;
+    for (let i = 0; i < 10; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      if (days.includes(d.getDay())) return format(d, "yyyy-MM-dd");
+    }
+    return null;
+  }
+  if (freq === "bulanan") {
+    const dates = Array.isArray(t.monthly_dates) ? t.monthly_dates : [];
+    if (!dates.length) return null;
+    for (let i = 0; i < 35; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      if (dates.includes(d.getDate())) return format(d, "yyyy-MM-dd");
+    }
+    return null;
+  }
+  return null;
+}
+
+// Cek apakah task sudah dikerjakan di hari sebelumnya (dalam siklus jatuh tempo ini).
+// Log test (is_test_data) diabaikan agar mode uji owner tidak memengaruhi keeper asli.
+function isCompletedPrevCycle(itemKey, lastDueDate, todayStr, scope, userEmail, recentLogs) {
+  const logs = (recentLogs || []).filter(l =>
+    l.item_id === itemKey && l.is_done && l.period_key &&
+    !l.is_test_data &&
+    l.period_key >= lastDueDate && l.period_key < todayStr
+  );
+  if (scope === "pribadi") return logs.some(l => l.done_by_email === userEmail);
+  return logs.length > 0;
+}
+
 // ── MAIN ──
 export default function TugasHariIni({ user, showTeamView = false }) {
   const qc = useQueryClient();
+  const { isOwnerTestSave } = useCurrentUser();
+  const testTag = isOwnerTestSave ? { is_test_data: true } : {};
   const today = format(new Date(), "yyyy-MM-dd");
   const now = new Date();
   const dow = now.getDay();
@@ -97,6 +138,19 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today }),
     enabled: showTeamView,
     staleTime: 30 * 1000,
+  });
+
+  // ── Log 35 hari terakhir (semua user) — untuk deteksi carry-over task terlambat ──
+  const carryStart = format(subDays(now, 35), "yyyy-MM-dd");
+  const { data: recentLogs = [] } = useQuery({
+    queryKey: ["tugas-carryover-logs", carryStart],
+    queryFn: async () => {
+      try {
+        const res = await base44.entities.MaintenanceLog.filter({ period_key: { $gte: carryStart } }, "-period_key", 2000);
+        return res || [];
+      } catch { return []; }
+    },
+    staleTime: 60 * 1000,
   });
 
   const { data: tortoises = [] } = useQuery({
@@ -194,16 +248,19 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     const kebersihanPoints = kebersihanAnchor?.points ?? 0;
 
     sopTasks
-      .filter(t => {
-        if (!t.is_active) return false;
-        const freq = String(t.frequency || "").toLowerCase();
-        if (freq === "harian") return true;
-        if (freq === "mingguan") return Array.isArray(t.weekly_days) && t.weekly_days.includes(dow);
-        if (freq === "bulanan") return Array.isArray(t.monthly_dates) && t.monthly_dates.includes(dom);
-        return false;
-      })
+      .filter(t => t.is_active)
       .forEach(t => {
         const titleLower = (t.title || "").toLowerCase();
+
+        // ── Carry-over: task terlambat tetap tampil sampai selesai ──
+        const lastDue = computeLastDueDate(t, today);
+        if (!lastDue) return;
+        const isOverdue = lastDue < today;
+        if (isOverdue) {
+          const prevDone = isCompletedPrevCycle(`sop_${t.id}`, lastDue, today, t.task_scope || "bersama", user?.email, recentLogs);
+          if (prevDone) return; // sudah dikerjakan di hari sebelumnya → sembunyikan
+        }
+        const terlambat = isOverdue && !existingLogItemIds.has(`sop_${t.id}`);
         if (titleLower.includes("all kandang") || titleLower.includes("semua kandang")) {
           if (t.category === "kebersihan") {
             const activeEnclosures = enclosures.filter(e => !e.is_archived);
@@ -217,6 +274,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
                 points: kebersihanPoints,
                 badge: "kebersihan",
                 badgeColor: CATEGORY_BADGE.kebersihan,
+                terlambat,
                 task_scope: "bersama",
               });
             });
@@ -240,6 +298,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
               tortoiseCode: tor.code,
               tortoiseName: tor.name,
               tortoiseEnclosure: tor.enclosure,
+              terlambat,
             });
           });
           (rotasiUkur.dewasa || []).forEach(tor => {
@@ -257,6 +316,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
               tortoiseCode: tor.code,
               tortoiseName: tor.name,
               tortoiseEnclosure: tor.enclosure,
+              terlambat,
             });
           });
           return;
@@ -277,6 +337,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             assigned_to_email: t.assigned_to_email || "",
             assigned_to_name: t.assigned_to_name || "",
             isTimbangBaby: true,
+            terlambat,
           });
           return;
         }
@@ -294,10 +355,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           task_scope: t.task_scope || "bersama",
           assigned_to_email: t.assigned_to_email || "",
           assigned_to_name: t.assigned_to_name || "",
+          terlambat,
         });
       });
     return items;
-  }, [sopTasks, dow, dom, rotasiUkur, enclosures]);
+  }, [sopTasks, today, rotasiUkur, enclosures, existingLogItemIds, recentLogs, user?.email]);
 
   // Reminder timbang
   const timbangToday = tortoises.filter(t => {
@@ -379,7 +441,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         const existing = await base44.entities.MaintenanceLog.filter({
           item_id: task.id, period_key: today, is_done: true,
         });
-        const byOther = existing.find(l => l.done_by_email !== user?.email);
+        const byOther = existing.find(l => l.done_by_email !== user?.email && !l.is_test_data);
         if (byOther) {
           return { type: "done", name: byOther.done_by || "karyawan lain", time: byOther.done_at || "" };
         }
@@ -442,6 +504,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         done_by: user.full_name || user.email,
         done_by_email: user.email,
         poin_earned: task.points || 0,
+        ...testTag,
       });
       refetchLogs();
     } catch {
@@ -515,6 +578,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         done_by: user.full_name || user.email,
         done_by_email: user.email,
         poin_earned: task.points || 0,
+        ...testTag,
         photo_url: file_url,
       });
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
@@ -576,6 +640,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         shell_length_cm: length_cm,
         measured_by: user.full_name || user.email,
         notes: "Rotasi otomatis timbang & ukur",
+        ...testTag,
       });
       // 2. Buat MaintenanceLog (centang)
       if (!existingLogItemIds.has(task.id)) {
@@ -588,6 +653,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           done_by: user.full_name || user.email,
           done_by_email: user.email,
           poin_earned: task.points || 0,
+          ...testTag,
         });
       }
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
@@ -627,6 +693,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           done_by: user.full_name || user.email,
           done_by_email: user.email,
           poin_earned: task.points || 0,
+          ...testTag,
         });
       }
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
@@ -724,6 +791,16 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         </div>
       )}
 
+      {isOwnerTestSave && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 flex items-center gap-2.5">
+          <span className="text-lg">🧪</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Mode Uji Keeper aktif</p>
+            <p className="text-xs text-amber-700">Tugas yang Anda kerjakan tersimpan sebagai <strong>data test</strong> — tidak masuk laporan atau hitung poin asli.</p>
+          </div>
+        </div>
+      )}
+
       {/* Task List */}
       <div className="space-y-2">
         {allTasks.map((task, idx) => (
@@ -807,6 +884,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         user={user}
         today={today}
         babies={babyTortoises}
+        isTestData={isOwnerTestSave}
         saving={savingId === timbangBabyTask?.id}
         onClose={() => setTimbangBabyTask(null)}
         onDone={handleTimbangBabyDone}
@@ -840,7 +918,7 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
   };
 
   return (
-    <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isChecked ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm`}>
+    <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isChecked ? "border-green-300 bg-green-50" : task.terlambat ? "border-red-300 bg-red-50" : "border-gray-100 bg-white"} shadow-sm`}>
       <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
         <span className="text-xs font-bold text-gray-400 w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
@@ -849,6 +927,9 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
             <p className={`text-sm font-semibold ${isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
             {requirePhoto && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex-shrink-0">📷 Wajib Foto</span>
+            )}
+            {task.terlambat && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white flex-shrink-0 animate-pulse">⏰ Terlambat</span>
             )}
             {task.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${task.badgeColor}`}>{task.badge}</span>}
             {!isIstirahat && !isAbsensi && (

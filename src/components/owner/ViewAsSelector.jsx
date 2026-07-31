@@ -23,6 +23,7 @@ export default function ViewAsSelector({ open, onClose }) {
   const { activateViewAs } = useViewAs();
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserMode, setShowUserMode] = useState(false);
+  const [testSave, setTestSave] = useState(false);
   const navigate = useNavigate();
 
   const { data: users = [] } = useActiveUsers({ enabled: open });
@@ -37,13 +38,17 @@ export default function ViewAsSelector({ open, onClose }) {
     }
     const matchingUser = users.find(u => u.role === role);
     const userEmail = matchingUser?.email || null;
-    activateViewAs(role, label, userEmail);
+    activateViewAs(role, label, userEmail, { testSave });
     onClose();
+    if (testSave) navigate("/sop");
+    setTestSave(false);
   };
 
   const handleSelectUser = (u) => {
-    activateViewAs(u.role || "keeper", `${u.full_name || u.email} (${ROLE_LABELS[u.role] || u.role})`, u.email);
+    activateViewAs(u.role || "keeper", `${u.full_name || u.email} (${ROLE_LABELS[u.role] || u.role})`, u.email, { testSave });
     onClose();
+    if (testSave) navigate("/sop");
+    setTestSave(false);
   };
 
   return (
@@ -54,7 +59,7 @@ export default function ViewAsSelector({ open, onClose }) {
             <Eye className="w-4 h-4 text-primary" /> Lihat Sebagai
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Simulasikan tampilan sesuai role. Anda tetap sebagai Owner — tidak ada data yang berubah.
+            Simulasikan tampilan sesuai role. Anda tetap sebagai Owner — tidak ada data yang berubah, kecuali "Mode uji" aktif.
           </p>
         </DialogHeader>
 
@@ -145,7 +150,21 @@ export default function ViewAsSelector({ open, onClose }) {
           )}
         </div>
 
-        <div className="px-5 py-3 border-t">
+        <div className="px-5 py-3 border-t space-y-3">
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={testSave}
+              onChange={(e) => setTestSave(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+            />
+            <div>
+              <p className="text-xs font-semibold text-amber-700 flex items-center gap-1">🧪 Mode uji — simpan data sebagai test</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Penyimpanan berfungsi (data benar-benar tersimpan) tapi ditandai <strong>is_test_data</strong> agar tidak masuk laporan/hitung poin. Memilih role langsung membuka halaman tugas keeper.
+              </p>
+            </div>
+          </label>
           <Button variant="outline" className="w-full" onClick={onClose}>Batal</Button>
         </div>
       </DialogContent>

@@ -97,6 +97,16 @@
     "approved_at": {
       "type": "string",
       "description": "Waktu approve"
+    },
+    "is_test_data": {
+      "type": "boolean",
+      "default": false,
+      "description": "Ditandai sebagai data test (Mode Uji owner) \u2014 tidak masuk laporan/poin asli"
+    },
+    "excluded_from_reports": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)"
     }
   },
   "required": [

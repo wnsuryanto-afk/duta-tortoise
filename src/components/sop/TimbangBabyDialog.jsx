@@ -15,7 +15,7 @@ import { toast } from "sonner";
  * (trigger onMeasurementSaved auto-update profil Tortoise + dorong foto ke galeri).
  * Task di-centang via onDone() → membuat MaintenanceLog seperti alur checklist biasa.
  */
-export default function TimbangBabyDialog({ open, onClose, onDone, user, today, task, babies = [], saving }) {
+export default function TimbangBabyDialog({ open, onClose, onDone, user, today, task, babies = [], saving, isTestData = false }) {
   const [selected, setSelected] = useState(null);
   const [weight, setWeight] = useState("");
   const [length, setLength] = useState("");
@@ -98,6 +98,7 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
         measured_by: user?.full_name || user?.email,
         notes: "Timbang baby massal 2 mingguan",
         photo_url,
+        ...(isTestData ? { is_test_data: true } : {}),
       });
       const newDone = new Set(doneIds);
       newDone.add(selected.id);
