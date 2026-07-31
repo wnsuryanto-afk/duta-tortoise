@@ -200,10 +200,7 @@ export default function TortoisePhotoLightbox({
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
     } catch {
-      window.open(url, "_blank");
-      setDlError(
-        "Gagal simpan otomatis. Tekan & tahan foto di tab baru, lalu pilih Simpan Gambar."
-      );
+      setDlError("Unduh otomatis gagal. Tekan & tahan foto pada layar ini, lalu pilih 'Simpan Gambar'.");
     }
     setDownloading(false);
   };
