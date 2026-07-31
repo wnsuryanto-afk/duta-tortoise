@@ -197,7 +197,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
       <div className="flex items-start gap-3">
         {/* Foto Thumbnail - DIPERBESAR */}
         <button
-          className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-primary/10 hover:shadow-lg hover:scale-105 transition-all duration-200 relative group"
+          className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-primary/10 hover:shadow-lg hover:scale-105 transition-all duration-200 relative group"
           onClick={() => photos.length > 0 && setLightboxIdx(0)}
           type="button"
         >
@@ -344,7 +344,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
         </div>
 
         {showActions && (
-          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-wrap gap-1 justify-end content-start w-[72px] opacity-0 group-hover:opacity-100 transition-opacity">
             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="Riwayat Kandang" onClick={() => setShowHistory(true)}>
               <MapPin className="w-3 h-3" />
             </Button>
