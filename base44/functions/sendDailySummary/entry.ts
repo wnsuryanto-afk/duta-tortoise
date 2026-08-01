@@ -4,6 +4,9 @@ import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.
 /**
  * sendDailySummary — kirim ringkasan harian / mingguan / pagi ke grup WhatsApp.
  *
+ * Dipanggil oleh scheduled automation dan/atau saat user membuka app
+ * (pemicu di AuthContext, body kosong = scheduled check).
+ *
  * Semua waktu disimpan & ditampilkan dalam WIB (Asia/Jakarta, UTC+7).
  * Konversi ke UTC dilakukan di sini saat membandingkan waktu server.
  *
@@ -795,7 +798,7 @@ export default async function(req: Request): Promise<Response> {
     ) {
       const scheduledMin = parseWibMinutes(settings.morning_summary_time || "07:00");
       const diff = wibMinutes - scheduledMin; // menit setelah jadwal (negatif = belum saatnya)
-      if (diff >= 0 && diff <= 90) { // guard 90 menit — cegah kiriman susulan liar
+      if (diff >= 0) { // lewat jadwal = kirim (anti-dobel dijaga last_sent)
         const message = await buildMorningSummary(base44, settings, wibToday, wibNow);
         const result = await sendMorningSummaryToDestinations(base44, settings, message, "daily_summary");
         if (result.success) {
@@ -812,7 +815,7 @@ export default async function(req: Request): Promise<Response> {
     if (settings.daily_summary_enabled && lastSentDate(settings.daily_summary_last_sent) !== wibToday) {
       const scheduledMin = parseWibMinutes(settings.daily_summary_time || "16:30");
       const diff = wibMinutes - scheduledMin;
-      if (diff >= 0 && diff <= 90) {
+      if (diff >= 0) {
         const destination = settings.summary_destination || "individuals";
         const needsGroup = destination === "group" || destination === "both";
         if (!needsGroup || (settings.group_id && settings.group_id.trim())) {
@@ -844,7 +847,7 @@ export default async function(req: Request): Promise<Response> {
     if (settings.weekly_summary_enabled && isSaturdayWib && lastSentDate(settings.weekly_summary_last_sent) !== wibToday) {
       const scheduledMin = parseWibMinutes(settings.daily_summary_time || "16:30");
       const diff = wibMinutes - scheduledMin;
-      if (diff >= 0 && diff <= 90) {
+      if (diff >= 0) {
         const message = await buildWeeklySummary(base44, settings, wibToday, wibNow);
         const result = await sendSummaryToDestinations(base44, settings, message, "weekly_summary");
         if (result.success) {

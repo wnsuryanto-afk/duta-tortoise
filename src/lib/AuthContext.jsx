@@ -98,6 +98,13 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+
+      // ── Pemicu ringkasan WhatsApp saat app dibuka (semua role) ──
+      // Fire-and-forget: diam-diam, tidak memblokir tampilan, gagal tanpa notifikasi.
+      // Body kosong = scheduled check (kirim bila jadwal WIB sudah tiba & belum terkirim hari ini).
+      try {
+        base44.functions.invoke("sendDailySummary", {}).catch(() => {});
+      } catch {}
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
