@@ -132,13 +132,24 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 2 * 60 * 1000,
   });
 
-  // ── Semua log hari ini — HANYA untuk team view (owner/manajer), bukan untuk locking ──
+  // ── Semua log hari ini (semua karyawan) — untuk team view & deteksi "sudah dikerjakan rekan" ──
   const { data: allLogsToday = [], refetch: refetchAllLogs } = useQuery({
     queryKey: ["tugas-hari-ini-all-logs", today],
     queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today }),
-    enabled: showTeamView,
     staleTime: 30 * 1000,
   });
+
+  // ── Peta "sudah dikerjakan rekan" (item_id → {name, time}) — scope bukan pribadi ──
+  const doneByOtherMap = useMemo(() => {
+    const m = {};
+    (allLogsToday || []).forEach(l => {
+      if (!l.is_done || l.is_test_data) return;
+      if ((l.done_by_email || "") === user?.email) return;
+      if (!l.item_id) return;
+      if (!m[l.item_id]) m[l.item_id] = { name: l.done_by || "karyawan lain", time: l.done_at || "" };
+    });
+    return m;
+  }, [allLogsToday, user?.email]);
 
   // ── Log 35 hari terakhir (semua user) — untuk deteksi carry-over task terlambat ──
   const carryStart = format(subDays(now, 35), "yyyy-MM-dd");
@@ -388,7 +399,14 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const checkableTasks = allTasks.filter(t => !t.noCheck && !ABSENSI_IDS.has(t.id));
   const absChecked = { abs_masuk: !!attendance?.check_in, abs_pulang: !!attendance?.check_out };
   const totalProgress = checkableTasks.length + 2;
-  const doneProgress = checkableTasks.filter(t => checkedIds.has(t.id)).length + (absChecked.abs_masuk ? 1 : 0) + (absChecked.abs_pulang ? 1 : 0);
+  // Selesai = dikerjakan sendiri ATAU dikerjakan rekan (scope bukan pribadi) — tidak menggandakan poin & tidak menurunkan persentase
+  const isTaskSettled = (t) => {
+    if (checkedIds.has(t.id)) return true;
+    if ((t.task_scope || "bersama") === "pribadi") return false;
+    if (t.assigned_to_email && t.assigned_to_email !== user?.email) return false;
+    return !!(doneByOtherMap[t.id]);
+  };
+  const doneProgress = checkableTasks.filter(isTaskSettled).length + (absChecked.abs_masuk ? 1 : 0) + (absChecked.abs_pulang ? 1 : 0);
   const progressPct = totalProgress > 0 ? Math.round((doneProgress / totalProgress) * 100) : 0;
 
   // Team view map (hanya untuk owner/manajer — allLogsToday hanya fetch saat showTeamView)
@@ -484,13 +502,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     try {
       const lock = await checkTaskLock(task);
       if (lock) {
-        if (lock.type === "done") {
-          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
-        } else {
-          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
-        }
+        // sudah dikerjakan/ditugaskan rekan — ditampilkan sebagai selesai di baris, jangan simpan & jangan tolak dengan error
+        refetchAllLogs();
         refetchLogs();
-        return; // jangan simpan, jangan centang
+        return;
       }
 
       // Simpan
@@ -556,11 +571,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       // ── CEK PENGUNCIAN SEBELUM SIMPAN ──
       const lock = await checkTaskLock(task);
       if (lock) {
-        if (lock.type === "done") {
-          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
-        } else {
-          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
-        }
+        refetchAllLogs();
         refetchLogs();
         return;
       }
@@ -621,11 +632,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       // ── CEK PENGUNCIAN SEBELUM SIMPAN ──
       const lock = await checkTaskLock(task);
       if (lock) {
-        if (lock.type === "done") {
-          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
-        } else {
-          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
-        }
+        refetchAllLogs();
         refetchLogs();
         setUkurTarget(null);
         return;
@@ -674,11 +681,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     try {
       const lock = await checkTaskLock(task);
       if (lock) {
-        if (lock.type === "done") {
-          toast.error(`Tugas ini sudah dikerjakan ${lock.name}${lock.time ? ` jam ${lock.time}` : ""}`);
-        } else {
-          toast.error(`Tugas ini ditugaskan ke ${lock.name}`);
-        }
+        refetchAllLogs();
         refetchLogs();
         setTimbangBabyTask(null);
         return;
@@ -809,6 +812,15 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             task={task}
             idx={idx}
             isChecked={ABSENSI_IDS.has(task.id) ? (task.id === "abs_masuk" ? absChecked.abs_masuk : absChecked.abs_pulang) : checkedIds.has(task.id)}
+            lockedInfo={
+              ABSENSI_IDS.has(task.id) || task.noCheck
+                ? null
+                : (task.assigned_to_email && task.assigned_to_email !== user?.email)
+                  ? { kind: "assigned", name: task.assigned_to_name || task.assigned_to_email }
+                  : ((task.task_scope || "bersama") === "pribadi"
+                      ? null
+                      : (doneByOtherMap[task.id] ? { kind: "done", name: doneByOtherMap[task.id].name, time: doneByOtherMap[task.id].time } : null))
+            }
             isAbsensi={ABSENSI_IDS.has(task.id)}
             isSaving={savingId === task.id}
             attendance={attendance}
@@ -894,14 +906,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component (sederhana, tanpa lock UI) ──
-function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, isTimbangBaby, onCheck, onUkurCheck, onTimbangBabyCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
+function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, isTimbangBaby, onCheck, onUkurCheck, onTimbangBabyCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
   const [showPhoto, setShowPhoto] = useState(false);
+  const isLocked = !!lockedInfo;
+  const lockedLabel = lockedInfo
+    ? (lockedInfo.kind === "done"
+        ? `Sudah dikerjakan ${lockedInfo.name}${lockedInfo.time ? ` jam ${lockedInfo.time}` : ""}`
+        : `Ditugaskan ke ${lockedInfo.name}`)
+    : "";
 
   const handleClick = () => {
-    if (isIstirahat || isAbsensi || isSaving) return;
+    if (isIstirahat || isAbsensi || isSaving || isLocked) return;
     if (isTimbangBaby && !isChecked) {
       onTimbangBabyCheck();
       return;
@@ -918,13 +936,19 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
   };
 
   return (
-    <div className={`rounded-2xl border-2 transition-all ${isIstirahat ? "border-gray-100 bg-gray-50 opacity-60" : isChecked ? "border-green-300 bg-green-50" : task.terlambat ? "border-red-300 bg-red-50" : "border-gray-100 bg-white"} shadow-sm`}>
-      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
+    <div className={`rounded-2xl border-2 transition-all ${
+      isIstirahat ? "border-gray-100 bg-gray-50 opacity-60"
+      : isLocked ? "border-gray-300 bg-gray-100"
+      : isChecked ? "border-green-300 bg-green-50"
+      : task.terlambat ? "border-red-300 bg-red-50"
+      : "border-gray-100 bg-white"
+    } shadow-sm`}>
+      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi && !isLocked ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
         <span className="text-xs font-bold text-gray-400 w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <p className={`text-sm font-semibold ${isChecked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
+            <p className={`text-sm font-semibold ${isChecked || isLocked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
             {requirePhoto && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex-shrink-0">📷 Wajib Foto</span>
             )}
@@ -940,6 +964,12 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
             <span className="flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /> {task.waktu}</span>
             {task.keterangan && <span className="text-xs text-gray-400">· {task.keterangan}</span>}
           </div>
+
+          {isLocked && (
+            <p className="mt-1 text-[11px] font-medium text-gray-500 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-gray-400" /> {lockedLabel}
+            </p>
+          )}
 
           {isAbsensi && (
             <p className="text-xs mt-1 font-medium">
@@ -997,7 +1027,7 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
           {/* Optional photo button (non-require_photo, checked, no photo yet) — camera or gallery */}
-          {!requirePhoto && !isIstirahat && !isAbsensi && isChecked && !photoUrl && (
+          {!requirePhoto && !isIstirahat && !isAbsensi && !isLocked && isChecked && !photoUrl && (
             <label className={`w-7 h-7 rounded-xl border-2 border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-all ${uploadingPhoto ? "opacity-50" : ""}`}>
               {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin" /> : <Camera className="w-3.5 h-3.5 text-gray-400" />}
               <input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) onPhotoUpload(e.target.files[0]); e.target.value = ""; }} className="hidden" />
@@ -1007,12 +1037,12 @@ function TaskRow({ task, idx, isChecked, isAbsensi, isSaving, attendance, photoU
           {/* Checkbox */}
           {!isIstirahat && (
             <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
-              isChecked ? "bg-green-500 border-green-500"
+              isChecked || isLocked ? "bg-green-500 border-green-500"
               : isAbsensi ? "border-gray-200 bg-gray-50"
               : requirePhoto ? "border-red-300 hover:border-red-400"
               : "border-gray-300 hover:border-green-400"
-            } ${isSaving ? "opacity-50 animate-pulse" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving) handleClick(); }}>
-              {isChecked ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
+            } ${(isSaving || isLocked) ? "opacity-60" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving && !isLocked) handleClick(); }}>
+              {(isChecked || isLocked) ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
             </div>
           )}
         </div>

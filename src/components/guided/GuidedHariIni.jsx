@@ -16,6 +16,7 @@ import SickTortoisePicker from "@/components/health/SickTortoisePicker";
 import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel";
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
+import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -171,16 +172,23 @@ export default function GuidedHariIni({ user }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Semua log kebersihan hari ini (semua karyawan) — untuk penguncian per-kandang
+  // Semua log kebersihan hari ini (semua karyawan, kedua format lama & baru) — untuk penguncian & tampilan per-kandang
   const { data: allKebersihanLogs = [] } = useQuery({
     queryKey: ["kebersihan-all-logs", today],
-    queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today, item_id: "kebersihan" }),
+    queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: today }),
     staleTime: 30 * 1000,
   });
   const allKandangDoneMap = useMemo(() => {
     const m = {};
     allKebersihanLogs.forEach(l => {
-      if (l.enclosure_id && l.is_done !== false) {
+      if (!l.is_done || l.is_test_data) return;
+      // format baru / TugasHariIni: item_id "kebersihan_kandang_E4"
+      if (l.item_id && l.item_id.startsWith("kebersihan_kandang_")) {
+        const k = l.item_id.replace("kebersihan_kandang_", "");
+        if (k && !m[k]) m[k] = { done_by: l.done_by, done_at: l.done_at, done_by_email: l.done_by_email };
+      }
+      // format lama GuidedHariIni: item_id "kebersihan", enclosure_id "E4"
+      else if (l.item_id === "kebersihan" && l.enclosure_id && !m[l.enclosure_id]) {
         m[l.enclosure_id] = { done_by: l.done_by, done_at: l.done_at, done_by_email: l.done_by_email };
       }
     });
@@ -216,9 +224,17 @@ export default function GuidedHariIni({ user }) {
   });
 
   // Sync kandang done dari maintenance logs (restore state setelah reload)
+  // Mendukung kedua format: baru (item_id "kebersihan_kandang_E4") & lama (item_id "kebersihan", enclosure_id "E4")
   useEffect(() => {
     if (maintenanceLogs.length > 0) {
-      const saved = new Set(maintenanceLogs.map(l => l.enclosure_id));
+      const saved = new Set();
+      maintenanceLogs.forEach(l => {
+        if (l.item_id && l.item_id.startsWith("kebersihan_kandang_")) {
+          saved.add(l.item_id.replace("kebersihan_kandang_", ""));
+        } else if (l.item_id === "kebersihan" && l.enclosure_id) {
+          saved.add(l.enclosure_id);
+        }
+      });
       setKandangDone(saved);
       setKandangSaved(saved);
     }
@@ -380,6 +396,10 @@ export default function GuidedHariIni({ user }) {
   const [pendingKandang, setPendingKandang] = useState(null);
 
   // Poin hari ini (dideklarasikan setelah poinKebersihan)
+  // settled = dikerjakan sendiri ATAU dikerjakan rekan (tidak menggandakan poin, tapi menghitung sebagai selesai)
+  const settledKandangCount = KANDANG_LIST.filter(k =>
+    kandangSaved.has(k) || (allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email)
+  ).length;
   const poinKandang = kandangSaved.size * poinKebersihan;
   const poinKura    = sakitReports.length * 15;
   const poinCheckin = hasCheckedIn ? 5 : 0;
@@ -391,14 +411,13 @@ export default function GuidedHariIni({ user }) {
       setKandangDone(p => { const n = new Set(p); n.delete(k); return n; });
       return;
     }
-    // VALIDASI PENGEKUNCIAN: cek apakah kandang ini sudah dikerjakan orang lain
-    const lockByOther = allKandangDoneMap[k];
-    if (lockByOther && lockByOther.done_by_email !== user.email) {
-      showMsg("warn", `${k} sudah dibersihkan ${lockByOther.done_by}${lockByOther.done_at ? ` · ${lockByOther.done_at}` : ""}`);
+    // VALIDASI PENGEKUNCIAN LINTAS MODUL: kandang sudah dikerjakan rekan → ditampilkan selesai di ubin, jangan tolak dengan error
+    const lockByOther = allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email ? allKandangDoneMap[k] : null;
+    if (lockByOther) {
       return;
     }
-    // ANTI-DOBEL: cek apakah sudah ada log kebersihan untuk kandang ini hari ini
-    const dupLog = maintenanceLogs.find(l => l.enclosure_id === k && l.item_id === "kebersihan" && l.period_key === today);
+    // ANTI-DOBEL: cek apakah sudah ada log kebersihan (format lama atau baru) untuk kandang ini hari ini
+    const dupLog = maintenanceLogs.find(l => matchKandangLog(l, "kebersihan", k));
     if (dupLog) {
       setKandangDone(p => { const n = new Set(p); n.add(k); return n; });
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
@@ -417,11 +436,11 @@ export default function GuidedHariIni({ user }) {
     setKandangDone(p => { const n = new Set(p); n.add(k); return n; });
     try {
       const logData = {
-        check_key: `${user.email}__harian__${k}__${today}`,
+        check_key: canonicalKandangCheckKey(user.email, "kebersihan", k, today),
         enclosure_id: k,
         enclosure_name: k,
         freq: "harian",
-        item_id: "kebersihan",
+        item_id: canonicalKandangItemId("kebersihan", k),
         item_label: `Kebersihan ${k}`,
         period_key: today,
         is_done: true,
@@ -684,20 +703,20 @@ export default function GuidedHariIni({ user }) {
 
         {/* ══ WIDGET 3: KEBERSIHAN KANDANG ═══════════════════════ */}
         <WidgetErrorBoundary widgetName="Kebersihan Kandang">
-        <Widget done={kandangSaved.size === KANDANG_LIST.length}>
+        <Widget done={settledKandangCount === KANDANG_LIST.length}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span className="text-base">🏠</span>
                 <span className="font-semibold text-gray-800">Kebersihan Kandang</span>
               </div>
-              <span className="text-xs text-gray-500">{kandangSaved.size}/{KANDANG_LIST.length} selesai</span>
+              <span className="text-xs text-gray-500">{settledKandangCount}/{KANDANG_LIST.length} selesai</span>
             </div>
 
             {/* Progress bar */}
             <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
               <div className="h-full bg-green-500 rounded-full transition-all duration-300"
-                style={{ width: `${(kandangSaved.size / KANDANG_LIST.length) * 100}%` }} />
+                style={{ width: `${(settledKandangCount / KANDANG_LIST.length) * 100}%` }} />
             </div>
 
             <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>
@@ -706,29 +725,29 @@ export default function GuidedHariIni({ user }) {
               {KANDANG_LIST.map(k => {
                 const done = kandangDone.has(k);
                 const isPending = pendingKandang === k;
-                const lockByOther = allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email && !done;
+                const other = (allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email) ? allKandangDoneMap[k] : null;
                 return (
                   <button
                     key={k}
                     onClick={() => handleToggleKandang(k)}
-                    disabled={lockByOther}
-                    title={lockByOther ? `Sudah dibersihkan ${allKandangDoneMap[k].done_by} · ${allKandangDoneMap[k].done_at || ""}` : ""}
+                    disabled={!!other}
+                    title={other ? `Sudah dikerjakan ${other.done_by}${other.done_at ? ` jam ${other.done_at}` : ""}` : (done ? "Sudah kamu kerjakan" : "Tap jika sudah dibersihkan")}
                     className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all ${
                       done ? "bg-green-500 text-white shadow-md active:scale-90"
-                      : lockByOther ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : other ? "bg-green-100 text-green-700 border border-green-300"
                       : isPending ? "bg-amber-100 text-amber-600 animate-pulse active:scale-90"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-90"
                     }`}
                   >
-                    {done ? <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" /> : lockByOther ? <Lock className="w-3 h-3 mb-0.5" /> : null}
-                    <span>{k}</span>
-                    {lockByOther && <span className="text-[7px] font-normal mt-0.5 truncate w-full text-center px-0.5">{(allKandangDoneMap[k].done_by || "").split(" ")[0]}</span>}
+                    {(done || other) ? <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" /> : null}
+                    <span className={other ? "line-through opacity-80" : ""}>{k}</span>
+                    {other && <span className="text-[7px] font-normal mt-0.5 truncate w-full text-center px-0.5">{(other.done_by || "Rekan").split(" ")[0]}</span>}
                   </button>
                 );
               })}
             </div>
 
-            {kandangSaved.size === KANDANG_LIST.length && (
+            {settledKandangCount === KANDANG_LIST.length && (
               <p className="text-center text-sm font-semibold text-green-700 mt-3">✓ Semua kandang sudah dibersihkan!</p>
             )}
 
