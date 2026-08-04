@@ -104,6 +104,9 @@ export default function GuidedHariIni({ user }) {
   // ── Local state ──
   const [kandangDone, setKandangDone]   = useState(new Set());
   const [kandangSaved, setKandangSaved] = useState(new Set()); // already persisted
+  const [kandangNotice, setKandangNotice] = useState(null); // { text, tone } — keterangan tertempel ≥5 dtk
+  const kandangNoticeTimer = useRef(null);
+  const kandangPhotoRef = useRef({ received: false, k: null }); // deteksi batal ambil foto kamera
   const [kondisiOk, setKondisiOk]       = useState(null);
   const [sakitForm, setSakitForm]       = useState({ kura: "", diagnosis: [], severity: "", description: "" });
   const [savedSakit, setSavedSakit]     = useState(null);
@@ -428,6 +431,13 @@ export default function GuidedHariIni({ user }) {
   const poinCheckin = hasCheckedIn ? 5 : 0;
   const totalPoin   = poinCheckin + poinKandang + poinKura;
 
+  // Keterangan tertempel di widget kandang minimal 5 detik (bukan toast sekilas)
+  const showKandangNotice = (text, tone = "info") => {
+    setKandangNotice({ text, tone, id: Date.now() });
+    if (kandangNoticeTimer.current) clearTimeout(kandangNoticeTimer.current);
+    kandangNoticeTimer.current = setTimeout(() => setKandangNotice(null), 6000);
+  };
+
   const handleToggleKandang = async (k) => {
     const alreadySaved = kandangSaved.has(k);
     if (alreadySaved) {
@@ -443,9 +453,11 @@ export default function GuidedHariIni({ user }) {
         return;
       }
     }
-    // VALIDASI PENGEKUNCIAN LINTAS MODUL: kandang sudah dikerjakan rekan → ditampilkan selesai di ubin, jangan tolak dengan error
+    // VALIDASI PENGEKUNCIAN LINTAS MODUL: kandang sudah dikerjakan rekan → tampilkan selesai di ubin + keterangan tertempel
     const lockByOther = allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email ? allKandangDoneMap[k] : null;
     if (lockByOther) {
+      setKandangDone(p => { const n = new Set(p); n.add(k); return n; }); // ubin langsung tampil selesai
+      showKandangNotice(`Kandang ${k} sudah dibersihkan ${lockByOther.done_by || "rekan"}${lockByOther.done_at ? ` jam ${lockByOther.done_at}` : ""}.`, "info");
       return;
     }
     // ANTI-DOBEL: cek apakah sudah ada log kebersihan (format lama atau baru) untuk kandang ini hari ini
@@ -458,6 +470,18 @@ export default function GuidedHariIni({ user }) {
     // Jika kebersihan wajib foto, buka kamera dulu (kamera langsung, anti galeri)
     if (requirePhotoKebersihan) {
       setPendingKandang(k);
+      kandangPhotoRef.current = { received: false, k };
+      const onWinFocus = () => {
+        window.removeEventListener('focus', onWinFocus);
+        setTimeout(() => {
+          // Kamera ditutup tanpa memilih foto → beri keterangan tertempel, jangan diam
+          if (!kandangPhotoRef.current.received && kandangPhotoRef.current.k === k) {
+            setPendingKandang(null);
+            showKandangNotice(`Foto belum diambil. Kandang ${k} wajib foto sebelum bisa dicentang. Ketuk ubin kandang lagi untuk membuka kamera.`, "error");
+          }
+        }, 600);
+      };
+      window.addEventListener('focus', onWinFocus);
       kandangCameraRef.current?.click();
       return;
     }
@@ -494,8 +518,10 @@ export default function GuidedHariIni({ user }) {
           photoUrl, takenAt: nowStr(),
         });
       }
-    } catch {
-      setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
+    } catch (err) {
+      // Gagal simpan (sinyal buruk/error jaringan) → kembalikan ubin ke belum selesai + keterangan tertempel
+      setKandangDone(p => { const n = new Set(p); n.delete(k); return n; });
+      showKandangNotice(`Gagal menyimpan kandang ${k} — cek sinyal, lalu ketuk ubin kandang untuk mencoba lagi.`, "error");
     } finally {
       setPendingKandang(null);
     }
@@ -503,14 +529,16 @@ export default function GuidedHariIni({ user }) {
 
   const handleKandangPhoto = async (file) => {
     if (!pendingKandang) return;
+    kandangPhotoRef.current.received = true; // tandai foto sudah masuk → fokus handler tidak akan salah baca
     const k = pendingKandang;
     try {
       const compressed = await compressImage(file);
       if (!compressed) { setPendingKandang(null); return; }
       const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
       await saveKandangDone(k, file_url);
-    } catch {
+    } catch (err) {
       setPendingKandang(null);
+      showKandangNotice(`Gagal mengunggah foto kandang ${k} — cek sinyal, lalu ketuk ubin kandang untuk mencoba lagi.`, "error");
     }
   };
 
@@ -762,6 +790,12 @@ export default function GuidedHariIni({ user }) {
                 <p className="text-xs font-semibold text-amber-700">
                   Tunggu <span className="text-amber-800">{cooldownSec} detik</span> lagi sebelum kandang berikutnya. Satu kandang butuh waktu untuk dibersihkan.
                 </p>
+              </div>
+            )}
+            {kandangNotice && (
+              <div className={`mb-3 p-2.5 rounded-lg flex items-center gap-2 ${kandangNotice.tone === "error" ? "bg-red-50 border border-red-300" : "bg-blue-50 border border-blue-300"}`}>
+                <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${kandangNotice.tone === "error" ? "text-red-600" : "text-blue-600"}`} />
+                <p className={`text-xs font-semibold ${kandangNotice.tone === "error" ? "text-red-700" : "text-blue-700"}`}>{kandangNotice.text}</p>
               </div>
             )}
             <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>

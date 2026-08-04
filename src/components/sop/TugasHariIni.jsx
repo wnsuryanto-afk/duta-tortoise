@@ -487,8 +487,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 
   // ── Handlers ──
   const handleCheck = async (task) => {
-    if (task.noCheck || ABSENSI_IDS.has(task.id)) return;
-    if (savingId) return; // anti double-tap
+    if (task.noCheck || ABSENSI_IDS.has(task.id)) return false;
+    if (savingId) return false; // anti double-tap
 
     const alreadyDone = checkedIds.has(task.id);
 
@@ -500,18 +500,19 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         const existing = myLogs.find(l => l.item_id === task.id);
         if (existing) await base44.entities.MaintenanceLog.delete(existing.id);
         refetchLogs();
+        return true;
       } catch {
         setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+        return false;
       } finally {
         setSavingId(null);
       }
-      return;
     }
 
     // ANTI-DOBEL: jika sudah ada log milik user untuk item_id ini hari ini
     if (existingLogItemIds.has(task.id)) {
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
-      return;
+      return true;
     }
 
     // ── CEK PENGUNCIAN SAAT AKAN SIMPAN ──
@@ -522,7 +523,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         // sudah dikerjakan/ditugaskan rekan — ditampilkan sebagai selesai di baris, jangan simpan & jangan tolak dengan error
         refetchAllLogs();
         refetchLogs();
-        return;
+        return true;
       }
 
       // Simpan
@@ -539,8 +540,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         ...testTag,
       });
       refetchLogs();
+      return true;
     } catch {
       setCheckedIds(p => { const n = new Set(p); n.delete(task.id); return n; });
+      return false;
     } finally {
       setSavingId(null);
     }
@@ -582,7 +585,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   };
 
   const handlePhotoCheck = async (task, file) => {
-    if (savingId) return;
+    if (savingId) return false;
     setSavingId(task.id);
     try {
       // ── CEK PENGUNCIAN SEBELUM SIMPAN ──
@@ -590,11 +593,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       if (lock) {
         refetchAllLogs();
         refetchLogs();
-        return;
+        return true;
       }
 
       const compressed = await compressImage(file);
-      if (!compressed) return;
+      if (!compressed) return false;
       const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
       const takenAt = format(new Date(), "HH:mm");
       await base44.entities.MaintenanceLog.create({
@@ -635,7 +638,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           }
         },
       });
+      return true;
     } catch {
+      return false;
     } finally {
       setSavingId(null);
     }
@@ -950,7 +955,12 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
+  const photoReceivedRef = useRef(false); // deteksi batal ambil foto kamera
   const [showPhoto, setShowPhoto] = useState(false);
+  const [notice, setNotice] = useState(null); // keterangan tertempel di kartu ≥5 dtk
+  const [pulse, setPulse] = useState(false); // penegasan singkat saat menekan kartu yang sudah dikerjakan
+  const [saveError, setSaveError] = useState(false); // gagal simpan → tombol Coba Lagi
+  const noticeTimer = useRef(null);
   const isLocked = !!lockedInfo;
   const lockedLabel = lockedInfo
     ? (lockedInfo.kind === "done"
@@ -958,21 +968,54 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
         : `Ditugaskan ke ${lockedInfo.name}`)
     : "";
 
-  const handleClick = () => {
-    if (isIstirahat || isAbsensi || isSaving || isLocked) return;
-    if (isTimbangBaby && !isChecked) {
-      onTimbangBabyCheck();
+  const showNotice = (text) => {
+    setNotice({ text, id: Date.now() });
+    setSaveError(false);
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(null), 6000);
+  };
+
+  const openCameraForTask = () => {
+    photoReceivedRef.current = false;
+    const onWinFocus = () => {
+      window.removeEventListener('focus', onWinFocus);
+      setTimeout(() => {
+        if (!photoReceivedRef.current) {
+          showNotice("Foto belum diambil. Tugas ini wajib foto sebelum bisa dicentang. Ketuk tombol kamera untuk mencoba lagi.");
+        }
+      }, 600);
+    };
+    window.addEventListener('focus', onWinFocus);
+    cameraRef.current?.click();
+  };
+
+  const handleClick = async () => {
+    // Tidak ada penolakan diam — setiap kasus memunculkan keterangan tertempel di kartu
+    if (isAbsensi) { showNotice("Absen dilakukan lewat tombol Check In / Check Out di bagian atas halaman, bukan dari daftar ini."); return; }
+    if (isIstirahat) { showNotice("Ini baris penanda waktu istirahat, bukan tugas yang perlu dicentang."); return; }
+    if (isSaving) { showNotice("Sedang menyimpan, tunggu sebentar..."); return; }
+    if (isLocked) {
+      // Penegasan singkat: kedipkan keterangan "sudah dikerjakan" sesaat
+      setPulse(true);
+      setTimeout(() => setPulse(false), 1200);
       return;
     }
-    if (isUkurRotasi && !isChecked) {
-      onUkurCheck();
-      return;
-    }
+    if (saveError) setSaveError(false);
+    if (isTimbangBaby && !isChecked) { onTimbangBabyCheck(); return; }
+    if (isUkurRotasi && !isChecked) { onUkurCheck(); return; }
     if (requirePhoto && !isChecked) {
-      cameraRef.current?.click();
-    } else {
-      onCheck();
+      openCameraForTask();
+      return;
     }
+    const ok = await onCheck();
+    if (!ok) setSaveError(true);
+  };
+
+  const retryCheck = async () => {
+    setSaveError(false);
+    if (requirePhoto) { openCameraForTask(); return; }
+    const ok = await onCheck();
+    if (!ok) setSaveError(true);
   };
 
   return (
@@ -1006,8 +1049,8 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
           </div>
 
           {isLocked && (
-            <p className="mt-1 text-[11px] font-medium text-gray-500 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-gray-400" /> {lockedLabel}
+            <p className={`mt-1 text-[11px] font-medium flex items-center gap-1 ${pulse ? "text-blue-700 scale-[1.02]" : "text-gray-500"} transition-all`}>
+              <CheckCircle2 className={`w-3 h-3 ${pulse ? "text-blue-500" : "text-gray-400"}`} /> {lockedLabel}
             </p>
           )}
 
@@ -1095,7 +1138,14 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={e => { if (e.target.files?.[0]) onPhotoCheck(e.target.files[0]); e.target.value = ""; }}
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (!f) return;
+          photoReceivedRef.current = true; // kamera ditutup DENGAN foto → fokus handler tidak akan salah baca
+          const ok = await onPhotoCheck(f);
+          if (!ok) setSaveError(true);
+        }}
       />
     </div>
   );
