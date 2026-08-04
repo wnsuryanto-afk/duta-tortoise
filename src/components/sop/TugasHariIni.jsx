@@ -9,6 +9,7 @@
  * sudah dikerjakan orang lain pada tanggal yang sama. Jika ya → tolak simpan.
  */
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format, parseISO, differenceInCalendarDays, subDays } from "date-fns";
@@ -93,6 +94,7 @@ function isCompletedPrevCycle(itemKey, lastDueDate, todayStr, scope, userEmail, 
 // ── MAIN ──
 export default function TugasHariIni({ user, showTeamView = false }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { isOwnerTestSave } = useCurrentUser();
   const testTag = isOwnerTestSave ? { is_test_data: true } : {};
   const today = format(new Date(), "yyyy-MM-dd");
@@ -274,20 +276,21 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         const terlambat = isOverdue && !existingLogItemIds.has(`sop_${t.id}`);
         if (titleLower.includes("all kandang") || titleLower.includes("semua kandang")) {
           if (t.category === "kebersihan") {
-            const activeEnclosures = enclosures.filter(e => !e.is_archived);
-            activeEnclosures.forEach(enc => {
-              items.push({
-                id: `kebersihan_kandang_${enc.name}`,
-                label: `Kebersihan ${enc.name}`,
-                waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
-                icon: "🏠",
-                keterangan: "",
-                points: kebersihanPoints,
-                badge: "kebersihan",
-                badgeColor: CATEGORY_BADGE.kebersihan,
-                terlambat,
-                task_scope: "bersama",
-              });
+            // SATU PINTU: kebersihan per-kandang hanya dikerjakan di layar ubin (GuidedHariIni)
+            // yang mewajibkan foto + jeda 60 dtk. Di daftar SOP tampilkan satu baris pengantar.
+            items.push({
+              id: `kebersihan_kandang_intro`,
+              label: `Kebersihan kandang — dikerjakan di layar Kandang`,
+              waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+              icon: "🏠",
+              keterangan: "",
+              points: kebersihanPoints,
+              badge: "kebersihan",
+              badgeColor: CATEGORY_BADGE.kebersihan,
+              require_photo: kebersihanAnchor?.require_photo || false,
+              terlambat,
+              isKebersihanIntro: true,
+              noCheck: true,
             });
           }
           return;
@@ -395,6 +398,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 
   // Full task list: struktural + SOPTask + timbang
   const allTasks = [...STRUCTURAL, ...sopTaskItems, ...timbangItems];
+
+  // Kemajuan kebersihan kandang (dari log hari ini, format kanonik) — untuk baris pengantar
+  const kebersihanProgress = useMemo(() => {
+    const activeEnclosures = enclosures.filter(e => !e.is_archived);
+    const total = activeEnclosures.length;
+    const doneSet = new Set();
+    (allLogsToday || []).forEach(l => {
+      if (!l.is_done || l.is_test_data) return;
+      if (l.item_id && l.item_id.startsWith("kebersihan_kandang_")) {
+        doneSet.add(l.item_id.replace("kebersihan_kandang_", ""));
+      }
+    });
+    return { total, done: doneSet.size };
+  }, [allLogsToday, enclosures]);
 
   const checkableTasks = allTasks.filter(t => !t.noCheck && !ABSENSI_IDS.has(t.id));
   const absChecked = { abs_masuk: !!attendance?.check_in, abs_pulang: !!attendance?.check_out };
@@ -806,7 +823,29 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 
       {/* Task List */}
       <div className="space-y-2">
-        {allTasks.map((task, idx) => (
+        {allTasks.map((task, idx) => {
+          if (task.isKebersihanIntro) {
+            return (
+              <div key={task.id} className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-3.5 flex items-center gap-3 shadow-sm">
+                <span className="text-lg flex-shrink-0 leading-none">🏠</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-sm font-semibold text-gray-800">{task.label}</p>
+                    {task.require_photo && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600"><Camera className="w-3 h-3" /> Wajib Foto</span>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda 60 dtk</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">{kebersihanProgress.done} dari {kebersihanProgress.total} kandang selesai</p>
+                  <div className="w-full h-1.5 bg-blue-100 rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${kebersihanProgress.total ? (kebersihanProgress.done / kebersihanProgress.total) * 100 : 0}%` }} />
+                  </div>
+                </div>
+                <button onClick={() => navigate("/")} className="flex-shrink-0 text-xs font-bold px-3 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all">Buka layar Kandang →</button>
+              </div>
+            );
+          }
+          return (
           <TaskRow
             key={task.id}
             task={task}
@@ -842,7 +881,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             aiSaran={aiSaranMap[(task.label || "").trim().toLowerCase()]}
             aiSaranEnabled={aiSaranEnabled}
           />
-        ))}
+          );
+        })}
         {sopTaskItems.length === 0 && (
           <div className="text-center text-sm text-gray-400 py-6">
             Belum ada SOPTask aktif untuk hari ini. Tambah/aktifkan task di menu SOP.

@@ -36,6 +36,10 @@
           "notes": {
             "type": "string"
           },
+          "recorded_at": {
+            "type": "string",
+            "description": "Jam pencatatan task (HH:mm WIB) \u2014 untuk ditampilkan di Approval Poin & deteksi centang beruntun"
+          },
           "photo_url": {
             "type": "string",
             "description": "URL bukti foto penyelesaian task"

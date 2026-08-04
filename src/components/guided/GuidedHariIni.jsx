@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   MapPin, Leaf, Heart, LogOut, CheckCircle2, AlertTriangle,
-  Smile, Star, Bell, X, Package, ChevronDown, ChevronUp, ClipboardList, Lock
+  Smile, Star, Bell, X, Package, ChevronDown, ChevronUp, ClipboardList, Lock, Clock, Camera
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
@@ -240,6 +240,26 @@ export default function GuidedHariIni({ user }) {
     }
   }, [maintenanceLogs.length]);
 
+  // Sinkron jeda: ambil timestamp centang kandang terakhir dari log sendiri (created_date = presisi detik)
+  useEffect(() => {
+    if (!maintenanceLogs.length) return;
+    let maxMs = 0;
+    maintenanceLogs.forEach(l => {
+      if ((l.item_id && l.item_id.startsWith("kebersihan_kandang_")) || l.item_id === "kebersihan") {
+        const ms = l.created_date ? new Date(l.created_date).getTime() : 0;
+        if (ms > maxMs) maxMs = ms;
+      }
+    });
+    if (maxMs > 0) setLastCheckAtMs(prev => Math.max(prev, maxMs));
+  }, [maintenanceLogs]);
+
+  // Hitungan mundur jeda antar kandang
+  useEffect(() => {
+    if (cooldownSec <= 0) return;
+    const t = setTimeout(() => setCooldownSec(s => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [cooldownSec]);
+
   // Derived
   const hasCheckedIn  = !!attendance?.check_in;
   const hasCheckedOut = !!attendance?.check_out;
@@ -394,6 +414,9 @@ export default function GuidedHariIni({ user }) {
   const requirePhotoKebersihan = kebersihanAnchor?.require_photo ?? false;
   const kandangCameraRef = useRef(null);
   const [pendingKandang, setPendingKandang] = useState(null);
+  // ── Jeda minimum 60 detik antar kandang (anti centang beruntun) ──
+  const [lastCheckAtMs, setLastCheckAtMs] = useState(0);
+  const [cooldownSec, setCooldownSec] = useState(0);
 
   // Poin hari ini (dideklarasikan setelah poinKebersihan)
   // settled = dikerjakan sendiri ATAU dikerjakan rekan (tidak menggandakan poin, tapi menghitung sebagai selesai)
@@ -410,6 +433,15 @@ export default function GuidedHariIni({ user }) {
     if (alreadySaved) {
       setKandangDone(p => { const n = new Set(p); n.delete(k); return n; });
       return;
+    }
+    // JEDA MINIMUM 60 DETIK antar kandang — tolak dengan hitungan mundur yang jelas & ramah
+    if (lastCheckAtMs > 0) {
+      const elapsedMs = Date.now() - lastCheckAtMs;
+      if (elapsedMs < 60000) {
+        const remaining = Math.ceil((60000 - elapsedMs) / 1000);
+        setCooldownSec(remaining);
+        return;
+      }
     }
     // VALIDASI PENGEKUNCIAN LINTAS MODUL: kandang sudah dikerjakan rekan → ditampilkan selesai di ubin, jangan tolak dengan error
     const lockByOther = allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email ? allKandangDoneMap[k] : null;
@@ -452,6 +484,7 @@ export default function GuidedHariIni({ user }) {
       if (photoUrl) logData.photo_url = photoUrl;
       await base44.entities.MaintenanceLog.create(logData);
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
+      setLastCheckAtMs(Date.now()); // mulai jeda 60 dtk untuk kandang berikutnya
       refetchML();
       flashPoin(k, poinKebersihan);
       if (photoUrl) {
@@ -706,9 +739,13 @@ export default function GuidedHariIni({ user }) {
         <Widget done={settledKandangCount === KANDANG_LIST.length}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-base">🏠</span>
                 <span className="font-semibold text-gray-800">Kebersihan Kandang</span>
+                {requirePhotoKebersihan && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600"><Camera className="w-3 h-3" /> Wajib Foto</span>
+                )}
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda 60 dtk</span>
               </div>
               <span className="text-xs text-gray-500">{settledKandangCount}/{KANDANG_LIST.length} selesai</span>
             </div>
@@ -719,6 +756,14 @@ export default function GuidedHariIni({ user }) {
                 style={{ width: `${(settledKandangCount / KANDANG_LIST.length) * 100}%` }} />
             </div>
 
+            {cooldownSec > 0 && (
+              <div className="mb-3 p-2.5 rounded-lg bg-amber-50 border border-amber-300 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 animate-pulse" />
+                <p className="text-xs font-semibold text-amber-700">
+                  Tunggu <span className="text-amber-800">{cooldownSec} detik</span> lagi sebelum kandang berikutnya. Satu kandang butuh waktu untuk dibersihkan.
+                </p>
+              </div>
+            )}
             <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>
 
             <div className="grid grid-cols-5 gap-2">
@@ -734,7 +779,7 @@ export default function GuidedHariIni({ user }) {
                     title={other ? `Sudah dikerjakan ${other.done_by}${other.done_at ? ` jam ${other.done_at}` : ""}` : (done ? "Sudah kamu kerjakan" : "Tap jika sudah dibersihkan")}
                     className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all ${
                       done ? "bg-green-500 text-white shadow-md active:scale-90"
-                      : other ? "bg-green-100 text-green-700 border border-green-300"
+                      : other ? "bg-gray-200 text-gray-500 border border-gray-300"
                       : isPending ? "bg-amber-100 text-amber-600 animate-pulse active:scale-90"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-90"
                     }`}
@@ -757,7 +802,7 @@ export default function GuidedHariIni({ user }) {
               accept="image/*"
               capture="environment"
               className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleKandangPhoto(e.target.files[0]); e.target.value = ""; }}
+              onChange={e => { if (e.target.files?.[0]) handleKandangPhoto(e.target.files[0]); else setPendingKandang(null); e.target.value = ""; }}
             />
           </div>
         </Widget>

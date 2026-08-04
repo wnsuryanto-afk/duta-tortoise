@@ -27,6 +27,26 @@ const statusConfig = {
 
 const norm = (s) => (s || "").trim().toLowerCase();
 
+// Deteksi "dicentang beruntun": 3+ kandang dicentang dalam rentang <5 menit (penanda untuk ditinjau, bukan tuduhan)
+function parseHHmmToMin(t) {
+  if (!t) return null;
+  const m = /^(\d{1,2}):(\d{2})/.exec(t);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+function checkBeruntun(tasks) {
+  const times = (tasks || [])
+    .filter(t => /^kebersihan\s+\S/i.test(t.task_title || ""))
+    .map(t => parseHHmmToMin(t.recorded_at || t.photo_taken_at))
+    .filter(x => x != null)
+    .sort((a, b) => a - b);
+  if (times.length < 3) return false;
+  for (let i = 0; i + 2 < times.length; i++) {
+    if (times[i + 2] - times[i] < 5) return true;
+  }
+  return false;
+}
+
 export default function SOPApproval() {
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
@@ -416,6 +436,7 @@ export default function SOPApproval() {
               }, {})
             ).sort((a, b) => b[1] - a[1]).slice(0, 3) : [];
             const dupSet = getDupSet(c);
+            const beruntun = checkBeruntun(tasks);
             const isOpen = !!expanded[c.id];
             const willApprove = getWillApprove(c);
             const cm = getCheckedMap(c);
@@ -452,6 +473,14 @@ export default function SOPApproval() {
                         <span className="text-green-600 font-bold ml-auto">✓ Disetujui: {c.approved_points} poin</span>
                       )}
                     </div>
+                    {beruntun && (
+                      <div className="mt-2 p-2 rounded-lg bg-orange-50 border border-orange-300">
+                        <p className="text-xs font-bold text-orange-700 flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" /> Dicentang beruntun — periksa
+                        </p>
+                        <p className="text-[10px] text-orange-600 mt-0.5">3 kandang atau lebih dicentang dalam rentang kurang dari 5 menit.</p>
+                      </div>
+                    )}
                     {isHighClaim && (
                       <div className="mt-2 p-2 rounded-lg bg-red-50 border border-red-200">
                         <p className="text-xs font-bold text-red-700 flex items-center gap-1">
@@ -503,10 +532,15 @@ export default function SOPApproval() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2 flex-wrap">
                                   <span className="text-sm font-medium">{t.task_title || t.task_id}</span>
-                                  <Badge variant="outline" className="text-amber-600 text-[11px]">+{t.points || 0} poin</Badge>
-                                  {isSkipped && (
-                                    <Badge className="bg-orange-100 text-orange-700 text-[10px]">⏭️ Dilewati - stok kosong</Badge>
-                                  )}
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {(t.recorded_at || t.photo_taken_at) && (
+                                      <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><Clock className="w-3 h-3" />{t.recorded_at || t.photo_taken_at} WIB</span>
+                                    )}
+                                    <Badge variant="outline" className="text-amber-600 text-[11px]">+{t.points || 0} poin</Badge>
+                                    {isSkipped && (
+                                      <Badge className="bg-orange-100 text-orange-700 text-[10px]">⏭️ Dilewati - stok kosong</Badge>
+                                    )}
+                                  </div>
                                 </div>
                                 {isDup && (
                                   <p className="text-[11px] text-amber-700 font-semibold mt-0.5 flex items-center gap-1">

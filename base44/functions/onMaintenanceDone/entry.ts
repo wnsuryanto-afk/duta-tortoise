@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
       task_title: log.item_label || log.item_id,
       points: poinEarned,
       notes: log.enclosure_name || "",
+      recorded_at: log.done_at || "", // jam pencatatan (HH:mm WIB) untuk ditampilkan di Approval Poin
     };
 
     if (existing && existing.length > 0) {
