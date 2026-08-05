@@ -115,6 +115,16 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [photoSavedIds, setPhotoSavedIds] = useState(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
+  // ── Jeda minimum 60 detik antar pencentangan tugas SOP (anti centang beruntun) ──
+  // Pengecualian: absensi, baris istirahat, dan tugas tambahan keeper (tidak konsumsi jeda).
+  const lastCheckAtRef = useRef(0);
+  const getCooldownRemaining = () => {
+    if (!lastCheckAtRef.current) return 0;
+    const elapsedMs = Date.now() - lastCheckAtRef.current;
+    return elapsedMs >= 60000 ? 0 : Math.ceil((60000 - elapsedMs) / 1000);
+  };
+  const registerCheckTime = () => { lastCheckAtRef.current = Date.now(); };
+
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);
   const companySettings = useCompanySettings();
   const aiSaranEnabled = companySettings.ai_saran_enabled !== false;
@@ -251,6 +261,18 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       setCheckedIds(new Set(myLogs.map(l => l.item_id).filter(Boolean)));
     }
   }, [myLogs.length]);
+
+  // Sinkron jeda: ambil timestamp centang tugas (non-extra) terakhir dari log sendiri
+  useEffect(() => {
+    if (!myLogs.length) return;
+    let maxMs = 0;
+    myLogs.forEach(l => {
+      if (l.is_extra) return; // tugas tambahan tidak mengganti jeda
+      const ms = l.created_date ? new Date(l.created_date).getTime() : 0;
+      if (ms > maxMs) maxMs = ms;
+    });
+    if (maxMs > 0) lastCheckAtRef.current = Math.max(lastCheckAtRef.current, maxMs);
+  }, [myLogs]);
 
   // ── Bangun task dari SOPTask (hormati frequency + weekly_days + monthly_dates) ──
   const sopTaskItems = useMemo(() => {
@@ -539,6 +561,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         poin_earned: task.points || 0,
         ...testTag,
       });
+      registerCheckTime();
       refetchLogs();
       return true;
     } catch {
@@ -600,18 +623,25 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       if (!compressed) return false;
       const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed.file });
       const takenAt = format(new Date(), "HH:mm");
-      await base44.entities.MaintenanceLog.create({
-        check_key: `${user.email}__tugas__${task.id}__${today}`,
-        enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
-        freq: "harian", item_id: task.id, item_label: task.label,
-        period_key: today, is_done: true,
-        done_at: takenAt,
-        done_by: user.full_name || user.email,
-        done_by_email: user.email,
-        poin_earned: task.points || 0,
-        ...testTag,
-        photo_url: file_url,
-      });
+      const existing = myLogs.find(l => l.item_id === task.id);
+      if (existing) {
+        // Ganti foto bukti (tugas sudah dicentang sebelumnya) — perbarui tautan, jangan buat log dobel
+        await base44.entities.MaintenanceLog.update(existing.id, { photo_url: file_url });
+      } else {
+        await base44.entities.MaintenanceLog.create({
+          check_key: `${user.email}__tugas__${task.id}__${today}`,
+          enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
+          freq: "harian", item_id: task.id, item_label: task.label,
+          period_key: today, is_done: true,
+          done_at: takenAt,
+          done_by: user.full_name || user.email,
+          done_by_email: user.email,
+          poin_earned: task.points || 0,
+          ...testTag,
+          photo_url: file_url,
+        });
+        registerCheckTime();
+      }
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       refetchLogs();
       markPhotoSaved(task.id);
@@ -684,6 +714,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           poin_earned: task.points || 0,
           ...testTag,
         });
+        registerCheckTime();
       }
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       refetchLogs();
@@ -720,6 +751,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           poin_earned: task.points || 0,
           ...testTag,
         });
+        registerCheckTime();
       }
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       refetchLogs();
@@ -855,6 +887,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             key={task.id}
             task={task}
             idx={idx}
+            getCooldownRemaining={getCooldownRemaining}
             isChecked={ABSENSI_IDS.has(task.id) ? (task.id === "abs_masuk" ? absChecked.abs_masuk : absChecked.abs_pulang) : checkedIds.has(task.id)}
             lockedInfo={
               ABSENSI_IDS.has(task.id) || task.noCheck
@@ -951,7 +984,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component (sederhana, tanpa lock UI) ──
-function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, isTimbangBaby, onCheck, onUkurCheck, onTimbangBabyCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled }) {
+function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, isTimbangBaby, onCheck, onUkurCheck, onTimbangBabyCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled, getCooldownRemaining }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
@@ -960,7 +993,23 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
   const [notice, setNotice] = useState(null); // keterangan tertempel di kartu ≥5 dtk
   const [pulse, setPulse] = useState(false); // penegasan singkat saat menekan kartu yang sudah dikerjakan
   const [saveError, setSaveError] = useState(false); // gagal simpan → tombol Coba Lagi
+  const [cooldownLeft, setCooldownLeft] = useState(0); // hitungan mundur jeda antar tugas
   const noticeTimer = useRef(null);
+  const cooldownTimer = useRef(null);
+
+  // Hitungan mundur jeda — menetap di kartu sampai habis
+  const startCooldownNotice = (secs) => {
+    setCooldownLeft(secs);
+    setSaveError(false);
+    if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    cooldownTimer.current = setInterval(() => {
+      setCooldownLeft(s => {
+        if (s <= 1) { clearInterval(cooldownTimer.current); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+  };
+  useEffect(() => () => { if (cooldownTimer.current) clearInterval(cooldownTimer.current); }, []);
   const isLocked = !!lockedInfo;
   const lockedLabel = lockedInfo
     ? (lockedInfo.kind === "done"
@@ -1000,6 +1049,11 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
       setTimeout(() => setPulse(false), 1200);
       return;
     }
+    // Jeda minimum 60 detik antar tugas — kecuali uncheck (isChecked) / absensi / istirahat
+    if (!isChecked) {
+      const remaining = getCooldownRemaining ? getCooldownRemaining() : 0;
+      if (remaining > 0) { startCooldownNotice(remaining); return; }
+    }
     if (saveError) setSaveError(false);
     if (isTimbangBaby && !isChecked) { onTimbangBabyCheck(); return; }
     if (isUkurRotasi && !isChecked) { onUkurCheck(); return; }
@@ -1013,6 +1067,8 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
 
   const retryCheck = async () => {
     setSaveError(false);
+    const remaining = getCooldownRemaining ? getCooldownRemaining() : 0;
+    if (remaining > 0) { startCooldownNotice(remaining); return; }
     if (requirePhoto) { openCameraForTask(); return; }
     const ok = await onCheck();
     if (!ok) setSaveError(true);
@@ -1042,6 +1098,11 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
             {!isIstirahat && !isAbsensi && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">+{poin} poin</span>
             )}
+            {!isIstirahat && !isAbsensi && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 flex-shrink-0 inline-flex items-center gap-0.5">
+                <Clock className="w-2.5 h-2.5" /> Jeda 60 dtk
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /> {task.waktu}</span>
@@ -1061,6 +1122,34 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
                 : attendance?.check_out ? <span className="text-green-600">✓ Pulang {attendance.check_out}</span> : <span className="text-gray-400">Belum check out</span>
               }
             </p>
+          )}
+
+          {/* Keterangan tertempel (absensi/istirahat/sedang-menyimpan/foto-batal) — menetap ≥5 dtk, bukan toast sekilas */}
+          {notice && (
+            <div className="mt-1.5 p-2 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-1.5 animate-fade-in">
+              <Clock className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] font-medium text-blue-700 leading-snug">{notice.text}</p>
+            </div>
+          )}
+
+          {/* Jeda antar tugas — hitungan mundur yang menetap di kartu sampai habis */}
+          {cooldownLeft > 0 && (
+            <div className="mt-1.5 p-2 rounded-lg bg-amber-50 border border-amber-300 flex items-start gap-1.5 animate-fade-in">
+              <Clock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5 animate-pulse" />
+              <p className="text-[11px] font-semibold text-amber-700 leading-snug">
+                Tunggu <span className="text-amber-800">{cooldownLeft} detik</span> lagi. Satu tugas butuh waktu untuk dikerjakan.
+              </p>
+            </div>
+          )}
+
+          {/* Gagal simpan (sinyal buruk/error jaringan) → keterangan + tombol Coba Lagi */}
+          {saveError && (
+            <div className="mt-1.5 p-2 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 animate-fade-in">
+              <p className="text-[11px] font-medium text-red-700 leading-snug flex-1">Gagal menyimpan — cek sinyal, lalu coba lagi.</p>
+              <button onClick={(e) => { e.stopPropagation(); retryCheck(); }} className="flex-shrink-0 text-[11px] font-bold text-red-700 bg-white border border-red-300 rounded-lg px-2.5 py-1 active:scale-95 transition-all flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" /> Coba Lagi
+              </button>
+            </div>
           )}
 
           {/* Photo thumbnail — clickable to enlarge */}
@@ -1108,7 +1197,21 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+          {/* Tombol kamera jelas terlihat untuk tugas wajib foto — terpisah dari area centang */}
+          {requirePhoto && !isIstirahat && !isAbsensi && !isLocked && (
+            <button
+              onClick={(e) => { e.stopPropagation(); openCameraForTask(); }}
+              disabled={isSaving || uploadingPhoto}
+              className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl border-2 transition-all active:scale-95 disabled:opacity-50 ${
+                isChecked ? "border-green-300 text-green-700 bg-green-50 hover:bg-green-100"
+                : "border-red-300 text-red-600 bg-red-50 hover:bg-red-100"
+              }`}
+            >
+              {(uploadingPhoto || (isSaving && requirePhoto)) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              {isChecked ? "Ganti" : "Foto"}
+            </button>
+          )}
           {/* Optional photo button (non-require_photo, checked, no photo yet) — camera or gallery */}
           {!requirePhoto && !isIstirahat && !isAbsensi && !isLocked && isChecked && !photoUrl && (
             <label className={`w-7 h-7 rounded-xl border-2 border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-all ${uploadingPhoto ? "opacity-50" : ""}`}>
