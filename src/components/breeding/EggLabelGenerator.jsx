@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Download, Printer, Loader2, AlertTriangle, CheckCircle2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { renderColorLabelHTML } from "@/components/breeding/colorEggLabel";
 
 // Definisi ukuran fisik (mm) dan konfigurasi font dasar (px @ 203 DPI)
 const SIZE_DEFS = [
@@ -69,7 +70,8 @@ function buildLabelHTML(breeding, sizeDef, mode) {
   return { wPx, hPx, F, S, qrText, sizeDef };
 }
 
-async function renderLabelHTML(breeding, sizeDef, mode) {
+async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
+  if (mode === "color") return renderColorLabelHTML(breeding, sizeDef, tortoises);
   const { wPx, hPx, F, S, qrText } = buildLabelHTML(breeding, sizeDef, mode);
   const qrDataUrl = await QRCode.toDataURL(qrText, {
     width: 400, margin: 1, color: { dark: "#000000", light: "#ffffff" },
@@ -183,16 +185,16 @@ async function htmlToPng(html, wPx, hPx) {
   return canvas.toDataURL("image/png");
 }
 
-async function renderLabelPng(breeding, sizeDef, mode) {
+async function renderLabelPng(breeding, sizeDef, mode, tortoises = []) {
   const dpi = mode === "color" ? 300 : 203;
   const wPx = Math.round((sizeDef.w * dpi) / 25.4);
   const hPx = Math.round((sizeDef.h * dpi) / 25.4);
-  const html = await renderLabelHTML(breeding, sizeDef, mode);
+  const html = await renderLabelHTML(breeding, sizeDef, mode, tortoises);
   return htmlToPng(html, wPx, hPx);
 }
 
 // Lembar A4 (210×297 mm @ 300 DPI), 2 kolom × 5 baris label 100×50 mm, khusus mode warna
-async function renderA4SheetPng(breedings) {
+async function renderA4SheetPng(breedings, tortoises = []) {
   const dpi = 300;
   const mm = (v) => Math.round((v * dpi) / 25.4);
   const wA4 = mm(210), hA4 = mm(297);
@@ -204,7 +206,7 @@ async function renderA4SheetPng(breedings) {
   const labels = breedings.slice(0, 10);
   const labelHtmls = [];
   for (const b of labels) {
-    labelHtmls.push(await renderLabelHTML(b, labelDef, "color"));
+    labelHtmls.push(await renderLabelHTML(b, labelDef, "color", tortoises));
   }
 
   const cells = [];
@@ -231,7 +233,7 @@ function fileStem(b) {
   return `label-${code}-${ds}`;
 }
 
-export default function EggLabelGenerator({ breedings = [], allActiveBreedings = [], open, onClose }) {
+export default function EggLabelGenerator({ breedings = [], allActiveBreedings = [], tortoises = [], open, onClose }) {
   const [printerMode, setPrinterMode] = useState("thermal");
   const [sizeId, setSizeId] = useState("100x50");
   const [previews, setPreviews] = useState([]);
@@ -248,7 +250,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     const out = [];
     for (const b of breedings) {
       try {
-        const dataUrl = await renderLabelPng(b, sizeDef, printerMode);
+        const dataUrl = await renderLabelPng(b, sizeDef, printerMode, tortoises);
         out.push({ breeding: b, dataUrl });
       } catch (e) {
         out.push({ breeding: b, dataUrl: null });
@@ -290,7 +292,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     setA4Generating(true);
     setA4Done(false);
     try {
-      const dataUrl = await renderA4SheetPng(allActiveBreedings.length ? allActiveBreedings : breedings);
+      const dataUrl = await renderA4SheetPng(allActiveBreedings.length ? allActiveBreedings : breedings, tortoises);
       const tag = format(new Date(), "ddMMyyyy", { locale: idLocale });
       triggerDownload(dataUrl, `lembar-A4-label-telur-${tag}.png`);
       setA4Done(true);

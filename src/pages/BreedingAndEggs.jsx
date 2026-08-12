@@ -731,6 +731,7 @@ export default function BreedingAndEggs() {
         <EggLabelGenerator
           breedings={labelBreedings}
           allActiveBreedings={breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")}
+          tortoises={tortoises}
           open={showLabelDialog}
           onClose={() => setShowLabelDialog(false)}
         />
