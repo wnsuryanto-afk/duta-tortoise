@@ -169,20 +169,20 @@ export async function renderColorLabelHTML(breeding, sizeDef, tortoises = []) {
   const induk = `<div style="display:flex;align-items:stretch;gap:8px;padding:9px 14px;flex-shrink:0">
     <div style="flex:1;background:#DBEAFE;border:1.5px solid #3B82F6;border-radius:11px;padding:8px 11px;min-width:0">
       <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#1D4ED8;letter-spacing:1px">${ico("mars", "#1D4ED8", 14)} JANTAN</div>
-      <div style="font-weight:900;font-size:32px;color:#1E3A8A;height:40px;line-height:40px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${maleName}</div>
+      <div style="font-weight:900;font-size:32px;color:#1E3A8A;line-height:1.12;padding-bottom:7px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${maleName}</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#1E40AF;margin-top:4px">${ico("pin", "#1E40AF", 13)} <span style="font-weight:600">${maleEnc}</span></div>
     </div>
     <div style="display:flex;align-items:center;flex-shrink:0">${ico("heart", "#E11D48", 18)}</div>
     <div style="flex:1;background:#FCE7F3;border:1.5px solid #EC4899;border-radius:11px;padding:8px 11px;min-width:0">
       <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#BE185D;letter-spacing:1px">${ico("venus", "#BE185D", 14)} BETINA</div>
-      <div style="font-weight:900;font-size:32px;color:#831843;height:40px;line-height:40px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${femaleName}</div>
+      <div style="font-weight:900;font-size:32px;color:#831843;line-height:1.12;padding-bottom:7px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${femaleName}</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#9D174D;margin-top:4px">${ico("pin", "#9D174D", 13)} <span style="font-weight:600">${femaleEnc}</span></div>
     </div>
   </div>`;
 
   const gridBox = (bg, border, labelColor, icon, label, value) => `<div style="background:${bg};border:1px solid ${border};border-radius:9px;padding:6px 9px;min-width:0">
     <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:${labelColor}">${ico(icon, labelColor, 13)} ${label}</div>
-    <div style="font-size:15px;font-weight:800;color:#1F2937;margin-top:2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${value}</div>
+    <div style="font-size:15px;font-weight:800;color:#1F2937;margin-top:2px;line-height:1.2;padding-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${value}</div>
   </div>`;
   const grid = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;padding:0 14px;margin-top:2px;flex-shrink:0">
     ${gridBox("#FEF9C3", "#CA8A04", "#713F12", "egg", "Jumlah Telur", `${eggNum} butir`)}
@@ -195,7 +195,7 @@ export async function renderColorLabelHTML(breeding, sizeDef, tortoises = []) {
     <div style="display:flex;align-items:center;gap:12px">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:800;font-size:14px;color:${late ? "#991B1B" : "#78350F"};letter-spacing:0.5px">CANDLING HARI KE-30</span>${late ? ico("alert", "#DC2626", 15) : ""}</div>
-        <div style="font-weight:900;font-size:24px;color:${late ? "#991B1B" : "#1F2937"};height:30px;line-height:30px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cdStr}${late ? " · TERLAMBAT" : ""}</div>
+        <div style="font-weight:900;font-size:24px;color:${late ? "#991B1B" : "#1F2937"};line-height:1.15;padding-bottom:6px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cdStr}${late ? " · TERLAMBAT" : ""}</div>
       </div>
       <div style="width:32px;height:32px;border:2.5px solid ${late ? "#DC2626" : "#1F2937"};background:#fff;border-radius:5px;flex-shrink:0"></div>
     </div>
