@@ -111,8 +111,8 @@ export async function renderColorLabelHTML(breeding, sizeDef, tortoises = []) {
 
     const parentRow = `<div style="display:flex;align-items:center;gap:6px;padding:6px 9px;flex-shrink:0">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:900;font-size:${nameF}px;color:#1E3A8A;height:${Math.round(nameF * 1.25)}px;line-height:${Math.round(nameF * 1.25)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${maleName}</div>
-        <div style="font-weight:900;font-size:${nameF}px;color:#831843;height:${Math.round(nameF * 1.25)}px;line-height:${Math.round(nameF * 1.25)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${femaleName}</div>
+        <div style="font-weight:900;font-size:${nameF}px;color:#1E3A8A;line-height:1.12;padding-bottom:${Math.round(nameF * 0.22)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${maleName}</div>
+        <div style="font-weight:900;font-size:${nameF}px;color:#831843;line-height:1.12;padding-bottom:${Math.round(nameF * 0.22)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${femaleName}</div>
       </div>
       <div style="border:1.5px solid #166534;background:#DCFCE7;border-radius:8px;padding:4px 8px;text-align:center;flex-shrink:0">
         <div style="font-weight:900;font-size:${Math.round(nameF * 0.7)}px;color:#14532D;line-height:1">${eggNum}</div>
@@ -124,7 +124,7 @@ export async function renderColorLabelHTML(breeding, sizeDef, tortoises = []) {
       <div style="display:flex;align-items:center;gap:8px">
         <div style="flex:1;min-width:0">
           <div style="font-weight:800;font-size:${cTitle}px;color:${late ? "#991B1B" : "#78350F"};letter-spacing:0.3px">CANDLING H+30</div>
-          <div style="font-weight:900;font-size:${cDate}px;color:${late ? "#991B1B" : "#1F2937"};height:${Math.round(cDate * 1.25)}px;line-height:${Math.round(cDate * 1.25)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cdStr}${late ? " · TERLAMBAT" : ""}</div>
+          <div style="font-weight:900;font-size:${cDate}px;color:${late ? "#991B1B" : "#1F2937"};line-height:1.15;padding-bottom:${Math.round(cDate * 0.24)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cdStr}${late ? " · TERLAMBAT" : ""}</div>
         </div>
         <div style="width:${cBox}px;height:${cBox}px;border:2px solid ${late ? "#DC2626" : "#1F2937"};background:#fff;border-radius:3px;flex-shrink:0"></div>
       </div>
