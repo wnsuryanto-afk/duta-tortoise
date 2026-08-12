@@ -107,7 +107,7 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
   const pita = `<div style="background:${T.pitaBg};color:${T.pitaFg};text-align:center;font-weight:800;font-size:${F(S.pita)}px;letter-spacing:1px;padding:${F(S.pPad)}px ${F(S.pPad * 2)}px;flex-shrink:0">DUTA TORTOISE — KOTAK TELUR</div>`;
 
   const mainRow = `<div style="display:flex;align-items:center;gap:${F(compact ? 8 : 12)}px;padding:${F(compact ? 5 : 10)}px ${F(S.pad)}px ${F(compact ? 6 : 14)}px">
-    <div style="flex:1 1 auto;font-weight:900;font-size:${F(S.kode)}px;color:${T.ink};line-height:${S.lhKode};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${parentCode}</div>
+    <div style="flex:1 1 auto;font-weight:900;font-size:${F(S.kode)}px;color:${T.ink};line-height:${F(Math.round(S.kode * 1.3))}px;padding-bottom:${F(4)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${parentCode}</div>
     <div style="border:${F(compact ? 1.5 : 2.5)}px solid ${T.eggBorder};background:${T.eggBg};border-radius:${F(6)}px;padding:${F(compact ? 3 : 5)}px ${F(compact ? 7 : 12)}px;text-align:center;flex-shrink:0">
       <div style="font-weight:900;font-size:${F(S.egg)}px;line-height:1.05;color:${T.ink}">${eggNum}</div>
       <div style="font-size:${F(S.eggLbl)}px;font-weight:700;letter-spacing:1px;color:${T.ink}">BUTIR</div>
@@ -118,7 +118,7 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
     <div style="display:flex;align-items:center;gap:${F(compact ? 8 : 12)}px">
       <div style="flex:1;min-width:0">
         <div style="font-weight:800;font-size:${F(S.cTitle)}px;letter-spacing:0.5px;color:${T.candText}">CANDLING HARI KE-30</div>
-        <div style="font-weight:900;font-size:${F(S.cDate)}px;line-height:${S.lhDate};color:${T.candText};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:${F(2)}px">${cdStr}</div>
+        <div style="font-weight:900;font-size:${F(S.cDate)}px;line-height:${F(Math.round(S.cDate * 1.3))}px;padding-bottom:${F(3)}px;color:${T.candText};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:${F(2)}px">${cdStr}</div>
       </div>
       <div style="width:${F(S.cBox)}px;height:${F(S.cBox)}px;border:${F(compact ? 2 : 3)}px solid ${T.candBorder};background:#fff;flex-shrink:0"></div>
     </div>
