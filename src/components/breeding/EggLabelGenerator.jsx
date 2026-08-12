@@ -94,8 +94,11 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
   const season = breeding.season_year || "";
   const inkDays = (d && hs) ? Math.max(0, Math.round((hs - d) / 86400000)) : null;
   const printedDate = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-  const maleLine = `${breeding.male_name || "—"}${breeding.male_enclosure ? ` · ${breeding.male_enclosure}` : ""}`;
-  const femaleLine = `${breeding.female_name || "—"}${breeding.female_enclosure ? ` · ${breeding.female_enclosure}` : ""}`;
+  const findT = (id, name) => tortoises.find(t => (id && t.id === id) || (name && (t.name === name || t.code === name)));
+  const maleEnc = (findT(breeding.male_id, breeding.male_name)?.enclosure) || "—";
+  const femaleEnc = (findT(breeding.female_id, breeding.female_name)?.enclosure) || "—";
+  const maleLine = `${breeding.male_name || "—"}${maleEnc !== "—" ? ` · ${maleEnc}` : ""}`;
+  const femaleLine = `${breeding.female_name || "—"}${femaleEnc !== "—" ? ` · ${femaleEnc}` : ""}`;
   const compact = !sizeDef.full;
 
   const dotted = (w) => `<span style="display:inline-block;border-bottom:1.5px dotted ${T.border};width:${F(w)}px;height:1em;vertical-align:bottom">&nbsp;</span>`;
@@ -106,19 +109,19 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
 
   const pita = `<div style="background:${T.pitaBg};color:${T.pitaFg};text-align:center;font-weight:800;font-size:${F(S.pita)}px;letter-spacing:1px;padding:${F(S.pPad)}px ${F(S.pPad * 2)}px;flex-shrink:0">DUTA TORTOISE — KOTAK TELUR</div>`;
 
-  const mainRow = `<div style="display:flex;align-items:center;gap:${F(compact ? 8 : 12)}px;padding:${F(compact ? 5 : 10)}px ${F(S.pad)}px ${F(compact ? 6 : 14)}px">
-    <div style="flex:1 1 auto;font-weight:900;font-size:${F(S.kode)}px;color:${T.ink};line-height:${F(Math.round(S.kode * 1.3))}px;padding-bottom:${F(4)}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${parentCode}</div>
+  const mainRow = `<div style="display:flex;align-items:center;gap:${F(compact ? 8 : 12)}px;padding:${F(compact ? 5 : 10)}px ${F(S.pad)}px ${F(compact ? 6 : 14)}px;flex-shrink:0">
+    <div style="flex:1 1 auto;font-weight:900;font-size:${F(S.kode)}px;color:${T.ink};height:${F(Math.round(S.kode * 1.3))}px;line-height:${F(Math.round(S.kode * 1.3))}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${parentCode}</div>
     <div style="border:${F(compact ? 1.5 : 2.5)}px solid ${T.eggBorder};background:${T.eggBg};border-radius:${F(6)}px;padding:${F(compact ? 3 : 5)}px ${F(compact ? 7 : 12)}px;text-align:center;flex-shrink:0">
       <div style="font-weight:900;font-size:${F(S.egg)}px;line-height:1.05;color:${T.ink}">${eggNum}</div>
       <div style="font-size:${F(S.eggLbl)}px;font-weight:700;letter-spacing:1px;color:${T.ink}">BUTIR</div>
     </div>
   </div>`;
 
-  const candlingBox = `<div style="border:${F(compact ? 2 : 3)}px solid ${T.candBorder};background:${T.candBg};border-radius:${F(6)}px;padding:${F(compact ? 6 : 10)}px ${F(compact ? 7 : 12)}px ${F(compact ? 5 : 10)}px;margin:${F(compact ? 5 : 8)}px ${F(S.pad)}px">
+  const candlingBox = `<div style="border:${F(compact ? 2 : 3)}px solid ${T.candBorder};background:${T.candBg};border-radius:${F(6)}px;padding:${F(compact ? 6 : 10)}px ${F(compact ? 7 : 12)}px ${F(compact ? 5 : 10)}px;margin:${F(compact ? 5 : 8)}px ${F(S.pad)}px;flex-shrink:0">
     <div style="display:flex;align-items:center;gap:${F(compact ? 8 : 12)}px">
       <div style="flex:1;min-width:0">
         <div style="font-weight:800;font-size:${F(S.cTitle)}px;letter-spacing:0.5px;color:${T.candText}">CANDLING HARI KE-30</div>
-        <div style="font-weight:900;font-size:${F(S.cDate)}px;line-height:${F(Math.round(S.cDate * 1.3))}px;padding-bottom:${F(3)}px;color:${T.candText};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:${F(2)}px">${cdStr}</div>
+        <div style="font-weight:900;font-size:${F(S.cDate)}px;height:${F(Math.round(S.cDate * 1.3))}px;line-height:${F(Math.round(S.cDate * 1.3))}px;margin-top:${F(2)}px;color:${T.candText};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cdStr}</div>
       </div>
       <div style="width:${F(S.cBox)}px;height:${F(S.cBox)}px;border:${F(compact ? 2 : 3)}px solid ${T.candBorder};background:#fff;flex-shrink:0"></div>
     </div>
@@ -126,15 +129,15 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
 
   const lateMargin = compact ? [4, 6, 0] : [4, S.pad, 0];
   const lateRibbon = late
-    ? `<div style="background:${T.lateBg};color:${T.lateFg};text-align:center;font-weight:800;font-size:${F(compact ? 9 : 11)}px;letter-spacing:1px;padding:${F(2)}px ${F(4)}px;margin:${lateMargin.map((n) => F(n)).join("px ")}px">${compact ? "⚠ CANDLING TERLAMBAT" : "⚠ CANDLING TERLAMBAT — periksa segera"}</div>`
+    ? `<div style="background:${T.lateBg};color:${T.lateFg};text-align:center;font-weight:800;font-size:${F(compact ? 9 : 11)}px;letter-spacing:1px;padding:${F(2)}px ${F(4)}px;margin:${lateMargin.map((n) => F(n)).join("px ")}px;flex-shrink:0">${compact ? "⚠ CANDLING TERLAMBAT" : "⚠ CANDLING TERLAMBAT — periksa segera"}</div>`
     : "";
 
   let leftContent;
   if (compact) {
     leftContent = `${mainRow}${candlingBox}${lateRibbon}`;
   } else {
-    const infoTable = `<div style="border-top:1.5px solid ${T.border};margin:0 ${F(S.pad)}px"></div>
-      <div style="display:flex;gap:${F(14)}px;padding:${F(7)}px ${F(S.pad)}px">
+    const infoTable = `<div style="border-top:1.5px solid ${T.border};margin:0 ${F(S.pad)}px;flex-shrink:0"></div>
+      <div style="display:flex;gap:${F(14)}px;padding:${F(7)}px ${F(S.pad)}px;flex-shrink:0">
         <div style="flex:1;display:flex;flex-direction:column;gap:${F(5)}px">
           ${infoRow("cal", "Bertelur", tglStr)}
           ${infoRow("cal", "Menetas", hatchStr)}
@@ -146,8 +149,8 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
           ${infoRow("box", "Inkubator", incubatorLine)}
         </div>
       </div>`;
-    const suhuRow = `<div style="font-size:${F(13)}px;color:${T.ink};padding:${F(6)}px ${F(S.pad)}px ${F(2)}px">Suhu: ${dotted(70)} °C &nbsp;&nbsp; Kelembapan: ${dotted(70)} %</div>`;
-    const footer = `<div style="font-size:${F(11)}px;color:${T.ink};border-top:1px solid ${T.footerBorder};padding:${F(5)}px ${F(S.pad)}px;margin-top:auto;display:flex;justify-content:space-between">
+    const suhuRow = `<div style="font-size:${F(13)}px;color:${T.ink};padding:${F(6)}px ${F(S.pad)}px ${F(2)}px;flex-shrink:0">Suhu: ${dotted(70)} °C &nbsp;&nbsp; Kelembapan: ${dotted(70)} %</div>`;
+    const footer = `<div style="font-size:${F(11)}px;color:${T.ink};border-top:1px solid ${T.footerBorder};padding:${F(5)}px ${F(S.pad)}px;margin-top:auto;flex-shrink:0;display:flex;justify-content:space-between">
       <span style="font-weight:700">${season ? "MUSIM " + season : ""}</span>
       <span>Dicetak: ${printedDate}</span>
     </div>`;
