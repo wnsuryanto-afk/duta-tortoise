@@ -50,6 +50,10 @@
     "reference_id": {
       "type": "string"
     },
+    "invoice_photo_url": {
+      "type": "string",
+      "description": "URL lampiran foto/screenshot invoice (AI Vision) untuk penelusuran"
+    },
     "enclosure_name": {
       "type": "string",
       "description": "Alokasi biaya ke kandang tertentu (opsional)"

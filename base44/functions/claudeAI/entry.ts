@@ -103,6 +103,32 @@ Deno.serve(async (req) => {
       return Response.json({ answer });
     }
 
+    // ── 5. BACA INVOICE (AI Vision) ───────────────────────────────────────────
+    if (mode === "baca_invoice") {
+      const { imageBase64 } = payload;
+      const systemPrompt = `Kamu pembaca invoice/nota belanja. Baca gambar screenshot invoice marketplace (Tokopedia, Shopee, Lazada) atau nota toko. Kembalikan JSON MURNI tanpa penjelasan apa pun dan tanpa pagar kode markdown, persis struktur: {"toko":"nama penjual","tanggal":"YYYY-MM-DD","total":angka,"ongkir":angka,"diskon":angka,"items":[{"nama":"nama barang","qty":angka,"satuan":"kg/gram/pcs/botol/strip","harga_satuan":angka,"subtotal":angka}]}. Semua harga dalam Rupiah sebagai angka bulat tanpa titis atau koma. Bila suatu nilai tidak terbaca, isi null, JANGAN mengarang. Bila gambar bukan invoice, kembalikan {"error":"bukan invoice"}.`;
+      const raw = await callClaude(apiKey, systemPrompt, "Baca invoice ini dan kembalikan JSON saja.", imageBase64 || null);
+      let result;
+      try {
+        const m = raw.match(/\{[\s\S]*\}/);
+        result = m ? JSON.parse(m[0]) : { error: "Gagal membaca" };
+      } catch { result = { error: "Gagal membaca" }; }
+      return Response.json({ result });
+    }
+
+    // ── 6. BACA KADALUARSA (AI Vision) ────────────────────────────────────────
+    if (mode === "baca_kadaluarsa") {
+      const { imageBase64 } = payload;
+      const systemPrompt = `Kamu pembaca kemasan obat/vitamin. Baca foto kemasan dan kembalikan JSON MURNI tanpa penjelasan dan tanpa markdown: {"expired_date":"YYYY-MM-DD","batch_number":"kode batch bila ada","nama_produk":"nama yang terbaca","keyakinan":"tinggi/sedang/rendah"}. Tanggal kadaluarsa di kemasan Indonesia sering ditulis MM/YYYY atau "EXP 03/28". Bila hanya bulan dan tahun yang tertulis, pakai tanggal terakhir bulan itu (YYYY-MM-28/30/31 sesuai bulan). Bila tidak terbaca jelas, isi null dan keyakinan "rendah". JANGAN menebak.`;
+      const raw = await callClaude(apiKey, systemPrompt, "Baca tanggal kadaluarsa dan batch kemasan ini, kembalikan JSON saja.", imageBase64 || null);
+      let result;
+      try {
+        const m = raw.match(/\{[\s\S]*\}/);
+        result = m ? JSON.parse(m[0]) : { error: "Gagal membaca" };
+      } catch { result = { error: "Gagal membaca" }; }
+      return Response.json({ result });
+    }
+
     return Response.json({ error: "Unknown mode" }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -373,7 +373,7 @@ export default function WarehousePage() {
           user={user}
           role={role}
           presetItem={txPresetItem}
-          onAddNew={() => { setShowBarangMasuk(false); setEditItem(null); setShowForm(true); }}
+          onAddNew={(preset) => { setShowBarangMasuk(false); setEditItem(preset || null); setShowForm(true); }}
           onScan={() => { setShowBarangMasuk(false); setShowScanner(true); }}
           onClose={(refreshed) => { setShowBarangMasuk(false); setTxPresetItem(null); if (refreshed) invalidate(); }}
         />

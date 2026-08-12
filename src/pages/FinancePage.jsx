@@ -2,6 +2,8 @@ import { useState } from "react";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
 import LabaRugiEnhanced from "@/components/finance/LabaRugiEnhanced";
 import EditTransactionDialog from "@/components/finance/EditTransactionDialog";
+import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
+import { toast } from "sonner";
 import { useFinanceCategories } from "@/hooks/useEntityCategories";
 import { logActivity } from "@/lib/logActivity";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +45,16 @@ const MONTHS = Array.from({ length: 12 }, (_, i) => ({
   label: format(new Date(2026, i, 1), "MMMM yyyy", { locale: id }),
 }));
 
+function guessCategory(text) {
+  const t = (text || "").toLowerCase();
+  if (/pakan|sayur|kangkung|pelet|rumput|hibiscus|azolla|buah|gamal|kaladi|pegagan/.test(t)) return "pakan";
+  if (/vitamin|suplemen|supplement|calcium|kalsium|nevitan|zylkene/.test(t)) return "vitamin_suplemen";
+  if (/obat|paracet|syrup|salep|antibiot|injek|obat cacing|deoworm/.test(t)) return "obat_perawatan";
+  if (/solar|bbm|bensin|pertalite|pertamax/.test(t)) return "solar_bbm";
+  if (/rokok/.test(t)) return "rokok";
+  return "lainnya";
+}
+
 // ── Add Transaction Form ───────────────────────────────────────────────────────
 function AddTransactionForm({ user, onClose, onSaved }) {
   const qc = useQueryClient();
@@ -57,6 +69,9 @@ function AddTransactionForm({ user, onClose, onSaved }) {
     description: "",
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const [pendingInvoice, setPendingInvoice] = useState(null);
+  const [invoicePhotoUrl, setInvoicePhotoUrl] = useState(null);
+  const [splitMode, setSplitMode] = useState("single");
 
   const { pemasukan, pengeluaran } = useFinanceCategories();
   const catOptions = form.type === "pemasukan"
@@ -67,6 +82,59 @@ function AddTransactionForm({ user, onClose, onSaved }) {
   const hargaNum = Number(form.harga_satuan) || 0;
   const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
   const displayAmount = autoTotal !== null ? autoTotal : (Number(form.amount) || 0);
+
+  const handleApplyInvoice = async (inv, photoUrl) => {
+    setInvoicePhotoUrl(photoUrl);
+    const items = inv.items || [];
+    if (splitMode === "split" && items.length > 1) {
+      setSaving(true);
+      try {
+        for (const it of items) {
+          const sub = Number(it.subtotal) || 0;
+          if (sub <= 0) continue;
+          await base44.entities.FinanceTransaction.create({
+            type: "pengeluaran",
+            category: guessCategory(it.nama),
+            amount: sub,
+            date: inv.tanggal || form.date,
+            description: `${inv.toko || "Invoice"} — ${it.nama}`.slice(0, 200),
+            qty: Number(it.qty) > 0 ? Number(it.qty) : undefined,
+            harga_satuan: Number(it.harga_satuan) > 0 ? Number(it.harga_satuan) : undefined,
+            created_by_name: user?.full_name || user?.email || "",
+            ...(photoUrl ? { invoice_photo_url: photoUrl } : {}),
+          });
+        }
+        await logActivity({
+          action: "create",
+          entity_type: "FinanceTransaction",
+          entity_id: "batch-invoice",
+          entity_name: `Invoice ${inv.toko || ""} (${items.length} item)`,
+          changes_summary: `Pecah invoice AI menjadi ${items.length} transaksi pengeluaran.`,
+        });
+        qc.invalidateQueries({ queryKey: ["finance-transactions"] });
+        toast.success(`${items.length} transaksi dibuat dari invoice`);
+        setSaving(false);
+        onSaved?.();
+        onClose();
+      } catch {
+        setSaving(false);
+        toast.error("Gagal menyimpan sebagian transaksi");
+      }
+      return;
+    }
+    const total = Number(inv.total) || items.reduce((s, i) => s + (Number(i.subtotal) || 0), 0);
+    const ringkas = items.map((i) => i.nama).filter(Boolean).join(", ");
+    setForm((p) => ({
+      ...p,
+      type: "pengeluaran",
+      amount: String(total || ""),
+      date: inv.tanggal || p.date,
+      description: `${inv.toko || "Invoice"} — ${ringkas}`.slice(0, 200),
+      category: guessCategory(items.map((i) => i.nama).join(" ")),
+    }));
+    setPendingInvoice(null);
+    toast.success("Hasil scan diisi ke form — periksa sebelum simpan");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,6 +150,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
     };
     if (qtyNum > 0) payload.qty = qtyNum;
     if (hargaNum > 0) payload.harga_satuan = hargaNum;
+    if (invoicePhotoUrl) payload.invoice_photo_url = invoicePhotoUrl;
     const created = await base44.entities.FinanceTransaction.create(payload);
     await logActivity({
       action: "create",
@@ -98,6 +167,34 @@ function AddTransactionForm({ user, onClose, onSaved }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+      <InvoiceVisionUpload onApplied={({ invoice, photoUrl }) => setPendingInvoice({ invoice, photoUrl })} />
+      {pendingInvoice && (
+        <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/50 space-y-2">
+          <p className="text-xs font-semibold text-blue-800">
+            Hasil Scan: {pendingInvoice.invoice.toko || "Invoice"} — {pendingInvoice.invoice.items?.length || 0} item
+          </p>
+          {(pendingInvoice.invoice.items?.length || 0) > 1 && (
+            <div className="flex gap-3 text-xs flex-wrap">
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="radio" checked={splitMode === "single"} onChange={() => setSplitMode("single")} />
+                Satu transaksi (pakai total)
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="radio" checked={splitMode === "split"} onChange={() => setSplitMode("split")} />
+                Pecah jadi beberapa transaksi
+              </label>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={() => handleApplyInvoice(pendingInvoice.invoice, pendingInvoice.photoUrl)}>
+              Terapkan Hasil Scan
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setPendingInvoice(null); setInvoicePhotoUrl(null); }}>
+              Batal Scan
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="flex gap-2">
         {["pemasukan", "pengeluaran"].map(t => (
           <button key={t} type="button" onClick={() => setForm(p => ({ ...p, type: t, category: t === "pemasukan" ? "penjualan_tortoise" : "operasional" }))}

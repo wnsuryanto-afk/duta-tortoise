@@ -10,6 +10,8 @@ import { useImageCompression } from "@/lib/useImageCompression";
 import { useTestMode } from "@/lib/useTestMode";
 import { format } from "date-fns";
 import ItemSearchSelect from "@/components/stock/ItemSearchSelect";
+import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
+import ExpiryVisionScan from "@/components/ai/ExpiryVisionScan";
 
 /**
  * Dialog for recording stock IN (barang masuk).
@@ -36,8 +38,45 @@ export default function BarangMasukDialog({ items, user, role, presetItem, onAdd
   const [photoUrl, setPhotoUrl] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
+  const [expiredDate, setExpiredDate] = useState("");
+  const [batchNumber, setBatchNumber] = useState("");
 
   const canSubmit = selectedItem && Number(qty) > 0 && !saving && !compressing && !uploadingPhoto;
+
+  const normText = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+  const matchItem = (invName) => {
+    const n = normText(invName);
+    if (!n) return null;
+    let best = null, bestScore = 0;
+    for (const it of items) {
+      const name = normText(it.name);
+      const sku = (it.sku || "").toLowerCase();
+      let score = 0;
+      if (name && (name.includes(n) || n.includes(name))) {
+        score = Math.max(score, Math.min(name.length, n.length) / Math.max(name.length, n.length));
+      }
+      if (sku && n.includes(sku)) score = 1;
+      if (score > bestScore) { bestScore = score; best = it; }
+    }
+    return bestScore >= 0.5 ? best : null;
+  };
+
+  const handleInvoiceApplied = ({ invoice, photoUrl: pUrl }) => {
+    setInvoiceData(invoice);
+    if (pUrl) setPhotoUrl(pUrl);
+    if (invoice.toko) setSupplier(invoice.toko);
+    if (invoice.tanggal) setDate(invoice.tanggal);
+  };
+
+  const pakaiItem = (it, match) => {
+    if (match) setSelectedItem(match);
+    setQty(String(it.qty ?? ""));
+    setTotalPrice(String(it.subtotal ?? it.harga_satuan ?? ""));
+    if (invoiceData?.toko) setSupplier(invoiceData.toko);
+    if (invoiceData?.tanggal) setDate(invoiceData.tanggal);
+    setInvoiceData(null);
+  };
 
   const handlePhoto = async (e) => {
     const file = e.target.files?.[0];
@@ -87,12 +126,15 @@ export default function BarangMasukDialog({ items, user, role, presetItem, onAdd
         ...testModeTag,
       });
 
-      await base44.entities.WarehouseItem.update(selectedItem.id, {
+      const itemUpdate = {
         current_stock: newStock,
         last_restocked_date: date,
         last_edited_by: user?.email || "",
         last_edited_at: new Date().toISOString(),
-      });
+      };
+      if (expiredDate) itemUpdate.expired_date = expiredDate;
+      if (batchNumber) itemUpdate.batch_number = batchNumber;
+      await base44.entities.WarehouseItem.update(selectedItem.id, itemUpdate);
 
       if (purchasePrice > 0) {
         await base44.entities.FinanceTransaction.create({
@@ -126,6 +168,31 @@ export default function BarangMasukDialog({ items, user, role, presetItem, onAdd
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-3 pt-1">
+          <InvoiceVisionUpload onApplied={handleInvoiceApplied} buttonLabel="Scan Invoice dengan AI" />
+          {invoiceData && (
+            <div className="border border-blue-200 rounded-lg p-2.5 bg-blue-50/50 space-y-2">
+              <p className="text-xs font-semibold text-blue-800">Cocokkan item dari invoice ({invoiceData.items?.length || 0})</p>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {(invoiceData.items || []).map((it, i) => {
+                  const m = matchItem(it.nama);
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-xs bg-white rounded border p-1.5">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{it.nama || "(tanpa nama)"}</p>
+                        <p className="text-muted-foreground">{it.qty} {it.satuan} · Rp {Number(it.subtotal || 0).toLocaleString("id-ID")}</p>
+                      </div>
+                      {m ? (
+                        <Button type="button" size="sm" className="h-7 text-xs" onClick={() => pakaiItem(it, m)}>Pakai: {m.name}</Button>
+                      ) : (
+                        <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => onAddNew({ name: it.nama, purchase_price: Number(it.harga_satuan) || 0 })}>Buat baru</Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setInvoiceData(null)}>Tutup</Button>
+            </div>
+          )}
           <div>
             <Label className="text-xs mb-1.5 block">Pilih Item *</Label>
             <ItemSearchSelect
@@ -189,6 +256,17 @@ export default function BarangMasukDialog({ items, user, role, presetItem, onAdd
               placeholder="Kosongkan jika tidak tahu"
               className="mt-0.5"
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs">Kadaluarsa & Batch</Label>
+              <ExpiryVisionScan onApplied={(d) => { if (d.expired_date) setExpiredDate(d.expired_date); if (d.batch_number) setBatchNumber(d.batch_number); }} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Input type="date" value={expiredDate} onChange={(e) => setExpiredDate(e.target.value)} className="mt-0.5" />
+              <Input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="No. Batch" className="mt-0.5" />
+            </div>
           </div>
 
           <div>
