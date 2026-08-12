@@ -728,7 +728,12 @@ export default function BreedingAndEggs() {
       />
 
       {showLabelDialog && (
-        <EggLabelGenerator breedings={labelBreedings} open={showLabelDialog} onClose={() => setShowLabelDialog(false)} />
+        <EggLabelGenerator
+          breedings={labelBreedings}
+          allActiveBreedings={breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")}
+          open={showLabelDialog}
+          onClose={() => setShowLabelDialog(false)}
+        />
       )}
 
       {/* DIALOG LABEL DIHAPUS - download otomatis dari BreedingForm */}
