@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Bot, Upload, Loader2, CheckCircle, AlertTriangle, XCircle, Copy, Save } from "lucide-react";
+import { Bot, Loader2, CheckCircle, AlertTriangle, XCircle, Copy, Save } from "lucide-react";
+import MultiImagePicker from "@/components/ai/MultiImagePicker";
 
 const SEVERITY_CONFIG = {
   ringan: { color: "border-green-300 bg-green-50", badge: "bg-green-100 text-green-800", icon: CheckCircle, iconColor: "text-green-600", label: "Ringan" },
@@ -15,39 +16,24 @@ const SEVERITY_CONFIG = {
 export default function AIHealthConsultant({ tortoise, onSaveToRecord }) {
   const [open, setOpen] = useState(false);
   const [symptoms, setSymptoms] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [catatan, setCatatan] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setImagePreview(ev.target.result);
-    reader.readAsDataURL(file);
-  };
 
   const handleConsult = async () => {
     if (!symptoms.trim()) return;
     setLoading(true);
     setResult(null);
-    let imageBase64 = null;
-    if (imageFile) {
-      imageBase64 = await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result.split(",")[1]);
-        reader.readAsDataURL(imageFile);
-      });
-    }
+    setCatatan(null);
     const res = await base44.functions.invoke("claudeAI", {
       mode: "health_consult",
-      payload: { symptoms, tortoiseName: tortoise?.name || "", imageBase64 },
+      payload: { symptoms, tortoiseName: tortoise?.name || "", images: images.map(i => i.base64) },
     });
     setResult(res.data.result);
+    if (res.data?.catatan_gambar) setCatatan(res.data.catatan_gambar);
     setLoading(false);
   };
 
@@ -97,12 +83,11 @@ export default function AIHealthConsultant({ tortoise, onSaveToRecord }) {
 
             <div>
               <label className="text-sm font-medium mb-1.5 block">Foto (opsional)</label>
-              <label className="flex items-center gap-2 border-2 border-dashed rounded-xl p-3 cursor-pointer hover:border-primary/50 transition-colors">
-                <Upload className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{imageFile ? imageFile.name : "Upload foto kura-kura"}</span>
-                <input type="file" accept="image/*" className="hidden" onChange={handleImage} />
-              </label>
-              {imagePreview && <img src={imagePreview} alt="preview" className="mt-2 rounded-lg w-full h-32 object-cover" />}
+              <MultiImagePicker
+                images={images}
+                onChange={setImages}
+                hint="Foto tampak atas, tampak bawah, dan bagian yang bermasalah dari dekat."
+              />
             </div>
 
             <Button onClick={handleConsult} disabled={!symptoms.trim() || loading} className="w-full">
@@ -142,6 +127,7 @@ export default function AIHealthConsultant({ tortoise, onSaveToRecord }) {
                   </div>
                 )}
 
+                {catatan && <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded p-2">{catatan}</p>}
                 <p className="text-xs text-muted-foreground italic border-t pt-2">⚠️ Hasil analisis AI bukan pengganti diagnosa dokter hewan.</p>
 
                 {tortoise && (

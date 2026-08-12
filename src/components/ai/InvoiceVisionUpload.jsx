@@ -4,54 +4,57 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScanLine, Camera, Loader2, Trash2, Plus, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { fileToCompressedBase64 } from "@/lib/aiImageBase64";
+import { ScanLine, Loader2, Trash2, Plus, AlertTriangle, CheckCircle2 } from "lucide-react";
+import MultiImagePicker from "@/components/ai/MultiImagePicker";
 
 const EMPTY = { toko: "", tanggal: "", total: "", ongkir: "", diskon: "", items: [{ nama: "", qty: 1, satuan: "", harga_satuan: "", subtotal: "" }] };
 
+const fromInvoice = (r) => ({
+  toko: r.toko ?? "",
+  tanggal: r.tanggal ?? "",
+  total: r.total ?? "",
+  ongkir: r.ongkir ?? "",
+  diskon: r.diskon ?? "",
+  items: (r.items?.length ? r.items : []).map((it) => ({
+    nama: it.nama ?? "", qty: it.qty ?? 1, satuan: it.satuan ?? "",
+    harga_satuan: it.harga_satuan ?? "", subtotal: it.subtotal ?? "",
+  })),
+});
+
 /**
  * Pemindai invoice dengan AI Vision (case claudeAI "baca_invoice").
+ * Mendukung beberapa gambar sekaligus (maks 5).
  * Props:
- *   onApplied({ invoice, photoUrl })  — dipanggil saat pemilik menyetujui hasil bacaan
- *   buttonLabel, disabled
+ *   onApplied({ invoice, photoUrls })  — dipanggil saat pemilik menyetujui hasil bacaan
+ *   buttonLabel, disabled, hint
  */
-export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Invoice dengan AI", disabled }) {
+export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Invoice dengan AI", disabled, hint }) {
   const [open, setOpen] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const [blob, setBlob] = useState(null);
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const [catatan, setCatatan] = useState(null);
 
-  const reset = () => { setPreview(null); setBlob(null); setData(null); setError(null); };
+  const reset = () => { setImages([]); setData(null); setError(null); setCatatan(null); };
 
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLoading(true); setError(null); setData(null);
+  const handleScan = async () => {
+    if (images.length === 0) return;
+    setLoading(true); setError(null); setData(null); setCatatan(null);
     try {
-      const { base64, dataUrl, blob: bl } = await fileToCompressedBase64(file, 1500);
-      setPreview(dataUrl); setBlob(bl);
-      const res = await base44.functions.invoke("claudeAI", { mode: "baca_invoice", payload: { imageBase64: base64 } });
+      const res = await base44.functions.invoke("claudeAI", { mode: "baca_invoice", payload: { images: images.map((i) => i.base64) } });
       const r = res.data?.result;
+      if (res.data?.catatan_gambar) setCatatan(res.data.catatan_gambar);
       if (!r || r.error) {
         setError(r?.error === "bukan invoice" ? "Gambar ini bukan invoice." : "Gagal membaca invoice.");
         setData({ ...EMPTY });
+      } else if (Array.isArray(r)) {
+        const first = r[0] || {};
+        setData(fromInvoice(first));
+        const note = `Terdeteksi ${r.length} invoice berbeda — hanya invoice pertama ditampilkan.`;
+        setCatatan((prev) => (prev ? `${prev} ${note}` : note));
       } else {
-        setData({
-          toko: r.toko ?? "",
-          tanggal: r.tanggal ?? "",
-          total: r.total ?? "",
-          ongkir: r.ongkir ?? "",
-          diskon: r.diskon ?? "",
-          items: (r.items?.length ? r.items : []).map((it) => ({
-            nama: it.nama ?? "",
-            qty: it.qty ?? 1,
-            satuan: it.satuan ?? "",
-            harga_satuan: it.harga_satuan ?? "",
-            subtotal: it.subtotal ?? "",
-          })),
-        });
+        setData(fromInvoice(r));
       }
     } catch {
       setError("Panggilan AI gagal atau habis waktu.");
@@ -66,11 +69,13 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
   const delItem = (i) => setData((d) => ({ ...d, items: d.items.filter((_, x) => x !== i) }));
 
   const handleApply = async () => {
-    let photoUrl = null;
-    if (blob) {
-      try { const r = await base44.integrations.Core.UploadFile({ file: blob }); photoUrl = r.file_url; } catch { /* lampiran opsional */ }
+    const photoUrls = [];
+    for (const img of images) {
+      if (img.blob) {
+        try { const r = await base44.integrations.Core.UploadFile({ file: img.blob }); photoUrls.push(r.file_url); } catch { /* lampiran opsional */ }
+      }
     }
-    onApplied?.({ invoice: data, photoUrl });
+    onApplied?.({ invoice: data, photoUrls });
     setOpen(false); reset();
   };
 
@@ -86,26 +91,28 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Camera className="w-5 h-5 text-blue-600" /> Scan Invoice AI</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><ScanLine className="w-5 h-5 text-blue-600" /> Scan Invoice AI</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer hover:border-blue-400 text-sm text-muted-foreground transition-colors">
-              <Camera className="w-4 h-4" /> Ambil / Pilih Foto Invoice
-              <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-            </label>
+            <MultiImagePicker
+              images={images}
+              onChange={setImages}
+              hint={hint || "Bila invoice panjang dan terpotong saat di-scroll, ambil beberapa tangkapan layar dan unggah semuanya."}
+            />
 
-            {preview && <img src={preview} alt="preview" className="rounded-lg max-h-48 mx-auto border" />}
-
-            {loading && (
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
-                <Loader2 className="w-4 h-4 animate-spin" /> Membaca invoice...
-              </div>
-            )}
+            <Button type="button" className="w-full" disabled={images.length === 0 || loading} onClick={handleScan}>
+              {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Membaca invoice...</> : `Baca Invoice (${images.length} foto)`}
+            </Button>
 
             {error && !loading && (
               <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{error} Sebagian data tidak terbaca — silakan isi manual di bawah.</span>
+              </div>
+            )}
+            {catatan && !loading && (
+              <div className="flex items-start gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {catatan}
               </div>
             )}
 

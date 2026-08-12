@@ -83,7 +83,8 @@ function AddTransactionForm({ user, onClose, onSaved }) {
   const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
   const displayAmount = autoTotal !== null ? autoTotal : (Number(form.amount) || 0);
 
-  const handleApplyInvoice = async (inv, photoUrl) => {
+  const handleApplyInvoice = async (inv, photoUrls) => {
+    const photoUrl = photoUrls?.[0] || null;
     setInvoicePhotoUrl(photoUrl);
     const items = inv.items || [];
     if (splitMode === "split" && items.length > 1) {
@@ -167,7 +168,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 mt-2">
-      <InvoiceVisionUpload onApplied={({ invoice, photoUrl }) => setPendingInvoice({ invoice, photoUrl })} />
+      <InvoiceVisionUpload onApplied={({ invoice, photoUrls }) => setPendingInvoice({ invoice, photoUrls })} />
       {pendingInvoice && (
         <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/50 space-y-2">
           <p className="text-xs font-semibold text-blue-800">
@@ -186,7 +187,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
             </div>
           )}
           <div className="flex gap-2">
-            <Button type="button" size="sm" onClick={() => handleApplyInvoice(pendingInvoice.invoice, pendingInvoice.photoUrl)}>
+            <Button type="button" size="sm" onClick={() => handleApplyInvoice(pendingInvoice.invoice, pendingInvoice.photoUrls)}>
               Terapkan Hasil Scan
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => { setPendingInvoice(null); setInvoicePhotoUrl(null); }}>

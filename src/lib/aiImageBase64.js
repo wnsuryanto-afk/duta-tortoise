@@ -31,7 +31,7 @@ export async function fileToCompressedBase64(file, maxDim = 1500) {
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0, width, height);
-  const outDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+  const outDataUrl = canvas.toDataURL("image/jpeg", 0.8);
   const base64 = outDataUrl.split(",")[1];
   const blob = await (await fetch(outDataUrl)).blob();
 

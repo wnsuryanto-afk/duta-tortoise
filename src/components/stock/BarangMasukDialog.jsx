@@ -62,9 +62,9 @@ export default function BarangMasukDialog({ items, user, role, presetItem, onAdd
     return bestScore >= 0.5 ? best : null;
   };
 
-  const handleInvoiceApplied = ({ invoice, photoUrl: pUrl }) => {
+  const handleInvoiceApplied = ({ invoice, photoUrls }) => {
     setInvoiceData(invoice);
-    if (pUrl) setPhotoUrl(pUrl);
+    if (photoUrls?.[0]) setPhotoUrl(photoUrls[0]);
     if (invoice.toko) setSupplier(invoice.toko);
     if (invoice.tanggal) setDate(invoice.tanggal);
   };

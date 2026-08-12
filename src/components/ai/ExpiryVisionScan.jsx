@@ -5,34 +5,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendarClock, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { fileToCompressedBase64 } from "@/lib/aiImageBase64";
+import MultiImagePicker from "@/components/ai/MultiImagePicker";
 
 const EMPTY = { expired_date: "", batch_number: "", nama_produk: "", keyakinan: "rendah" };
 
 /**
  * Pemindai tanggal kadaluarsa dengan AI Vision (case claudeAI "baca_kadaluarsa").
+ * Mendukung beberapa gambar (maks 5), mis. sisi depan & sisi bertuliskan EXP.
  * Props:
  *   onApplied({ expired_date, batch_number, nama_produk, keyakinan })
  *   disabled
  */
 export default function ExpiryVisionScan({ onApplied, disabled }) {
   const [open, setOpen] = useState(false);
-  const [preview, setPreview] = useState(null);
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const [catatan, setCatatan] = useState(null);
 
-  const reset = () => { setPreview(null); setData(null); setError(null); };
+  const reset = () => { setImages([]); setData(null); setError(null); setCatatan(null); };
 
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLoading(true); setError(null); setData(null);
+  const handleScan = async () => {
+    if (images.length === 0) return;
+    setLoading(true); setError(null); setData(null); setCatatan(null);
     try {
-      const { base64, dataUrl } = await fileToCompressedBase64(file, 1500);
-      setPreview(dataUrl);
-      const res = await base44.functions.invoke("claudeAI", { mode: "baca_kadaluarsa", payload: { imageBase64: base64 } });
+      const res = await base44.functions.invoke("claudeAI", { mode: "baca_kadaluarsa", payload: { images: images.map((i) => i.base64) } });
       const r = res.data?.result;
+      if (res.data?.catatan_gambar) setCatatan(res.data.catatan_gambar);
       if (!r || r.error) { setError("Gagal membaca kemasan."); setData({ ...EMPTY }); }
       else setData({ expired_date: r.expired_date || "", batch_number: r.batch_number || "", nama_produk: r.nama_produk || "", keyakinan: r.keyakinan || "rendah" });
     } catch {
@@ -47,10 +47,12 @@ export default function ExpiryVisionScan({ onApplied, disabled }) {
 
   return (
     <>
-      <Button type="button" variant="outline" size="sm" className="gap-2 border-amber-200 text-amber-700 hover:bg-amber-50" disabled={disabled} onClick={() => setOpen(true)}>
-        <CalendarClock className="w-4 h-4" /> Foto Tanggal Kadaluarsa
-      </Button>
-      <span className="text-[10px] text-muted-foreground ml-1">Hasil AI perlu diperiksa.</span>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Button type="button" variant="outline" size="sm" className="gap-2 border-amber-200 text-amber-700 hover:bg-amber-50" disabled={disabled} onClick={() => setOpen(true)}>
+          <CalendarClock className="w-4 h-4" /> Foto Tanggal Kadaluarsa
+        </Button>
+        <span className="text-[10px] text-muted-foreground">Hasil AI perlu diperiksa.</span>
+      </div>
 
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
         <DialogContent className="max-w-sm">
@@ -58,17 +60,26 @@ export default function ExpiryVisionScan({ onApplied, disabled }) {
             <DialogTitle className="flex items-center gap-2"><CalendarClock className="w-5 h-5 text-amber-600" /> Baca Kadaluarsa AI</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer hover:border-amber-400 text-sm text-muted-foreground transition-colors">
-              <CalendarClock className="w-4 h-4" /> Ambil / Pilih Foto Kemasan
-              <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-            </label>
-            {preview && <img src={preview} alt="preview" className="rounded-lg max-h-40 mx-auto border" />}
-            {loading && <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="w-4 h-4 animate-spin" /> Membaca kemasan...</div>}
+            <MultiImagePicker
+              images={images}
+              onChange={setImages}
+              hint="Foto sisi depan dan sisi yang bertuliskan EXP."
+            />
+            <Button type="button" className="w-full" disabled={images.length === 0 || loading} onClick={handleScan}>
+              {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Membaca kemasan...</> : `Baca Kadaluarsa (${images.length} foto)`}
+            </Button>
+
             {error && !loading && (
               <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {error} Isi manual di bawah.
               </div>
             )}
+            {catatan && !loading && (
+              <div className="flex items-start gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {catatan}
+              </div>
+            )}
+
             {data && !loading && (
               <div className="space-y-2 border rounded-lg p-3 bg-muted/20">
                 {data.keyakinan === "rendah" && (
