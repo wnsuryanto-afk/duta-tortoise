@@ -12,6 +12,7 @@ import { Loader2, Camera, X, ImagePlus, AlertTriangle, Download } from "lucide-r
 import { addDays, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { downloadLabel, generateKodeLabel } from "@/lib/labelUtils";
+import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -214,14 +215,14 @@ export default function BreedingForm({ open, onClose, editData }) {
             <div className="space-y-1.5">
               <Label>Jantan <span className="text-red-500">*</span></Label>
               {males.length > 0 ? (
-                <Select value={form.male_id} onValueChange={handleMaleSelect}>
-                  <SelectTrigger className={errors.male_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih jantan" /></SelectTrigger>
-                  <SelectContent>
-                    {males.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <TortoiseSearchSelect
+                  tortoises={males}
+                  value={form.male_id}
+                  onChange={handleMaleSelect}
+                  showKandangFilter
+                  showHealthWarning
+                  placeholder="Pilih jantan"
+                />
               ) : (
                 <Input value={form.male_name} onChange={(e) => handleChange("male_name", e.target.value)} placeholder="Nama jantan" className={errors.male_name ? "border-red-500" : ""} />
               )}
@@ -230,14 +231,14 @@ export default function BreedingForm({ open, onClose, editData }) {
             <div className="space-y-1.5">
               <Label>Betina <span className="text-red-500">*</span></Label>
               {females.length > 0 ? (
-                <Select value={form.female_id} onValueChange={handleFemaleSelect}>
-                  <SelectTrigger className={errors.female_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih betina" /></SelectTrigger>
-                  <SelectContent>
-                    {females.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <TortoiseSearchSelect
+                  tortoises={females}
+                  value={form.female_id}
+                  onChange={handleFemaleSelect}
+                  showKandangFilter
+                  showHealthWarning
+                  placeholder="Pilih betina"
+                />
               ) : (
                 <Input value={form.female_name} onChange={(e) => handleChange("female_name", e.target.value)} placeholder="Nama betina" className={errors.female_name ? "border-red-500" : ""} />
               )}

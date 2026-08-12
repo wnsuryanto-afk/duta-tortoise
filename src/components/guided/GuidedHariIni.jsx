@@ -12,7 +12,7 @@ import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import TugasHariIni from "@/components/sop/TugasHariIni";
 import IncidentalTaskList from "@/components/incidental/IncidentalTaskList";
 import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
-import SickTortoisePicker from "@/components/health/SickTortoisePicker";
+import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
 import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel";
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
@@ -910,13 +910,14 @@ export default function GuidedHariIni({ user }) {
                   <p className="font-semibold text-gray-700 text-sm">Laporan Kura Sakit</p>
                   <button onClick={() => setShowSakitForm(false)}><X className="w-4 h-4 text-gray-400" /></button>
                 </div>
-                <SickTortoisePicker
+                <TortoiseSearchSelect
                   tortoises={tortoises}
                   loading={tortoisesLoading}
                   error={tortoisesError}
                   onRetry={refetchTortoises}
                   value={sakitForm.kura}
                   onChange={(id) => setSakitForm(p => ({ ...p, kura: id }))}
+                  placeholder="Pilih kura"
                 />
                 <div>
                   <p className="text-xs font-semibold mb-1.5" style={{ color: "#1B4332" }}>Diagnosis * (pilih yang sesuai)</p>
