@@ -128,7 +128,7 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
             {error && !loading && (
               <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>{error} Sebagian data tidak terbaca — silakan isi manual di bawah.</span>
+                <span className="whitespace-pre-wrap break-words">{error}{"\n\n"}Silakan isi manual di bawah.</span>
               </div>
             )}
             {catatan && !loading && (
