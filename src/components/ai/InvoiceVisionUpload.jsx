@@ -56,8 +56,29 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
       } else {
         setData(fromInvoice(r));
       }
-    } catch {
-      setError("Panggilan AI gagal atau habis waktu.");
+    } catch (err) {
+      const detail =
+        err?.response?.data?.error ||
+        err?.response?.data?.detail ||
+        err?.data?.error ||
+        err?.body?.error ||
+        err?.message ||
+        String(err);
+      const status = err?.response?.status || err?.status;
+      let ramah = "Panggilan AI gagal.";
+      const d = String(detail).toLowerCase();
+      if (d.includes("api_key") || d.includes("api key") || status === 500) {
+        ramah = "Kunci API Claude belum diisi atau salah. Isi CLAUDE_API_KEY di Dashboard Base44 → Secrets.";
+      } else if (d.includes("timeout") || d.includes("timed out") || status === 504) {
+        ramah = "Waktu habis. Coba kurangi jumlah foto atau gunakan satu foto saja.";
+      } else if (d.includes("too large") || d.includes("payload") || status === 413) {
+        ramah = "Ukuran gambar terlalu besar. Coba unggah lebih sedikit foto.";
+      } else if (status === 401 || status === 403) {
+        ramah = "Kunci API ditolak. Periksa CLAUDE_API_KEY di Dashboard Base44 → Secrets.";
+      } else if (d.includes("model")) {
+        ramah = "Model AI tidak tersedia untuk kunci API ini.";
+      }
+      setError(`${ramah}\n\nRincian teknis: ${detail}${status ? ` (status ${status})` : ""}`);
       setData({ ...EMPTY });
     }
     setLoading(false);
