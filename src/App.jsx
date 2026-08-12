@@ -28,6 +28,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import TortoiseList from '@/pages/TortoiseList.jsx';
 import BreedingAndEggs from '@/pages/BreedingAndEggs.jsx';
+import BreedingDetailPage from '@/pages/BreedingDetailPage';
 import HealthList from '@/pages/HealthList.jsx';
 import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
@@ -106,6 +107,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/tortoise" element={<TortoiseList />} />
         <Route path="/breeding" element={<BreedingAndEggs />} />
+        <Route path="/breeding/:id" element={<BreedingDetailPage />} />
         <Route path="/health" element={<HealthList />} />
         <Route path="/sales" element={<SalesList />} />
         <Route path="/users" element={<UserManagement />} />

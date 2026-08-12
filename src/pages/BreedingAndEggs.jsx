@@ -11,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical, Printer } from "lucide-react";
 import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
+import EggLabelGenerator, { isCandlingLate } from "@/components/breeding/EggLabelGenerator";
+import EggQRPreview from "@/components/breeding/EggQRPreview";
 import { format, differenceInDays, parseISO, addDays } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
@@ -120,7 +122,8 @@ export default function BreedingAndEggs() {
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [hatchBreeding, setHatchBreeding] = useState(null);
-  const [showLabelDialog, setShowLabelDialog] = useState(false); // kept for removal
+  const [showLabelDialog, setShowLabelDialog] = useState(false);
+  const [labelBreedings, setLabelBreedings] = useState([]);
   const [editIncubator, setEditIncubator] = useState(null);
   const [showIncubatorForm, setShowIncubatorForm] = useState(false);
   const [activeTab, setActiveTab] = useState("pembiakan");
@@ -215,7 +218,13 @@ export default function BreedingAndEggs() {
           </div>
           <p className="text-muted-foreground mt-1">Kelola pembiakan, inkubasi telur, dan penetasan</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi").length > 0 && (
+            <Button variant="outline" onClick={() => { setLabelBreedings(breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")); setShowLabelDialog(true); }}>
+              <Printer className="w-4 h-4 mr-2" />
+              Unduh Semua Label Aktif
+            </Button>
+          )}
           {perms.canCreate && (
             <Button onClick={() => { setEditData(null); setShowForm(true); }}>
               <Plus className="w-4 h-4 mr-2" />
@@ -288,18 +297,10 @@ export default function BreedingAndEggs() {
                             onDelete={() => handleDelete(b)}
                             onHatch={() => setHatchBreeding(b)}
                           />
-                          {b.egg_laying_date && (
+                          {b.egg_laying_date && (b.status === "bertelur" || b.status === "inkubasi") && (
                             <button
-                              title="Download Label Kotak Telur"
-                              onClick={() => downloadLabel({
-                                maleCode: b.male_name,
-                                femaleCode: b.female_name,
-                                maleEnclosure: b.male_enclosure || "",
-                                femaleEnclosure: b.female_enclosure || "",
-                                tglBertelur: b.egg_laying_date,
-                                eggCount: b.egg_count,
-                                inkubatorName: b.incubator_name,
-                              })}
+                              title="Cetak Label Kotak Telur"
+                              onClick={() => { setLabelBreedings([b]); setShowLabelDialog(true); }}
                               className="p-1.5 rounded-lg hover:bg-green-100 text-green-700 transition-colors"
                             >
                               🏷️
@@ -334,6 +335,25 @@ export default function BreedingAndEggs() {
                         {b.hatch_date && b.status === "menetas" && <span>{format(new Date(b.hatch_date), "d MMM yyyy", { locale: id })}</span>}
                       </div>
                     </div>
+
+                    {/* Label kotak telur (status bertelur / inkubasi) */}
+                    {(b.status === "bertelur" || b.status === "inkubasi") && (
+                      <div className="mt-3 flex items-center gap-3 p-2.5 rounded-xl bg-green-50/60 border border-green-200">
+                        <EggQRPreview id={b.id} size={52} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-green-800">Label kotak telur siap</p>
+                          <p className="text-[11px] text-muted-foreground">Scan QR untuk buka rincian pembiakan</p>
+                          {isCandlingLate(b) && (
+                            <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-0.5">
+                              <AlertTriangle className="w-3 h-3" /> Candling terlambat
+                            </p>
+                          )}
+                        </div>
+                        <Button size="sm" variant="outline" className="gap-1 flex-shrink-0" onClick={() => { setLabelBreedings([b]); setShowLabelDialog(true); }}>
+                          <Printer className="w-3.5 h-3.5" /> Cetak Label
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Progress Bar Inkubasi */}
                     {active && b.egg_laying_date && (
@@ -706,6 +726,10 @@ export default function BreedingAndEggs() {
         onClose={() => setHatchBreeding(null)}
         breeding={hatchBreeding}
       />
+
+      {showLabelDialog && (
+        <EggLabelGenerator breedings={labelBreedings} open={showLabelDialog} onClose={() => setShowLabelDialog(false)} />
+      )}
 
       {/* DIALOG LABEL DIHAPUS - download otomatis dari BreedingForm */}
 

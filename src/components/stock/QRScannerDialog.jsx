@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QrCode, Keyboard } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /**
  * QR Scanner dialog using html5-qrcode.
@@ -15,6 +16,20 @@ export default function QRScannerDialog({ open, onClose, onResult }) {
   const [error, setError] = useState("");
   const scannerRef = useRef(null);
   const scannerDivId = "qr-scanner-container";
+  const navigate = useNavigate();
+
+  // Pemindai mengenali awalan "BREED:" → buka rincian pembiakan
+  const handleDecoded = (text) => {
+    const t = (text || "").trim();
+    if (t.toUpperCase().startsWith("BREED:")) {
+      const breedId = t.slice(6).trim();
+      handleClose();
+      navigate(`/breeding/${breedId}`);
+      return;
+    }
+    onResult(t.toUpperCase());
+    handleClose();
+  };
 
   useEffect(() => {
     if (!open || mode !== "camera") return;
@@ -28,9 +43,7 @@ export default function QRScannerDialog({ open, onClose, onResult }) {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
-            scanner.stop().catch(() => {});
-            onResult(decodedText.trim());
-            onClose();
+            handleDecoded(decodedText);
           },
           () => {}
         );
@@ -62,8 +75,7 @@ export default function QRScannerDialog({ open, onClose, onResult }) {
   const handleManualSubmit = (e) => {
     e.preventDefault();
     if (!manualSku.trim()) return;
-    onResult(manualSku.trim().toUpperCase());
-    handleClose();
+    handleDecoded(manualSku.trim());
   };
 
   return (
