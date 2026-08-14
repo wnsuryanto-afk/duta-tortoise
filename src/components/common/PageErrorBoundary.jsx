@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 class PageErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, info: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -14,6 +14,7 @@ class PageErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     console.error("PageErrorBoundary caught:", error, info);
+    this.setState({ info });
   }
 
   handleRefresh = () => {
