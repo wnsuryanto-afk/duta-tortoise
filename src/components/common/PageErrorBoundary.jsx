@@ -39,9 +39,20 @@ class PageErrorBoundary extends React.Component {
               Halaman ini mengalami error. Silakan coba refresh atau hubungi admin.
             </p>
             {this.state.error && (
-              <p className="text-xs text-muted-foreground/60 mt-2 font-mono bg-muted px-3 py-1.5 rounded max-w-sm mx-auto break-all">
-                {this.state.error.message}
-              </p>
+              <div className="mt-2 max-w-lg mx-auto text-left">
+                <p className="text-xs text-muted-foreground/60 font-mono bg-muted px-3 py-1.5 rounded break-all">
+                  {this.state.error.message}
+                </p>
+                <details className="mt-2">
+                  <summary className="text-xs text-muted-foreground cursor-pointer select-none">
+                    Rincian teknis (tunjukkan ke admin)
+                  </summary>
+                  <pre className="text-[10px] leading-tight font-mono bg-muted/60 p-2 rounded mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all">
+{String(this.state.error.stack || "").slice(0, 1200)}
+{this.state.info?.componentStack ? "\n--- KOMPONEN ---" + String(this.state.info.componentStack).slice(0, 1200) : ""}
+                  </pre>
+                </details>
+              </div>
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
