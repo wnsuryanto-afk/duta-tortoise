@@ -243,6 +243,9 @@ export default function GuidedHariIni({ user }) {
     }
   }, [maintenanceLogs.length]);
 
+  const [lastCheckAtMs, setLastCheckAtMs] = useState(0);
+  const [cooldownSec, setCooldownSec] = useState(0);
+
   // Sinkron jeda: ambil timestamp centang kandang terakhir dari log sendiri (created_date = presisi detik)
   useEffect(() => {
     if (!maintenanceLogs.length) return;
@@ -418,8 +421,6 @@ export default function GuidedHariIni({ user }) {
   const kandangCameraRef = useRef(null);
   const [pendingKandang, setPendingKandang] = useState(null);
   // ── Jeda minimum 60 detik antar kandang (anti centang beruntun) ──
-  const [lastCheckAtMs, setLastCheckAtMs] = useState(0);
-  const [cooldownSec, setCooldownSec] = useState(0);
 
   // Poin hari ini (dideklarasikan setelah poinKebersihan)
   // settled = dikerjakan sendiri ATAU dikerjakan rekan (tidak menggandakan poin, tapi menghitung sebagai selesai)
