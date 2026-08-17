@@ -9,12 +9,20 @@ import MultiImagePicker from "@/components/ai/MultiImagePicker";
 
 const EMPTY = { expired_date: "", batch_number: "", nama_produk: "", keyakinan: "rendah" };
 
+const EXPIRY_SCHEMA = {
+  type: "object",
+  properties: {
+    expired_date: { type: "string" },
+    batch_number: { type: "string" },
+    nama_produk: { type: "string" },
+    keyakinan: { type: "string" },
+  },
+};
+
 /**
- * Pemindai tanggal kadaluarsa dengan AI Vision (case claudeAI "baca_kadaluarsa").
- * Mendukung beberapa gambar (maks 5), mis. sisi depan & sisi bertuliskan EXP.
- * Props:
- *   onApplied({ expired_date, batch_number, nama_produk, keyakinan })
- *   disabled
+ * Pemindai tanggal kadaluarsa dengan AI Vision memakai integrasi bawaan Base44 (InvokeLLM).
+ * Tidak butuh kunci API tambahan. Mendukung beberapa gambar (maks 5).
+ * Props: onApplied({ expired_date, batch_number, nama_produk, keyakinan }), disabled
  */
 export default function ExpiryVisionScan({ onApplied, disabled }) {
   const [open, setOpen] = useState(false);
@@ -22,21 +30,51 @@ export default function ExpiryVisionScan({ onApplied, disabled }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
-  const [catatan, setCatatan] = useState(null);
 
-  const reset = () => { setImages([]); setData(null); setError(null); setCatatan(null); };
+  const reset = () => { setImages([]); setData(null); setError(null); };
+
+  const uploadImages = async () => {
+    const urls = [];
+    for (const img of images) {
+      if (!img.blob) continue;
+      try { const r = await base44.integrations.Core.UploadFile({ file: img.blob }); if (r?.file_url) urls.push(r.file_url); } catch { /* opsional */ }
+    }
+    return urls;
+  };
 
   const handleScan = async () => {
     if (images.length === 0) return;
-    setLoading(true); setError(null); setData(null); setCatatan(null);
+    setLoading(true); setError(null); setData(null);
     try {
-      const res = await base44.functions.invoke("claudeAI", { mode: "baca_kadaluarsa", payload: { images: images.map((i) => i.base64) } });
-      const r = res.data?.result;
-      if (res.data?.catatan_gambar) setCatatan(res.data.catatan_gambar);
-      if (!r || r.error) { setError("Gagal membaca kemasan."); setData({ ...EMPTY }); }
-      else setData({ expired_date: r.expired_date || "", batch_number: r.batch_number || "", nama_produk: r.nama_produk || "", keyakinan: r.keyakinan || "rendah" });
-    } catch {
-      setError("Panggilan AI gagal atau habis waktu.");
+      const urls = await uploadImages();
+      if (urls.length === 0) {
+        setError("Gagal mengunggah gambar untuk dianalisis. Coba foto yang lebih kecil atau periksa koneksi.");
+        setData({ ...EMPTY });
+        setLoading(false);
+        return;
+      }
+      const multiNote = urls.length > 1
+        ? " Beberapa gambar adalah beberapa sisi kemasan yang sama — ambil tanggal kadaluarsa dan nomor batch dari sisi mana pun yang paling jelas terbaca."
+        : "";
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Anda pembaca kemasan obat/vitamin. Baca foto kemasan.${multiNote}\n\nKembalikan JSON: expired_date (YYYY-MM-DD), batch_number, nama_produk, keyakinan (tinggi/sedang/rendah). Tanggal kadaluarsa di kemasan Indonesia sering ditulis MM/YYYY atau "EXP 03/28". Bila hanya bulan dan tahun tertulis, pakai tanggal terakhir bulan itu (YYYY-MM-28/30/31 sesuai bulan). Bila tidak terbaca jelas, isi null dan keyakinan "rendah". JANGAN menebak.`,
+        file_urls: urls,
+        response_json_schema: EXPIRY_SCHEMA,
+      });
+      if (!result) {
+        setError("Gagal membaca kemasan.");
+        setData({ ...EMPTY });
+      } else {
+        setData({
+          expired_date: result.expired_date || "",
+          batch_number: result.batch_number || "",
+          nama_produk: result.nama_produk || "",
+          keyakinan: result.keyakinan || "rendah",
+        });
+      }
+    } catch (e) {
+      const msg = e?.message || "";
+      setError(`Gagal memanggil AI bawaan Base44 (mungkin layanan sibuk, gambar terlalu besar, atau waktu habis). ${msg}`);
       setData({ ...EMPTY });
     }
     setLoading(false);
@@ -65,6 +103,7 @@ export default function ExpiryVisionScan({ onApplied, disabled }) {
               onChange={setImages}
               hint="Foto sisi depan dan sisi yang bertuliskan EXP."
             />
+            <p className="text-[10px] text-muted-foreground">Memakai AI bawaan Base44 — tidak perlu kunci API tambahan.</p>
             <Button type="button" className="w-full" disabled={images.length === 0 || loading} onClick={handleScan}>
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Membaca kemasan...</> : `Baca Kadaluarsa (${images.length} foto)`}
             </Button>
@@ -72,11 +111,6 @@ export default function ExpiryVisionScan({ onApplied, disabled }) {
             {error && !loading && (
               <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {error} Isi manual di bawah.
-              </div>
-            )}
-            {catatan && !loading && (
-              <div className="flex items-start gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {catatan}
               </div>
             )}
 

@@ -9,24 +9,35 @@ import MultiImagePicker from "@/components/ai/MultiImagePicker";
 
 const EMPTY = { toko: "", tanggal: "", total: "", ongkir: "", diskon: "", items: [{ nama: "", qty: 1, satuan: "", harga_satuan: "", subtotal: "" }] };
 
-const fromInvoice = (r) => ({
-  toko: r.toko ?? "",
-  tanggal: r.tanggal ?? "",
-  total: r.total ?? "",
-  ongkir: r.ongkir ?? "",
-  diskon: r.diskon ?? "",
-  items: (r.items?.length ? r.items : []).map((it) => ({
-    nama: it.nama ?? "", qty: it.qty ?? 1, satuan: it.satuan ?? "",
-    harga_satuan: it.harga_satuan ?? "", subtotal: it.subtotal ?? "",
-  })),
-});
+const INVOICE_SCHEMA = {
+  type: "object",
+  properties: {
+    toko: { type: "string" },
+    tanggal: { type: "string" },
+    total: { type: "number" },
+    ongkir: { type: "number" },
+    diskon: { type: "number" },
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          nama: { type: "string" },
+          qty: { type: "number" },
+          satuan: { type: "string" },
+          harga_satuan: { type: "number" },
+          subtotal: { type: "number" },
+        },
+      },
+    },
+    error: { type: "string" },
+  },
+};
 
 /**
- * Pemindai invoice dengan AI Vision (case claudeAI "baca_invoice").
- * Mendukung beberapa gambar sekaligus (maks 5).
- * Props:
- *   onApplied({ invoice, photoUrls })  — dipanggil saat pemilik menyetujui hasil bacaan
- *   buttonLabel, disabled, hint
+ * Pemindai invoice dengan AI Vision memakai integrasi bawaan Base44 (InvokeLLM).
+ * Tidak butuh kunci API tambahan. Mendukung beberapa gambar (maks 5).
+ * Props: onApplied({ invoice, photoUrls }), buttonLabel, disabled, hint
  */
 export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Invoice dengan AI", disabled, hint }) {
   const [open, setOpen] = useState(false);
@@ -34,51 +45,58 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
-  const [catatan, setCatatan] = useState(null);
+  const [fileUrls, setFileUrls] = useState([]);
 
-  const reset = () => { setImages([]); setData(null); setError(null); setCatatan(null); };
+  const reset = () => { setImages([]); setData(null); setError(null); setFileUrls([]); };
+
+  const uploadImages = async () => {
+    const urls = [];
+    for (const img of images) {
+      if (!img.blob) continue;
+      try { const r = await base44.integrations.Core.UploadFile({ file: img.blob }); if (r?.file_url) urls.push(r.file_url); } catch { /* lampiran opsional */ }
+    }
+    return urls;
+  };
 
   const handleScan = async () => {
     if (images.length === 0) return;
-    setLoading(true); setError(null); setData(null); setCatatan(null);
+    setLoading(true); setError(null); setData(null);
     try {
-      const res = await base44.functions.invoke("claudeAI", { mode: "baca_invoice", payload: { images: images.map((i) => i.base64) } });
-      const r = res.data?.result;
-      if (res.data?.catatan_gambar) setCatatan(res.data.catatan_gambar);
-      if (!r || r.error) {
-        setError(r?.error === "bukan invoice" ? "Gambar ini bukan invoice." : "Gagal membaca invoice.");
+      const urls = await uploadImages();
+      setFileUrls(urls);
+      if (urls.length === 0) {
+        setError("Gagal mengunggah gambar untuk dianalisis. Coba foto yang lebih kecil atau periksa koneksi.");
         setData({ ...EMPTY });
-      } else if (Array.isArray(r)) {
-        const first = r[0] || {};
-        setData(fromInvoice(first));
-        const note = `Terdeteksi ${r.length} invoice berbeda — hanya invoice pertama ditampilkan.`;
-        setCatatan((prev) => (prev ? `${prev} ${note}` : note));
+        setLoading(false);
+        return;
+      }
+      const multiNote = urls.length > 1
+        ? " Beberapa gambar yang dikirim adalah beberapa halaman atau potongan dari SATU invoice yang sama (mis. bagian atas dan bagian bawah yang terpotong saat di-scroll) — GABUNGKAN menjadi SATU hasil, jangan hasilkan beberapa invoice terpisah."
+        : "";
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Anda pembaca invoice/nota belanja. Baca gambar screenshot invoice marketplace (Tokopedia, Shopee, Lazada) atau nota toko.${multiNote}\n\nKembalikan JSON dengan field: toko (nama penjual), tanggal (YYYY-MM-DD), total (Rupiah angka bulat tanpa titis/koma), ongkir, diskon, dan items berisi nama, qty, satuan (kg/gram/pcs/botol/strip), harga_satuan, subtotal. Semua harga dalam Rupiah sebagai angka bulat tanpa titik atau koma. Bila suatu nilai tidak terbaca, isi null, JANGAN mengarang. Bila gambar bukan invoice, isi field error dengan teks "bukan invoice".`,
+        file_urls: urls,
+        response_json_schema: INVOICE_SCHEMA,
+      });
+      if (!result || result.error === "bukan invoice") {
+        setError("Gambar ini bukan invoice. Sebagian data tidak terbaca — silakan isi manual di bawah.");
+        setData({ ...EMPTY });
       } else {
-        setData(fromInvoice(r));
+        setData({
+          toko: result.toko ?? "",
+          tanggal: result.tanggal ?? "",
+          total: result.total ?? "",
+          ongkir: result.ongkir ?? "",
+          diskon: result.diskon ?? "",
+          items: (result.items?.length ? result.items : []).map((it) => ({
+            nama: it.nama ?? "", qty: it.qty ?? 1, satuan: it.satuan ?? "",
+            harga_satuan: it.harga_satuan ?? "", subtotal: it.subtotal ?? "",
+          })),
+        });
       }
-    } catch (err) {
-      const detail =
-        err?.response?.data?.error ||
-        err?.response?.data?.detail ||
-        err?.data?.error ||
-        err?.body?.error ||
-        err?.message ||
-        String(err);
-      const status = err?.response?.status || err?.status;
-      let ramah = "Panggilan AI gagal.";
-      const d = String(detail).toLowerCase();
-      if (d.includes("api_key") || d.includes("api key") || status === 500) {
-        ramah = "Kunci API Claude belum diisi atau salah. Isi CLAUDE_API_KEY di Dashboard Base44 → Secrets.";
-      } else if (d.includes("timeout") || d.includes("timed out") || status === 504) {
-        ramah = "Waktu habis. Coba kurangi jumlah foto atau gunakan satu foto saja.";
-      } else if (d.includes("too large") || d.includes("payload") || status === 413) {
-        ramah = "Ukuran gambar terlalu besar. Coba unggah lebih sedikit foto.";
-      } else if (status === 401 || status === 403) {
-        ramah = "Kunci API ditolak. Periksa CLAUDE_API_KEY di Dashboard Base44 → Secrets.";
-      } else if (d.includes("model")) {
-        ramah = "Model AI tidak tersedia untuk kunci API ini.";
-      }
-      setError(`${ramah}\n\nRincian teknis: ${detail}${status ? ` (status ${status})` : ""}`);
+    } catch (e) {
+      const msg = e?.message || "";
+      setError(`Gagal memanggil AI bawaan Base44 (mungkin layanan sibuk, gambar terlalu besar, atau waktu habis). ${msg}`);
       setData({ ...EMPTY });
     }
     setLoading(false);
@@ -89,14 +107,8 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
   const addItem = () => setData((d) => ({ ...d, items: [...d.items, { nama: "", qty: 1, satuan: "", harga_satuan: "", subtotal: "" }] }));
   const delItem = (i) => setData((d) => ({ ...d, items: d.items.filter((_, x) => x !== i) }));
 
-  const handleApply = async () => {
-    const photoUrls = [];
-    for (const img of images) {
-      if (img.blob) {
-        try { const r = await base44.integrations.Core.UploadFile({ file: img.blob }); photoUrls.push(r.file_url); } catch { /* lampiran opsional */ }
-      }
-    }
-    onApplied?.({ invoice: data, photoUrls });
+  const handleApply = () => {
+    onApplied?.({ invoice: data, photoUrls: fileUrls });
     setOpen(false); reset();
   };
 
@@ -120,6 +132,7 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
               onChange={setImages}
               hint={hint || "Bila invoice panjang dan terpotong saat di-scroll, ambil beberapa tangkapan layar dan unggah semuanya."}
             />
+            <p className="text-[10px] text-muted-foreground">Memakai AI bawaan Base44 — tidak perlu kunci API tambahan.</p>
 
             <Button type="button" className="w-full" disabled={images.length === 0 || loading} onClick={handleScan}>
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Membaca invoice...</> : `Baca Invoice (${images.length} foto)`}
@@ -128,12 +141,7 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
             {error && !loading && (
               <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span className="whitespace-pre-wrap break-words">{error}{"\n\n"}Silakan isi manual di bawah.</span>
-              </div>
-            )}
-            {catatan && !loading && (
-              <div className="flex items-start gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {catatan}
+                <span>{error}</span>
               </div>
             )}
 
