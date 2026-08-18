@@ -480,6 +480,13 @@ export default function OwnerDashboard({ user }) {
                   ? "Klik untuk meninjau & menyetujui poin karyawan →"
                   : "✓ Tidak ada checklist menunggu persetujuan"}
               </p>
+              <Link
+                to="/layar-tim"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-block mt-1 text-xs font-medium text-amber-900 underline hover:no-underline"
+              >
+                Periksa dulu di Layar Tim — urutan kerja, jeda waktu & bukti foto →
+              </Link>
             </div>
             <ChevronRight className="w-5 h-5 text-amber-700 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
           </div>
