@@ -234,13 +234,11 @@ export default function Sidebar({ viewAsRole = null }) {
   const role = viewAsRole || realRole;
   const close = () => setOpen(false);
 
-  // Track which groups are expanded
-  const [expanded, setExpanded] = useState(() => {
-    // Default: expand the group containing the current path
-    const initial = {};
-    NAV_GROUPS.forEach(g => { initial[g.id] = false; });
-    return initial;
-  });
+  // Track which groups are expanded.
+  // PENTING: mulai dari {} (kosong), BUKAN semua false.
+  // Nilai `undefined` inilah yang membuat `expanded[id] ?? isGrpActive`
+  // bekerja, sehingga grup yang sedang aktif otomatis terbuka saat halaman dimuat.
+  const [expanded, setExpanded] = useState({});
 
   const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
 
