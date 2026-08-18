@@ -12,47 +12,24 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, CornerDownLeft, X } from "lucide-react";
-import { NAV_GROUPS } from "@/components/layout/Sidebar";
+import { NAV_SECTIONS, SETTINGS_ITEMS, EXTRA_DESTINATIONS } from "@/lib/navigation";
 import { canAccess } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-
-// Halaman yang punya route tapi sengaja tidak dipasang di sidebar.
-const HIDDEN_ROUTES = [
-  { path: "/warehouse",          section: "warehouse",           label: "Gudang (detail barang)",     group: "Stok & Gudang" },
-  { path: "/stock-gudang",       section: "stock-gudang",        label: "Stok Gudang",                group: "Stok & Gudang" },
-  { path: "/feed-stock",         section: "feed-stock",          label: "Stok Pakan",                 group: "Stok & Gudang" },
-  { path: "/supplier",           section: "supplier",            label: "Daftar Pemasok",             group: "Stok & Gudang" },
-  { path: "/pellet-recipe",      section: "pellet-recipe",       label: "Resep Pelet",                group: "Kandang & Pakan" },
-  { path: "/payroll",            section: "payroll",             label: "Laporan Payroll",            group: "SDM & Gaji" },
-  { path: "/payroll-gaji",       section: "payroll-gaji",        label: "Payroll & Gaji",             group: "SDM & Gaji" },
-  { path: "/daily-payroll",      section: "payroll",             label: "Payroll Harian",             group: "SDM & Gaji" },
-  { path: "/rekap-poin-gaji",    section: "salary",              label: "Rekap Poin & Gaji",          group: "SDM & Gaji" },
-  { path: "/breeding-planner",   section: "breeding-planner",    label: "Perencana Breeding",         group: "Kura" },
-  { path: "/passport",           section: "tortoise",            label: "Paspor Kura",                group: "Kura" },
-  { path: "/incomplete-data",    section: "dashboard",           label: "Data Belum Lengkap",         group: "Laporan & Log" },
-  { path: "/info",               section: "info",                label: "Info & Pengumuman",          group: "Laporan & Log" },
-  { path: "/feedback",           section: "feedback",            label: "Masukan Aplikasi",           group: "Laporan & Log" },
-  { path: "/sop-term-condition", section: "sop",                 label: "Syarat & Ketentuan SOP",     group: "SOP & Jadwal" },
-  { path: "/edit-profil",        section: "dashboard",           label: "Edit Profil Saya",           group: "Pengaturan" },
-];
 
 function buildDestinations(role) {
   const out = [];
   const seen = new Set();
-  NAV_GROUPS.forEach((g) => {
-    g.items.forEach((item) => {
-      if (!canAccess(role, item.section)) return;
-      if (seen.has(item.path)) return;
-      seen.add(item.path);
-      out.push({ path: item.path, label: item.label, group: g.label });
-    });
+  const add = (path, label, group, section) => {
+    if (!canAccess(role, section) || seen.has(path)) return;
+    seen.add(path);
+    out.push({ path, label, group });
+  };
+  NAV_SECTIONS.forEach((s) => {
+    add(s.hub, `${s.label} \u2014 semua halaman`, s.label, s.items[0]?.section);
+    s.items.forEach((i) => add(i.path, i.label, s.label, i.section));
   });
-  HIDDEN_ROUTES.forEach((r) => {
-    if (!canAccess(role, r.section)) return;
-    if (seen.has(r.path)) return;
-    seen.add(r.path);
-    out.push({ path: r.path, label: r.label, group: r.group });
-  });
+  SETTINGS_ITEMS.forEach((i) => add(i.path, i.label, "Pengaturan", i.section));
+  EXTRA_DESTINATIONS.forEach((i) => add(i.path, i.label, i.group, i.section));
   return out;
 }
 

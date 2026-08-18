@@ -9,7 +9,9 @@ import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye, User, Bell, LogOut, Loader2, Search } from "lucide-react";
+import { Eye, User, LogOut, Loader2, Search, Settings } from "lucide-react";
+import { SETTINGS_ITEMS } from "@/lib/navigation";
+import { canAccess } from "@/lib/permissions";
 import CommandPalette from "@/components/common/CommandPalette";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -290,7 +292,7 @@ export default function AppLayout() {
         <ViewAsRoleBanner viewAsLabel={viewAsLabel} viewAsRole={viewAsRole} onReset={resetViewAs} />
       )}
 
-      <Sidebar viewAsRole={isViewingAs ? viewAsRole : null} />
+      <Sidebar viewAsRole={isViewingAs ? viewAsRole : null} onOpenSearch={() => setShowPalette(true)} />
 
       <main className={`lg:ml-64 min-h-screen ${isViewingAs ? "mt-10" : ""}`}>
         {/* ── Top bar ── */}
@@ -358,7 +360,9 @@ export default function AppLayout() {
                     <div className="py-1.5">
                       {[
                         { label: "Edit Profil", icon: User, path: "/edit-profil" },
-                        { label: "Notifikasi", icon: Bell, path: "/notifications" },
+                        ...SETTINGS_ITEMS
+                          .filter((i) => canAccess(isViewingAs && viewAsRole ? viewAsRole : user?.role, i.section))
+                          .map((i) => ({ label: i.label, icon: Settings, path: i.path })),
                       ].map(({ label, icon: Icon, path }) => (
                         <button
                           key={path}
