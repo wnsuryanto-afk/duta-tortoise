@@ -103,11 +103,9 @@ export default function ItemDetailDialog({ item, itemType, role, open, onClose, 
             <Button variant="outline" size="sm" className="gap-1" onClick={onTransaction}>
               📦 Stok Masuk/Keluar
             </Button>
-            {sku && (
-              <Button variant="outline" size="sm" className="gap-1" onClick={onLabel}>
-                <Printer className="w-3.5 h-3.5" /> Buat Label
-              </Button>
-            )}
+            <Button variant="outline" size="sm" className="gap-1" onClick={onLabel}>
+              <Printer className="w-3.5 h-3.5" /> Buat Label
+            </Button>
             {isAdminRole && (
               <Button variant="outline" size="sm" className="gap-1" onClick={onEdit}>
                 <Pencil className="w-3.5 h-3.5" /> Edit

@@ -17,7 +17,7 @@ import BarangMasukDialog from "@/components/stock/BarangMasukDialog";
 import BarangKeluarDialog from "@/components/stock/BarangKeluarDialog";
 import RiwayatTransaksiTab from "@/components/stock/RiwayatTransaksiTab";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
-import NiimbotLabelGenerator from "@/components/stock/NiimbotLabelGenerator";
+import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
 import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
 import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
@@ -167,7 +167,7 @@ export default function WarehousePage() {
           </Button>
           {isAdmin && filtered.length > 0 && (
             <Button variant="outline" onClick={() => setLabelItems(filtered)} className="gap-2">
-              <Printer className="w-4 h-4" /> Label Massal
+              <Printer className="w-4 h-4" /> Cetak Semua Label
             </Button>
           )}
           {isAdmin && (
@@ -275,7 +275,9 @@ export default function WarehousePage() {
                         <p className="font-semibold text-sm">{item.name}</p>
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cat.color}`}>{cat.label}</span>
-                          {item.sku && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1 rounded">{item.sku}</span>}
+                          {item.sku
+                            ? <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1 rounded">{item.sku}</span>
+                            : <span className="text-[10px] text-amber-700 bg-amber-50 px-1 rounded border border-amber-200">belum ada SKU</span>}
                           {item.is_mandatory && <Badge className="text-[10px] bg-red-500 text-white px-1 py-0">WAJIB</Badge>}
                           <ConditionBadge item={item} />
                         </div>
@@ -314,8 +316,9 @@ export default function WarehousePage() {
                             ✏️ Lengkapi
                           </Button>
                         )}
-                        {item.sku && isAdmin && (
+                        {isAdmin && (
                           <Button variant="ghost" size="icon" className="h-8 w-8"
+                            title="Cetak Label"
                             onClick={() => setLabelItems([item])}>
                             <Printer className="w-3.5 h-3.5" />
                           </Button>
@@ -400,7 +403,7 @@ export default function WarehousePage() {
       )}
 
       {labelItems && (
-        <NiimbotLabelGenerator open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
+        <WarehouseLabelModal open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
       )}
 
       <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />
