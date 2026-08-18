@@ -5,8 +5,7 @@
  * muat di sidebar. Sisanya selama ini cuma bisa dibuka lewat URL.
  * Dengan palette ini, menu bisa tetap pendek tanpa ada halaman yang hilang.
  *
- * Sumber tujuan: NAV_GROUPS dari Sidebar (agar tidak ada daftar ganda)
- * + HIDDEN_ROUTES untuk halaman yang memang tidak layak masuk menu.
+ * Sumber tujuan: src/lib/navigation.js (satu-satunya daftar navigasi).
  * Semuanya tetap disaring oleh canAccess() sesuai role.
  */
 import { useState, useEffect, useMemo, useRef } from "react";
