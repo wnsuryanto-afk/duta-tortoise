@@ -88,6 +88,39 @@
       "type": "string",
       "description": "Daftar hal yang diperiksa AI pada foto task ini (panduan per task). Kosong = penilaian umum."
     },
+    "boleh_carryover": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah task boleh dibawa tertunggak (carry-over) ke hari berikutnya"
+    },
+    "jenis_carryover": {
+      "type": "string",
+      "enum": [
+        "1hari",
+        "tertunggak",
+        "hangus"
+      ],
+      "default": "1hari",
+      "description": "Jenis carry-over: 1hari = boleh dibawa 1 hari, tertunggak = boleh menumpuk, hangus = batal jika tidak dikerjakan"
+    },
+    "butuh_bahan_gudang": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah task butuh bahan dari gudang (cek stok sebelum dikerjakan)"
+    },
+    "wajib_untuk_role": {
+      "type": "string",
+      "enum": [
+        "semua",
+        "keeper",
+        "kepala_feeder",
+        "admin",
+        "manajer",
+        "owner"
+      ],
+      "default": "semua",
+      "description": "Role yang wajib mengerjakan task ini (semua = siapa saja)"
+    },
     "is_active": {
       "type": "boolean",
       "default": true,

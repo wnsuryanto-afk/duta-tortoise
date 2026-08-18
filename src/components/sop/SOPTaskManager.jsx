@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Star, Check, AlertTriangle, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { Link } from "react-router-dom";
+import { JENIS_CARRYOVER_OPTIONS, WAJIB_ROLE_OPTIONS } from "@/lib/sopTermCondition";
 
 const categoryColors = {
   pakan: "bg-green-100 text-green-700",
@@ -38,6 +40,10 @@ const DEFAULT_FORM = {
   weekly_days: [], monthly_dates: [],
   target_enclosures: [], target_tortoise_ids: [], target_tortoise_names: [],
   require_photo: false,
+  boleh_carryover: false,
+  jenis_carryover: "1hari",
+  butuh_bahan_gudang: false,
+  wajib_untuk_role: "semua",
   ai_check_points: "",
   assigned_to_email: "", assigned_to_name: "",
 };
@@ -158,6 +164,10 @@ export default function SOPTaskManager() {
       assigned_to_email: t.assigned_to_email || "",
       assigned_to_name: t.assigned_to_name || "",
       ai_check_points: t.ai_check_points || "",
+      boleh_carryover: t.boleh_carryover ?? false,
+      jenis_carryover: t.jenis_carryover || "1hari",
+      butuh_bahan_gudang: t.butuh_bahan_gudang ?? false,
+      wajib_untuk_role: t.wajib_untuk_role || "semua",
     });
     setEditData(t);
     setShowForm(true);
@@ -245,12 +255,19 @@ export default function SOPTaskManager() {
           <p className="text-sm text-muted-foreground">{tasks.length} task terdaftar</p>
           {canEdit && <p className="text-xs text-primary mt-0.5">Klik poin pada baris task untuk edit langsung</p>}
         </div>
-        {canEdit && (
-          <Button onClick={openNew} size="sm">
-            <Plus className="w-4 h-4 mr-1.5" />
-            Tambah Task
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {role === "owner" && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/sop-term-condition">⚙️ Term & Condition</Link>
+            </Button>
+          )}
+          {canEdit && (
+            <Button onClick={openNew} size="sm">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Tambah Task
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -401,18 +418,45 @@ export default function SOPTaskManager() {
 
               {form.require_photo && (
                 <div>
-                  <label className="text-xs font-medium mb-1 block">
-                    Panduan Pemeriksaan AI <span className="text-muted-foreground font-normal">(hal yang diperiksa AI pada foto task ini)</span>
-                  </label>
-                  <Textarea
-                    value={form.ai_check_points || ""}
-                    onChange={e => setForm(p => ({ ...p, ai_check_points: e.target.value }))}
-                    placeholder={"Contoh:\n- Tempat minum terisi dan bersih\n- Tidak ada sisa pakan lama\n- Lantai kandang relatif kering\n- Foto diambil dari jarak yang menampilkan seluruh kandang"}
-                    className="resize-none h-24 text-xs"
-                  />
+...
                   <p className="text-[10px] text-muted-foreground mt-1">AI akan memeriksa foto sesuai daftar di atas. Kosongkan untuk penilaian umum.</p>
                 </div>
               )}
+
+              {/* Term & Condition SOP */}
+              <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/20">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Term & Condition SOP</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                    <Switch checked={form.boleh_carryover || false} onCheckedChange={v => setForm(p => ({ ...p, boleh_carryover: v }))} />
+                    Boleh Carry-over
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                    <Switch checked={form.butuh_bahan_gudang || false} onCheckedChange={v => setForm(p => ({ ...p, butuh_bahan_gudang: v }))} />
+                    Butuh Bahan Gudang
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Jenis Carry-over</label>
+                    <Select value={form.jenis_carryover || "1hari"} onValueChange={v => setForm(p => ({ ...p, jenis_carryover: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {JENIS_CARRYOVER_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Wajib untuk Role</label>
+                    <Select value={form.wajib_untuk_role || "semua"} onValueChange={v => setForm(p => ({ ...p, wajib_untuk_role: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {WAJIB_ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

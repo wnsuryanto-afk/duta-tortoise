@@ -53,6 +53,7 @@ import NotificationsPage from '@/pages/NotificationsPage';
 import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
 import SOPLibraryPage from '@/pages/SOPLibraryPage';
 import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
+import TermConditionSOPPage from '@/pages/TermConditionSOPPage';
 import CRMPage from '@/pages/CRMPage';
 import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
 import EditProfilePage from '@/pages/EditProfilePage.jsx';
@@ -132,6 +133,7 @@ const AuthenticatedApp = () => {
         <Route path="/breeding-planner" element={<BreedingPlannerPage />} />
         <Route path="/sop-library" element={<SOPLibraryPage />} />
         <Route path="/task-template" element={<DailyTaskTemplatePage />} />
+        <Route path="/sop-term-condition" element={<TermConditionSOPPage />} />
         <Route path="/crm" element={<CRMPage />} />
         <Route path="/death-records" element={<DeathRecordsPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
