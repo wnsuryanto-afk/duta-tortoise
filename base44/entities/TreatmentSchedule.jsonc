@@ -109,6 +109,29 @@
     },
     "notes": {
       "type": "string"
+    },
+    "require_photo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah treatment wajib disertai foto bukti"
+    },
+    "points": {
+      "type": "number",
+      "default": 10,
+      "description": "Poin per treatment selesai"
+    },
+    "wajib_untuk_role": {
+      "type": "string",
+      "enum": [
+        "semua",
+        "keeper",
+        "kepala_feeder",
+        "admin",
+        "manajer",
+        "owner"
+      ],
+      "default": "semua",
+      "description": "Role yang wajib mengerjakan treatment ini (semua = siapa saja)"
     }
   },
   "required": [
