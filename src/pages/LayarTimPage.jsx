@@ -18,7 +18,7 @@ import { format, subDays, addDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   Users, Camera, CameraOff, Clock, AlertTriangle, CheckCircle2,
-  ChevronLeft, ChevronRight, MapPin, Timer, ImageOff, Eye
+  ChevronLeft, ChevronRight, MapPin, Timer, ImageOff, Eye, FileEdit, WifiOff
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────
@@ -98,12 +98,23 @@ function KeeperCard({ checklist, attendance }) {
 
   const aiTemuan = tasks.filter((t) => t.ai_temuan_penting && t.ai_status !== "selesai");
 
+  // Absensi yang dibuat orang lain (mis. owner) = input manual, bukan check-in lapangan.
+  const isManual =
+    !!attendance &&
+    (/manual/i.test(attendance.notes || "") ||
+      (!!attendance.created_by && !!attendance.employee_email &&
+        attendance.created_by !== attendance.employee_email));
+  const hasGps = attendance?.check_in_lat != null && attendance?.check_in_lng != null;
+
   const statusMap = {
     approved: { t: "Disetujui", c: "bg-green-100 text-green-700" },
     submitted: { t: "Menunggu approval", c: "bg-amber-100 text-amber-800" },
     rejected: { t: "Ditolak", c: "bg-red-100 text-red-700" },
   };
-  const st = statusMap[checklist?.status] || { t: checklist?.status || "Belum kirim", c: "bg-muted text-muted-foreground" };
+  const st = statusMap[checklist?.status] ||
+    (isManual && !checklist
+      ? { t: "Input manual", c: "bg-slate-100 text-slate-600" }
+      : { t: checklist?.status || "Belum kirim", c: "bg-muted text-muted-foreground" });
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -170,10 +181,20 @@ function KeeperCard({ checklist, attendance }) {
         {aiTemuan.slice(0, 2).map((t) => (
           <Flag key={t.task_id + "-ai"} tone="warn">AI pada “{t.task_title}”: {t.ai_temuan_penting}</Flag>
         ))}
-        {attendance?.location_verified === false && attendance?.check_in && (
-          <Flag tone="warn">Check-in tercatat di luar radius kandang.</Flag>
+        {isManual ? (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg border bg-slate-50 border-slate-200 text-xs text-slate-700">
+            <FileEdit className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>
+              Absensi ini <strong>diinput manual</strong>, bukan check-in dari lapangan.
+              {attendance?.notes ? ` Catatan: ${attendance.notes}` : ""}
+            </span>
+          </div>
+        ) : (
+          hasGps && attendance?.location_verified === false && (
+            <Flag tone="warn">Check-in tercatat di luar radius kandang.</Flag>
+          )
         )}
-        {tasks.length === 0 && (
+        {tasks.length === 0 && !isManual && (
           <p className="text-xs text-muted-foreground px-1">Belum ada tugas tercatat hari ini.</p>
         )}
       </div>
@@ -293,6 +314,17 @@ export default function LayarTimPage() {
           bukan dari perkiraan. Jeda di bawah 3 menit per kandang ditandai merah.
         </span>
       </div>
+
+      {!isLoading && attendances.length > 0 && checklists.length === 0 && (
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-slate-100 border border-slate-300 text-xs text-slate-700">
+          <WifiOff className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span>
+            Tidak ada satu pun checklist pada tanggal ini, padahal absensi tercatat.
+            Ini biasanya berarti <strong>aplikasi tidak dapat diakses</strong> pada hari tersebut —
+            bukan berarti tim tidak bekerja. Jangan pakai hari ini sebagai dasar penilaian.
+          </span>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
