@@ -347,7 +347,10 @@ export default function OwnerDashboard({ user }) {
 
   // kasbon outstanding
   const activeKasbons = kasbons.filter(k => k.status === "active" || k.remaining_amount > 0);
-  const totalKasbonDebt = activeKasbons.reduce((s, k) => s + (k.remaining_amount || k.amount || 0), 0);
+  // Skema Kasbon tidak menyimpan remaining_amount — sisa dihitung dari
+  // amount dikurangi total_paid, agar cicilan yang sudah berjalan ikut terhitung.
+  const sisaKasbon = (k) => Math.max(0, (k.amount || 0) - (k.total_paid || 0));
+  const totalKasbonDebt = activeKasbons.reduce((s, k) => s + sisaKasbon(k), 0);
 
   // SP Aktif + filtered logs
   const activeWarnings = warnings.filter(w => w.status === "aktif" || !w.status);
@@ -862,7 +865,7 @@ export default function OwnerDashboard({ user }) {
                   {activeKasbons.slice(0, 3).map(k => (
                     <div key={k.id} className="flex justify-between text-xs">
                       <span>{k.employee_name}</span>
-                      <span className="font-medium">{fmt(k.remaining_amount || k.amount)}</span>
+                      <span className="font-medium">{fmt(sisaKasbon(k))}</span>
                     </div>
                   ))}
                 </div>

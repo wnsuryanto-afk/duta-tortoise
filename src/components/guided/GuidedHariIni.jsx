@@ -4,8 +4,8 @@ import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
-  MapPin, Leaf, Heart, LogOut, CheckCircle2, AlertTriangle,
-  Smile, Star, Bell, X, Package, ChevronDown, ChevronUp, ClipboardList, Lock, Clock, Camera
+  MapPin, Heart, CheckCircle2, AlertTriangle,
+  Smile, Star, Bell, X, Package, ClipboardList, Clock, Camera
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
