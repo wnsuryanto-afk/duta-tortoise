@@ -18,7 +18,7 @@ import { canAccess, ROLE_LABELS, ROLE_COLORS } from "@/lib/permissions";
 // ─────────────────────────────────────────────
 // 9 GRUP NAVIGASI UTAMA
 // ─────────────────────────────────────────────
-const NAV_GROUPS = [
+export const NAV_GROUPS = [
   // ── 1. DASHBOARD ──────────────────────────
   {
     id: "dashboard",
@@ -117,6 +117,7 @@ const NAV_GROUPS = [
     items: [
       { path: "/hr",              section: "hr",           label: "Absensi & SDM",       icon: Users },
       { path: "/approval-poin",   section: "approval-poin", label: "Approval Poin",       icon: ShieldAlert },
+      { path: "/layar-tim",      section: "layar-tim",     label: "Layar Tim",           icon: ScanSearch, hint: "Aktivitas keeper hari ini: urutan, jeda waktu, bukti foto" },
       { path: "/temuan-foto",      section: "temuan-foto",   label: "Temuan dari Foto", icon: ScanSearch },
       { path: "/catatan-saran",    section: "catatan-saran", label: "Catatan Keeper",    icon: MessageCircle },
       { path: "/salary",          section: "salary",       label: "Gaji Bulanan",        icon: Calculator },

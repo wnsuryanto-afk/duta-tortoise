@@ -23,6 +23,7 @@ import HarusDibeliPage from '@/pages/HarusDibeliPage';
 import AlatKerjaPage from '@/pages/AlatKerjaPage';
 import PengaturanWhatsAppPage from '@/pages/PengaturanWhatsAppPage';
 import WhatsAppLogPage from '@/pages/WhatsAppLogPage';
+import LayarTimPage from '@/pages/LayarTimPage';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -146,6 +147,7 @@ const AuthenticatedApp = () => {
         <Route path="/operational-costs" element={<OperationalCostsPage />} />
         <Route path="/salary-slip" element={<SalarySlipPage />} />
         <Route path="/approval-poin" element={<ApprovalPoinPage />} />
+        <Route path="/layar-tim" element={<LayarTimPage />} />
         <Route path="/tugas-insidentil" element={<IncidentalTaskPage />} />
         <Route path="/daftar-belanja" element={<DaftarBelanjaPage />} />
         <Route path="/harus-dibeli" element={<HarusDibeliPage />} />
