@@ -143,8 +143,11 @@ export default function Dashboard() {
   }
 
   const renderDashboard = () => {
-    if (effectiveRole === "owner" || effectiveRole === "manajer") return <OwnerDashboard user={user} />;
-    if (effectiveRole === "admin") return <AdminDashboard user={user} />;
+    if (effectiveRole === "owner") return <OwnerDashboard user={user} />;
+    // Manajer & Admin memakai dashboard operasional yang sama.
+    // Manajer TIDAK lagi melihat laba/rugi, margin, piutang, dan gaji seluruh tim
+    // — itu konsisten dengan permissions.js dan hanya hak owner.
+    if (effectiveRole === "manajer" || effectiveRole === "admin") return <AdminDashboard user={user} />;
     if (effectiveRole === "kepala_feeder") return <KepalaFeederDashboard user={user} />;
     if (effectiveRole === "keeper") return <KeeperDashboard viewAsEmail={isViewingAs ? viewAsUserEmail : undefined} />;
     if (effectiveRole === "investor") return <InvestorDashboard user={user} />;
