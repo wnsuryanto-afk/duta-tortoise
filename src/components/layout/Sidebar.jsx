@@ -91,7 +91,6 @@ const NAV_GROUPS = [
       { path: "/harus-dibeli",  section: "harus-dibeli", label: "🛒 Harus Dibeli",          icon: ShoppingCart, hint: "Barang yang stoknya menipis atau habis" },
       { path: "/daftar-belanja",section: "daftar-belanja",label: "Permintaan Belanja",     icon: ShoppingCart, hint: "Usulan pembelian dari tim" },
       { path: "/alat-kerja",    section: "alat-kerja",   label: "🔧 Alat Kerja",          icon: Wrench },
-      { path: "/supplier",      section: "supplier",     label: "Pemasok",                icon: Truck },
     ],
   },
 

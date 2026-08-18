@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye } from "lucide-react";
+import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
+import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 function formatRp(v) { return "Rp " + Number(v || 0).toLocaleString("id-ID"); }
@@ -516,6 +517,9 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
   const [photoItem, setPhotoItem] = useState(null);
   const [expiredItem, setExpiredItem] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [selected, setSelected] = useState({});
+  const [labelItems, setLabelItems] = useState(null);
+  const selectedCount = Object.keys(selected).length;
 
   const allItems = useMemo(() => [
     ...feedstocks.map(i => ({ ...i, _src: "feed", _price: i.price_per_unit || 0, _loc: i.storage_location || "gudang", _cat: "pakan" })),
@@ -607,6 +611,12 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
               <AlertTriangle className="w-3.5 h-3.5" /> {criticalMandatory} wajib kritis!
             </div>
           )}
+          {canEdit && selectedCount > 0 && (
+            <Button variant="outline" className="gap-1.5 h-9 text-sm"
+              onClick={() => setLabelItems(filtered.filter(i => selected[i._src + "_" + i.id]))}>
+              <Printer className="w-4 h-4" /> Cetak Label Terpilih ({selectedCount})
+            </Button>
+          )}
           {canCreate && (
             <Button className="gap-1.5 h-9 text-sm" onClick={() => { setEditItem(null); setShowForm(true); }}>
               <Plus className="w-4 h-4" /> Tambah Item
@@ -627,6 +637,24 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40 text-left">
+                  <th className="px-2 py-2.5 w-8">
+                    <input
+                      type="checkbox"
+                      className="w-3.5 h-3.5 accent-primary"
+                      checked={filtered.length > 0 && filtered.every(i => selected[i._src + "_" + i.id])}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelected(prev => ({ ...prev, ...Object.fromEntries(filtered.map(i => [i._src + "_" + i.id, true])) }));
+                        } else {
+                          setSelected(prev => {
+                            const n = { ...prev };
+                            filtered.forEach(i => delete n[i._src + "_" + i.id]);
+                            return n;
+                          });
+                        }
+                      }}
+                    />
+                  </th>
                   <th className="px-3 py-2.5 font-medium text-xs text-muted-foreground w-14">Foto</th>
                   <th className="px-4 py-2.5 font-medium text-xs text-muted-foreground">Nama Item</th>
                   <th className="px-4 py-2.5 font-medium text-xs text-muted-foreground">Kategori</th>
@@ -639,6 +667,22 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
               <tbody className="divide-y divide-border">
                 {filtered.map(item => (
                   <tr key={item._src + item.id} className={`hover:bg-muted/30 transition-colors ${stockStatus(item) === "kritis" ? "bg-red-50/50" : ""}`}>
+                    {/* Select */}
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        className="w-3.5 h-3.5 accent-primary"
+                        checked={!!selected[item._src + "_" + item.id]}
+                        onChange={(e) => {
+                          const k = item._src + "_" + item.id;
+                          setSelected(prev => {
+                            const n = { ...prev };
+                            if (e.target.checked) n[k] = true; else delete n[k];
+                            return n;
+                          });
+                        }}
+                      />
+                    </td>
                     {/* Photo */}
                     <td className="px-3 py-2">
                       <PhotoCell item={item} onPreview={url => setPhotoPreview(url)} onUpload={openUpload} canEdit={canEdit} />
@@ -674,6 +718,11 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
                         <Button variant="ghost" size="icon" className="h-7 w-7" title="Kurangi stok" onClick={() => setAdjustItem(item)}>
                           <MinusCircle className="w-3.5 h-3.5 text-red-500" />
                         </Button>
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Cetak Label" onClick={() => setLabelItems([item])}>
+                            <Printer className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         {canEdit && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
                             <Pencil className="w-3.5 h-3.5" />
@@ -753,6 +802,11 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
           {adjustItem && <AdjustDialog item={adjustItem} onClose={() => setAdjustItem(null)} />}
         </DialogContent>
       </Dialog>
+
+      {/* Cetak Label */}
+      {labelItems && (
+        <WarehouseLabelModal open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
+      )}
     </div>
   );
 }
