@@ -226,26 +226,7 @@ export default function SystemMaintenancePage() {
           </CardContent>
         </Card>
 
-        {/* Migrasi Struktur Stok */}
-        <Card className="md:col-span-2 border border-blue-200 bg-blue-50/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-800">
-              <Database className="w-5 h-5 text-blue-600" />
-              Migrasi Struktur Data Stok
-            </CardTitle>
-            <CardDescription className="text-blue-700">
-              Migrasi field <code className="bg-blue-100 px-1 rounded">code→sku</code>, hapus kategori pakan dari gudang, 
-              dan pisahkan ItemUsage lama menjadi StockMovement + ItemBorrow.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full gap-2 border-blue-300 text-blue-800 hover:bg-blue-100" asChild>
-              <a href="/migrasi-struktur">
-                <Database className="w-4 h-4" /> Buka Halaman Migrasi Struktur →
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
+
 
         {/* Recalculate All */}
         <Card className="md:col-span-2 border-2 border-primary/20">

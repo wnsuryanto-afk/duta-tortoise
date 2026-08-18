@@ -403,7 +403,7 @@ export default function KeeperDashboard() {
               <Bell className="w-5 h-5 text-blue-500" />
               <h2 className="font-semibold text-base">Pengingat</h2>
             </div>
-            <Link to="/reminders">
+            <Link to="/health">
               <Button size="sm" variant="ghost" className="text-xs gap-1 h-7 px-2">
                 Lihat semua <ChevronRight className="w-3.5 h-3.5" />
               </Button>
