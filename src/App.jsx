@@ -69,10 +69,7 @@ import CatatanSaranPage from '@/pages/CatatanSaranPage';
 import TemuanFotoPage from '@/pages/TemuanFotoPage';
 import StockGudangPage from '@/pages/StockGudangPage';
 import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
-import DuplikatStokPage from '@/pages/DuplikatStokPage';
-import MigrasiKategoriPage from '@/pages/MigrasiKategoriPage';
 import DashboardStokPage from '@/pages/DashboardStokPage';
-import MigrasiStrukturPage from '@/pages/MigrasiStrukturPage';
 import UnifiedStokPage from '@/pages/UnifiedStokPage';
 import PanduanPakanPage from '@/pages/PanduanPakanPage';
 import PanduanPenyakitPage from '@/pages/PanduanPenyakitPage';
@@ -161,10 +158,7 @@ const AuthenticatedApp = () => {
         <Route path="/temuan-foto" element={<TemuanFotoPage />} />
         <Route path="/stock-gudang" element={<StockGudangPage />} />
         <Route path="/rekap-poin-gaji" element={<RekapPoinGajiPage />} />
-        <Route path="/duplikat-stok" element={<DuplikatStokPage />} />
-        <Route path="/migrasi-kategori" element={<MigrasiKategoriPage />} />
         <Route path="/dashboard-stok" element={<DashboardStokPage />} />
-        <Route path="/migrasi-struktur" element={<MigrasiStrukturPage />} />
         <Route path="/stok-unified" element={<UnifiedStokPage />} />
         <Route path="/panduan-pakan" element={<PanduanPakanPage />} />
         <Route path="/pakan-harian" element={<PakanHarianPage />} />
