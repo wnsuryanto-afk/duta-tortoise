@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 // useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
   TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart,
-  Users, AlertTriangle, BarChart2, Target, ChevronRight, RefreshCw, ShieldAlert, ListChecks
+  Users, AlertTriangle, BarChart2, Target, ChevronRight, ChevronDown, RefreshCw, ShieldAlert, ListChecks
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
@@ -68,6 +68,9 @@ const MONTH_NAMES_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", 
 const PIE_COLORS = ["#4ade80", "#f87171", "#60a5fa", "#fbbf24", "#a78bfa"];
 
 export default function OwnerDashboard({ user }) {
+  // Panel analitik tertutup default: dashboard jadi ringkas,
+  // dan query berat fase-3 baru dijalankan saat panel dibuka.
+  const [showDetail, setShowDetail] = useState(false);
   const now = new Date();
   const thisMonthStart = format(startOfMonth(now), "yyyy-MM-dd");
   const thisMonthEnd = format(endOfMonth(now), "yyyy-MM-dd");
@@ -171,9 +174,10 @@ export default function OwnerDashboard({ user }) {
   // ── Fase 3: data tersier — ditunda 3 detik ─────
   const [phase3Ready, setPhase3Ready] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setPhase3Ready(true), 3000);
+    if (!showDetail) return;
+    const t = setTimeout(() => setPhase3Ready(true), 300);
     return () => clearTimeout(t);
-  }, []);
+  }, [showDetail]);
 
   const { data: annualGoals = [] } = useQuery({
     queryKey: ["owner-annual-goals"],
@@ -458,9 +462,6 @@ export default function OwnerDashboard({ user }) {
       {/* ── EXCLUDED DATA WIDGET ── */}
       <ExcludedDataWidget />
 
-      {/* ── WIDGET LABA RUGI REALTIME ── */}
-      <LabaRugiWidget />
-
       {/* ── WIDGET CHECKLIST MENUNGGU APPROVAL ── */}
       {phase2Ready && (
         <Link
@@ -514,6 +515,52 @@ export default function OwnerDashboard({ user }) {
           <PettyCashWidget />
         </div>
       </div>
+
+      {/* ── ROW 13: ALERT KRITIS ── */}
+      <div className="bg-card rounded-xl border border-border p-4">
+        <SectionTitle icon={AlertTriangle}>Perlu Perhatianmu</SectionTitle>
+        {criticalAlerts.length === 0 ? (
+          <p className="text-sm text-green-600 font-medium">✓ Semua kondisi normal hari ini</p>
+        ) : (
+          <div className="space-y-2">
+            {criticalAlerts.map((a, i) => (
+              <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${a.type === "red" ? "bg-red-50 border border-red-100" : "bg-amber-50 border border-amber-100"}`}>
+                <span className="text-base mt-0.5">{a.type === "red" ? "🔴" : "🟡"}</span>
+                <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800" : "text-amber-800"}`}>
+                  {a.msg}
+                  {a.href && (
+                    <Link to={a.href} className="ml-2 text-primary font-medium underline hover:no-underline text-xs">
+                      {a.linkLabel || "Lihat →"}
+                    </Link>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* ── DAFTAR BELANJA ── */}
+      <ShoppingListWidget />
+
+      {/* == ANALISIS MENDALAM (tertutup secara default) == */}
+      <button
+        onClick={() => setShowDetail(v => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <BarChart2 className="w-4 h-4 text-primary" />
+          Analisis Mendalam
+        </span>
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {showDetail ? "Tutup" : "Modal, breeding, kesehatan, piutang, target, SDM"}
+          <ChevronDown className={showDetail ? "w-4 h-4 rotate-180 transition-transform" : "w-4 h-4 transition-transform"} />
+        </span>
+      </button>
+
+      {showDetail && (
+        <div className="space-y-6 animate-fade-in">
+      {/* ── WIDGET LABA RUGI REALTIME ── */}
+      <LabaRugiWidget />
 
       {/* ── ROW 2: NILAI & MODAL ── */}
       <div>
@@ -923,32 +970,9 @@ export default function OwnerDashboard({ user }) {
         </div>
       </div>
 
-      {/* ── DAFTAR BELANJA ── */}
-      <ShoppingListWidget />
+        </div>
+      )}
 
-      {/* ── ROW 13: ALERT KRITIS ── */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <SectionTitle icon={AlertTriangle}>Perlu Perhatianmu</SectionTitle>
-        {criticalAlerts.length === 0 ? (
-          <p className="text-sm text-green-600 font-medium">✓ Semua kondisi normal hari ini</p>
-        ) : (
-          <div className="space-y-2">
-            {criticalAlerts.map((a, i) => (
-              <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${a.type === "red" ? "bg-red-50 border border-red-100" : "bg-amber-50 border border-amber-100"}`}>
-                <span className="text-base mt-0.5">{a.type === "red" ? "🔴" : "🟡"}</span>
-                <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800" : "text-amber-800"}`}>
-                  {a.msg}
-                  {a.href && (
-                    <Link to={a.href} className="ml-2 text-primary font-medium underline hover:no-underline text-xs">
-                      {a.linkLabel || "Lihat →"}
-                    </Link>
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
