@@ -240,7 +240,9 @@ export default function Sidebar({ viewAsRole = null }) {
   // bekerja, sehingga grup yang sedang aktif otomatis terbuka saat halaman dimuat.
   const [expanded, setExpanded] = useState({});
 
-  const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+  // `currentlyOpen` dikirim dari render agar toggle tahu kondisi nyata
+  // (termasuk saat grup terbuka otomatis karena aktif) — cegah klik ganda.
+  const toggle = (id, currentlyOpen) => setExpanded(p => ({ ...p, [id]: !currentlyOpen }));
 
   // Build visible groups: filter items by role, deduplicate paths
   const seenPaths = new Set();
@@ -316,7 +318,7 @@ export default function Sidebar({ viewAsRole = null }) {
               <div key={group.id}>
                 {/* Group header */}
                 <button
-                  onClick={() => toggle(group.id)}
+                  onClick={() => toggle(group.id, isExp)}
                   className={cn(
                     "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-all duration-150",
                     isGrpActive
