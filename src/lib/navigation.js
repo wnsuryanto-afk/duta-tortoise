@@ -18,7 +18,7 @@ import {
   LayoutGrid, ShoppingCart, Wrench, AlertTriangle, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart, BarChart2,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy,
-  Activity, MessageSquare, UserCog, Egg,
+  Activity, MessageSquare, UserCog, Egg, Send,
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -119,6 +119,8 @@ export const NAV_SECTIONS = [
       { path: "/users",           section: "users",         label: "Manajemen User",   icon: UserCog,       desc: "Akun & hak akses" },
       { path: "/kritik-saran",    section: "kritik-saran",  label: "Kotak Saran",      icon: MessageSquare, desc: "Masukan tim" },
       { path: "/activity-log",    section: "activity-log",  label: "Activity Log",     icon: Activity,      desc: "Jejak perubahan data" },
+      { path: "/pengaturan-whatsapp", section: "pengaturan-whatsapp", label: "Pengaturan WhatsApp", icon: Send,     desc: "Nomor tujuan & pesan otomatis (Fonnte)" },
+      { path: "/log-whatsapp",        section: "log-whatsapp",        label: "Log WhatsApp",        icon: MessageSquare, desc: "Riwayat pesan terkirim & gagal" },
     ],
   },
 ];
@@ -145,3 +147,19 @@ export const EXTRA_DESTINATIONS = [
   { path: "/sop-term-condition", section: "sop",       label: "Syarat & Ketentuan SOP", group: "Operasional" },
   { path: "/edit-profil",        section: "dashboard", label: "Edit Profil Saya",     group: "Pengaturan" },
 ];
+
+/**
+ * Cari area induk dari sebuah path, untuk tombol "kembali" yang sadar konteks.
+ * Mengembalikan { hub, label } bila halaman berada di dalam sebuah area,
+ * atau null bila halaman berdiri sendiri (mis. halaman pengaturan).
+ */
+export function findParentArea(pathname) {
+  if (!pathname || pathname === "/") return null;
+  for (const s of NAV_SECTIONS) {
+    if (pathname === s.hub) return null; // hub itu sendiri -> kembali ke Beranda
+    if (s.items.some((i) => i.path === pathname || pathname.startsWith(i.path + "/"))) {
+      return { hub: s.hub, label: s.label };
+    }
+  }
+  return null;
+}
