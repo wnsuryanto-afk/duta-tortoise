@@ -383,6 +383,20 @@ export default function OwnerDashboard({ user }) {
   // ── Alert Kritis ──────────────────────────────────
   const criticalAlerts = [];
 
+  // Duplikat CompanySettings dengan setting_key "main" berbahaya:
+  // kode memakai [0] secara sembarang, sehingga nilai_per_poin dan koordinat
+  // kandang bisa berbeda-beda antar sesi tanpa disadari.
+  if (companySettings.length > 1) {
+    const poinValues = [...new Set(companySettings.map(c => c.nilai_per_poin).filter(v => v != null))];
+    criticalAlerts.push({
+      type: "red",
+      msg: `Ada ${companySettings.length} record Pengaturan Perusahaan berlabel "main"` +
+        (poinValues.length > 1 ? ` dengan nilai per poin berbeda (${poinValues.join(" vs ")}). Perhitungan gaji tidak dapat dipercaya sampai ini disatukan.` : ". Satukan agar pengaturan konsisten."),
+      href: "/system-maintenance",
+      linkLabel: "Perbaiki →",
+    });
+  }
+
   // Tortoises with status "terjual" but no Sale record
   const saleTortoiseIds = new Set(sales.map(s => s.tortoise_id).filter(Boolean));
   const terjualNoSale = tortoises.filter(t => t.status === "terjual" && !saleTortoiseIds.has(t.id));
