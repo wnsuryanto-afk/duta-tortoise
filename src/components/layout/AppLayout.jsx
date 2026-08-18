@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import PageErrorBoundary from "@/components/common/PageErrorBoundary";
 import Sidebar from "./Sidebar";
 import GuidedLayout from "@/components/guided/GuidedLayout";
@@ -9,8 +9,8 @@ import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye, User, LogOut, Loader2, Search, Settings } from "lucide-react";
-import { SETTINGS_ITEMS } from "@/lib/navigation";
+import { Eye, User, LogOut, Loader2, Search, Settings, ArrowLeft } from "lucide-react";
+import { SETTINGS_ITEMS, findParentArea } from "@/lib/navigation";
 import { canAccess } from "@/lib/permissions";
 import CommandPalette from "@/components/common/CommandPalette";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -194,6 +194,12 @@ export default function AppLayout() {
   const { viewAsRole, viewAsLabel, viewAsUserEmail, testSaveMode, isViewingAs, resetViewAs } = useViewAs();
   const [showViewAsSelector, setShowViewAsSelector] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const location = useLocation();
+  // Tombol kembali sadar konteks: dari halaman detail -> kembali ke area induknya,
+  // dari halaman area/pengaturan -> kembali ke Beranda.
+  const parentArea = findParentArea(location.pathname);
+  const backTarget = location.pathname === "/" ? null : (parentArea ? parentArea.hub : "/");
+  const backLabel = parentArea ? parentArea.label : "Beranda";
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -299,6 +305,16 @@ export default function AppLayout() {
         <div className={`sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b transition-colors ${isViewingAs && viewAsRole ? "border-blue-400 border-b-2" : "border-border"}`}>
           <div className="flex justify-between items-center px-4 lg:px-8 py-3 max-w-7xl mx-auto">
             <div className="w-8 lg:hidden" />
+            {backTarget ? (
+              <button
+                onClick={() => navigate(backTarget)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 -ml-1 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title={`Kembali ke ${backLabel}`}
+              >
+                <ArrowLeft className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate max-w-[120px] sm:max-w-none">{backLabel}</span>
+              </button>
+            ) : null}
             <div className="flex-1" />
             <div className="flex items-center gap-2">
               {/* Pencarian halaman — menggantikan kebutuhan menu panjang */}
