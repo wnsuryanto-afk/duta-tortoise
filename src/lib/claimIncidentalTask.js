@@ -17,6 +17,10 @@ export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhoto
   if (fresh.status === "done") {
     throw new Error(`sudah dikerjakan ${fresh.done_by_name || "karyawan lain"}`);
   }
+  // Hanya tugas resmi (pending) yang boleh diklaim. Usulan/cancelled tidak menghasilkan poin.
+  if (fresh.status !== "pending") {
+    throw new Error("Tugas belum bisa diklaim (menunggu persetujuan/dibatalkan)");
+  }
   if (fresh.material_status === "waiting_materials") {
     throw new Error("Tugas masih menunggu barang tersedia");
   }

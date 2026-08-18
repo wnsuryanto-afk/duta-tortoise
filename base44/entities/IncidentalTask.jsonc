@@ -35,12 +35,35 @@
     "status": {
       "type": "string",
       "enum": [
+        "usulan",
         "pending",
         "done",
         "cancelled"
       ],
       "default": "pending",
-      "description": "pending = belum dikerjakan, done = sudah dikerjakan, cancelled = dibatalkan"
+      "description": "usulan = usulan keeper menunggu persetujuan (poin belum berlaku), pending = tugas resmi belum dikerjakan, done = sudah dikerjakan, cancelled = dibatalkan/ditolak"
+    },
+    "bobot": {
+      "type": "string",
+      "enum": [
+        "ringan",
+        "sedang",
+        "berat"
+      ],
+      "description": "Bobot perkiraan waktu pengerjaan pilihan keeper: ringan (<30 menit)=10 poin, sedang (30 menit-2 jam)=25 poin, berat (>2 jam)=50 poin. Poin akhir bisa diubah saat persetujuan."
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Alasan penolakan usulan (tampil ke keeper supaya belajar)"
+    },
+    "reviewed_by_name": {
+      "type": "string",
+      "description": "Nama owner/manajer/admin yang menyetujui/menolak usulan"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu usulan ditinjau"
     },
     "sub_steps": {
       "type": "array",

@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { canAccess } from "@/lib/permissions";
+import { canAccess, isManagerLevel } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +17,14 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import IncidentalTaskForm from "@/components/incidental/IncidentalTaskForm";
+import IncidentalTaskUsulanForm from "@/components/incidental/IncidentalTaskUsulanForm";
+import IncidentalTaskUsulanSection from "@/components/incidental/IncidentalTaskUsulanSection";
 
 export default function IncidentalTaskPage() {
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [showUsulanForm, setShowUsulanForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [cancelingId, setCancelingId] = useState(null);
 
@@ -47,6 +50,8 @@ export default function IncidentalTaskPage() {
   if (!canAccess(role, "tugas-insidentil")) return <AccessDenied />;
 
   const deriveStatus = (t) => {
+    if (t.status === "usulan")
+      return { label: "Menunggu Persetujuan", color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
     if (t.status === "cancelled")
       return { label: "Dibatalkan", color: "bg-gray-100 text-gray-600 border-gray-200" };
     if (t.status === "pending")
@@ -59,8 +64,15 @@ export default function IncidentalTaskPage() {
     return { label: "Dikerjakan", color: "bg-blue-100 text-blue-700 border-blue-200" };
   };
 
+  const usulanTasks = tasks.filter((t) => t.status === "usulan");
+  const rejectedUsulan = tasks.filter((t) => t.status === "cancelled" && t.rejection_reason);
+  const resmiTasks = tasks.filter(
+    (t) => t.status !== "usulan" && !(t.status === "cancelled" && t.rejection_reason)
+  );
   const filtered =
-    filterStatus === "all" ? tasks : tasks.filter((t) => deriveStatus(t).label.toLowerCase().includes(filterStatus));
+    filterStatus === "all"
+      ? resmiTasks
+      : resmiTasks.filter((t) => deriveStatus(t).label.toLowerCase().includes(filterStatus));
 
   const handleCancel = async (t) => {
     setCancelingId(t.id);
@@ -78,9 +90,10 @@ export default function IncidentalTaskPage() {
   };
 
   const stats = {
-    pending: tasks.filter((t) => t.status === "pending").length,
-    done: tasks.filter((t) => t.status === "done").length,
-    cancelled: tasks.filter((t) => t.status === "cancelled").length,
+    pending: resmiTasks.filter((t) => t.status === "pending").length,
+    done: resmiTasks.filter((t) => t.status === "done").length,
+    cancelled: resmiTasks.filter((t) => t.status === "cancelled").length,
+    usulan: usulanTasks.length,
   };
 
   const filters = [
@@ -102,13 +115,19 @@ export default function IncidentalTaskPage() {
             Beri tugas dadakan langsung ke karyawan — muncul di checklist "Tugas Hari Ini" mereka & ikut alur approval poin.
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="gap-1.5">
-          <Plus className="w-4 h-4" /> Buat Tugas
-        </Button>
+        {isManagerLevel(role) ? (
+          <Button onClick={() => setShowForm(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" /> Buat Tugas
+          </Button>
+        ) : (
+          <Button onClick={() => setShowUsulanForm(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" /> Usulkan Tugas
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${isManagerLevel(role) ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
         <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
           <p className="text-xs text-muted-foreground">Belum Dikerjakan</p>
@@ -121,6 +140,12 @@ export default function IncidentalTaskPage() {
           <p className="text-2xl font-bold text-gray-500">{stats.cancelled}</p>
           <p className="text-xs text-muted-foreground">Dibatalkan</p>
         </Card>
+        {isManagerLevel(role) && (
+          <Card className="p-4 text-center border-yellow-200 bg-yellow-50">
+            <p className="text-2xl font-bold text-yellow-600">{stats.usulan}</p>
+            <p className="text-xs text-muted-foreground">Menunggu Persetujuan</p>
+          </Card>
+        )}
       </div>
 
       {/* Filter */}
@@ -146,7 +171,11 @@ export default function IncidentalTaskPage() {
         <Card className="p-12 text-center text-muted-foreground">
           <Pin className="w-10 h-10 mx-auto mb-2 opacity-20" />
           <p className="font-semibold">Belum ada tugas insidentil</p>
-          <p className="text-sm mt-1">Klik "Buat Tugas" untuk memberi tugas dadakan ke karyawan.</p>
+          <p className="text-sm mt-1">
+            {isManagerLevel(role)
+              ? 'Klik "Buat Tugas" untuk memberi tugas dadakan ke karyawan.'
+              : 'Klik "Usulkan Tugas" untuk mengajukan pekerjaan ke owner/manajer.'}
+          </p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -248,7 +277,15 @@ export default function IncidentalTaskPage() {
         </div>
       )}
 
+      <IncidentalTaskUsulanSection
+        usulanTasks={usulanTasks}
+        rejectedUsulan={rejectedUsulan}
+        user={user}
+        role={role}
+      />
+
       <IncidentalTaskForm open={showForm} onClose={() => setShowForm(false)} user={user} />
+      <IncidentalTaskUsulanForm open={showUsulanForm} onClose={() => setShowUsulanForm(false)} user={user} />
     </div>
   );
 }
