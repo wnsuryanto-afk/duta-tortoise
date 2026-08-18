@@ -194,8 +194,11 @@ export default function AppLayout() {
   const userMenuRef = useRef(null);
 
   const isOwner = user?.role === "owner"; // selalu berdasarkan role asli
-  // Saat ViewAs aktif, jangan masuk GuidedMode
-  const isGuidedRole = ["keeper", "kepala_feeder"].includes(user?.role) && !isViewingAs;
+  // Role efektif: saat ViewAs aktif, pakai role yang sedang di-preview.
+  // Dengan ini owner benar-benar melihat layar Guided yang dipakai keeper,
+  // bukan dashboard lama yang tidak pernah mereka lihat.
+  const effectiveRole = isViewingAs && viewAsRole ? viewAsRole : user?.role;
+  const isGuidedRole = ["keeper", "kepala_feeder"].includes(effectiveRole);
   const [forceNormalMode, setForceNormalMode] = useState(false);
   const isInvestor = (viewAsRole || user?.role) === "investor";
   // isViewingAs comes from context now
@@ -242,13 +245,39 @@ export default function AppLayout() {
   }
 
   // Keeper / Kepala Feeder → Guided Mode (kecuali user minta normal)
-  if (isProfileLoaded && isGuidedRole && !forceNormalMode && !isViewingAs) {
+  if (isProfileLoaded && isGuidedRole && !forceNormalMode) {
+    // Saat owner memakai "Lihat Sebagai", tampilkan layar guided milik user
+    // yang dipilih. Tanpa Mode Uji, seluruh aksi diblokir agar aktivitas owner
+    // tidak pernah membuat checklist/absensi atas nama keeper.
+    const previewUser = isViewingAs
+      ? {
+          ...user,
+          email: viewAsUserEmail || user?.email,
+          full_name: viewAsLabel || user?.full_name,
+          role: viewAsRole,
+        }
+      : user;
+    const readOnlyPreview = isViewingAs && !testSaveMode;
+
     return (
       <PageErrorBoundary>
-        <GuidedLayout
-          user={user}
-          onSwitchToNormal={() => setForceNormalMode(true)}
-        />
+        {isViewingAs && (
+          <ViewAsRoleBanner viewAsLabel={viewAsLabel} viewAsRole={viewAsRole} onReset={resetViewAs} />
+        )}
+        <div
+          className={isViewingAs ? "pt-10" : ""}
+          onClickCapture={(e) => {
+            if (!readOnlyPreview) return;
+            e.preventDefault();
+            e.stopPropagation();
+            toast.info("Mode preview — aksi dinonaktifkan. Aktifkan Mode Uji bila ingin mencoba menyimpan.");
+          }}
+        >
+          <GuidedLayout
+            user={previewUser}
+            onSwitchToNormal={() => setForceNormalMode(true)}
+          />
+        </div>
       </PageErrorBoundary>
     );
   }
