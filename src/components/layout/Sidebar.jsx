@@ -87,10 +87,11 @@ const NAV_GROUPS = [
     icon: Package,
     color: "text-blue-500",
     items: [
-      { path: "/stok-unified", section: "stock-gudang", label: "Inventaris & Pergerakan", icon: LayoutGrid },
-      { path: "/harus-dibeli", section: "harus-dibeli", label: "🛒 Harus Dibeli",          icon: ShoppingCart },
-      { path: "/alat-kerja",   section: "alat-kerja",   label: "🔧 Alat Kerja",          icon: Wrench },
-      { path: "/supplier",     section: "supplier",     label: "Pemasok",                icon: Truck },
+      { path: "/stok-unified",  section: "stock-gudang", label: "Inventaris & Pergerakan", icon: LayoutGrid },
+      { path: "/harus-dibeli",  section: "harus-dibeli", label: "🛒 Harus Dibeli",          icon: ShoppingCart, hint: "Barang yang stoknya menipis atau habis" },
+      { path: "/daftar-belanja",section: "daftar-belanja",label: "Permintaan Belanja",     icon: ShoppingCart, hint: "Usulan pembelian dari tim" },
+      { path: "/alat-kerja",    section: "alat-kerja",   label: "🔧 Alat Kerja",          icon: Wrench },
+      { path: "/supplier",      section: "supplier",     label: "Pemasok",                icon: Truck },
     ],
   },
 
@@ -344,6 +345,7 @@ export default function Sidebar({ viewAsRole = null }) {
                           key={item.section + item.path}
                           to={item.path}
                           onClick={close}
+                          title={item.hint}
                           className={cn(
                             "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150 group",
                             isActive
