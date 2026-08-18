@@ -9,7 +9,8 @@ import { base44 } from "@/api/base44Client";
 import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
-import { Eye, User, Bell, LogOut, Loader2 } from "lucide-react";
+import { Eye, User, Bell, LogOut, Loader2, Search } from "lucide-react";
+import CommandPalette from "@/components/common/CommandPalette";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,6 +191,7 @@ export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
   const { viewAsRole, viewAsLabel, viewAsUserEmail, testSaveMode, isViewingAs, resetViewAs } = useViewAs();
   const [showViewAsSelector, setShowViewAsSelector] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -297,6 +299,16 @@ export default function AppLayout() {
             <div className="w-8 lg:hidden" />
             <div className="flex-1" />
             <div className="flex items-center gap-2">
+              {/* Pencarian halaman — menggantikan kebutuhan menu panjang */}
+              <button
+                onClick={() => setShowPalette(true)}
+                className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted transition-colors"
+                title="Cari halaman (Ctrl+K)"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cari halaman</span>
+                <kbd className="hidden lg:inline text-[10px] font-mono px-1.5 py-0.5 rounded border border-border bg-muted/60">⌘K</kbd>
+              </button>
               {isOwner && !isViewingAs && (
                 <Button
                   variant="outline"
@@ -394,6 +406,11 @@ export default function AppLayout() {
       </main>
 
       <TourController />
+      <CommandPalette
+        open={showPalette}
+        onOpenChange={setShowPalette}
+        role={isViewingAs && viewAsRole ? viewAsRole : user?.role}
+      />
       {isOwner && (
         <ViewAsSelector
           open={showViewAsSelector}
