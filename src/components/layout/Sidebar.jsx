@@ -88,9 +88,9 @@ const NAV_GROUPS = [
     color: "text-blue-500",
     items: [
       { path: "/stok-unified",  section: "stock-gudang", label: "Inventaris & Pergerakan", icon: LayoutGrid },
-      { path: "/harus-dibeli",  section: "harus-dibeli", label: "🛒 Harus Dibeli",          icon: ShoppingCart, hint: "Barang yang stoknya menipis atau habis" },
+      { path: "/harus-dibeli",  section: "harus-dibeli", label: "Harus Dibeli",          icon: ShoppingCart, hint: "Barang yang stoknya menipis atau habis" },
       { path: "/daftar-belanja",section: "daftar-belanja",label: "Permintaan Belanja",     icon: ShoppingCart, hint: "Usulan pembelian dari tim" },
-      { path: "/alat-kerja",    section: "alat-kerja",   label: "🔧 Alat Kerja",          icon: Wrench },
+      { path: "/alat-kerja",    section: "alat-kerja",   label: "Alat Kerja",          icon: Wrench },
     ],
   },
 
@@ -118,8 +118,8 @@ const NAV_GROUPS = [
     items: [
       { path: "/hr",              section: "hr",           label: "Absensi & SDM",       icon: Users },
       { path: "/approval-poin",   section: "approval-poin", label: "Approval Poin",       icon: ShieldAlert },
-      { path: "/temuan-foto",      section: "temuan-foto",   label: "🔎 Temuan dari Foto", icon: ScanSearch },
-      { path: "/catatan-saran",    section: "catatan-saran", label: "💬 Catatan Keeper",    icon: MessageCircle },
+      { path: "/temuan-foto",      section: "temuan-foto",   label: "Temuan dari Foto", icon: ScanSearch },
+      { path: "/catatan-saran",    section: "catatan-saran", label: "Catatan Keeper",    icon: MessageCircle },
       { path: "/salary",          section: "salary",       label: "Gaji Bulanan",        icon: Calculator },
       { path: "/salary-slip",     section: "salary-slip",  label: "Slip Gaji",           icon: FileText },
       { path: "/kasbon",          section: "kasbon",       label: "Kasbon",              icon: Wallet },
@@ -138,7 +138,7 @@ const NAV_GROUPS = [
       { path: "/breeding-report",  section: "breeding-report",  label: "Lap. Breeding",   icon: BarChart2 },
       { path: "/stock-prediction", section: "warehouse",        label: "Prediksi Stok",   icon: AlertTriangle },
       { path: "/activity-log",     section: "activity-log",     label: "Activity Log",    icon: Activity },
-      { path: "/kritik-saran",     section: "kritik-saran",     label: "📮 Kotak Saran",  icon: MessageSquare },
+      { path: "/kritik-saran",     section: "kritik-saran",     label: "Kotak Saran",  icon: MessageSquare },
     ],
   },
 
@@ -159,70 +159,6 @@ const NAV_GROUPS = [
     ],
   },
 ];
-
-// ─────────────────────────────────────────────
-// Sub-item link
-// ─────────────────────────────────────────────
-function NavItem({ item, isActive, onClick }) {
-  return (
-    <Link
-      to={item.path}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-150 group ml-1",
-        isActive
-          ? "bg-sidebar-primary text-sidebar-primary-foreground"
-          : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-      )}
-    >
-      <item.icon className={cn(
-        "w-3.5 h-3.5 flex-shrink-0 transition-all",
-        isActive ? "opacity-100" : "opacity-50 group-hover:opacity-75"
-      )} />
-      <span className="flex-1 leading-tight">{item.label}</span>
-      {isActive && <div className="w-1 h-1 rounded-full bg-sidebar-primary-foreground/70 flex-shrink-0" />}
-    </Link>
-  );
-}
-
-// ─────────────────────────────────────────────
-// Grup collapsible
-// ─────────────────────────────────────────────
-function NavGroup({ group, isExpanded, hasActive, onToggle, onNavClick }) {
-  const GroupIcon = group.icon;
-  return (
-    <div>
-      <button
-        onClick={onToggle}
-        className={cn(
-          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-semibold transition-all duration-150",
-          hasActive
-            ? "text-sidebar-foreground bg-sidebar-accent/60"
-            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/40"
-        )}
-      >
-        <GroupIcon className={cn("w-4 h-4 flex-shrink-0", group.color)} />
-        <span className="flex-1 text-left">{group.label}</span>
-        {isExpanded
-          ? <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-          : <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-        }
-      </button>
-      {isExpanded && (
-        <div className="mt-0.5 space-y-0.5 pb-1">
-          {group.items.map((item) => (
-            <NavItem
-              key={item.section + item.path}
-              item={item}
-              isActive={false /* handled per item below */}
-              onClick={onNavClick}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────
 // MAIN SIDEBAR
