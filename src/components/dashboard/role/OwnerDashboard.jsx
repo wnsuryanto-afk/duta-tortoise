@@ -463,10 +463,7 @@ export default function OwnerDashboard({ user }) {
 
       {/* ── WIDGET CHECKLIST MENUNGGU APPROVAL ── */}
       {phase2Ready && (
-        <Link
-          to="/approval-poin"
-          className="block bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition-colors group"
-        >
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-amber-100 text-amber-700 flex-shrink-0">
               <ListChecks className="w-5 h-5" />
@@ -475,22 +472,18 @@ export default function OwnerDashboard({ user }) {
               <p className="font-semibold text-sm text-amber-800">
                 Checklist menunggu approval: {pendingApproval.length}
               </p>
-              <p className="text-xs text-amber-700">
-                {pendingApproval.length > 0
-                  ? "Klik untuk meninjau & menyetujui poin karyawan →"
-                  : "✓ Tidak ada checklist menunggu persetujuan"}
-              </p>
-              <Link
-                to="/layar-tim"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-block mt-1 text-xs font-medium text-amber-900 underline hover:no-underline"
-              >
-                Periksa dulu di Layar Tim — urutan kerja, jeda waktu & bukti foto →
-              </Link>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                <Link to="/layar-tim" className="text-xs font-semibold text-amber-900 underline hover:no-underline">
+                  Periksa di Layar Tim →
+                </Link>
+                <Link to="/approval-poin" className="text-xs font-medium text-amber-800 underline hover:no-underline">
+                  {pendingApproval.length > 0 ? "Setujui poin karyawan →" : "Lihat riwayat approval →"}
+                </Link>
+              </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-amber-700 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+            <ChevronRight className="w-5 h-5 text-amber-700 flex-shrink-0" />
           </div>
-        </Link>
+        </div>
       )}
 
       {/* ── TUGAS INSIDENTIL ── */}
