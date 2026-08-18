@@ -2,7 +2,6 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Database, Home, Users, CheckCircle2, AlertTriangle, Baby, FlaskConical } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";

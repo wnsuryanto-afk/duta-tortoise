@@ -4,8 +4,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 // useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
-  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart,
-  Users, AlertTriangle, BarChart2, Target, ChevronRight, ChevronDown, RefreshCw, ShieldAlert, ListChecks
+  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, Target, ChevronRight, ChevronDown, ShieldAlert, ListChecks
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
@@ -13,7 +12,7 @@ import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 

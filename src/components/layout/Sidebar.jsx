@@ -1,13 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Shell, Heart, Baby, DollarSign, Users, Menu, X,
-  LogOut, ClipboardList, BarChart2, BookOpen, Stethoscope,
+  LogOut, BarChart2, BookOpen, Stethoscope,
   Wallet, Calculator, PieChart, Bell, Printer, Package, Thermometer,
   FileText, MessageSquare, Library, ListTodo, Activity, Settings,
   Calendar, CalendarRange, ChevronDown, ChevronRight, Trophy,
   LayoutGrid, GitBranch, Skull, Home,
-  TrendingUp, Zap, AlertTriangle, Truck, ClipboardCheck,
-  Star, Clock, BookMarked, ShieldAlert, ArrowLeftRight, Leaf, Salad,
+  TrendingUp, Zap, AlertTriangle, ClipboardCheck, Clock, ShieldAlert, Leaf, Salad,
   ShoppingCart, Wrench, MessageCircle, ScanSearch
 } from "lucide-react";
 import { useState } from "react";

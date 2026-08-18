@@ -14,17 +14,13 @@ import KepalaFeederDashboard from "@/components/dashboard/role/KepalaFeederDashb
 import InvestorDashboard from "@/components/dashboard/role/InvestorDashboard";
 
 // Fallback: dashboard lama untuk role yang belum punya tampilan khusus
-import { Shell, Baby, Egg, ClipboardList, Users, Package, Target } from "lucide-react";
+import { Shell, Baby, Egg, ClipboardList, Package } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
-import KPISummaryWidget from "@/components/dashboard/KPISummaryWidget";
 import HealthReminderAlert from "@/components/dashboard/HealthReminderAlert";
 import FeedStockAlert from "@/components/dashboard/FeedStockAlert";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import EggHatchChart from "@/components/dashboard/EggHatchChart";
-import AttendanceDashboardBanner from "@/components/dashboard/AttendanceDashboardBanner";
-import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 import HatchReminderAlert from "@/components/dashboard/HatchReminderAlert";
-import OwnerSummaryWidget from "@/components/dashboard/OwnerSummaryWidget";
 import ExpiredItemAlert from "@/components/dashboard/ExpiredItemAlert";
 import IncompleteDataWidget from "@/components/dashboard/IncompleteDataWidget";
 import GettingStartedChecklist from "@/components/tutorial/GettingStartedChecklist";
@@ -32,8 +28,6 @@ import QuickActionsBar from "@/components/dashboard/QuickActionsBar";
 import UrgentAlerts from "@/components/dashboard/UrgentAlerts";
 import OperationalToday from "@/components/dashboard/OperationalToday";
 import DashboardSection from "@/components/dashboard/DashboardSection";
-import HRMetrics from "@/components/dashboard/HRMetrics";
-import OperationalSummaryWidget from "@/components/dashboard/OperationalSummaryWidget";
 
 function FallbackDashboard() {
   const { data: tortoises = [] } = useQuery({
