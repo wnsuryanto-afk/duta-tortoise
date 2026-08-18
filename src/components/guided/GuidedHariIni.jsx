@@ -351,23 +351,29 @@ export default function GuidedHariIni({ user }) {
     if (hasCheckedOut || !attendance) return;
     setLoading(true);
     if (farmConfigured) {
-      let pos;
+      // GPS mati / izin ditolak BUKAN alasan mengunci orang dari check out.
+      // Check out tetap jalan, tapi ditandai tidak terverifikasi agar terlihat
+      // oleh owner di Layar Tim. Blokir hanya kalau GPS berhasil DAN jelas jauh.
+      let pos = null;
       try { pos = await getCurrentPosition(); }
-      catch {
-        showMsg("error", "Izinkan akses lokasi di HP kamu dulu ya.");
-        setLoading(false); return;
-      }
-      const dist = Math.round(haversineDistance(pos.lat, pos.lng, farmLat, farmLng));
-      if (dist > farmRadius) {
-        showMsg("error", `Kamu masih ${dist}m dari kandang. Harus di lokasi kandang untuk check out.`);
-        setLoading(false); return;
+      catch { pos = null; }
+      if (pos) {
+        const dist = Math.round(haversineDistance(pos.lat, pos.lng, farmLat, farmLng));
+        if (dist > farmRadius) {
+          showMsg("error", `Kamu masih ${dist}m dari kandang. Harus di lokasi kandang untuk check out.`);
+          setLoading(false); return;
+        }
+      } else {
+        showMsg("warn", "GPS tidak terbaca. Check out tetap dicatat, tapi ditandai tanpa lokasi.");
       }
       const checkoutTime = nowStr();
       const shiftEnd = attendance.shift_end || salaryConfig?.shift_end || "16:00";
       const ot = calcOvertimeHours(checkoutTime, shiftEnd);
       await base44.entities.Attendance.update(attendance.id, {
         check_out: checkoutTime,
-        check_out_lat: pos.lat, check_out_lng: pos.lng,
+        check_out_lat: pos ? pos.lat : null,
+        check_out_lng: pos ? pos.lng : null,
+        checkout_location_verified: !!pos,
         overtime_hours: ot,
         selfie_checkout_url: selfieUrl || "",
       });

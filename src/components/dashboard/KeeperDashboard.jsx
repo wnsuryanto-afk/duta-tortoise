@@ -149,27 +149,30 @@ export default function KeeperDashboard() {
     setLocationWarning(null);
 
     if (farmConfigured) {
-      let pos;
+      // GPS gagal tidak mengunci check out — lihat catatan di GuidedHariIni.
+      let pos = null;
       try {
         pos = await getCurrentPosition();
       } catch (err) {
-        setGpsError(err.message);
-        setCheckLoading(false);
-        return;
+        setGpsError(null);
+        setLocationWarning("GPS tidak terbaca. Check out tetap dicatat, tapi ditandai tanpa lokasi.");
       }
-      const dist = Math.round(haversineDistance(pos.lat, pos.lng, farmLat, farmLng));
-      if (dist > farmRadius) {
-        setGpsError(`Check out harus dilakukan di lokasi kandang. Anda saat ini berada ${dist}m dari kandang. Silakan menuju kandang untuk checkout.`);
-        setCheckLoading(false);
-        return;
+      if (pos) {
+        const dist = Math.round(haversineDistance(pos.lat, pos.lng, farmLat, farmLng));
+        if (dist > farmRadius) {
+          setGpsError(`Check out harus dilakukan di lokasi kandang. Anda saat ini berada ${dist}m dari kandang. Silakan menuju kandang untuk checkout.`);
+          setCheckLoading(false);
+          return;
+        }
       }
       const checkoutTime = nowStr();
       const shiftEnd = todayAttendance.shift_end || salaryConfig?.shift_end || "16:00";
       const overtimeHours = calcOvertimeHours(checkoutTime, shiftEnd);
       await base44.entities.Attendance.update(todayAttendance.id, {
         check_out: checkoutTime,
-        check_out_lat: pos.lat,
-        check_out_lng: pos.lng,
+        check_out_lat: pos ? pos.lat : null,
+        check_out_lng: pos ? pos.lng : null,
+        checkout_location_verified: !!pos,
         overtime_hours: overtimeHours,
       });
       if (overtimeHours > 0) {
