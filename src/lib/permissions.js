@@ -44,7 +44,7 @@ export const NAV_ACCESS = {
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
-    "health", "warehouse", "finance", "users-readonly", "sop", "sop-library",
+    "health", "warehouse", "finance", "users", "sop", "sop-library",
     "task-template", "payroll", "payroll-gaji", "salary", "hr",
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",

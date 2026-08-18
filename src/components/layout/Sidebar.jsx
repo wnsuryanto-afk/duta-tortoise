@@ -39,57 +39,62 @@ const NAV_GROUPS = [
     icon: Shell,
     color: "text-teal-500",
     items: [
-      { path: "/tortoise",    section: "tortoise",   label: "Daftar Kura",        icon: Shell },
-      { path: "/health",      section: "health",     label: "Rekam Kesehatan",    icon: Heart },
-      { path: "/panduan-penyakit", section: "panduan-penyakit", label: "Panduan Penyakit", icon: BookOpen },
-      { path: "/breeding",    section: "breeding",   label: "Breeding & Telur",   icon: Baby },
-      { path: "/breeding-calendar", section: "breeding-calendar", label: "Kalender Breeding", icon: CalendarRange },
-      { path: "/family-tree", section: "family-tree",label: "Silsilah",           icon: GitBranch },
-      { path: "/treatment",   section: "treatment",  label: "Jadwal Treatment",   icon: Stethoscope },
-      { path: "/death-records",section:"death-records",label:"Catatan Kematian",  icon: Skull },
-      { path: "/kura-diam",    section: "kura-diam",   label: "Deteksi Kura Diam", icon: Clock },
+      { path: "/tortoise",         section: "tortoise",         label: "Daftar Kura",        icon: Shell },
+      { path: "/health",           section: "health",           label: "Rekam Kesehatan",    icon: Heart },
+      { path: "/panduan-penyakit", section: "panduan-penyakit", label: "Panduan Penyakit",   icon: BookOpen },
+      { path: "/breeding",          section: "breeding",         label: "Breeding & Telur",   icon: Baby },
+      { path: "/breeding-calendar",section: "breeding-calendar",label: "Kalender Breeding",  icon: CalendarRange },
+      { path: "/family-tree",      section: "family-tree",      label: "Silsilah",           icon: GitBranch },
+      { path: "/death-records",    section: "death-records",    label: "Catatan Kematian",    icon: Skull },
+      { path: "/kura-diam",        section: "kura-diam",        label: "Deteksi Kura Diam",  icon: Clock },
     ],
   },
 
-  // ── 3. KANDANG ────────────────────────────
+  // ── 3. KANDANG & PAKAN ────────────────────
   {
-    id: "kandang",
-    label: "Kandang",
+    id: "kandang-pakan",
+    label: "Kandang & Pakan",
     icon: Home,
     color: "text-amber-500",
     items: [
-      { path: "/enclosure",           section: "enclosure",   label: "Daftar Kandang",       icon: Home },
-      { path: "/incubator-readings",  section: "breeding",    label: "Inkubator",            icon: Thermometer },
-      { path: "/maintenance-schedule",section: "maintenance", label: "Jadwal Pemeliharaan",  icon: Calendar },
+      { path: "/enclosure",          section: "enclosure",     label: "Daftar Kandang",       icon: Home },
+      { path: "/incubator-readings", section: "breeding",      label: "Inkubator",            icon: Thermometer },
+      { path: "/panduan-pakan",      section: "panduan-pakan",  label: "Panduan Pakan Sulcata", icon: Leaf },
+      { path: "/pakan-harian",       section: "pakan-harian",   label: "Pakan Harian",          icon: Salad },
     ],
   },
 
-  // ── 3.5 PANDUAN PAKAN ────────────────────
+  // ── 4. SOP & JADWAL ───────────────────────
   {
-    id: "panduan",
-    label: "Panduan Pakan",
-    icon: Leaf,
-    color: "text-green-500",
+    id: "sop-jadwal",
+    label: "SOP & Jadwal",
+    icon: ClipboardCheck,
+    color: "text-slate-400",
     items: [
-      { path: "/panduan-pakan", section: "panduan-pakan",  label: "Panduan Pakan Sulcata", icon: Leaf },
-      { path: "/pakan-harian",  section: "pakan-harian",   label: "Pakan Harian",           icon: Salad },
+      { path: "/sop",                 section: "sop",                 label: "Checklist Harian",      icon: ClipboardCheck },
+      { path: "/treatment",           section: "treatment",           label: "Jadwal Treatment",     icon: Stethoscope },
+      { path: "/maintenance-schedule",section: "maintenance",         label: "Jadwal Pemeliharaan",   icon: Calendar },
+      { path: "/sop-library",         section: "sop-library",         label: "Perpustakaan SOP",     icon: Library },
+      { path: "/task-template",       section: "task-template",       label: "Template Tugas",       icon: ListTodo },
+      { path: "/tugas-insidentil",    section: "tugas-insidentil",    label: "Tugas Insidentil",     icon: Zap },
     ],
   },
 
-  // ── 4. STOK & GUDANG ─────────────────────
+  // ── 5. STOK & GUDANG ─────────────────────
   {
     id: "stok",
     label: "Stok & Gudang",
     icon: Package,
     color: "text-blue-500",
     items: [
-      { path: "/stok-unified",  section: "stock-gudang", label: "Inventaris & Pergerakan", icon: LayoutGrid },
-      { path: "/harus-dibeli",  section: "harus-dibeli", label: "🛒 Harus Dibeli",         icon: ShoppingCart },
-      { path: "/supplier",      section: "supplier",     label: "Pemasok",                icon: Truck },
+      { path: "/stok-unified", section: "stock-gudang", label: "Inventaris & Pergerakan", icon: LayoutGrid },
+      { path: "/harus-dibeli", section: "harus-dibeli", label: "🛒 Harus Dibeli",          icon: ShoppingCart },
+      { path: "/alat-kerja",   section: "alat-kerja",   label: "🔧 Alat Kerja",          icon: Wrench },
+      { path: "/supplier",     section: "supplier",     label: "Pemasok",                icon: Truck },
     ],
   },
 
-  // ── 5. KEUANGAN ───────────────────────────
+  // ── 6. KEUANGAN ───────────────────────────
   {
     id: "keuangan",
     label: "Keuangan",
@@ -104,37 +109,21 @@ const NAV_GROUPS = [
     ],
   },
 
-  // ── 6. SDM & KARYAWAN ─────────────────────
+  // ── 7. SDM & GAJI ────────────────────────
   {
     id: "sdm",
-    label: "SDM & Karyawan",
+    label: "SDM & Gaji",
     icon: Users,
     color: "text-green-500",
     items: [
-      { path: "/hr",            section: "hr",           label: "Absensi & SDM",     icon: Users },
-      { path: "/sop",           section: "sop",          label: "Checklist Harian",  icon: ClipboardCheck },
-      { path: "/catatan-saran", section: "catatan-saran", label: "💬 Catatan & Saran", icon: MessageCircle },
-      { path: "/alat-kerja",   section: "alat-kerja",   label: "🔧 Alat Kerja",     icon: Wrench },
-      { path: "/approval-poin", section: "approval-poin", label: "Approval Poin",    icon: ShieldAlert },
-      { path: "/temuan-foto",   section: "temuan-foto",   label: "🔎 Temuan dari Foto", icon: ScanSearch },
-      { path: "/tugas-insidentil", section: "tugas-insidentil", label: "Tugas Insidentil", icon: Zap },
-      { path: "/daftar-belanja",   section: "daftar-belanja",   label: "Daftar Belanja",   icon: ShoppingCart },
-      { path: "/salary",        section: "salary",       label: "Gaji Bulanan",      icon: Calculator },
-      { path: "/salary-slip",   section: "salary-slip",  label: "Slip Gaji",         icon: FileText },
-      { path: "/kasbon",        section: "kasbon",       label: "Kasbon",            icon: Wallet },
-      { path: "/breeder-ranking",section:"breeding",     label: "Ranking & Bonus Khusus", icon: Trophy },
-    ],
-  },
-
-  // ── 7. SOP & TUGAS ────────────────────────
-  {
-    id: "sop",
-    label: "SOP & Tugas",
-    icon: ClipboardList,
-    color: "text-slate-400",
-    items: [
-      { path: "/sop-library",   section: "sop-library",  label: "Perpustakaan SOP",  icon: Library },
-      { path: "/task-template", section: "task-template",label: "Template Tugas",    icon: ListTodo },
+      { path: "/hr",              section: "hr",           label: "Absensi & SDM",       icon: Users },
+      { path: "/approval-poin",   section: "approval-poin", label: "Approval Poin",       icon: ShieldAlert },
+      { path: "/temuan-foto",      section: "temuan-foto",   label: "🔎 Temuan dari Foto", icon: ScanSearch },
+      { path: "/catatan-saran",    section: "catatan-saran", label: "💬 Catatan Keeper",    icon: MessageCircle },
+      { path: "/salary",          section: "salary",       label: "Gaji Bulanan",        icon: Calculator },
+      { path: "/salary-slip",     section: "salary-slip",  label: "Slip Gaji",           icon: FileText },
+      { path: "/kasbon",          section: "kasbon",       label: "Kasbon",              icon: Wallet },
+      { path: "/breeder-ranking", section: "breeding",     label: "Ranking & Bonus Khusus", icon: Trophy },
     ],
   },
 
@@ -145,11 +134,11 @@ const NAV_GROUPS = [
     icon: BarChart2,
     color: "text-pink-500",
     items: [
-      { path: "/sales-report",    section: "sales-report",    label: "Lap. Penjualan",    icon: PieChart },
-      { path: "/breeding-report", section: "breeding-report", label: "Lap. Breeding",     icon: BarChart2 },
-      { path: "/stock-prediction",section: "warehouse",       label: "Prediksi Stok",     icon: AlertTriangle },
-      { path: "/activity-log",    section: "activity-log",    label: "Activity Log",      icon: Activity },
-      { path: "/kritik-saran",    section: "kritik-saran",    label: "Kritik & Saran",    icon: MessageSquare },
+      { path: "/sales-report",     section: "sales-report",     label: "Lap. Penjualan",  icon: PieChart },
+      { path: "/breeding-report",  section: "breeding-report",  label: "Lap. Breeding",   icon: BarChart2 },
+      { path: "/stock-prediction", section: "warehouse",        label: "Prediksi Stok",   icon: AlertTriangle },
+      { path: "/activity-log",     section: "activity-log",     label: "Activity Log",    icon: Activity },
+      { path: "/kritik-saran",     section: "kritik-saran",     label: "📮 Kotak Saran",  icon: MessageSquare },
     ],
   },
 
@@ -164,10 +153,9 @@ const NAV_GROUPS = [
       { path: "/vet-contacts",       section: "health",             label: "Kontak Dokter Hewan", icon: Stethoscope },
       { path: "/printer-config",     section: "printer-config",     label: "Printer & Label",     icon: Printer },
       { path: "/users",              section: "users",              label: "Manajemen User",      icon: Users },
-      { path: "/users",              section: "users-readonly",     label: "Direktori User",      icon: Users },
       { path: "/system-maintenance", section: "system-maintenance", label: "Pemeliharaan Sistem", icon: Settings },
       { path: "/pengaturan-whatsapp", section: "pengaturan-whatsapp", label: "Pengaturan WhatsApp", icon: MessageCircle },
-      { path: "/log-whatsapp", section: "log-whatsapp", label: "Log WhatsApp", icon: MessageCircle },
+      { path: "/log-whatsapp",       section: "log-whatsapp",       label: "Log WhatsApp",       icon: MessageCircle },
     ],
   },
 ];
