@@ -188,7 +188,7 @@ function ProfileSetupScreen({ user, onComplete }) {
 
 export default function AppLayout() {
   const { user, isLoading } = useCurrentUser();
-  const { viewAsRole, viewAsLabel, isViewingAs, resetViewAs } = useViewAs();
+  const { viewAsRole, viewAsLabel, viewAsUserEmail, testSaveMode, isViewingAs, resetViewAs } = useViewAs();
   const [showViewAsSelector, setShowViewAsSelector] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
