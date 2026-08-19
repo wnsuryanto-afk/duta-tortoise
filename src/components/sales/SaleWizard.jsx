@@ -644,11 +644,12 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         await base44.entities.Tortoise.update(form.tortoise_id, {
           status: "terjual",
           is_currently_sick: false,
-          // catatan: hitung ulang kandang dilakukan setelah update di bawah
           previous_status: prevTortoise?.status || "aktif",
           enclosure: "",
           last_status_change: today,
         });
+        // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.
+        try { await recalcEnclosureCounts(); } catch { /* penjualan tetap tersimpan */ }
       }
 
       // C) Create FinanceTransaction
