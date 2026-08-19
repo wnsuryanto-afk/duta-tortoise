@@ -22,7 +22,12 @@ const TOGGLE_MAP = {
  */
 export function normalizePhone(raw) {
   if (!raw) return "";
-  let cleaned = String(raw).replace(/[\s\-().]/g, "");
+  // ID grup WhatsApp (mis. 120363xxxxxxxxx@g.us) BUKAN nomor telepon.
+  // Sebelumnya ID grup dibuang diam-diam oleh validasi di bawah, sehingga
+  // pesan ke grup tidak pernah terkirim tanpa keterangan apa pun.
+  const raw2 = String(raw).trim();
+  if (raw2.includes("@g.us") || /^\d{15,}-\d+$/.test(raw2)) return raw2;
+  let cleaned = raw2.replace(/[\s\-().]/g, "");
   cleaned = cleaned.replace(/^\+/, "");
   if (cleaned.startsWith("0")) {
     cleaned = "62" + cleaned.slice(1);
@@ -283,4 +288,36 @@ export async function sendWhatsAppNotification(base44, params) {
     });
     return { success: false, reason: errMsg };
   }
+}
+
+/**
+ * Tentukan tujuan tambahan berupa grup WhatsApp untuk sebuah jenis notifikasi.
+ *
+ * Setiap jenis punya pengaturan tujuan sendiri (`individuals` | `group` | `both`)
+ * supaya tidak ada satu tombol yang mengirim SEMUA notifikasi ke grup — gaji
+ * karyawan tidak boleh ikut terkirim ke grup karena salah setel.
+ *
+ * Grup PAGI (morning_group_id) berisi keeper; grup SORE (group_id) hanya manajemen.
+ *
+ * @returns {{ targets: string[], mode: string }}
+ */
+export function resolveNotificationTargets(settings, notificationType, individualPhones) {
+  const NONE = { targets: individualPhones || [], mode: "individuals" };
+  if (!settings) return NONE;
+
+  // Jenis notifikasi yang boleh ke grup, beserta grup mana yang dipakai.
+  const groupMap = {
+    sick_report:  { field: "notif_sick_report_destination",  group: settings.morning_group_id },
+    tool_request: { field: "notif_tool_request_destination", group: settings.morning_group_id },
+    low_stock:    { field: "notif_low_stock_destination",    group: settings.group_id },
+  };
+
+  const conf = groupMap[notificationType];
+  if (!conf) return NONE; // gaji, tugas insidentil, pengingat approval: perorangan saja
+
+  const mode = settings[conf.field] || "individuals";
+  const groupId = (conf.group || "").trim();
+  if (mode === "individuals" || !groupId) return NONE;
+  if (mode === "group") return { targets: [groupId], mode: "group" };
+  return { targets: [...(individualPhones || []), groupId], mode: "both" };
 }
