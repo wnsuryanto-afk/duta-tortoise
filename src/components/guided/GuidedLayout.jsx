@@ -29,7 +29,12 @@ const NAV_ITEMS = [
   { id: "kasbon",  label: "Kasbon",    icon: Wallet,     to: "/kasbon" },
 ];
 
+import { useDailyCareTasks } from "@/lib/useDailyCareTasks";
+
 export default function GuidedLayout({ user, onSwitchToNormal }) {
+  // Keeper biasanya orang pertama membuka aplikasi tiap pagi —
+  // pemicu di sini yang paling mungkin berjalan lebih dulu.
+  useDailyCareTasks(!!user);
   const location = useLocation();
   const navigate = useNavigate();
   const [sakitOpen, setSakitOpen] = useState(false);
