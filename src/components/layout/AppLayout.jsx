@@ -11,6 +11,7 @@ import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
 import { Eye, User, LogOut, Loader2, Search, Settings, ArrowLeft } from "lucide-react";
 import { SETTINGS_ITEMS, findParentArea } from "@/lib/navigation";
+import { useDailyCareTasks } from "@/lib/useDailyCareTasks";
 import { canAccess } from "@/lib/permissions";
 import CommandPalette from "@/components/common/CommandPalette";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -195,6 +196,9 @@ export default function AppLayout() {
   const [showViewAsSelector, setShowViewAsSelector] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const location = useLocation();
+  // Jalur cadangan pengganti cron: buat tugas perawatan harian
+  // untuk kura yang masih sakit saat aplikasi pertama dibuka hari ini.
+  useDailyCareTasks(!!user);
   // Tombol kembali sadar konteks: dari halaman detail -> kembali ke area induknya,
   // dari halaman area/pengaturan -> kembali ke Beranda.
   const parentArea = findParentArea(location.pathname);
