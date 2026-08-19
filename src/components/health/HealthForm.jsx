@@ -130,6 +130,27 @@ export default function HealthForm({ open, onClose, editData }) {
     } else {
       savedRecord = await base44.entities.HealthRecord.create({ ...data, ...testModeTag });
     }
+    // ── Sambungkan catatan kesehatan ke status kura ──
+    // Sebelumnya HealthRecord dibuat tanpa pernah menandai kuranya, sehingga
+    // penghitung "Sakit" di Daftar Kura selalu 0 meski ada catatan sakit aktif.
+    if (data.tortoise_id) {
+      try {
+        if (data.type === "sakit") {
+          await base44.entities.Tortoise.update(data.tortoise_id, {
+            is_currently_sick: true,
+            status: "sakit",
+          });
+        } else if (data.type === "sembuh") {
+          await base44.entities.Tortoise.update(data.tortoise_id, {
+            is_currently_sick: false,
+            status: "aktif",
+          });
+        }
+      } catch {
+        // Gagal memperbarui status tidak boleh membatalkan catatan yang sudah tersimpan.
+      }
+    }
+
     // Auto-create FinanceTransaction jika ada biaya_obat dan type sakit/obat
     if (data.biaya_obat > 0 && (data.type === "sakit" || data.type === "obat")) {
       const diagDesc = (data.diagnoses || []).slice(0, 2).join(", ");
