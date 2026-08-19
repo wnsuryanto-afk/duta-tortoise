@@ -108,7 +108,7 @@ export default function GuidedHariIni({ user }) {
   const kandangNoticeTimer = useRef(null);
   const kandangPhotoRef = useRef({ received: false, k: null }); // deteksi batal ambil foto kamera
   const [kondisiOk, setKondisiOk]       = useState(null);
-  const [sakitForm, setSakitForm]       = useState({ kura: "", diagnosis: [], severity: "", description: "" });
+  const [sakitForm, setSakitForm]       = useState({ kura: "", diagnosis: [], severity: "", description: "", treatment: "" });
   const [savedSakit, setSavedSakit]     = useState(null);
   const [sakitReports, setSakitReports] = useState([]);
   const [loading, setLoading]           = useState(false);
@@ -603,6 +603,10 @@ export default function GuidedHariIni({ user }) {
       showMsg("warn", "Pilih kura, diagnosis, dan tingkat keparahan dulu ya.");
       return;
     }
+    if (!sakitForm.treatment.trim()) {
+      showMsg("warn", "Isi dulu perlakuan/tindakannya. Ini yang akan dibaca tim setiap hari.");
+      return;
+    }
     setLoading(true);
     const kura = tortoises.find(t => t.id === sakitForm.kura);
     const diagNames = sakitForm.diagnosis
@@ -615,6 +619,7 @@ export default function GuidedHariIni({ user }) {
       type: "sakit",
       diagnosis: sakitForm.diagnosis,
       severity: sakitForm.severity,
+      treatment: sakitForm.treatment.trim(),
       description: `Dilaporkan oleh ${user.full_name || user.email}. Diagnosis: ${diagNames}${sakitForm.description ? `. Catatan: ${sakitForm.description}` : ""}`,
       diagnosis_notes: diagNames,
     });
@@ -635,7 +640,7 @@ export default function GuidedHariIni({ user }) {
         severity: sakitForm.severity,
       });
     }
-    setSakitForm({ kura: "", diagnosis: [], severity: "", description: "" });
+    setSakitForm({ kura: "", diagnosis: [], severity: "", description: "", treatment: "" });
     setShowSakitForm(false);
     setLoading(false);
   };
@@ -1024,7 +1029,13 @@ export default function GuidedHariIni({ user }) {
                             if (!nextSeverity && !isSel && p.severity_default) {
                               nextSeverity = p.severity_default;
                             }
-                            return { ...prev, diagnosis: next, severity: nextSeverity };
+                            // Isi perlakuan otomatis dari protokol saat diagnosis dipilih.
+                            // Keeper tinggal menyesuaikan, tidak perlu mengarang dari nol.
+                            let nextTreatment = prev.treatment;
+                            if (!isSel && !nextTreatment && Array.isArray(p.perawatan_pendukung) && p.perawatan_pendukung.length > 0) {
+                              nextTreatment = p.perawatan_pendukung.map((x, i) => `${i + 1}. ${x}`).join("\n");
+                            }
+                            return { ...prev, diagnosis: next, severity: nextSeverity, treatment: nextTreatment };
                           })}
                           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                             sel ? "text-white border-[#1B4332]" : "bg-gray-50 border-gray-200 text-gray-600"
@@ -1056,6 +1067,21 @@ export default function GuidedHariIni({ user }) {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: "#1B4332" }}>
+                    Perlakuan / tindakan * (wajib diisi)
+                  </p>
+                  <textarea
+                    rows={4}
+                    value={sakitForm.treatment}
+                    onChange={e => setSakitForm(prev => ({ ...prev, treatment: e.target.value }))}
+                    placeholder="Apa yang dilakukan untuk kura ini? Pilih diagnosis dulu, saran perawatan akan terisi otomatis."
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Ini yang akan muncul di layar tim setiap hari sampai kura dinyatakan sembuh.
+                  </p>
+                </div>
                 <textarea
                   rows={2}
                   value={sakitForm.description}
@@ -1066,7 +1092,7 @@ export default function GuidedHariIni({ user }) {
                 <p className="text-xs text-green-600 font-semibold text-center">+15 poin untuk laporan ini</p>
                 <button
                   onClick={handleLaporKura}
-                  disabled={loading || !sakitForm.kura || sakitForm.diagnosis.length === 0 || !sakitForm.severity}
+                  disabled={loading || !sakitForm.kura || sakitForm.diagnosis.length === 0 || !sakitForm.severity || !sakitForm.treatment.trim()}
                   className="w-full text-white font-bold py-3 rounded-xl disabled:opacity-40 active:scale-95"
                   style={{ backgroundColor: "#E76F00" }}
                 >
