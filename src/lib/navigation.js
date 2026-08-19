@@ -120,7 +120,7 @@ export const NAV_SECTIONS = [
       { path: "/payroll",         section: "payroll",       label: "Bonus & Reward",   icon: Trophy,        desc: "Bonus khusus di luar gaji rutin" },
       { path: "/daily-payroll",   section: "payroll",       label: "Gaji Harian",      icon: FileText,      desc: "Rekap upah harian dari absensi" },
       { path: "/users",           section: "users",         label: "Manajemen User",   icon: UserCog,       desc: "Akun & hak akses" },
-      { path: "/kritik-saran",    section: "kritik-saran",  label: "Kritik & Saran",   icon: MessageSquare, desc: "Masukan tim untuk kemajuan bersama" },
+      { path: "/kritik-saran",    section: "kritik-saran",  label: "Kotak Masukan",    icon: MessageSquare, desc: "Kritik & saran tim — yang ditindaklanjuti dapat 10 poin bonus" },
       { path: "/activity-log",    section: "activity-log",  label: "Activity Log",     icon: Activity,      desc: "Jejak perubahan data" },
       { path: "/pengaturan-whatsapp", section: "pengaturan-whatsapp", label: "Pengaturan WhatsApp", icon: Send,     desc: "Nomor tujuan & pesan otomatis (Fonnte)" },
       { path: "/log-whatsapp",        section: "log-whatsapp",        label: "Log WhatsApp",        icon: MessageSquare, desc: "Riwayat pesan terkirim & gagal" },
@@ -143,7 +143,6 @@ export const EXTRA_DESTINATIONS = [
   { path: "/passport",           section: "tortoise",  label: "Paspor Kura (cetak)",  group: "Kura" },
   { path: "/incomplete-data",    section: "dashboard", label: "Data Belum Lengkap",   group: "Laporan" },
   { path: "/info",               section: "info",      label: "Info & Pengumuman",    group: "Laporan" },
-  { path: "/feedback",           section: "feedback",  label: "Kritik & Saran (halaman lama)", group: "Laporan" },
   { path: "/sop-term-condition", section: "sop",       label: "Syarat & Ketentuan SOP", group: "Operasional" },
   { path: "/edit-profil",        section: "dashboard", label: "Edit Profil Saya",     group: "Pengaturan" },
 ];

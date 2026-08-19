@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -43,7 +43,6 @@ import WarehousePage from '@/pages/WarehousePage';
 import FinancePage from '@/pages/FinancePage';
 import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
-import FeedbackPage from '@/pages/FeedbackPage';
 import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
 import FamilyTreePage from '@/pages/FamilyTreePage';
@@ -120,7 +119,7 @@ const AuthenticatedApp = () => {
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/info" element={<InfoPage />} />
         <Route path="/treatment" element={<TreatmentPage />} />
-        <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="/feedback" element={<Navigate to="/kritik-saran" replace />} />
         <Route path="/kasbon" element={<KasbonPage />} />
         <Route path="/payroll-gaji" element={<PayrollPage />} />
         <Route path="/family-tree" element={<FamilyTreePage />} />
