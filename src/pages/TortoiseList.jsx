@@ -545,8 +545,8 @@ export default function TortoiseList() {
                   Tidak ada kura yang cocok dengan filter
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ada {tortoises.length} kura di database, tapi tidak ada yang memenuhi
-                  kombinasi filter yang sedang aktif.
+                  Ada {activeCount} kura aktif ({tortoises.length} termasuk mati, terjual,
+                  dan diarsipkan), tapi tidak ada yang memenuhi kombinasi filter yang sedang aktif.
                 </p>
                 <button
                   onClick={() => {
