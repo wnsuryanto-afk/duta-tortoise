@@ -70,15 +70,15 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
   const grouped = useMemo(() => groupEnclosures(filteredEnclosures), [filteredEnclosures]);
 
   const selectedEnc = enclosures.find(e => e.name === newEnclosure);
-  const isFull = selectedEnc?.capacity > 0 && selectedEnc?.current_count >= selectedEnc?.capacity;
-  const isNearFull = selectedEnc?.capacity > 0 && selectedEnc?.current_count >= selectedEnc?.capacity * 0.8;
+  const isFull = selectedEnc?.max_capacity > 0 && selectedEnc?.current_count >= selectedEnc?.max_capacity;
+  const isNearFull = selectedEnc?.max_capacity > 0 && selectedEnc?.current_count >= selectedEnc?.max_capacity * 0.8;
 
   const getCapacityLabel = (enc) => {
-    if (!enc.capacity || enc.capacity === 0) return enc.name;
-    const pct = Math.round((enc.current_count || 0) / enc.capacity * 100);
-    if (pct >= 100) return `${enc.name} (${enc.current_count}/${enc.capacity}) 🔴`;
-    if (pct >= 80) return `${enc.name} (${enc.current_count}/${enc.capacity}) 🟡`;
-    return `${enc.name} (${enc.current_count || 0}/${enc.capacity}) ✅`;
+    if (!enc.max_capacity || enc.max_capacity === 0) return enc.name;
+    const pct = Math.round((enc.current_count || 0) / enc.max_capacity * 100);
+    if (pct >= 100) return `${enc.name} (${enc.current_count}/${enc.max_capacity}) 🔴`;
+    if (pct >= 80) return `${enc.name} (${enc.current_count}/${enc.max_capacity}) 🟡`;
+    return `${enc.name} (${enc.current_count || 0}/${enc.max_capacity}) ✅`;
   };
 
   const handleSave = async () => {
@@ -210,8 +210,8 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
                     <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-1.5">{group.label}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {group.items.map(enc => {
-                        const full = enc.capacity > 0 && enc.current_count >= enc.capacity;
-                        const near = enc.capacity > 0 && enc.current_count >= enc.capacity * 0.8;
+                        const full = enc.max_capacity > 0 && enc.current_count >= enc.max_capacity;
+                        const near = enc.max_capacity > 0 && enc.current_count >= enc.max_capacity * 0.8;
                         return (
                           <button
                             key={enc.id}
@@ -228,7 +228,7 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
                             }`}
                           >
                             {enc.name}
-                            {enc.capacity > 0 && (
+                            {enc.max_capacity > 0 && (
                               <span className="ml-1 opacity-70">
                                 {full ? "🔴" : near ? "🟡" : "✅"}
                               </span>
