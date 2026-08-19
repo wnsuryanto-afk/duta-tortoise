@@ -1,4 +1,4 @@
-import { Shell, Egg, Wallet, Users, Pill, Package, FileText, Calendar, CheckSquare, HelpCircle } from "lucide-react";
+import { Shell, Egg, Wallet, Users, Pill, Package, FileText, CheckSquare, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const emptyStateConfig = {
@@ -11,7 +11,7 @@ const emptyStateConfig = {
   },
   breeding: {
     icon: Egg,
-    title: "Belum ada记录 breeding",
+    title: "Belum ada catatan breeding",
     description: "Catat breeding pertama untuk memulai tracking reproduksi kura-kura.",
     buttonText: "+ Catat Breeding",
     color: "text-blue-600",

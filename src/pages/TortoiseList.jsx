@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, Eye, TrendingUp, CalendarX, Skull, ShoppingBag } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag } from "lucide-react";
 import TortoiseTerjualTab from "@/components/tortoise/TortoiseTerjualTab";
 import ExportButton from "@/components/common/ExportButton";
 import SaleWizard from "@/components/sales/SaleWizard";
@@ -536,10 +536,36 @@ export default function TortoiseList() {
           {isLoading ? (
             <CardSkeleton count={6} />
           ) : filtered.length === 0 ? (
-            <EmptyState
-              type="tortoise"
-              onAction={perms.canCreate ? () => { setEditData(null); setShowForm(true); } : null}
-            />
+            // Bedakan "belum ada data sama sekali" dari "tidak ada yang cocok dengan filter".
+            // Sebelumnya keduanya menampilkan "Belum ada kura-kura terdaftar",
+            // padahal datanya ada dan hanya tersaring.
+            tortoises.length > 0 ? (
+              <div className="text-center py-14 px-4">
+                <p className="text-base font-semibold text-foreground">
+                  Tidak ada kura yang cocok dengan filter
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ada {tortoises.length} kura di database, tapi tidak ada yang memenuhi
+                  kombinasi filter yang sedang aktif.
+                </p>
+                <button
+                  onClick={() => {
+                    setSearch(""); setStatusFilter("semua"); setGenderFilter("semua");
+                    setMorphFilter("semua"); setShellTypeFilter("semua"); setEnclosureFilter(null);
+                    setProvenFilter("semua"); setSpeciesFilter("semua");
+                    setWeightFilter("semua"); setShellLengthFilter("semua"); setIncompleteFilter(false);
+                  }}
+                  className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+                >
+                  Hapus semua filter
+                </button>
+              </div>
+            ) : (
+              <EmptyState
+                type="tortoise"
+                onAction={perms.canCreate ? () => { setEditData(null); setShowForm(true); } : null}
+              />
+            )
           ) : viewMode === "semua" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[b.status] ?? 0)).map((t) => (
