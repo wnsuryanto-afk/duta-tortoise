@@ -112,6 +112,7 @@ export default function GuidedHariIni({ user }) {
   const [savedSakit, setSavedSakit]     = useState(null);
   const [sakitReports, setSakitReports] = useState([]);
   const [loading, setLoading]           = useState(false);
+  const [sembuhLoading, setSembuhLoading] = useState(null);
   const [msg, setMsg]                   = useState(null);
   const [poinFlash, setPoinFlash]       = useState(null); // { label, poin }
   const [showSakitForm, setShowSakitForm] = useState(false);
@@ -722,17 +723,51 @@ export default function GuidedHariIni({ user }) {
               <AlertTriangle className="w-5 h-5" />
               Ada yang butuh perhatian segera!
             </div>
-            {sickTortoises.map(h => (
-              <div key={h.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl border border-red-200">
-                <div>
-                  <p className="text-sm font-semibold text-red-800">Kura sakit: {h.tortoise_name}</p>
-                  <p className="text-xs text-red-600">{h.diagnosis_notes || h.description || "—"}</p>
+            {sickTortoises.map(h => {
+              const hari = h.since
+                ? Math.max(0, Math.round((new Date(today) - new Date(h.since)) / 86400000))
+                : null;
+              return (
+                <div key={h.id} className="p-3 bg-white rounded-xl border border-red-200 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-red-800">
+                        {h.tortoise_name}
+                        {h.enclosure ? <span className="font-normal text-red-500"> · {h.enclosure}</span> : null}
+                      </p>
+                      <p className="text-xs text-red-600">{h.diagnosis_notes || h.description || "Perlu diperiksa"}</p>
+                    </div>
+                    {h.severity && (
+                      <span className="flex-shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-red-100 text-red-700">
+                        {h.severity}
+                      </span>
+                    )}
+                  </div>
+
+                  {h.treatment && (
+                    <div className="rounded-lg bg-amber-50 border border-amber-200 p-2">
+                      <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wide">Perlakuan</p>
+                      <p className="text-xs text-amber-900 whitespace-pre-line">{h.treatment}</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    {hari !== null && (
+                      <span className="text-[11px] text-red-500 flex-1">
+                        {hari === 0 ? "Dilaporkan hari ini" : `Sudah ${hari} hari sakit`}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleLaporSembuh(h)}
+                      disabled={sembuhLoading === h.tortoise_id}
+                      className="flex-shrink-0 text-xs font-bold text-white bg-green-600 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                    >
+                      {sembuhLoading === h.tortoise_id ? "Menyimpan…" : "✓ Sudah Sembuh"}
+                    </button>
+                  </div>
                 </div>
-                <a href="/health" className="flex-shrink-0 text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg">
-                  Lihat
-                </a>
-              </div>
-            ))}
+              );
+            })}
             {kritisNotifs.map(n => (
               <div key={n.id} className="flex items-start gap-2 bg-white rounded-xl border border-amber-200 p-2.5">
                 <Bell className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
