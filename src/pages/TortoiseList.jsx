@@ -157,6 +157,9 @@ export default function TortoiseList() {
     return false;
   };
 
+  // Jumlah kura aktif — dipakai di beberapa tempat pada JSX di bawah.
+  const totalAktif = tortoises.filter(t => t.status === "aktif" && !t.is_archived).length;
+
   const filtered = tortoises.filter((t) => {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     let matchStatus;
@@ -545,7 +548,7 @@ export default function TortoiseList() {
                   Tidak ada kura yang cocok dengan filter
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ada {activeCount} kura aktif ({tortoises.length} termasuk mati, terjual,
+                  Ada {totalAktif} kura aktif ({tortoises.length} termasuk mati, terjual,
                   dan diarsipkan), tapi tidak ada yang memenuhi kombinasi filter yang sedang aktif.
                 </p>
                 <button
