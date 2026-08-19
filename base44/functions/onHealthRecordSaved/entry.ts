@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { waitUntil } from "base44:runtime";
 import {
   sendWhatsAppNotification,
+  resolveNotificationTargets,
+  getSettings,
   getPhoneNumbersForRoles,
 } from "../../shared/whatsapp.ts";
 
@@ -77,8 +79,11 @@ Deno.serve(async (req) => {
           `Pelapor: ${reporterName}\n` +
           `Gejala: ${gejalaText}\n\n` +
           `Buka aplikasi → menu *Rekam Kesehatan* untuk detail.`;
+        // Tambahkan grup WhatsApp bila owner mengaktifkannya untuk jenis ini.
+        const waSettings = await getSettings(base44);
+        const resolved = resolveNotificationTargets(waSettings, 'sick_report', phones);
         await sendWhatsAppNotification(base44, {
-          targets: phones,
+          targets: resolved.targets,
           message: waMessage,
           notificationType: 'sick_report',
           relatedEntityId: record.id,

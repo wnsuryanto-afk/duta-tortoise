@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { waitUntil } from "base44:runtime";
 import {
   sendWhatsAppNotification,
+  resolveNotificationTargets,
+  getSettings,
   getPhoneNumbersForRoles,
 } from "../../shared/whatsapp.ts";
 
@@ -85,8 +87,11 @@ Deno.serve(async (req) => {
           `Barang: ${item.name}${item.sku ? ` (${item.sku})` : ''}\n` +
           `Stok: ${newStock} ${unit} (min: ${minStock} ${unit})\n\n` +
           `Buka aplikasi → menu *Harus Dibeli* untuk restock.`;
+        // Tambahkan grup WhatsApp bila owner mengaktifkannya untuk jenis ini.
+        const waSettings = await getSettings(base44);
+        const resolved = resolveNotificationTargets(waSettings, 'low_stock', phones);
         await sendWhatsAppNotification(base44, {
-          targets: phones,
+          targets: resolved.targets,
           message: waMessage,
           notificationType: 'low_stock',
           relatedEntityId: item.id,

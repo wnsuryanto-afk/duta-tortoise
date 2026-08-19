@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { waitUntil } from "base44:runtime";
 import {
   sendWhatsAppNotification,
+  resolveNotificationTargets,
+  getSettings,
   getPhoneNumbersForRoles,
 } from "../../shared/whatsapp.ts";
 
@@ -41,8 +43,11 @@ export default async function(req: Request): Promise<Response> {
       (async () => {
         const phones = await getPhoneNumbersForRoles(base44, ['owner', 'manajer']);
         if (phones.length > 0) {
+          // Tambahkan grup WhatsApp bila owner mengaktifkannya untuk jenis ini.
+          const waSettings = await getSettings(base44);
+          const resolved = resolveNotificationTargets(waSettings, 'tool_request', phones);
           await sendWhatsAppNotification(base44, {
-            targets: phones,
+            targets: resolved.targets,
             message,
             notificationType: 'tool_request',
             relatedEntityId: toolReq.id,
