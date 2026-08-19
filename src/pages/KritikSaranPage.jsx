@@ -27,6 +27,9 @@ const TYPE_CONFIG = {
   saran:  { label: "Saran",  color: "bg-blue-100 text-blue-700" },
 };
 
+// Poin bonus untuk setiap masukan yang ditindaklanjuti owner/manajer.
+const POIN_MASUKAN = 10;
+
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.baru;
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>{cfg.label}</span>;
@@ -114,19 +117,56 @@ export default function KritikSaranPage() {
         responded_date: new Date().toISOString().split("T")[0],
         status: "ditindaklanjuti",
       });
+      // Poin bonus untuk masukan yang ditindaklanjuti.
+      // Owner tidak memberi poin ke dirinya sendiri.
+      let poinDiberi = 0;
+      if (selected.submitted_by_email && selected.submitted_by_email !== user?.email) {
+        try {
+          const period = new Date().toISOString().slice(0, 7); // yyyy-MM
+          const existing = await base44.entities.BonusReward.filter({
+            employee_email: selected.submitted_by_email,
+            period,
+          });
+          if (existing.length > 0) {
+            await base44.entities.BonusReward.update(existing[0].id, {
+              total_points: (existing[0].total_points || 0) + POIN_MASUKAN,
+              notes: [existing[0].notes, "Poin masukan ditindaklanjuti"].filter(Boolean).join(" | "),
+            });
+          } else {
+            await base44.entities.BonusReward.create({
+              employee_email: selected.submitted_by_email,
+              employee_name: selected.submitted_by_name || selected.submitted_by_email,
+              period,
+              total_points: POIN_MASUKAN,
+              notes: "Poin masukan ditindaklanjuti",
+            });
+          }
+          poinDiberi = POIN_MASUKAN;
+        } catch {
+          // Gagal memberi poin tidak boleh membatalkan balasan yang sudah tersimpan.
+          poinDiberi = 0;
+        }
+      }
+
       // Notif ke submitter
       await base44.entities.Notification.create({
         recipient_email: selected.submitted_by_email,
         title: "✅ Masukan Anda Direspons",
-        message: `${selected.title || selected.content.slice(0, 50)} telah direspons oleh ${user.full_name}`,
+        message: `${selected.title || selected.content.slice(0, 50)} telah direspons oleh ${user.full_name}` +
+          (poinDiberi ? ` — kamu mendapat ${poinDiberi} poin bonus.` : ""),
         type: "success",
         category: "lainnya",
         is_read: false,
       });
       qc.invalidateQueries({ queryKey: ["feedback-suggestions"] });
+      qc.invalidateQueries({ queryKey: ["bonus-rewards"] });
       setSelected(null);
       setResponseText("");
-      toast.success("Balasan berhasil dikirim");
+      toast.success(
+        poinDiberi
+          ? `Balasan terkirim — ${poinDiberi} poin bonus diberikan.`
+          : "Balasan berhasil dikirim"
+      );
     } catch {
       toast.error("Gagal mengirim balasan");
     } finally {
