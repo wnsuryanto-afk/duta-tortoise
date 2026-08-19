@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { normalizePhone, normalizePhoneInput } from "@/lib/normalizePhone";
+import { normalizePhoneInput } from "@/lib/normalizePhone";
 import { safeFormatDate } from "@/lib/safeDate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -98,6 +98,8 @@ export default function PengaturanWhatsAppPage() {
     const tg = {};
     NOTIF_CONFIG.forEach((c) => {
       tg[c.key] = data[c.key] !== false;
+      // Muat juga tujuan pengiriman untuk notifikasi yang mendukung grup
+      if (c.destKey) tg[c.destKey] = data[c.destKey] || "individuals";
     });
     setToggles(tg);
     setGroupId(data.group_id || "");
