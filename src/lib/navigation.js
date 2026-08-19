@@ -18,7 +18,7 @@ import {
   LayoutGrid, ShoppingCart, Wrench, AlertTriangle, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart, BarChart2,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy,
-  Activity, MessageSquare, UserCog, Egg, Send,
+  Activity, MessageSquare, UserCog, Egg, Send, QrCode,
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -38,6 +38,7 @@ export const NAV_SECTIONS = [
       { path: "/breeding-planner",  section: "breeding-planner",  label: "Perencana Breeding",icon: Egg,          desc: "Rencana perkawinan" },
       { path: "/incubator-readings",section: "breeding",          label: "Inkubator",         icon: Thermometer,  desc: "Suhu & kelembapan" },
       { path: "/family-tree",       section: "family-tree",       label: "Silsilah",          icon: GitBranch,    desc: "Garis keturunan" },
+      { path: "/label-kura",        section: "tortoise",          label: "Cetak Label QR",    icon: QrCode,       desc: "Label 50×30mm per kandang, dipindai buka paspor" },
       { path: "/death-records",     section: "death-records",     label: "Catatan Kematian",  icon: Skull,        desc: "Riwayat & penyebab" },
       { path: "/kura-diam",         section: "kura-diam",         label: "Deteksi Kura Diam", icon: Clock,        desc: "Kura tanpa aktivitas" },
       { path: "/breeder-ranking",   section: "breeding",          label: "Ranking Indukan",   icon: Trophy,       desc: "Peringkat produksi telur per indukan" },
