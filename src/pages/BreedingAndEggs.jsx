@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical, Printer, ScanLine } from "lucide-react";
+import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
 import EggLabelGenerator, { isCandlingLate } from "@/components/breeding/EggLabelGenerator";
 import EggQRPreview from "@/components/breeding/EggQRPreview";
@@ -127,6 +128,9 @@ export default function BreedingAndEggs() {
   const [editIncubator, setEditIncubator] = useState(null);
   const [showIncubatorForm, setShowIncubatorForm] = useState(false);
   const [activeTab, setActiveTab] = useState("pembiakan");
+  // Pemindai label telur (QR "BREED:<id>") langsung dari modul Breeding,
+  // sebelumnya hanya tersedia di halaman Gudang / Stok Pakan.
+  const [showScanner, setShowScanner] = useState(false);
 
 
   const { data: breedings = [], isLoading: breedingLoading } = useQuery({
@@ -219,6 +223,10 @@ export default function BreedingAndEggs() {
           <p className="text-muted-foreground mt-1">Kelola pembiakan, inkubasi telur, dan penetasan</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setShowScanner(true)}>
+            <ScanLine className="w-4 h-4 mr-2" />
+            Pindai Label Telur
+          </Button>
           {breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi").length > 0 && (
             <Button variant="outline" onClick={() => { setLabelBreedings(breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")); setShowLabelDialog(true); }}>
               <Printer className="w-4 h-4 mr-2" />
@@ -751,6 +759,12 @@ export default function BreedingAndEggs() {
           />
         </DialogContent>
       </Dialog>
+      <QRScannerDialog
+        open={showScanner}
+        onOpenChange={setShowScanner}
+        onResult={() => setShowScanner(false)}
+      />
+
     </div>
   );
 }
