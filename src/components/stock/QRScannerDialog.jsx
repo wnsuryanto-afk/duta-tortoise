@@ -3,7 +3,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QrCode, Keyboard } from "lucide-react";
+import { QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 /**
@@ -25,6 +25,13 @@ export default function QRScannerDialog({ open, onClose, onResult }) {
       const breedId = t.slice(6).trim();
       handleClose();
       navigate(`/breeding/${breedId}`);
+      return;
+    }
+    // QR kura berisi URL penuh menuju paspor -> ambil id-nya dan buka di dalam aplikasi
+    if (t.includes("/passport?id=")) {
+      const id = t.split("/passport?id=")[1].split(/[&#\s]/)[0];
+      handleClose();
+      navigate(`/passport?id=${id}`);
       return;
     }
     onResult(t.toUpperCase());

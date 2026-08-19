@@ -16,7 +16,10 @@ export default function TortoiseQRCode({ tortoise }) {
   useEffect(() => {
     // Buat URL publik profil kura-kura (berbasis domain saat ini)
     const base = window.location.origin;
-    const url = `${base}/tortoise-profile/${tortoise.id}`;
+    // Paspor kura membaca ?id= (lihat TortoisePassport.jsx).
+    // Sebelumnya QR menunjuk /tortoise-profile/<id> yang tidak punya route sama sekali,
+    // sehingga semua QR yang sudah tercetak mengarah ke halaman kosong.
+    const url = `${base}/passport?id=${tortoise.id}`;
     setProfileUrl(url);
   }, [tortoise.id]);
 
