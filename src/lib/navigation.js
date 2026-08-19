@@ -18,7 +18,7 @@ import {
   LayoutGrid, ShoppingCart, Wrench, AlertTriangle, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart, BarChart2,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy,
-  Activity, MessageSquare, UserCog, Egg, Send, Trophy as TrophyIcon,
+  Activity, MessageSquare, UserCog, Egg, Send,
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
