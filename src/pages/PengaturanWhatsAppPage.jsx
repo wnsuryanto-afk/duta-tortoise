@@ -22,11 +22,11 @@ import {
 
 const NOTIF_CONFIG = [
   { key: "notif_daily_approval", label: "⏰ Pengingat Harian (17:30)", desc: "Jumlah checklist menunggu approval → Owner" },
-  { key: "notif_sick_report", label: "🤒 Laporan Kura Sakit", desc: "Laporan sakit baru → Owner + Manajer" },
-  { key: "notif_low_stock", label: "💊 Stok Obat Menipis", desc: "Stok menyentuh minimum → Owner + Manajer + Admin" },
+  { key: "notif_sick_report", label: "🤒 Laporan Kura Sakit", desc: "Laporan sakit baru → Owner + Manajer", destKey: "notif_sick_report_destination", groupLabel: "Grup PAGI (berisi keeper)" },
+  { key: "notif_low_stock", label: "💊 Stok Obat Menipis", desc: "Stok menyentuh minimum → Owner + Manajer + Admin", destKey: "notif_low_stock_destination", groupLabel: "Grup SORE (manajemen)" },
   { key: "notif_salary_paid", label: "💸 Gaji Dibayar", desc: "Slip ditandai dibayar → Karyawan ybs" },
   { key: "notif_incidental_task", label: "📌 Tugas Insidentil Baru", desc: "Tugas baru → Karyawan yang ditugaskan" },
-  { key: "notif_tool_request", label: "🔴 Alat Rusak / Pengajuan", desc: "Pengajuan barang baru → Owner + Manajer" },
+  { key: "notif_tool_request", label: "🔴 Alat Rusak / Pengajuan", desc: "Pengajuan barang baru → Owner + Manajer", destKey: "notif_tool_request_destination", groupLabel: "Grup PAGI (berisi keeper)" },
 ];
 
 export default function PengaturanWhatsAppPage() {
@@ -174,6 +174,9 @@ export default function PengaturanWhatsAppPage() {
         notif_salary_paid: toggles.notif_salary_paid ?? false,
         notif_incidental_task: toggles.notif_incidental_task ?? false,
         notif_tool_request: toggles.notif_tool_request ?? false,
+        notif_sick_report_destination: toggles.notif_sick_report_destination || "individuals",
+        notif_low_stock_destination: toggles.notif_low_stock_destination || "individuals",
+        notif_tool_request_destination: toggles.notif_tool_request_destination || "individuals",
         group_id: groupId,
         summary_destination: summaryDestination,
         summary_recipients: summaryRecipients,
@@ -606,23 +609,60 @@ export default function PengaturanWhatsAppPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {NOTIF_CONFIG.map((cfg) => (
-            <div
-              key={cfg.key}
-              className="flex items-center justify-between gap-3 py-2 border-b last:border-0"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{cfg.label}</p>
-                <p className="text-xs text-muted-foreground">{cfg.desc}</p>
+          {NOTIF_CONFIG.map((cfg) => {
+            const aktif = toggles[cfg.key] ?? false;
+            const dest = toggles[cfg.destKey] || "individuals";
+            return (
+              <div key={cfg.key} className="py-2 border-b last:border-0 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{cfg.label}</p>
+                    <p className="text-xs text-muted-foreground">{cfg.desc}</p>
+                  </div>
+                  <Switch
+                    checked={aktif}
+                    onCheckedChange={(v) => setToggles((t) => ({ ...t, [cfg.key]: v }))}
+                  />
+                </div>
+
+                {/* Pilihan tujuan hanya untuk notifikasi yang aman masuk grup.
+                    Gaji & tugas insidentil sengaja tidak punya opsi ini. */}
+                {cfg.destKey && aktif && (
+                  <div className="ml-1 pl-3 border-l-2 border-muted flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] text-muted-foreground mr-1">Kirim ke:</span>
+                    {[
+                      { v: "individuals", t: "Perorangan" },
+                      { v: "group", t: "Grup" },
+                      { v: "both", t: "Keduanya" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setToggles((t) => ({ ...t, [cfg.destKey]: opt.v }))}
+                        className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                          dest === opt.v
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {opt.t}
+                      </button>
+                    ))}
+                    {dest !== "individuals" && (
+                      <span className="text-[11px] text-muted-foreground w-full mt-0.5">
+                        → {cfg.groupLabel}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-              <Switch
-                checked={toggles[cfg.key] ?? false}
-                onCheckedChange={(v) =>
-                  setToggles((t) => ({ ...t, [cfg.key]: v }))
-                }
-              />
-            </div>
-          ))}
+            );
+          })}
+
+          <p className="text-[11px] text-muted-foreground pt-1 border-t">
+            Gaji Dibayar dan Tugas Insidentil sengaja tidak punya pilihan grup — nominal gaji
+            dan tugas perorangan tidak boleh terlihat seluruh anggota grup.
+          </p>
         </CardContent>
       </Card>
 
