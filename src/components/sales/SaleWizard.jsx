@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { recalcEnclosureCounts } from "@/lib/enclosureCount";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -643,6 +644,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         await base44.entities.Tortoise.update(form.tortoise_id, {
           status: "terjual",
           is_currently_sick: false,
+          // catatan: hitung ulang kandang dilakukan setelah update di bawah
           previous_status: prevTortoise?.status || "aktif",
           enclosure: "",
           last_status_change: today,

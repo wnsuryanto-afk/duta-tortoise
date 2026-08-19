@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { recalcEnclosureCounts } from "@/lib/enclosureCount";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -303,7 +304,12 @@ export default function DeathRecordsPage() {
       is_currently_sick: false,
       ...deathData,
     });
+    // Kandang harus dihitung ulang: kura mati bukan lagi penghuni.
+    try {
+      await recalcEnclosureCounts(deathModalTortoise.enclosure ? [deathModalTortoise.enclosure] : null);
+    } catch { /* jangan batalkan pencatatan kematian kalau hitung ulang gagal */ }
     qc.invalidateQueries({ queryKey: ["tortoises-all-death"] });
+    qc.invalidateQueries({ queryKey: ["enclosures"] });
     setDeathModalTortoise(null);
     setShowSelectModal(false);
     toast.success(`${deathModalTortoise.name} berhasil dicatat meninggal.`);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { recalcEnclosureCounts } from "@/lib/enclosureCount";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,6 +83,7 @@ export default function SaleForm({ open, onClose, editData }) {
         await base44.entities.Tortoise.update(data.tortoise_id, {
           status: "terjual",
           is_currently_sick: false,
+          // catatan: hitung ulang kandang dilakukan setelah update di bawah
           enclosure: "",
         });
         queryClient.invalidateQueries({ queryKey: ["tortoises"] });
