@@ -216,15 +216,61 @@ export default function GuidedHariIni({ user }) {
   const refetchNotifs = () => {};
 
   // HealthRecord: load lazy, hanya saat widget darurat diperlukan
+  // Kura sakit = status bertahan di data kura, BUKAN catatan bertanggal hari ini.
+  // Versi lama hanya membaca 10 catatan terakhir yang date === hari ini, sehingga
+  // kura yang dilaporkan sakit kemarin lenyap dari layar keeper esok harinya —
+  // tidak ada pengingat perawatan sama sekali sampai dia mati atau sembuh sendiri.
   const { data: sickTortoises = [] } = useQuery({
     queryKey: ["sick-tortoises-today"],
     queryFn: async () => {
-      const hrs = await base44.entities.HealthRecord.list("-date", 10); // limit 10
-      return hrs.filter(h => h.date === today && h.type === "sakit");
+      const sick = await base44.entities.Tortoise.filter({ is_currently_sick: true }, "name", 100);
+      if (sick.length === 0) return [];
+      const hrs = await base44.entities.HealthRecord.list("-date", 200);
+      return sick.map((t) => {
+        const last = hrs.find((h) => h.tortoise_id === t.id && h.type === "sakit");
+        return {
+          id: t.id,
+          tortoise_id: t.id,
+          tortoise_name: t.name,
+          enclosure: t.enclosure,
+          severity: last?.severity,
+          since: last?.date,
+          diagnosis_notes: last?.diagnosis_notes,
+          treatment: last?.treatment,
+          description: last?.description,
+        };
+      });
     },
-    staleTime: 10 * 60 * 1000,
-    refetchInterval: false, // matikan auto-refresh
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: false,
   });
+
+  // Keeper menutup siklus: lapor sembuh -> catatan "sembuh" + status kembali aktif
+  const handleLaporSembuh = async (t) => {
+    if (sembuhLoading) return;
+    setSembuhLoading(t.tortoise_id);
+    try {
+      await base44.entities.HealthRecord.create({
+        tortoise_id: t.tortoise_id,
+        tortoise_name: t.tortoise_name,
+        date: today,
+        type: "sembuh",
+        source: "manual",
+        description: `Dilaporkan sembuh oleh ${user.full_name || user.email}.`,
+      });
+      await base44.entities.Tortoise.update(t.tortoise_id, {
+        is_currently_sick: false,
+        status: "aktif",
+        last_status_change: today,
+      });
+      qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
+      qc.invalidateQueries({ queryKey: ["health-records"] });
+      showMsg("success", `${t.tortoise_name} ditandai sembuh.`);
+    } catch {
+      showMsg("error", "Gagal menyimpan. Coba lagi ya.");
+    }
+    setSembuhLoading(null);
+  };
 
   // Sync kandang done dari maintenance logs (restore state setelah reload)
   // Mendukung kedua format: baru (item_id "kebersihan_kandang_E4") & lama (item_id "kebersihan", enclosure_id "E4")
