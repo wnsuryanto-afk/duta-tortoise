@@ -42,10 +42,11 @@ export default async function(req: Request): Promise<Response> {
     waitUntil(
       (async () => {
         const phones = await getPhoneNumbersForRoles(base44, ['owner', 'manajer']);
-        if (phones.length > 0) {
+        {
           // Tambahkan grup WhatsApp bila owner mengaktifkannya untuk jenis ini.
           const waSettings = await getSettings(base44);
           const resolved = resolveNotificationTargets(waSettings, 'tool_request', phones);
+          if (resolved.targets.length === 0) return;
           await sendWhatsAppNotification(base44, {
             targets: resolved.targets,
             message,

@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     waitUntil(
       (async () => {
         const phones = await getPhoneNumbersForRoles(base44, ['owner', 'manajer']);
-        if (phones.length === 0) return;
+        // Jangan berhenti di sini: grup bisa jadi satu-satunya tujuan.
         const waMessage =
           `🤒 *Laporan Kura Sakit*\n\n` +
           `Kura: ${record.tortoise_name}\n` +
@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
         // Tambahkan grup WhatsApp bila owner mengaktifkannya untuk jenis ini.
         const waSettings = await getSettings(base44);
         const resolved = resolveNotificationTargets(waSettings, 'sick_report', phones);
+        if (resolved.targets.length === 0) return;
         await sendWhatsAppNotification(base44, {
           targets: resolved.targets,
           message: waMessage,

@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     waitUntil(
       (async () => {
         const phones = await getPhoneNumbersForRoles(base44, ['owner', 'manajer', 'admin']);
-        if (phones.length === 0) return;
+        // Jangan berhenti di sini: grup bisa jadi satu-satunya tujuan.
         const waMessage =
           `💊 *Stok ${statusLabel}*\n\n` +
           `Barang: ${item.name}${item.sku ? ` (${item.sku})` : ''}\n` +
@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
         // Tambahkan grup WhatsApp bila owner mengaktifkannya untuk jenis ini.
         const waSettings = await getSettings(base44);
         const resolved = resolveNotificationTargets(waSettings, 'low_stock', phones);
+        if (resolved.targets.length === 0) return;
         await sendWhatsAppNotification(base44, {
           targets: resolved.targets,
           message: waMessage,
