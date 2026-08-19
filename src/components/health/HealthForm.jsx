@@ -186,7 +186,7 @@ export default function HealthForm({ open, onClose, editData }) {
   };
 
   const typeLabels = {
-    checkup: "Checkup", sakit: "Sakit", obat: "Obat",
+    checkup: "Checkup", sakit: "Sakit", sembuh: "Sembuh", obat: "Obat",
     vaksin: "Vaksin", timbang: "Timbang", lainnya: "Lainnya",
   };
 
