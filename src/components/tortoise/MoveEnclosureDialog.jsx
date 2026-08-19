@@ -184,9 +184,9 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
                 isNearFull ? "bg-amber-50 border-amber-200 text-amber-700" :
                 "bg-green-50 border-green-200 text-green-700"
               }`}>
-                {isFull ? `🔴 Kandang penuh! (${selectedEnc.current_count}/${selectedEnc.capacity})` :
-                 isNearFull ? `🟡 Hampir penuh: ${selectedEnc.current_count}/${selectedEnc.capacity}` :
-                 `✅ Tersedia: ${selectedEnc.current_count || 0}/${selectedEnc.capacity || "∞"}`}
+                {isFull ? `🔴 Kandang penuh! (${selectedEnc.current_count}/${selectedEnc.max_capacity})` :
+                 isNearFull ? `🟡 Hampir penuh: ${selectedEnc.current_count}/${selectedEnc.max_capacity}` :
+                 `✅ Tersedia: ${selectedEnc.current_count || 0}/${selectedEnc.max_capacity || "∞"}`}
               </div>
             )}
 
