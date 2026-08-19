@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MessageSquare, Send, Loader2, Clock, Eye, CheckCircle, XCircle, Filter } from "lucide-react";
+import { MessageSquare, Send, Loader2, Eye, CheckCircle, XCircle, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
@@ -191,8 +191,8 @@ export default function KritikSaranPage() {
           <MessageSquare className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">Kritik & Saran</h1>
-          <p className="text-sm text-muted-foreground">Sampaikan masukan untuk kemajuan bersama</p>
+          <h1 className="text-xl font-bold text-foreground">Kotak Masukan</h1>
+          <p className="text-sm text-muted-foreground">Kritik & saran untuk kemajuan bersama — masukan yang ditindaklanjuti dapat 10 poin bonus</p>
         </div>
         {canReview && newCount > 0 && (
           <Badge className="ml-auto bg-red-500 text-white">{newCount} baru</Badge>
