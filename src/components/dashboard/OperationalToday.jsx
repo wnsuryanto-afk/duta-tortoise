@@ -44,7 +44,7 @@ export default function OperationalToday() {
       icon: ClipboardList,
       color: "text-primary",
       bgColor: "bg-primary/10",
-      onClick: () => navigate("/daily-checklist"),
+      onClick: () => navigate("/sop"),
       content: (
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
@@ -86,7 +86,7 @@ export default function OperationalToday() {
       icon: Home,
       color: "text-chart-3",
       bgColor: "bg-chart-3/10",
-      onClick: () => navigate("/maintenance-schedules"),
+      onClick: () => navigate("/maintenance-schedule"),
       content: (
         <div>
           <p className="text-2xl font-bold text-chart-3">{todayMaintenance.length}</p>

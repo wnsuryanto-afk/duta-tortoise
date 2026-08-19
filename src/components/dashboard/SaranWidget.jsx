@@ -26,7 +26,7 @@ export function SaranOwnerWidget() {
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <p className="text-xs text-muted-foreground mb-3">{pending.length} saran menunggu ditindaklanjuti</p>
-        <Link to="/review-saran">
+        <Link to="/kritik-saran">
           <span className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">
             Review Sekarang <ChevronRight className="w-3 h-3" />
           </span>
