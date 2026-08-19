@@ -11,7 +11,7 @@
  */
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Home, Salad, HeartPulse, BookOpen, FileText, Wallet, Plus, X, Star, User, LogOut } from "lucide-react";
+import { Home, Salad, HeartPulse, BookOpen, FileText, Wallet, X, Star, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import GuidedHariIni from "./GuidedHariIni";
