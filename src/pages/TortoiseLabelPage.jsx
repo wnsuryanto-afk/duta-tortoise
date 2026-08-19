@@ -136,11 +136,12 @@ export default function TortoiseLabelPage() {
         </p>
       </div>
 
+      {/* Penyaring */}
       <div className="flex flex-wrap gap-2">
         <select
           value={kandang}
           onChange={(e) => setKandang(e.target.value)}
-          className="h-9 px-3 rounded-lg border border-border bg-card text-sm"
+          className="h-10 px-3 rounded-lg border border-border bg-card text-sm flex-1 min-w-[150px]"
         >
           <option value="semua">Semua kandang ({active.length})</option>
           {kandangList.map((k) => (
@@ -152,18 +153,46 @@ export default function TortoiseLabelPage() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Cari nama/kode kura…"
-          className="h-9 w-full sm:w-56"
+          placeholder="Cari nama kura…"
+          className="h-10 flex-1 min-w-[150px]"
         />
-        <Button variant="outline" size="sm" onClick={toggleAll} disabled={filtered.length === 0}>
-          {allSelected ? <CheckSquare className="w-4 h-4 mr-1.5" /> : <Square className="w-4 h-4 mr-1.5" />}
-          {allSelected ? "Batal pilih semua" : `Pilih semua (${filtered.length})`}
-        </Button>
-        <Button onClick={handlePrint} disabled={selected.size === 0 || busy} className="ml-auto">
-          {busy ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Printer className="w-4 h-4 mr-1.5" />}
-          Cetak {selected.size > 0 ? `${selected.size} label` : "label"}
-        </Button>
       </div>
+
+      {/* Baris aksi — selalu terlihat, menempel di atas saat digulir */}
+      {filtered.length > 0 && (
+        <div className="sticky top-14 z-20 -mx-1 px-1 py-2 bg-background/95 backdrop-blur border-b border-border space-y-2">
+          <button
+            onClick={toggleAll}
+            className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors"
+          >
+            {allSelected ? (
+              <CheckSquare className="w-5 h-5 text-primary flex-shrink-0" />
+            ) : (
+              <Square className="w-5 h-5 text-primary flex-shrink-0" />
+            )}
+            <span className="text-sm font-semibold text-foreground text-left flex-1">
+              {allSelected
+                ? `Batal pilih semua (${filtered.length} kura)`
+                : `Pilih semua ${filtered.length} kura${kandang !== "semua" ? ` di ${kandang}` : ""}`}
+            </span>
+          </button>
+
+          <Button
+            onClick={handlePrint}
+            disabled={selected.size === 0 || busy}
+            className="w-full h-11"
+          >
+            {busy ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Printer className="w-4 h-4 mr-2" />
+            )}
+            {selected.size === 0
+              ? "Pilih kura dulu untuk mencetak"
+              : `Cetak ${selected.size} label`}
+          </Button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
