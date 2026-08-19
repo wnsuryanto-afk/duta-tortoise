@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -11,18 +11,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, Trash2, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, MoreVertical, Printer, ScanLine } from "lucide-react";
+import { Plus, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, Printer, ScanLine } from "lucide-react";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
 import EggLabelGenerator, { isCandlingLate } from "@/components/breeding/EggLabelGenerator";
 import EggQRPreview from "@/components/breeding/EggQRPreview";
-import { format, differenceInDays, parseISO, addDays } from "date-fns";
+import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
 import HatchDialog from "@/components/breeding/HatchDialog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms } from "@/lib/permissions";
-import { downloadLabel } from "@/lib/labelUtils";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
@@ -761,7 +760,7 @@ export default function BreedingAndEggs() {
       </Dialog>
       <QRScannerDialog
         open={showScanner}
-        onOpenChange={setShowScanner}
+        onClose={() => setShowScanner(false)}
         onResult={() => setShowScanner(false)}
       />
 
