@@ -386,6 +386,21 @@ export default function OwnerDashboard({ user }) {
   // ── Alert Kritis ──────────────────────────────────
   const criticalAlerts = [];
 
+  // Kematian tercatat tapi status kura belum "mati" — pernah terjadi pada HF5
+  // dan B119: tanggal & penyebab kematian terisi, tapi kura tetap dihitung
+  // sebagai populasi aktif dan tetap muncul di daftar sakit.
+  const deathMismatch = tortoises.filter(t => t.death_date && t.status !== "mati");
+  if (deathMismatch.length > 0) {
+    criticalAlerts.push({
+      type: "red",
+      msg: `${deathMismatch.length} kura punya tanggal kematian tapi statusnya belum "mati" ` +
+        `(${deathMismatch.slice(0, 3).map(t => t.name).join(", ")}${deathMismatch.length > 3 ? ", …" : ""}). ` +
+        `Mereka masih terhitung populasi aktif.`,
+      href: "/death-records",
+      linkLabel: "Perbaiki →",
+    });
+  }
+
   // Duplikat CompanySettings dengan setting_key "main" berbahaya:
   // kode memakai [0] secara sembarang, sehingga nilai_per_poin dan koordinat
   // kandang bisa berbeda-beda antar sesi tanpa disadari.
