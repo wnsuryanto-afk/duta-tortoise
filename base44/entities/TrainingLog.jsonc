@@ -1,0 +1,75 @@
+{
+  "name": "TrainingLog",
+  "properties": {
+    "category": {
+      "default": "lainnya",
+      "description": "Kategori pelatihan",
+      "enum": [
+        "pakan",
+        "kesehatan",
+        "breeding",
+        "kandang",
+        "keselamatan",
+        "administrasi",
+        "lainnya"
+      ],
+      "type": "string"
+    },
+    "certificate_url": {
+      "description": "URL file sertifikat",
+      "type": "string"
+    },
+    "duration_hours": {
+      "description": "Durasi pelatihan (jam)",
+      "type": "number"
+    },
+    "employee_email": {
+      "description": "Email karyawan peserta",
+      "type": "string"
+    },
+    "employee_name": {
+      "description": "Nama karyawan peserta",
+      "type": "string"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "type": "boolean"
+    },
+    "is_test_data": {
+      "default": false,
+      "type": "boolean"
+    },
+    "notes": {
+      "description": "Catatan tambahan",
+      "type": "string"
+    },
+    "result": {
+      "default": "dalam_proses",
+      "description": "Hasil pelatihan",
+      "enum": [
+        "lulus",
+        "tidak_lulus",
+        "dalam_proses"
+      ],
+      "type": "string"
+    },
+    "trainer": {
+      "description": "Nama pelatih/instruktur",
+      "type": "string"
+    },
+    "training_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "training_title": {
+      "description": "Judul pelatihan",
+      "type": "string"
+    }
+  },
+  "required": [
+    "employee_name",
+    "training_title",
+    "training_date"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,58 @@
+{
+  "name": "TutorialContent",
+  "properties": {
+    "category": {
+      "default": "lainnya",
+      "description": "Kategori materi",
+      "enum": [
+        "dasar",
+        "pakan",
+        "kandang",
+        "kesehatan",
+        "breeding",
+        "lainnya"
+      ],
+      "type": "string"
+    },
+    "content": {
+      "description": "Isi lengkap artikel (markdown/teks)",
+      "type": "string"
+    },
+    "image_url": {
+      "description": "Gambar sampul",
+      "type": "string"
+    },
+    "is_published": {
+      "default": true,
+      "description": "Tampil untuk semua pengguna",
+      "type": "boolean"
+    },
+    "summary": {
+      "description": "Ringkasan singkat",
+      "type": "string"
+    },
+    "title": {
+      "description": "Judul materi",
+      "type": "string"
+    },
+    "type": {
+      "default": "artikel",
+      "description": "Jenis materi",
+      "enum": [
+        "artikel",
+        "video"
+      ],
+      "type": "string"
+    },
+    "video_url": {
+      "description": "URL video (YouTube dsb)",
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "type",
+    "category"
+  ],
+  "type": "object"
+}
