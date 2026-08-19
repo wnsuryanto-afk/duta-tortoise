@@ -28,6 +28,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
   const [diagnosis, setDiagnosis] = useState([]);
   const [severity, setSeverity] = useState("");
   const [notes, setNotes] = useState("");
+  const [treatment, setTreatment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [savedRecord, setSavedRecord] = useState(null);
   const today = format(new Date(), "yyyy-MM-dd");
@@ -57,7 +58,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
 
   if (!open) return null;
 
-  const canSave = kura && diagnosis.length > 0 && severity;
+  const canSave = kura && diagnosis.length > 0 && severity && treatment.trim();
 
   const toggleDiagnosis = (code) => {
     setDiagnosis(prev => {
@@ -66,6 +67,14 @@ export default function SakitFormDialog({ open, onClose, user }) {
       if (!severity && next.length > 0) {
         const p = protocols.find(pr => pr.diagnosis_code === next[0]);
         if (p?.severity_default) setSeverity(p.severity_default);
+      }
+      // Saran perawatan dari protokol mengisi kolom perlakuan bila masih kosong
+      if (next.length > 0) {
+        const p = protocols.find(pr => pr.diagnosis_code === next[next.length - 1]);
+        const saran = p?.perawatan_pendukung;
+        if (Array.isArray(saran) && saran.length > 0) {
+          setTreatment(prev => prev.trim() ? prev : saran.map((x, i) => `${i + 1}. ${x}`).join("\n"));
+        }
       }
       return next;
     });
@@ -76,6 +85,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
     setDiagnosis([]);
     setSeverity("");
     setNotes("");
+    setTreatment("");
     setSavedRecord(null);
     onClose();
   };
@@ -95,6 +105,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
       type: "sakit",
       diagnosis,
       severity,
+      treatment: treatment.trim(),
       description: `Dilaporkan oleh ${user?.full_name || user?.email}. Diagnosis: ${diagNames}${notes ? `. Catatan: ${notes}` : ""}`,
       diagnosis_notes: diagNames,
     });
@@ -229,6 +240,16 @@ export default function SakitFormDialog({ open, onClose, user }) {
               <p className="text-xs font-semibold mb-1.5" style={{ color: "#1B4332" }}>
                 Catatan Tambahan (opsional)
               </p>
+              <p className="text-xs font-semibold text-gray-700 mb-1.5">
+                Perlakuan / tindakan * (wajib diisi)
+              </p>
+              <textarea
+                rows={4}
+                value={treatment}
+                onChange={e => setTreatment(e.target.value)}
+                placeholder="Apa yang dilakukan untuk kura ini? Pilih diagnosis dulu, saran perawatan terisi otomatis."
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none mb-3"
+              />
               <textarea
                 rows={2}
                 value={notes}
