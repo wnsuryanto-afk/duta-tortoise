@@ -298,6 +298,9 @@ export default function DeathRecordsPage() {
     if (!deathModalTortoise) return;
     await base44.entities.Tortoise.update(deathModalTortoise.id, {
       status: "mati",
+      // Kura yang mati harus keluar dari daftar sakit, kalau tidak dia tetap
+      // muncul di layar keeper dan di penghitung "Sakit" selamanya.
+      is_currently_sick: false,
       ...deathData,
     });
     qc.invalidateQueries({ queryKey: ["tortoises-all-death"] });

@@ -9,7 +9,6 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, AlertTriangle } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
-import IncompleteBanner from "@/components/common/IncompleteBanner";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import DeathRecordModal from "./DeathRecordModal";
 import SickModal from "./SickModal";
@@ -199,7 +198,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
   };
 
   const handleDeathSaved = (deathData) => {
-    setForm(p => ({ ...p, status: "mati", previous_status: p.status, last_status_change: new Date().toISOString().split("T")[0], ...deathData }));
+    setForm(p => ({ ...p, status: "mati", is_currently_sick: false, previous_status: p.status, last_status_change: new Date().toISOString().split("T")[0], ...deathData }));
     setShowDeathModal(false);
     setPendingStatus(null);
   };

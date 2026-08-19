@@ -81,6 +81,7 @@ export default function SaleForm({ open, onClose, editData }) {
       if (data.tortoise_id) {
         await base44.entities.Tortoise.update(data.tortoise_id, {
           status: "terjual",
+          is_currently_sick: false,
           enclosure: "",
         });
         queryClient.invalidateQueries({ queryKey: ["tortoises"] });

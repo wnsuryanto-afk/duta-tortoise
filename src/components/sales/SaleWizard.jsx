@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircle2, TrendingUp, TrendingDown, Search, Info } from "lucide-react";
+import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircle2, TrendingUp, TrendingDown, Search } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
-import { useCostPerTortoise, calcCareCost } from "@/hooks/useCostPerTortoise";
-import { format, differenceInMonths } from "date-fns";
+import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
+import { differenceInMonths } from "date-fns";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
 
@@ -642,6 +642,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
       if (!isAlreadyTerjual) {
         await base44.entities.Tortoise.update(form.tortoise_id, {
           status: "terjual",
+          is_currently_sick: false,
           previous_status: prevTortoise?.status || "aktif",
           enclosure: "",
           last_status_change: today,
