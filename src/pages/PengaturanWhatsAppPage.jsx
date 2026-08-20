@@ -702,8 +702,6 @@ export default function PengaturanWhatsAppPage() {
                         )}
                       </div>
                     )}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
