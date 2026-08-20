@@ -9,6 +9,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingCart, Plus, CheckCircle2, Package, Clock } from "lucide-react";
 
+
+/**
+ * Entitas ShoppingList berisi DUA generasi nama field:
+ *   lama (Juni 2026): item_name, qty_needed, unit, est_price, platform
+ *   baru (Juli 2026): nama_barang, jumlah, satuan, harga_est_per_unit, platform_beli
+ *
+ * 36 record lama tampil sebagai "(tanpa nama)" karena widget hanya membaca nama
+ * baru. Penormal ini membuat keduanya terbaca tanpa perlu mengubah data.
+ */
+function normalizeItem(i) {
+  const platform = i.platform_beli || (i.platform ? String(i.platform).replace(/_/g, " ") : "");
+  return {
+    ...i,
+    nama_barang: i.nama_barang || i.item_name || "",
+    jumlah: i.jumlah ?? i.qty_needed ?? 0,
+    satuan: i.satuan || i.unit || "",
+    platform_beli: platform,
+    harga_est_per_unit: i.harga_est_per_unit ?? i.est_price ?? 0,
+    harga_aktual: i.harga_aktual ?? i.bought_price ?? null,
+    qty_aktual: i.qty_aktual ?? i.bought_qty ?? null,
+    tanggal_dibeli: i.tanggal_dibeli || i.bought_date || null,
+    link_produk: i.link_produk || "",
+  };
+}
+
 const PRIORITY_SECTIONS = [
   { key: "segera",     label: "🔴 Segera",    className: "border-red-200 bg-red-50" },
   { key: "minggu_ini", label: "🟡 Minggu Ini", className: "border-yellow-200 bg-yellow-50" },
@@ -186,7 +211,7 @@ function ShoppingItem({ item, onUpdate }) {
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-border hover:shadow-sm transition-shadow">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground leading-snug break-words">
-            {item.nama_barang || "(tanpa nama)"}
+            {item.nama_barang || "(nama belum diisi)"}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <Badge className={`text-[10px] px-1.5 py-0 border ${badge.className}`}>{badge.label}</Badge>
@@ -238,7 +263,10 @@ export default function ShoppingListWidget() {
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["shopping-list"],
-    queryFn: () => base44.entities.ShoppingList.list("-created_date", 200),
+    queryFn: async () => {
+      const raw = await base44.entities.ShoppingList.list("-created_date", 200);
+      return raw.map(normalizeItem);
+    },
     staleTime: 2 * 60 * 1000,
   });
 
