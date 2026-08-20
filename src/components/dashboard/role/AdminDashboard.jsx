@@ -36,7 +36,10 @@ function MiniCard({ label, value, icon: Icon, urgent = false, href }) {
   return inner;
 }
 
-export default function AdminDashboard({ user }) {
+export default function AdminDashboard({ user, role = "admin" }) {
+  // Manajer & Admin berbagi dashboard ini, tapi fokusnya berbeda:
+  // manajer mengawasi tim, admin mengurus stok & administrasi.
+  const isManajer = role === "manajer";
   const now = new Date();
   const today = format(now, "yyyy-MM-dd");
   const thisMonthKey = format(now, "yyyy-MM");
@@ -193,6 +196,33 @@ export default function AdminDashboard({ user }) {
           </>
         )}
       </div>
+
+      {/* ── PANTAU TIM (khusus manajer) ── */}
+      {isManajer && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h2 className="font-semibold text-sm mb-3 text-foreground">Pantau Tim</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              to="/layar-tim"
+              className="flex flex-col gap-0.5 p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-muted/40 transition-colors"
+            >
+              <span className="text-sm font-semibold">Layar Tim</span>
+              <span className="text-[11px] text-muted-foreground">
+                Urutan kerja, jeda waktu, bukti foto hari ini
+              </span>
+            </Link>
+            <Link
+              to="/approval-poin"
+              className="flex flex-col gap-0.5 p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-muted/40 transition-colors"
+            >
+              <span className="text-sm font-semibold">Approval Poin</span>
+              <span className="text-[11px] text-muted-foreground">
+                Tinjau checklist sebelum poin dihitung
+              </span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ── TUGAS INSIDENTIL ── */}
       <IncidentalTaskCard />
