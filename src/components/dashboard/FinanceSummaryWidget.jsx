@@ -84,7 +84,7 @@ export default function FinanceSummaryWidget() {
               const pct = pengeluaran > 0 ? Math.round((amount / pengeluaran) * 100) : 0;
               return (
                 <div key={key} className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground flex-1 truncate">{label}</span>
+                  <span className="text-muted-foreground flex-1 min-w-0 truncate">{label}</span>
                   <div className="flex items-center gap-1">
                     <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div className="h-full bg-current rounded-full" style={{ width: `${pct}%`, opacity: 0.7 }} />

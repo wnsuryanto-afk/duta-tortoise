@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, CheckCircle2, ClipboardList, Filter } from "lucide-react";
-import { getMissingFields, INCOMPLETE_CHECKS } from "@/lib/incompleteChecks";
+import { getMissingFields } from "@/lib/incompleteChecks";
 import { Link } from "react-router-dom";
 
 function ProgressBar({ done, total }) {
@@ -58,7 +58,7 @@ function DataTable({ items, entityType, editPath, nameField = "name", filterInco
                         ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                         : <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                       }
-                      <span className="font-medium truncate">{item[nameField] || item.title || item.buyer_name || item.tortoise_name || item.employee_name || "-"}</span>
+                      <span className="flex-1 min-w-0 font-medium truncate">{item[nameField] || item.title || item.buyer_name || item.tortoise_name || item.employee_name || "-"}</span>
                       {item.missing.length > 0 && (
                         <Badge className="bg-amber-100 text-amber-700 border-amber-300 border text-[10px] px-1.5">
                           {item.missing.length} field kosong

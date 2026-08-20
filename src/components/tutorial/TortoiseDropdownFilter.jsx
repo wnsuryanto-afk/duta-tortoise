@@ -34,7 +34,7 @@ export default function SearchableDropdownFilter({ items, selected, onSelect, pl
         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors min-w-[140px] max-w-[200px]
           ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}
       >
-        <span className="flex-1 text-left truncate">
+        <span className="flex-1 min-w-0 text-left truncate">
           {selectedItem ? selectedItem.label : allLabel}
         </span>
         {selected ? (

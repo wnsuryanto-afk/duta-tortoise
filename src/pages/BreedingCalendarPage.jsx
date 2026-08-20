@@ -36,7 +36,7 @@ function BatchTimeline({ batch, now, onClick }) {
       >
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate">♀ {batch.female_name} × ♂ {batch.male_name}</p>
+            <p className="min-w-0 text-sm font-semibold truncate">♀ {batch.female_name} × ♂ {batch.male_name}</p>
             <p className="text-xs text-muted-foreground">Belum ada tanggal kawin</p>
           </div>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${cfg.color}`}>{cfg.label}</span>

@@ -124,7 +124,7 @@ function TortoiseRow({ tortoise, treatId, logs, onCheck, user }) {
         isDone ? "bg-green-50 border-green-300 text-green-700 cursor-default" : "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
       }`}>
       {isDone ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" /> : <Circle className="w-3.5 h-3.5 flex-shrink-0" />}
-      <span className="truncate font-medium">{tortoise.name}</span>
+      <span className="flex-1 min-w-0 truncate font-medium">{tortoise.name}</span>
       {tortoise.age_category && <span className="text-[10px] opacity-60 flex-shrink-0">{tortoise.age_category}</span>}
     </button>
   );
