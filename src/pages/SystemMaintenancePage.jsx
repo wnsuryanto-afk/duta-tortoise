@@ -83,6 +83,42 @@ export default function SystemMaintenancePage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Migrasi field ShoppingList lama */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-blue-600" />
+              Migrasi Daftar Belanja
+            </CardTitle>
+            <CardDescription>
+              36 record lama memakai nama field generasi pertama (item_name, qty_needed, unit)
+              sehingga tampil tanpa nama. Tombol ini menyalinnya ke nama field yang dipakai
+              sekarang. Aman dijalankan berulang; field lama tidak dihapus.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={() => handleRecalculate("migrasiBelanja", "migrateShoppingListFields")}
+              disabled={loading.migrasiBelanja}
+              className="w-full gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading.migrasiBelanja ? "animate-spin" : ""}`} />
+              {loading.migrasiBelanja ? "Memigrasi..." : "Jalankan Migrasi"}
+            </Button>
+            {results.migrasiBelanja && !results.migrasiBelanja.error && (
+              <div className="text-sm text-green-700 bg-green-50 p-2 rounded-lg">
+                ✓ {results.migrasiBelanja.dimigrasi} dari {results.migrasiBelanja.perlu_migrasi} record
+                dimigrasi (total {results.migrasiBelanja.total_record} record).
+              </div>
+            )}
+            {results.migrasiBelanja?.error && (
+              <div className="text-sm text-red-700 bg-red-50 p-2 rounded-lg">
+                ✗ {results.migrasiBelanja.error}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Enclosure Recalculation */}
         <Card>
           <CardHeader>
