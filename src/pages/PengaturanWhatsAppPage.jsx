@@ -677,21 +677,31 @@ export default function PengaturanWhatsAppPage() {
                             atau tambahkan lewat "Grup WhatsApp Tambahan" di bawah.
                           </p>
                         ) : (
-                          <select
-                            value={toggles[cfg.groupKey] || ""}
-                            onChange={(e) =>
-                              setToggles((t) => ({ ...t, [cfg.groupKey]: e.target.value }))
-                            }
-                            className="w-full h-8 text-[11px] px-2 rounded-lg border border-border bg-background"
-                          >
-                            <option value="">
-                              Grup bawaan ({cfg.defaultGroup === "morning" ? "PAGI" : "SORE"})
-                            </option>
-                            {allGroups.map((g) => (
-                              <option key={g.id} value={g.id}>{g.name}</option>
-                            ))}
-                          </select>
+                          <div className="flex flex-wrap gap-1.5">
+                            {/* Tombol pil, bukan <select>: daftar pilihan <select> di webview
+                                dirender browser di posisi yang tidak bisa dikendalikan
+                                (muncul menutupi bagian atas layar). */}
+                            {[{ id: "", name: `Grup bawaan (${cfg.defaultGroup === "morning" ? "PAGI" : "SORE"})` }, ...allGroups].map((g) => {
+                              const aktifGrup = (toggles[cfg.groupKey] || "") === g.id;
+                              return (
+                                <button
+                                  key={g.id || "default"}
+                                  type="button"
+                                  onClick={() => setToggles((t) => ({ ...t, [cfg.groupKey]: g.id }))}
+                                  className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                                    aktifGrup
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background border-border text-muted-foreground hover:bg-muted"
+                                  }`}
+                                >
+                                  {g.name}
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
+                      </div>
+                    )}
                       </div>
                     )}
                   </div>
