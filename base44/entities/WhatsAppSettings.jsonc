@@ -123,6 +123,20 @@
       "description": "Stok obat/suplemen menyentuh minimum → Owner + Manajer + Admin",
       "type": "boolean"
     },
+    "notif_low_stock_destination": {
+      "type": "string",
+      "enum": [
+        "individuals",
+        "group",
+        "both"
+      ],
+      "default": "individuals",
+      "description": "Tujuan notifikasi stok menipis."
+    },
+    "notif_low_stock_group_id": {
+      "type": "string",
+      "description": "ID grup tujuan notifikasi stok menipis. Kosong = pakai Grup SORE."
+    },
     "notif_salary_paid": {
       "default": false,
       "description": "Gaji ditandai dibayar → karyawan ybs",
@@ -133,10 +147,38 @@
       "description": "Laporan kura sakit baru → Owner + Manajer",
       "type": "boolean"
     },
+    "notif_sick_report_destination": {
+      "type": "string",
+      "enum": [
+        "individuals",
+        "group",
+        "both"
+      ],
+      "default": "individuals",
+      "description": "Tujuan notifikasi laporan kura sakit."
+    },
+    "notif_sick_report_group_id": {
+      "type": "string",
+      "description": "ID grup tujuan notifikasi kura sakit. Kosong = pakai Grup PAGI."
+    },
     "notif_tool_request": {
       "default": false,
       "description": "Laporan alat rusak / pengajuan barang → Owner + Manajer",
       "type": "boolean"
+    },
+    "notif_tool_request_destination": {
+      "type": "string",
+      "enum": [
+        "individuals",
+        "group",
+        "both"
+      ],
+      "default": "individuals",
+      "description": "Tujuan notifikasi alat rusak / pengajuan barang."
+    },
+    "notif_tool_request_group_id": {
+      "type": "string",
+      "description": "ID grup tujuan notifikasi alat rusak. Kosong = pakai Grup PAGI."
     },
     "phone_admin": {
       "description": "Nomor WhatsApp Admin",
@@ -152,15 +194,15 @@
     },
     "pic_administrasi": {
       "type": "string",
-      "description": "Email penanggung jawab administrasi & kelengkapan data. Kosong = pakai semua pemegang role admin."
+      "description": "Email PJ administrasi & kelengkapan data di ringkasan PR. Kosong = semua role admin."
     },
     "pic_approval": {
       "type": "string",
-      "description": "Email penanggung jawab approval poin & pengawasan tim. Kosong = pakai semua pemegang role manajer."
+      "description": "Email PJ approval poin & pengawasan tim di ringkasan PR. Kosong = semua role manajer."
     },
     "pic_pembelian": {
       "type": "string",
-      "description": "Email penanggung jawab pembelian & talangan di ringkasan PR. Kosong = pakai semua pemegang role owner."
+      "description": "Email PJ pembelian & talangan di ringkasan PR. Kosong = semua role owner."
     },
     "setting_key": {
       "default": "main",
@@ -195,6 +237,11 @@
       },
       "type": "array"
     },
+    "summary_show_pr": {
+      "type": "boolean",
+      "default": true,
+      "description": "Tampilkan bagian 'PR MASING-MASING' di ringkasan SORE."
+    },
     "updated_at": {
       "format": "date-time",
       "type": "string"
@@ -202,6 +249,27 @@
     "updated_by": {
       "description": "Email user terakhir edit",
       "type": "string"
+    },
+    "wa_groups": {
+      "type": "array",
+      "description": "Grup WhatsApp tambahan di luar Grup PAGI dan Grup SORE.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group_id": {
+            "type": "string",
+            "description": "ID grup, format 120363xxxxxxxxx@g.us"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nama grup agar mudah dikenali"
+          },
+          "note": {
+            "type": "string",
+            "description": "Catatan singkat"
+          }
+        }
+      }
     },
     "weekly_summary_enabled": {
       "default": false,
