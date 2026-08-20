@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { dashBreedings, dashChecklistsToday, dashEnclosures, dashFeedStocks, dashFinances, dashHealth, dashPendingApproval, dashSales, dashTortoises, dashWarehouse } from "@/lib/dashboardQueries";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -81,13 +80,25 @@ export default function OwnerDashboard({ user }) {
 
   // ── Fase 1: data kritis — dimuat segera ──────────
   const { data: finances = [] } = useQuery({
-    dashFinances();
+    queryKey: ["owner-finances"],
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 100), // turun dari 500
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: tortoises = [] } = useQuery({
-    dashTortoises();
+    queryKey: ["owner-tortoises"],
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: warehouseItems = [] } = useQuery({
-    dashWarehouse();
+    queryKey: ["owner-warehouse"],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 50),
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: companySettings = [] } = useQuery({
     queryKey: ["company-settings"],
@@ -104,16 +115,36 @@ export default function OwnerDashboard({ user }) {
   }, []);
 
   const { data: breedings = [] } = useQuery({
-    dashBreedings();
+    queryKey: ["owner-breedings"],
+    queryFn: () => base44.entities.Breeding.list("-created_date", 50), // turun dari 200
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: feedStocks = [] } = useQuery({
-    dashFeedStocks();
+    queryKey: ["owner-feedstocks"],
+    queryFn: () => base44.entities.FeedStock.list("-name", 30),
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: sales = [] } = useQuery({
-    dashSales();
+    queryKey: ["owner-sales"],
+    queryFn: () => base44.entities.Sale.list("-date", 50), // turun dari 200
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: healthRecords = [] } = useQuery({
-    dashHealth();
+    queryKey: ["owner-health"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 50), // turun dari 200
+    enabled: phase2Ready,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: buyerProfiles = [] } = useQuery({
     queryKey: ["owner-buyers"],
@@ -124,14 +155,20 @@ export default function OwnerDashboard({ user }) {
   });
 
   const { data: dailyChecklists = [] } = useQuery({
-    dashChecklistsToday(),
+    queryKey: ["owner-checklists"],
+    queryFn: () => base44.entities.DailyChecklist.filter({ date: format(now, "yyyy-MM-dd") }),
     enabled: phase2Ready,
     staleTime: 5 * 60 * 1000,
     refetchInterval: false,
   });
 
   const { data: pendingApproval = [] } = useQuery({
-    dashPendingApproval();
+    queryKey: ["owner-pending-approval"],
+    queryFn: () => base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500),
+    enabled: phase2Ready,
+    staleTime: 60 * 1000,
+    refetchInterval: false,
+  });
 
   // ── Fase 3: data tersier — ditunda 3 detik ─────
   const [phase3Ready, setPhase3Ready] = useState(false);
@@ -190,7 +227,12 @@ export default function OwnerDashboard({ user }) {
   });
 
   const { data: enclosures = [] } = useQuery({
-    dashEnclosures();
+    queryKey: ["owner-enclosures"],
+    queryFn: () => base44.entities.Enclosure.list(),
+    enabled: phase3Ready,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: false,
+  });
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ["owner-suppliers"],
