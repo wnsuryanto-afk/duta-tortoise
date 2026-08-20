@@ -641,7 +641,9 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     }
   } catch {}
 
-  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB_`);
+  // Penanda versi: cara paling cepat memastikan fungsi backend yang berjalan
+  // sudah versi terbaru atau masih versi lama yang ter-deploy sebelumnya.
+  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v2_`);
 
   return lines.join("\n");
 }
