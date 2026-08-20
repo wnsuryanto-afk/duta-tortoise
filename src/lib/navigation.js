@@ -18,7 +18,7 @@ import {
   LayoutGrid, ShoppingCart, Wrench, AlertTriangle, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart, BarChart2,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy,
-  Activity, MessageSquare, UserCog, Egg, Send, QrCode,
+  Activity, MessageSquare, UserCog, Egg, Send, QrCode, Receipt,
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -76,6 +76,7 @@ export const NAV_SECTIONS = [
       { path: "/stok-unified",     section: "stock-gudang",   label: "Stok & Gudang",           icon: LayoutGrid,    desc: "Barang, pakan, dan pergerakan stok" },
       { path: "/harus-dibeli",     section: "harus-dibeli",   label: "Harus Dibeli",            icon: ShoppingCart,  desc: "Stok menipis atau habis" },
       { path: "/daftar-belanja",   section: "daftar-belanja", label: "Permintaan Belanja",      icon: ShoppingCart,  desc: "Barang diminta tim, belum tersedia" },
+      { path: "/pembelian",        section: "daftar-belanja", label: "Pembelian Barang",        icon: Receipt,       desc: "Pesan online, terima barang, stok & biaya tercatat" },
       { path: "/dashboard-stok",   section: "warehouse",      label: "Ringkasan Stok",          icon: LayoutGrid,    desc: "Nilai & sebaran stok" },
       { path: "/warehouse",        section: "warehouse",      label: "Gudang Gazebo",           icon: Package,       desc: "Barang di gudang gazebo" },
       { path: "/feed-stock",       section: "feed-stock",     label: "Stok Pakan",              icon: Leaf,          desc: "Persediaan pakan" },
