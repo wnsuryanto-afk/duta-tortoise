@@ -4,14 +4,14 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import {
-  CheckCircle, AlertTriangle, Package, Users, DollarSign, Heart, Clock, RefreshCw, ChevronRight
+  CheckCircle, AlertTriangle, Package, Users, Heart
 } from "lucide-react";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
 import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
