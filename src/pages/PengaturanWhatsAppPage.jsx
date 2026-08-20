@@ -668,6 +668,75 @@ export default function PengaturanWhatsAppPage() {
             );
           })}
 
+          {/* Grup WhatsApp tambahan — di luar Grup PAGI & SORE bawaan */}
+          <div className="pt-3 border-t space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold">Grup WhatsApp Tambahan</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Selain Grup PAGI dan SORE. Setelah ditambah, grup ini muncul sebagai pilihan
+                  tujuan di tiap notifikasi di atas.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setWaGroups((g) => [...g, { name: "", group_id: "", note: "" }])}
+              >
+                + Tambah
+              </Button>
+            </div>
+
+            {waGroups.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground italic">
+                Belum ada grup tambahan.
+              </p>
+            ) : (
+              waGroups.map((g, idx) => (
+                <div key={idx} className="rounded-lg border border-border p-2.5 space-y-2 bg-muted/20">
+                  <div className="flex gap-2">
+                    <Input
+                      className="h-8 text-xs"
+                      placeholder="Nama grup, mis. Grup Dokter Hewan"
+                      value={g.name || ""}
+                      onChange={(e) =>
+                        setWaGroups((arr) =>
+                          arr.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x))
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive flex-shrink-0 h-8"
+                      onClick={() => setWaGroups((arr) => arr.filter((_, i) => i !== idx))}
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                  <Input
+                    className="h-8 text-xs font-mono"
+                    placeholder="120363xxxxxxxxx@g.us"
+                    value={g.group_id || ""}
+                    onChange={(e) =>
+                      setWaGroups((arr) =>
+                        arr.map((x, i) => (i === idx ? { ...x, group_id: e.target.value } : x))
+                      )
+                    }
+                  />
+                  {g.group_id && !String(g.group_id).includes("@g.us") && (
+                    <p className="text-[11px] text-amber-700">
+                      ID grup biasanya berakhiran <span className="font-mono">@g.us</span> —
+                      pastikan ini bukan nomor telepon.
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
           <p className="text-[11px] text-muted-foreground pt-1 border-t">
             Gaji Dibayar dan Tugas Insidentil sengaja tidak punya pilihan grup — nominal gaji
             dan tugas perorangan tidak boleh terlihat seluruh anggota grup.
