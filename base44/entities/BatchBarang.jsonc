@@ -1,0 +1,85 @@
+{
+  "name": "BatchBarang",
+  "properties": {
+    "batch_code": {
+      "description": "Kode unik batch, isi QR label. Format: BATCH-<SKU>-<YYMMDD>-<urut>",
+      "type": "string"
+    },
+    "catatan": {
+      "type": "string"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "type": "boolean"
+    },
+    "harga_satuan": {
+      "description": "Harga per satuan termasuk porsi ongkir & biaya admin (Rp)",
+      "type": "number"
+    },
+    "is_test_data": {
+      "default": false,
+      "type": "boolean"
+    },
+    "item_id": {
+      "description": "ID WarehouseItem terkait",
+      "type": "string"
+    },
+    "item_sku": {
+      "type": "string"
+    },
+    "jumlah_awal": {
+      "description": "Jumlah saat batch diterima",
+      "type": "number"
+    },
+    "jumlah_sisa": {
+      "description": "Sisa saat ini. Pengambilan mengurangi batch dengan expired terdekat lebih dulu.",
+      "type": "number"
+    },
+    "label_dicetak": {
+      "default": false,
+      "description": "Sudah pernah dicetak labelnya",
+      "type": "boolean"
+    },
+    "label_per_butir": {
+      "default": false,
+      "description": "True = jumlah label sebanyak jumlah_awal. False = satu label untuk seluruh batch.",
+      "type": "boolean"
+    },
+    "nama_barang": {
+      "type": "string"
+    },
+    "pembelian_id": {
+      "description": "ID PembelianBarang asal batch ini",
+      "type": "string"
+    },
+    "satuan": {
+      "type": "string"
+    },
+    "status": {
+      "default": "aktif",
+      "description": "aktif = masih bisa diambil. habis = jumlah_sisa 0. kadaluarsa = lewat tanggal expired, tidak boleh diambil.",
+      "enum": [
+        "aktif",
+        "habis",
+        "kadaluarsa"
+      ],
+      "type": "string"
+    },
+    "tanggal_expired": {
+      "description": "Tanggal kedaluwarsa batch. Dasar urutan pengambilan.",
+      "format": "date",
+      "type": "string"
+    },
+    "tanggal_terima": {
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "batch_code",
+    "nama_barang",
+    "jumlah_awal",
+    "tanggal_terima"
+  ],
+  "type": "object"
+}

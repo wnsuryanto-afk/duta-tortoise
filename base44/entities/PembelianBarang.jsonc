@@ -1,0 +1,156 @@
+{
+  "name": "PembelianBarang",
+  "properties": {
+    "biaya_admin": {
+      "default": 0,
+      "description": "Biaya admin marketplace (Rp) \u2014 ikut dihitung sebagai harga barang",
+      "type": "number"
+    },
+    "bukti_pesanan_url": {
+      "description": "Screenshot pesanan online atau foto nota",
+      "type": "string"
+    },
+    "bukti_terima_url": {
+      "description": "Foto barang saat diterima",
+      "type": "string"
+    },
+    "catatan": {
+      "type": "string"
+    },
+    "dibayar_oleh_email": {
+      "description": "Email pemberi dana talangan (mis. owner kedua yang belanja pakai uang pribadi)",
+      "type": "string"
+    },
+    "dibayar_oleh_nama": {
+      "description": "Nama pemberi dana talangan",
+      "type": "string"
+    },
+    "diterima_oleh_email": {
+      "description": "Siapa yang mengonfirmasi barang diterima",
+      "type": "string"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "type": "boolean"
+    },
+    "finance_tx_id": {
+      "description": "ID FinanceTransaction yang terbentuk saat barang diterima",
+      "type": "string"
+    },
+    "is_talangan": {
+      "default": true,
+      "description": "True bila dibayar pakai uang pribadi dan menjadi utang farm ke pembeli",
+      "type": "boolean"
+    },
+    "is_test_data": {
+      "default": false,
+      "type": "boolean"
+    },
+    "items": {
+      "description": "Rincian barang dalam satu pesanan",
+      "items": {
+        "properties": {
+          "harga_satuan": {
+            "type": "number"
+          },
+          "item_sku": {
+            "type": "string"
+          },
+          "jumlah_diterima": {
+            "type": "number"
+          },
+          "jumlah_pesan": {
+            "type": "number"
+          },
+          "kategori": {
+            "description": "Menentukan biaya vs aset: alat_kerja dicatat sebagai aset",
+            "enum": [
+              "obat",
+              "vitamin",
+              "alat_kerja",
+              "pakan",
+              "lainnya"
+            ],
+            "type": "string"
+          },
+          "label_per_butir": {
+            "default": false,
+            "description": "True = cetak label sebanyak jumlahnya. False = satu label per batch.",
+            "type": "boolean"
+          },
+          "nama_barang": {
+            "type": "string"
+          },
+          "satuan": {
+            "type": "string"
+          },
+          "shopping_list_id": {
+            "type": "string"
+          },
+          "tanggal_expired": {
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "ongkir": {
+      "default": 0,
+      "description": "Ongkos kirim (Rp) \u2014 ikut dihitung sebagai harga barang",
+      "type": "number"
+    },
+    "platform": {
+      "description": "Tempat pembelian",
+      "type": "string"
+    },
+    "status": {
+      "default": "dipesan",
+      "description": "dipesan \u2192 menunggu barang. diterima_penuh / diterima_sebagian \u2192 stok bertambah & biaya tercatat. dibatalkan \u2192 barang kembali ke daftar belanja, tidak ada biaya.",
+      "enum": [
+        "dipesan",
+        "diterima_penuh",
+        "diterima_sebagian",
+        "dibatalkan"
+      ],
+      "type": "string"
+    },
+    "status_utang": {
+      "default": "belum_dibayar",
+      "description": "Pelunasan talangan ke pembeli. Cukup dicatat, tanpa bukti transfer.",
+      "enum": [
+        "belum_dibayar",
+        "lunas"
+      ],
+      "type": "string"
+    },
+    "tanggal_lunas": {
+      "format": "date",
+      "type": "string"
+    },
+    "tanggal_pesan": {
+      "format": "date",
+      "type": "string"
+    },
+    "tanggal_terima": {
+      "format": "date",
+      "type": "string"
+    },
+    "total_barang": {
+      "default": 0,
+      "description": "Total harga barang sebelum ongkir & admin (Rp)",
+      "type": "number"
+    },
+    "total_bayar": {
+      "default": 0,
+      "description": "Total yang benar-benar dibayar = barang + ongkir + admin (Rp)",
+      "type": "number"
+    }
+  },
+  "required": [
+    "tanggal_pesan",
+    "status"
+  ],
+  "type": "object"
+}
