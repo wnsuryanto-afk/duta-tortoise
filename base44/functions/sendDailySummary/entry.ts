@@ -530,10 +530,21 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
       ]);
 
     const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
-    const owners = users.filter((u) => u.role === "owner");
-    const admins = users.filter((u) => u.role === "admin");
-    const manajers = users.filter((u) => u.role === "manajer");
-    const nama = (arr) => arr.map((u) => (u.full_name || u.email || "").split(" ")[0]).join(" / ") || "-";
+
+    // PIC ditentukan owner lewat Pengaturan WhatsApp. Versi lama menyebut
+    // SEMUA orang ber-role sama, sehingga "Pembelian" tertulis atas nama tiga
+    // orang padahal yang belanja hanya satu. Bila belum diatur, jatuh ke role.
+    const byEmail = (email) => users.find((u) => u.email === email);
+    const firstName = (u) => (u?.full_name || u?.email || "").split(" ")[0];
+    const picNama = (settingEmail, fallbackRole) => {
+      const u = settingEmail ? byEmail(settingEmail) : null;
+      if (u) return firstName(u);
+      const arr = users.filter((x) => x.role === fallbackRole);
+      return arr.map(firstName).join(" / ") || "-";
+    };
+    const namaPembelian = picNama(settings?.pic_pembelian, "owner");
+    const namaAdmin = picNama(settings?.pic_administrasi, "admin");
+    const namaApproval = picNama(settings?.pic_approval, "manajer");
 
     const picLines = [];
 
@@ -541,10 +552,29 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     const belanjaOwner = [];
     if (shoppingList.length > 0) {
       const totalEst = shoppingList.reduce((t, i) => t + (i.total_est || 0), 0);
-      const segera = shoppingList.filter((i) => i.priority === "segera").length;
+      const urgent = shoppingList.filter((i) => i.priority === "segera");
       belanjaOwner.push(
-        `  • ${shoppingList.length} barang belum dibeli${segera ? ` (${segera} SEGERA)` : ""} — est ${rp(totalEst)}`
+        `  • ${shoppingList.length} barang belum dibeli${urgent.length ? ` (${urgent.length} SEGERA)` : ""} — est ${rp(totalEst)}`
       );
+
+      // Sebut namanya. Tanpa ini penerima tidak tahu apa yang harus dibeli
+      // dan harus membuka aplikasi hanya untuk melihat daftarnya.
+      const urut = [...shoppingList].sort((a, b) => {
+        const rank = { segera: 0, minggu_ini: 1, bulan_ini: 2, opsional: 3 };
+        const ra = rank[a.priority] ?? 9, rb = rank[b.priority] ?? 9;
+        if (ra !== rb) return ra - rb;
+        return (b.total_est || 0) - (a.total_est || 0);
+      });
+      for (const it of urut.slice(0, 10)) {
+        const nm = it.nama_barang || it.item_name || "(tanpa nama)";
+        const jml = it.jumlah ?? it.qty_needed ?? 0;
+        const sat = it.satuan || it.unit || "";
+        const tanda = it.priority === "segera" ? "‼️" : "▫️";
+        belanjaOwner.push(`     ${tanda} ${nm} — ${jml} ${sat}${it.total_est ? ` · ${rp(it.total_est)}` : ""}`);
+      }
+      if (urut.length > 10) {
+        belanjaOwner.push(`     …dan ${urut.length - 10} barang lain, lihat menu Harus Dibeli`);
+      }
     }
     if (pembelian.length > 0) {
       belanjaOwner.push(`  • ${pembelian.length} pesanan masih ditunggu barangnya`);
@@ -555,7 +585,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
       belanjaOwner.push(`  • Talangan belum dilunasi: ${rp(totalUtang)}`);
     }
     if (belanjaOwner.length > 0) {
-      picLines.push(`👤 *Pembelian — ${nama(owners)}*`);
+      picLines.push(`👤 *Pembelian — ${namaPembelian}*`);
       picLines.push(...belanjaOwner);
     }
 
@@ -572,7 +602,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     if (kasbonPending.length > 0) adminLines.push(`  • ${kasbonPending.length} kasbon menunggu ditinjau`);
     if (toolRequests.length > 0) adminLines.push(`  • ${toolRequests.length} pengajuan barang menunggu`);
     if (adminLines.length > 0) {
-      picLines.push(`👤 *Administrasi — ${nama(admins)}*`);
+      picLines.push(`👤 *Administrasi — ${namaAdmin}*`);
       picLines.push(...adminLines);
     }
 
@@ -586,7 +616,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
       mgrLines.push(`  • ${sakitAktif} kura masih berstatus sakit, pastikan perawatannya jalan`);
     }
     if (mgrLines.length > 0) {
-      picLines.push(`👤 *Pengawasan Tim — ${nama(manajers)}*`);
+      picLines.push(`👤 *Approval & Pengawasan — ${namaApproval}*`);
       picLines.push(...mgrLines);
     }
 
