@@ -490,9 +490,29 @@ export default function OwnerDashboard({ user }) {
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi />
 
-      {/* ── EXCLUDED DATA WIDGET ── */}
-      <ExcludedDataWidget />
-
+      {/* ── ROW 13: ALERT KRITIS ── */}
+      <div className="bg-card rounded-xl border border-border p-4">
+        <SectionTitle icon={AlertTriangle}>Perlu Perhatianmu</SectionTitle>
+        {criticalAlerts.length === 0 ? (
+          <p className="text-sm text-green-600 font-medium">✓ Semua kondisi normal hari ini</p>
+        ) : (
+          <div className="space-y-2">
+            {criticalAlerts.map((a, i) => (
+              <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${a.type === "red" ? "bg-red-50 border border-red-100" : "bg-amber-50 border border-amber-100"}`}>
+                <span className="text-base mt-0.5">{a.type === "red" ? "🔴" : "🟡"}</span>
+                <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800" : "text-amber-800"}`}>
+                  {a.msg}
+                  {a.href && (
+                    <Link to={a.href} className="ml-2 text-primary font-medium underline hover:no-underline text-xs">
+                      {a.linkLabel || "Lihat →"}
+                    </Link>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       {/* ── WIDGET CHECKLIST MENUNGGU APPROVAL ── */}
       {phase2Ready && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -521,6 +541,9 @@ export default function OwnerDashboard({ user }) {
       {/* ── TUGAS INSIDENTIL ── */}
       <IncidentalTaskCard />
 
+      {/* ── DAFTAR BELANJA ── */}
+      <ShoppingListWidget />
+
       {/* ── ROW 1: KESEHATAN FINANSIAL ── */}
       <div>
         <SectionTitle icon={DollarSign}>Kesehatan Finansial Bulan Ini</SectionTitle>
@@ -547,32 +570,6 @@ export default function OwnerDashboard({ user }) {
         </div>
       </div>
 
-      {/* ── ROW 13: ALERT KRITIS ── */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <SectionTitle icon={AlertTriangle}>Perlu Perhatianmu</SectionTitle>
-        {criticalAlerts.length === 0 ? (
-          <p className="text-sm text-green-600 font-medium">✓ Semua kondisi normal hari ini</p>
-        ) : (
-          <div className="space-y-2">
-            {criticalAlerts.map((a, i) => (
-              <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${a.type === "red" ? "bg-red-50 border border-red-100" : "bg-amber-50 border border-amber-100"}`}>
-                <span className="text-base mt-0.5">{a.type === "red" ? "🔴" : "🟡"}</span>
-                <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800" : "text-amber-800"}`}>
-                  {a.msg}
-                  {a.href && (
-                    <Link to={a.href} className="ml-2 text-primary font-medium underline hover:no-underline text-xs">
-                      {a.linkLabel || "Lihat →"}
-                    </Link>
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {/* ── DAFTAR BELANJA ── */}
-      <ShoppingListWidget />
-
       {/* == ANALISIS MENDALAM (tertutup secara default) == */}
       <button
         onClick={() => setShowDetail(v => !v)}
@@ -590,6 +587,9 @@ export default function OwnerDashboard({ user }) {
 
       {showDetail && (
         <div className="space-y-6 animate-fade-in">
+      {/* ── EXCLUDED DATA WIDGET ── */}
+      <ExcludedDataWidget />
+
       {/* ── WIDGET LABA RUGI REALTIME ── */}
       <LabaRugiWidget />
 
