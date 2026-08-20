@@ -22,11 +22,11 @@ import {
 
 const NOTIF_CONFIG = [
   { key: "notif_daily_approval", label: "⏰ Pengingat Harian (17:30)", desc: "Jumlah checklist menunggu approval → Owner" },
-  { key: "notif_sick_report", label: "🤒 Laporan Kura Sakit", desc: "Laporan sakit baru → Owner + Manajer", destKey: "notif_sick_report_destination", groupLabel: "Grup PAGI (berisi keeper)" },
-  { key: "notif_low_stock", label: "💊 Stok Obat Menipis", desc: "Stok menyentuh minimum → Owner + Manajer + Admin", destKey: "notif_low_stock_destination", groupLabel: "Grup SORE (manajemen)" },
+  { key: "notif_sick_report", label: "🤒 Laporan Kura Sakit", desc: "Laporan sakit baru → Owner + Manajer", destKey: "notif_sick_report_destination", groupKey: "notif_sick_report_group_id", defaultGroup: "morning" },
+  { key: "notif_low_stock", label: "💊 Stok Obat Menipis", desc: "Stok menyentuh minimum → Owner + Manajer + Admin", destKey: "notif_low_stock_destination", groupKey: "notif_low_stock_group_id", defaultGroup: "evening" },
   { key: "notif_salary_paid", label: "💸 Gaji Dibayar", desc: "Slip ditandai dibayar → Karyawan ybs" },
   { key: "notif_incidental_task", label: "📌 Tugas Insidentil Baru", desc: "Tugas baru → Karyawan yang ditugaskan" },
-  { key: "notif_tool_request", label: "🔴 Alat Rusak / Pengajuan", desc: "Pengajuan barang baru → Owner + Manajer", destKey: "notif_tool_request_destination", groupLabel: "Grup PAGI (berisi keeper)" },
+  { key: "notif_tool_request", label: "🔴 Alat Rusak / Pengajuan", desc: "Pengajuan barang baru → Owner + Manajer", destKey: "notif_tool_request_destination", groupKey: "notif_tool_request_group_id", defaultGroup: "morning" },
 ];
 
 export default function PengaturanWhatsAppPage() {
@@ -40,6 +40,7 @@ export default function PengaturanWhatsAppPage() {
   const [phones, setPhones] = useState({ owner: "", manajer: "", admin: "" });
   const [empPhones, setEmpPhones] = useState({});
   const [toggles, setToggles] = useState({});
+  const [waGroups, setWaGroups] = useState([]); // grup tambahan buatan owner
   const [testing, setTesting] = useState(false);
   const [groupId, setGroupId] = useState("");
   const [summaryTime, setSummaryTime] = useState("16:30");
@@ -100,8 +101,10 @@ export default function PengaturanWhatsAppPage() {
       tg[c.key] = data[c.key] !== false;
       // Muat juga tujuan pengiriman untuk notifikasi yang mendukung grup
       if (c.destKey) tg[c.destKey] = data[c.destKey] || "individuals";
+      if (c.groupKey) tg[c.groupKey] = data[c.groupKey] || "";
     });
     setToggles(tg);
+    setWaGroups(Array.isArray(data.wa_groups) ? data.wa_groups : []);
     setGroupId(data.group_id || "");
     setSummaryTime(data.daily_summary_time || "16:30");
     setSummaryEnabled(data.daily_summary_enabled === true);
@@ -179,6 +182,10 @@ export default function PengaturanWhatsAppPage() {
         notif_sick_report_destination: toggles.notif_sick_report_destination || "individuals",
         notif_low_stock_destination: toggles.notif_low_stock_destination || "individuals",
         notif_tool_request_destination: toggles.notif_tool_request_destination || "individuals",
+        notif_sick_report_group_id: toggles.notif_sick_report_group_id || "",
+        notif_low_stock_group_id: toggles.notif_low_stock_group_id || "",
+        notif_tool_request_group_id: toggles.notif_tool_request_group_id || "",
+        wa_groups: waGroups.filter((g) => g.group_id && g.group_id.trim()),
         group_id: groupId,
         summary_destination: summaryDestination,
         summary_recipients: summaryRecipients,
