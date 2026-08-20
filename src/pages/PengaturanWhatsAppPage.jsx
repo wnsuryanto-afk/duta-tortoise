@@ -48,6 +48,10 @@ export default function PengaturanWhatsAppPage() {
   const [showPoints, setShowPoints] = useState(false);
   const [weeklyEnabled, setWeeklyEnabled] = useState(false);
   const [showPR, setShowPR] = useState(true); // bagian 'PR MASING-MASING'
+  // Penanggung jawab tiap bidang di ringkasan PR. Kosong = pakai role sebagai fallback.
+  const [picPembelian, setPicPembelian] = useState("");
+  const [picAdministrasi, setPicAdministrasi] = useState("");
+  const [picApproval, setPicApproval] = useState("");
   const [aiSorotan, setAiSorotan] = useState(true);
   const [aiWeekly, setAiWeekly] = useState(true);
   const [aiSmartAlerts, setAiSmartAlerts] = useState(false);
@@ -107,6 +111,9 @@ export default function PengaturanWhatsAppPage() {
     setToggles(tg);
     setWaGroups(Array.isArray(data.wa_groups) ? data.wa_groups : []);
     setShowPR(data.summary_show_pr !== false);
+    setPicPembelian(data.pic_pembelian || "");
+    setPicAdministrasi(data.pic_administrasi || "");
+    setPicApproval(data.pic_approval || "");
     setGroupId(data.group_id || "");
     setSummaryTime(data.daily_summary_time || "16:30");
     setSummaryEnabled(data.daily_summary_enabled === true);
@@ -208,6 +215,9 @@ export default function PengaturanWhatsAppPage() {
         daily_summary_show_points: showPoints,
         weekly_summary_enabled: weeklyEnabled,
         summary_show_pr: showPR,
+        pic_pembelian: picPembelian,
+        pic_administrasi: picAdministrasi,
+        pic_approval: picApproval,
         morning_summary_enabled: morningEnabled,
         morning_summary_time: morningTime || "07:00",
         morning_group_id: morningGroupId,
@@ -996,6 +1006,40 @@ export default function PengaturanWhatsAppPage() {
             </div>
             <Switch checked={showPR} onCheckedChange={setShowPR} />
           </div>
+
+          {showPR && (
+            <div className="ml-1 pl-3 border-l-2 border-muted space-y-3 pb-2">
+              <p className="text-[11px] text-muted-foreground">
+                Siapa penanggung jawab tiap bidang? Nama ini yang muncul di ringkasan.
+                Kosongkan untuk memakai seluruh pemegang role terkait.
+              </p>
+              {[
+                { label: "Pembelian & talangan", val: picPembelian, set: setPicPembelian },
+                { label: "Administrasi & data", val: picAdministrasi, set: setPicAdministrasi },
+                { label: "Approval & pengawasan tim", val: picApproval, set: setPicApproval },
+              ].map((row) => (
+                <div key={row.label}>
+                  <p className="text-xs font-medium mb-1">{row.label}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[{ email: "", full_name: "Sesuai role" }, ...(users || [])].map((u) => (
+                      <button
+                        key={u.email || "default"}
+                        type="button"
+                        onClick={() => row.set(u.email)}
+                        className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                          row.val === u.email
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {(u.full_name || u.email || "").split(" ")[0] || u.email}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* AI Features */}
           <div className="pt-2 border-t mt-2">
