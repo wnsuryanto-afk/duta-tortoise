@@ -518,7 +518,8 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   // Ringkasan lama hanya melaporkan keadaan farm, tanpa menyebut siapa yang
   // harus mengerjakan apa. Bagian ini menautkan setiap pekerjaan tertunda ke
   // peran pemiliknya, supaya tidak ada yang menunggu satu sama lain.
-  try {
+  // Bisa dimatikan owner lewat Pengaturan WhatsApp (summary_show_pr).
+  if (settings?.summary_show_pr !== false) try {
     const [shoppingList, pembelian, kasbonPending, pendingApproval, incompleteTortoises] =
       await Promise.all([
         base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }).catch(() => []),
