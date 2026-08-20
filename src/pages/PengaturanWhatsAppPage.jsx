@@ -140,6 +140,18 @@ export default function PengaturanWhatsAppPage() {
     }
   }, [settings, initialized]);
 
+  // Semua grup yang bisa dipilih sebagai tujuan notifikasi:
+  // dua grup bawaan (PAGI & SORE) + grup tambahan yang dibuat owner.
+  const allGroups = [
+    ...(morningGroupId && morningGroupId.trim()
+      ? [{ id: morningGroupId.trim(), name: "Grup PAGI (berisi keeper)" }] : []),
+    ...(groupId && groupId.trim()
+      ? [{ id: groupId.trim(), name: "Grup SORE (manajemen)" }] : []),
+    ...waGroups
+      .filter((g) => g.group_id && g.group_id.trim())
+      .map((g) => ({ id: g.group_id.trim(), name: g.name || g.group_id })),
+  ];
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const empArray = (users || [])
@@ -658,9 +670,29 @@ export default function PengaturanWhatsAppPage() {
                       </button>
                     ))}
                     {dest !== "individuals" && (
-                      <span className="text-[11px] text-muted-foreground w-full mt-0.5">
-                        → {cfg.groupLabel}
-                      </span>
+                      <div className="w-full mt-1">
+                        {allGroups.length === 0 ? (
+                          <p className="text-[11px] text-amber-700">
+                            Belum ada grup terdaftar. Isi ID Grup PAGI/SORE di bagian Ringkasan Harian,
+                            atau tambahkan lewat "Grup WhatsApp Tambahan" di bawah.
+                          </p>
+                        ) : (
+                          <select
+                            value={toggles[cfg.groupKey] || ""}
+                            onChange={(e) =>
+                              setToggles((t) => ({ ...t, [cfg.groupKey]: e.target.value }))
+                            }
+                            className="w-full h-8 text-[11px] px-2 rounded-lg border border-border bg-background"
+                          >
+                            <option value="">
+                              Grup bawaan ({cfg.defaultGroup === "morning" ? "PAGI" : "SORE"})
+                            </option>
+                            {allGroups.map((g) => (
+                              <option key={g.id} value={g.id}>{g.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
