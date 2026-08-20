@@ -47,6 +47,7 @@ export default function PengaturanWhatsAppPage() {
   const [summaryEnabled, setSummaryEnabled] = useState(false);
   const [showPoints, setShowPoints] = useState(false);
   const [weeklyEnabled, setWeeklyEnabled] = useState(false);
+  const [showPR, setShowPR] = useState(true); // bagian 'PR MASING-MASING'
   const [aiSorotan, setAiSorotan] = useState(true);
   const [aiWeekly, setAiWeekly] = useState(true);
   const [aiSmartAlerts, setAiSmartAlerts] = useState(false);
@@ -105,6 +106,7 @@ export default function PengaturanWhatsAppPage() {
     });
     setToggles(tg);
     setWaGroups(Array.isArray(data.wa_groups) ? data.wa_groups : []);
+    setShowPR(data.summary_show_pr !== false);
     setGroupId(data.group_id || "");
     setSummaryTime(data.daily_summary_time || "16:30");
     setSummaryEnabled(data.daily_summary_enabled === true);
@@ -205,6 +207,7 @@ export default function PengaturanWhatsAppPage() {
         daily_summary_enabled: summaryEnabled,
         daily_summary_show_points: showPoints,
         weekly_summary_enabled: weeklyEnabled,
+        summary_show_pr: showPR,
         morning_summary_enabled: morningEnabled,
         morning_summary_time: morningTime || "07:00",
         morning_group_id: morningGroupId,
@@ -981,6 +984,17 @@ export default function PengaturanWhatsAppPage() {
               <p className="text-xs text-muted-foreground">Kirim rekap mingguan setiap Sabtu pada jam yang sama</p>
             </div>
             <Switch checked={weeklyEnabled} onCheckedChange={setWeeklyEnabled} />
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2">
+            <div className="flex-1">
+              <p className="text-sm font-medium">PR Masing-Masing</p>
+              <p className="text-xs text-muted-foreground">
+                Daftar pekerjaan tertunda per peran di ringkasan sore: pembelian &amp; talangan (owner),
+                data belum lengkap &amp; kasbon (admin), approval &amp; kura sakit (manajer).
+                Bagian ini hilang sendiri bila semua bersih.
+              </p>
+            </div>
+            <Switch checked={showPR} onCheckedChange={setShowPR} />
           </div>
 
           {/* AI Features */}
