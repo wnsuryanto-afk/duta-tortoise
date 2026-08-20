@@ -514,6 +514,88 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     }
   }
 
+  // ── TUGAS PER ORANG (PR yang belum selesai) ──
+  // Ringkasan lama hanya melaporkan keadaan farm, tanpa menyebut siapa yang
+  // harus mengerjakan apa. Bagian ini menautkan setiap pekerjaan tertunda ke
+  // peran pemiliknya, supaya tidak ada yang menunggu satu sama lain.
+  try {
+    const [shoppingList, pembelian, kasbonPending, pendingApproval, incompleteTortoises] =
+      await Promise.all([
+        base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }).catch(() => []),
+        base44.asServiceRole.entities.PembelianBarang.filter({ status: "dipesan" }).catch(() => []),
+        base44.asServiceRole.entities.Kasbon.filter({ status: "pending" }).catch(() => []),
+        base44.asServiceRole.entities.DailyChecklist.filter({ status: "submitted" }).catch(() => []),
+        Promise.resolve(tortoises),
+      ]);
+
+    const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
+    const owners = users.filter((u) => u.role === "owner");
+    const admins = users.filter((u) => u.role === "admin");
+    const manajers = users.filter((u) => u.role === "manajer");
+    const nama = (arr) => arr.map((u) => (u.full_name || u.email || "").split(" ")[0]).join(" / ") || "-";
+
+    const picLines = [];
+
+    // ── Pembelian (owner) ──
+    const belanjaOwner = [];
+    if (shoppingList.length > 0) {
+      const totalEst = shoppingList.reduce((t, i) => t + (i.total_est || 0), 0);
+      const segera = shoppingList.filter((i) => i.priority === "segera").length;
+      belanjaOwner.push(
+        `  • ${shoppingList.length} barang belum dibeli${segera ? ` (${segera} SEGERA)` : ""} — est ${rp(totalEst)}`
+      );
+    }
+    if (pembelian.length > 0) {
+      belanjaOwner.push(`  • ${pembelian.length} pesanan masih ditunggu barangnya`);
+    }
+    const utang = pembelian.filter((p) => p.is_talangan && p.status_utang === "belum_dibayar");
+    if (utang.length > 0) {
+      const totalUtang = utang.reduce((t, p) => t + (p.total_bayar || 0), 0);
+      belanjaOwner.push(`  • Talangan belum dilunasi: ${rp(totalUtang)}`);
+    }
+    if (belanjaOwner.length > 0) {
+      picLines.push(`👤 *Pembelian — ${nama(owners)}*`);
+      picLines.push(...belanjaOwner);
+    }
+
+    // ── Administrasi (admin) ──
+    const adminLines = [];
+    const tanpaBerat = incompleteTortoises.filter(
+      (t) => t.status === "aktif" && !t.is_archived && !t.current_weight
+    ).length;
+    const tanpaFoto = incompleteTortoises.filter(
+      (t) => t.status === "aktif" && !t.is_archived && !(t.photo_urls || []).length
+    ).length;
+    if (tanpaBerat > 0) adminLines.push(`  • ${tanpaBerat} kura belum ada data berat`);
+    if (tanpaFoto > 0) adminLines.push(`  • ${tanpaFoto} kura belum ada foto`);
+    if (kasbonPending.length > 0) adminLines.push(`  • ${kasbonPending.length} kasbon menunggu ditinjau`);
+    if (toolRequests.length > 0) adminLines.push(`  • ${toolRequests.length} pengajuan barang menunggu`);
+    if (adminLines.length > 0) {
+      picLines.push(`👤 *Administrasi — ${nama(admins)}*`);
+      picLines.push(...adminLines);
+    }
+
+    // ── Pengawasan tim (manajer) ──
+    const mgrLines = [];
+    if (pendingApproval.length > 0) {
+      mgrLines.push(`  • ${pendingApproval.length} checklist menunggu approval poin`);
+    }
+    const sakitAktif = tortoises.filter((t) => t.is_currently_sick).length;
+    if (sakitAktif > 0) {
+      mgrLines.push(`  • ${sakitAktif} kura masih berstatus sakit, pastikan perawatannya jalan`);
+    }
+    if (mgrLines.length > 0) {
+      picLines.push(`👤 *Pengawasan Tim — ${nama(manajers)}*`);
+      picLines.push(...mgrLines);
+    }
+
+    if (picLines.length > 0) {
+      lines.push("📋 *PR MASING-MASING*");
+      lines.push(...picLines);
+      lines.push("");
+    }
+  } catch { /* bagian ini tidak boleh menggagalkan seluruh ringkasan */ }
+
   // ── PERINGATAN TERTUNDA ──
   try {
     const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
