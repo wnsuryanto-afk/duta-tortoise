@@ -678,9 +678,7 @@ export default function PengaturanWhatsAppPage() {
                           </p>
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
-                            {/* Tombol pil, bukan <select>: daftar pilihan <select> di webview
-                                dirender browser di posisi yang tidak bisa dikendalikan
-                                (muncul menutupi bagian atas layar). */}
+                            {/* Tombol pil, bukan <select> */}
                             {[{ id: "", name: `Grup bawaan (${cfg.defaultGroup === "morning" ? "PAGI" : "SORE"})` }, ...allGroups].map((g) => {
                               const aktifGrup = (toggles[cfg.groupKey] || "") === g.id;
                               return (
