@@ -305,19 +305,41 @@ export function resolveNotificationTargets(settings, notificationType, individua
   const NONE = { targets: individualPhones || [], mode: "individuals" };
   if (!settings) return NONE;
 
-  // Jenis notifikasi yang boleh ke grup, beserta grup mana yang dipakai.
+  // Jenis notifikasi yang boleh ke grup, beserta grup bawaannya bila owner
+  // belum memilih grup lain. Gaji & tugas insidentil sengaja TIDAK ada di sini.
   const groupMap = {
-    sick_report:  { field: "notif_sick_report_destination",  group: settings.morning_group_id },
-    tool_request: { field: "notif_tool_request_destination", group: settings.morning_group_id },
-    low_stock:    { field: "notif_low_stock_destination",    group: settings.group_id },
+    sick_report:  { destField: "notif_sick_report_destination",  groupField: "notif_sick_report_group_id",  fallback: settings.morning_group_id },
+    tool_request: { destField: "notif_tool_request_destination", groupField: "notif_tool_request_group_id", fallback: settings.morning_group_id },
+    low_stock:    { destField: "notif_low_stock_destination",    groupField: "notif_low_stock_group_id",    fallback: settings.group_id },
   };
 
   const conf = groupMap[notificationType];
-  if (!conf) return NONE; // gaji, tugas insidentil, pengingat approval: perorangan saja
+  if (!conf) return NONE;
 
-  const mode = settings[conf.field] || "individuals";
-  const groupId = (conf.group || "").trim();
+  const mode = settings[conf.destField] || "individuals";
+  // Grup yang dipilih owner untuk jenis ini; kosong berarti pakai grup bawaan.
+  const groupId = String(settings[conf.groupField] || conf.fallback || "").trim();
+
   if (mode === "individuals" || !groupId) return NONE;
   if (mode === "group") return { targets: [groupId], mode: "group" };
   return { targets: [...(individualPhones || []), groupId], mode: "both" };
+}
+
+/**
+ * Semua grup yang tersedia: dua grup bawaan + grup tambahan buatan owner.
+ * Dipakai UI untuk menampilkan pilihan, dan bisa dipakai backend untuk validasi.
+ */
+export function listAllGroups(settings) {
+  if (!settings) return [];
+  const out = [];
+  if (settings.morning_group_id) {
+    out.push({ group_id: settings.morning_group_id, name: "Grup PAGI (berisi keeper)", builtin: true });
+  }
+  if (settings.group_id) {
+    out.push({ group_id: settings.group_id, name: "Grup SORE (manajemen)", builtin: true });
+  }
+  (settings.wa_groups || []).forEach((g) => {
+    if (g && g.group_id) out.push({ group_id: g.group_id, name: g.name || g.group_id, note: g.note, builtin: false });
+  });
+  return out;
 }
