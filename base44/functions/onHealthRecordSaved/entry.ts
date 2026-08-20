@@ -75,10 +75,20 @@ Deno.serve(async (req) => {
         const waMessage =
           `🤒 *Laporan Kura Sakit*\n\n` +
           `Kura: ${record.tortoise_name}\n` +
-          `Kandang: ${record.enclosure || '?'}\n` +
+          `Kandang: ${kandangKura || '?'}\n` +
           `Pelapor: ${reporterName}\n` +
           `Gejala: ${gejalaText}\n\n` +
           `Buka aplikasi → menu *Rekam Kesehatan* untuk detail.`;
+        // HealthRecord tidak menyimpan kandang — ambil dari data kura,
+        // supaya pesan tidak lagi selalu berbunyi "Kandang: ?".
+        let kandangKura = '';
+        try {
+          if (record.tortoise_id) {
+            const t = await base44.asServiceRole.entities.Tortoise.filter({ id: record.tortoise_id });
+            kandangKura = t?.[0]?.enclosure || '';
+          }
+        } catch { /* kandang kosong lebih baik daripada notifikasi gagal */ }
+
         // Tambahkan grup WhatsApp bila owner mengaktifkannya untuk jenis ini.
         const waSettings = await getSettings(base44);
         const resolved = resolveNotificationTargets(waSettings, 'sick_report', phones);
