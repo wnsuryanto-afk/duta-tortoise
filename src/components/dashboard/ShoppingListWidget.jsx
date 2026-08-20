@@ -180,23 +180,30 @@ function ShoppingItem({ item, onUpdate }) {
 
   return (
     <>
-      <div className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-lg border border-border hover:shadow-sm transition-shadow">
+      {/* Nama barang diberi baris sendiri. Versi lama menaruhnya sebaris dengan
+          badge memakai `truncate` tanpa min-w-0 — di layar sempit elemen itu
+          menyusut sampai nol lebar, sehingga yang tersisa hanya badge & harga. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-border hover:shadow-sm transition-shadow">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-foreground truncate">{item.nama_barang}</span>
+          <p className="text-sm font-semibold text-foreground leading-snug break-words">
+            {item.nama_barang || "(tanpa nama)"}
+          </p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <Badge className={`text-[10px] px-1.5 py-0 border ${badge.className}`}>{badge.label}</Badge>
-          </div>
-          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
-            <span>{item.jumlah} {item.satuan}</span>
-            {item.platform_beli && <span>📦 {item.platform_beli}</span>}
-            {item.total_est > 0 && <span className="font-medium text-foreground">{formatRp(item.total_est)}</span>}
+            <span className="text-xs text-muted-foreground">{item.jumlah} {item.satuan}</span>
+            {item.total_est > 0 && (
+              <span className="text-xs font-semibold text-foreground">{formatRp(item.total_est)}</span>
+            )}
+            {item.platform_beli && (
+              <span className="text-xs text-muted-foreground">📦 {item.platform_beli}</span>
+            )}
             {item.status === "sudah_dibeli" && item.harga_aktual > 0 && (
-              <span className="text-green-600">Aktual: {formatRp(item.harga_aktual)}</span>
+              <span className="text-xs text-green-600">Aktual: {formatRp(item.harga_aktual)}</span>
             )}
           </div>
           {item.notes && <p className="text-xs text-muted-foreground mt-0.5 italic">{item.notes}</p>}
         </div>
-        <div className="flex gap-1.5 shrink-0">
+        <div className="flex gap-1.5 shrink-0 self-end sm:self-auto">
           {item.status === "belum_dibeli" && (
             <Button size="sm" variant="outline" className="text-xs h-7 px-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
               disabled={updatingStatus === "sudah_dipesan"} onClick={handleDipesan}>
