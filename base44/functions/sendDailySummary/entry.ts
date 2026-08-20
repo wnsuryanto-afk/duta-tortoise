@@ -561,10 +561,10 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     // ── Administrasi (admin) ──
     const adminLines = [];
     const tanpaBerat = incompleteTortoises.filter(
-      (t) => t.status === "aktif" && !t.is_archived && !t.current_weight
+      (t) => t.status === "aktif" && !t.is_archived && !t.weight_grams
     ).length;
     const tanpaFoto = incompleteTortoises.filter(
-      (t) => t.status === "aktif" && !t.is_archived && !(t.photo_urls || []).length
+      (t) => t.status === "aktif" && !t.is_archived && !(t.photos || []).length
     ).length;
     if (tanpaBerat > 0) adminLines.push(`  • ${tanpaBerat} kura belum ada data berat`);
     if (tanpaFoto > 0) adminLines.push(`  • ${tanpaFoto} kura belum ada foto`);
