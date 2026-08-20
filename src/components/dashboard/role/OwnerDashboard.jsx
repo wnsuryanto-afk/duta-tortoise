@@ -132,7 +132,7 @@ export default function OwnerDashboard({ user }) {
 
   const { data: sales = [] } = useQuery({
     queryKey: ["owner-sales"],
-    queryFn: () => base44.entities.Sale.list("-date", 50), // turun dari 200
+    queryFn: () => base44.entities.Sale.list("-sale_date", 50), // turun dari 200
     enabled: phase2Ready,
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,

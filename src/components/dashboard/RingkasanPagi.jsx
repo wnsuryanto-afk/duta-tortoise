@@ -87,7 +87,7 @@ export default function RingkasanPagi() {
     staleTime: 60 * 1000,
   });
   const { data: todayChecklists = [] } = useQuery({
-    queryKey: ["ringkasan-today-checklists", today],
+    queryKey: ["owner-checklists"],
     queryFn: () => base44.entities.DailyChecklist.filter({ date: today }),
     staleTime: 2 * 60 * 1000,
   });

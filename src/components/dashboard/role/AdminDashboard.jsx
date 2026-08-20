@@ -43,13 +43,13 @@ export default function AdminDashboard({ user }) {
   const lastUpdate = format(now, "HH:mm", { locale: idLocale });
 
   const { data: dailyChecklists = [], refetch: refetchCL } = useQuery({
-    queryKey: ["admin-checklists", today],
+    queryKey: ["owner-checklists"],
     queryFn: () => base44.entities.DailyChecklist.filter({ date: today }),
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: attendances = [] } = useQuery({
-    queryKey: ["admin-attendance", today],
+    queryKey: ["ringkasan-attendance", today],
     queryFn: () => base44.entities.Attendance.filter({ date: today }),
     staleTime: 2 * 60 * 1000,
   });
@@ -57,8 +57,8 @@ export default function AdminDashboard({ user }) {
   const { data: allUsers = [] } = useActiveUsers();
 
   const { data: warehouseItems = [] } = useQuery({
-    queryKey: ["admin-warehouse"],
-    queryFn: () => base44.entities.WarehouseItem.list(),
+    queryKey: ["owner-warehouse"],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 50),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -69,8 +69,8 @@ export default function AdminDashboard({ user }) {
   });
 
   const { data: tortoises = [] } = useQuery({
-    queryKey: ["admin-tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 200),
+    queryKey: ["owner-tortoises"],
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
     staleTime: 5 * 60 * 1000,
   });
 
