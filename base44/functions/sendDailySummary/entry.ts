@@ -552,7 +552,9 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     const belanjaOwner = [];
     if (shoppingList.length > 0) {
       const totalEst = shoppingList.reduce((t, i) => t + (i.total_est || 0), 0);
-      const urgent = shoppingList.filter((i) => i.priority === "segera");
+      const urgent = shoppingList
+        .filter((i) => i.priority === "segera")
+        .sort((a, b) => (b.total_est || 0) - (a.total_est || 0));
       belanjaOwner.push(
         `  • ${shoppingList.length} barang belum dibeli${urgent.length ? ` (${urgent.length} SEGERA)` : ""} — est ${rp(totalEst)}`
       );
@@ -565,15 +567,29 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         if (ra !== rb) return ra - rb;
         return (b.total_est || 0) - (a.total_est || 0);
       });
-      for (const it of urut.slice(0, 10)) {
+      // SEMUA barang SEGERA disebut satu per satu — tujuannya agar daftar ini
+      // bisa dipakai langsung dari WhatsApp tanpa membuka aplikasi. Sisanya
+      // cukup disebut jumlahnya supaya pesan tidak menjadi terlalu panjang.
+      const baris = (it) => {
         const nm = it.nama_barang || it.item_name || "(tanpa nama)";
         const jml = it.jumlah ?? it.qty_needed ?? 0;
         const sat = it.satuan || it.unit || "";
-        const tanda = it.priority === "segera" ? "‼️" : "▫️";
-        belanjaOwner.push(`     ${tanda} ${nm} — ${jml} ${sat}${it.total_est ? ` · ${rp(it.total_est)}` : ""}`);
+        return `${nm} — ${jml} ${sat}${it.total_est ? ` · ${rp(it.total_est)}` : ""}`;
+      };
+
+      for (const it of urgent) {
+        belanjaOwner.push(`     ‼️ ${baris(it)}`);
       }
-      if (urut.length > 10) {
-        belanjaOwner.push(`     …dan ${urut.length - 10} barang lain, lihat menu Harus Dibeli`);
+
+      const sisa = urut.filter((i) => i.priority !== "segera");
+      const tampilSisa = sisa.slice(0, 5);
+      for (const it of tampilSisa) {
+        belanjaOwner.push(`     ▫️ ${baris(it)}`);
+      }
+      if (sisa.length > tampilSisa.length) {
+        belanjaOwner.push(
+          `     …${sisa.length - tampilSisa.length} barang lain tidak mendesak, lihat menu Harus Dibeli`
+        );
       }
     }
     if (pembelian.length > 0) {
@@ -643,7 +659,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
 
   // Penanda versi: cara paling cepat memastikan fungsi backend yang berjalan
   // sudah versi terbaru atau masih versi lama yang ter-deploy sebelumnya.
-  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v2_`);
+  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v3_`);
 
   return lines.join("\n");
 }
