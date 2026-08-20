@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  ShoppingCart, PackageX, AlertTriangle, Clock, Loader2, CheckCircle2,
+  ShoppingCart, PackageX, Loader2, CheckCircle2,
 } from "lucide-react";
 import BoughtItemDialog from "@/components/pettycash/BoughtItemDialog";
 
@@ -159,9 +159,11 @@ export default function HarusDibeliPage() {
     return shoppingList.map((s) => ({
       type: "shopping",
       shopping_list_id: s.id,
-      name: s.nama_barang,
-      jumlah: s.jumlah,
-      satuan: s.satuan,
+      // Record ShoppingList lama memakai item_name/qty_needed/unit —
+      // tanpa fallback ini barangnya tampil tanpa nama.
+      name: s.nama_barang || s.item_name || "(nama belum diisi)",
+      jumlah: s.jumlah ?? s.qty_needed ?? 0,
+      satuan: s.satuan || s.unit || "",
       priority: s.priority,
       harga_est: s.total_est || s.harga_est_per_unit || 0,
       source: "tugas_menunggu",
