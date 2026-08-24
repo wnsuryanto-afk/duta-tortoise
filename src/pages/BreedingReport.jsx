@@ -8,6 +8,7 @@ import { Egg, Baby, TrendingUp, FlaskConical, BarChart2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { parentHasSickHistory } from "@/lib/parentHealthUtils";
 
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
@@ -20,6 +21,12 @@ export default function BreedingReport() {
   const { data: breedings = [], isLoading } = useQuery({
     queryKey: ["breedings-report"],
     queryFn: () => base44.entities.Breeding.list("-egg_laying_date", 500),
+  });
+
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["breeding-report-health"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 1000),
+    staleTime: 10 * 60 * 1000,
   });
 
   // Filter data berdasarkan tahun terpilih (gunakan egg_laying_date)
@@ -58,14 +65,17 @@ export default function BreedingReport() {
     const map = {};
     filtered.forEach((b) => {
       const key = `${b.male_name} × ${b.female_name}`;
-      if (!map[key]) map[key] = { pair: key, sessions: 0, eggs: 0, hatched: 0, records: [] };
+      if (!map[key]) map[key] = { pair: key, sessions: 0, eggs: 0, hatched: 0, records: [], sickAffected: 0 };
       map[key].sessions++;
       map[key].eggs    += b.egg_count     || 0;
       map[key].hatched += b.hatched_count || 0;
       map[key].records.push(b);
+      if (parentHasSickHistory(b.male_id, b.female_id, healthRecords, b.egg_laying_date).affected) {
+        map[key].sickAffected++;
+      }
     });
     return Object.values(map).sort((a, b) => b.eggs - a.eggs);
-  }, [filtered]);
+  }, [filtered, healthRecords]);
 
   return (
     <div className="space-y-6">
@@ -183,6 +193,7 @@ export default function BreedingReport() {
                         <th className="text-center py-2 px-2 font-medium">Total Telur</th>
                         <th className="text-center py-2 px-2 font-medium">Menetas</th>
                         <th className="text-center py-2 px-2 font-medium">Tingkat Penetasan</th>
+                        <th className="text-center py-2 px-2 font-medium">Induk Sakit (90 hari)</th>
                         <th className="text-left py-2 pl-4 font-medium">Tgl Bertelur Terakhir</th>
                       </tr>
                     </thead>
@@ -204,6 +215,15 @@ export default function BreedingReport() {
                               }>
                                 {rate}%
                               </Badge>
+                            </td>
+                            <td className="text-center py-2.5 px-2 text-xs">
+                              {p.sickAffected > 0 ? (
+                                <span className="inline-flex items-center gap-0.5 text-amber-700 font-medium">
+                                  ⚠ {p.sickAffected}/{p.sessions} sesi
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                             </td>
                             <td className="py-2.5 pl-4 text-muted-foreground text-xs">
                               {lastRecord?.egg_laying_date

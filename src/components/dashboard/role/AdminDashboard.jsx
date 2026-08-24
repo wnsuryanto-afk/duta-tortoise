@@ -11,6 +11,7 @@ import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
+import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -159,6 +160,9 @@ export default function AdminDashboard({ user, role = "admin" }) {
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi />
+
+      {/* ── PERINGATAN KLUSTER PENYAKIT ── */}
+      <DiseaseClusterWarningCard canDismiss={role === "owner"} />
 
       {/* ── SECTION 1: BUTUH TINDAKAN ── */}
       <div className={`rounded-xl border p-4 ${pendingApprovalCount === 0 ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-300"}`}>

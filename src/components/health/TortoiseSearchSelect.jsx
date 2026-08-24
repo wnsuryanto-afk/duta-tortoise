@@ -39,6 +39,7 @@ export default function TortoiseSearchSelect({
   genderFilter,
   showKandangFilter = false,
   showHealthWarning = false,
+  recoveryInfoMap = {},
   placeholder = "Pilih kura",
 }) {
   const [open, setOpen] = useState(false);
@@ -208,6 +209,11 @@ export default function TortoiseSearchSelect({
                     {sick && showHealthWarning && (
                       <p className="text-[11px] text-red-600 font-medium mt-0.5 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" /> sedang dalam perawatan
+                      </p>
+                    )}
+                    {!sick && showHealthWarning && recoveryInfoMap[t.id] != null && (
+                      <p className="text-[11px] text-amber-600 font-medium mt-0.5 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> baru sembuh {recoveryInfoMap[t.id]} hari lalu
                       </p>
                     )}
                   </button>

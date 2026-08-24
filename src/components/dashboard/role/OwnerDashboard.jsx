@@ -11,6 +11,7 @@ import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
 import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
+import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
@@ -489,6 +490,9 @@ export default function OwnerDashboard({ user }) {
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi />
+
+      {/* ── PERINGATAN KLUSTER PENYAKIT ── */}
+      <DiseaseClusterWarningCard canDismiss />
 
       {/* ── ROW 13: ALERT KRITIS ── */}
       <div className="bg-card rounded-xl border border-border p-4">

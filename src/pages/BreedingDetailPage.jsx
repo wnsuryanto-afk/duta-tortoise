@@ -10,6 +10,7 @@ import { id as idLocale } from "date-fns/locale";
 import { ArrowLeft, Printer, AlertTriangle } from "lucide-react";
 import EggLabelGenerator, { candlingDate30, isCandlingLate } from "@/components/breeding/EggLabelGenerator";
 import EggGrid from "@/components/breeding/EggGrid";
+import ParentHealthBadges from "@/components/breeding/ParentHealthBadges";
 
 const statusColors = {
   bertelur: "bg-chart-3/10 text-chart-3 border-chart-3/20",
@@ -36,6 +37,12 @@ export default function BreedingDetailPage() {
     queryKey: ["breeding-detail", id],
     queryFn: () => base44.entities.Breeding.filter({ id }),
     enabled: !!id,
+  });
+
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["breeding-detail-health"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
   });
 
   const b = list[0];
@@ -75,6 +82,15 @@ export default function BreedingDetailPage() {
           <h2 className="font-bold text-lg">{b.male_name} × {b.female_name}</h2>
           <Badge variant="outline" className={`capitalize ${statusColors[b.status] || ""}`}>{b.status}</Badge>
         </div>
+
+        <ParentHealthBadges
+          maleId={b.male_id}
+          femaleId={b.female_id}
+          maleName={b.male_name}
+          femaleName={b.female_name}
+          healthRecords={healthRecords}
+          refDate={b.egg_laying_date}
+        />
 
         {late && (
           <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-medium">

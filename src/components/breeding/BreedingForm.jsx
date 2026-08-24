@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { addDays, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { downloadLabel, generateKodeLabel } from "@/lib/labelUtils";
 import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
+import { recoveryDaysAgo } from "@/lib/parentHealthUtils";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -57,6 +58,12 @@ export default function BreedingForm({ open, onClose, editData }) {
     queryFn: () => base44.entities.Incubator.list(),
   });
 
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["breeding-form-health"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: breedings = [] } = useQuery({
     queryKey: ["breedings"],
     queryFn: () => base44.entities.Breeding.list("-created_date", 200),
@@ -64,6 +71,17 @@ export default function BreedingForm({ open, onClose, editData }) {
 
   const males = tortoises.filter((t) => t.gender === "jantan" && (t.status === "aktif" || t.status === "breeding"));
   const females = tortoises.filter((t) => t.gender === "betina" && (t.status === "aktif" || t.status === "breeding"));
+
+  // Keterangan "baru sembuh <30 hari" di pemilih kura (membaca HealthRecord).
+  const recoveryInfoMap = useMemo(() => {
+    const m = {};
+    const now = new Date();
+    tortoises.forEach((t) => {
+      const d = recoveryDaysAgo(t.id, healthRecords, now);
+      if (d != null) m[t.id] = d;
+    });
+    return m;
+  }, [tortoises, healthRecords]);
 
   const handlePhotoUpload = async (file) => {
     if (!file) return;
@@ -221,6 +239,7 @@ export default function BreedingForm({ open, onClose, editData }) {
                   onChange={handleMaleSelect}
                   showKandangFilter
                   showHealthWarning
+                  recoveryInfoMap={recoveryInfoMap}
                   placeholder="Pilih jantan"
                 />
               ) : (
@@ -237,6 +256,7 @@ export default function BreedingForm({ open, onClose, editData }) {
                   onChange={handleFemaleSelect}
                   showKandangFilter
                   showHealthWarning
+                  recoveryInfoMap={recoveryInfoMap}
                   placeholder="Pilih betina"
                 />
               ) : (

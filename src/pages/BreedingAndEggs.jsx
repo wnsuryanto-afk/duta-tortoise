@@ -20,6 +20,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
 import HatchDialog from "@/components/breeding/HatchDialog";
+import ParentHealthBadges from "@/components/breeding/ParentHealthBadges";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
@@ -145,6 +146,12 @@ export default function BreedingAndEggs() {
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-breeding-label"],
     queryFn: () => base44.entities.Tortoise.list("code", 500),
+  });
+
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["breeding-health-records"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
   });
 
   if (!canAccess(role, "breeding")) return <AccessDenied />;
@@ -296,6 +303,14 @@ export default function BreedingAndEggs() {
                                 </span>
                               )}
                             </div>
+                            <ParentHealthBadges
+                              maleId={b.male_id}
+                              femaleId={b.female_id}
+                              maleName={b.male_name}
+                              femaleName={b.female_name}
+                              healthRecords={healthRecords}
+                              refDate={b.egg_laying_date}
+                            />
                           </div>
                           <BreedingCardMenu
                             canEdit={perms.canEdit}
@@ -647,6 +662,14 @@ export default function BreedingAndEggs() {
                       <Badge variant="outline" className={`text-[11px] capitalize mt-2 ${statusColors[b.status] || ""}`}>
                         {b.status}
                       </Badge>
+                      <ParentHealthBadges
+                        maleId={b.male_id}
+                        femaleId={b.female_id}
+                        maleName={b.male_name}
+                        femaleName={b.female_name}
+                        healthRecords={healthRecords}
+                        refDate={b.egg_laying_date}
+                      />
                     </div>
                     {b.hatch_date && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
