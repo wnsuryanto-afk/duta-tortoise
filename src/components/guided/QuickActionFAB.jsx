@@ -3,10 +3,12 @@
  * Muncul di semua halaman GuidedMode. 3 aksi besar dengan label teks.
  */
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Lightbulb } from "lucide-react";
+import IncidentalTaskUsulanForm from "@/components/incidental/IncidentalTaskUsulanForm";
 
-export default function QuickActionFAB({ onLaporSakit, onCatatPakan, onTugasHariIni }) {
+export default function QuickActionFAB({ onLaporSakit, onCatatPakan, onTugasHariIni, user }) {
   const [open, setOpen] = useState(false);
+  const [showUsulan, setShowUsulan] = useState(false);
 
   const run = (fn) => () => { setOpen(false); fn(); };
 
@@ -59,10 +61,26 @@ export default function QuickActionFAB({ onLaporSakit, onCatatPakan, onTugasHari
                   <p className="text-xs text-blue-600">Kembali ke checklist</p>
                 </div>
               </button>
+              <button
+                onClick={run(() => setShowUsulan(true))}
+                className="w-full flex items-center gap-4 p-4 bg-purple-50 border-2 border-purple-200 rounded-2xl active:scale-95 transition-all hover:bg-purple-100"
+              >
+                <span className="text-3xl flex-shrink-0"><Lightbulb className="w-7 h-7 text-purple-600" /></span>
+                <div className="text-left">
+                  <p className="font-bold text-purple-800 text-base">Usulkan Tugas</p>
+                  <p className="text-xs text-purple-600">Ada pekerjaan di luar SOP?</p>
+                </div>
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      <IncidentalTaskUsulanForm
+        open={showUsulan}
+        onClose={() => setShowUsulan(false)}
+        user={user}
+      />
     </>
   );
 }

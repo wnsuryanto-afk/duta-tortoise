@@ -120,6 +120,8 @@ export default function GuidedHariIni({ user }) {
   const [showCatatan, setShowCatatan]   = useState(false);
   const [showSelfie, setShowSelfie]     = useState(false);
   const [selfieMode, setSelfieMode]     = useState(null); // "checkin" | "checkout"
+  const [sembuhPrompt, setSembuhPrompt]   = useState(new Set()); // tortoise_id yg sedang ditanya "sudah sembuh?"
+  const [savingPerawatan, setSavingPerawatan] = useState(null); // tortoise_id sedang mencatat perawatan
 
   // ── Queries — diberi jeda & staleTime panjang ──
   const { data: attendance } = useQuery({
@@ -272,6 +274,54 @@ export default function GuidedHariIni({ user }) {
     }
     setSembuhLoading(null);
   };
+
+  // ── Perawatan harian kura sakit ──
+  // Keeper mencatat bahwa perawatan hari ini sudah dilakukan. Setelah dicentang,
+  // tawarkan penutupan langsung di kartunya ("Apakah sudah sembuh?").
+  // Pencatatan ini PERSISTEN (disimpan ke MaintenanceLog) agar tidak muncul lagi
+  // hari ini, tapi TIDAK mengubah status kura — keputusan sembuh tetap di keeper.
+  const perawatanDoneIds = useMemo(() => {
+    const s = new Set();
+    (maintenanceLogs || []).forEach((l) => {
+      if (l.item_id && l.item_id.startsWith("perawatan_")) {
+        s.add(l.item_id.replace("perawatan_", ""));
+      }
+    });
+    return s;
+  }, [maintenanceLogs]);
+
+  const handlePerawatanDone = async (h) => {
+    if (savingPerawatan) return;
+    setSavingPerawatan(h.tortoise_id);
+    try {
+      await base44.entities.MaintenanceLog.create({
+        check_key: `${user.email}__harian__perawatan_${h.tortoise_id}__${today}`,
+        enclosure_id: "perawatan",
+        enclosure_name: "Perawatan",
+        freq: "harian",
+        item_id: `perawatan_${h.tortoise_id}`,
+        item_label: `Perawatan ${h.tortoise_name}`,
+        period_key: today,
+        is_done: true,
+        done_at: nowStr(),
+        done_by: user.full_name || user.email,
+        done_by_email: user.email,
+        poin_earned: 0,
+      });
+      refetchML();
+      setSembuhPrompt((p) => new Set(p).add(h.tortoise_id));
+    } catch {
+      showMsg("error", "Gagal mencatat perawatan. Coba lagi ya.");
+    }
+    setSavingPerawatan(null);
+  };
+
+  const dismissSembuhPrompt = (tid) =>
+    setSembuhPrompt((p) => {
+      const n = new Set(p);
+      n.delete(tid);
+      return n;
+    });
 
   // Sync kandang done dari maintenance logs (restore state setelah reload)
   // Mendukung kedua format: baru (item_id "kebersihan_kandang_E4") & lama (item_id "kebersihan", enclosure_id "E4")
@@ -762,14 +812,72 @@ export default function GuidedHariIni({ user }) {
                         {hari === 0 ? "Dilaporkan hari ini" : `Sudah ${hari} hari sakit`}
                       </span>
                     )}
-                    <button
-                      onClick={() => handleLaporSembuh(h)}
-                      disabled={sembuhLoading === h.tortoise_id}
-                      className="flex-shrink-0 text-xs font-bold text-white bg-green-600 px-3 py-1.5 rounded-lg disabled:opacity-50"
-                    >
-                      {sembuhLoading === h.tortoise_id ? "Menyimpan…" : "✓ Sudah Sembuh"}
-                    </button>
+                    {!(hari > 14) && (
+                      <button
+                        onClick={() => handleLaporSembuh(h)}
+                        disabled={sembuhLoading === h.tortoise_id}
+                        className="flex-shrink-0 text-xs font-bold text-white bg-green-600 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                      >
+                        {sembuhLoading === h.tortoise_id ? "Menyimpan…" : "✓ Sudah Sembuh"}
+                      </button>
+                    )}
                   </div>
+
+                  {/* Pengingat: kura sudah sakit >14 hari — mungkin lupa ditutup */}
+                  {hari > 14 && (
+                    <div className="p-2.5 rounded-lg bg-amber-50 border-2 border-amber-400 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <p className="text-[11px] font-semibold text-amber-800 flex-1 leading-snug">
+                        Sudah {hari} hari dalam perawatan — masih sakit atau lupa ditutup?
+                      </p>
+                      <button
+                        onClick={() => handleLaporSembuh(h)}
+                        disabled={sembuhLoading === h.tortoise_id}
+                        className="flex-shrink-0 text-xs font-bold text-white bg-amber-600 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                      >
+                        {sembuhLoading === h.tortoise_id ? "Menyimpan…" : "Tandai Sembuh"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Tugas perawatan harian: keeper mencatat perawatan hari ini */}
+                  {!perawatanDoneIds.has(h.tortoise_id) ? (
+                    <button
+                      onClick={() => handlePerawatanDone(h)}
+                      disabled={savingPerawatan === h.tortoise_id}
+                      className="w-full text-xs font-semibold text-green-800 bg-green-100 border border-green-300 px-3 py-2 rounded-lg hover:bg-green-200 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      {savingPerawatan === h.tortoise_id ? "Menyimpan…" : "✓ Perawatan hari ini sudah dilakukan"}
+                    </button>
+                  ) : (
+                    <p className="text-[11px] text-green-700 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Perawatan hari ini sudah dicatat
+                    </p>
+                  )}
+
+                  {/* Penutupan: tawarkan saat perawatan hari ini baru saja dicentang */}
+                  {sembuhPrompt.has(h.tortoise_id) && (
+                    <div className="p-2.5 rounded-lg bg-green-50 border-2 border-green-400 space-y-2">
+                      <p className="text-xs font-semibold text-green-800">
+                        Apakah {h.tortoise_name} sudah sembuh?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleLaporSembuh(h)}
+                          disabled={sembuhLoading === h.tortoise_id}
+                          className="flex-1 text-xs font-bold text-white bg-green-600 px-3 py-2 rounded-lg disabled:opacity-50"
+                        >
+                          {sembuhLoading === h.tortoise_id ? "Menyimpan…" : "Ya, sudah sembuh"}
+                        </button>
+                        <button
+                          onClick={() => dismissSembuhPrompt(h.tortoise_id)}
+                          className="flex-1 text-xs font-bold text-gray-700 bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200"
+                        >
+                          Belum, lanjut besok
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

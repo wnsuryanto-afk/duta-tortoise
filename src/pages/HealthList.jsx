@@ -11,6 +11,7 @@ import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { id } from "date-fns/locale";
 import HealthForm from "@/components/health/HealthForm";
+import SickTortoiseClosePanel from "@/components/health/SickTortoiseClosePanel";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms } from "@/lib/permissions";
 
@@ -25,8 +26,9 @@ const TYPE_CONFIG = {
 
 export default function HealthList() {
   const qc = useQueryClient();
-  const { role } = useCurrentUser();
+  const { user, role } = useCurrentUser();
   const perms = getPerms(role, "health");
+  const showSickPanel = ["owner", "manajer", "admin"].includes(role);
 
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -129,6 +131,10 @@ export default function HealthList() {
           </Button>
         )}
       </div>
+
+      {showSickPanel && (
+        <SickTortoiseClosePanel user={user} />
+      )}
 
       {/* Search + Filter Toggle */}
       <div className="flex gap-2">

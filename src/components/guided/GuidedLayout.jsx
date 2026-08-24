@@ -122,6 +122,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
         onLaporSakit={() => setSakitOpen(true)}
         onCatatPakan={() => navigate("/pakan-harian")}
         onTugasHariIni={() => navigate("/")}
+        user={user}
       />
 
       {/* ── Sakit form dialog ── */}
