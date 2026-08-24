@@ -343,7 +343,7 @@ export default function OwnerDashboard({ user }) {
 
   // ── SDM ───────────────────────────────────────────
   const settings = companySettings[0] || {};
-  const nilaiPerPoin = settings.nilai_per_poin || 500;
+  const nilaiPerPoin = settings.nilai_per_poin || 0;
   const targetPoin = settings.min_poin_bulanan || 300;
 
   // kasbon outstanding

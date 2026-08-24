@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2, Eye } from "lucide-react";
+import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2, Eye, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -27,8 +27,8 @@ export default function RekapPoinGajiPage() {
   const [viewSlip, setViewSlip] = useState(null);
 
   const settings = useCompanySettings();
-  const TARGET_POIN_SETTING = settings.min_poin_bulanan || 300;
-  const NILAI_PER_POIN_SETTING = settings.nilai_per_poin || 500;
+  const TARGET_POIN_SETTING = settings.min_poin_bulanan || 0;
+  const NILAI_PER_POIN_SETTING = settings.nilai_per_poin || 0;
 
   const { data: users = [] } = useActiveUsers();
 
@@ -331,6 +331,12 @@ export default function RekapPoinGajiPage() {
         </div>
       </div>
 
+      {NILAI_PER_POIN_SETTING === 0 && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 font-medium">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          Nilai per poin belum diatur (Rp 0). Atur di halaman Pengaturan Poin & Simulasi.
+        </div>
+      )}
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-4">

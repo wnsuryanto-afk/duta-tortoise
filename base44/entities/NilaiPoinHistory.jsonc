@@ -1,0 +1,44 @@
+{
+  "name": "NilaiPoinHistory",
+  "type": "object",
+  "properties": {
+    "changed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu perubahan dilakukan"
+    },
+    "old_value": {
+      "type": "number",
+      "description": "Nilai per poin sebelum perubahan (Rp)",
+      "default": 0
+    },
+    "new_value": {
+      "type": "number",
+      "description": "Nilai per poin setelah perubahan (Rp)",
+      "default": 0
+    },
+    "old_target": {
+      "type": "number",
+      "description": "Target poin bulanan sebelum perubahan",
+      "default": 0
+    },
+    "new_target": {
+      "type": "number",
+      "description": "Target poin bulanan setelah perubahan",
+      "default": 0
+    },
+    "changed_by_email": {
+      "type": "string",
+      "description": "Email user yang mengubah"
+    },
+    "changed_by_name": {
+      "type": "string",
+      "description": "Nama user yang mengubah"
+    }
+  },
+  "required": [
+    "changed_at",
+    "new_value",
+    "changed_by_email"
+  ]
+}

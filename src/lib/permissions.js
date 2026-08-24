@@ -31,7 +31,7 @@ export const NAV_ACCESS = {
   owner: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "warehouse", "finance", "users", "sop", "sop-library",
-    "task-template", "payroll", "payroll-gaji", "salary", "hr",
+    "task-template", "payroll", "payroll-gaji", "salary", "hr", "pengaturan-poin",
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
@@ -45,7 +45,7 @@ export const NAV_ACCESS = {
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "warehouse", "finance", "users", "sop", "sop-library",
-    "task-template", "payroll", "payroll-gaji", "salary", "hr",
+    "task-template", "payroll", "payroll-gaji", "salary", "hr", "pengaturan-poin",
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",
@@ -57,7 +57,7 @@ export const NAV_ACCESS = {
   manajer: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "warehouse", "finance", "users", "sop", "sop-library",
-    "task-template", "payroll", "payroll-gaji", "salary", "hr",
+    "task-template", "payroll", "payroll-gaji", "salary", "hr", "pengaturan-poin",
     "reminders", "breeding-report", "sales-report", "feed-stock",
     "info", "treatment", "feedback", "kasbon", "notifications",
     "breeding-planner", "crm", "sales", "death-records",

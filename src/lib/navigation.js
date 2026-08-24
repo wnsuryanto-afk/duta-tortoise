@@ -17,7 +17,7 @@ import {
   Leaf, Salad, Stethoscope, Calendar, Library, ListTodo, Zap,
   LayoutGrid, ShoppingCart, Wrench, AlertTriangle, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart, BarChart2,
-  ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy,
+  ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy, Star,
   Activity, MessageSquare, UserCog, Egg, Send, QrCode, Receipt,
 } from "lucide-react";
 
@@ -117,6 +117,7 @@ export const NAV_SECTIONS = [
       { path: "/salary",          section: "salary",        label: "Hitung Gaji",      icon: Calculator,    desc: "Gaji pokok + poin + lembur + sayur − absen − kasbon" },
       { path: "/salary-slip",     section: "salary-slip",   label: "Slip Gaji",        icon: FileText,      desc: "Cetak slip" },
       { path: "/rekap-poin-gaji", section: "salary",        label: "Rekap Poin & Gaji",icon: Calculator,    desc: "Poin per karyawan" },
+      { path: "/pengaturan-poin", section: "pengaturan-poin", label: "Pengaturan Poin",  icon: Star,          desc: "Nilai per poin, simulasi dampak biaya, riwayat" },
       { path: "/kasbon",          section: "kasbon",        label: "Kasbon",           icon: Wallet,        desc: "Pinjaman karyawan" },
       { path: "/payroll-gaji",    section: "payroll-gaji",  label: "Penggajian Karyawan", icon: Wallet,     desc: "Proses gaji, lembur, sayur, kasbon" },
       { path: "/payroll",         section: "payroll",       label: "Bonus & Reward",   icon: Trophy,        desc: "Bonus khusus di luar gaji rutin" },

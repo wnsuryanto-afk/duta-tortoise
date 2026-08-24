@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Star, FileText, Eye, Loader2, CalendarRange, Wallet } from "lucide-react";
+import { Users, Star, FileText, Eye, Loader2, CalendarRange, Wallet, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { formatRole } from "@/lib/permissions";
@@ -60,7 +60,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
   });
 
   const employees = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
-  const nilaiPerPoin = settings.nilai_per_poin || 500;
+  const nilaiPerPoin = settings.nilai_per_poin || 0;
 
   const weekAttendances = attendances.filter(a => a.date >= weekStart && a.date <= weekEnd);
   const weekChecklists = dailyChecklists.filter(c => c.date >= weekStart && c.date <= weekEnd);
@@ -235,6 +235,12 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         )}
       </div>
 
+      {nilaiPerPoin === 0 && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-medium">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          Nilai per poin belum diatur. Bonus poin dihitung Rp 0. Atur di halaman Pengaturan Poin.
+        </div>
+      )}
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3">

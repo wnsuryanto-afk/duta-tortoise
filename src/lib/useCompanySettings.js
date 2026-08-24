@@ -14,7 +14,7 @@ export function useCompanySettings() {
       const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
       return res[0] || {};
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
   return data || {};
 }

@@ -1,75 +1,26 @@
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { useCurrentUser } from "@/lib/useCurrentUser";
+/**
+ * TargetPoinSettings — tampilan ringkas nilai & target poin (read-only).
+ *
+ * Mengedit nilai per poin kini hanya boleh dilakukan di halaman
+ * /pengaturan-poin (PengaturanPoinPage) yang punya simulasi dampak.
+ * Komponen ini hanya menampilkan nilai saat ini + tautan ke sana,
+ * supaya tidak ada dua tempat yang mengedit sumber sekaligus.
+ */
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Star, Target, TrendingUp, Save, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { Star, Target, AlertTriangle, ArrowRight } from "lucide-react";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 
 function formatRp(val) {
   return "Rp " + Number(val || 0).toLocaleString("id-ID");
 }
 
 export default function TargetPoinSettings() {
-  const { role } = useCurrentUser();
-  const queryClient = useQueryClient();
-  const canEdit = ["owner", "manajer"].includes(role);
-
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["company-settings"],
-    queryFn: async () => {
-      const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
-      return res[0] || null;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const [target, setTarget] = useState("");
-  const [nilaiPoin, setNilaiPoin] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
-
-  useEffect(() => {
-    if (settings) {
-      setTarget(String(settings.min_poin_bulanan ?? 300));
-      setNilaiPoin(String(settings.nilai_per_poin ?? 500));
-      setDirty(false);
-    }
-  }, [settings]);
-
-  const handleSave = async () => {
-    const t = parseInt(target);
-    const n = parseInt(nilaiPoin);
-    if (isNaN(t) || t <= 0) { toast.error("Target poin harus > 0"); return; }
-    if (isNaN(n) || n < 0) { toast.error("Nilai per poin tidak boleh negatif"); return; }
-
-    setSaving(true);
-    if (settings?.id) {
-      await base44.entities.CompanySettings.update(settings.id, {
-        min_poin_bulanan: t,
-        nilai_per_poin: n,
-      });
-    } else {
-      await base44.entities.CompanySettings.create({
-        setting_key: "main",
-        company_name: "Duta Tortoise",
-        min_poin_bulanan: t,
-        nilai_per_poin: n,
-      });
-    }
-    queryClient.invalidateQueries({ queryKey: ["company-settings"] });
-    toast.success("Pengaturan target & poin disimpan ✅");
-    setSaving(false);
-    setDirty(false);
-  };
-
-  const targetNum = parseInt(target) || 0;
-  const nilaiNum = parseInt(nilaiPoin) || 0;
-  const contohBonus = formatRp(targetNum * nilaiNum);
-
-  if (isLoading) return <div className="h-20 animate-pulse rounded-xl bg-muted" />;
+  const settings = useCompanySettings();
+  const nilai = Number(settings.nilai_per_poin) || 0;
+  const target = Number(settings.min_poin_bulanan) || 0;
+  const nilaiUnset = nilai === 0;
 
   return (
     <Card>
@@ -79,84 +30,41 @@ export default function TargetPoinSettings() {
           Target & Poin Bulanan
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Target Poin */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium flex items-center gap-1.5">
-              <Target className="w-4 h-4 text-primary" />
-              Target Poin Bulanan per Karyawan
-            </label>
-            {canEdit ? (
-              <Input
-                type="number"
-                min={1}
-                value={target}
-                onChange={e => { setTarget(e.target.value); setDirty(true); }}
-                placeholder="Contoh: 300"
-              />
-            ) : (
-              <div className="h-9 flex items-center px-3 rounded-md border bg-muted text-sm font-semibold text-primary">
-                {settings?.min_poin_bulanan ?? 300} poin
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">Poin minimum yang harus dicapai tiap bulan</p>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-3 rounded-lg border bg-muted/30">
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5 text-primary" /> Target Poin Bulanan
+            </p>
+            <p className="text-lg font-bold mt-1">{target} poin</p>
           </div>
-
-          {/* Nilai per Poin */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-green-600" />
-              Nilai Rupiah per Poin
-            </label>
-            {canEdit ? (
-              <Input
-                type="number"
-                min={0}
-                value={nilaiPoin}
-                onChange={e => { setNilaiPoin(e.target.value); setDirty(true); }}
-                placeholder="Contoh: 500"
-              />
-            ) : (
-              <div className="h-9 flex items-center px-3 rounded-md border bg-muted text-sm font-semibold text-green-700">
-                {formatRp(settings?.nilai_per_poin ?? 500)} / poin
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">Bonus per poin di atas target minimum</p>
+          <div className="p-3 rounded-lg border bg-muted/30">
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Star className="w-3.5 h-3.5 text-green-600" /> Nilai per Poin
+            </p>
+            <p className="text-lg font-bold mt-1 text-green-700">{formatRp(nilai)}</p>
           </div>
         </div>
 
-        {/* Contoh perhitungan */}
-        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm">
-          <p className="font-semibold text-amber-800 mb-1">💡 Contoh Perhitungan</p>
-          <p className="text-amber-700">
-            Jika karyawan mencapai{" "}
-            <span className="font-bold">{targetNum.toLocaleString("id-ID")} poin</span>
-            {" "}= bonus{" "}
-            <span className="font-bold text-green-700">{contohBonus}</span>
-          </p>
-          <p className="text-xs text-amber-600 mt-1">
-            Poin di atas target × Rp {nilaiNum.toLocaleString("id-ID")} = bonus tambahan
-          </p>
-        </div>
-
-        {!canEdit && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 bg-muted rounded-lg">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Hanya Owner & Manajer yang dapat mengubah pengaturan ini
+        {nilaiUnset && (
+          <div className="flex items-center gap-2 text-xs text-red-700 p-2.5 rounded-lg bg-red-50 border border-red-200">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            Nilai per poin belum diatur. Bonus poin dihitung Rp 0.
           </div>
         )}
 
-        {canEdit && (
-          <Button
-            onClick={handleSave}
-            disabled={saving || !dirty}
-            className="gap-2"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? "Menyimpan..." : "Simpan Pengaturan"}
-          </Button>
-        )}
+        <div className="text-xs text-amber-700 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+          ⚠️ Keeper mencapai 90–160 poin per hari — target {target || 300} tercapai di hari ketiga. Pertimbangkan menaikkannya.
+        </div>
+
+        <Button asChild variant="outline" className="gap-2 w-full sm:w-auto">
+          <Link to="/pengaturan-poin">
+            <ArrowRight className="w-4 h-4" /> Buka Pengaturan Poin & Simulasi
+          </Link>
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Pengaturan nilai poin & target kini di satu halaman dengan simulasi dampak biaya.
+        </p>
       </CardContent>
     </Card>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -269,8 +270,8 @@ function CompanySettingsTab() {
     company_logo_url: "",
     director_name: "",
     director_title: "Pimpinan",
-    min_poin_bulanan: 300,
-    nilai_per_poin: 500,
+    min_poin_bulanan: 0,
+    nilai_per_poin: 0,
     farm_lat: "",
     farm_lng: "",
     farm_location_radius: 200,
@@ -289,8 +290,8 @@ function CompanySettingsTab() {
       company_logo_url: existing.company_logo_url || "",
       director_name: existing.director_name || "",
       director_title: existing.director_title || "Pimpinan",
-      min_poin_bulanan: existing.min_poin_bulanan ?? 300,
-      nilai_per_poin: existing.nilai_per_poin ?? 500,
+      min_poin_bulanan: existing.min_poin_bulanan ?? 0,
+      nilai_per_poin: existing.nilai_per_poin ?? 0,
       farm_lat: existing.farm_lat ?? "",
       farm_lng: existing.farm_lng ?? "",
       farm_location_radius: existing.farm_location_radius ?? 200,
@@ -423,26 +424,21 @@ function CompanySettingsTab() {
           <p className="text-xs text-muted-foreground mt-0.5">Digunakan untuk menghitung bonus/potongan di Rekap Poin & Gaji</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Target Poin Minimum/Bulan</Label>
-            <Input
-              type="number"
-              min={0}
-              value={currentForm.min_poin_bulanan}
-              onChange={e => set("min_poin_bulanan", Number(e.target.value) || 0)}
-              placeholder="300"
-            />
+          <div className="p-3 rounded-lg border bg-muted/30">
+            <p className="text-xs text-muted-foreground">Target Poin Bulanan</p>
+            <p className="text-lg font-bold mt-0.5">{currentForm.min_poin_bulanan ?? 0} poin</p>
           </div>
-          <div className="space-y-1.5">
-            <Label>Nilai per Poin (Rp)</Label>
-            <Input
-              type="number"
-              min={0}
-              value={currentForm.nilai_per_poin}
-              onChange={e => set("nilai_per_poin", Number(e.target.value) || 0)}
-              placeholder="500"
-            />
+          <div className="p-3 rounded-lg border bg-muted/30">
+            <p className="text-xs text-muted-foreground">Nilai per Poin</p>
+            <p className="text-lg font-bold mt-0.5 text-green-700">Rp {(Number(currentForm.nilai_per_poin) || 0).toLocaleString("id-ID")}</p>
+            {(Number(currentForm.nilai_per_poin) || 0) === 0 && (
+              <p className="text-xs text-red-600 mt-0.5">Nilai per poin belum diatur</p>
+            )}
           </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <Link to="/pengaturan-poin" className="text-primary hover:underline font-medium">Buka Pengaturan Poin & Simulasi →</Link>
+          <span className="text-muted-foreground">— nilai poin & target hanya diubah di sana.</span>
         </div>
         {/* Approval threshold stok */}
         <div className="grid grid-cols-1 gap-4 mt-2">
@@ -458,21 +454,9 @@ function CompanySettingsTab() {
             <p className="text-xs text-muted-foreground">Jika nilai stok keluar melebihi batas ini, butuh persetujuan admin/owner terlebih dahulu.</p>
           </div>
         </div>
-        {/* Contoh perhitungan dinamis */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
-          <p className="font-medium">📊 Contoh Perhitungan:</p>
-          {(() => {
-            const target = currentForm.min_poin_bulanan || 300;
-            const nilai = currentForm.nilai_per_poin || 500;
-            const contohPoin = target + 20;
-            return (
-              <>
-                <p>• {contohPoin} poin = bonus Rp {(contohPoin * nilai).toLocaleString("id-ID")} (tidak ada potongan, target ≥{target})</p>
-                <p>• {target - 30} poin = potongan Rp {(30 * nilai).toLocaleString("id-ID")} (kurang 30 poin dari target {target})</p>
-                <p>• Tepat {target} poin = bonus Rp {(target * nilai).toLocaleString("id-ID")}, tidak ada potongan</p>
-              </>
-            );
-          })()}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+          <p className="font-medium">ℹ️ Perubahan nilai poin berlaku ke depan</p>
+          <p className="mt-0.5">Slip gaji yang sudah dibuat memakai nilai saat itu dan tidak berubah surut. Atur nilai di <Link to="/pengaturan-poin" className="underline font-medium">Pengaturan Poin & Simulasi</Link>.</p>
         </div>
       </div>
 
