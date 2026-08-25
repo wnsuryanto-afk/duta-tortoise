@@ -5,9 +5,8 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, CheckCheck, Info, AlertTriangle, AlertCircle, CheckCircle2, Filter, Send, Users, X, ExternalLink } from "lucide-react";
+import { Bell, CheckCheck, Info, AlertTriangle, AlertCircle, CheckCircle2, Filter, Send, X, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import SendNotifDialog from "@/components/notifications/SendNotifDialog";
 

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlayCircle, CheckCircle2, Loader2, Youtube } from "lucide-react";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
 
 function getYoutubeEmbed(url) {
   if (!url) return null;

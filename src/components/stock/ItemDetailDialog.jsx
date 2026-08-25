@@ -1,6 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Pencil, Printer, Package, User, Clock } from "lucide-react";
 import QRCodeDisplay from "./QRCodeDisplay";
 import { formatRp } from "@/lib/skuUtils";

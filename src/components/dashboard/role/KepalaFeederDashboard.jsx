@@ -2,11 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
-import {
-  Users, CheckCircle, XCircle, AlertTriangle, Star, ChevronRight, Loader2, Package, Wallet
+import { useState } from "react";
+import { CheckCircle, XCircle, AlertTriangle, Star, ChevronRight, Loader2, Package, Wallet
 } from "lucide-react";
-import { format, subMonths, startOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { toast } from "sonner";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format, differenceInMonths, differenceInYears } from "date-fns";
 import { id } from "date-fns/locale";
-import { Shell, Share2, Download, Copy, CheckCircle, QrCode, ChevronLeft, ChevronRight } from "lucide-react";
+import { Shell, Share2, Copy, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;

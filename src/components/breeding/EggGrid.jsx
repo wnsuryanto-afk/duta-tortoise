@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { differenceInDays } from "date-fns";
-import { X, Shell, Baby, ExternalLink, Lock, LockOpen, CheckCircle2 } from "lucide-react";
+import { X, Baby, ExternalLink, Lock, LockOpen, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

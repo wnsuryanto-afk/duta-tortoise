@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -7,10 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, PackageOpen, AlertTriangle, CheckCircle2, QrCode, ArrowUpCircle, ArrowDownCircle, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, PackageOpen, QrCode, ArrowUpCircle, ArrowDownCircle, Printer } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import { formatRp } from "@/lib/skuUtils";
 import StockItemForm from "@/components/stock/StockItemForm";
 import BarangMasukDialog from "@/components/stock/BarangMasukDialog";

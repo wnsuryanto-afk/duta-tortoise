@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { QrCode, Plus, Check } from "lucide-react";
+import { QrCode, Plus } from "lucide-react";
 
 /**
  * Searchable item picker for stock transactions.

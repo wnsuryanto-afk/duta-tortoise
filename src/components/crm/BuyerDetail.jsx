@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Pencil, MessageCircle, Loader2, ExternalLink, Shell, ShoppingBag, MapPin, Phone, Star } from "lucide-react";
+import { Pencil, MessageCircle, Loader2, ExternalLink, Shell, ShoppingBag, MapPin, Phone } from "lucide-react";
 import BuyerForm from "./BuyerForm";
 import SaleWizard from "@/components/sales/SaleWizard";
 

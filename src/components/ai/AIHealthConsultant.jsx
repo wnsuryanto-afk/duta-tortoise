@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Bot, Loader2, CheckCircle, AlertTriangle, XCircle, Copy, Save } from "lucide-react";
+import { Bot, Loader2, CheckCircle, AlertTriangle, XCircle, Save } from "lucide-react";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
 
 const SEVERITY_CONFIG = {
