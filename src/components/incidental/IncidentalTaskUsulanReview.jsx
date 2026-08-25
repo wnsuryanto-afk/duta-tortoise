@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Check, X } from "lucide-react";
 import { toast } from "sonner";
-import { BOBOT_OPTIONS, pointsForBobot } from "@/lib/incidentalBobot";
+import { BOBOT_OPTIONS } from "@/lib/incidentalBobot";
 
 export default function IncidentalTaskUsulanReview({ task, open, onClose, onResolved }) {
   const qc = useQueryClient();

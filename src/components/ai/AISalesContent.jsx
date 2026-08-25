@@ -2,7 +2,6 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Megaphone, Loader2, Copy, RefreshCw, Check } from "lucide-react";
 
 const PLATFORMS = ["Instagram", "TikTok", "Tokopedia", "Shopee", "WhatsApp"];

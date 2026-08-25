@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Plus, DollarSign, TrendingUp, ShoppingBag, Clock, Printer, CreditCard, Pencil, Trash2, Undo2 } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, ShoppingBag, Clock, CreditCard, Pencil, Trash2, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ExportButton from "@/components/common/ExportButton";
 import ExcludeToggle from "@/components/owner/ExcludeToggle";
@@ -20,8 +20,6 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms, canDelete as canDeleteGlobal } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 

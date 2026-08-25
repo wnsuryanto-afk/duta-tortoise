@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, TrendingDown, DollarSign, Package, Users, Pill, FlaskConical, Wallet, MoreHorizontal, Fuel, Flame } from "lucide-react";
-import { format } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,

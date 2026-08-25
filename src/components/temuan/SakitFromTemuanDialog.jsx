@@ -8,13 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { SEVERITIES } from "@/lib/severity";
 
-const SEVERITIES = [
-  { value: "ringan", label: "🟡 Ringan" },
-  { value: "sedang", label: "🟠 Sedang" },
-  { value: "berat",  label: "🔴 Berat" },
-  { value: "kritis", label: "🚨 Kritis" },
-];
 
 /**
  * SakitFromTemuanDialog — form lapor kura sakit dari temuan AI.

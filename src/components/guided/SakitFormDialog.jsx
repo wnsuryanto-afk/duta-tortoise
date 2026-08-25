@@ -12,15 +12,9 @@ import { format } from "date-fns";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
 import SickTortoisePicker from "@/components/health/SickTortoisePicker";
 import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel";
+import { SEVERITIES, TRIGGER_SEVERITIES } from "@/lib/severity";
 
-const SEVERITIES = [
-  { value: "ringan", label: "🟡 Ringan" },
-  { value: "sedang", label: "🟠 Sedang" },
-  { value: "berat",  label: "🔴 Berat" },
-  { value: "kritis", label: "🚨 Kritis" },
-];
 
-const TRIGGER_SEVERITIES = ["sedang", "berat", "kritis"];
 
 export default function SakitFormDialog({ open, onClose, user }) {
   const qc = useQueryClient();

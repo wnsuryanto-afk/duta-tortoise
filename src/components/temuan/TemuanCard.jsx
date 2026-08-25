@@ -2,7 +2,7 @@ import { safeFormatDate } from "@/lib/safeDate";
 import { CATEGORIES } from "@/lib/temuanCategorize";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Stethoscope, CheckCircle2, XCircle, Pin } from "lucide-react";
+import { Stethoscope, CheckCircle2, XCircle, Pin } from "lucide-react";
 
 /**
  * TemuanCard — kartu satu temuan AI Vision dengan thumbnail, info, dan tombol aksi.

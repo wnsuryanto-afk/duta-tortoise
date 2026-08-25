@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { SEVERITIES } from "@/lib/severity";
 
 const DIAGNOSES = [
   { value: "infeksi_saluran_pernapasan", label: "Infeksi Saluran Pernapasan" },
@@ -35,12 +35,6 @@ const DIAGNOSES = [
   { value: "lainnya", label: "Lainnya" },
 ];
 
-const SEVERITIES = [
-  { value: "ringan", label: "🟡 Ringan" },
-  { value: "sedang", label: "🟠 Sedang" },
-  { value: "berat", label: "🔴 Berat" },
-  { value: "kritis", label: "🚨 Kritis" },
-];
 
 export default function SickModal({ tortoise, open, onClose, onSaved }) {
   const [diagnosis, setDiagnosis]     = useState([]);

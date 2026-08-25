@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, Pencil, Trash2, Egg, Eye } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Egg } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function BreedingCardMenu({ onEdit, onDelete, onHatch, canEdit, canDelete }) {

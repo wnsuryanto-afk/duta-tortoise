@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Printer, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Printer, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 const TEMPLATES = {

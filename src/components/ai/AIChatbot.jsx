@@ -3,7 +3,6 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Bot, User } from "lucide-react";
-import { format } from "date-fns";
 import useCurrentUser from "@/lib/useCurrentUser";
 
 const QUICK_REPLIES = [

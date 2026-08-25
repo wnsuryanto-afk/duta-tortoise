@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { ROLE_LABELS, ROLE_COLORS, isOwner } from "@/lib/permissions";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,10 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import AccessDenied from "@/components/common/AccessDenied";
 import {
-  ArrowLeft, Phone, MessageCircle, Edit, Shield,
-  UserX, ChevronDown, ChevronUp, Loader2, Crown,
-  Calendar, Briefcase, CreditCard, TrendingUp, Activity,
-  ClipboardCheck, Building, Star, Clock, Leaf, AlertCircle
+  ArrowLeft, MessageCircle, Edit, Shield,
+  UserX, ChevronDown, ChevronUp, Loader2,
+  Calendar, CreditCard, TrendingUp,
+  ClipboardCheck, Star, Clock, Leaf, AlertCircle
 } from "lucide-react";
 import { format, differenceInMonths, differenceInYears, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";

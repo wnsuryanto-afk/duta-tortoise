@@ -10,7 +10,8 @@ import { useViewAs } from "@/lib/ViewAsContext";
 import ViewAsRoleBanner from "@/components/owner/ViewAsRoleBanner";
 import ViewAsSelector from "@/components/owner/ViewAsSelector";
 import { Eye, User, LogOut, Loader2, Search, Settings, ArrowLeft } from "lucide-react";
-import { SETTINGS_ITEMS, findParentArea } from "@/lib/navigation";
+import { SETTINGS_ITEMS, findParentArea, findSectionByPath } from "@/lib/navigation";
+import AccessDenied from "@/components/common/AccessDenied";
 import { useDailyCareTasks } from "@/lib/useDailyCareTasks";
 import { canAccess } from "@/lib/permissions";
 import CommandPalette from "@/components/common/CommandPalette";
@@ -212,6 +213,12 @@ export default function AppLayout() {
   // Dengan ini owner benar-benar melihat layar Guided yang dipakai keeper,
   // bukan dashboard lama yang tidak pernah mereka lihat.
   const effectiveRole = isViewingAs && viewAsRole ? viewAsRole : user?.role;
+  // Penjagaan rute terpusat. Menyaring daftar menu saja tidak menghentikan
+  // siapa pun yang mengetik URL langsung, jadi izinnya diperiksa lagi di sini
+  // sebelum halaman dirender. Section null = halaman yang memang terbuka
+  // untuk semua role (beranda, hub area, profil).
+  const routeSection = findSectionByPath(location.pathname);
+  const routeAllowed = !routeSection || canAccess(effectiveRole, routeSection);
   const isGuidedRole = ["keeper", "kepala_feeder"].includes(effectiveRole);
   const [forceNormalMode, setForceNormalMode] = useState(false);
   const isInvestor = (viewAsRole || user?.role) === "investor";
@@ -424,7 +431,7 @@ export default function AppLayout() {
         <div className="p-4 lg:p-8 max-w-7xl mx-auto">
           {isOwner && <IncompleteProfileBanner user={user} profile={profile} />}
           <PageErrorBoundary>
-            <Outlet />
+            {routeAllowed ? <Outlet /> : <AccessDenied />}
           </PageErrorBoundary>
         </div>
       </main>

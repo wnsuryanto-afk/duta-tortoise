@@ -2,11 +2,9 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, ChevronRight, UserPlus, Home, Shell, Wallet, Wheat, Stethoscope, Users, ClipboardList } from "lucide-react";
+import { CheckCircle2, Circle, UserPlus, Home, Shell, Wallet, Wheat, Stethoscope, Users, ClipboardList } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 const CHECKLIST_ITEMS = [
   { 

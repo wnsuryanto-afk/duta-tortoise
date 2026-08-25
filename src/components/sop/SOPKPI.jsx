@@ -1,12 +1,11 @@
-import { useState } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Star, Trophy, TrendingUp, Gift, CheckCircle2, Clock } from "lucide-react";
+import { Star, Trophy, TrendingUp, Gift, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 const statusColors = {

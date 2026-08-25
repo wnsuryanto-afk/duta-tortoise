@@ -20,6 +20,7 @@ import {
   Users, Camera, CameraOff, Clock, AlertTriangle, CheckCircle2,
   ChevronLeft, ChevronRight, MapPin, Timer, ImageOff, Eye, FileEdit, WifiOff
 } from "lucide-react";
+import { poinChecklist } from "@/lib/poinChecklist";
 
 // ── Helpers ───────────────────────────────────────────────
 const toMin = (hhmm) => {
@@ -83,7 +84,9 @@ function KeeperCard({ checklist, attendance }) {
 
   const kandangNoPhoto = kandang.filter((t) => !t.photo_url).length;
   const withPhoto = tasks.filter((t) => t.photo_url).length;
-  const totalPoin = checklist?.approved_points ?? checklist?.total_points_claimed ?? 0;
+  // Layar tim menampilkan progres berjalan, jadi checklist yang belum
+  // ditinjau tetap ditampilkan memakai poin klaim keeper.
+  const totalPoin = poinChecklist(checklist, { hitungBelumDitinjau: true });
 
   // Foto menyusul: jarak jam centang vs jam foto diambil > 20 menit
   const lateProof = tasks

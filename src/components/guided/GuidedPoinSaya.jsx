@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { format, subDays, startOfMonth } from "date-fns";
+import { format, subDays } from "date-fns";
 import { id } from "date-fns/locale";
 import { Star, TrendingUp, CheckCircle2, Target } from "lucide-react";
 

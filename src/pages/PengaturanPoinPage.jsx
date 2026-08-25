@@ -28,6 +28,7 @@ import PoinKalkulator from "@/components/settings/poin/PoinKalkulator";
 import PoinGrafik from "@/components/settings/poin/PoinGrafik";
 import PoinTabelSimulasi from "@/components/settings/poin/PoinTabelSimulasi";
 import PoinRiwayatPerubahan from "@/components/settings/poin/PoinRiwayatPerubahan";
+import { poinChecklist, totalPoinChecklist } from "@/lib/poinChecklist";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -98,7 +99,7 @@ export default function PengaturanPoinPage() {
       employees.map((emp) => {
         const config = salaryConfigs.find((c) => c.role === emp.role) || {};
         const empApproved = approved30.filter((c) => c.employee_email === emp.email);
-        const poin30 = empApproved.reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
+        const poin30 = totalPoinChecklist(empApproved);
         const hadirDays30 = attendances.filter((a) => a.employee_email === emp.email && a.status === "hadir" && a.date >= cutoffStr).length;
         const isDaily = ["keeper", "kepala_feeder"].includes(emp.role);
         const monthlyBase = isDaily ? hadirDays30 * (config.base_salary || 0) : config.base_salary || 0;
@@ -114,7 +115,7 @@ export default function PengaturanPoinPage() {
       const nm = c.employee_name || "—";
       names.add(nm);
       byDate[c.date] = byDate[c.date] || { date: c.date };
-      byDate[c.date][nm] = (byDate[c.date][nm] || 0) + (c.approved_points || c.total_points_claimed || 0);
+      byDate[c.date][nm] = (byDate[c.date][nm] || 0) + poinChecklist(c);
     });
     return { barData: Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date)), empNames: [...names] };
   }, [approved30]);
@@ -131,15 +132,15 @@ export default function PengaturanPoinPage() {
   );
 
   const summary = useMemo(() => {
-    const totalPoin30 = approved30.reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
+    const totalPoin30 = totalPoinChecklist(approved30);
     const perDay = {};
     approved30.forEach((c) => {
-      perDay[c.date] = (perDay[c.date] || 0) + (c.approved_points || c.total_points_claimed || 0);
+      perDay[c.date] = (perDay[c.date] || 0) + poinChecklist(c);
     });
     const dayVals = Object.values(perDay);
     const totalThisMonth = approved30
       .filter((c) => (c.date || "").startsWith(thisMonthKey))
-      .reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
+      .reduce((s, c) => s + poinChecklist(c), 0);
     return {
       avgPerDay: totalPoin30 / 30,
       maxDay: dayVals.length ? Math.max(...dayVals) : 0,

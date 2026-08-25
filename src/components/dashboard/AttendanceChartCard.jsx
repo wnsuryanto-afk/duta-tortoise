@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
-import { Users, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Users } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { id } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";

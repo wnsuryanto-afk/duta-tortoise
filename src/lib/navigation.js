@@ -151,6 +151,37 @@ export const EXTRA_DESTINATIONS = [
 ];
 
 /**
+ * Cari `section` hak akses untuk sebuah pathname.
+ *
+ * Dipakai AppLayout untuk menjaga rute secara TERPUSAT: setiap halaman yang
+ * terdaftar di sini otomatis tunduk pada NAV_ACCESS, tanpa perlu diingat
+ * satu per satu di dalam halamannya. Menyaring menu saja tidak cukup —
+ * tanpa ini, mengetik URL langsung tetap membuka halaman.
+ *
+ * Mengembalikan null untuk path yang memang tidak dibatasi role (beranda,
+ * hub area, halaman profil awal). Pemanggil memperlakukan null sebagai
+ * "boleh diakses", supaya rute baru tidak terkunci diam-diam.
+ *
+ * Pencocokan memakai awalan terpanjang, sehingga rute detail seperti
+ * "/panduan-penyakit/:id" mewarisi section induknya.
+ */
+export function findSectionByPath(pathname) {
+  if (!pathname || pathname === "/") return null;
+  const all = [
+    ...NAV_SECTIONS.flatMap((s) => s.items),
+    ...SETTINGS_ITEMS,
+    ...EXTRA_DESTINATIONS,
+  ];
+  let best = null;
+  for (const item of all) {
+    if (pathname === item.path || pathname.startsWith(item.path + "/")) {
+      if (!best || item.path.length > best.path.length) best = item;
+    }
+  }
+  return best ? best.section : null;
+}
+
+/**
  * Cari area induk dari sebuah path, untuk tombol "kembali" yang sadar konteks.
  * Mengembalikan { hub, label } bila halaman berada di dalam sebuah area,
  * atau null bila halaman berdiri sendiri (mis. halaman pengaturan).

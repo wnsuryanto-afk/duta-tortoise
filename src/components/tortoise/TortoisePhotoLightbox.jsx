@@ -77,7 +77,7 @@ export default function TortoisePhotoLightbox({
       return;
     }
     if (index > photos.length - 1) setIndex(photos.length - 1);
-  }, [photos.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [photos.length]);
 
   // Navigasi keyboard (desktop)
   useEffect(() => {

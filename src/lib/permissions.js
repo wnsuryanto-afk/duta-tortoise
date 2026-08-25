@@ -37,7 +37,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "activity-log", "system-maintenance", "vet-contacts", "maintenance", "layar-tim",
     "printer-config", "help", "petty-cash", "supplier", "pellet-recipe",
-    "operational-costs", "kritik-saran", "stock-gudang",
+    "operational-costs", "kritik-saran", "catatan-saran", "stock-gudang",
     "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
     "approval-poin", "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja",
     "pengaturan-whatsapp", "log-whatsapp", "temuan-foto",
@@ -51,7 +51,7 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "printer-config", "layar-tim",
     "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
+    "kritik-saran", "catatan-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
     "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja", "temuan-foto",
   ],
   manajer: [
@@ -63,26 +63,26 @@ export const NAV_ACCESS = {
     "breeding-planner", "crm", "sales", "death-records",
     "vet-contacts", "maintenance", "activity-log", "layar-tim",
     "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
-    "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
+    "kritik-saran", "catatan-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
     "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja", "temuan-foto",
   ],
   kepala_feeder: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
     "health", "sop", "treatment",
-    "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran",
+    "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran", "catatan-saran",
     "petty-cash", "stock-gudang", "warehouse", "feed-stock", "panduan-penyakit",
     "kasbon", "salary-slip", "alat-kerja", "tugas-insidentil",
   ],
   keeper: [
     "dashboard", "tortoise", "breeding", "enclosure",
     "health", "sop", "treatment",
-    "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran", "panduan-penyakit",
+    "info", "notifications", "pakan-harian", "panduan-pakan", "kritik-saran", "catatan-saran", "panduan-penyakit",
     "kasbon", "salary-slip", "alat-kerja",
   ],
   investor: [
     "dashboard", "tortoise", "breeding", "family-tree",
     "health", "finance", "breeding-report", "sales-report", "info", "breeding-planner",
-    "panduan-pakan", "kritik-saran", "sales", "panduan-penyakit",
+    "panduan-pakan", "kritik-saran", "catatan-saran", "sales", "panduan-penyakit",
   ],
 };
 

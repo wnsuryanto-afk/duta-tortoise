@@ -4,10 +4,9 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { FileDown, ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, isWithinInterval } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval, parseISO, isWithinInterval } from "date-fns";
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
 
