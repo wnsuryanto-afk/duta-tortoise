@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import MonthlySalesSummary from "@/components/dashboard/MonthlySalesSummary";
+import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -787,6 +789,10 @@ export default function OwnerDashboard({ user }) {
           </div>
         </div>
       )}
+
+      {/* ── GRAFIK PENJUALAN & KEHADIRAN (widget yang sebelumnya menganggur) ── */}
+      <MonthlySalesSummary sales={sales} />
+      <AttendanceChartCard />
 
       {/* ── ROW 7: GRAFIK ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

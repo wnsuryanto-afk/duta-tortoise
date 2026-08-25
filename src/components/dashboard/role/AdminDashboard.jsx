@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
+import HRMetrics from "@/components/dashboard/HRMetrics";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
@@ -227,6 +229,10 @@ export default function AdminDashboard({ user, role = "admin" }) {
           </div>
         </div>
       )}
+
+      {/* ── PERINGATAN TENGGAT SOP & RINGKASAN SDM ── */}
+      <SOPDeadlineAlert />
+      {isManajer && <HRMetrics />}
 
       {/* ── TUGAS INSIDENTIL ── */}
       <IncidentalTaskCard />
