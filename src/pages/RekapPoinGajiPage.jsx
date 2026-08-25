@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { useVegTrips } from "@/hooks/useVegTrips";
+import { totalPoinChecklist } from "@/lib/poinChecklist";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -95,13 +96,8 @@ export default function RekapPoinGajiPage() {
         c.date >= monthStart &&
         c.date < monthEnd
       );
-      const checklistPoin = empChecklists
-        .filter((c) => c.status !== "rejected")
-        .reduce((s, c) => {
-          const pts = c.approved_points || c.total_points_claimed ||
-            (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0) : 0);
-          return s + (pts || 0);
-        }, 0);
+      // Seperti rekap bulanan lain, checklist yang belum ditinjau ikut dihitung.
+      const checklistPoin = totalPoinChecklist(empChecklists, { hitungBelumDitinjau: true });
 
       const totalPoin = bonusPoin + checklistPoin;
       const targetTercapai = totalPoin >= TARGET_POIN_SETTING;

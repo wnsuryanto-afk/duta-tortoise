@@ -12,6 +12,7 @@ import { formatRole } from "@/lib/permissions";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { getWeekOptions, formatWeekLabel, getWeekEnd, safeParseDate } from "@/lib/weeklySalaryUtils";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
+import { totalPoinChecklist } from "@/lib/poinChecklist";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -83,11 +84,9 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
       const empChecklists = weekChecklists.filter(
         c => c.employee_email === emp.email && c.status === "approved"
       );
-      const poin = empChecklists.reduce((s, c) => {
-        const pts = c.approved_points || c.total_points_claimed ||
-          (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0) : 0);
-        return s + (pts || 0);
-      }, 0);
+      // Sudah disaring ke status "approved" di atas, jadi poin yang dipakai
+      // adalah keputusan owner — termasuk bila owner menurunkannya ke 0.
+      const poin = totalPoinChecklist(empChecklists);
       const poinBonus = poin * nilaiPerPoin;
 
       // Lembur

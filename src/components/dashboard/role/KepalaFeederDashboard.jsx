@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { CheckCircle, XCircle, AlertTriangle, Star, ChevronRight, Loader2, Package, Wallet
 } from "lucide-react";
+import { poinChecklist } from "@/lib/poinChecklist";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { toast } from "sonner";
@@ -89,7 +90,7 @@ export default function KepalaFeederDashboard({ user }) {
   monthChecklists
     .filter(c => (c.date || "").startsWith(thisMonthKey) && c.status === "approved")
     .forEach(c => {
-      poinByKeeper[c.employee_email] = (poinByKeeper[c.employee_email] || 0) + (c.approved_points || c.total_points_claimed || 0);
+      poinByKeeper[c.employee_email] = (poinByKeeper[c.employee_email] || 0) + poinChecklist(c);
     });
 
   // Poin diri sendiri hari ini

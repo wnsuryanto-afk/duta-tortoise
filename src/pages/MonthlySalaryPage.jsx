@@ -11,6 +11,7 @@ import { Wallet, Star, Clock, FileDown, Users } from "lucide-react";
 import { format, subMonths, getDaysInMonth } from "date-fns";
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
+import { poinChecklist } from "@/lib/poinChecklist";
 
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
   const d = subMonths(new Date(), i);
@@ -123,9 +124,9 @@ export default function MonthlySalaryPage() {
       const emp = empMap[c.employee_email];
       if (!emp) return;
       if (c.status === "rejected") return;
-      const pts = c.approved_points || c.total_points_claimed ||
-        (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((s, t) => s + (t.points || 0), 0) : 0);
-      emp.kpiPoints += pts || 0;
+      // Rekap bulanan ikut menghitung checklist yang belum ditinjau owner,
+      // berbeda dengan slip mingguan yang hanya menghitung yang disetujui.
+      emp.kpiPoints += poinChecklist(c, { hitungBelumDitinjau: true });
     });
 
     // Overtime
