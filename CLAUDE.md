@@ -19,8 +19,12 @@ setiap push ke repo terpantul ke Builder, dan sebaliknya.
 | Lint (wajib sebelum commit) | `npm run lint` |
 | Perbaiki lint otomatis | `npm run lint:fix` |
 | Cek tipe | `npm run typecheck` |
+| Test | `npm test` (Vitest) |
+| Test mode tonton | `npm run test:watch` |
 
-Belum ada test suite. **Verifikasi perubahan dengan `npm run lint` + `npm run build`.**
+**Verifikasi setiap perubahan dengan `npm run lint && npm test && npm run build`.**
+Ketiganya juga dijalankan CI (`.github/workflows/ci.yml`) di setiap PR.
+Lint harus tetap 0 error — jangan tinggalkan error baru.
 
 ---
 
@@ -42,6 +46,12 @@ komponen. Tidak ada Redux/Zustand. Cache di-invalidate lewat `queryClient`.
 
 **Routing**: semua rute didaftarkan manual di `src/App.jsx` di dalam
 `<Route element={<AppLayout />}>`. Import statis, tidak ada lazy-loading.
+
+**Hak akses ditegakkan di satu tempat**: `AppLayout` memetakan pathname ke
+`section` lewat `findSectionByPath()` lalu memeriksa `canAccess()` sebelum
+merender `<Outlet />`. Halaman tidak perlu menjaga dirinya sendiri, tetapi
+tetap harus memakai `getPerms()` untuk menyembunyikan tombol aksi. Path yang
+tidak terdaftar di `navigation.js` dianggap terbuka untuk semua role.
 
 ---
 
@@ -113,6 +123,10 @@ Setiap halaman baru **wajib** punya `section` di `NAV_ACCESS` dan
 | Label & QR | `labelUtils.js`, `skuUtils.js` |
 | Kompresi gambar | `useImageCompression.js` |
 | Perhitungan gaji mingguan | `weeklySalaryUtils.js` |
+| **Poin sebuah checklist** | `poinChecklist.js` — wajib dipakai, jangan hitung sendiri |
+| Tingkat keparahan sakit | `severity.js` |
+| Jadwal & carry-over SOP | `sopJadwal.js` |
+| Sapaan & durasi kerja | `guidedUtils.js` |
 | Breeding | `breedingUtils.js`, `breedingCalendarUtils.js` |
 | Kluster penyakit | `diseaseClusterUtils.js` |
 
@@ -123,10 +137,19 @@ Setiap halaman baru **wajib** punya `section` di `NAV_ACCESS` dan
 - **`components/stock/` vs `components/stok/`** — dua folder berbeda yang
   keduanya dipakai. `stock/` = gudang/inventori umum, `stok/` = tab-tab
   halaman `UnifiedStokPage`. Jangan tertukar, jangan digabung tanpa diminta.
-- **File raksasa.** Beberapa file 40–68 KB (`GuidedHariIni.jsx`,
-  `TugasHariIni.jsx`, `OwnerDashboard.jsx`, `TortoiseList.jsx`). Membaca satu
-  file penuh bisa habis belasan ribu token. **Baca per bagian**
-  (`sed -n '1,120p'`) atau `grep -n` dulu untuk cari fungsi yang dituju.
+- **File besar.** `GuidedHariIni.jsx`, `TugasHariIni.jsx`,
+  `OwnerDashboard.jsx`, `TortoiseList.jsx`, dan `PengaturanWhatsAppPage.jsx`
+  masih 40–59 KB. Membaca satu file penuh bisa habis belasan ribu token.
+  **Baca per bagian** (`sed -n '1,120p'`) atau `grep -n` dulu untuk cari
+  fungsi yang dituju.
+- **Poin checklist.** Jangan pernah menulis
+  `approved_points || total_points_claimed` — `||` menganggap 0 sebagai
+  kosong, sehingga checklist yang poinnya dinolkan owner justru terbayar
+  penuh. Pakai `poinChecklist()` dari `@/lib/poinChecklist`.
+- **Formatter Rupiah tersalin di 16+ berkas** sebagai `const fmt = ...`,
+  padahal `formatCurrency()` sudah ada di `formatIndonesian.js`. Keduanya
+  berbeda untuk nilai desimal, jadi jangan menukarnya begitu saja tanpa
+  memutuskan pembulatan mana yang benar.
 - **`src/components/ui/`** generated shadcn — jangan diedit tangan.
 - **`src/backups/`** berisi snapshot JSON, bukan kode aktif.
 - `s2.cjs` dan `scan.cjs` di root adalah skrip pemindai sekali-pakai, bukan
