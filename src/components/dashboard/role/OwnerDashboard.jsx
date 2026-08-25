@@ -288,6 +288,27 @@ export default function OwnerDashboard({ user }) {
   const profit = incomeThis - expenseThis;
   const margin = incomeThis > 0 ? (profit / incomeThis * 100).toFixed(1) : "0.0";
 
+  // Deret 7 hari terakhir untuk sparkline. Dihitung dari transaksi yang sudah
+  // ditarik di layar ini — tidak ada query tambahan ke server.
+  const deret7Hari = (() => {
+    const hari = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      hari.push(d.toISOString().slice(0, 10));
+    }
+    const masuk = [], keluar = [], laba = [];
+    hari.forEach((tgl) => {
+      const hariIni = finances.filter((f) => (f.date || "").slice(0, 10) === tgl);
+      const m = hariIni.filter((f) => f.type === "pemasukan").reduce((t, f) => t + (f.amount || 0), 0);
+      const k = hariIni.filter((f) => f.type === "pengeluaran").reduce((t, f) => t + (f.amount || 0), 0);
+      masuk.push(m);
+      keluar.push(k);
+      laba.push(m - k);
+    });
+    return { masuk, keluar, laba };
+  })();
+
   // ── Stock Calcs ───────────────────────────────────
   const feedValue = feedStocks.reduce((s, f) => s + (f.current_stock || 0) * (f.price_per_unit || 0), 0);
   const warehouseValue = warehouseItems.reduce((s, f) => s + (f.current_stock || 0) * (f.purchase_price || 0), 0);
@@ -585,14 +606,18 @@ export default function OwnerDashboard({ user }) {
           <KpiCard icon={TrendingUp} label="Pemasukan" color="bg-green-100 text-green-700" href="/finance"
             value={fmt(incomeThis)}
             sub={<TrendBadge value={incomeThis - incomeLast} />}
+            spark={<Sparkline data={deret7Hari.masuk} positiveIsGood />}
           />
           <KpiCard icon={TrendingDown} label="Pengeluaran" color="bg-red-100 text-red-600" href="/finance"
             value={fmt(expenseThis)}
             sub={<TrendBadge value={expenseThis - expenseLast} />}
+            spark={<Sparkline data={deret7Hari.keluar} positiveIsGood={false} />}
           />
           <KpiCard icon={DollarSign} label="Laba/Rugi Bersih" href="/finance"
             color={profit >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}
             value={<span className={profit >= 0 ? "text-green-700" : "text-red-600"}>{fmt(profit)}</span>}
+            sub={<span className="text-xs text-muted-foreground">7 hari terakhir</span>}
+            spark={<Sparkline data={deret7Hari.laba} positiveIsGood />}
           />
           <KpiCard icon={Percent} label="Margin" color="bg-blue-100 text-blue-700" href="/finance"
             value={<span className={Number(margin) >= 0 ? "text-green-700" : "text-red-600"}>{margin}%</span>}
