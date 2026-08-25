@@ -299,7 +299,7 @@ export default function OwnerDashboard({ user }) {
     }
     const masuk = [], keluar = [], laba = [];
     hari.forEach((tgl) => {
-      const hariIni = finances.filter((f) => (f.date || "").slice(0, 10) === tgl);
+      const hariIni = activeFinances.filter((f) => (f.date || "").slice(0, 10) === tgl);
       const m = hariIni.filter((f) => f.type === "pemasukan").reduce((t, f) => t + (f.amount || 0), 0);
       const k = hariIni.filter((f) => f.type === "pengeluaran").reduce((t, f) => t + (f.amount || 0), 0);
       masuk.push(m);
