@@ -30,13 +30,14 @@ export default function GuidedPoinSaya({ user }) {
     enabled: !!user?.email,
   });
 
-  const TARGET = settings?.min_poin_bulanan || 300;
-  const nilaiPerPoin = settings?.nilai_per_poin || 500;
+  const TARGET = settings?.min_poin_bulanan ?? 0;
+  const nilaiPerPoin = settings?.nilai_per_poin ?? 0;
+  const settingsSiap = TARGET > 0 && nilaiPerPoin > 0;
 
   const totalPoin = logs.reduce((s, l) => s + (l.poin_earned || 0), 0);
-  const pct = Math.min(100, Math.round((totalPoin / TARGET) * 100));
+  const pct = TARGET > 0 ? Math.min(100, Math.round((totalPoin / TARGET) * 100)) : 0;
   const kurang = Math.max(0, TARGET - totalPoin);
-  const estBonus = totalPoin >= TARGET ? (totalPoin - TARGET) * nilaiPerPoin : 0;
+  const estBonus = settingsSiap && totalPoin >= TARGET ? (totalPoin - TARGET) * nilaiPerPoin : 0;
 
   // Riwayat 7 hari terakhir (aggregate poin per hari)
   const last7 = Array.from({ length: 7 }, (_, i) => {
