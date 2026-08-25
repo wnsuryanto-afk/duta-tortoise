@@ -11,7 +11,7 @@
  */
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Home, Salad, HeartPulse, BookOpen, FileText, Wallet, X, Star, User, LogOut } from "lucide-react";
+import { Home, Salad, HeartPulse, BookOpen, FileText, Wallet, X, Star, User, LogOut, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import GuidedHariIni from "./GuidedHariIni";
@@ -61,10 +61,26 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto relative">
       {/* ── Slim top bar ── */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-100 flex items-center justify-between px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🐢</span>
-          <span className="font-bold text-sm text-gray-800">Duta Tortoise</span>
-        </div>
+        {/* Di halaman selain Beranda, logo diganti tombol kembali.
+            Sebelumnya keeper tidak punya jalan kembali sama sekali —
+            satu-satunya cara keluar adalah lewat bottom nav. */}
+        {isHome ? (
+          <div className="flex items-center gap-2">
+            <span className="text-base">🐢</span>
+            <span className="font-bold text-sm text-gray-800">Duta Tortoise</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1.5 -ml-1 px-2 py-1.5 rounded-lg text-green-800 active:bg-green-50"
+            aria-label="Kembali ke beranda"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-bold text-sm">
+              {NAV_ITEMS.find(n => n.to === location.pathname)?.label || "Beranda"}
+            </span>
+          </button>
+        )}
         <button
           onClick={() => setProfileMenu(true)}
           className="w-8 h-8 rounded-full bg-green-100 border border-green-300 flex items-center justify-center text-xs font-bold text-green-700 active:scale-95"
