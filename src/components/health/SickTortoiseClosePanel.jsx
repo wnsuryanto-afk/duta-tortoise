@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { perubahanSembuh } from "@/lib/statusKura";
 import { format } from "date-fns";
 import { Heart, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -54,11 +55,7 @@ export default function SickTortoiseClosePanel({ user }) {
         source: "manual",
         description: `Ditandai sembuh oleh ${user?.full_name || user?.email || "pengelola"} dari halaman Rekam Kesehatan.`,
       });
-      await base44.entities.Tortoise.update(t.tortoise_id, {
-        is_currently_sick: false,
-        status: "aktif",
-        last_status_change: today,
-      });
+      await base44.entities.Tortoise.update(t.tortoise_id, perubahanSembuh(t, today));
       qc.invalidateQueries({ queryKey: ["sick-tortoises-close-panel"] });
       qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
       qc.invalidateQueries({ queryKey: ["health-records"] });

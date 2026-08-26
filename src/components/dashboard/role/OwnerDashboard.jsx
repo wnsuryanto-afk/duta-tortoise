@@ -346,14 +346,16 @@ export default function OwnerDashboard({ user }) {
   const deathsThisMonth = deathRecords.filter(d => (d.death_date || "").startsWith(thisMonthKey));
   const deathsLastMonth = deathRecords.filter(d => (d.death_date || "").startsWith(format(subMonths(now, 1), "yyyy-MM")));
   const sickThisMonth = healthRecords.filter(h => h.date?.startsWith(thisMonthKey) && h.type === "sakit");
-  const recoveredThisMonth = healthRecords.filter(h => h.date?.startsWith(thisMonthKey) && h.type === "checkup").length;
+  const recoveredThisMonth = healthRecords.filter(h => h.date?.startsWith(thisMonthKey) && h.type === "sembuh").length;
   const treatmentTotal = sickThisMonth.length;
   const recoveryRate = treatmentTotal > 0 ? pct(recoveredThisMonth, treatmentTotal) : "100";
 
   // Enclosure dengan kasus terbanyak
   const enclosureCases = {};
+  const kandangKura = new Map(tortoises.map(t => [t.id, t.enclosure]));
   sickThisMonth.forEach(h => {
-    if (h.enclosure_name) enclosureCases[h.enclosure_name] = (enclosureCases[h.enclosure_name] || 0) + 1;
+    const kandang = kandangKura.get(h.tortoise_id);
+    if (kandang) enclosureCases[kandang] = (enclosureCases[kandang] || 0) + 1;
   });
   const problemEnclosure = Object.entries(enclosureCases).sort((a, b) => b[1] - a[1])[0];
 
@@ -417,7 +419,7 @@ export default function OwnerDashboard({ user }) {
   // ── Top Kandang ───────────────────────────────────
   const enclosureStats = enclosures.map(enc => {
     const count = tortoises.filter(t => t.enclosure === enc.name && t.status === "aktif" && !t.is_archived).length;
-    const sick = sickThisMonth.filter(h => h.enclosure_name === enc.name || tortoises.find(t => t.id === h.tortoise_id && t.enclosure === enc.name)).length;
+    const sick = sickThisMonth.filter(h => kandangKura.get(h.tortoise_id) === enc.name).length;
     return { name: enc.name, count, sick };
   }).filter(e => e.count > 0).sort((a, b) => b.count - a.count || a.sick - b.sick).slice(0, 5);
 

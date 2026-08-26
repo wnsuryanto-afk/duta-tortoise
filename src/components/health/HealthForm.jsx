@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
+import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -135,16 +136,13 @@ export default function HealthForm({ open, onClose, editData }) {
     // penghitung "Sakit" di Daftar Kura selalu 0 meski ada catatan sakit aktif.
     if (data.tortoise_id) {
       try {
+        // Status sebelum sakit dibaca dari kuranya sendiri; menebak "aktif"
+        // membuat kura baby kehilangan klasifikasinya setelah sembuh.
+        const kura = tortoises.find((t) => t.id === data.tortoise_id);
         if (data.type === "sakit") {
-          await base44.entities.Tortoise.update(data.tortoise_id, {
-            is_currently_sick: true,
-            status: "sakit",
-          });
+          await base44.entities.Tortoise.update(data.tortoise_id, perubahanSakit(kura, data.date));
         } else if (data.type === "sembuh") {
-          await base44.entities.Tortoise.update(data.tortoise_id, {
-            is_currently_sick: false,
-            status: "aktif",
-          });
+          await base44.entities.Tortoise.update(data.tortoise_id, perubahanSembuh(kura, data.date));
         }
       } catch {
         // Gagal memperbarui status tidak boleh membatalkan catatan yang sudah tersimpan.

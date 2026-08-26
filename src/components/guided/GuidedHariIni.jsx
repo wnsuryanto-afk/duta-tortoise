@@ -18,6 +18,7 @@ import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
 import { LeafPattern } from "@/components/common/Illustration";
+import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -237,6 +238,9 @@ export default function GuidedHariIni({ user }) {
           tortoise_id: t.id,
           tortoise_name: t.name,
           enclosure: t.enclosure,
+          // Dibawa agar kura baby kembali jadi baby setelah sembuh, bukan aktif
+          previous_status: t.previous_status,
+          status: t.status,
           severity: last?.severity,
           since: last?.date,
           diagnosis_notes: last?.diagnosis_notes,
@@ -262,11 +266,7 @@ export default function GuidedHariIni({ user }) {
         source: "manual",
         description: `Dilaporkan sembuh oleh ${user.full_name || user.email}.`,
       });
-      await base44.entities.Tortoise.update(t.tortoise_id, {
-        is_currently_sick: false,
-        status: "aktif",
-        last_status_change: today,
-      });
+      await base44.entities.Tortoise.update(t.tortoise_id, perubahanSembuh(t, today));
       qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
       qc.invalidateQueries({ queryKey: ["health-records"] });
       showMsg("success", `${t.tortoise_name} ditandai sembuh.`);
@@ -676,7 +676,7 @@ export default function GuidedHariIni({ user }) {
     });
     // Set is_currently_sick=true pada Tortoise
     try {
-      await base44.entities.Tortoise.update(sakitForm.kura, { is_currently_sick: true, status: "sakit" });
+      await base44.entities.Tortoise.update(sakitForm.kura, perubahanSakit(kura, today));
     } catch {}
     qc.invalidateQueries({ queryKey: ["health-records"] });
     qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
