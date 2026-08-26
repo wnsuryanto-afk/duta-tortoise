@@ -26,8 +26,9 @@ import {
 import { toast } from "sonner";
 import {
   ShoppingCart, Package, Truck, CheckCircle2, XCircle, Loader2,
-  Wallet, Receipt, AlertTriangle,
+  Wallet, Receipt, AlertTriangle, ChevronRight,
 } from "lucide-react";
+import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -347,8 +348,13 @@ export default function PembelianPage() {
     toast.success("Ditandai lunas");
   };
 
+  // Empat tahap satu alur. Sebelumnya tahap pertama — "apa yang sebenarnya
+  // kurang" — dijawab tiga halaman terpisah yang tidak bersambung ke sini,
+  // sehingga orang membaca daftar di satu layar lalu mengetik ulang isinya
+  // di layar lain.
   const TABS = [
-    { id: "belum", label: "Belum Dibeli", n: belumDibeli.length },
+    { id: "kurang", label: "Yang Kurang", n: null },
+    { id: "belum", label: "Daftar Belanja", n: belumDibeli.length },
     { id: "menunggu", label: "Menunggu Barang", n: menunggu.length },
     { id: "riwayat", label: "Riwayat", n: riwayat.length },
   ];
@@ -360,7 +366,7 @@ export default function PembelianPage() {
           <ShoppingCart className="w-5 h-5 text-primary" /> Pembelian Barang
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Dari pesan online sampai stok bertambah dan biaya tercatat.
+          Satu alur: apa yang kurang, dipesan, diterima, lalu stok dan biayanya tercatat.
         </p>
       </div>
 
@@ -374,23 +380,34 @@ export default function PembelianPage() {
         </div>
       )}
 
-      <div className="flex gap-1.5 flex-wrap">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-              tab === t.id
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background border-border text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {t.label} ({t.n})
-          </button>
+      {/* Panah di antara tahap menunjukkan barang bergerak ke satu arah —
+          dengan pil terpisah, keempatnya terbaca sebagai penyaring sejajar,
+          bukan sebagai urutan pekerjaan. */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1 px-1">
+        {TABS.map((t, i) => (
+          <div key={t.id} className="flex items-center gap-1 flex-shrink-0">
+            {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />}
+            <button
+              onClick={() => setTab(t.id)}
+              aria-current={tab === t.id ? "page" : undefined}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+                tab === t.id
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <span className="font-semibold">{t.label}</span>
+              {t.n !== null && <span className="ml-1 tabular opacity-80">({t.n})</span>}
+            </button>
+          </div>
         ))}
       </div>
 
-      {isLoading ? (
+      {tab === "kurang" ? (
+        <Section title="Barang yang stoknya menipis atau habis" icon={AlertTriangle}>
+          <TahapYangKurang onSelesai={() => setTab("belum")} />
+        </Section>
+      ) : isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
       ) : tab === "belum" ? (
         <Section title="Pilih barang untuk dipesan" icon={ShoppingCart} count={belumDibeli.length}>
