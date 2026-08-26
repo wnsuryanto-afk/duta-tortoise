@@ -20,13 +20,14 @@
       "enum": [
         "checkup",
         "sakit",
+        "sembuh",
         "obat",
         "vaksin",
         "timbang",
         "lainnya"
       ],
       "default": "checkup",
-      "description": "Jenis catatan"
+      "description": "Jenis catatan. \"sembuh\" menutup episode sakit dan dihitung sebagai tingkat kesembuhan di laporan."
     },
     "source": {
       "type": "string",

@@ -20,6 +20,7 @@ import { HealthArt } from "@/components/common/Illustration";
 const TYPE_CONFIG = {
   checkup: { label: "Cek Kesehatan", color: "bg-blue-100 text-blue-700" },
   sakit:   { label: "Sakit",         color: "bg-red-100 text-red-700" },
+  sembuh:  { label: "Sembuh",        color: "bg-emerald-100 text-emerald-700" },
   obat:    { label: "Obat",          color: "bg-orange-100 text-orange-700" },
   vaksin:  { label: "Vaksin",        color: "bg-green-100 text-green-700" },
   timbang: { label: "Timbang",       color: "bg-amber-100 text-amber-700" },

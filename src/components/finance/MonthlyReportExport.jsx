@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Download, Loader2, FileText } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import jsPDF from "jspdf";
 
@@ -449,14 +449,31 @@ export default function MonthlyReportExport({ role }) {
         doc.text("✓ Tidak ada kasus penyakit pada periode ini.", 14, y + 8);
         y += 20;
       } else {
+        // Kolom status sebelumnya berisi perbandingan yang tidak pernah salah:
+        // daftarnya sudah disaring ke "sakit" saja, jadi cabang "Sembuh" adalah
+        // kode mati dan setiap baris selalu tertulis "Sakit". Yang sebenarnya
+        // ingin diketahui pembaca laporan adalah kasus mana yang sudah ditutup.
+        //
+        // Dicari di seluruh riwayat, bukan hanya bulan ini: kasus yang mulai
+        // akhir bulan sering baru sembuh di bulan berikutnya.
+        const statusKasus = (h) => {
+          const sembuh = healthRecords.find(
+            (r) =>
+              r.type === "sembuh" &&
+              r.tortoise_id === h.tortoise_id &&
+              (r.date || "") >= (h.date || "")
+          );
+          return sembuh ? `Sembuh ${sembuh.date}` : "Masih dirawat";
+        };
+
         const healthRows = sickRecords.slice(0, 20).map((h, i) => [
           String(i + 1),
           h.tortoise_name || "—",
           (h.diagnosis || []).join(", ").replace(/_/g, " ") || "—",
           h.severity || "—",
-          h.type === "sakit" ? "Sakit" : "Sembuh",
+          statusKasus(h),
         ]);
-        y = drawTable(doc, ["No", "Nama Kura", "Diagnosis", "Keparahan", "Status"], healthRows, y, [10, 45, 70, 25, 22]);
+        y = drawTable(doc, ["No", "Nama Kura", "Diagnosis", "Keparahan", "Status"], healthRows, y, [10, 40, 62, 22, 38]);
         y += 6;
       }
 
