@@ -1,15 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, CheckCheck, Info, AlertTriangle, AlertCircle, CheckCircle2, Filter, Send, Users, X, ExternalLink } from "lucide-react";
+import { Bell, CheckCheck, Info, AlertTriangle, AlertCircle, CheckCircle2, Filter, Send, X, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import SendNotifDialog from "@/components/notifications/SendNotifDialog";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Loader2, Archive } from "lucide-react";
+import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 
 const typeConfig = {
   info: { color: "bg-blue-50 border-blue-200 text-blue-800", dot: "bg-blue-500", icon: Info, iconColor: "text-blue-500" },
@@ -35,26 +38,37 @@ export default function NotificationsPage() {
   const [filterRead, setFilterRead] = useState("semua");
   const [filterCategory, setFilterCategory] = useState("semua");
   const [showSend, setShowSend] = useState(false);
+  const [sibuk, setSibuk] = useState(null);
+  const navigate = useNavigate();
 
   const { data: notifs = [], isLoading } = useQuery({
     queryKey: ["notifications", user?.email],
-    queryFn: async () => {
-      const all = await base44.entities.Notification.filter({ recipient_email: user?.email });
-      // Auto-hapus notifikasi > 30 hari
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 30);
-      const old = all.filter(n => {
-        const ts = n.created_at || n.created_date;
-        return ts && new Date(ts) < cutoff;
-      });
-      if (old.length > 0) {
-        await Promise.all(old.map(n => base44.entities.Notification.delete(n.id)));
-        return all.filter(n => !old.find(o => o.id === n.id));
-      }
-      return all;
-    },
+    queryFn: () => base44.entities.Notification.filter({ recipient_email: user?.email }),
     enabled: !!user?.email,
   });
+
+  // Pembersihan notifikasi lebih dari 30 hari — dijalankan TERPISAH dari
+  // pengambilan data. Sebelumnya penghapusan ini berada di dalam queryFn,
+  // sehingga satu delete yang gagal membuat seluruh query gagal dan halaman
+  // ini tampil kosong seolah tidak ada notifikasi sama sekali.
+  const sudahBersih = useRef(false);
+  useEffect(() => {
+    if (sudahBersih.current || notifs.length === 0) return;
+    sudahBersih.current = true;
+
+    const batas = new Date();
+    batas.setDate(batas.getDate() - 30);
+    const kedaluwarsa = notifs.filter((n) => {
+      const ts = n.created_at || n.created_date;
+      return ts && new Date(ts) < batas;
+    });
+    if (kedaluwarsa.length === 0) return;
+
+    jalankanMassal(kedaluwarsa, (n) => base44.entities.Notification.delete(n.id), { serentak: 3 })
+      .then((hasil) => {
+        if (hasil.berhasil > 0) queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      });
+  }, [notifs, queryClient]);
 
   const filtered = useMemo(() => {
     return notifs
@@ -69,27 +83,74 @@ export default function NotificationsPage() {
       });
   }, [notifs, filterRead, filterCategory]);
 
-  const unreadCount = notifs.filter(n => !n.is_read).length;
+  const terlihat = filtered;
+  const aktif = useMemo(() => notifs.filter(n => !n.is_dismissed), [notifs]);
+  const unreadCount = aktif.filter(n => !n.is_read).length;
+  const belumTerlihat = terlihat.filter(n => !n.is_read).length;
+  const terbacaTerlihat = terlihat.filter(n => n.is_read).length;
+  const disaring = filterRead !== "semua" || filterCategory !== "semua";
 
-  const markAllRead = async () => {
-    const unread = notifs.filter(n => !n.is_read && !n.is_dismissed);
-    await Promise.all(unread.map(n =>
-      base44.entities.Notification.update(n.id, { is_read: true, read_at: new Date().toISOString() })
-    ));
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  const segarkan = () => queryClient.invalidateQueries({ queryKey: ["notifications"] });
+
+  /**
+   * Penulisan massal dengan batas serentak, pengulangan saat kena batas laju,
+   * dan hasil yang dilaporkan. Promise.all atas puluhan pembaruan sekaligus —
+   * pola lama di sini — gagal diam-diam dan membuat angkanya tidak pernah turun.
+   */
+  const kerjakanMassal = async (daftar, label, perubahan, satuan = "notifikasi") => {
+    if (daftar.length === 0 || sibuk) return;
+    setSibuk({ label, sudah: 0, total: daftar.length });
+
+    const hasil = await jalankanMassal(
+      daftar,
+      (n) => base44.entities.Notification.update(n.id, perubahan()),
+      { serentak: 4, onKemajuan: (sudah, total) => setSibuk({ label, sudah, total }) }
+    );
+
+    setSibuk(null);
+    segarkan();
+
+    const { nada, teks } = ringkasHasil(hasil, satuan);
+    if (nada === "berhasil") toast.success(teks);
+    else if (nada === "gagal") toast.error(teks);
+    else toast.warning(teks);
   };
+
+  const markAllRead = () =>
+    kerjakanMassal(
+      terlihat.filter((n) => !n.is_read),
+      "Menandai terbaca",
+      () => ({ is_read: true, read_at: new Date().toISOString() })
+    );
+
+  // Menandai terbaca tidak pernah memendekkan daftar. Ini yang membuatnya habis.
+  const bersihkanTerbaca = () =>
+    kerjakanMassal(
+      terlihat.filter((n) => n.is_read),
+      "Membersihkan",
+      () => ({ is_dismissed: true })
+    );
 
   const markRead = async (notif) => {
     if (!notif.is_read) {
-      await base44.entities.Notification.update(notif.id, { is_read: true, read_at: new Date().toISOString() });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      try {
+        await base44.entities.Notification.update(notif.id, { is_read: true, read_at: new Date().toISOString() });
+        segarkan();
+      } catch (e) {
+        toast.error("Gagal menandai terbaca: " + (e?.message || "coba lagi"));
+        return;
+      }
     }
-    if (notif.action_url) window.location.href = notif.action_url;
+    if (notif.action_url) navigate(notif.action_url);
   };
 
   const dismiss = async (notifId) => {
-    await base44.entities.Notification.update(notifId, { is_dismissed: true, is_read: true, read_at: new Date().toISOString() });
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    try {
+      await base44.entities.Notification.update(notifId, { is_dismissed: true, is_read: true, read_at: new Date().toISOString() });
+      segarkan();
+    } catch (e) {
+      toast.error("Gagal menyingkirkan: " + (e?.message || "coba lagi"));
+    }
   };
 
   return (
@@ -101,13 +162,32 @@ export default function NotificationsPage() {
           </div>
           <div>
             <h1 className="text-2xl font-heading font-bold">Notifikasi</h1>
-            <p className="text-sm text-muted-foreground">{unreadCount > 0 ? `${unreadCount} belum dibaca` : "Semua sudah dibaca"}</p>
+            <p className="text-sm text-muted-foreground">
+              {aktif.length === 0
+                ? "Kotak notifikasi kosong"
+                : unreadCount > 0
+                  ? `${unreadCount} belum dibaca dari ${aktif.length}`
+                  : `Semua sudah dibaca — ${aktif.length} bisa dibersihkan`}
+            </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllRead}>
-              <CheckCheck className="w-4 h-4 mr-1" /> Tandai Semua Dibaca
+        <div className="flex gap-2 flex-wrap">
+          {belumTerlihat > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllRead} disabled={!!sibuk}>
+              <CheckCheck className="w-4 h-4 mr-1" />
+              Tandai {belumTerlihat} dibaca{disaring ? " (yang tampil)" : ""}
+            </Button>
+          )}
+          {terbacaTerlihat > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={bersihkanTerbaca}
+              disabled={!!sibuk}
+              title="Singkirkan notifikasi yang sudah dibaca dari daftar"
+            >
+              <Archive className="w-4 h-4 mr-1" />
+              Bersihkan {terbacaTerlihat}
             </Button>
           )}
           {["owner", "admin"].includes(role) && (
@@ -117,6 +197,23 @@ export default function NotificationsPage() {
           )}
         </div>
       </div>
+
+      {/* Kemajuan operasi massal — puluhan pembaruan butuh waktu, dan tanpa
+          penanda ini tombolnya terasa tidak berfungsi. */}
+      {sibuk && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-primary/25 bg-primary/5">
+          <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
+          <span className="text-sm text-muted-foreground flex-1">
+            {sibuk.label}… <span className="tabular font-medium">{sibuk.sudah}/{sibuk.total}</span>
+          </span>
+          <div className="w-28 bar-track h-2">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-200"
+              style={{ width: `${sibuk.total ? (sibuk.sudah / sibuk.total) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Filter */}
       <div className="flex flex-wrap gap-3">
@@ -161,9 +258,16 @@ export default function NotificationsPage() {
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <Bell className="w-12 h-12 mx-auto mb-3 opacity-20" />
-          <p>Tidak ada notifikasi</p>
+        <div className="text-center py-20">
+          <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-accent/40" />
+          <p className="font-medium text-foreground">
+            {aktif.length === 0 ? "Kotak notifikasi kosong" : "Tidak ada yang cocok dengan saringan"}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {aktif.length === 0
+              ? "Semuanya sudah dibaca dan dibersihkan."
+              : "Ubah saringan di atas untuk melihat notifikasi lain."}
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
