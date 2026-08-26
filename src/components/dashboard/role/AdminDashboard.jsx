@@ -14,6 +14,8 @@ import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
 import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
+import PageHeader from "@/components/common/PageHeader";
+import { TeamArt } from "@/components/common/Illustration";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -152,13 +154,24 @@ export default function AdminDashboard({ user, role = "admin" }) {
 
   return (
     <div className="space-y-5 pb-10 animate-fade-in">
-      {/* ── HEADER ── */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold text-foreground font-heading">{greeting(user?.full_name)}</h1>
-          <p className="text-sm text-muted-foreground">{todayDate} · Update: {lastUpdate}</p>
-        </div>
-      </div>
+      {/* ── HEADER ──
+          Empat angka yang paling sering ditanyakan admin tiap pagi diangkat
+          ke kepala halaman, jadi tidak perlu menggulir untuk tahu keadaan. */}
+      <PageHeader
+        title={greeting(user?.full_name)}
+        subtitle={`${todayDate} · Update: ${lastUpdate}`}
+        art={<TeamArt size="md" />}
+        chips={[
+          { key: "hadir", icon: Users, label: "Hadir", value: `${hadirCount}/${totalStaff}`,
+            tone: hadirCount >= totalStaff ? "good" : "warn" },
+          { key: "approve", icon: CheckCircle, label: "Perlu approval", value: pendingApprovalCount,
+            tone: pendingApprovalCount > 0 ? "warn" : "good" },
+          { key: "sakit", icon: Heart, label: "Kura sakit", value: sickTortoises.length,
+            tone: sickTortoises.length > 0 ? "warn" : "good" },
+          { key: "stok", icon: Package, label: "Stok kritis", value: totalCritical,
+            tone: totalCritical > 0 ? "bad" : "good" },
+        ]}
+      />
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi />

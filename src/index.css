@@ -227,3 +227,197 @@
 .animate-skeleton {
   animation: skeletonPulse 1.5s ease-in-out infinite;
 }
+/* ══════════════════════════════════════════════════════════════
+   UI REFINEMENT — lapisan visual tambahan
+   Tujuan: tampilan lebih hidup, tidak kaku, dan lebih informatif.
+   Semua utilitas di bawah bersifat opsional (opt-in lewat class),
+   jadi tidak ada komponen lama yang berubah tanpa diminta.
+   ══════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* ── Permukaan ── */
+
+  /* Kartu yang terasa "diangkat" — dipakai untuk KPI & panel utama */
+  .surface-raised {
+    @apply bg-card rounded-2xl border border-border;
+    box-shadow: 0 1px 2px rgba(45, 80, 22, 0.04), 0 6px 20px -8px rgba(45, 80, 22, 0.14);
+    transition: box-shadow .25s cubic-bezier(.16,1,.3,1),
+                transform .25s cubic-bezier(.16,1,.3,1),
+                border-color .25s ease;
+  }
+
+  /* Kaca buram — untuk header lengket & overlay */
+  .surface-glass {
+    background: hsl(var(--card) / 0.72);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    @apply border border-border/70;
+  }
+
+  /* Gradien lembut bernuansa daun — latar header halaman */
+  .surface-leaf {
+    background:
+      radial-gradient(120% 140% at 0% 0%, hsl(var(--accent) / .16) 0%, transparent 55%),
+      radial-gradient(120% 140% at 100% 0%, hsl(var(--chart-4) / .14) 0%, transparent 50%),
+      linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card)) 100%);
+  }
+
+  /* Garis aksen tipis di sisi kiri kartu catatan */
+  .surface-note {
+    @apply rounded-xl border border-l-4;
+  }
+
+  /* ── Interaksi ── */
+
+  /* Naik sedikit saat disentuh — memberi umpan balik tanpa berisik */
+  .hover-lift {
+    transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s cubic-bezier(.16,1,.3,1);
+    will-change: transform;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 2px 4px rgba(45, 80, 22, .05), 0 14px 32px -12px rgba(45, 80, 22, .26);
+  }
+  .hover-lift:active { transform: translateY(-1px); }
+
+  /* Kilau melintas saat hover — dipakai hemat, hanya di kartu ajakan aksi */
+  .hover-shine { position: relative; overflow: hidden; }
+  .hover-shine::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 -60%;
+    width: 45%;
+    background: linear-gradient(100deg, transparent, hsl(0 0% 100% / .28), transparent);
+    transform: skewX(-18deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hover-shine:hover::after { animation: shineSweep .85s cubic-bezier(.4,0,.2,1); }
+
+  /* Cincin denyut untuk hal yang mendesak */
+  .pulse-ring { position: relative; }
+  .pulse-ring::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px solid hsl(var(--destructive) / .5);
+    animation: pulseRing 2s cubic-bezier(.4,0,.6,1) infinite;
+    pointer-events: none;
+  }
+
+  /* ── Data & angka ── */
+
+  .stat-value {
+    @apply font-heading font-bold tracking-tight;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+  }
+
+  /* Angka sejajar rapi di tabel/daftar */
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* Bilah progres dengan animasi tumbuh */
+  .bar-track { @apply h-2 rounded-full bg-muted overflow-hidden; }
+  .bar-fill {
+    @apply h-full rounded-full;
+    transform-origin: left center;
+    animation: barGrow .7s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  /* ── Skeleton berkilau ── */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted-foreground) / .12) 37%,
+      hsl(var(--muted)) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmerSlide 1.4s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  /* Anak-anak muncul berurutan — membuat halaman terasa mengalir */
+  .stagger > * {
+    animation: fadeInUp .45s cubic-bezier(.16,1,.3,1) both;
+  }
+  .stagger > *:nth-child(1) { animation-delay: .00s }
+  .stagger > *:nth-child(2) { animation-delay: .05s }
+  .stagger > *:nth-child(3) { animation-delay: .10s }
+  .stagger > *:nth-child(4) { animation-delay: .15s }
+  .stagger > *:nth-child(5) { animation-delay: .20s }
+  .stagger > *:nth-child(6) { animation-delay: .25s }
+  .stagger > *:nth-child(7) { animation-delay: .30s }
+  .stagger > *:nth-child(8) { animation-delay: .35s }
+  .stagger > *:nth-child(n+9) { animation-delay: .40s }
+
+  .animate-float { animation: floatSoft 6s ease-in-out infinite; }
+  .animate-pop   { animation: popIn .32s cubic-bezier(.34,1.56,.64,1) both; }
+  .animate-slide-right { animation: slideInRight .35s cubic-bezier(.16,1,.3,1) both; }
+
+  /* Teks bergradien untuk angka sorotan */
+  .text-gradient-leaf {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Daftar panjang yang bisa digulir tanpa terpotong mendadak */
+  .fade-bottom {
+    -webkit-mask-image: linear-gradient(to bottom, #000 85%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 85%, transparent 100%);
+  }
+}
+
+@keyframes shineSweep {
+  from { left: -60%; opacity: 1 }
+  to   { left: 130%; opacity: 0 }
+}
+
+@keyframes pulseRing {
+  0%   { transform: scale(1);    opacity: .8 }
+  70%  { transform: scale(1.06); opacity: 0 }
+  100% { transform: scale(1.06); opacity: 0 }
+}
+
+@keyframes barGrow {
+  from { transform: scaleX(0) }
+  to   { transform: scaleX(1) }
+}
+
+@keyframes shimmerSlide {
+  0%   { background-position: 100% 50% }
+  100% { background-position: 0 50% }
+}
+
+@keyframes floatSoft {
+  0%, 100% { transform: translateY(0) }
+  50%      { transform: translateY(-6px) }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(.94) }
+  to   { opacity: 1; transform: scale(1) }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(-10px) }
+  to   { opacity: 1; transform: translateX(0) }
+}
+
+/* ── Hormati preferensi "kurangi gerak" ──
+   Beberapa pengguna pusing melihat animasi. Di sini seluruh gerakan
+   dimatikan, bukan sekadar dipercepat, supaya benar-benar tenang. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hover-lift:hover { transform: none }
+}

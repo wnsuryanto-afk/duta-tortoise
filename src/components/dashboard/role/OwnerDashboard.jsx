@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 // useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
-  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, Target, ChevronRight, ChevronDown, ShieldAlert, ListChecks
+  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, Target, ChevronRight, ChevronDown, ShieldAlert, ListChecks, StickyNote
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
@@ -16,6 +16,11 @@ import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import PageHeader from "@/components/common/PageHeader";
+import NoteCard from "@/components/common/NoteCard";
+import InfoHint from "@/components/ui/info-hint";
+import { Sparkline } from "@/components/ui/sparkline";
+import { TortoiseArt } from "@/components/common/Illustration";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -29,59 +34,48 @@ function greeting(name) {
   return `Selamat ${salam}, ${name || "Boss"}`;
 }
 
+/**
+ * Selisih terhadap bulan lalu, dalam rupiah.
+ * TrendPill bawaan menampilkan persentase; di sini nominal lebih berguna
+ * karena owner membandingkan angka rupiah, bukan rasio.
+ */
 function TrendBadge({ value, suffix = "" }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">sama</span>;
   const up = value > 0;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${up ? "text-green-600" : "text-red-500"}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${up ? "bg-accent/12 text-accent" : "bg-destructive/12 text-destructive"}`}>
       {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-      {up ? "+" : ""}{fmt(Math.abs(value))}{suffix} vs bln lalu
+      {up ? "+" : "−"}{fmt(Math.abs(value))}{suffix}
+      <span className="font-normal opacity-70">vs bln lalu</span>
     </span>
   );
 }
 
-/**
- * Sparkline — garis tren 7 hari di bawah angka KPI.
- * Digambar langsung sebagai SVG, tanpa pustaka grafik: ukurannya kecil dan
- * jumlahnya banyak, jadi memuat recharts untuk ini justru memberatkan.
- * Angka tanpa arah tidak bisa dipakai memutuskan — ini yang memberi arahnya.
- */
-function Sparkline({ data = [], positiveIsGood = true }) {
-  if (!data || data.length < 2) return null;
-  const max = Math.max(...data), min = Math.min(...data);
-  const span = max - min || 1;
-  const W = 56, H = 18;
-  const pts = data
-    .map((v, i) => `${(i / (data.length - 1)) * W},${H - ((v - min) / span) * (H - 3) - 1.5}`)
-    .join(" ");
-  const naik = data[data.length - 1] >= data[0];
-  const baik = positiveIsGood ? naik : !naik;
-  const warna = baik ? "#1d9e75" : "#d03b3b";
-  return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="flex-shrink-0">
-      <polyline points={pts} fill="none" stroke={warna} strokeWidth="1.75"
-        strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function KpiCard({ icon: Icon, label, value, sub, color = "bg-primary/10 text-primary", href, spark }) {
+function KpiCard({ icon: Icon, label, value, sub, color = "bg-primary/10 text-primary", href, spark, hint, big = false }) {
   const inner = (
-    <div className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow cursor-pointer">
-      <div className="flex items-start justify-between gap-2">
-        <div className={`p-2 rounded-lg ${color}`}>
+    <div className="surface-raised hover-lift group relative overflow-hidden p-4 h-full flex flex-col cursor-pointer">
+      {/* Sapuan warna di sudut — memberi kedalaman tanpa menambah garis */}
+      <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl opacity-[0.13] group-hover:opacity-25 transition-opacity ${color.split(" ").find(c => c.startsWith("bg-")) || "bg-primary"}`} />
+      <div className="relative flex items-start justify-between gap-2">
+        <div className={`p-2 rounded-lg transition-transform group-hover:scale-110 ${color}`}>
           <Icon className="w-4 h-4" />
         </div>
+        {href && (
+          <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-50 group-hover:translate-x-0 transition-all" />
+        )}
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-bold text-foreground mt-0.5 leading-tight">{value}</p>
-      <div className="flex items-end justify-between gap-2 mt-1">
+      <p className="relative mt-3 text-xs text-muted-foreground flex items-center gap-1">
+        {label}
+        {hint && <InfoHint title={label} size={12}>{hint}</InfoHint>}
+      </p>
+      <p className={`relative stat-value text-foreground mt-0.5 ${big ? "text-2xl" : "text-xl"}`}>{value}</p>
+      <div className="relative flex items-end justify-between gap-2 mt-auto pt-1.5">
         {sub ? <div className="min-w-0">{sub}</div> : <span />}
         {spark}
       </div>
     </div>
   );
-  if (href) return <Link to={href}>{inner}</Link>;
+  if (href) return <Link to={href} className="block h-full">{inner}</Link>;
   return inner;
 }
 
@@ -525,19 +519,100 @@ export default function OwnerDashboard({ user }) {
 
   const rankEmoji = ["🥇", "🥈", "🥉"];
 
+  /**
+   * Catatan otomatis — menerjemahkan angka di dashboard menjadi kalimat.
+   *
+   * Grafik memberi tahu *apa* yang terjadi, tapi tidak *apa artinya*. Tiap
+   * catatan hanya muncul bila ambangnya benar-benar terlampaui; kalau semua
+   * sehat, panelnya tidak ditampilkan sama sekali daripada memaksakan
+   * kalimat kosong yang lama-lama tidak dibaca siapa pun.
+   */
+  const catatan = [];
+
+  if (incomeThis > 0 && Number(margin) < 15) {
+    catatan.push({
+      tone: "warning",
+      title: `Margin bulan ini tipis — ${margin}%`,
+      body: `Dari pemasukan ${fmt(incomeThis)}, laba bersih tinggal ${fmt(profit)}. Periksa pengeluaran terbesar bulan ini sebelum menambah pembelian baru.`,
+    });
+  } else if (incomeThis > 0 && Number(margin) >= 30) {
+    catatan.push({
+      tone: "success",
+      title: `Margin sehat — ${margin}%`,
+      body: `Laba bersih ${fmt(profit)} dari pemasukan ${fmt(incomeThis)}. Pola bulan ini layak dipertahankan.`,
+    });
+  }
+
+  if (expenseLast > 0 && expenseThis > expenseLast * 1.25) {
+    catatan.push({
+      tone: "warning",
+      title: "Pengeluaran naik tajam",
+      body: `Bulan ini ${fmt(expenseThis)}, naik ${Math.round(((expenseThis - expenseLast) / expenseLast) * 100)}% dari ${fmt(expenseLast)} bulan lalu. Buka rincian kategori untuk melihat penyebabnya.`,
+    });
+  }
+
+  if (sickTortoises.length > 0 && activeTortoises.length > 0) {
+    const rasio = Math.round((sickTortoises.length / activeTortoises.length) * 100);
+    catatan.push({
+      tone: rasio >= 10 ? "warning" : "info",
+      title: `${sickTortoises.length} kura sedang sakit (${rasio}% populasi)`,
+      body: problemEnclosure
+        ? `Kasus terbanyak di kandang ${problemEnclosure[0]} (${problemEnclosure[1]} kasus bulan ini). Periksa kebersihan dan suhu kandang tersebut.`
+        : "Pastikan tiap kura sakit punya jadwal perawatan yang berjalan.",
+    });
+  }
+
+  if (totalDebt > 0) {
+    catatan.push({
+      tone: "info",
+      title: `Piutang belum tertagih ${fmt(totalDebt)}`,
+      body: `Tersebar di ${debtors.length} pembeli. Uang ini sudah dihitung sebagai penjualan tapi belum masuk kas.`,
+    });
+  }
+
+  if (eggsThisMonth > 0) {
+    catatan.push({
+      tone: "info",
+      title: `${eggsThisMonth} telur baru bulan ini`,
+      body: `${hatchedThisMonth} sudah menetas. Tingkat keberhasilan sepanjang riwayat: ${successRate}%.`,
+    });
+  }
+
+  if (costPerTortoise > 0) {
+    catatan.push({
+      tone: "note",
+      title: `Biaya ${fmt(costPerTortoise)} per ekor bulan ini`,
+      body: `Total pengeluaran ${fmt(expenseThis)} dibagi ${activeTortoises.length} kura aktif. Pakai angka ini sebagai dasar HPP saat menentukan harga jual.`,
+    });
+  }
+
+
   return (
     <div className="space-y-6 pb-10 animate-fade-in">
-      {/* ── HEADER ── */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold text-foreground font-heading">{greeting(user?.full_name)}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{today}</p>
-        </div>
-        <Link to="/finance"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-          <BarChart2 className="w-4 h-4" /> Lihat Laporan Lengkap
-        </Link>
-      </div>
+      {/* ── HEADER ──
+          Angka-angka penting diangkat ke kepala halaman: keadaan peternakan
+          terbaca sebelum satu widget pun digulir. */}
+      <PageHeader
+        title={greeting(user?.full_name)}
+        subtitle={today}
+        art={<TortoiseArt size="md" />}
+        chips={[
+          { key: "kura", icon: Shell, label: "Kura aktif", value: activeTortoises.length },
+          { key: "sakit", icon: Heart, label: "Sakit", value: sickTortoises.length,
+            tone: sickTortoises.length > 0 ? "warn" : "good" },
+          { key: "telur", icon: Egg, label: "Telur aktif", value: totalEggs },
+          { key: "laba", icon: DollarSign, label: "Laba bulan ini", value: fmt(profit),
+            tone: profit >= 0 ? "good" : "bad" },
+          { key: "alert", icon: AlertTriangle, label: "Perlu perhatian", value: criticalAlerts.length,
+            tone: criticalAlerts.length > 0 ? "warn" : "good" },
+        ]}
+        actions={
+          <Link to="/finance"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 hover-lift transition-colors">
+            <BarChart2 className="w-4 h-4" /> Laporan Lengkap
+          </Link>
+        }
+      />
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi />
@@ -549,13 +624,21 @@ export default function OwnerDashboard({ user }) {
       <div className="bg-card rounded-xl border border-border p-4">
         <SectionTitle icon={AlertTriangle}>Perlu Perhatianmu</SectionTitle>
         {criticalAlerts.length === 0 ? (
-          <p className="text-sm text-green-600 font-medium">✓ Semua kondisi normal hari ini</p>
+          <div className="flex items-center gap-3 py-2">
+            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-accent/12 text-accent flex-shrink-0 text-lg">✓</span>
+            <div>
+              <p className="text-sm font-semibold text-accent">Semua kondisi normal hari ini</p>
+              <p className="text-xs text-muted-foreground">
+                Tidak ada kura sakit, stok kritis, atau piutang jatuh tempo yang terdeteksi.
+              </p>
+            </div>
+          </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 stagger">
             {criticalAlerts.map((a, i) => (
-              <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${a.type === "red" ? "bg-red-50 border border-red-100" : "bg-amber-50 border border-amber-100"}`}>
+              <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg transition-transform hover:translate-x-0.5 ${a.type === "red" ? "bg-red-50 border border-red-100 dark:bg-red-950/30 dark:border-red-900" : "bg-amber-50 border border-amber-100 dark:bg-amber-950/30 dark:border-amber-900"}`}>
                 <span className="text-base mt-0.5">{a.type === "red" ? "🔴" : "🟡"}</span>
-                <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800" : "text-amber-800"}`}>
+                <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800 dark:text-red-300" : "text-amber-800 dark:text-amber-300"}`}>
                   {a.msg}
                   {a.href && (
                     <Link to={a.href} className="ml-2 text-primary font-medium underline hover:no-underline text-xs">
@@ -568,6 +651,23 @@ export default function OwnerDashboard({ user }) {
           </div>
         )}
       </div>
+      {/* ── CATATAN OTOMATIS ── */}
+      {catatan.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-4">
+          <SectionTitle icon={StickyNote}>
+            Catatan dari Data Hari Ini
+          </SectionTitle>
+          <p className="text-xs text-muted-foreground -mt-2 mb-3">
+            Dibuat otomatis dari angka di dashboard ini — bukan masukan manual.
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 stagger">
+            {catatan.map((c, i) => (
+              <NoteCard key={i} tone={c.tone} title={c.title}>{c.body}</NoteCard>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── WIDGET CHECKLIST MENUNGGU APPROVAL ── */}
       {phase2Ready && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">

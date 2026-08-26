@@ -246,8 +246,10 @@ export default function AppLayout() {
   // Masih loading — tampilkan spinner diam, jangan render kondisi apapun
   if (isLoading || (!!user?.email && profileLoading)) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
+      <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="text-4xl animate-float">🐢</div>
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-xs text-muted-foreground">Menyiapkan Duta Tortoise…</p>
       </div>
     );
   }
@@ -306,7 +308,7 @@ export default function AppLayout() {
 
       <main className={`lg:ml-64 min-h-screen ${isViewingAs ? "mt-10" : ""}`}>
         {/* ── Top bar ── */}
-        <div className={`sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b transition-colors ${isViewingAs && viewAsRole ? "border-blue-400 border-b-2" : "border-border"}`}>
+        <div className={`sticky top-0 z-30 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 border-b transition-colors ${isViewingAs && viewAsRole ? "border-blue-400 border-b-2" : "border-border"}`}>
           <div className="flex justify-between items-center px-4 lg:px-8 py-3 max-w-7xl mx-auto">
             <div className="w-8 lg:hidden" />
             {backTarget ? (
@@ -324,7 +326,7 @@ export default function AppLayout() {
               {/* Pencarian halaman — menggantikan kebutuhan menu panjang */}
               <button
                 onClick={() => setShowPalette(true)}
-                className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted transition-colors"
+                className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted hover:border-primary/30 hover:text-foreground transition-all active:scale-95"
                 title="Cari halaman (Ctrl+K)"
               >
                 <Search className="w-3.5 h-3.5" />

@@ -14,7 +14,11 @@ import KepalaFeederDashboard from "@/components/dashboard/role/KepalaFeederDashb
 import InvestorDashboard from "@/components/dashboard/role/InvestorDashboard";
 
 // Fallback: dashboard lama untuk role yang belum punya tampilan khusus
-import { Shell, Baby, Egg, ClipboardList, Package } from "lucide-react";
+import { Shell, Baby, Egg, ClipboardList, Package, Heart, LayoutDashboard } from "lucide-react";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import PageHeader from "@/components/common/PageHeader";
+import { TortoiseArt } from "@/components/common/Illustration";
 import StatCard from "@/components/dashboard/StatCard";
 import HealthReminderAlert from "@/components/dashboard/HealthReminderAlert";
 import FeedStockAlert from "@/components/dashboard/FeedStockAlert";
@@ -40,32 +44,88 @@ function FallbackDashboard() {
     queryFn: () => base44.entities.Breeding.list("-created_date", 30), // turun dari 200
     staleTime: 10 * 60 * 1000,
   });
+
   const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "baby");
-  const totalEggs = breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi").reduce((sum, b) => sum + (b.egg_count || 0), 0);
+  const sickTortoises = tortoises.filter((t) => t.status === "sakit" || t.is_currently_sick);
+  const babyCount = tortoises.filter((t) => t.status === "baby").length;
+  const totalEggs = breedings
+    .filter((b) => b.status === "bertelur" || b.status === "inkubasi")
+    .reduce((sum, b) => sum + (b.egg_count || 0), 0);
   const totalHatched = breedings.reduce((sum, b) => sum + (b.hatched_count || 0), 0);
+  const totalEggsEver = breedings.reduce((sum, b) => sum + (b.egg_count || 0), 0);
+  const hatchRate = totalEggsEver > 0 ? Math.round((totalHatched / totalEggsEver) * 100) : 0;
+
   const stats = [
-    { label: "Tortoise Aktif", value: activeTortoises.length, icon: Shell, color: "bg-primary/15 text-primary" },
-    { label: "Total Telur", value: totalEggs, icon: Egg, color: "bg-accent/15 text-accent" },
-    { label: "Total Menetas", value: totalHatched, icon: Baby, color: "bg-chart-4/15 text-chart-4" },
+    {
+      label: "Tortoise Aktif", value: activeTortoises.length, icon: Shell,
+      color: "bg-primary/15 text-primary", href: "/tortoise",
+      sub: `${babyCount} di antaranya baby`,
+      hint: "Kura berstatus aktif atau baby. Yang terjual, mati, atau diarsipkan tidak dihitung.",
+    },
+    {
+      label: "Telur Diinkubasi", value: totalEggs, icon: Egg,
+      color: "bg-accent/15 text-accent", href: "/breeding",
+      sub: "dari batch bertelur & inkubasi",
+      hint: "Jumlah telur pada batch yang berstatus bertelur atau inkubasi — belum termasuk yang sudah menetas.",
+    },
+    {
+      label: "Total Menetas", value: totalHatched, icon: Baby,
+      color: "bg-chart-4/15 text-chart-4", href: "/breeding",
+      sub: totalEggsEver > 0 ? `${hatchRate}% dari ${totalEggsEver} telur tercatat` : "belum ada telur tercatat",
+    },
+    {
+      label: "Sedang Sakit", value: sickTortoises.length, icon: Heart,
+      color: sickTortoises.length > 0 ? "bg-red-100 text-red-600" : "bg-muted text-muted-foreground",
+      href: "/health",
+      sub: sickTortoises.length > 0 ? "butuh perawatan harian" : "tidak ada yang sakit",
+    },
   ];
+
   return (
     <div className="space-y-8 pb-8">
+      <PageHeader
+        title="Beranda"
+        subtitle={format(new Date(), "EEEE, d MMMM yyyy", { locale: idLocale })}
+        description="Ringkasan kondisi peternakan hari ini. Tiap kartu bisa diklik untuk membuka rinciannya."
+        icon={LayoutDashboard}
+        art={<TortoiseArt size="md" />}
+      />
+
       <QuickActionsBar />
       <GettingStartedChecklist />
       <UrgentAlerts />
-      <DashboardSection title="Operasional Hari Ini" icon={ClipboardList}><OperationalToday /></DashboardSection>
-      <DashboardSection title="Statistik Kura-kura" icon={Shell}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+      <DashboardSection
+        title="Operasional Hari Ini"
+        description="Tugas dan kegiatan yang dijadwalkan untuk hari ini"
+        icon={ClipboardList}
+      >
+        <OperationalToday />
+      </DashboardSection>
+
+      <DashboardSection
+        title="Statistik Kura-kura"
+        description="Populasi, produksi telur, dan kondisi kesehatan"
+        icon={Shell}
+        count={tortoises.length}
+      >
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
           <TortoiseMorphSummary tortoises={tortoises} />
           <EggHatchChart breedings={breedings} />
         </div>
       </DashboardSection>
-      <DashboardSection title="Stok & Gudang" icon={Package}>
+
+      <DashboardSection
+        title="Stok & Gudang"
+        description="Peringatan stok menipis dan barang mendekati kadaluarsa"
+        icon={Package}
+      >
         <div className="space-y-4"><FeedStockAlert /><ExpiredItemAlert /></div>
       </DashboardSection>
+
       <IncompleteDataWidget />
       <HealthReminderAlert />
       <HatchReminderAlert />

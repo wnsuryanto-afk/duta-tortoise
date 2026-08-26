@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Shell, Menu, X, LogOut, Search } from "lucide-react";
+import { LayoutDashboard, Shell, Menu, X, LogOut, Search, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -34,7 +34,7 @@ export default function Sidebar({ viewAsRole = null, onOpenSearch }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2.5 rounded-xl bg-sidebar text-sidebar-foreground shadow-lg border border-sidebar-border"
+        className="fixed top-4 left-4 z-50 lg:hidden p-2.5 rounded-xl bg-sidebar text-sidebar-foreground shadow-lg border border-sidebar-border active:scale-95 transition-transform"
         aria-label="Buka menu"
       >
         <Menu className="w-4 h-4" />
@@ -52,9 +52,11 @@ export default function Sidebar({ viewAsRole = null, onOpenSearch }) {
         )}
       >
         {/* Logo */}
-        <div className="px-4 py-4 flex items-center justify-between border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
+        <div className="relative px-4 py-4 flex items-center justify-between border-b border-sidebar-border overflow-hidden">
+          {/* Cahaya samar di belakang logo — memberi kedalaman pada panel gelap */}
+          <div className="absolute -top-12 -left-8 w-40 h-40 rounded-full bg-sidebar-primary/20 blur-3xl pointer-events-none" />
+          <div className="relative flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sidebar-primary/35 to-sidebar-primary/10 border border-sidebar-primary/30 flex items-center justify-center flex-shrink-0 shadow-inner">
               <Shell className="w-[18px] h-[18px] text-sidebar-primary" />
             </div>
             <div>
@@ -64,7 +66,7 @@ export default function Sidebar({ viewAsRole = null, onOpenSearch }) {
           </div>
           <button
             onClick={close}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+            className="relative lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
             aria-label="Tutup menu"
           >
             <X className="w-4 h-4" />
@@ -77,13 +79,17 @@ export default function Sidebar({ viewAsRole = null, onOpenSearch }) {
             to="/"
             onClick={close}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all",
+              "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200",
               location.pathname === "/"
-                ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+                : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent hover:translate-x-0.5"
             )}
           >
-            <LayoutDashboard className="w-[18px] h-[18px] flex-shrink-0" />
+            {/* Batang penanda halaman aktif — lebih cepat dipindai daripada warna latar saja */}
+            {location.pathname === "/" && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-sidebar-primary-foreground/80" />
+            )}
+            <LayoutDashboard className="w-[18px] h-[18px] flex-shrink-0 transition-transform group-hover:scale-110" />
             <span className="flex-1">Beranda</span>
           </Link>
 
@@ -96,14 +102,21 @@ export default function Sidebar({ viewAsRole = null, onOpenSearch }) {
                 to={s.hub}
                 onClick={close}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all",
+                  "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200",
                   active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent hover:translate-x-0.5"
                 )}
               >
-                <Icon className={cn("w-[18px] h-[18px] flex-shrink-0", !active && s.color)} />
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-sidebar-primary-foreground/80" />
+                )}
+                <Icon className={cn("w-[18px] h-[18px] flex-shrink-0 transition-transform group-hover:scale-110", !active && s.color)} />
                 <span className="flex-1">{s.label}</span>
+                <ChevronRight className={cn(
+                  "w-3.5 h-3.5 flex-shrink-0 transition-all",
+                  active ? "opacity-70" : "opacity-0 -translate-x-1 group-hover:opacity-40 group-hover:translate-x-0"
+                )} />
               </Link>
             );
           })}

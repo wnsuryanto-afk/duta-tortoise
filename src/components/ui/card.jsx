@@ -2,10 +2,18 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef(({ className, ...props }, ref) => (
+/**
+ * `interactive` menambah efek terangkat saat kursor lewat — dipakai untuk
+ * kartu yang bisa diklik, agar terlihat bahwa ia menuju ke suatu tempat.
+ */
+const Card = React.forwardRef(({ className, interactive = false, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+    className={cn(
+      "rounded-xl border bg-card text-card-foreground shadow transition-shadow",
+      interactive && "hover-lift cursor-pointer",
+      className
+    )}
     {...props} />
 ))
 Card.displayName = "Card"

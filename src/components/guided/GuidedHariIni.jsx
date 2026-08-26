@@ -17,6 +17,7 @@ import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel
 import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
+import { LeafPattern } from "@/components/common/Illustration";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -731,18 +732,80 @@ export default function GuidedHariIni({ user }) {
 
   return (
     <div className="pb-6">
-      {/* ── HEADER ── */}
-      <div className="bg-green-700 text-white px-5 pt-10 pb-5">
-        <p className="text-green-200 text-sm">{getSalam()},</p>
-        <h1 className="text-xl font-bold mt-0.5 flex items-center justify-between">
-          <span>{user?.full_name?.split(" ")[0] || "Keeper"} 👋</span>
-          {totalPoin > 0 && (
-            <span className="flex items-center gap-1 bg-green-600/60 px-3 py-1 rounded-full text-sm font-semibold">
-              <Star className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" /> {totalPoin} poin
+      {/* ── HEADER ──
+          Keeper membuka layar ini puluhan kali sehari, hampir selalu sambil
+          berdiri di kandang. Karena itu kemajuan hari ini ditaruh di header:
+          berapa kandang beres, berapa poin terkumpul, sudah absen atau belum —
+          semuanya terbaca dalam satu pandangan tanpa perlu menggulir. */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-green-700 via-green-700 to-green-800 text-white px-5 pt-10 pb-5">
+        <LeafPattern className="text-white opacity-[0.07]" />
+        {/* Cahaya samar — memberi kedalaman pada blok warna datar */}
+        <div className="absolute -top-16 -right-10 w-56 h-56 rounded-full bg-lime-300/15 blur-3xl pointer-events-none" />
+
+        <div className="relative">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-green-200 text-sm">{getSalam()},</p>
+              <h1 className="text-xl font-bold mt-0.5 truncate">
+                {user?.full_name?.split(" ")[0] || "Keeper"} 👋
+              </h1>
+              <p className="text-green-200/90 text-xs mt-1 capitalize">{todayLabel}</p>
+            </div>
+
+            {/* Cincin kemajuan kandang — bentuk lingkaran lebih cepat dibaca
+                daripada tulisan "3/8" saat layar dilirik sekilas. */}
+            {KANDANG_LIST.length > 0 && (
+              <div className="relative flex-shrink-0 w-[62px] h-[62px]">
+                <svg viewBox="0 0 62 62" className="w-full h-full -rotate-90">
+                  <circle cx="31" cy="31" r="26" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="6" />
+                  <circle
+                    cx="31" cy="31" r="26" fill="none"
+                    stroke={settledKandangCount >= KANDANG_LIST.length ? "#bef264" : "#ffffff"}
+                    strokeWidth="6" strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 26}
+                    strokeDashoffset={2 * Math.PI * 26 * (1 - settledKandangCount / KANDANG_LIST.length)}
+                    style={{ transition: "stroke-dashoffset .9s cubic-bezier(.16,1,.3,1)" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+                  <span className="text-sm font-bold tabular">
+                    {settledKandangCount}<span className="opacity-60">/{KANDANG_LIST.length}</span>
+                  </span>
+                  <span className="text-[8px] text-green-100/80 mt-0.5">kandang</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Ringkasan hari ini — angka yang paling sering ditanyakan keeper */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-4">
+            <span className="inline-flex items-center gap-1 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold">
+              <Star className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" />
+              {totalPoin} poin
             </span>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+              hasCheckedIn ? "bg-lime-300/25 text-lime-100" : "bg-amber-300/25 text-amber-100"
+            }`}>
+              <Clock className="w-3.5 h-3.5" />
+              {hasCheckedIn ? `Masuk ${attendance.check_in}` : "Belum absen"}
+            </span>
+            {sickTortoises.length > 0 && (
+              <span className="inline-flex items-center gap-1 bg-red-400/30 text-red-50 px-2.5 py-1 rounded-full text-xs font-semibold">
+                <Heart className="w-3.5 h-3.5" />
+                {sickTortoises.length} kura sakit
+              </span>
+            )}
+          </div>
+
+          {/* Rincian poin — supaya jelas dari mana angkanya, bukan angka gaib */}
+          {totalPoin > 0 && (
+            <p className="text-[11px] text-green-200/80 mt-2">
+              {poinCheckin > 0 && `Absen ${poinCheckin}`}
+              {poinKandang > 0 && `${poinCheckin > 0 ? " · " : ""}Kandang ${poinKandang}`}
+              {poinKura > 0 && `${poinCheckin > 0 || poinKandang > 0 ? " · " : ""}Lapor sakit ${poinKura}`}
+            </p>
           )}
-        </h1>
-        <p className="text-green-200 text-xs mt-1 capitalize">{todayLabel}</p>
+        </div>
       </div>
 
       {/* ── POIN FLASH ── */}

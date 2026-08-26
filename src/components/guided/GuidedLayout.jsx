@@ -145,7 +145,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
       <SakitFormDialog open={sakitOpen} onClose={() => setSakitOpen(false)} user={user} />
 
       {/* ── Bottom navigation ── */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 z-40 shadow-[0_-2px_16px_rgba(0,0,0,0.08)]">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-gray-200 z-40 shadow-[0_-2px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
         <div className="flex">
           {NAV_ITEMS.map(item => {
             const Icon = item.icon;
@@ -155,12 +155,28 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
               <button
                 key={item.id}
                 onClick={() => handleNav(item)}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors active:scale-95",
+                  "relative flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all active:scale-90",
                   isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-gray-400 hover:text-gray-600"
                 )}
               >
-                <Icon className={cn("w-[18px] h-[18px]", isSakit && "fill-red-50")} />
+                {/* Garis di atas ikon menandai halaman aktif — di layar sentuh,
+                    perbedaan warna saja sering luput terlihat. */}
+                {isActive && !isSakit && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-b-full bg-green-600" />
+                )}
+                <span className={cn(
+                  "flex items-center justify-center rounded-xl transition-all",
+                  isActive && !isSakit ? "bg-green-50 px-3 py-1 -my-0.5" : "px-3 py-1 -my-0.5",
+                  isSakit && "bg-red-50 px-3 py-1 -my-0.5"
+                )}>
+                  <Icon className={cn(
+                    "w-[18px] h-[18px] transition-transform",
+                    isActive && "scale-110",
+                    isSakit && "fill-red-100"
+                  )} />
+                </span>
                 <span className={cn(
                   "text-[9px] font-semibold leading-none",
                   isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-gray-400"
