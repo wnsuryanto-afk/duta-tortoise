@@ -14,6 +14,7 @@ import { categorizeFinding } from "@/lib/temuanCategorize";
 import HarusDibeliWidget from "@/components/dashboard/HarusDibeliWidget";
 import ToolLoanWidget from "@/components/dashboard/ToolLoanWidget";
 import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
+import KeputusanHariIni from "@/components/dashboard/KeputusanHariIni";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -27,11 +28,6 @@ export default function RingkasanPagi() {
   const { data: tortoises = [], isLoading: tLoading } = useQuery({
     queryKey: ["owner-tortoises"],
     queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
-    staleTime: 5 * 60 * 1000,
-  });
-  const { data: warehouse = [], isLoading: wLoading } = useQuery({
-    queryKey: ["owner-warehouse"],
-    queryFn: () => base44.entities.WarehouseItem.list("-name", 50),
     staleTime: 5 * 60 * 1000,
   });
   const { data: incidental = [], isLoading: iLoading } = useQuery({
@@ -108,7 +104,6 @@ export default function RingkasanPagi() {
   const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
   const activeTortoises = tortoises.filter(t => t.status === "aktif" && !t.is_archived);
   const waitingMaterials = incidental.filter(t => t.status === "pending" && t.material_status === "waiting_materials").length;
-  const lowStock = warehouse.filter(i => i.is_mandatory && (i.current_stock || 0) < (i.minimum_stock || 0));
   const saldoKas = ledger.length > 0 ? Math.round(ledger[0].balance_after || 0) : 0;
 
   const activeSales = sales.filter(s => !s.excluded_from_reports);
@@ -138,14 +133,32 @@ export default function RingkasanPagi() {
   const checkedInEmails = new Set(checkedIn.map(a => a.employee_email).filter(Boolean));
   const belumMasuk = staff.filter(u => !checkedInEmails.has(u.email));
 
-  const attentionLoading = tLoading || wLoading || iLoading;
+  const attentionLoading = tLoading || iLoading;
+  // Bobot dibedakan: kura sakit menyangkut hewan hidup, barang menunggu kiriman
+  // bisa ditangani minggu depan. Sebelumnya kelimanya dirender merah identik,
+  // sehingga merah berhenti berarti darurat dan mata belajar mengabaikannya.
   const attention = [
-    { count: sickTortoises.length, icon: "🤒", label: "Kura sakit", href: "/health" },
-    { count: pendingToolReqs.length, icon: "🔴", label: "Barang rusak", href: "/alat-kerja" },
-    { count: waitingMaterials, icon: "⏳", label: "Menunggu barang", href: "/daftar-belanja" },
-    { count: lowStock.length, icon: "⚠️", label: "Stok di bawah min", href: "/dashboard-stok" },
-    { count: kuraDiamMerah, icon: "🔍", label: "Kura diam >90 hari", href: "/kura-diam" },
+    { count: sickTortoises.length, icon: "🤒", label: "Kura sakit", href: "/health", bobot: "gawat" },
+    { count: kuraDiamMerah, icon: "🔍", label: "Kura diam >90 hari", href: "/kura-diam", bobot: "waspada" },
+    { count: pendingToolReqs.length, icon: "🔴", label: "Barang rusak", href: "/alat-kerja", bobot: "waspada" },
+    { count: waitingMaterials, icon: "⏳", label: "Menunggu barang", href: "/daftar-belanja", bobot: "kabar" },
   ].filter(a => a.count > 0);
+
+  const GAYA_BOBOT = {
+    gawat:   "bg-red-50 border-red-200 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-900",
+    waspada: "bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/30 dark:border-amber-900",
+    kabar:   "bg-muted/50 border-border hover:bg-muted",
+  };
+  const GAYA_ANGKA = {
+    gawat:   "text-red-600 dark:text-red-400",
+    waspada: "text-amber-600 dark:text-amber-400",
+    kabar:   "text-foreground",
+  };
+  const GAYA_LABEL = {
+    gawat:   "text-red-700 dark:text-red-300/80",
+    waspada: "text-amber-700 dark:text-amber-300/80",
+    kabar:   "text-muted-foreground",
+  };
 
   const segeraBatches = breedings.filter(b => isBatchSegera(b, now));
 
@@ -153,8 +166,11 @@ export default function RingkasanPagi() {
 
   return (
     <div className="space-y-3">
+      {/* 0. LAPIS KEPUTUSAN — hal yang bisa dituntaskan dari layar ini juga */}
+      <KeputusanHariIni />
+
       {/* HEADER */}
-      <div>
+      <div className="pt-1">
         <h2 className="text-lg font-bold font-heading flex items-center gap-1.5">
           ☀️ Ringkasan Pagi
         </h2>
@@ -172,9 +188,13 @@ export default function RingkasanPagi() {
       ) : (
         <div className={`grid gap-2 ${attention.length === 1 ? "grid-cols-1" : attention.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
           {attention.map((a, i) => (
-            <Link key={i} to={a.href} className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center hover:bg-red-100 transition-colors">
-              <p className="text-xl font-bold text-red-600 leading-none">{a.count}</p>
-              <p className="text-[10px] text-red-700 leading-tight mt-1">{a.icon} {a.label}</p>
+            <Link
+              key={i}
+              to={a.href}
+              className={`border rounded-xl p-2.5 text-center transition-colors ${GAYA_BOBOT[a.bobot]}`}
+            >
+              <p className={`text-xl font-bold leading-none tabular ${GAYA_ANGKA[a.bobot]}`}>{a.count}</p>
+              <p className={`text-[10px] leading-tight mt-1 ${GAYA_LABEL[a.bobot]}`}>{a.icon} {a.label}</p>
             </Link>
           ))}
         </div>

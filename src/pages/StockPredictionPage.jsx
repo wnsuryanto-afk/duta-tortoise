@@ -1,25 +1,23 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Package, Leaf, Clock, CheckCircle2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Package, Leaf, Clock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import { subDays, parseISO, isAfter } from "date-fns";
+import { hitungSisaHari, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 
 function urgencyLabel(days) {
   if (days === null || days === Infinity) return { label: "—", color: "text-muted-foreground bg-muted border-border", icon: null };
   if (days < 0) return { label: "Stok Habis!", color: "text-red-700 bg-red-100 border-red-200", icon: "🚨" };
-  if (days < 7) return { label: `${Math.round(days)} hari — Segera Restock!`, color: "text-red-700 bg-red-100 border-red-200", icon: "🔴" };
+  if (days <= AMBANG_GAWAT_HARI) return { label: `${Math.round(days)} hari — Segera Restock!`, color: "text-red-700 bg-red-100 border-red-200", icon: "🔴" };
+  if (days < 7) return { label: `${Math.round(days)} hari — Perlu Dipesan`, color: "text-amber-700 bg-amber-100 border-amber-200", icon: "🟠" };
   if (days < 14) return { label: `${Math.round(days)} hari — Perhatian`, color: "text-amber-700 bg-amber-100 border-amber-200", icon: "🟡" };
   return { label: `${Math.round(days)} hari — Aman`, color: "text-green-700 bg-green-100 border-green-200", icon: "🟢" };
 }
 
-function StockCard({ item, estimatedDays, type }) {
+function StockCard({ item, estimatedDays }) {
   const u = urgencyLabel(estimatedDays);
 
   return (
@@ -69,35 +67,8 @@ export default function StockPredictionPage() {
     queryFn: () => base44.entities.WarehouseTransaction.list("-created_date", 300),
   });
 
-  const computeEstimatedDays = (item) => {
-    if (!item.current_stock || item.current_stock <= 0) return -1;
-
-    // Find consumption transactions in last 30 days
-    const thirtyDaysAgo = subDays(new Date(), 30);
-    const consumedTx = transactions.filter(t => {
-      if (t.item_id !== item.id && t.item_name !== item.name) return false;
-      if (t.transaction_type !== "keluar" && t.transaction_type !== "pakai") return false;
-      try {
-        const d = parseISO(t.created_date || t.date);
-        return isAfter(d, thirtyDaysAgo);
-      } catch { return false; }
-    });
-
-    const totalConsumed = consumedTx.reduce((s, t) => s + Math.abs(t.quantity || 0), 0);
-    const avgDaily = totalConsumed / 30;
-
-    if (avgDaily <= 0) {
-      // fallback: use daily_ideal if available
-      const daily = item.daily_ideal || 0;
-      if (daily > 0) return item.current_stock / daily;
-      return Infinity; // no consumption data
-    }
-
-    return item.current_stock / avgDaily;
-  };
-
   const warehouseWithDays = useMemo(() =>
-    warehouseItems.map(i => ({ ...i, estimatedDays: computeEstimatedDays(i) }))
+    warehouseItems.map(i => ({ ...i, estimatedDays: hitungSisaHari(i, transactions) }))
       .sort((a, b) => {
         const da = a.estimatedDays === Infinity ? 9999 : a.estimatedDays;
         const db = b.estimatedDays === Infinity ? 9999 : b.estimatedDays;
