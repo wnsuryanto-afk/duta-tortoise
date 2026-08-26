@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
+import { tulisInduk } from "@/lib/silsilah";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Egg, Loader2, Baby, CheckCircle2, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
@@ -197,11 +198,16 @@ export default function HatchDialog({ open, onClose, breeding }) {
   const handleSave = async () => {
     setSaving(true);
 
+    // Hatch rate ikut disimpan. Sebelumnya hanya tombol "Selesaikan Inkubasi"
+    // yang mengisinya, jadi clutch yang ditutup dari sini tidak pernah
+    // menampilkan angka keberhasilannya di kartu mana pun.
+    const jumlahTelur = Number(breeding.egg_count) || 0;
     await base44.entities.Breeding.update(breeding.id, {
       hatched_count: hatchedCount,
       failed_count: Number(failed) || 0,
       status: "menetas",
       hatch_date: hatchDate,
+      hatch_rate: jumlahTelur > 0 ? Math.round((hatchedCount / jumlahTelur) * 100) : 0,
     });
 
     let newBabies = [];
@@ -212,8 +218,16 @@ export default function HatchDialog({ open, onClose, breeding }) {
         status: "baby",
         gender: b.gender || "belum_diketahui",
         birth_date: hatchDate,
-        parent_male: breeding.male_id || null,
-        parent_female: breeding.female_id || null,
+        // `breeding.male_id || null` menghapus tautannya sama sekali bila
+        // induknya belum terdaftar sebagai kura. Namanya dipakai sebagai jalan
+        // terakhir supaya silsilahnya tidak hilang begitu saja.
+        parent_male: tulisInduk(breeding.male_id, breeding.male_name),
+        parent_female: tulisInduk(breeding.female_id, breeding.female_name),
+        // Tautan langsung ke clutch-nya. Tanpa ini, satu-satunya cara
+        // menemukan bayi ini sebagai keturunan clutch-nya adalah menebak dari
+        // pasangan induknya — dan itu keliru begitu pasangan yang sama
+        // bertelur lebih dari sekali.
+        last_breeding_id: breeding.id,
         enclosure: b.enclosure || undefined,
         shell_type: b.shell_type || "normal",
         weight_grams: b.weight_grams ? Number(b.weight_grams) : undefined,

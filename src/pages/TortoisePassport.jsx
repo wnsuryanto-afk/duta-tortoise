@@ -4,6 +4,7 @@ import { format, differenceInMonths, differenceInYears } from "date-fns";
 import { id } from "date-fns/locale";
 import { Shell, Share2, Download, Copy, CheckCircle, QrCode, ChevronLeft, ChevronRight } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { petaKura, keteranganInduk } from "@/lib/silsilah";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -92,6 +93,27 @@ function PhotoCarousel({ photos }) {
   );
 }
 
+/**
+ * Cari kura dari satu rujukan induk lewat ketiga bentuk penyimpanannya.
+ *
+ * Hasil pencarian nama dikembalikan APA ADANYA — termasuk bila ada lebih dari
+ * satu kura bernama sama. `petaKura` yang kemudian menandainya sebagai nama
+ * ganda dan menolak menebak salah satunya.
+ */
+async function cariKuraLewatRujukan(rujukan) {
+  const r = String(rujukan || "").trim();
+  if (!r) return [];
+  for (const kunci of ["id", "code", "name"]) {
+    try {
+      const hasil = await base44.entities.Tortoise.filter({ [kunci]: r }, "-created_date", 5);
+      if (hasil?.length) return hasil;
+    } catch {
+      // Bentuk berikutnya masih layak dicoba.
+    }
+  }
+  return [];
+}
+
 export default function TortoisePassport() {
   const params = new URLSearchParams(window.location.search);
   const tortoiseId = params.get("id");
@@ -102,6 +124,7 @@ export default function TortoisePassport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [indukPeta, setIndukPeta] = useState(null);
 
   useEffect(() => {
     if (!tortoiseId) { setError("ID kura tidak ditemukan"); setLoading(false); return; }
@@ -110,18 +133,50 @@ export default function TortoisePassport() {
       base44.entities.MeasurementHistory.filter({ tortoise_id: tortoiseId }, "-date", 12),
       base44.entities.HealthRecord.filter({ tortoise_id: tortoiseId }, "-date", 5),
       base44.entities.CompanySettings.filter({ setting_key: "main" }).then(r => r[0]),
-    ]).then(([t, m, h, s]) => {
+    ]).then(async ([t, m, h, s]) => {
       if (!t) { setError("Data kura tidak ditemukan"); setLoading(false); return; }
       setTortoise(t);
       setMeasurements(m || []);
       setHealthRecords(h || []);
       setSettings(s || {});
+
+      // Rujukan induk bisa berupa id, kode, atau nama tergantung layar mana
+      // yang mencatat penetasannya. Paspor ini dicetak dan dibawa pembeli:
+      // mencetak nilainya mentah-mentah — seperti sebelumnya — bisa memuat ID
+      // basis data di tempat nama ayahnya. Karena itu induknya dicari dulu.
+      //
+      // Hanya kedua induknya yang diambil, bukan seluruh kura: halaman ini
+      // sering dibuka pembeli dari pemindaian QR di ponsel, dan menarik ribuan
+      // catatan demi dua nama bukan pertukaran yang sepadan.
+      const rujukan = [t.parent_male, t.parent_female].filter(Boolean);
+      if (rujukan.length > 0) {
+        try {
+          const hasil = await Promise.all(rujukan.map(cariKuraLewatRujukan));
+          setIndukPeta(petaKura(hasil.flat()));
+        } catch {
+          // Paspornya tetap tampil; bagian silsilah jatuh ke rujukan mentah
+          // yang masih terbaca manusia, dan menyembunyikan yang berupa ID.
+        }
+      }
       setLoading(false);
     }).catch(e => {
       setError("Gagal memuat data passport");
       setLoading(false);
     });
   }, [tortoiseId]);
+
+  // Keterangan induk yang layak dicetak. Rujukan yang tidak ketemu dan
+  // berbentuk ID sengaja tidak ditampilkan sama sekali: mencetak deretan
+  // karakter basis data di paspor pembeli lebih buruk daripada tidak mencetak
+  // apa pun.
+  const ayah = (() => {
+    const k = keteranganInduk(tortoise?.parent_male, indukPeta);
+    return { ...k, tampil: !!k.teks };
+  })();
+  const ibu = (() => {
+    const k = keteranganInduk(tortoise?.parent_female, indukPeta);
+    return { ...k, tampil: !!k.teks };
+  })();
 
   const passportUrl = window.location.href;
   const certNumber = tortoise ? `DT-${new Date().getFullYear()}-${(tortoise.code || tortoise.id?.slice(-6)).toUpperCase()}` : "";
@@ -258,20 +313,22 @@ export default function TortoisePassport() {
         </div>
 
         {/* ── SILSILAH ── */}
-        {(tortoise.parent_male || tortoise.parent_female) && (
+        {(ayah.tampil || ibu.tampil) && (
           <div className="bg-green-800/40 rounded-2xl border border-green-700/30 p-4">
             <h2 className="text-sm font-bold text-green-300 uppercase tracking-wide mb-3">Silsilah (CBB)</h2>
             <div className="grid grid-cols-2 gap-3">
-              {tortoise.parent_male && (
+              {ayah.tampil && (
                 <div className="bg-blue-900/30 rounded-xl p-3">
                   <p className="text-[10px] text-blue-300 uppercase tracking-wide">♂ Ayah</p>
-                  <p className="font-semibold mt-0.5">{tortoise.parent_male}</p>
+                  <p className="font-semibold mt-0.5">{ayah.teks}</p>
+                  {ayah.kura?.code && <p className="text-[10px] text-blue-200/70 mt-0.5">{ayah.kura.code}</p>}
                 </div>
               )}
-              {tortoise.parent_female && (
+              {ibu.tampil && (
                 <div className="bg-pink-900/30 rounded-xl p-3">
                   <p className="text-[10px] text-pink-300 uppercase tracking-wide">♀ Ibu</p>
-                  <p className="font-semibold mt-0.5">{tortoise.parent_female}</p>
+                  <p className="font-semibold mt-0.5">{ibu.teks}</p>
+                  {ibu.kura?.code && <p className="text-[10px] text-pink-200/70 mt-0.5">{ibu.kura.code}</p>}
                 </div>
               )}
             </div>

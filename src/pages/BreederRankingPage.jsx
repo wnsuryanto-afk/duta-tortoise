@@ -11,6 +11,7 @@ import { Trophy, TrendingUp, Egg, Award, ChevronDown, X } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import { ringkasProduksi, adaHasil } from "@/lib/hasilInkubasi";
 
 const currentYear = new Date().getFullYear();
 
@@ -73,7 +74,7 @@ function PairDetailModal({ pair, history, onClose }) {
             ) : (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {clutches.map((c, i) => {
-                  const hr = c.egg_count > 0 ? ((c.hatched_count || 0) / c.egg_count) * 100 : 0;
+                  const hr = ringkasProduksi([c]).hatchRate;
                   return (
                     <div key={c.id} className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-lg text-xs">
                       <div>
@@ -82,7 +83,7 @@ function PairDetailModal({ pair, history, onClose }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <span>{c.egg_count} telur</span>
-                        {c.status === "menetas" && <HatchRateBadge rate={hr} />}
+                        {adaHasil(c) && <HatchRateBadge rate={hr} />}
                         <Badge variant="outline" className="text-[10px]">{c.status}</Badge>
                       </div>
                     </div>
@@ -187,11 +188,11 @@ export default function BreederRankingPage() {
 
     return Object.values(map).map(p => {
       const allTime = breedings.filter(b => b.male_name === p.maleName && b.female_name === p.femaleName);
-      const completed = p.clutches.filter(c => c.status === "menetas");
-      const totalEggs = p.clutches.reduce((s, c) => s + (c.egg_count || 0), 0);
-      const totalHatched = completed.reduce((s, c) => s + (c.hatched_count || 0), 0);
-      const totalEggsForHatch = completed.reduce((s, c) => s + (c.egg_count || 0), 0);
-      const hatchRate = totalEggsForHatch > 0 ? (totalHatched / totalEggsForHatch) * 100 : 0;
+      // Clutch yang ditutup lewat "Selesaikan Inkubasi" berstatus "selesai",
+      // bukan "menetas". Menghitung "menetas" saja membuat pasangan yang
+      // clutch-nya ditutup dari layar telur ber-hatch-rate 0% — padahal
+      // telurnya menetas.
+      const { totalTelur: totalEggs, totalMenetas: totalHatched, hatchRate } = ringkasProduksi(p.clutches);
       const clutchesThisYear = p.clutches.filter(c => c.season_year === currentYear || c.egg_laying_date?.startsWith(String(currentYear))).length;
       const clutchPerYear = allTime.length > 0 ? allTime.length / Math.max(1, yearOptions.length) : 0;
 
@@ -223,11 +224,7 @@ export default function BreederRankingPage() {
       maleMap[b.male_name].push(b);
     });
     return Object.entries(maleMap).map(([name, clutches]) => {
-      const completed = clutches.filter(c => c.status === "menetas");
-      const totalEggs = clutches.reduce((s,c) => s+(c.egg_count||0),0);
-      const totalHatched = completed.reduce((s,c) => s+(c.hatched_count||0),0);
-      const totalEggsForHatch = completed.reduce((s,c) => s+(c.egg_count||0),0);
-      const hatchRate = totalEggsForHatch > 0 ? (totalHatched/totalEggsForHatch)*100 : 0;
+      const { totalTelur: totalEggs, totalMenetas: totalHatched, hatchRate } = ringkasProduksi(clutches);
       const clutchPerYear = clutches.length / Math.max(1, yearOptions.length);
       const normalizedEggs = Math.min(100, (totalEggs/50)*100);
       const normalizedClutch = Math.min(100, (clutchPerYear/3)*100);
@@ -243,11 +240,7 @@ export default function BreederRankingPage() {
       femaleMap[b.female_name].push(b);
     });
     return Object.entries(femaleMap).map(([name, clutches]) => {
-      const completed = clutches.filter(c => c.status === "menetas");
-      const totalEggs = clutches.reduce((s,c) => s+(c.egg_count||0),0);
-      const totalHatched = completed.reduce((s,c) => s+(c.hatched_count||0),0);
-      const totalEggsForHatch = completed.reduce((s,c) => s+(c.egg_count||0),0);
-      const hatchRate = totalEggsForHatch > 0 ? (totalHatched/totalEggsForHatch)*100 : 0;
+      const { totalTelur: totalEggs, totalMenetas: totalHatched, hatchRate } = ringkasProduksi(clutches);
       const clutchPerYear = clutches.length / Math.max(1, yearOptions.length);
       const normalizedEggs = Math.min(100, (totalEggs/50)*100);
       const normalizedClutch = Math.min(100, (clutchPerYear/3)*100);

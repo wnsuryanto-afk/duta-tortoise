@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Shell, Baby } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { petaKura, cariInduk, cariKeturunan } from "@/lib/silsilah";
 
 const GENDER_BG = {
   jantan: "bg-blue-100 border-blue-300 text-blue-800",
@@ -54,26 +55,12 @@ function ConnectorLine({ horizontal = false }) {
 }
 
 export default function TortoiseLineagePanel({ tortoise, allTortoises }) {
-  // Code-based lookup (parent_male/parent_female menyimpan KODE, bukan nama)
-  const tortoiseByCode = useMemo(() => {
-    const map = {};
-    allTortoises.forEach(t => { if (t.code) map[t.code] = t; });
-    return map;
-  }, [allTortoises]);
-
-  // ID-based fallback
-  const tortoiseById = useMemo(() => {
-    const map = {};
-    allTortoises.forEach(t => { map[t.id] = t; });
-    return map;
-  }, [allTortoises]);
-
-  function findParent(ref) {
-    if (!ref) return null;
-    if (tortoiseByCode[ref]) return tortoiseByCode[ref];
-    if (tortoiseById[ref]) return tortoiseById[ref];
-    return null;
-  }
+  // Rujukan induk bisa berupa id, kode, ATAU nama — tiga layar pencatat menulis
+  // tiga bentuk yang berbeda. Pencarian lama hanya mencoba kode lalu id,
+  // sehingga bayi yang dicatat dari kartu telur (yang menulis nama) tidak
+  // pernah punya silsilah sama sekali.
+  const peta = useMemo(() => petaKura(allTortoises), [allTortoises]);
+  const findParent = (ref) => cariInduk(ref, peta);
 
   const father = findParent(tortoise.parent_male);
   const mother = findParent(tortoise.parent_female);
@@ -87,21 +74,20 @@ export default function TortoiseLineagePanel({ tortoise, allTortoises }) {
   const hasParents = !!(tortoise.parent_male || tortoise.parent_female);
   const hasGrandparents = father?.parent_male || father?.parent_female || mother?.parent_male || mother?.parent_female;
 
-  // Keturunan: cari tortoise yang parent_male/parent_female = CODE dari kura ini
-  const children = useMemo(() => {
-    const code = tortoise.code;
-    if (!code) return [];
-    return allTortoises.filter(t =>
-      t.parent_male === code || t.parent_female === code
-    );
-  }, [allTortoises, tortoise.code]);
+  // Keturunan dicari lewat rujukan apa pun bentuknya. Versi lama mencocokkan
+  // KODE saja, dan tidak satu pun layar pencatat penetasan menulis kode ke
+  // sana — jadi kolom keturunan selalu kosong untuk semua kura.
+  const children = useMemo(
+    () => cariKeturunan(tortoise, allTortoises, peta),
+    [tortoise, allTortoises, peta]
+  );
 
   if (!hasParents && children.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <Shell className="w-10 h-10 mx-auto mb-2 opacity-20" />
         <p className="text-sm">Belum ada data silsilah untuk kura ini.</p>
-        <p className="text-xs mt-1">Isi field parent_male / parent_female di profil kura untuk menampilkan silsilah.</p>
+        <p className="text-xs mt-1">Silsilah terisi otomatis saat telur dicatat menetas. Untuk kura yang datang dari luar, induknya memang tidak tercatat.</p>
       </div>
     );
   }

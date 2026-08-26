@@ -13,6 +13,7 @@ import {
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
+import { petaKura, dariClutch } from "@/lib/silsilah";
 
 export default function DeleteConfirmDialog({ entityType, entityId, entityName, open, onOpenChange, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -40,12 +41,14 @@ export default function DeleteConfirmDialog({ entityType, entityId, entityName, 
           breeding: breeding.length,
         });
       } else if (entityType === "Breeding") {
-        const babies = await base44.entities.Tortoise.filter({
-          $or: [
-            { parent_male: entityName?.male_name },
-            { parent_female: entityName?.female_name }
-          ]
-        });
+        // Pengaman ini dulu mencari induk lewat NAMA saja. Bayi yang dicatat
+        // dari dialog "Catat Hasil Menetas" menyimpan ID induknya, jadi
+        // clutch-nya bisa dihapus tanpa satu pun peringatan bahwa bayinya
+        // masih ada. Sekarang seluruh kura diperiksa lewat rujukan apa pun
+        // bentuknya — id, kode, maupun nama.
+        const semua = await base44.entities.Tortoise.list("-created_date", 1000);
+        const peta = petaKura(semua);
+        const babies = semua.filter((t) => dariClutch(t, entityName, peta));
         setRelatedData({ babies: babies.length });
       } else if (entityType === "Enclosure") {
         const tortoises = await base44.entities.Tortoise.filter({ enclosure: entityId });

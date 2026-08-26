@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { petaKura, dariClutch } from "@/lib/silsilah";
 import { base44 } from "@/api/base44Client";
 import { Shell, Baby } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -24,16 +26,15 @@ export default function ClutchOffspringSection({ breeding }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Ambil anak dari egg_records yang punya tortoise_id
-  const registeredIds = (breeding.egg_records || [])
-    .filter(e => e.tortoise_id)
-    .map(e => e.tortoise_id);
-
-  // Fallback: cari dari parent_male/female = nama induk
-  const offspring = tortoises.filter(t =>
-    registeredIds.includes(t.id) ||
-    (t.last_breeding_id === breeding.id) ||
-    (t.parent_male === breeding.male_name && t.parent_female === breeding.female_name && t.source === "hasil_sendiri")
+  // Tiga tautan diperiksa berurutan — nomor telur, clutch terakhir, lalu
+  // pasangan induknya — karena jalur pencatatan yang berbeda mengisi tautan
+  // yang berbeda. Pencocokan induk lama membandingkan NAMA secara harfiah,
+  // sehingga bayi dari dialog "Catat Hasil Menetas" (yang menyimpan ID induk)
+  // tidak pernah muncul sebagai keturunan clutch-nya sendiri.
+  const peta = useMemo(() => petaKura(tortoises), [tortoises]);
+  const offspring = useMemo(
+    () => tortoises.filter(t => dariClutch(t, breeding, peta)),
+    [tortoises, breeding, peta]
   );
 
   if (offspring.length === 0) return null;

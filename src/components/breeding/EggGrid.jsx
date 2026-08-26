@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { tulisInduk } from "@/lib/silsilah";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { differenceInDays } from "date-fns";
@@ -384,8 +385,12 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
       status: "aktif",
       age_category: "baby",
       enclosure: form.enclosure,
-      parent_male: breeding.male_name,
-      parent_female: breeding.female_name,
+      // ID induk, bukan namanya. Nama ikut berubah saat kura diganti nama dan
+      // sambungan silsilahnya lepas tanpa peringatan; ID tidak. Bila induknya
+      // memang belum terdaftar sebagai kura, namanya tetap dipakai supaya
+      // penetasan masih bisa dicatat.
+      parent_male: tulisInduk(breeding.male_id, breeding.male_name),
+      parent_female: tulisInduk(breeding.female_id, breeding.female_name),
       last_breeding_id: breeding.id,
       weight_grams: form.weight_grams ? Number(form.weight_grams) : undefined,
       weighing_interval_days: 14,
