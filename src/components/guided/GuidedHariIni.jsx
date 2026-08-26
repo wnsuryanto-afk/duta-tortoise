@@ -19,6 +19,7 @@ import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
 import { LeafPattern } from "@/components/common/Illustration";
 import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
+import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -228,28 +229,7 @@ export default function GuidedHariIni({ user }) {
   // tidak ada pengingat perawatan sama sekali sampai dia mati atau sembuh sendiri.
   const { data: sickTortoises = [] } = useQuery({
     queryKey: ["sick-tortoises-today"],
-    queryFn: async () => {
-      const sick = await base44.entities.Tortoise.filter({ is_currently_sick: true }, "name", 100);
-      if (sick.length === 0) return [];
-      const hrs = await base44.entities.HealthRecord.list("-date", 200);
-      return sick.map((t) => {
-        const last = hrs.find((h) => h.tortoise_id === t.id && h.type === "sakit");
-        return {
-          id: t.id,
-          tortoise_id: t.id,
-          tortoise_name: t.name,
-          enclosure: t.enclosure,
-          // Dibawa agar kura baby kembali jadi baby setelah sembuh, bukan aktif
-          previous_status: t.previous_status,
-          status: t.status,
-          severity: last?.severity,
-          since: last?.date,
-          diagnosis_notes: last?.diagnosis_notes,
-          treatment: last?.treatment,
-          description: last?.description,
-        };
-      });
-    },
+    queryFn: () => ambilKuraSakitBerketerangan(200),
     staleTime: 5 * 60 * 1000,
     refetchInterval: false,
   });

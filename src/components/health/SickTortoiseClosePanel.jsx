@@ -4,13 +4,15 @@
  * tombol "Tandai Sembuh" agar status sakit tidak menggantung berbulan-bulan.
  *
  * Menjalankan alur yang sama dengan tombol "✓ Sudah Sembuh" di layar keeper:
- * membuat catatan jenis "sembuh", mengembalikan is_currently_sick=false,
- * status kura menjadi "aktif", dan riwayat kesehatan tetap utuh.
+ * membuat catatan jenis "sembuh", melepas centang sakitnya, dan mengembalikan
+ * statusnya ke keadaan sebelum sakit — kura baby kembali jadi baby, bukan
+ * "aktif". Riwayat kesehatan tetap utuh.
  */
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { perubahanSembuh } from "@/lib/statusKura";
+import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { format } from "date-fns";
 import { Heart, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -21,25 +23,7 @@ export default function SickTortoiseClosePanel({ user }) {
 
   const { data: sickTortoises = [] } = useQuery({
     queryKey: ["sick-tortoises-close-panel"],
-    queryFn: async () => {
-      const sick = await base44.entities.Tortoise.filter({ is_currently_sick: true }, "name", 200);
-      if (sick.length === 0) return [];
-      const hrs = await base44.entities.HealthRecord.list("-date", 200);
-      return sick.map((t) => {
-        const last = hrs.find((h) => h.tortoise_id === t.id && h.type === "sakit");
-        return {
-          id: t.id,
-          tortoise_id: t.id,
-          tortoise_name: t.name,
-          enclosure: t.enclosure,
-          severity: last?.severity,
-          since: last?.date,
-          diagnosis_notes: last?.diagnosis_notes,
-          treatment: last?.treatment,
-          description: last?.description,
-        };
-      });
-    },
+    queryFn: () => ambilKuraSakitBerketerangan(200),
     staleTime: 60 * 1000,
   });
 
@@ -132,7 +116,7 @@ export default function SickTortoiseClosePanel({ user }) {
         );
       })}
       <p className="text-[11px] text-red-500 flex items-center gap-1">
-        <CheckCircle2 className="w-3.5 h-3.5" /> Catatan "sembuh" akan dibuat & status kura kembali aktif.
+        <CheckCircle2 className="w-3.5 h-3.5" /> Catatan "sembuh" akan dibuat & status kura kembali seperti sebelum sakit.
       </p>
     </div>
   );

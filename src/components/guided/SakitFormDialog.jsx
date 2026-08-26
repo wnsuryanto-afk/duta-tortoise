@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { perubahanSakit } from "@/lib/statusKura";
 import { format } from "date-fns";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
 import SickTortoisePicker from "@/components/health/SickTortoisePicker";
@@ -110,9 +111,12 @@ export default function SakitFormDialog({ open, onClose, user }) {
       diagnosis_notes: diagNames,
     });
 
-    // Set is_currently_sick=true pada Tortoise
+    // Tandai kuranya sakit pada kedua penandanya sekaligus. Menulis status dan
+    // centang secara harfiah seperti sebelumnya tidak menyimpan status asalnya,
+    // sehingga kura baby yang sakit lalu sembuh kembali sebagai "aktif" dan
+    // klasifikasi baby-nya hilang untuk selamanya.
     try {
-      await base44.entities.Tortoise.update(kura, { is_currently_sick: true, status: "sakit" });
+      await base44.entities.Tortoise.update(kura, perubahanSakit(t, today));
     } catch {}
 
     qc.invalidateQueries({ queryKey: ["health-records"] });

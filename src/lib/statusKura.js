@@ -66,3 +66,146 @@ export function perubahanSakit(kura, tanggal) {
     last_status_change: tanggal || new Date().toISOString().split("T")[0],
   };
 }
+
+/**
+ * Status yang berarti kura tidak lagi dirawat di peternakan.
+ * Kura dengan status ini tidak mungkin "sedang sakit".
+ */
+export const STATUS_TUTUP = ["mati", "terjual", "diarsipkan"];
+
+/**
+ * SATU definisi "kura ini sedang sakit".
+ *
+ * Sakit ditandai dua kali di data kura: lewat `status` dan lewat centang
+ * `is_currently_sick`. Sebelas layar sudah membacanya dengan pola gabungan
+ * `status === "sakit" || is_currently_sick`, tapi Daftar Kura membacanya
+ * setengah-setengah — lencana "Sakit Saat Ini" menghitung centangnya saja,
+ * sedangkan penyaringnya membandingkan statusnya saja. Tombolnya menyebut satu
+ * angka, isinya kura yang lain, dan kura yang kedua penandanya berbeda tidak
+ * muncul di mana pun sehingga tidak bisa diperbaiki dari layar itu.
+ *
+ * Selama dua penanda itu masih ada, keduanya harus dibaca lewat fungsi ini.
+ */
+export function sedangSakit(kura) {
+  return kura?.status === "sakit" || !!kura?.is_currently_sick;
+}
+
+/** Apakah kedua penanda sakit sepakat? */
+export function tandaSelaras(kura) {
+  if (!kura) return true;
+  return (kura.status === "sakit") === !!kura.is_currently_sick;
+}
+
+/**
+ * Apa kata riwayat kesehatan: kasus terakhir masih terbuka atau sudah ditutup?
+ *
+ * Catatan "sakit" membuka kasus, catatan "sembuh" menutupnya. Jenis lain
+ * (checkup, obat, timbang) terjadi di tengah perawatan dan tidak memutuskan
+ * apa pun. Bila tanggal keduanya sama persis, riwayat tidak dianggap menjawab —
+ * menebak urutan dari dua catatan bertanggal sama bisa keliru.
+ *
+ * @returns {"sakit"|"sembuh"|null} null bila riwayat tidak menjawab.
+ */
+export function keputusanRiwayat(tortoiseId, healthRecords = []) {
+  if (!tortoiseId) return null;
+  let sakit = null;
+  let sembuh = null;
+  healthRecords.forEach((h) => {
+    if (!h || h.tortoise_id !== tortoiseId || !h.date) return;
+    if (h.type === "sakit") { if (!sakit || h.date > sakit) sakit = h.date; }
+    else if (h.type === "sembuh") { if (!sembuh || h.date > sembuh) sembuh = h.date; }
+  });
+  if (!sakit && !sembuh) return null;
+  if (sakit && sembuh && sakit === sembuh) return null;
+  if (!sembuh) return "sakit";
+  if (!sakit) return "sembuh";
+  return sakit > sembuh ? "sakit" : "sembuh";
+}
+
+/**
+ * Periksa keselarasan penanda sakit pada seluruh kura, tanpa mengubah apa pun.
+ *
+ * Dua penanda yang berselisih tidak selalu punya satu jawaban benar, jadi
+ * pemeriksaan ini memisahkan yang PASTI dari yang RAGU, dan hanya yang pasti
+ * yang boleh diperbaiki massal:
+ *
+ *   - nyalakan  — statusnya "sakit" tapi centangnya kosong. Statusnya sudah
+ *                 terlihat di kartu dan penghitung, centangnya tinggal menyusul.
+ *   - matikan   — centangnya terisi padahal kuranya sudah mati/terjual/
+ *                 diarsipkan, atau catatan sembuhnya sudah ada.
+ *   - sakitkan  — centangnya terisi dan catatan sakit terakhir belum ditutup,
+ *                 tapi statusnya bukan "sakit".
+ *   - sembuhkan — statusnya "sakit" padahal catatan sembuhnya sudah ada.
+ *   - ragu      — centangnya terisi, statusnya hidup dan bukan sakit, dan
+ *                 riwayatnya tidak menjawab. Ini keputusan manusia: menebaknya
+ *                 berarti mengeluarkan kura yang benar-benar sakit dari daftar
+ *                 perawatan, atau sebaliknya menghidupkan kembali kasus yang
+ *                 sengaja ditutup.
+ *
+ * @returns {{ selaras: number, perbaikan: Array, ragu: Array }}
+ */
+export function periksaTandaSakit(tortoises = [], healthRecords = []) {
+  const perbaikan = [];
+  const ragu = [];
+  let selaras = 0;
+
+  tortoises.forEach((kura) => {
+    if (tandaSelaras(kura)) { selaras += 1; return; }
+    const riwayat = keputusanRiwayat(kura.id, healthRecords);
+
+    if (kura.status === "sakit") {
+      // Centangnya kosong.
+      if (riwayat === "sembuh") {
+        perbaikan.push({
+          kura,
+          jenis: "sembuhkan",
+          alasan: "Catatan sembuhnya sudah ada, tapi statusnya masih sakit.",
+          perubahan: perubahanSembuh(kura),
+        });
+      } else {
+        perbaikan.push({
+          kura,
+          jenis: "nyalakan",
+          alasan: "Statusnya sakit, tapi centang sakitnya kosong.",
+          perubahan: { is_currently_sick: true },
+        });
+      }
+      return;
+    }
+
+    // Centangnya terisi, statusnya bukan "sakit".
+    if (STATUS_TUTUP.includes(kura.status) || kura.is_archived) {
+      perbaikan.push({
+        kura,
+        jenis: "matikan",
+        alasan: "Sudah tidak dirawat lagi, jadi tidak mungkin sedang sakit.",
+        perubahan: { is_currently_sick: false },
+      });
+      return;
+    }
+    if (riwayat === "sembuh") {
+      perbaikan.push({
+        kura,
+        jenis: "matikan",
+        alasan: "Catatan sembuhnya sudah ada, tapi centang sakitnya belum dilepas.",
+        perubahan: { is_currently_sick: false },
+      });
+      return;
+    }
+    if (riwayat === "sakit") {
+      perbaikan.push({
+        kura,
+        jenis: "sakitkan",
+        alasan: "Catatan sakit terakhir belum ditutup, tapi statusnya bukan sakit.",
+        perubahan: perubahanSakit(kura),
+      });
+      return;
+    }
+    ragu.push({
+      kura,
+      alasan: "Centang sakitnya terisi, tapi statusnya bukan sakit dan tidak ada catatan kesehatan yang menjelaskan.",
+    });
+  });
+
+  return { selaras, perbaikan, ragu };
+}

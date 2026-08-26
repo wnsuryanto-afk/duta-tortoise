@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { kandangDariNama } from "@/lib/kandang";
+import { perubahanSakit, perubahanSembuh, STATUS_TUTUP } from "@/lib/statusKura";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, AlertTriangle } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
@@ -187,14 +188,59 @@ export default function TortoiseForm({ open, onClose, editData }) {
   };
 
   // Intercept status changes for special modals
+  /**
+   * Status dan centang "Sedang Sakit" adalah dua penanda untuk satu keadaan yang
+   * sama, dan sebelas layar membacanya bersamaan. Dropdown ini dulu hanya
+   * menyentuh salah satunya: memindahkan kura dari "Sakit" ke "Aktif" lewat
+   * dropdown meninggalkan centangnya menyala selamanya — kartunya hijau, tapi
+   * kura itu tetap muncul di layar keeper dan di penghitung "Sakit", dan tidak
+   * ada satu pun layar yang bisa melepaskannya.
+   *
+   * Sekarang dropdown menempuh jalur yang sama persis dengan centangnya:
+   * masuk ke "Sakit" lewat SickModal (diagnosis wajib diisi), keluar dari
+   * "Sakit" lewat RecoveryModal (dikonfirmasi sembuh), dan status penutup
+   * melepas centangnya langsung — kura yang mati atau diarsipkan tidak
+   * "sembuh", ia hanya berhenti dirawat.
+   */
   const handleStatusChange = (newStatus) => {
-    const prevStatus = form.status;
+    if (!newStatus || newStatus === form.status) return;
+    const hariIni = new Date().toISOString().split("T")[0];
+
     if (newStatus === "mati" && !editData?.death_date) {
       // Jika belum pernah mati, tampilkan modal kematian
       setPendingStatus(newStatus);
       setShowDeathModal(true);
       return;
     }
+
+    if (STATUS_TUTUP.includes(newStatus)) {
+      setForm(p => ({
+        ...p,
+        status: newStatus,
+        is_currently_sick: false,
+        previous_status: p.status !== newStatus ? p.status : p.previous_status,
+        last_status_change: hariIni,
+      }));
+      return;
+    }
+
+    if (newStatus === "sakit") {
+      // Centangnya sudah menyala: statusnya tinggal menyusul, tanpa menanyakan
+      // ulang diagnosis yang sudah pernah diisi.
+      if (form.is_currently_sick) {
+        setForm(p => ({ ...p, ...perubahanSakit(p, hariIni) }));
+      } else {
+        setShowSickModal(true);
+      }
+      return;
+    }
+
+    if (form.is_currently_sick || form.status === "sakit") {
+      setPendingStatus(newStatus);
+      setShowRecoveryModal(true);
+      return;
+    }
+
     set("status", newStatus);
   };
 
@@ -205,26 +251,26 @@ export default function TortoiseForm({ open, onClose, editData }) {
   };
 
   const handleSickSaved = (healthExtra) => {
-    setForm(p => ({
-      ...p,
-      is_currently_sick: true,
-      status: "sakit",
-      previous_status: p.status !== "sakit" ? p.status : p.previous_status,
-      last_status_change: new Date().toISOString().split("T")[0],
-      _pendingHealthData: healthExtra,
-    }));
+    setForm(p => ({ ...p, ...perubahanSakit(p), _pendingHealthData: healthExtra }));
     setShowSickModal(false);
+    setPendingStatus(null);
   };
 
   const handleRecoveryConfirm = (withCheckup) => {
+    // Bila sembuhnya datang dari dropdown, status yang dipilih pemilik yang
+    // dipakai. Bila datang dari melepas centangnya, status dikembalikan ke
+    // keadaan sebelum sakit — `p.previous_status || "aktif"` yang lama bisa
+    // mengembalikan kura ke "mati" atau "terjual", menghidupkan lagi data yang
+    // sudah ditutup.
+    const tujuan = pendingStatus;
     setForm(p => ({
       ...p,
-      is_currently_sick: false,
-      status: p.previous_status || "aktif",
-      last_status_change: new Date().toISOString().split("T")[0],
+      ...perubahanSembuh(p),
+      ...(tujuan ? { status: tujuan } : {}),
       _pendingRecovery: withCheckup,
     }));
     setShowRecoveryModal(false);
+    setPendingStatus(null);
   };
 
   const handleSickToggle = (checked) => {
@@ -309,7 +355,11 @@ export default function TortoiseForm({ open, onClose, editData }) {
           tortoise_id: editData.id,
           tortoise_name: form.name,
           date: today,
-          type: "checkup",
+          // "sembuh" adalah jenis catatan resmi untuk penutupan kasus, dan
+          // itulah yang dibaca penghitung pemulihan di beranda serta riwayat
+          // induk di modul Breeding. Sebagai "checkup", pemulihan lewat layar
+          // ini tidak pernah terhitung di mana pun.
+          type: "sembuh",
           source: "auto_recovery",
           description: "Pulih dari sakit",
         });
@@ -750,13 +800,13 @@ export default function TortoiseForm({ open, onClose, editData }) {
       <SickModal
         tortoise={form}
         open={showSickModal}
-        onClose={() => setShowSickModal(false)}
+        onClose={() => { setShowSickModal(false); setPendingStatus(null); }}
         onSaved={handleSickSaved}
       />
       <RecoveryModal
         tortoise={form}
         open={showRecoveryModal}
-        onClose={() => setShowRecoveryModal(false)}
+        onClose={() => { setShowRecoveryModal(false); setPendingStatus(null); }}
         onConfirm={handleRecoveryConfirm}
       />
     </Dialog>

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { perubahanSakit } from "@/lib/statusKura";
 
 const SEVERITIES = [
   { value: "ringan", label: "🟡 Ringan" },
@@ -51,11 +52,12 @@ export default function SakitFromTemuanDialog({ finding, user, onClose, onResolv
 
   const handleSave = async () => {
     setSubmitting(true);
+    const hariIni = format(new Date(), "yyyy-MM-dd");
     try {
       await base44.entities.HealthRecord.create({
         tortoise_id: tortoiseId,
         tortoise_name: selectedTortoise?.name || "",
-        date: format(new Date(), "yyyy-MM-dd"),
+        date: hariIni,
         type: "sakit",
         source: "manual",
         diagnosis,
@@ -63,6 +65,25 @@ export default function SakitFromTemuanDialog({ finding, user, onClose, onResolv
         description: `Dari temuan foto task "${finding.task_title}": ${finding.finding_text}`,
         photo_urls: finding.photo_url ? [finding.photo_url] : [],
       });
+
+      // Catatan kesehatan saja tidak membuat kuranya tampak sakit di mana pun:
+      // status dan centang sakit ada di data kura, bukan di catatannya. Tanpa
+      // langkah ini, laporan dari temuan foto tidak pernah sampai ke layar
+      // keeper maupun ke penghitung "Sakit" — kura yang baru saja dilaporkan
+      // sakit tetap terlihat sehat di seluruh aplikasi.
+      //
+      // Data kura diambil segar dari entitasnya, bukan dari daftar pemilih:
+      // daftar itu datang dari fungsi ringkasan yang tidak membawa
+      // `previous_status`, dan tanpa itu kura baby kehilangan klasifikasinya
+      // begitu dinyatakan sembuh.
+      try {
+        const kura = await base44.entities.Tortoise.get(tortoiseId);
+        await base44.entities.Tortoise.update(tortoiseId, perubahanSakit(kura, hariIni));
+      } catch {
+        // Catatan kesehatannya sudah tersimpan; kegagalan di sini tidak boleh
+        // membatalkannya. Ketidakselarasan yang tersisa terbaca di
+        // Pemeliharaan Sistem.
+      }
 
       await onResolved(finding, "sick_report");
       toast.success("Laporan kura sakit dibuat & temuan ditandai selesai");

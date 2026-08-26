@@ -80,9 +80,17 @@ export default function SaleForm({ open, onClose, editData }) {
       await base44.entities.Sale.create({ ...data, ...testModeTag });
       // Update tortoise status to terjual and remove from enclosure
       if (data.tortoise_id) {
+        // Status asal disimpan dan tanggal perubahannya dicatat, sama seperti
+        // yang dilakukan SaleWizard. Tanpa keduanya, pembatalan penjualan tidak
+        // punya rujukan untuk mengembalikan kura ke statusnya semula.
+        const kuraTerjual = tortoises.find(t => t.id === data.tortoise_id);
         await base44.entities.Tortoise.update(data.tortoise_id, {
           status: "terjual",
           is_currently_sick: false,
+          previous_status: kuraTerjual?.status && kuraTerjual.status !== "terjual"
+            ? kuraTerjual.status
+            : kuraTerjual?.previous_status,
+          last_status_change: new Date().toISOString().split("T")[0],
           enclosure: "",
           enclosure_id: "",
         });

@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import TortoisePhotoLightbox from "./TortoisePhotoLightbox";
 import { TortoiseArt } from "@/components/common/Illustration";
+import { sedangSakit } from "@/lib/statusKura";
 
 function PriceField({ label }) {
   return (
@@ -61,7 +62,9 @@ const sourceLabel = {
 // Background warna untuk card berdasarkan kondisi
 function getCardBg(tortoise) {
   if (tortoise.status === "mati") return "bg-gray-100 border-gray-400 opacity-80";
-  if (tortoise.status === "sakit") return "bg-red-50 border-red-200";
+  // Dibaca lewat kedua penandanya agar kartu tidak tampak sehat sementara
+  // penghitung "Sakit" di kepala halaman ikut menghitungnya.
+  if (sedangSakit(tortoise)) return "bg-red-50 border-red-200";
   if (tortoise.status === "terjual") return "bg-yellow-50 border-yellow-200";
   if (tortoise.status === "baby") return "bg-sky-50 border-sky-200";
   if (tortoise.is_proven) return "bg-green-50 border-green-200";

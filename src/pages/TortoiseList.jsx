@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag, HeartPulse } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
+import { sedangSakit } from "@/lib/statusKura";
 import { TortoiseArt } from "@/components/common/Illustration";
 import TortoiseTerjualTab from "@/components/tortoise/TortoiseTerjualTab";
 import ExportButton from "@/components/common/ExportButton";
@@ -167,6 +168,11 @@ export default function TortoiseList() {
     let matchStatus;
     if (statusFilter === "semua") matchStatus = true;
     else if (statusFilter === "baby") matchStatus = t.age_category === "baby" && t.status === "aktif";
+    // "Sakit" dibaca lewat kedua penandanya, sama seperti lencana penghitungnya
+    // di atas. Membandingkan status saja membuat tombol menyebut satu angka dan
+    // menampilkan isi yang lain — dan kura yang penandanya berselisih tidak
+    // muncul di mana pun, jadi tidak bisa diperbaiki dari layar ini.
+    else if (statusFilter === "sakit") matchStatus = sedangSakit(t);
     else matchStatus = t.status === statusFilter;
     const matchGender = genderFilter === "semua" || t.gender === genderFilter;
     const matchMorph = morphFilter === "semua" || (t.morph || "normal") === morphFilter;
@@ -266,7 +272,7 @@ export default function TortoiseList() {
       aktif: tortoises.filter(t => t.status === "aktif" && !t.is_archived).length,
       jantan: hidup.filter(t => t.gender === "jantan").length,
       betina: hidup.filter(t => t.gender === "betina").length,
-      sakit: hidup.filter(t => t.status === "sakit" || t.is_currently_sick).length,
+      sakit: hidup.filter(sedangSakit).length,
       karantina: quarantinedTortoises.length,
     };
   })();
@@ -361,7 +367,7 @@ export default function TortoiseList() {
                 <SelectItem value="semua">Semua Status ({tortoises.length})</SelectItem>
                 <SelectItem value="aktif">Aktif ({tortoises.filter(t => t.status === "aktif").length})</SelectItem>
                 <SelectItem value="baby">🐣 Baby ({tortoises.filter(t => t.age_category === "baby" && t.status === "aktif").length})</SelectItem>
-                <SelectItem value="sakit">Sakit ({tortoises.filter(t => t.status === "sakit").length})</SelectItem>
+                <SelectItem value="sakit">Sakit ({tortoises.filter(sedangSakit).length})</SelectItem>
                 <SelectItem value="breeding">Breeding ({tortoises.filter(t => t.status === "breeding").length})</SelectItem>
                 <SelectItem value="terjual">Terjual ({tortoises.filter(t => t.status === "terjual").length})</SelectItem>
                 <SelectItem value="mati">Mati ({tortoises.filter(t => t.status === "mati").length})</SelectItem>
@@ -530,7 +536,7 @@ export default function TortoiseList() {
               className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${statusFilter === "sakit" ? "bg-red-100 border-red-400 text-red-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
             >
               🏥 Sakit Saat Ini
-              <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === "sakit" ? "bg-red-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(t => t.is_currently_sick).length}</span>
+              <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === "sakit" ? "bg-red-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(sedangSakit).length}</span>
             </button>
 
             <button
@@ -623,7 +629,7 @@ export default function TortoiseList() {
                         <div className="flex gap-1 text-xs">
                           <span className="text-green-600">{items.filter(t => t.status === "aktif").length}</span>
                           <span className="text-blue-600">·{items.filter(t => t.age_category === "baby").length}</span>
-                          <span className="text-yellow-600">·{items.filter(t => t.status === "sakit").length}</span>
+                          <span className="text-yellow-600">·{items.filter(sedangSakit).length}</span>
                         </div>
                       </div>
                       {canEditEnclosure && (
