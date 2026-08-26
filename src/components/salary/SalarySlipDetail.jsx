@@ -37,6 +37,9 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   // Admin boleh melihat & generate slip, tetapi TIDAK boleh approve/membayar.
   const canApprove = role === "owner";
   const canPay = ["owner", "manajer"].includes(role);
+  // Keeper hanya boleh melihat total yang mereka terima — tanpa rincian
+  // "nilai per poin" atau rumus perhitungannya. Cukup baris "Bonus Poin".
+  const isKeeperView = !["owner", "admin", "manajer"].includes(role);
   const settings = companySettings || {};
   const conf = statusConfig[slip.status] || statusConfig.draft;
   const StatusIcon = conf.icon;
@@ -228,7 +231,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                 </td>
                 <td className="p-2 border border-border text-right font-medium">{fmt(slip.base_salary)}</td>
               </tr>
-              {!isWeekly && (
+              {!isKeeperView && !isWeekly && (
                 <tr className="bg-amber-50/40">
                   <td className="p-2 border border-border">
                     Total Poin KPI
@@ -242,7 +245,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                 </tr>
               )}
               <tr>
-                <td className="p-2 border border-border">Bonus Poin ({slip.total_poin || 0} poin)</td>
+                <td className="p-2 border border-border">{isKeeperView ? "Bonus Poin" : `Bonus Poin (${slip.total_poin || 0} poin)`}</td>
                 <td className="p-2 border border-border text-right text-green-600 font-medium">+{fmt(slip.poin_bonus)}</td>
               </tr>
               {hasPoinDed && (

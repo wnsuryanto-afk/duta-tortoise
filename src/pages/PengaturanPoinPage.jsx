@@ -86,7 +86,7 @@ export default function PengaturanPoinPage() {
   const newNilai = Number(nilaiInput) || 0;
   const oldTarget = Number(settings.min_poin_bulanan) || 0;
 
-  const employees = users.filter((u) => ["keeper", "kepala_feeder", "admin"].includes(u.role));
+  const employees = users.filter((u) => ["keeper", "kepala_feeder"].includes(u.role));
 
   const approved30 = useMemo(
     () => dailyChecklists.filter((c) => c.status === "approved" && c.date && c.date >= cutoffStr && c.date <= todayStr),
@@ -111,13 +111,17 @@ export default function PengaturanPoinPage() {
     const byDate = {};
     const names = new Set();
     approved30.forEach((c) => {
-      const nm = c.employee_name || "—";
+      // Nama di-resolve dari entity User berdasarkan email, bukan dari field
+      // nama yang tersalin di checklist — supaya perubahan nama di Manajemen
+      // User langsung berlaku di grafik.
+      const u = users.find((x) => x.email === c.employee_email);
+      const nm = u?.full_name || c.employee_name || "—";
       names.add(nm);
       byDate[c.date] = byDate[c.date] || { date: c.date };
       byDate[c.date][nm] = (byDate[c.date][nm] || 0) + (c.approved_points || c.total_points_claimed || 0);
     });
     return { barData: Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date)), empNames: [...names] };
-  }, [approved30]);
+  }, [approved30, users]);
 
   const lineData = useMemo(
     () =>

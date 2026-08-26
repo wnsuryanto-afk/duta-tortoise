@@ -299,7 +299,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
                         <p className="font-medium">{fmt(row.baseSalary)}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Poin ({row.poin}):</span>
+                        <span className="text-muted-foreground">{isManagerRole ? `Poin (${row.poin}):` : "Bonus Poin:"}</span>
                         <p className="font-medium text-green-600">+{fmt(row.poinBonus)}</p>
                       </div>
                       <div>
@@ -349,16 +349,20 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         </div>
       )}
 
-      {viewSlip && (
-        <SalarySlipDetail
-          slip={viewSlip}
-          companySettings={settings}
-          onClose={() => {
-            setViewSlip(null);
-            qc.invalidateQueries({ queryKey: ["salary-slips"] });
-          }}
-        />
-      )}
+      {viewSlip && (() => {
+        const slipUser = users.find((u) => u.email === viewSlip.employee_email);
+        const resolvedSlip = slipUser?.full_name ? { ...viewSlip, employee_name: slipUser.full_name } : viewSlip;
+        return (
+          <SalarySlipDetail
+            slip={resolvedSlip}
+            companySettings={settings}
+            onClose={() => {
+              setViewSlip(null);
+              qc.invalidateQueries({ queryKey: ["salary-slips"] });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { logActivity } from "@/lib/logActivity";
 import { reverifySinglePhoto } from "@/lib/photoVerification";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
 import PhotoPreviewModal from "./PhotoPreviewModal";
 
 const statusConfig = {
@@ -51,6 +52,11 @@ export default function SOPApproval() {
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
   const isOwner = role === "owner";
+  const { data: users = [] } = useActiveUsers();
+  // Nama karyawan di-resolve dari entity User berdasarkan email (bukan dari
+  // field nama yang tersalin di checklist) supaya perubahan nama di Manajemen
+  // User langsung berlaku di semua tempat.
+  const empName = (c) => users.find((u) => u.email === c?.employee_email)?.full_name || c?.employee_name || "—";
   const [expanded, setExpanded] = useState({});
   const [taskChecked, setTaskChecked] = useState({});
   const [manualPoin, setManualPoin] = useState({});
@@ -257,10 +263,10 @@ export default function SOPApproval() {
         action: "approve",
         entity_type: "DailyChecklist",
         entity_id: c.id,
-        entity_name: `${c.employee_name} — ${c.date}`,
-        changes_summary: `Menyetujui poin checklist ${c.employee_name} (${c.date}): ${willApprove} poin`,
+        entity_name: `${empName(c)} — ${c.date}`,
+        changes_summary: `Menyetujui poin checklist ${empName(c)} (${c.date}): ${willApprove} poin`,
       });
-      toast.success(`Checklist ${c.employee_name} disetujui — ${willApprove} poin`);
+      toast.success(`Checklist ${empName(c)} disetujui — ${willApprove} poin`);
       setExpanded((p) => ({ ...p, [c.id]: false }));
       qc.invalidateQueries({ queryKey: ["checklists-all"] });
       qc.invalidateQueries({ queryKey: ["checklists-pending-count"] });
@@ -288,8 +294,8 @@ export default function SOPApproval() {
         action: "reject",
         entity_type: "DailyChecklist",
         entity_id: c.id,
-        entity_name: `${c.employee_name} — ${c.date}`,
-        changes_summary: `Menolak poin checklist ${c.employee_name} (${c.date}): ${reason}`,
+        entity_name: `${empName(c)} — ${c.date}`,
+        changes_summary: `Menolak poin checklist ${empName(c)} (${c.date}): ${reason}`,
       });
       toast.success("Checklist ditolak");
       setExpanded((p) => ({ ...p, [c.id]: false }));
@@ -306,9 +312,9 @@ export default function SOPApproval() {
   const employeeStats = useMemo(() => {
     const stats = {};
     checklists.forEach(c => {
-      const key = c.employee_email || c.employee_name;
+      const key = c.employee_email || empName(c);
       if (!stats[key]) {
-        stats[key] = { name: c.employee_name, email: c.employee_email, tasks: 0, points: 0 };
+        stats[key] = { name: empName(c), email: c.employee_email, tasks: 0, points: 0 };
       }
       stats[key].tasks += (c.completed_tasks || []).length;
       stats[key].points += c.status === "approved" ? (c.approved_points || 0) : (c.total_points_claimed || 0);
@@ -449,7 +455,7 @@ export default function SOPApproval() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-sm">{c.employee_name}</p>
+                      <p className="font-semibold text-sm">{empName(c)}</p>
                       <Badge variant="outline" className={`text-[11px] ${statusConfig[c.status]?.color}`}>
                         {statusConfig[c.status]?.label}
                       </Badge>

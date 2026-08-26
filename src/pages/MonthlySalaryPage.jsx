@@ -96,7 +96,7 @@ export default function MonthlySalaryPage() {
   const salaryData = useMemo(() => {
     const empMap = {};
     users.forEach((u) => {
-      if (!["keeper", "kepala_feeder", "admin"].includes(u.role)) return;
+      if (!["keeper", "kepala_feeder"].includes(u.role)) return;
       if (!u.email) return;
       const profile = userProfiles.find((p) => p.user_email === u.email);
       empMap[u.email] = {
