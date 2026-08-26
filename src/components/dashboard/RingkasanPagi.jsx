@@ -15,6 +15,7 @@ import HarusDibeliWidget from "@/components/dashboard/HarusDibeliWidget";
 import ToolLoanWidget from "@/components/dashboard/ToolLoanWidget";
 import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
 import KeputusanHariIni from "@/components/dashboard/KeputusanHariIni";
+import ArahMingguIni from "@/components/dashboard/ArahMingguIni";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -168,6 +169,9 @@ export default function RingkasanPagi() {
     <div className="space-y-3">
       {/* 0. LAPIS KEPUTUSAN — hal yang bisa dituntaskan dari layar ini juga */}
       <KeputusanHariIni />
+
+      {/* 0.5 LAPIS ARAH — peringatan dini, tidak menuntut tindakan hari ini */}
+      <ArahMingguIni />
 
       {/* HEADER */}
       <div className="pt-1">
