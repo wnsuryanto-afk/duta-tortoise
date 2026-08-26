@@ -5,12 +5,13 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useVegTrips } from "@/hooks/useVegTrips";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wallet, Star, Clock, Leaf, MinusCircle, FileDown, Users } from "lucide-react";
-import { format, subMonths, getDaysInMonth } from "date-fns";
+import { Wallet, Star, Clock, FileDown, Users } from "lucide-react";
+import { hitungGajiKaryawan } from "@/lib/hitungGaji";
+import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
+import AlurGaji from "@/components/salary/AlurGaji";
 import jsPDF from "jspdf";
 
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
@@ -49,7 +50,6 @@ export default function MonthlySalaryPage() {
     admin: "Admin",
     owner: "Owner",
   })[r] || r || "Keeper";
-  const isDailyRole = (r) => ["keeper", "kepala_feeder"].includes(r);
 
   const { data: checklists = [] } = useQuery({
     queryKey: ["checklists-salary", period],
@@ -80,6 +80,12 @@ export default function MonthlySalaryPage() {
 
   const { data: vegTripsMap = {} } = useVegTrips(period, isAdmin);
 
+  const { data: bonusRewards = [] } = useQuery({
+    queryKey: ["bonus-rewards", period],
+    queryFn: () => base44.entities.BonusReward.filter({ period }),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: kasbons = [] } = useQuery({
     queryKey: ["kasbons-active"],
     queryFn: () => base44.entities.Kasbon.filter({ status: "approved" }),
@@ -88,9 +94,6 @@ export default function MonthlySalaryPage() {
 
   // Build per-employee salary calculation (eligible employees from User; owner excluded)
   const salaryData = useMemo(() => {
-    const configMap = {};
-    salaryConfigs.forEach((c) => { configMap[c.role] = c; });
-
     const empMap = {};
     users.forEach((u) => {
       if (!["keeper", "kepala_feeder", "admin"].includes(u.role)) return;
@@ -101,103 +104,56 @@ export default function MonthlySalaryPage() {
         name: u.full_name || profile?.full_name || u.email,
         role: u.role,
         profile,
-        attendDays: 0,
-        kpiPoints: 0,
-        overtimeHours: 0,
-        vegTrips: 0,
-        kasbonDeduction: 0,
       };
     });
 
+    // Perhitungan dipindah ke lib/hitungGaji — sumber yang sama dengan halaman
+    // yang benar-benar menerbitkan slip. Sebelumnya layar ini punya rumusnya
+    // sendiri dan berselisih dalam tiga hal (poin bonus, cara menghitung absen,
+    // dan siapa yang berhak uang sayur), sehingga angka yang ditampilkan di
+    // sini bukan angka yang akhirnya dibayarkan.
     const [yr, mo] = period.split("-").map(Number);
-    const workDays = getDaysInMonth(new Date(yr, mo - 1));
+    const awal = `${period}-01`;
+    const akhirPeriode = format(new Date(yr, mo, 1), "yyyy-MM-dd");
 
-    // Attendance (hari hadir)
-    attendances.forEach((a) => {
-      const emp = empMap[a.employee_email];
-      if (!emp) return;
-      if (a.status === "hadir") emp.attendDays++;
-    });
-
-    // KPI points dari checklist SOP yang dikirim (exclude rejected)
-    checklists.forEach((c) => {
-      const emp = empMap[c.employee_email];
-      if (!emp) return;
-      if (c.status === "rejected") return;
-      const pts = c.approved_points || c.total_points_claimed ||
-        (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((s, t) => s + (t.points || 0), 0) : 0);
-      emp.kpiPoints += pts || 0;
-    });
-
-    // Overtime
-    overtimeLogs.forEach((o) => {
-      const emp = empMap[o.employee_email];
-      if (!emp) return;
-      emp.overtimeHours += o.hours || 0;
-    });
-
-    // Vegetable trips (dari PakanHarian, dedup per hari)
-    Object.entries(vegTripsMap).forEach(([email, data]) => {
-      const emp = empMap[email];
-      if (!emp) return;
-      emp.vegTrips += data.trips || 0;
-    });
-
-    // Kasbon deduction
-    kasbons.forEach((k) => {
-      const emp = empMap[k.employee_email];
-      if (!emp) return;
-      if (k.status !== "approved") return;
-      const remaining = (k.amount || 0) - (k.total_paid || 0);
-      if (remaining <= 0) return;
-      const alreadyDeducted = (k.deduction_log || []).some(d => d.salary_period === period && d.salary_slip_id);
-      if (alreadyDeducted) return;
-      emp.kasbonDeduction += Math.min(remaining, k.weekly_deduction || 100000);
-    });
-
-    // Calculate salary
     return Object.values(empMap).map((emp) => {
-      const cfg = configMap[emp.role] || {};
-      const baseRate = cfg.base_salary || 0;
-      const daily = isDailyRole(emp.role);
-      // Harian: gaji pokok = base × hari hadir; Bulanan: flat
-      const baseSalary = daily ? baseRate * emp.attendDays : baseRate;
-      // KPI: poin × point_value (default 200 utk keeper & kepala_feeder)
-      const pointValue = (cfg.point_value && cfg.point_value > 0) ? cfg.point_value : (daily ? 200 : 0);
-      const kpiValue = emp.kpiPoints * pointValue;
-      const overtimePay = emp.overtimeHours * (cfg.overtime_rate_per_hour || 0);
-      const vegPay = emp.vegTrips * (cfg.vegetable_rate_per_trip || 0);
+      const h = hitungGajiKaryawan(emp, {
+        salaryConfigs,
+        checklists,
+        bonusRewards,
+        attendances,
+        overtimeLogs,
+        vegTripsMap,
+        kasbons,
+        periode: period,
+        awal,
+        akhir: akhirPeriode,
+      });
 
-      let absentDays = 0;
-      let absentDeduction = 0;
-      if (!daily) {
-        absentDays = Math.max(0, workDays - emp.attendDays);
-        absentDeduction = absentDays * (cfg.absent_deduction || 0);
-      }
-      const kasbonDed = emp.kasbonDeduction || 0;
-
-      const totalGross = baseSalary + kpiValue + overtimePay + vegPay;
-      const totalDeduction = absentDeduction + kasbonDed;
-      const netSalary = Math.max(0, totalGross - totalDeduction);
-
+      // Nama lama dipertahankan supaya tabel, ekspor PDF, dan kartu ringkasan
+      // di bawah tidak perlu ikut diubah.
       return {
         ...emp,
-        baseRate,
-        daily,
-        baseSalary,
-        pointValue,
-        kpiValue,
-        overtimePay,
-        vegPay,
-        absentDays,
-        absentDeduction,
-        kasbonDed,
-        totalGross,
-        totalDeduction,
-        netSalary,
+        daily: h.harian,
+        baseRate: h.config.base_salary || 0,
+        attendDays: h.hariHadir,
+        kpiPoints: h.totalPoin,
+        overtimeHours: h.jamLembur,
+        vegTrips: h.tripSayur,
+        baseSalary: h.gajiPokok,
+        pointValue: h.nilaiPoin,
+        kpiValue: h.bonusPoin,
+        overtimePay: h.upahLembur,
+        vegPay: h.upahSayur,
+        absentDays: h.hariAbsen,
+        absentDeduction: h.potonganAbsen,
+        kasbonDed: h.potonganKasbon,
+        totalGross: h.kotor,
+        totalDeduction: h.potongan,
+        netSalary: h.bersih,
       };
     }).sort((a, b) => b.netSalary - a.netSalary);
-  }, [salaryConfigs, users, attendances, checklists, overtimeLogs, vegTripsMap, kasbons, userProfiles, period]);
+  }, [salaryConfigs, users, attendances, checklists, bonusRewards, overtimeLogs, vegTripsMap, kasbons, userProfiles, period]);
 
   const totalNet = salaryData.reduce((s, e) => s + e.netSalary, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === period)?.label || period;
@@ -253,6 +209,7 @@ export default function MonthlySalaryPage() {
 
   return (
     <div className="space-y-6">
+      <AlurGaji aktif="hitung" periode={period} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">

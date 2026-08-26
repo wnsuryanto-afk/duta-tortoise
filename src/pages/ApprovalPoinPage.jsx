@@ -1,9 +1,11 @@
 import { ShieldCheck } from "lucide-react";
 import SOPApproval from "@/components/sop/SOPApproval";
+import AlurGaji from "@/components/salary/AlurGaji";
 
 export default function ApprovalPoinPage() {
   return (
     <div className="space-y-6">
+      <AlurGaji aktif="poin" />
       <div>
         <h1 className="text-3xl font-heading font-bold flex items-center gap-2">
           <ShieldCheck className="w-7 h-7 text-primary" /> Approval Poin Checklist

@@ -1,0 +1,218 @@
+/**
+ * hitungGaji.js — SUMBER TUNGGAL perhitungan gaji bulanan.
+ *
+ * Sebelumnya gaji bulanan dihitung di dua tempat dengan rumus yang berbeda:
+ *
+ *   - Halaman "Hitung Gaji" — hanya menampilkan, tidak pernah menulis apa pun.
+ *   - Halaman "Rekap Poin & Gaji" — yang benar-benar menerbitkan slip.
+ *
+ * Keduanya untuk periode dan orang yang sama, tapi berselisih dalam tiga hal,
+ * sehingga angka yang dilihat pemilik di layar "Hitung Gaji" bukan angka yang
+ * akhirnya dibayarkan:
+ *
+ *   1. Poin bonus (BonusReward) dihitung penerbit slip, tidak dihitung pratinjau.
+ *   2. Potongan absen: pratinjau menganggap SETIAP hari dalam bulan yang tidak
+ *      ada catatan hadirnya sebagai absen — di bulan yang absensinya tidak
+ *      diisi tiap hari, ini memotong sangat besar. Penerbit slip hanya
+ *      menghitung hari yang memang tercatat mangkir, dan tidak menghitung izin
+ *      maupun sakit.
+ *   3. Uang sayur: penerbit slip membatasinya pada peran harian; pratinjau
+ *      memberikannya ke siapa pun yang punya catatan trip.
+ *
+ * Pemeriksaan kasbon ganda sudah ada di kedua tempat dan tidak berbeda.
+ *
+ * Rumus di bawah mengikuti PENERBIT SLIP, karena itulah yang benar-benar
+ * membayar. Menyamakan pratinjau ke penerbit membuat angkanya jujur tanpa
+ * mengubah gaji siapa pun.
+ *
+ * Slip MINGGUAN punya aturannya sendiri (tanpa potongan absen) dan sengaja
+ * tidak disatukan ke sini — periodenya beda, dan mengubahnya berarti mengubah
+ * gaji yang sudah berjalan.
+ */
+
+/** Peran yang dibayar harian; sisanya dibayar bulanan flat. */
+export const PERAN_HARIAN = ["keeper", "kepala_feeder"];
+
+/** Nilai poin bawaan untuk peran harian bila konfigurasi belum diisi. */
+export const NILAI_POIN_BAWAAN = 200;
+
+/** Potongan kasbon bawaan per periode bila kasbon tidak menentukan sendiri. */
+export const POTONGAN_KASBON_BAWAAN = 100000;
+
+export function adalahPeranHarian(role) {
+  return PERAN_HARIAN.includes(role);
+}
+
+/**
+ * Poin seorang karyawan pada satu periode.
+ *
+ * Checklist yang ditolak tidak dihitung. Poin yang sudah disetujui menang atas
+ * poin yang baru diklaim; bila keduanya kosong, poin dijumlahkan dari tugas
+ * yang tercentang.
+ */
+export function hitungPoin({ checklists = [], bonusRewards = [], email, awal, akhir, periode }) {
+  const dariChecklist = checklists
+    .filter((c) => c.employee_email === email && c.date >= awal && c.date < akhir)
+    .filter((c) => c.status !== "rejected")
+    .reduce((total, c) => {
+      const poin =
+        c.approved_points ||
+        c.total_points_claimed ||
+        (Array.isArray(c.completed_tasks)
+          ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0)
+          : 0);
+      return total + (poin || 0);
+    }, 0);
+
+  const bonus = bonusRewards.find((b) => b.employee_email === email && b.period === periode);
+  const dariBonus = bonus?.total_points || 0;
+
+  return { dariChecklist, dariBonus, total: dariChecklist + dariBonus };
+}
+
+/**
+ * Potongan kasbon untuk satu periode.
+ *
+ * Kasbon yang potongannya sudah tercatat untuk periode ini dilewati — tanpa
+ * pemeriksaan ini, membuka layar gaji dua kali bisa memotong dua kali.
+ */
+export function hitungKasbon({ kasbons = [], email, periode }) {
+  let potongan = 0;
+  let sisa = 0;
+  const idDipotong = [];
+
+  kasbons
+    .filter((k) => k.employee_email === email && k.status === "approved")
+    .forEach((k) => {
+      const sisaKasbon = (k.amount || 0) - (k.total_paid || 0);
+      if (sisaKasbon <= 0) return;
+
+      const sudahDipotong = (k.deduction_log || []).some(
+        (d) => d.salary_period === periode && d.salary_slip_id
+      );
+      if (sudahDipotong) {
+        sisa += sisaKasbon;
+        return;
+      }
+
+      const kali = Math.min(k.weekly_deduction || POTONGAN_KASBON_BAWAAN, sisaKasbon);
+      potongan += kali;
+      idDipotong.push(k.id);
+      sisa += sisaKasbon - kali;
+    });
+
+  return { potongan, sisa, idDipotong };
+}
+
+/**
+ * Hitung gaji satu karyawan untuk satu periode bulanan.
+ *
+ * @param {object} karyawan  { email, role }
+ * @param {object} sumber    seluruh data mentah yang dibutuhkan
+ * @returns {object} rincian lengkap — setiap komponen dikembalikan terpisah
+ *   supaya layar bisa menjelaskan angkanya, bukan hanya menampilkan totalnya.
+ */
+export function hitungGajiKaryawan(karyawan, sumber) {
+  const {
+    salaryConfigs = [],
+    checklists = [],
+    bonusRewards = [],
+    attendances = [],
+    overtimeLogs = [],
+    vegTripsMap = {},
+    kasbons = [],
+    periode,
+    awal,
+    akhir,
+    targetPoin = 0,
+  } = sumber;
+
+  const email = karyawan.email;
+  const config = salaryConfigs.find((c) => c.role === karyawan.role) || {};
+  const harian = adalahPeranHarian(karyawan.role);
+
+  const nilaiPoin =
+    config.point_value && config.point_value > 0
+      ? config.point_value
+      : harian
+        ? NILAI_POIN_BAWAAN
+        : 0;
+
+  // ── Poin ──
+  const poin = hitungPoin({ checklists, bonusRewards, email, awal, akhir, periode });
+  const bonusPoin = poin.total * nilaiPoin;
+
+  // ── Kehadiran ──
+  const absensi = attendances.filter(
+    (a) => a.employee_email === email && a.date >= awal && a.date < akhir
+  );
+  const hariHadir = absensi.filter((a) => a.status === "hadir").length;
+  // Izin dan sakit bukan mangkir, jadi tidak ikut dipotong. Hari yang sama
+  // sekali tidak punya catatan juga tidak dihitung absen — ketiadaan catatan
+  // berarti belum diisi, bukan berarti orangnya tidak masuk.
+  const hariAbsen = absensi.filter(
+    (a) => a.status !== "hadir" && a.status !== "izin" && a.status !== "sakit"
+  ).length;
+
+  // ── Komponen gaji ──
+  const gajiPokok = harian ? hariHadir * (config.base_salary || 0) : config.base_salary || 0;
+  const potonganAbsen = harian ? 0 : hariAbsen * (config.absent_deduction || 0);
+
+  const jamLembur = overtimeLogs
+    .filter((o) => o.employee_email === email && o.date >= awal && o.date < akhir)
+    .reduce((t, o) => t + (o.hours || 0), 0);
+  const upahLembur = jamLembur * (config.overtime_rate_per_hour || 0);
+
+  const sayur = vegTripsMap[email] || { trips: 0, dates: [] };
+  // Uang sayur hanya untuk peran harian — merekalah yang menjemput sayur.
+  const tripSayur = harian ? sayur.trips || 0 : 0;
+  const upahSayur = tripSayur * (config.vegetable_rate_per_trip || 0);
+
+  const kasbon = hitungKasbon({ kasbons, email, periode });
+
+  const kotor = gajiPokok + bonusPoin + upahLembur + upahSayur;
+  const potongan = potonganAbsen + kasbon.potongan;
+  const bersih = kotor - potongan;
+
+  return {
+    karyawan,
+    config,
+    harian,
+    nilaiPoin,
+
+    poinChecklist: poin.dariChecklist,
+    poinBonus: poin.dariBonus,
+    totalPoin: poin.total,
+    targetPoin,
+    targetTercapai: poin.total >= targetPoin,
+    selisihPoin: Math.abs(poin.total - targetPoin),
+    bonusPoin,
+
+    hariHadir,
+    hariAbsen,
+    gajiPokok,
+    potonganAbsen,
+
+    jamLembur,
+    upahLembur,
+
+    tripSayur,
+    tanggalSayur: sayur.dates || [],
+    upahSayur,
+
+    potonganKasbon: kasbon.potongan,
+    sisaKasbon: kasbon.sisa,
+    idKasbonDipotong: kasbon.idDipotong,
+
+    kotor,
+    potongan,
+    bersih,
+  };
+}
+
+/** Hitung seluruh karyawan sekaligus, terurut dari gaji bersih terbesar. */
+export function hitungGajiSemua(karyawanList = [], sumber) {
+  return karyawanList
+    .map((k) => hitungGajiKaryawan(k, sumber))
+    .sort((a, b) => b.bersih - a.bersih);
+}

@@ -16,6 +16,7 @@ import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import WeeklySlipManager from "@/components/salary/WeeklySlipManager";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
+import AlurGaji from "@/components/salary/AlurGaji";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 
 const statusConfig = {
@@ -85,6 +86,7 @@ export default function SalarySlipPage() {
 
   return (
     <div className="space-y-6">
+      <AlurGaji aktif="slip" />
       <div>
         <h1 className="text-3xl font-heading font-bold">Slip Gaji Rutin</h1>
         <p className="text-muted-foreground mt-1">

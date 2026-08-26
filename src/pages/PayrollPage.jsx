@@ -17,6 +17,7 @@ import { format, startOfMonth, endOfMonth, addWeeks, nextSaturday } from "date-f
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
+import AlurGaji from "@/components/salary/AlurGaji";
 import AccessDenied from "@/components/common/AccessDenied";
 
 const MAX_KASBON = 1000000;
@@ -132,6 +133,7 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
 
   return (
     <div className="space-y-4">
+      <AlurGaji aktif="masukan" />
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Maksimal Rp {MAX_KASBON.toLocaleString("id-ID")} · Dipotong sesuai rencana cicilan

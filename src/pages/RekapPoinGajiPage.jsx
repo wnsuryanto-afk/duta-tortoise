@@ -15,6 +15,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import { toast } from "sonner";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { useCompanySettings } from "@/lib/useCompanySettings";
+import AlurGaji from "@/components/salary/AlurGaji";
 import { useVegTrips } from "@/hooks/useVegTrips";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -312,6 +313,7 @@ export default function RekapPoinGajiPage() {
 
   return (
     <div className="space-y-6">
+      <AlurGaji aktif="hitung" periode={selectedMonth} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-heading font-bold">Rekap Poin & Generate Slip Gaji Rutin</h1>
