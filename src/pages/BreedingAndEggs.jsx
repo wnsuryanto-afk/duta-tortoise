@@ -23,6 +23,9 @@ import HatchDialog from "@/components/breeding/HatchDialog";
 import ParentHealthBadges from "@/components/breeding/ParentHealthBadges";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms } from "@/lib/permissions";
+import PageHeader from "@/components/common/PageHeader";
+import EmptyState from "@/components/common/EmptyState";
+import { EggNestArt } from "@/components/common/Illustration";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
 import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
@@ -214,39 +217,73 @@ export default function BreedingAndEggs() {
   const jantanList = (tortoises || []).filter(t => t.gender === "jantan");
   const betinaList = (tortoises || []).filter(t => t.gender === "betina");
 
+  // Ringkasan untuk kepala halaman. Tingkat menetas dihitung dari seluruh
+  // riwayat, bukan hanya batch aktif — batch yang sedang berjalan belum punya
+  // hasil, jadi memasukkannya akan menekan angkanya secara keliru.
+  const ringkasanBreeding = (() => {
+    const aktif = breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi");
+    const sekarang = new Date();
+    const segera = aktif.filter(b => {
+      if (!b.estimated_hatch_end) return false;
+      const sisa = Math.ceil((new Date(b.estimated_hatch_end) - sekarang) / 86400000);
+      return sisa >= 0 && sisa <= 7;
+    }).length;
+    const telurRiwayat = breedings
+      .filter(b => b.status !== "bertelur" && b.status !== "inkubasi")
+      .reduce((t, b) => t + (b.egg_count || 0), 0);
+    const menetasRiwayat = breedings.reduce((t, b) => t + (b.hatched_count || 0), 0);
+    return {
+      batchAktif: aktif.length,
+      telurAktif: aktif.reduce((t, b) => t + (b.egg_count || 0), 0),
+      segeraMenetas: segera,
+      hatchRate: telurRiwayat > 0 ? Math.round((menetasRiwayat / telurRiwayat) * 100) : null,
+    };
+  })();
+
   // (helpers moved to module level)
 
 
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-heading font-bold">Breeding & Telur</h1>
+      <PageHeader
+        title="Breeding & Telur"
+        subtitle="Kelola pembiakan, inkubasi telur, dan penetasan"
+        icon={Egg}
+        art={<EggNestArt size="md" />}
+        chips={[
+          { key: "batch", icon: Egg, label: "Batch aktif", value: ringkasanBreeding.batchAktif },
+          { key: "telur", icon: Thermometer, label: "Telur diinkubasi", value: ringkasanBreeding.telurAktif },
+          { key: "segera", icon: Calendar, label: "Menetas ≤7 hari", value: ringkasanBreeding.segeraMenetas,
+            tone: ringkasanBreeding.segeraMenetas > 0 ? "warn" : "default" },
+          { key: "rate", icon: AlertTriangle, label: "Tingkat menetas",
+            value: ringkasanBreeding.hatchRate === null ? "—" : `${ringkasanBreeding.hatchRate}%`,
+            tone: ringkasanBreeding.hatchRate === null ? "default"
+              : ringkasanBreeding.hatchRate >= 60 ? "good"
+              : ringkasanBreeding.hatchRate >= 40 ? "warn" : "bad" },
+        ]}
+        actions={
+          <>
             <PageTooltip page="breeding" />
-          </div>
-          <p className="text-muted-foreground mt-1">Kelola pembiakan, inkubasi telur, dan penetasan</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setShowScanner(true)}>
-            <ScanLine className="w-4 h-4 mr-2" />
-            Pindai Label Telur
-          </Button>
-          {breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi").length > 0 && (
-            <Button variant="outline" onClick={() => { setLabelBreedings(breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")); setShowLabelDialog(true); }}>
-              <Printer className="w-4 h-4 mr-2" />
-              Unduh Semua Label Aktif
+            <Button variant="outline" onClick={() => setShowScanner(true)}>
+              <ScanLine className="w-4 h-4 mr-2" />
+              Pindai Label
             </Button>
-          )}
-          {perms.canCreate && (
-            <Button onClick={() => { setEditData(null); setShowForm(true); }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Data
-            </Button>
-          )}
-        </div>
-      </div>
+            {breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi").length > 0 && (
+              <Button variant="outline" onClick={() => { setLabelBreedings(breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")); setShowLabelDialog(true); }}>
+                <Printer className="w-4 h-4 mr-2" />
+                Unduh Label Aktif
+              </Button>
+            )}
+            {perms.canCreate && (
+              <Button onClick={() => { setEditData(null); setShowForm(true); }} className="hover-lift">
+                <Plus className="w-4 h-4 mr-2" />
+                Tambah Data
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
@@ -264,10 +301,10 @@ export default function BreedingAndEggs() {
               <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
             </div>
           ) : breedings.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              <Egg className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-lg">Belum ada data pembiakan</p>
-            </div>
+            <EmptyState
+              type="breeding"
+              onAction={perms.canCreate ? () => { setEditData(null); setShowForm(true); } : null}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {pembiakanBreedings.map((b) => {
@@ -414,10 +451,13 @@ export default function BreedingAndEggs() {
               <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
             </div>
           ) : [...activeBreedings, ...breedings.filter(b => b.status === "selesai")].length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              <Egg className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-lg">Tidak ada telur aktif dalam inkubasi</p>
-            </div>
+            <EmptyState
+              type="breeding"
+              customTitle="Tidak ada telur dalam inkubasi"
+              customDescription="Batch yang berstatus bertelur atau inkubasi akan muncul di sini beserta hitung mundur perkiraan menetasnya."
+              onAction={perms.canCreate ? () => { setEditData(null); setShowForm(true); } : null}
+              customButtonText="+ Catat Batch Baru"
+            />
           ) : (
             <div className="space-y-6">
               {[...activeBreedings, ...breedings.filter(b => b.status === "selesai")].map((b) => {
@@ -525,11 +565,11 @@ export default function BreedingAndEggs() {
               <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
             </div>
           ) : incubators.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground border-2 border-dashed rounded-xl">
-              <Egg className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p className="font-medium">Belum ada inkubator terdaftar</p>
-              <p className="text-sm mt-1">Tambahkan inkubator untuk mulai memantau</p>
-            </div>
+            <EmptyState
+              type="breeding"
+              customTitle="Belum ada inkubator terdaftar"
+              customDescription="Tambahkan inkubator untuk mulai memantau suhu dan kelembapannya dari halaman ini."
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {incubators.map(inc => {
@@ -648,10 +688,11 @@ export default function BreedingAndEggs() {
               <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
             </div>
           ) : historyBreedings.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              <Egg className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-lg">Belum ada riwayat penetasan</p>
-            </div>
+            <EmptyState
+              type="breeding"
+              customTitle="Belum ada riwayat penetasan"
+              customDescription="Batch yang sudah selesai menetas akan tersimpan di sini sebagai riwayat, lengkap dengan jumlah telur dan hasilnya."
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {historyBreedings.map((b) => (

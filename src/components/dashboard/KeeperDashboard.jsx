@@ -17,6 +17,8 @@ import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget"
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
+import PageHeader from "@/components/common/PageHeader";
+import { TortoiseArt } from "@/components/common/Illustration";
 
 function getMinutesUntil(timeStr) {
   if (!timeStr) return null;
@@ -251,15 +253,22 @@ export default function KeeperDashboard() {
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-2xl font-heading font-bold">
-          Halo, {user?.full_name?.split(" ")[0] || "Keeper"} 👋
-        </h1>
-        <p className="text-muted-foreground text-sm mt-0.5 capitalize">
-          {format(new Date(), "EEEE, d MMMM yyyy", { locale: id })}
-        </p>
-      </div>
+      {/* Greeting — status absen dan poin bulan ini ikut di kepala halaman,
+          karena dua hal itulah yang paling sering dicek keeper. */}
+      <PageHeader
+        title={`Halo, ${user?.full_name?.split(" ")[0] || "Keeper"} 👋`}
+        subtitle={format(new Date(), "EEEE, d MMMM yyyy", { locale: id })}
+        art={<TortoiseArt size="md" />}
+        chips={[
+          {
+            key: "absen", icon: Clock, label: "Absen",
+            value: hasCheckedOut ? "Selesai" : hasCheckedIn ? `Masuk ${todayAttendance.check_in}` : "Belum",
+            tone: hasCheckedIn ? "good" : "warn",
+          },
+          { key: "poin", icon: Star, label: "Poin disetujui", value: approvedPoints },
+          { key: "hari", icon: CheckCircle2, label: "Hari disetujui", value: approvedDays },
+        ]}
+      />
 
       {/* ── 1. CHECK-IN ── */}
       <Card className={`p-5 border-2 ${hasCheckedOut ? "border-green-200 bg-green-50" : hasCheckedIn ? "border-primary/30 bg-primary/5" : "border-dashed border-muted-foreground/30"}`}>

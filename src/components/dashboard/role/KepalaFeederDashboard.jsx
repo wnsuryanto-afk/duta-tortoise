@@ -2,17 +2,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Users, CheckCircle, XCircle, AlertTriangle, Star, ChevronRight, Loader2, Package, Wallet
 } from "lucide-react";
-import { format, subMonths, startOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { toast } from "sonner";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
+import PageHeader from "@/components/common/PageHeader";
+import { TeamArt } from "@/components/common/Illustration";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
@@ -93,6 +95,15 @@ export default function KepalaFeederDashboard({ user }) {
       poinByKeeper[c.employee_email] = (poinByKeeper[c.employee_email] || 0) + (c.approved_points || c.total_points_claimed || 0);
     });
 
+  // Ringkasan tim untuk header — dihitung dari data yang sudah ada di layar ini
+  const hadirHariIni = keepers.filter(k =>
+    attendances.some(a => a.employee_email === k.email)
+  ).length;
+  const checklistMasuk = keepers.filter(k => {
+    const cl = dailyChecklists.find(c => c.employee_email === k.email);
+    return cl?.status === "submitted" || cl?.status === "approved";
+  }).length;
+
   // Poin diri sendiri hari ini
   const myTodayCL = dailyChecklists.find(c => c.employee_email === user?.email);
   const myTodayPoin = myTodayCL?.total_points_claimed || 0;
@@ -160,17 +171,23 @@ export default function KepalaFeederDashboard({ user }) {
 
   return (
     <div className="space-y-5 pb-10 animate-fade-in">
-      {/* ── HEADER ── */}
-      <div className="flex items-start justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-xl font-bold text-foreground font-heading">Halo, {user?.full_name || "Kepala Feeder"}</h1>
-          <p className="text-sm text-muted-foreground">{todayLabel}</p>
-        </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 border border-green-300">
-          <Star className="w-3.5 h-3.5 text-green-700" />
-          <span className="text-sm font-semibold text-green-700">{myTodayPoin} poin hari ini</span>
-        </div>
-      </div>
+      {/* ── HEADER ──
+          Kepala feeder mengawasi tim, jadi angka kehadiran dan checklist
+          diangkat ke atas — itu yang ditanyakan atasannya tiap pagi. */}
+      <PageHeader
+        title={`Halo, ${user?.full_name || "Kepala Feeder"}`}
+        subtitle={todayLabel}
+        art={<TeamArt size="md" />}
+        chips={[
+          { key: "hadir", icon: Users, label: "Keeper hadir",
+            value: `${hadirHariIni}/${keepers.length}`,
+            tone: keepers.length > 0 && hadirHariIni >= keepers.length ? "good" : "warn" },
+          { key: "checklist", icon: CheckCircle, label: "Checklist masuk",
+            value: `${checklistMasuk}/${keepers.length}`,
+            tone: keepers.length > 0 && checklistMasuk >= keepers.length ? "good" : "warn" },
+          { key: "poin", icon: Star, label: "Poin saya hari ini", value: myTodayPoin },
+        ]}
+      />
 
       {/* ── MOTIVASI HARIAN ── */}
       <MotivasiHarianCard />

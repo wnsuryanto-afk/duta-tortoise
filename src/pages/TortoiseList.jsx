@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag, HeartPulse } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import { TortoiseArt } from "@/components/common/Illustration";
 import TortoiseTerjualTab from "@/components/tortoise/TortoiseTerjualTab";
 import ExportButton from "@/components/common/ExportButton";
 import SaleWizard from "@/components/sales/SaleWizard";
@@ -255,14 +257,39 @@ export default function TortoiseList() {
   // Karantina tortoises
   const quarantinedTortoises = tortoises.filter(t => t.in_quarantine === true);
 
+  // Ringkasan populasi untuk kepala halaman. Rasio jantan-betina ikut
+  // ditampilkan karena itu yang menentukan kapasitas breeding, dan selama ini
+  // hanya bisa dilihat dengan menyaring daftar satu per satu.
+  const ringkasan = (() => {
+    const hidup = tortoises.filter(t => !t.is_archived && t.status !== "mati" && t.status !== "terjual");
+    return {
+      aktif: tortoises.filter(t => t.status === "aktif" && !t.is_archived).length,
+      jantan: hidup.filter(t => t.gender === "jantan").length,
+      betina: hidup.filter(t => t.gender === "betina").length,
+      sakit: hidup.filter(t => t.status === "sakit" || t.is_currently_sick).length,
+      karantina: quarantinedTortoises.length,
+    };
+  })();
+
   const handleSaveEnclosure = () => { setShowEnclosureForm(false); queryClient.invalidateQueries({ queryKey: ["enclosures"] }); };
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-heading font-bold text-foreground">Kura-kura & Kandang</h1>
-        <p className="text-muted-foreground text-sm mt-1">Kelola kura-kura dan kandang dalam satu tempat</p>
-      </div>
+      <PageHeader
+        title="Kura-kura & Kandang"
+        subtitle="Kelola kura-kura dan kandang dalam satu tempat"
+        icon={Shell}
+        art={<TortoiseArt size="md" />}
+        chips={[
+          { key: "aktif", icon: Shell, label: "Aktif", value: ringkasan.aktif },
+          { key: "jk", icon: Home, label: "Jantan : Betina",
+            value: `${ringkasan.jantan} : ${ringkasan.betina}` },
+          { key: "sakit", icon: HeartPulse, label: "Sakit", value: ringkasan.sakit,
+            tone: ringkasan.sakit > 0 ? "warn" : "good" },
+          { key: "karantina", icon: CalendarX, label: "Karantina", value: ringkasan.karantina,
+            tone: ringkasan.karantina > 0 ? "warn" : "default" },
+        ]}
+      />
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList className="w-full sm:w-auto">

@@ -15,9 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Plus, TrendingUp, TrendingDown, DollarSign, Loader2, Settings, Edit2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import PageHeader from "@/components/common/PageHeader";
+import StatCard from "@/components/dashboard/StatCard";
+import { WalletArt } from "@/components/common/Illustration";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
@@ -295,6 +297,8 @@ export default function FinancePage() {
   const totalPemasukan  = periodTx.filter((t) => t.type === "pemasukan").reduce((s, t) => s + (t.amount || 0), 0);
   const totalPengeluaran = periodTx.filter((t) => t.type === "pengeluaran").reduce((s, t) => s + (t.amount || 0), 0);
   const labaRugi = totalPemasukan - totalPengeluaran;
+  // Jumlah transaksi yang benar-benar dihitung pada periode ini
+  const transaksiPeriode = periodTx.length;
 
   const byCategory = {};
   periodTx.forEach((t) => {
@@ -356,61 +360,71 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Laporan Keuangan</h1>
-          <p className="text-muted-foreground text-sm">Laba rugi, pemasukan & pengeluaran</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <MonthlyReportExport role={role} />
-          {canManage && (
-            <Button onClick={() => setShowForm(true)} className="gap-2">
-              <Plus className="w-4 h-4" /> Tambah Transaksi
-            </Button>
-          )}
-        </div>
+      <PageHeader
+        title="Laporan Keuangan"
+        subtitle="Laba rugi, pemasukan & pengeluaran"
+        icon={DollarSign}
+        art={<WalletArt size="md" />}
+        chips={[
+          { key: "margin", icon: TrendingUp, label: "Margin",
+            value: totalPemasukan > 0 ? `${((labaRugi / totalPemasukan) * 100).toFixed(1)}%` : "—",
+            tone: labaRugi >= 0 ? "good" : "bad" },
+          { key: "transaksi", icon: Edit2, label: "Transaksi periode ini", value: transaksiPeriode },
+        ]}
+        actions={
+          <>
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <MonthlyReportExport role={role} />
+            {canManage && (
+              <Button onClick={() => setShowForm(true)} className="gap-2 hover-lift">
+                <Plus className="w-4 h-4" /> Tambah Transaksi
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      {/* Ringkasan periode — tiga angka yang saling terkait, jadi ditaruh
+          berdampingan dengan bilah perbandingan di bawahnya. */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger">
+        <StatCard label="Total Pemasukan" value={totalPemasukan} icon={TrendingUp}
+          format={(n) => `Rp ${n.toLocaleString("id-ID")}`}
+          color="bg-accent/15 text-accent" sub="uang masuk pada periode ini" />
+        <StatCard label="Total Pengeluaran" value={totalPengeluaran} icon={TrendingDown}
+          format={(n) => `Rp ${n.toLocaleString("id-ID")}`}
+          color="bg-red-100 text-red-600" sub="uang keluar pada periode ini" />
+        <StatCard label={labaRugi >= 0 ? "Laba" : "Rugi"} value={Math.abs(labaRugi)} icon={DollarSign}
+          format={(n) => `Rp ${n.toLocaleString("id-ID")}`}
+          color={labaRugi >= 0 ? "bg-primary/15 text-primary" : "bg-orange-100 text-orange-600"}
+          sub="pemasukan dikurangi pengeluaran"
+          hint="Selisih kas pada periode terpilih. Transaksi yang ditandai dikecualikan dari laporan tidak ikut dihitung." />
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-5 bg-green-50 border-green-200">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-green-100"><TrendingUp className="w-5 h-5 text-green-600" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Pemasukan</p>
-              <p className="text-xl font-bold text-green-700">Rp {totalPemasukan.toLocaleString("id-ID")}</p>
-            </div>
+      {/* Bilah perbandingan — sekali lihat langsung terlihat porsi pengeluaran
+          terhadap pemasukan, tanpa harus membandingkan dua angka panjang. */}
+      {totalPemasukan > 0 && (
+        <div className="surface-raised p-4">
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="font-semibold text-muted-foreground">
+              Pengeluaran memakan {Math.round((totalPengeluaran / totalPemasukan) * 100)}% dari pemasukan
+            </span>
+            <span className="tabular text-muted-foreground">
+              Rp {totalPengeluaran.toLocaleString("id-ID")} / Rp {totalPemasukan.toLocaleString("id-ID")}
+            </span>
           </div>
-        </Card>
-        <Card className="p-5 bg-red-50 border-red-200">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-red-100"><TrendingDown className="w-5 h-5 text-red-600" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Pengeluaran</p>
-              <p className="text-xl font-bold text-red-700">Rp {totalPengeluaran.toLocaleString("id-ID")}</p>
-            </div>
+          <div className="bar-track h-3">
+            <div
+              className={`bar-fill ${totalPengeluaran > totalPemasukan ? "bg-destructive" : "bg-accent"}`}
+              style={{ width: `${Math.min(100, (totalPengeluaran / totalPemasukan) * 100)}%` }}
+            />
           </div>
-        </Card>
-        <Card className={`p-5 ${labaRugi >= 0 ? "bg-primary/5 border-primary/20" : "bg-orange-50 border-orange-200"}`}>
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${labaRugi >= 0 ? "bg-primary/10" : "bg-orange-100"}`}>
-              <DollarSign className={`w-5 h-5 ${labaRugi >= 0 ? "text-primary" : "text-orange-600"}`} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{labaRugi >= 0 ? "Laba" : "Rugi"}</p>
-              <p className={`text-xl font-bold ${labaRugi >= 0 ? "text-primary" : "text-orange-700"}`}>
-                Rp {Math.abs(labaRugi).toLocaleString("id-ID")}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

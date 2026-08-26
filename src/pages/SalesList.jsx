@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Plus, DollarSign, TrendingUp, ShoppingBag, Clock, Printer, CreditCard, Pencil, Trash2, Undo2 } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, ShoppingBag, Clock, CreditCard, Pencil, Trash2, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ExportButton from "@/components/common/ExportButton";
 import ExcludeToggle from "@/components/owner/ExcludeToggle";
@@ -20,8 +19,9 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, getPerms, canDelete as canDeleteGlobal } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import PageHeader from "@/components/common/PageHeader";
+import StatCard from "@/components/dashboard/StatCard";
+import { WalletArt } from "@/components/common/Illustration";
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
@@ -210,55 +210,56 @@ export default function SalesList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-heading font-bold">Penjualan</h1>
+      <PageHeader
+        title="Penjualan"
+        subtitle={`${enrichedSales.length} transaksi · Total Rp ${fmt(totalRevenue)}`}
+        icon={DollarSign}
+        art={<WalletArt size="md" />}
+        chips={[
+          { key: "bulan", icon: ShoppingBag, label: "Bulan ini", value: `${salesThisMonth.length} ekor` },
+          { key: "omzet", icon: DollarSign, label: "Omzet bulan ini", value: `Rp ${fmt(revenueThisMonth)}` },
+          { key: "followup", icon: Clock, label: "Perlu follow-up", value: salesAktif.length,
+            tone: salesAktif.length > 0 ? "warn" : "good" },
+        ]}
+        actions={
+          <>
             <PageTooltip page="sales" />
-          </div>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {enrichedSales.length} transaksi · Total Rp {fmt(totalRevenue)}
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <ExportButton
-            data={sales}
-            filename={`penjualan-${new Date().toISOString().split("T")[0]}`}
-            title="Data Penjualan"
-            columns={[
-              {key:"sale_date",label:"Tgl"},{key:"tortoise_name",label:"Kura-kura"},
-              {key:"buyer_name",label:"Pembeli"},{key:"hp_whatsapp",label:"HP/WA"},
-              {key:"price",label:"Harga"},{key:"hpp",label:"HPP"},{key:"payment_status",label:"Pembayaran"},
-              {key:"shipping_method",label:"Pengiriman"},{key:"platform",label:"Platform"},
-            ]}
-          />
-          {perms.canCreate && !isInvestor && (
-            <Button onClick={() => setShowWizard(true)}>
-              <Plus className="w-4 h-4 mr-2" /> Catat Penjualan
-            </Button>
-          )}
-        </div>
-      </div>
+            <ExportButton
+              data={sales}
+              filename={`penjualan-${new Date().toISOString().split("T")[0]}`}
+              title="Data Penjualan"
+              columns={[
+                {key:"sale_date",label:"Tgl"},{key:"tortoise_name",label:"Kura-kura"},
+                {key:"buyer_name",label:"Pembeli"},{key:"hp_whatsapp",label:"HP/WA"},
+                {key:"price",label:"Harga"},{key:"hpp",label:"HPP"},{key:"payment_status",label:"Pembayaran"},
+                {key:"shipping_method",label:"Pengiriman"},{key:"platform",label:"Platform"},
+              ]}
+            />
+            {perms.canCreate && !isInvestor && (
+              <Button onClick={() => setShowWizard(true)} className="hover-lift">
+                <Plus className="w-4 h-4 mr-2" /> Catat Penjualan
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Summary widgets */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Bulan Ini", value: `${salesThisMonth.length} ekor`, sub: `Rp ${fmt(revenueThisMonth)}`, icon: ShoppingBag, color: "text-primary" },
-          { label: "Total Laba Bulan Ini", value: `Rp ${fmt(labaThisMonth)}`, sub: `Margin rata-rata ${avgMargin}%`, icon: TrendingUp, color: labaThisMonth >= 0 ? "text-green-600" : "text-red-600" },
-          { label: "Menunggu Follow-up", value: salesAktif.length, sub: "DP / Belum Bayar", icon: Clock, color: "text-amber-600" },
-          { label: "Total Terjual", value: enrichedSales.length, sub: `Rp ${fmt(totalRevenue)}`, icon: DollarSign, color: "text-primary" },
-        ].map(item => (
-          <Card key={item.label} className="p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <p className={`text-xl font-bold mt-1 ${item.color}`}>{item.value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>
-              </div>
-              <item.icon className={`w-5 h-5 ${item.color} opacity-60`} />
-            </div>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+        <StatCard label="Bulan Ini" value={`${salesThisMonth.length} ekor`}
+          icon={ShoppingBag} color="bg-primary/15 text-primary"
+          sub={`Rp ${fmt(revenueThisMonth)}`} />
+        <StatCard label="Laba Bulan Ini" value={`Rp ${fmt(labaThisMonth)}`}
+          icon={TrendingUp}
+          color={labaThisMonth >= 0 ? "bg-accent/15 text-accent" : "bg-red-100 text-red-600"}
+          sub={`Margin rata-rata ${avgMargin}%`}
+          hint="Hanya penjualan yang HPP-nya sudah diisi yang ikut dihitung. Penjualan tanpa HPP tidak bisa dihitung labanya." />
+        <StatCard label="Menunggu Follow-up" value={salesAktif.length}
+          icon={Clock} color="bg-amber-100 text-amber-700"
+          sub="DP / belum bayar" />
+        <StatCard label="Total Terjual" value={enrichedSales.length}
+          icon={DollarSign} color="bg-primary/15 text-primary"
+          sub={`Rp ${fmt(totalRevenue)}`} />
       </div>
 
       {/* Tabs */}

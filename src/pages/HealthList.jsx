@@ -14,6 +14,8 @@ import HealthForm from "@/components/health/HealthForm";
 import SickTortoiseClosePanel from "@/components/health/SickTortoiseClosePanel";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms } from "@/lib/permissions";
+import PageHeader from "@/components/common/PageHeader";
+import { HealthArt } from "@/components/common/Illustration";
 
 const TYPE_CONFIG = {
   checkup: { label: "Cek Kesehatan", color: "bg-blue-100 text-blue-700" },
@@ -109,6 +111,18 @@ export default function HealthList() {
     setSearch("");
   };
 
+  // Ringkasan untuk kepala halaman. "Sedang sakit" dihitung dari data kura,
+  // bukan dari jumlah catatan: satu kura bisa punya banyak catatan sekaligus.
+  const ringkasanSehat = (() => {
+    const bulanIni = format(new Date(), "yyyy-MM");
+    return {
+      sedangSakit: tortoises.filter(
+        t => !t.is_archived && (t.status === "sakit" || t.is_currently_sick)
+      ).length,
+      bulanIni: records.filter(r => (r.date || "").startsWith(bulanIni) && r.type === "sakit").length,
+    };
+  })();
+
   const handleEdit = (r) => { setEditData(r); setShowForm(true); };
   const handleDelete = async (r) => {
     if (confirm(`Hapus catatan untuk ${r.tortoise_name}?`)) {
@@ -120,17 +134,23 @@ export default function HealthList() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Catatan Sakit</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Riwayat kesehatan kura-kura</p>
-        </div>
-        {perms.canCreate && (
-          <Button onClick={() => { setEditData(null); setShowForm(true); }} className="gap-2 bg-primary">
+      <PageHeader
+        title="Catatan Sakit"
+        subtitle="Riwayat kesehatan kura-kura"
+        icon={Heart}
+        art={<HealthArt size="md" />}
+        chips={[
+          { key: "sakit", icon: Heart, label: "Sedang sakit", value: ringkasanSehat.sedangSakit,
+            tone: ringkasanSehat.sedangSakit > 0 ? "warn" : "good" },
+          { key: "bulan", icon: CalendarDays, label: "Kasus bulan ini", value: ringkasanSehat.bulanIni },
+          { key: "total", icon: BookOpen, label: "Total catatan", value: records.length },
+        ]}
+        actions={perms.canCreate && (
+          <Button onClick={() => { setEditData(null); setShowForm(true); }} className="gap-2 bg-primary hover-lift">
             <Plus className="w-4 h-4" /> Tambah Catatan
           </Button>
         )}
-      </div>
+      />
 
       {showSickPanel && (
         <SickTortoiseClosePanel user={user} />
