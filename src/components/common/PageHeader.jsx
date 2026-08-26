@@ -81,8 +81,11 @@ export default function PageHeader({
 
           {chips?.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mt-4">
-              {chips.map((c, i) => (
-                <HeaderChip key={c.key || c.label || i} {...c} />
+              {/* `key` dikeluarkan dari objeknya: menyebarkan objek yang masih
+                  memuat key ke JSX membuat React memperingatkan, dan key itu
+                  bukan prop yang perlu diterima HeaderChip. */}
+              {chips.map(({ key, ...c }, i) => (
+                <HeaderChip key={key || c.label || i} {...c} />
               ))}
             </div>
           )}

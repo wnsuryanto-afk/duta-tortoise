@@ -39,7 +39,20 @@ export default function StatCard({
   const tampilan =
     animate && numeric ? <AnimatedNumber value={value} format={format} /> : value;
 
+  // Nominal rupiah penuh ("Rp 24.500.000") tidak muat pada ukuran terbesar dan
+  // pecah jadi dua baris yang merusak tinggi kartu. Ukuran huruf mengecil
+  // mengikuti panjang teksnya, jadi angka sepanjang apa pun tetap satu baris.
+  const teksNilai = numeric
+    ? (format ? format(value) : Number(value).toLocaleString("id-ID"))
+    : typeof value === "string" ? value : "";
+  const ukuranNilai =
+    teksNilai.length > 15 ? "text-base sm:text-lg"
+    : teksNilai.length > 11 ? "text-lg sm:text-xl"
+    : teksNilai.length > 7 ? "text-xl sm:text-2xl"
+    : "text-2xl sm:text-[28px]";
+
   const interaktif = !!(href || onClick);
+  const warnaAksen = color.split(" ").find((c) => c.startsWith("text-")) || "text-primary";
 
   const body = (
     <div
@@ -52,9 +65,9 @@ export default function StatCard({
       {/* Sapuan warna lembut di sudut — memberi kartu kedalaman tanpa garis tegas */}
       <div
         className={cn(
-          "absolute -top-10 -right-10 w-28 h-28 rounded-full blur-2xl opacity-[0.14] transition-opacity",
-          interaktif && "group-hover:opacity-25",
-          color.split(" ").find((c) => c.startsWith("bg-")) || "bg-primary"
+          "absolute -top-10 -right-10 w-28 h-28 rounded-full blur-2xl bg-current opacity-[0.12] transition-opacity",
+          interaktif && "group-hover:opacity-20",
+          warnaAksen
         )}
       />
 
@@ -70,7 +83,7 @@ export default function StatCard({
               </InfoHint>
             )}
           </div>
-          <p className="stat-value text-2xl sm:text-[28px] mt-1.5 text-foreground">
+          <p className={cn("stat-value mt-1.5 text-foreground whitespace-nowrap", ukuranNilai)}>
             {tampilan}
           </p>
         </div>
@@ -104,8 +117,8 @@ export default function StatCard({
       {/* Garis aksen bawah — penanda kategori kartu */}
       <div
         className={cn(
-          "absolute bottom-0 left-0 right-0 h-[3px] opacity-70",
-          accent || color.split(" ").find((c) => c.startsWith("bg-")) || "bg-primary"
+          "absolute bottom-0 left-0 right-0 h-[3px]",
+          accent || cn("bg-current opacity-50 dark:opacity-40", warnaAksen)
         )}
       />
 

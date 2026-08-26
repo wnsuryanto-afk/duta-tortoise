@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
  * perlu membuka halaman lain.
  */
 const MORPHS = {
-  normal:     { label: "Normal",     bar: "bg-muted-foreground/50", chip: "bg-muted text-muted-foreground" },
+  normal:     { label: "Normal",     bar: "bg-primary/55",          chip: "bg-muted text-muted-foreground" },
   over_scute: { label: "Over Scute", bar: "bg-blue-500",   chip: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" },
   less_scute: { label: "Less Scute", bar: "bg-purple-500", chip: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" },
   het_albino: { label: "Het Albino", bar: "bg-orange-500", chip: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" },
