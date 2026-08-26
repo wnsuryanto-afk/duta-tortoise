@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
+import { kandangDariNama } from "@/lib/kandang";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, AlertTriangle } from "lucide-react";
 import TortoisePhotoGallery from "./TortoisePhotoGallery";
@@ -330,6 +331,10 @@ export default function TortoiseForm({ open, onClose, editData }) {
     let tortoiseId = editData?.id;
     const oldEnclosure = editData?.enclosure || "";
     const newEnclosureName = data.enclosure || "";
+    // Nomor kandang ikut disimpan supaya tautannya bertahan saat kandang
+    // diganti nama. Bila namanya tidak dikenali (kandang belum didaftarkan),
+    // nomornya dikosongkan dan pencarian jatuh ke nama seperti sebelumnya.
+    data.enclosure_id = kandangDariNama(newEnclosureName, enclosures)?.id || "";
     const oldData = editData ? { ...editData } : null;
     const nameChanged = editData?.id && editData?.name && editData.name !== cleanForm.name;
     if (editData?.id) {

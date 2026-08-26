@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { logActivity } from "@/lib/logActivity";
 import { base44 } from "@/api/base44Client";
+import { kandangDariNama, tulisKandang } from "@/lib/kandang";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -91,7 +92,12 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
     const target = newEnclosure.trim();
     const oldEnclosure = tortoise.enclosure || "";
 
-    await base44.entities.Tortoise.update(tortoise.id, { enclosure: target });
+    // Nomor kandang ikut ditulis supaya tautannya bertahan saat kandang
+    // diganti nama; namanya tetap disimpan sebagai keterangan.
+    const kandangTujuan = kandangDariNama(target, enclosures);
+    await base44.entities.Tortoise.update(tortoise.id, {
+      ...(kandangTujuan ? tulisKandang(kandangTujuan) : { enclosure: target }),
+    });
 
     await logActivity({
       action: "transfer",

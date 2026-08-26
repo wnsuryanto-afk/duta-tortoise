@@ -20,6 +20,7 @@ import { canAccess, getPerms, canDelete as canDeleteGlobal } from "@/lib/permiss
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
 import PageHeader from "@/components/common/PageHeader";
+import { kandangDariNama } from "@/lib/kandang";
 import StatCard from "@/components/dashboard/StatCard";
 import { WalletArt } from "@/components/common/Illustration";
 
@@ -105,10 +106,21 @@ export default function SalesList() {
     if (!cancelSale) return;
     setCancelling(true);
     try {
-      // Kembalikan status kura
+      // Kembalikan status kura. Daftar kandang diambil di sini saja — membatalkan
+      // penjualan jarang terjadi, tidak sepadan dengan satu query tetap di halaman.
+      let kandangKembali = null;
+      if (cancelEnclosure) {
+        try {
+          kandangKembali = kandangDariNama(cancelEnclosure, await base44.entities.Enclosure.list());
+        } catch {
+          // Gagal mengambil daftar kandang tidak boleh menggagalkan pembatalan;
+          // namanya tetap ditulis dan nomornya bisa dilengkapi lewat pemindahan data.
+        }
+      }
       await base44.entities.Tortoise.update(cancelSale.tortoise_id, {
         status: cancelSale._prev_status || "aktif",
         enclosure: cancelEnclosure || "",
+        enclosure_id: kandangKembali?.id || "",
         last_status_change: new Date().toISOString().split("T")[0],
       });
       // Hapus finance tx terkait

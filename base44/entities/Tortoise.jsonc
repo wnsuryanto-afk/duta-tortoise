@@ -193,6 +193,10 @@
       "type": "string",
       "format": "date"
     },
+    "enclosure_id": {
+      "type": "string",
+      "description": "Nomor kandang. Tautan yang sebenarnya — tidak berubah saat kandang diganti nama. Field enclosure di bawah tetap diisi sebagai keterangan yang terbaca manusia."
+    },
     "enclosure": {
       "type": "string"
     },

@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
 import TestModeSettings from "@/components/owner/TestModeSettings";
+import PemindahanKandang from "@/components/owner/PemindahanKandang";
 import AISaranToggle from "@/components/settings/AISaranToggle";
 
 export default function SystemMaintenancePage() {
@@ -60,6 +61,9 @@ export default function SystemMaintenancePage() {
         <h1 className="text-2xl font-heading font-bold text-foreground">Pemeliharaan Sistem</h1>
         <p className="text-muted-foreground text-sm mt-1">Sinkronisasi dan recalculate data untuk menjaga integritas</p>
       </div>
+
+      {/* Sambungan kura ke kandang — dijalankan sekali, aman diulang */}
+      <PemindahanKandang />
 
       {/* Mode Testing */}
       <div>

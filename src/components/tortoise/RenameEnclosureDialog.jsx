@@ -39,6 +39,17 @@ export default function RenameEnclosureDialog({ open, onClose, enclosureName, to
   });
   const catatanKandang = enclosures.find((e) => e.name === enclosureName);
 
+  // Kura yang sudah punya nomor kandang mengikuti perubahan nama dengan
+  // sendirinya — itulah gunanya nomor.
+  const { data: kuraKandang = [] } = useQuery({
+    queryKey: ["tortoises-rename", enclosureName],
+    queryFn: () => base44.entities.Tortoise.filter({ enclosure: enclosureName }),
+    enabled: open,
+    staleTime: 60 * 1000,
+  });
+  const idBernomor = new Set(kuraKandang.filter((t) => t.enclosure_id).map((t) => t.id));
+  const perluNama = tortoiseIds.filter((id) => !idBernomor.has(id)).length;
+
   const namaBersih = newName.trim();
   const bentrok = enclosures.some(
     (e) => e.name === namaBersih && e.name !== enclosureName
@@ -66,8 +77,13 @@ export default function RenameEnclosureDialog({ open, onClose, enclosureName, to
       }
     }
 
+    // Kura yang sudah tersambung lewat NOMOR tidak perlu disentuh sama sekali —
+    // tautannya tidak ikut berubah saat kandang diganti nama. Yang masih
+    // bergantung pada nama tetap diperbarui satu per satu.
+    const perluDiperbarui = tortoiseIds.filter((id) => !idBernomor.has(id));
+
     const hasil = await jalankanMassal(
-      tortoiseIds,
+      perluDiperbarui,
       (id) => base44.entities.Tortoise.update(id, { enclosure: namaBersih }),
       { serentak: 4, onKemajuan: (sudah, total) => setKemajuan({ sudah, total }) }
     );
@@ -109,8 +125,13 @@ export default function RenameEnclosureDialog({ open, onClose, enclosureName, to
               autoFocus
             />
             <p className="text-xs text-muted-foreground">
-              Memperbarui {tortoiseIds.length} kura
-              {catatanKandang ? " dan catatan kandangnya" : ""}.
+              {catatanKandang ? "Memperbarui catatan kandang" : "Memperbarui nama kandang"}
+              {perluNama > 0
+                ? ` dan ${perluNama} kura yang masih tersambung lewat nama.`
+                : "."}
+              {idBernomor.size > 0 && (
+                <> {idBernomor.size} kura lain sudah tersambung lewat nomor dan ikut sendiri.</>
+              )}
             </p>
             {bentrok && (
               <p className="text-xs text-destructive font-medium">

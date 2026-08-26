@@ -84,6 +84,7 @@ export default function SaleForm({ open, onClose, editData }) {
           status: "terjual",
           is_currently_sick: false,
           enclosure: "",
+          enclosure_id: "",
         });
         // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.
         try { await recalcEnclosureCounts(); } catch { /* penjualan tetap tersimpan */ }

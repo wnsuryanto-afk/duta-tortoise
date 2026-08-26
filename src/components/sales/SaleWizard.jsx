@@ -646,6 +646,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
           is_currently_sick: false,
           previous_status: prevTortoise?.status || "aktif",
           enclosure: "",
+          enclosure_id: "",
           last_status_change: today,
         });
         // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.

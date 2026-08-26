@@ -177,6 +177,7 @@ export default function HatchDialog({ open, onClose, breeding }) {
         photo_url: "",
         notes: `Anak dari ${breeding.male_name} × ${breeding.female_name}. Menetas pada ${format(new Date(hatchDate), "d MMMM yyyy", { locale: id })}`,
         enclosure: encName,
+        enclosure_id: selectedEnclosure?.id || "",
       };
     });
   };
