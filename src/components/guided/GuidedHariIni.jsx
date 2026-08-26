@@ -19,6 +19,7 @@ import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
 import { LeafPattern } from "@/components/common/Illustration";
 import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
+import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -295,22 +296,34 @@ export default function GuidedHariIni({ user }) {
     if (savingPerawatan) return;
     setSavingPerawatan(h.tortoise_id);
     try {
-      await base44.entities.MaintenanceLog.create({
-        check_key: `${user.email}__harian__perawatan_${h.tortoise_id}__${today}`,
-        enclosure_id: "perawatan",
-        enclosure_name: "Perawatan",
-        freq: "harian",
-        item_id: `perawatan_${h.tortoise_id}`,
-        item_label: `Perawatan ${h.tortoise_name}`,
-        period_key: today,
-        is_done: true,
-        done_at: nowStr(),
-        done_by: user.full_name || user.email,
-        done_by_email: user.email,
-        poin_earned: 0,
+      // Diambil saat tombol ditekan, bukan disimpan sebagai state: aksinya jarang,
+      // dan data yang segar justru yang mencegah catatan medis terduplikasi bila
+      // keeper lain sudah mencentang kura yang sama dari perangkat berbeda.
+      const [catatanKura, tugasTertunda] = await Promise.all([
+        base44.entities.HealthRecord.filter({ tortoise_id: h.tortoise_id, date: today }),
+        base44.entities.IncidentalTask.filter({ status: "pending" }, "-due_date", 100),
+      ]);
+
+      const hasil = await catatPerawatanHarian(h, user, {
+        tanggal: today,
+        catatanKesehatan: catatanKura,
+        tugasInsidentil: tugasTertunda,
       });
+
       refetchML();
+      qc.invalidateQueries({ queryKey: ["health-records"] });
+      qc.invalidateQueries({ queryKey: ["incidental-tasks-all"] });
       setSembuhPrompt((p) => new Set(p).add(h.tortoise_id));
+
+      if (!hasil.dicatat) {
+        showMsg("warn", `Perawatan ${h.tortoise_name} sudah tercatat hari ini.`);
+      } else if (hasil.peringatan) {
+        // Catatan medisnya tersimpan, tapi ada jejak tambahan yang gagal —
+        // menelannya berarti keeper mengira semuanya beres.
+        showMsg("warn", `Perawatan tercatat, tapi ${hasil.peringatan}.`);
+      } else {
+        showMsg("success", `Perawatan ${h.tortoise_name} masuk ke rekam kesehatannya.`);
+      }
     } catch {
       showMsg("error", "Gagal mencatat perawatan. Coba lagi ya.");
     }
