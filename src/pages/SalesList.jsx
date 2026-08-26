@@ -174,7 +174,7 @@ export default function SalesList() {
           <div key={s.id} className="group relative">
             <SaleCard sale={s} onDetail={null} onPrint={() => setPrintSale(s)} />
             {/* Admin actions overlay */}
-            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-3 right-3 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
               {isOwner && <ExcludeToggle record={s} entityName="Sale" queryKey={["sales"]} />}
               {perms.canEdit && (
                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Bukti Bayar" onClick={() => setProofSale(s)}>

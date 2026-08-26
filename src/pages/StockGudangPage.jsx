@@ -146,7 +146,7 @@ function ItemCard({ item, onAdjust, onEdit, onDelete, canEdit, canDelete }) {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-1 mt-3 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
         <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => onAdjust(item, "tambah")}>
           <PlusCircle className="w-3 h-3" /> Tambah
         </Button>

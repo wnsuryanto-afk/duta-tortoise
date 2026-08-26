@@ -296,7 +296,7 @@ export default function WarehousePage() {
                           <p className="text-xs text-muted-foreground">{formatRp(item.purchase_price)}/{item.unit}</p>
                         )}
                       </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}>
                         {canTransact && (
                           <Button size="sm" variant="outline" className="h-8 text-xs gap-1"

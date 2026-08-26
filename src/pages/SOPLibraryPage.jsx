@@ -121,7 +121,7 @@ export default function SOPLibraryPage() {
                         <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       {canEdit && (
-                        <div className="flex gap-1 mt-3 pt-2 border-t opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 mt-3 pt-2 border-t opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
                           <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={e => { e.stopPropagation(); setEditDoc(doc); setShowForm(true); }}>
                             <Pencil className="w-3 h-3 mr-1" /> Edit
                           </Button>

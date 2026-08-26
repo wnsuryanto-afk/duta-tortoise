@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Shell, ArrowRightLeft, MapPin, Egg, Ruler, Camera, Tag, QrCode, Lock, FileText, ShoppingBag, Star, GitBranch } from "lucide-react";
+import { Pencil, Trash2, ArrowRightLeft, MapPin, Egg, Ruler, Camera, Tag, QrCode, Lock, FileText, ShoppingBag, GitBranch } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
@@ -21,8 +21,9 @@ import TortoiseLineagePanel from "./TortoiseLineagePanel";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import TortoisePhotoLightbox from "./TortoisePhotoLightbox";
+import { TortoiseArt } from "@/components/common/Illustration";
 
-function PriceField({ label, value }) {
+function PriceField({ label }) {
   return (
     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
       <Lock className="w-2.5 h-2.5" /> {label}: 🔒
@@ -103,7 +104,6 @@ const morphColors = {
   // legacy
   over_scute: "bg-blue-100 text-blue-700",
   less_scute: "bg-purple-100 text-purple-700",
-  het_albino: "bg-orange-100 text-orange-700",
   wc: "bg-amber-100 text-amber-800",
   cb: "bg-teal-100 text-teal-700",
 };
@@ -193,7 +193,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
 
   return (
     <>
-    <Card className={`p-4 hover:shadow-md transition-shadow duration-200 group ${health.border} ${cardBg} ${activelySick ? "border-orange-400 border-2" : ""}`}>
+    <Card className={`p-4 hover-lift group ${health.border} ${cardBg} ${activelySick ? "border-orange-400 border-2" : ""}`}>
       <div className="flex items-start gap-3">
         {/* Foto Thumbnail - DIPERBESAR */}
         <button
@@ -211,17 +211,15 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
               )}
             </>
           ) : (
-            <div className={`w-full h-full flex flex-col items-center justify-center gap-1 ${
-              tortoise.gender === "jantan" ? "bg-green-50" :
-              tortoise.gender === "betina" ? "bg-orange-50" :
-              "bg-slate-100"
+            <div className={`w-full h-full flex flex-col items-center justify-center gap-0.5 ${
+              tortoise.gender === "jantan" ? "bg-green-50 dark:bg-green-950/40" :
+              tortoise.gender === "betina" ? "bg-orange-50 dark:bg-orange-950/40" :
+              "bg-muted"
             }`}>
-              <Shell className={`w-12 h-12 ${
-                tortoise.gender === "jantan" ? "text-green-500" :
-                tortoise.gender === "betina" ? "text-orange-400" :
-                "text-slate-400"
-              }`} />
-              <span className="text-[10px] font-medium text-slate-500">Upload Foto</span>
+              <TortoiseArt size={78} className="opacity-60" />
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                <Camera className="w-3 h-3" /> Tambah foto
+              </span>
             </div>
           )}
         </button>
@@ -344,7 +342,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
         </div>
 
         {showActions && (
-          <div className="flex flex-wrap gap-1 justify-end content-start w-[72px] opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-wrap gap-1 justify-end content-start w-[72px] opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="Riwayat Kandang" onClick={() => setShowHistory(true)}>
               <MapPin className="w-3 h-3" />
             </Button>

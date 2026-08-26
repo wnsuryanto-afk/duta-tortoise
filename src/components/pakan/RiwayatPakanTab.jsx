@@ -165,7 +165,7 @@ export default function RiwayatPakanTab({ movements, items, role, onRefresh }) {
                   {tx.stock_after != null && <p className="text-[10px] text-muted-foreground">Sisa: {tx.stock_after} {tx.unit}</p>}
                 </div>
                 {canDelete && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" disabled={deleting === tx.id} onClick={() => handleDelete(tx)} title="Hapus & kembalikan stok">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity" disabled={deleting === tx.id} onClick={() => handleDelete(tx)} title="Hapus & kembalikan stok">
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 )}

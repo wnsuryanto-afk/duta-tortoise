@@ -184,7 +184,7 @@ export default function RiwayatTransaksiTab({ movements, items, role, onRefresh 
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-8 w-8 text-destructive opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
                     disabled={deleting === tx.id}
                     onClick={() => handleDelete(tx)}
                     title="Hapus & kembalikan stok"

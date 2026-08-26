@@ -130,7 +130,7 @@ function EnclosureChecklistCard({ enclosure, logs, freq, onCheck, onVerify, user
               )}
               {isDone && !isVerified && canVerify && (
                 <button onClick={() => onVerify(log)}
-                  className="text-[10px] text-blue-600 hover:underline opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  className="text-[10px] text-blue-600 hover:underline opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity flex-shrink-0">
                   Verifikasi
                 </button>
               )}

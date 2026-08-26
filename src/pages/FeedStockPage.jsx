@@ -330,7 +330,7 @@ export default function FeedStockPage() {
                     style={{ width: `${Math.min(100, (s.current_stock / (s.minimum_stock * 3 || 1)) * 100)}%` }} />
                 </div>
 
-                <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                <div className="flex gap-1 mt-3 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()}>
                   <Button variant="outline" size="sm" className="h-7 text-xs flex-1"
                     onClick={() => { setTxItem(s); setTxInitialType("keluar"); }}>

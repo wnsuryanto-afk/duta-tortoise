@@ -33,12 +33,20 @@ function ProfilePhotoSection({ formData, user, onChange }) {
     <div className="flex items-center gap-4 mb-6">
       <div className="relative group">
         <UserAvatar name={formData.full_name || user?.email} photoUrl={formData.photo_url} size="xl" />
-        <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-          {uploading ? (
-            <Loader2 className="w-6 h-6 text-white animate-spin" />
-          ) : (
-            <Camera className="w-6 h-6 text-white" />
-          )}
+        {/* Selubung gelap hanya di desktop: menutupi seluruh foto sepanjang
+            waktu di ponsel justru membuat fotonya tidak terlihat. Di layar
+            kecil, lencana kamera di sudut yang menandakan foto bisa diganti. */}
+        <label className="absolute inset-0 rounded-full flex items-center justify-center cursor-pointer transition-opacity lg:bg-black/40 lg:opacity-0 lg:hover:opacity-100 lg:focus-within:opacity-100">
+          <span className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-primary-foreground border-2 border-background flex items-center justify-center shadow-md lg:hidden">
+            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+          </span>
+          <span className="hidden lg:flex">
+            {uploading ? (
+              <Loader2 className="w-6 h-6 text-white animate-spin" />
+            ) : (
+              <Camera className="w-6 h-6 text-white" />
+            )}
+          </span>
           <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploading} />
         </label>
       </div>
@@ -48,7 +56,7 @@ function ProfilePhotoSection({ formData, user, onChange }) {
         <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium mt-1 inline-block">
           {user?.role || "user"}
         </span>
-        <p className="text-xs text-muted-foreground mt-1">Klik foto untuk mengganti</p>
+        <p className="text-xs text-muted-foreground mt-1">Ketuk foto untuk menggantinya</p>
       </div>
     </div>
   );
