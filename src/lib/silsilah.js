@@ -166,3 +166,43 @@ export function dariClutch(kura, breeding, peta) {
   if (!ayah || !ibu || !ayahClutch || !ibuClutch) return false;
   return ayah.id === ayahClutch.id && ibu.id === ibuClutch.id;
 }
+
+/**
+ * Apakah `kandidat` merupakan keturunan dari `leluhur`?
+ *
+ * Dipakai untuk mencegah lingkaran saat induk diisi manual: menetapkan cucu
+ * sebagai kakek membuat silsilahnya berputar tanpa ujung, dan setiap layar yang
+ * menelusurinya ikut berputar bersamanya.
+ *
+ * Penelusuran dibatasi kedalamannya sebagai jaring pengaman terakhir, untuk
+ * data yang sudah terlanjur berputar sebelum pemeriksaan ini ada.
+ */
+export function adalahKeturunanDari(kandidat, leluhur, peta, kedalaman = 12) {
+  if (!kandidat?.id || !leluhur?.id) return false;
+  if (kandidat.id === leluhur.id) return true;
+  if (kedalaman <= 0) return false;
+  const ayah = kandidat.parent_male ? cariInduk(kandidat.parent_male, peta) : null;
+  const ibu = kandidat.parent_female ? cariInduk(kandidat.parent_female, peta) : null;
+  return (
+    adalahKeturunanDari(ayah, leluhur, peta, kedalaman - 1) ||
+    adalahKeturunanDari(ibu, leluhur, peta, kedalaman - 1)
+  );
+}
+
+/**
+ * Kura yang boleh dipilih sebagai induk bagi seekor kura.
+ *
+ * Yang dikeluarkan: dirinya sendiri, dan seluruh keturunannya — keduanya
+ * membuat silsilah berputar. Jenis kelamin disaring bila diminta; kura yang
+ * belum diketahui kelaminnya tetap ditawarkan, karena induk yang sudah lama
+ * mati sering tidak pernah tercatat kelaminnya.
+ */
+export function calonInduk(kura, tortoises = [], jenisKelamin, peta) {
+  const p = peta || petaKura(tortoises);
+  return (p.semua || tortoises).filter((t) => {
+    if (!t?.id) return false;
+    if (jenisKelamin && t.gender && t.gender !== jenisKelamin) return false;
+    if (!kura?.id) return true;
+    return !adalahKeturunanDari(t, kura, p);
+  });
+}

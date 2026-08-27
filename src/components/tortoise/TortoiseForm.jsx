@@ -15,6 +15,7 @@ import { getMissingFields } from "@/lib/incompleteChecks";
 import DeathRecordModal from "./DeathRecordModal";
 import SickModal from "./SickModal";
 import RecoveryModal from "./RecoveryModal";
+import PilihInduk from "./PilihInduk";
 import { logActivity } from "@/lib/logActivity";
 
 const SPECIES_LIST = [
@@ -662,10 +663,21 @@ export default function TortoiseForm({ open, onClose, editData }) {
             {errors.source && <p className="text-xs text-red-600">{errors.source}</p>}
             {form.source === "hasil_sendiri" && (
               <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1">
-                ✓ Silsilah akan tersedia — pastikan data induk terisi di breeding record
+                ✓ Untuk kura hasil tetas sendiri, induknya terisi otomatis saat penetasan dicatat
               </p>
             )}
           </div>
+
+          {/* Induk — satu-satunya tempat silsilah bisa diisi untuk kura yang
+              TIDAK berasal dari penetasan sendiri. Sebelum ini tidak ada satu
+              layar pun di aplikasi yang menulis ke kolom induk, jadi kura yang
+              dibeli atau sudah ada sebelum aplikasi dipakai tidak akan pernah
+              punya silsilah — dan tidak pernah bisa diklaim F2. */}
+          <PilihInduk
+            kura={editData}
+            nilai={form}
+            onUbah={(kunci, nilai) => set(kunci, nilai)}
+          />
 
           {/* Proven */}
           <div className="p-3 rounded-xl bg-green-50 border border-green-200 space-y-2">

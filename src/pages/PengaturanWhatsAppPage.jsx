@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 const NOTIF_CONFIG = [
-  { key: "notif_daily_approval", label: "⏰ Pengingat Harian (17:30)", desc: "Jumlah checklist menunggu approval → Owner" },
+  { key: "notif_daily_approval", label: "⏰ Pengingat Harian Approval", desc: "Jumlah checklist menunggu approval → Owner", timeKey: "daily_approval_time", timeDefault: "17:30" },
   { key: "notif_sick_report", label: "🤒 Laporan Kura Sakit", desc: "Laporan sakit baru → Owner + Manajer", destKey: "notif_sick_report_destination", groupKey: "notif_sick_report_group_id", defaultGroup: "morning" },
   { key: "notif_low_stock", label: "💊 Stok Obat Menipis", desc: "Stok menyentuh minimum → Owner + Manajer + Admin", destKey: "notif_low_stock_destination", groupKey: "notif_low_stock_group_id", defaultGroup: "evening" },
   { key: "notif_salary_paid", label: "💸 Gaji Dibayar", desc: "Slip ditandai dibayar → Karyawan ybs" },
@@ -67,6 +67,7 @@ export default function PengaturanWhatsAppPage() {
   // Morning summary
   const [morningEnabled, setMorningEnabled] = useState(false);
   const [morningTime, setMorningTime] = useState("07:00");
+  const [approvalTime, setApprovalTime] = useState("17:30");
   const [morningGroupId, setMorningGroupId] = useState("");
   const [morningDestination, setMorningDestination] = useState("group");
   const [morningShowPoints, setMorningShowPoints] = useState(false);
@@ -116,6 +117,7 @@ export default function PengaturanWhatsAppPage() {
     setPicApproval(data.pic_approval || "");
     setGroupId(data.group_id || "");
     setSummaryTime(data.daily_summary_time || "16:30");
+    setApprovalTime(data.daily_approval_time || "17:30");
     setSummaryEnabled(data.daily_summary_enabled === true);
     setShowPoints(data.daily_summary_show_points === true);
     setWeeklyEnabled(data.weekly_summary_enabled === true);
@@ -211,6 +213,7 @@ export default function PengaturanWhatsAppPage() {
         summary_destination: summaryDestination,
         summary_recipients: summaryRecipients,
         daily_summary_time: summaryTime || "16:30",
+        daily_approval_time: approvalTime || "17:30",
         daily_summary_enabled: summaryEnabled,
         daily_summary_show_points: showPoints,
         weekly_summary_enabled: weeklyEnabled,
@@ -658,6 +661,22 @@ export default function PengaturanWhatsAppPage() {
                     onCheckedChange={(v) => setToggles((t) => ({ ...t, [cfg.key]: v }))}
                   />
                 </div>
+
+                {/* Jam kirim, untuk notifikasi yang memang terjadwal. Jamnya
+                    dijaga di backend dalam WIB — penjadwal boleh memanggil
+                    kapan saja tanpa mengubah kapan pesannya benar-benar pergi. */}
+                {cfg.timeKey && aktif && (
+                  <div className="ml-1 pl-3 border-l-2 border-muted flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground">Dikirim pukul</span>
+                    <Input
+                      type="time"
+                      className="w-28 h-8 text-xs"
+                      value={approvalTime}
+                      onChange={(e) => setApprovalTime(e.target.value)}
+                    />
+                    <span className="text-xs text-muted-foreground">WIB</span>
+                  </div>
+                )}
 
                 {/* Pilihan tujuan hanya untuk notifikasi yang aman masuk grup.
                     Gaji & tugas insidentil sengaja tidak punya opsi ini. */}

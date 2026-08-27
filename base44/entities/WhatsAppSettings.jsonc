@@ -44,6 +44,11 @@
       "description": "Tampilkan poin per orang di ringkasan SORE. Aman aktif karena grup sore tidak berisi keeper.",
       "type": "boolean"
     },
+    "daily_approval_time": {
+      "default": "17:30",
+      "description": "Jam kirim pengingat approval dalam WIB (Asia/Jakarta, UTC+7). Contoh: 17:30 = jam setengah 6 sore WIB. Backend membandingkan jam WIB sekarang dengan jam ini — penjadwal boleh memanggil kapan saja.",
+      "type": "string"
+    },
     "daily_summary_time": {
       "default": "16:30",
       "description": "Jam kirim ringkasan sore dalam WIB (Asia/Jakarta, UTC+7). Contoh: 16:30 = jam 4 sore WIB. Backend membandingkan jam WIB sekarang dengan jam ini — tidak ada konversi UTC.",
@@ -110,7 +115,7 @@
     },
     "notif_daily_approval": {
       "default": true,
-      "description": "Pengingat harian checklist menunggu approval (17:30)",
+      "description": "Pengingat harian checklist menunggu approval. Jamnya diatur di daily_approval_time.",
       "type": "boolean"
     },
     "notif_incidental_task": {
