@@ -1,16 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { format, subDays, startOfMonth } from "date-fns";
+import { format, subDays, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
-import { Star, TrendingUp, CheckCircle2, Target } from "lucide-react";
+import { Star, Target, TrendingUp, TrendingDown, Award } from "lucide-react";
 
-function formatRp(val) {
-  return "Rp " + Number(val || 0).toLocaleString("id-ID");
-}
-
+/**
+ * Tampilan poin keeper.
+ *
+ * Keputusan pemilik: keeper cukup tahu BERAPA POIN yang mereka kumpulkan.
+ * Mereka tidak perlu tahu satu poin bernilai berapa rupiah, dan tidak perlu
+ * melihat perkiraan bonus. Karena itu seluruh tampilan rupiah, nilai per poin,
+ * dan perhitungan uang dihapus dari komponen ini — yang tersisa hanya poin,
+ * target, grafik 7 hari, dan perbandingan dengan bulan lalu.
+ */
 export default function GuidedPoinSaya({ user }) {
   const today = format(new Date(), "yyyy-MM-dd");
   const currentPeriod = format(new Date(), "yyyy-MM");
+  const lastPeriod = format(subMonths(new Date(), 1), "yyyy-MM");
 
   const { data: settings } = useQuery({
     queryKey: ["company-settings"],
@@ -20,29 +26,41 @@ export default function GuidedPoinSaya({ user }) {
     },
   });
 
-  // Ambil MaintenanceLog bulan ini milik user ini
+  // Hanya target poin bulanan yang dipakai. Nilai per poin SENGAJA TIDAK
+  // diambil — agar tidak ada kemungkinan angka uang bocor ke layar keeper.
+  const TARGET = settings?.min_poin_bulanan ?? 0;
+
+  // Ambil MaintenanceLog milik user ini (bulan ini + bulan lalu untuk perbandingan)
   const { data: logs = [] } = useQuery({
-    queryKey: ["maintenance-my-month", user?.email, currentPeriod],
+    queryKey: ["maintenance-my-month", user?.email, currentPeriod, lastPeriod],
     queryFn: async () => {
       const all = await base44.entities.MaintenanceLog.filter({ done_by_email: user.email });
-      return all.filter(l => l.period_key?.startsWith(currentPeriod) && l.is_done);
+      return all.filter(
+        (l) => l.is_done && (l.period_key?.startsWith(currentPeriod) || l.period_key?.startsWith(lastPeriod))
+      );
     },
     enabled: !!user?.email,
   });
 
-  const TARGET = settings?.min_poin_bulanan ?? 0;
-  const nilaiPerPoin = settings?.nilai_per_poin ?? 0;
-  const settingsSiap = TARGET > 0 && nilaiPerPoin > 0;
-
-  const totalPoin = logs.reduce((s, l) => s + (l.poin_earned || 0), 0);
+  const totalPoin = logs
+    .filter((l) => l.period_key?.startsWith(currentPeriod))
+    .reduce((s, l) => s + (l.poin_earned || 0), 0);
+  const lastMonthPoin = logs
+    .filter((l) => l.period_key?.startsWith(lastPeriod))
+    .reduce((s, l) => s + (l.poin_earned || 0), 0);
   const pct = TARGET > 0 ? Math.min(100, Math.round((totalPoin / TARGET) * 100)) : 0;
   const kurang = Math.max(0, TARGET - totalPoin);
-  const estBonus = settingsSiap && totalPoin >= TARGET ? (totalPoin - TARGET) * nilaiPerPoin : 0;
+  const targetTercapai = TARGET > 0 && totalPoin >= TARGET;
+
+  // Perbandingan dengan bulan lalu
+  const momDiff = totalPoin - lastMonthPoin;
+  const momPct = lastMonthPoin > 0 ? Math.round((momDiff / lastMonthPoin) * 100) : null;
+  const naikDariBulanLalu = momDiff > 0;
 
   // Riwayat 7 hari terakhir (aggregate poin per hari)
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = format(subDays(new Date(), 6 - i), "yyyy-MM-dd");
-    const dayLogs = logs.filter(l => l.period_key === d);
+    const dayLogs = logs.filter((l) => l.period_key === d);
     const poin = dayLogs.reduce((s, l) => s + (l.poin_earned || 0), 0);
     return { date: d, poin, count: dayLogs.length };
   });
@@ -60,56 +78,74 @@ export default function GuidedPoinSaya({ user }) {
       <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-6 text-white text-center shadow-lg">
         <p className="text-6xl font-bold">{totalPoin}</p>
         <p className="text-green-100 mt-1">poin terkumpul</p>
-        <div className="mt-4">
-          <div className="h-3 bg-green-600/50 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-white/80 rounded-full transition-all duration-700"
-              style={{ width: `${pct}%` }}
-            />
+        {TARGET > 0 && (
+          <div className="mt-4">
+            <div className="h-3 bg-green-600/50 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white/80 rounded-full transition-all duration-700"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className="text-sm text-green-100 mt-2">Target: {TARGET} poin ({pct}%)</p>
           </div>
-          <p className="text-sm text-green-100 mt-2">Target: {TARGET} poin ({pct}%)</p>
-        </div>
-      </div>
-
-      {/* Status */}
-      <div className={`rounded-2xl p-4 border flex items-center gap-3 ${kurang === 0 ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
-        {kurang === 0 ? (
-          <>
-            <CheckCircle2 className="w-8 h-8 text-green-600 flex-shrink-0" />
-            <div>
-              <p className="font-bold text-green-800">Target Tercapai! 🎉</p>
-              <p className="text-sm text-green-600">Kamu melampaui target bulanan</p>
-            </div>
-          </>
-        ) : (
-          <>
-            <Target className="w-8 h-8 text-orange-500 flex-shrink-0" />
-            <div>
-              <p className="font-bold text-orange-800">Kurang {kurang} poin lagi</p>
-              <p className="text-sm text-orange-600">Terus semangat! Target bulan ini {TARGET} poin</p>
-            </div>
-          </>
         )}
       </div>
 
-      {/* Estimasi bonus */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-        <TrendingUp className="w-8 h-8 text-amber-500 flex-shrink-0" />
-        <div>
-          <p className="font-semibold text-amber-800">Estimasi Bonus</p>
-          <p className="text-xl font-bold text-amber-700">{formatRp(estBonus)}</p>
-          <p className="text-xs text-amber-600">{nilaiPerPoin.toLocaleString("id-ID")} rupiah per poin di atas target</p>
+      {/* Status / pencapaian */}
+      {targetTercapai ? (
+        <div className="rounded-2xl p-4 border bg-green-50 border-green-200 flex items-center gap-3">
+          <Award className="w-8 h-8 text-green-600 flex-shrink-0" />
+          <div>
+            <p className="font-bold text-green-800">Target Tercapai! 🎉</p>
+            <p className="text-sm text-green-600">Kamu melampaui target bulanan {TARGET} poin</p>
+          </div>
         </div>
-      </div>
+      ) : TARGET > 0 ? (
+        <div className="rounded-2xl p-4 border bg-orange-50 border-orange-200 flex items-center gap-3">
+          <Target className="w-8 h-8 text-orange-500 flex-shrink-0" />
+          <div>
+            <p className="font-bold text-orange-800">Kurang {kurang} poin lagi</p>
+            <p className="text-sm text-orange-600">Terus semangat! Target bulan ini {TARGET} poin</p>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Perbandingan dengan bulan lalu */}
+      {lastMonthPoin > 0 && (
+        <div
+          className={`rounded-2xl p-4 border flex items-center gap-3 ${
+            naikDariBulanLalu ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"
+          }`}
+        >
+          {naikDariBulanLalu ? (
+            <TrendingUp className="w-8 h-8 text-blue-500 flex-shrink-0" />
+          ) : (
+            <TrendingDown className="w-8 h-8 text-gray-400 flex-shrink-0" />
+          )}
+          <div>
+            <p className={`font-semibold ${naikDariBulanLalu ? "text-blue-800" : "text-gray-700"}`}>
+              {naikDariBulanLalu ? "Lebih tinggi" : "Lebih rendah"} {momPct !== null ? `${Math.abs(momPct)}%` : ""} dari bulan lalu
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Bulan lalu: {lastMonthPoin} poin · Bulan ini: {totalPoin} poin
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Riwayat 7 hari */}
       <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
         <p className="font-semibold text-gray-700 mb-3">Riwayat 7 Hari Terakhir</p>
         <div className="space-y-2">
-          {last7.map(day => {
+          {last7.map((day) => {
             const isToday = day.date === today;
             return (
-              <div key={day.date} className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${isToday ? "bg-green-50 border border-green-200" : "bg-gray-50"}`}>
+              <div
+                key={day.date}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${
+                  isToday ? "bg-green-50 border border-green-200" : "bg-gray-50"
+                }`}
+              >
                 <span className={`text-sm ${isToday ? "font-semibold text-green-700" : "text-gray-600"}`}>
                   {isToday ? "Hari ini" : format(new Date(day.date + "T00:00:00"), "EEE, d MMM", { locale: id })}
                 </span>
@@ -121,9 +157,7 @@ export default function GuidedPoinSaya({ user }) {
                   ) : (
                     <span className="text-xs text-gray-300">—</span>
                   )}
-                  {day.count > 0 && (
-                    <span className="text-xs text-gray-400">{day.count} tugas</span>
-                  )}
+                  {day.count > 0 && <span className="text-xs text-gray-400">{day.count} tugas</span>}
                 </div>
               </div>
             );

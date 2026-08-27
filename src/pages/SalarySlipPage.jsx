@@ -43,8 +43,19 @@ export default function SalarySlipPage() {
   const { data: users = [] } = useEmployeeUsers();
 
   const settings = useCompanySettings();
-  const employees = users.filter(u => ["keeper", "admin", "kepala_feeder"].includes(u.role));
+  const employees = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
   const isManagerRole = ["owner", "admin", "manajer"].includes(role);
+  const isKeeperView = !isManagerRole;
+
+  // Nama karyawan selalu di-resolve dari entity User berdasarkan email
+  // (bukan dari field nama yang tersalin di slip) supaya perubahan nama di
+  // Manajemen User langsung berlaku di semua tempat.
+  const nameByEmail = useMemo(() => {
+    const m = {};
+    users.forEach((u) => { if (u.email) m[u.email] = u.full_name || u.email; });
+    return m;
+  }, [users]);
+  const resolveName = (email, fallback) => nameByEmail[email] || fallback || email || "—";
 
   const periodLabelOf = (s) => {
     if (s.period_type === "weekly" && s.week_start) {
@@ -60,7 +71,7 @@ export default function SalarySlipPage() {
   // Monthly mode: hanya slip bulanan (period_type !== "weekly")
   const filtered = useMemo(() => {
     return slips.filter(s => {
-      if (s.employee_role === "owner" || s.employee_role === "manajer") return false;
+      if (["owner", "manajer", "admin"].includes(s.employee_role)) return false;
       if (!isManagerRole && s.employee_email !== user?.email) return false;
       if (mode === "monthly" && s.period_type === "weekly") return false;
       const empMatch = filterEmployee === "all" || s.employee_email === filterEmployee;
@@ -208,7 +219,7 @@ export default function SalarySlipPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-semibold">{slip.employee_name}</span>
+                          <span className="font-semibold">{resolveName(slip.employee_email, slip.employee_name)}</span>
                           <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
                           <Badge variant="outline" className="text-[11px]">{formatRole(slip.employee_role)}</Badge>
                         </div>
@@ -235,8 +246,8 @@ export default function SalarySlipPage() {
                             <p className="font-bold text-primary">{fmt(slip.net_total)}</p>
                           </div>
                         </div>
-                        {(slip.total_poin !== undefined || slip.total_points !== undefined) && (
-                          <div className="mt-2 p-2 rounded-lg bg-muted/40 flex items-center gap-3 flex-wrap">
+                        {!isKeeperView && (slip.total_poin !== undefined || slip.total_points !== undefined) && (
+                        <div className="mt-2 p-2 rounded-lg bg-muted/40 flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-1.5">
                               <Star className="w-3.5 h-3.5 text-amber-500" />
                               <span className="text-xs font-medium">{slip.total_poin || slip.total_points || 0} poin</span>
@@ -283,7 +294,7 @@ export default function SalarySlipPage() {
       {/* Slip Detail Modal (monthly mode) */}
       {selectedSlip && (
         <SalarySlipDetail
-          slip={selectedSlip}
+          slip={{ ...selectedSlip, employee_name: resolveName(selectedSlip.employee_email, selectedSlip.employee_name) }}
           companySettings={settings}
           onClose={() => {
             setSelectedSlip(null);

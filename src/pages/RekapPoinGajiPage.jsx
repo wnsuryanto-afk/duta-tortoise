@@ -73,7 +73,7 @@ export default function RekapPoinGajiPage() {
   const monthStart = selectedMonth + "-01";
   const monthEnd = format(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1), "yyyy-MM") + "-01";
 
-  const employees = users.filter(u => ["keeper", "admin", "kepala_feeder"].includes(u.role));
+  const employees = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
 
   const rekapData = useMemo(() => {
     return employees.map(emp => {
@@ -161,11 +161,17 @@ export default function RekapPoinGajiPage() {
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
-  // Render SalarySlipDetail modal jika ada viewSlip
+  // Render SalarySlipDetail modal jika ada viewSlip.
+  // Nama karyawan di-resolve dari entity User berdasarkan email supaya
+  // perubahan nama di Manajemen User langsung terlihat di slip.
   if (viewSlip) {
+    const slipUser = users.find((u) => u.email === viewSlip.employee_email);
+    const resolvedSlip = slipUser?.full_name
+      ? { ...viewSlip, employee_name: slipUser.full_name }
+      : viewSlip;
     return (
       <SalarySlipDetail
-        slip={viewSlip}
+        slip={resolvedSlip}
         companySettings={settings}
         onClose={() => {
           setViewSlip(null);
