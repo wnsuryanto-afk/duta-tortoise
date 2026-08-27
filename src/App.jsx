@@ -83,6 +83,7 @@ import PakanHarianPage from '@/pages/PakanHarianPage';
 import TortoisePassport from '@/pages/TortoisePassport';
 import RiwayatKlusterPage from '@/pages/RiwayatKlusterPage';
 import PengaturanPoinPage from '@/pages/PengaturanPoinPage';
+import RempesanPage from '@/pages/RempesanPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -177,6 +178,7 @@ const AuthenticatedApp = () => {
         <Route path="/breeding-calendar" element={<BreedingCalendarPage />} />
         <Route path="/riwayat-kluster" element={<RiwayatKlusterPage />} />
         <Route path="/pengaturan-poin" element={<PengaturanPoinPage />} />
+        <Route path="/rempesan" element={<RempesanPage />} />
 
         <Route path="/lengkapi-profil" element={<ProfileSetupPage />} />
         <Route path="/edit-profil" element={<EditProfilePage />} />

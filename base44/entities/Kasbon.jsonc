@@ -20,22 +20,30 @@
       "format": "date"
     },
     "reason": {
-      "type": "string"
+      "type": "string",
+      "description": "Keperluan/alasan pengajuan dari keeper"
     },
     "status": {
       "type": "string",
       "enum": [
+        "diajukan",
         "pending",
         "approved",
         "rejected",
         "lunas"
       ],
-      "default": "pending"
+      "default": "diajukan",
+      "description": "diajukan = pengajuan keeper menunggu persetujuan owner, pending = (legacy) menunggu, approved = aktif berjalan, rejected = ditolak, lunas = selesai"
+    },
+    "proposed_weekly_deduction": {
+      "type": "number",
+      "default": 100000,
+      "description": "Usulan potongan per minggu dari keeper (bawaan Rp 100.000)"
     },
     "weekly_deduction": {
       "type": "number",
       "default": 100000,
-      "description": "Potongan per periode gaji (default Rp 100.000)"
+      "description": "Potongan per periode gaji yang disepakati (default Rp 100.000)"
     },
     "total_paid": {
       "type": "number",
@@ -48,6 +56,10 @@
     "approved_date": {
       "type": "string",
       "format": "date"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Alasan penolakan \u2014 tampil ke keeper"
     },
     "deduction_log": {
       "type": "array",
@@ -75,7 +87,7 @@
           },
           "salary_period": {
             "type": "string",
-            "description": "Periode gaji (YYYY-MM) jika dipotong via slip"
+            "description": "Periode gaji (week_start atau YYYY-MM) jika dipotong via slip"
           },
           "salary_slip_id": {
             "type": "string",
@@ -86,7 +98,8 @@
             "description": "Nama yang mencatat"
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "description": "Alasan/.catatan, mis. alasan dilewati minggu ini"
           }
         }
       }

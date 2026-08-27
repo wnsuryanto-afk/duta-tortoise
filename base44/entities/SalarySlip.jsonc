@@ -12,7 +12,7 @@
     },
     "employee_name": {
       "type": "string",
-      "description": "Nama karyawan"
+      "description": "Nama karyawan (snapshot) \u2014 tampilan utama di-resolve dari User"
     },
     "employee_role": {
       "type": "string",
@@ -44,12 +44,12 @@
     "attend_days": {
       "type": "number",
       "default": 0,
-      "description": "Jumlah hari hadir dalam periode (untuk slip mingguan)"
+      "description": "Jumlah hari hadir dalam periode"
     },
     "base_salary": {
       "type": "number",
       "default": 0,
-      "description": "Gaji pokok"
+      "description": "Gaji pokok = hari hadir \u00d7 tarif harian"
     },
     "kpi_bonus": {
       "type": "number",
@@ -59,24 +59,41 @@
     "overtime_pay": {
       "type": "number",
       "default": 0,
-      "description": "Total lembur"
+      "description": "Total lembur = jam lembur \u00d7 tarif lembur"
     },
     "vegetable_pay": {
       "type": "number",
       "default": 0,
-      "description": "Total upah ambil sayur"
+      "description": "(Legacy) total upah ambil sayur"
     },
     "vegetable_trips": {
       "type": "number",
       "default": 0,
-      "description": "Jumlah trip ambil sayur (1 trip = 1 hari ambil sayur pasar/campur)"
+      "description": "(Legacy) jumlah trip ambil sayur"
     },
     "vegetable_trip_dates": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Daftar tanggal trip ambil sayur untuk transparansi"
+      "description": "(Legacy) tanggal trip ambil sayur"
+    },
+    "rempesan_pay": {
+      "type": "number",
+      "default": 0,
+      "description": "Total upah rempesan minggu ini"
+    },
+    "rempesan_trips": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah trip rempesan (maks 1 per hari)"
+    },
+    "rempesan_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tanggal-tanggal rempesan untuk dicocokkan"
     },
     "absent_deduction": {
       "type": "number",
@@ -86,7 +103,7 @@
     "kasbon_deduction": {
       "type": "number",
       "default": 0,
-      "description": "Potongan kasbon periode ini"
+      "description": "Potongan kasbon periode ini (hasil konfirmasi owner)"
     },
     "kasbon_ids": {
       "type": "array",
@@ -94,6 +111,26 @@
         "type": "string"
       },
       "description": "ID Kasbon yang dipotong di slip ini"
+    },
+    "kasbon_plan": {
+      "type": "array",
+      "description": "Rencana potongan kasbon per kasbon hasil konfirmasi owner saat slip dibuat",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kasbon_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Nominal yang dipotong (0 bila dilewati)"
+          },
+          "skip_reason": {
+            "type": "string",
+            "description": "Alasan bila dilewati minggu itu"
+          }
+        }
+      }
     },
     "kasbon_remaining": {
       "type": "number",
@@ -105,10 +142,15 @@
       "default": 0,
       "description": "Total poin karyawan periode ini"
     },
+    "nilai_poin_saat_itu": {
+      "type": "number",
+      "default": 0,
+      "description": "Snapshot nilai rupiah per poin yang dipakai saat slip dibuat \u2014 tidak berubah surut meski pengaturan diubah"
+    },
     "poin_bonus": {
       "type": "number",
       "default": 0,
-      "description": "Bonus dari poin (total_poin \u00d7 nilai_per_poin)"
+      "description": "Bonus dari poin (total_poin \u00d7 nilai_poin_saat_itu)"
     },
     "poin_deduction": {
       "type": "number",
@@ -134,16 +176,17 @@
         "approved",
         "paid"
       ],
-      "default": "draft"
+      "default": "draft",
+      "description": "draft \u2192 approved (diperiksa admin) \u2192 paid (dibayar owner)"
     },
     "approved_by": {
       "type": "string",
-      "description": "Nama yang menyetujui"
+      "description": "Nama yang menandai diperiksa"
     },
     "approved_date": {
       "type": "string",
       "format": "date",
-      "description": "Tanggal disetujui"
+      "description": "Tanggal ditandai diperiksa"
     },
     "generated_by": {
       "type": "string",

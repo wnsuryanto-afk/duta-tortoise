@@ -63,6 +63,7 @@ export const NAV_SECTIONS = [
       { path: "/sop-library",          section: "sop-library",   label: "Perpustakaan SOP",     icon: Library,        desc: "Dokumen prosedur" },
       { path: "/task-template",        section: "task-template", label: "Template Tugas Harian",icon: ListTodo,       desc: "Susun tugas yang muncul tiap hari" },
       { path: "/tugas-insidentil",     section: "tugas-insidentil", label: "Tugas Insidentil",  icon: Zap,            desc: "Tugas di luar rutinitas" },
+      { path: "/rempesan",          section: "pakan-harian",   label: "Rempesan",          icon: Truck,          desc: "Catat ambil sayur/rumput (dihitung ke gaji)" },
     ],
   },
   {
