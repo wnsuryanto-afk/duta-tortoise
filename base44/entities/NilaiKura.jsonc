@@ -1,0 +1,73 @@
+{
+  "name": "NilaiKura",
+  "type": "object",
+  "description": "C8 - Perkiraan nilai jual per ekor, dihitung dari harga penjualan nyata. Satu record per kura, diperbarui tiap kali perhitungan dijalankan.",
+  "properties": {
+    "tortoise_id": {
+      "type": "string",
+      "description": "ID kura"
+    },
+    "tortoise_name": {
+      "type": "string"
+    },
+    "tortoise_code": {
+      "type": "string"
+    },
+    "periode": {
+      "type": "string",
+      "description": "Bulan perhitungan (YYYY-MM)"
+    },
+    "berat_gram": {
+      "type": "number"
+    },
+    "panjang_cm": {
+      "type": "number"
+    },
+    "umur_bulan": {
+      "type": "number"
+    },
+    "gender": {
+      "type": "string"
+    },
+    "nilai_estimasi": {
+      "type": "number",
+      "description": "Perkiraan harga jual (Rp)"
+    },
+    "nilai_bawah": {
+      "type": "number",
+      "description": "Batas bawah rentang wajar (Rp)"
+    },
+    "nilai_atas": {
+      "type": "number",
+      "description": "Batas atas rentang wajar (Rp)"
+    },
+    "dasar": {
+      "type": "string",
+      "enum": [
+        "penjualan_nyata",
+        "harga_acuan"
+      ],
+      "description": "penjualan_nyata = dihitung dari harga jual sendiri; harga_acuan = memakai angka acuan karena data penjualan belum cukup"
+    },
+    "harga_per_gram": {
+      "type": "number",
+      "description": "Harga per gram yang dipakai saat perhitungan"
+    },
+    "jumlah_sampel": {
+      "type": "number",
+      "description": "Berapa penjualan nyata yang dipakai membentuk angka ini"
+    },
+    "catatan": {
+      "type": "string"
+    },
+    "dihitung_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "tortoise_id",
+    "periode",
+    "nilai_estimasi"
+  ]
+}
