@@ -53,6 +53,27 @@ function satuanNormal(satuan) {
 }
 
 /**
+ * Penanda duplikat yang ditulis manusia di depan nama barang.
+ *
+ * Dipakai dua gaya di aplikasi ini: "[DUPLIKAT - ABAIKAN] Kasa Basah" yang
+ * diketik lewat layar Gudang, dan "[DUPLIKAT-HAPUS] ..." yang dulu dipakai
+ * fungsi pembersih di server. Polanya sengaja longgar — kurung siku apa pun
+ * yang memuat kata "duplikat" — supaya gaya penulisan yang sedikit berbeda
+ * tidak lolos begitu saja.
+ */
+const TANDA_DUPLIKAT = /^\s*\[[^\]]*duplikat[^\]]*\]\s*/i;
+
+/** Apakah nama barang ini sudah ditandai duplikat oleh manusia? */
+export function bertandaDuplikat(nama) {
+  return TANDA_DUPLIKAT.test(String(nama || ""));
+}
+
+/** Nama aslinya, tanpa penanda di depan. */
+export function namaTanpaTanda(nama) {
+  return String(nama || "").replace(TANDA_DUPLIKAT, "").trim();
+}
+
+/**
  * Barang mana yang jadi induk saat digabung?
  *
  * Yang PALING LAMA menang, kebalikan dari penyapu transaksi kembar. Alasannya
@@ -83,17 +104,22 @@ const angka = (n) => (Number.isFinite(Number(n)) ? Number(n) : 0);
  * }}
  */
 export function periksaBarangKembar(barangGudang = [], pakan = []) {
-  const hasil = { diperiksa: 0, kembar: [], ragu: [], totalHapus: 0 };
+  const hasil = { diperiksa: 0, kembar: [], ragu: [], bertanda: [], totalHapus: 0 };
 
   [
     ["gudang", barangGudang],
     ["pakan", pakan],
   ].forEach(([sumber, daftar]) => {
     const perNama = new Map();
+    const ditandai = [];
 
     daftar.forEach((item) => {
       if (!item?.id) return;
       hasil.diperiksa += 1;
+      // Yang sudah ditandai manusia tidak ikut dikelompokkan lewat namanya —
+      // penandanya membuat namanya tidak akan pernah cocok dengan barang mana
+      // pun. Ia diurus terpisah di bawah.
+      if (bertandaDuplikat(item.name)) { ditandai.push(item); return; }
       const kunci = namaNormal(item.name);
       if (!kunci) return;
       if (!perNama.has(kunci)) perNama.set(kunci, []);
@@ -128,6 +154,57 @@ export function periksaBarangKembar(barangGudang = [], pakan = []) {
         satuan: induk.unit || "",
       });
       hasil.totalHapus += hapus.length;
+    });
+
+    // ── Barang yang sudah ditandai duplikat oleh manusia ──
+    //
+    // Penandanya adalah keputusan yang sudah diambil, jadi tidak perlu ditebak
+    // lagi. Yang masih perlu diputuskan hanyalah ke mana riwayatnya pergi:
+    //
+    //   - Bila ada barang lain bernama sama persis (setelah penandanya
+    //     dilepas) dan satuannya sama, ia jadi induk dan barang bertanda ini
+    //     diperlakukan seperti duplikat biasa — riwayatnya pindah, stoknya
+    //     dijumlahkan.
+    //   - Bila tidak ada, tidak ada tempat menampung riwayatnya. Barangnya
+    //     hanya boleh dihapus kalau memang tidak membawa apa-apa: stok nol dan
+    //     tidak ada satu pun baris riwayat yang menunjuknya. Itu diperiksa saat
+    //     tombolnya ditekan, bukan di sini, karena perlu membaca enam entitas.
+    ditandai.forEach((item) => {
+      const bersih = namaNormal(namaTanpaTanda(item.name));
+      const sesatuan = (m) => satuanNormal(m.unit) === satuanNormal(item.unit);
+
+      // Nama bersihnya masuk daftar ragu (satuannya campur) — jangan ditebak.
+      const raguSama = hasil.ragu.some((r) => r.sumber === sumber && r.kunci === bersih);
+      const induk = bersih && !raguSama ? (perNama.get(bersih) || []).find(sesatuan) : undefined;
+
+      if (!induk) {
+        hasil.bertanda.push({ item, sumber, adaStok: angka(item.current_stock) > 0 });
+        return;
+      }
+
+      // Bila induknya sudah punya grup, IKUT ke grup itu — jangan membuat grup
+      // kedua di induk yang sama. Dua grup pada satu induk sama-sama menulis
+      // `current_stock` secara mutlak, jadi tulisan terakhir menimpa yang
+      // sebelumnya dan stok dari grup pertama hilang.
+      const grupAda = hasil.kembar.find(
+        (k) => k.sumber === sumber && k.induk.id === induk.id
+      );
+      if (grupAda) {
+        grupAda.hapus.push(item);
+        grupAda.stokGabungan += angka(item.current_stock);
+        grupAda.dariTanda = true;
+      } else {
+        hasil.kembar.push({
+          kunci: bersih,
+          sumber,
+          induk,
+          hapus: [item],
+          stokGabungan: angka(induk.current_stock) + angka(item.current_stock),
+          satuan: induk.unit || "",
+          dariTanda: true,
+        });
+      }
+      hasil.totalHapus += 1;
     });
   });
 
