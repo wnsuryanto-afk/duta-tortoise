@@ -95,13 +95,17 @@ Deno.serve(async (req) => {
       const ideal = Number(f.daily_ideal || 0);
       const min = Number(f.minimum_stock || 0);
 
-      // Campuran: dicari sendiri lebih dulu. Membeli hanya saat pencarian tidak
-      // menutup kebutuhan — ditandai oleh stok yang menyentuh batas minimum —
-      // dan secukupnya saja (5 hari), karena sisanya tetap datang dari kebun.
+      // Campuran: dicari sendiri lebih dulu, dibeli hanya sebagai cadangan.
+      //
+      // Yang dibeli adalah CADANGAN-nya, bukan seluruh kebutuhan. Membeli lima
+      // hari pemakaian rumput 180 kg/hari berarti memesan 900 kg — padahal
+      // sebagian besar tetap datang dari kebun, dan yang perlu ditutup hanya
+      // selisih saat pencarian sedang kurang. Karena itu patokannya stok
+      // minimum: dibeli sampai dua kali lipat cadangan itu.
       if (sumber === "campuran") {
-        const batas = min > 0 ? min : ideal * 2;
+        const batas = min > 0 ? min : Math.round(ideal * 0.5);
         if (batas <= 0 || stok > batas) continue;
-        const perlu = ideal > 0 ? ideal * 5 - stok : Math.max(batas * 2 - stok, batas);
+        const perlu = batas * 2 - stok;
         if (perlu <= 0) continue;
         await tambah({
           nama: f.name,
