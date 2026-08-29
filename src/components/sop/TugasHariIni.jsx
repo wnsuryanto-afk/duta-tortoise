@@ -387,6 +387,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           badge: t.category,
           badgeColor: CATEGORY_BADGE[t.category] || "bg-muted text-muted-foreground",
           require_photo: t.require_photo || false,
+          // A9 — ditandai otomatis oleh fungsi kunciBahanSOP saat bahan yang
+          // dibutuhkan task ini habis, supaya tidak ada poin yang dibayar untuk
+          // pekerjaan yang bahannya memang tidak ada.
+          terkunci_bahan: t.terkunci_bahan || false,
+          terkunci_alasan: t.terkunci_alasan || "",
           ai_check_points: t.ai_check_points || "",
           task_scope: t.task_scope || "bersama",
           assigned_to_email: t.assigned_to_email || "",
@@ -1053,6 +1058,15 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
     if (!isChecked) {
       const remaining = getCooldownRemaining ? getCooldownRemaining() : 0;
       if (remaining > 0) { startCooldownNotice(remaining); return; }
+    }
+    // A9 — bahan yang dibutuhkan task ini sedang habis. Menolak di sini lebih
+    // jujur daripada membiarkan dicentang lalu poinnya dipersoalkan belakangan.
+    if (task.terkunci_bahan && !isChecked) {
+      showNotice(
+        `Tugas ini belum bisa dikerjakan hari ini — ${task.terkunci_alasan || "bahan yang dibutuhkan habis"}. ` +
+        `Bukan salah kamu, dan poinnya tidak hangus: begitu bahannya ada, tugas ini terbuka lagi sendiri.`
+      );
+      return;
     }
     if (saveError) setSaveError(false);
     if (isTimbangBaby && !isChecked) { onTimbangBabyCheck(); return; }
