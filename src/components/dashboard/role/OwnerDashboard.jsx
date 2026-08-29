@@ -15,6 +15,9 @@ import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
+import SopTerkunciCard from "@/components/dashboard/SopTerkunciCard";
+import KuraPerluDiperiksaCard from "@/components/dashboard/KuraPerluDiperiksaCard";
+import PoinBonusTim from "@/components/dashboard/PoinBonusTim";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import PageHeader from "@/components/common/PageHeader";
 import NoteCard from "@/components/common/NoteCard";
@@ -721,6 +724,15 @@ export default function OwnerDashboard({ user }) {
 
       {/* ── PERINGATAN KLUSTER PENYAKIT ── */}
       <DiseaseClusterWarningCard canDismiss />
+
+      {/* ── YANG MENGHENTIKAN PEKERJAAN ──
+          Ditaruh di atas segalanya karena ini satu-satunya yang membuat kerja
+          hari ini tidak bisa jalan: bahan habis sehingga SOP terkunci. Ketiga
+          kartu di bawah menghilang sendiri saat tidak ada isinya, jadi beranda
+          tidak bertambah panjang di hari yang normal. */}
+      <SopTerkunciCard />
+      <KuraPerluDiperiksaCard />
+      <PoinBonusTim />
 
       {/* ── ROW 13: ALERT KRITIS ── */}
       <div className="bg-card rounded-xl border border-border p-4">
