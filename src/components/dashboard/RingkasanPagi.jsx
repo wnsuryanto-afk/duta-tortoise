@@ -22,13 +22,23 @@ import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
 /**
- * @param {boolean} tampilkanArah  Sertakan lapis "Arah Minggu Ini" di sini.
- *   Beranda pemilik mematikannya dan memasangnya sendiri di balik Analisis
- *   Mendalam: tren delapan minggu adalah peringatan DINI, bukan pekerjaan pagi
- *   ini, dan layar pertama disediakan untuk yang dikerjakan hari ini. Beranda
- *   admin tidak punya tombol semacam itu, jadi bawaannya tetap menyertakan.
+ * @param {"semua"|"harian"|"telaah"} bagian  Lapis mana yang dirender.
+ *
+ *   Tiga lapis di dalam ringkasan ini sebenarnya bukan pekerjaan pagi ini:
+ *   tren delapan minggu ("Arah Minggu Ini"), hitungan operasional harian, dan
+ *   perkiraan menetas dua minggu ke depan. Ketiganya peringatan dini atau
+ *   angka pantauan — berguna, tapi tidak menuntut tindakan sebelum sarapan.
+ *
+ *   Beranda pemilik memisahkannya: "harian" di layar pertama, "telaah" di
+ *   balik Analisis Mendalam. Kedua pemanggilan memakai queryKey yang sama, jadi
+ *   React Query menyatukannya dan tidak ada pengambilan data ganda — jauh lebih
+ *   baik daripada menyalin query beserta seluruh turunannya ke komponen lain.
+ *
+ *   Beranda admin tidak punya tombol semacam itu, jadi bawaannya "semua".
  */
-export default function RingkasanPagi({ tampilkanArah = true }) {
+export default function RingkasanPagi({ bagian = "semua" }) {
+  const adaHarian = bagian === "semua" || bagian === "harian";
+  const adaTelaah = bagian === "semua" || bagian === "telaah";
   const now = new Date();
   const today = format(now, "yyyy-MM-dd");
   const yesterday = format(subDays(now, 1), "yyyy-MM-dd");
@@ -183,19 +193,22 @@ export default function RingkasanPagi({ tampilkanArah = true }) {
   return (
     <div className="space-y-3">
       {/* 0. LAPIS KEPUTUSAN — hal yang bisa dituntaskan dari layar ini juga */}
-      <KeputusanHariIni />
+      {adaHarian && <KeputusanHariIni />}
 
       {/* 0.5 LAPIS ARAH — peringatan dini, tidak menuntut tindakan hari ini */}
-      {tampilkanArah && <ArahMingguIni />}
+      {adaTelaah && <ArahMingguIni />}
 
       {/* HEADER */}
+      {adaHarian && (
       <div className="pt-1">
         <h2 className="text-lg font-bold font-heading flex items-center gap-1.5">
           ☀️ Ringkasan Pagi
         </h2>
         <p className="text-xs text-muted-foreground">{todayLabel}</p>
       </div>
+      )}
 
+      {adaHarian && (<>
       {/* 1. BARIS PERHATIAN */}
       {attentionLoading ? (
         <div className="bg-muted rounded-xl p-3 h-12 animate-pulse" />
@@ -247,9 +260,11 @@ export default function RingkasanPagi({ tampilkanArah = true }) {
       <HarusDibeliWidget />
       <ToolLoanWidget />
       <ToolRequestWidget />
+      </>)}
 
-      {/* 1.6 BATCH BREEDING SEGERA */}
-      {segeraBatches.length > 0 && (
+      {/* 1.6 BATCH BREEDING SEGERA — perkiraan dua minggu ke depan, bukan
+          pekerjaan hari ini */}
+      {adaTelaah && segeraBatches.length > 0 && (
         <Link to="/breeding-calendar" className="block bg-amber-50 border border-amber-300 rounded-xl p-3 hover:bg-amber-100 transition-colors">
           <p className="text-sm font-bold text-amber-800">
             🥚 Perkiraan menetas/bertelur dalam 2 minggu: {segeraBatches.length} batch
@@ -271,7 +286,8 @@ export default function RingkasanPagi({ tampilkanArah = true }) {
         </Link>
       )}
 
-      {/* 2. OPERASIONAL HARI INI */}
+      {/* 2. OPERASIONAL HARI INI — angka pantauan, bukan pekerjaan pagi ini */}
+      {adaTelaah && (
       <div>
         <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Operasional Hari Ini</p>
         <div className="grid grid-cols-3 gap-2">
@@ -310,6 +326,8 @@ export default function RingkasanPagi({ tampilkanArah = true }) {
         )}
       </div>
 
+      )}
+      {adaHarian && (<>
       {/* 3. UANG
           Empat kartu selebar setengah layar untuk empat angka — dan di
           peternakan yang belum ramai, tiga di antaranya Rp 0. Kartu sebesar itu
@@ -374,6 +392,7 @@ export default function RingkasanPagi({ tampilkanArah = true }) {
           tidak menjawab pertanyaan yang benar-benar dipakai memutuskan: berapa
           porsinya terhadap seluruh kawanan, dan kandang mana yang sudah penuh. */}
       <KomposisiKawanan tortoises={tortoises} enclosures={enclosures} />
+      </>)}
     </div>
   );
 }
