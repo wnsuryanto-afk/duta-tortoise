@@ -6,7 +6,7 @@ import { AlertTriangle, Package, Leaf, Clock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import { hitungSisaHari, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { hitungSisaHari, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 
 function urgencyLabel(days) {
   if (days === null || days === Infinity) return { label: "—", color: "text-muted-foreground bg-muted border-border", icon: null };
@@ -58,8 +58,8 @@ export default function StockPredictionPage() {
   });
 
   const { data: feedStockItems = [], isLoading: fLoading } = useQuery({
-    queryKey: ["feed-stock"],
-    queryFn: () => base44.entities.FeedStock.list(),
+    queryKey: ["feedstocks", "-name", 300],
+    queryFn: () => base44.entities.FeedStock.list("-name", 300),
   });
 
   const { data: transactions = [], isLoading: tLoading } = useQuery({
@@ -67,14 +67,28 @@ export default function StockPredictionPage() {
     queryFn: () => base44.entities.WarehouseTransaction.list("-created_date", 300),
   });
 
+  // StockMovement adalah buku pergerakan stok yang sebenarnya — delapan layar
+  // menulis ke sana, sementara WarehouseTransaction hanya ditulis satu layar
+  // gudang. Perkiraan pemakaian dulu membaca yang kedua saja.
+  const { data: pergerakan = [] } = useQuery({
+    queryKey: ["stock-movements", "-date", 500],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const riwayatPakai = useMemo(
+    () => gabungRiwayatPemakaian(pergerakan, transactions),
+    [pergerakan, transactions]
+  );
+
   const warehouseWithDays = useMemo(() =>
-    warehouseItems.map(i => ({ ...i, estimatedDays: hitungSisaHari(i, transactions) }))
+    warehouseItems.map(i => ({ ...i, estimatedDays: hitungSisaHari(i, riwayatPakai) }))
       .sort((a, b) => {
         const da = a.estimatedDays === Infinity ? 9999 : a.estimatedDays;
         const db = b.estimatedDays === Infinity ? 9999 : b.estimatedDays;
         return da - db;
       }),
-    [warehouseItems, transactions]
+    [warehouseItems, riwayatPakai]
   );
 
   const feedWithDays = useMemo(() =>

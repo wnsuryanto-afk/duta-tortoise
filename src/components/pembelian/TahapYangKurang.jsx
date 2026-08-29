@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import InfoHint from "@/components/ui/info-hint";
 import Illustration from "@/components/common/Illustration";
-import { nilaiUrgensiStok, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +70,16 @@ export default function TahapYangKurang({ onSelesai }) {
     queryFn: () => base44.entities.WarehouseTransaction.list("-created_date", 300),
     staleTime: 5 * 60 * 1000,
   });
+
+  // StockMovement adalah buku pergerakan stok yang sebenarnya — delapan layar
+  // menulis ke sana, sementara WarehouseTransaction hanya ditulis satu layar
+  // gudang. Perkiraan pemakaian dulu membaca yang kedua saja.
+  const { data: pergerakan = [] } = useQuery({
+    queryKey: ["stock-movements", "-date", 500],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: shopping = [] } = useQuery({
     queryKey: ["pembelian-shopping"],
     queryFn: () => base44.entities.ShoppingList.list("-priority", 300),
@@ -85,7 +95,7 @@ export default function TahapYangKurang({ onSelesai }) {
   }, [shopping]);
 
   const baris = useMemo(() => {
-    const dinilai = nilaiUrgensiStok(warehouse, transaksi, sopTasks);
+    const dinilai = nilaiUrgensiStok(warehouse, gabungRiwayatPemakaian(pergerakan, transaksi), sopTasks);
     const hasil = [];
 
     dinilai.forEach((i) => {

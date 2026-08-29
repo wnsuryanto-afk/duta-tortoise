@@ -20,6 +20,47 @@ export const AMBANG_WASPADA_HARI = 14;
 const JENDELA_HARI = 30;
 
 /**
+ * Status pergerakan stok yang benar-benar mengubah stok.
+ *
+ * StockMovement bisa berstatus menunggu_approval atau ditolak. Keduanya belum
+ * (atau tidak akan) mengurangi stok, jadi menghitungnya sebagai pemakaian
+ * membuat perkiraan habisnya terlalu cepat. WarehouseTransaction tidak punya
+ * status sama sekali — barisnya baru dibuat setelah stoknya berubah.
+ */
+const STATUS_TERPAKAI = ["selesai", "disetujui"];
+
+/**
+ * Apakah satu baris riwayat berarti barangnya benar-benar dipakai/keluar?
+ *
+ * Nama field-nya `type`, bukan `transaction_type`. Yang lama dibaca di sini
+ * selama ini padahal tidak ada di skema StockMovement maupun
+ * WarehouseTransaction, sehingga penyaringnya tidak pernah cocok sekali pun:
+ * pemakaian selalu terhitung nol, sisa hari pakai selalu Infinity, dan setiap
+ * barang selalu dinilai "aman — belum ada data pemakaian". Prediksi Stok hanya
+ * pernah menyebut barang yang stoknya sudah nol, yang bukan prediksi.
+ *
+ * `transaction_type` tetap ikut dibaca untuk berjaga-jaga bila ada data lama.
+ */
+export function adalahPemakaian(t) {
+  if (!t) return false;
+  if (t.is_test_data) return false;
+  if (t.status && !STATUS_TERPAKAI.includes(t.status)) return false;
+  const jenis = t.type || t.transaction_type;
+  return jenis === "keluar" || jenis === "pakai";
+}
+
+/**
+ * Satukan dua buku riwayat stok yang dipakai aplikasi ini.
+ *
+ * StockMovement adalah buku yang sebenarnya — delapan layar menulis ke sana.
+ * WarehouseTransaction hanya ditulis satu layar gudang. Perkiraan pemakaian
+ * dulu membaca yang kedua saja, jadi hampir semua pemakaian tidak terlihat.
+ */
+export function gabungRiwayatPemakaian(...daftar) {
+  return daftar.flat().filter(Boolean);
+}
+
+/**
  * Perkiraan sisa hari pakai sebuah barang.
  *
  * @returns {number} `-1` bila stok sudah habis, `Infinity` bila belum ada data
@@ -34,7 +75,7 @@ export function hitungSisaHari(item, transactions = []) {
 
   const terpakai = transactions.reduce((total, t) => {
     if (t.item_id !== item.id && t.item_name !== item.name) return total;
-    if (t.transaction_type !== "keluar" && t.transaction_type !== "pakai") return total;
+    if (!adalahPemakaian(t)) return total;
     const waktu = Date.parse(t.created_date || t.date || "");
     if (!Number.isFinite(waktu) || waktu < batas) return total;
     return total + Math.abs(t.quantity || 0);

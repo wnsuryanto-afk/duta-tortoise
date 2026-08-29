@@ -249,8 +249,8 @@ export default function PelletRecipePage() {
     queryFn: () => base44.entities.PelletProduction.list("-production_date", 100),
   });
   const { data: feedItems = [] } = useQuery({
-    queryKey: ["feed-stock"],
-    queryFn: () => base44.entities.FeedStock.list(),
+    queryKey: ["feedstocks", "-name", 300],
+    queryFn: () => base44.entities.FeedStock.list("-name", 300),
   });
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["warehouse-items", "-created_date", 300],
@@ -264,7 +264,7 @@ export default function PelletRecipePage() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["pellet-recipes"] });
     qc.invalidateQueries({ queryKey: ["pellet-productions"] });
-    qc.invalidateQueries({ queryKey: ["feed-stock"] });
+    qc.invalidateQueries({ queryKey: ["feedstocks"] });
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });
   };
 

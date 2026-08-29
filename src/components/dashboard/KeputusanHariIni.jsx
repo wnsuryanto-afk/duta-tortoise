@@ -11,7 +11,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useViewAsGuard } from "@/lib/useViewAsGuard";
 import { canAccess } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
-import { nilaiUrgensiStok, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +86,16 @@ export default function KeputusanHariIni() {
     queryFn: () => base44.entities.WarehouseTransaction.list("-created_date", 300),
     staleTime: 5 * 60 * 1000,
   });
+
+  // StockMovement adalah buku pergerakan stok yang sebenarnya — delapan layar
+  // menulis ke sana, sementara WarehouseTransaction hanya ditulis satu layar
+  // gudang. Perkiraan pemakaian dulu membaca yang kedua saja.
+  const { data: pergerakan = [] } = useQuery({
+    queryKey: ["stock-movements", "-date", 500],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: sopTasks = [] } = useQuery({
     queryKey: ["sop-tasks"],
     queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
@@ -108,7 +118,7 @@ export default function KeputusanHariIni() {
   });
 
   // ── Stok ────────────────────────────────────────────────────────────
-  const dinilai = nilaiUrgensiStok(warehouse, transaksi, sopTasks);
+  const dinilai = nilaiUrgensiStok(warehouse, gabungRiwayatPemakaian(pergerakan, transaksi), sopTasks);
   const gawat = dinilai.filter((i) => i.tingkat === "gawat");
   const waspada = dinilai.filter((i) => i.tingkat === "waspada");
   const aman = dinilai.length - gawat.length - waspada.length;
