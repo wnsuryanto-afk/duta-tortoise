@@ -54,6 +54,13 @@
       },
       "description": "Tanggal-tanggal dalam bulan untuk task bulanan (1-31)"
     },
+    "bulan_aktif": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Bulan berapa saja task ini berlaku (1=Januari ... 12=Desember). Kosong = berlaku sepanjang tahun. Dipakai untuk pekerjaan yang jadwalnya lebih jarang daripada bulanan (mis. tiap 2 bulan pada bulan ganjil) atau musiman."
+    },
     "target_enclosures": {
       "type": "array",
       "items": {
