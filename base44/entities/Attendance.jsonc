@@ -45,6 +45,10 @@
       "type": "string",
       "description": "URL foto selfie saat check out"
     },
+    "checkout_location_verified": {
+      "type": "boolean",
+      "description": "Apakah lokasi saat pulang ada di dalam area. Pasangan dari location_verified yang mencatat lokasi saat datang; sudah ditulis dua layar tetapi field-nya belum pernah ada."
+    },
     "location_verified": {
       "type": "boolean",
       "default": false,

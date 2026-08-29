@@ -201,10 +201,15 @@ export default function RekapPoinGajiPage() {
       kasbon_ids: row.kasbonIdsToDeduct,
       kasbon_remaining: row.kasbonRemaining,
       net_total: row.netTotal,
-      total_points: row.totalPoin,
-      point_value: row.pointValue,
-      target_points: TARGET_POIN_SETTING,
       total_poin: row.totalPoin,
+      // Nama field-nya `nilai_poin_saat_itu`, bukan `point_value` — yang lama
+      // tidak ada di skema sehingga dibuang, dan slip bulanan jadi tidak punya
+      // snapshot sama sekali. Rincian "N poin × Rp X" pada slip lama karena itu
+      // ikut berubah saat nilai poin diubah, sehingga tidak lagi cocok dengan
+      // jumlah yang benar-benar dibayarkan. Slip mingguan tidak kena karena
+      // WeeklySlipManager sudah menulis field yang benar.
+      nilai_poin_saat_itu: row.pointValue,
+      target_poin_saat_itu: TARGET_POIN_SETTING,
       poin_bonus: row.bonus,
       poin_deduction: row.potonganPoin,
       poin_status: row.targetTercapai ? "Tercapai" : `Kurang ${row.selisihPoin} poin`,

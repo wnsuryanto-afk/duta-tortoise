@@ -2,6 +2,14 @@
   "name": "IncidentalTask",
   "type": "object",
   "properties": {
+    "tortoise_id": {
+      "type": "string",
+      "description": "Kura yang dituju, bila tugas ini soal seekor kura tertentu (mis. perawatan harian). Tanpa ini pencocokan terpaksa menebak dari judul."
+    },
+    "tortoise_code": {
+      "type": "string",
+      "description": "Kode kura, untuk ditampilkan tanpa perlu mengambil data kura."
+    },
     "title": {
       "type": "string",
       "description": "Judul tugas insidentil"

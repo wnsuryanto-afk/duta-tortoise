@@ -299,6 +299,7 @@ export default function HealthList() {
                           diagnoses={r.diagnosis || r.diagnoses}
                           severity={r.severity}
                           type={r.type}
+                          tortoiseId={r.tortoise_id}
                           tortoiseName={r.tortoise_name}
                           tortoiseCode={tortoises.find((t) => t.id === r.tortoise_id)?.code}
                         />

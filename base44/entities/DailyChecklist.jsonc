@@ -61,6 +61,10 @@
             "default": "completed",
             "description": "completed = task dikerjakan, skipped_no_stock = dilewati karena stok kosong"
           },
+          "deadline_passed": {
+            "type": "boolean",
+            "description": "Task dikerjakan lewat tenggat, sehingga poinnya nol. Menjelaskan kenapa poinnya nol saat status-nya tetap completed."
+          },
           "skip_reason": {
             "type": "string",
             "description": "Alasan skip (mis: Stok kosong)"
@@ -160,6 +164,11 @@
     "approved_by": {
       "type": "string",
       "description": "Nama admin yang approve"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu checklist disetujui/ditolak. Sudah ditulis Beranda Kepala Feeder di tiga tempat, tetapi field-nya belum pernah ada sehingga waktunya selalu hilang."
     },
     "approved_points": {
       "type": "number",

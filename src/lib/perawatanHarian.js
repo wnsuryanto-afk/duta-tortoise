@@ -64,23 +64,31 @@ function namaDariJudul(judul) {
 /**
  * Cari tugas perawatan harian yang dibuat server untuk kura ini.
  *
- * Tugasnya dibuat dengan judul "Perawatan [nama kura] — [penyakit]". Tidak ada
- * kolom yang menautkannya ke nomor kura, jadi pencocokan terpaksa lewat judul.
+ * Tugasnya kini menyimpan `tortoise_id`, jadi pencocokan dilakukan lewat id —
+ * tautan yang tidak ikut berubah saat kuranya diganti nama.
  *
- * Namanya diambil utuh dari judul lalu dibandingkan persis, bukan dicari sebagai
- * potongan teks. Bedanya nyata: dengan pencarian potongan, kura bernama "Bim"
- * akan mencomot tugas milik "Bimo" — dan menutup tugas kura lain lebih buruk
- * daripada membiarkan satu tugas terbuka.
+ * Judulnya tetap diurai sebagai cadangan, untuk tugas yang sudah telanjur ada
+ * di basis data sebelum kolom itu ditambahkan. Cadangan ini hanya dipakai bila
+ * tugasnya memang belum punya id, supaya tugas milik kura lain tidak ikut
+ * tersambar.
+ *
+ * Pada jalur cadangan, nama diambil utuh dari judul lalu dibandingkan persis,
+ * bukan dicari sebagai potongan teks. Bedanya nyata: dengan pencarian potongan,
+ * kura bernama "Bim" akan mencomot tugas milik "Bimo" — dan menutup tugas kura
+ * lain lebih buruk daripada membiarkan satu tugas terbuka.
  */
-export function cariTugasPerawatan(tugas, namaKura) {
+export function cariTugasPerawatan(tugas, namaKura, tortoiseId) {
+  const daftar = (tugas || []).filter((t) => t.status === "pending");
+
+  if (tortoiseId) {
+    const lewatId = daftar.find((t) => t.tortoise_id === tortoiseId);
+    if (lewatId) return lewatId;
+  }
+
   if (!namaKura) return null;
   const nama = namaKura.trim().toLowerCase();
   if (!nama) return null;
-  return (
-    (tugas || []).find(
-      (t) => t.status === "pending" && namaDariJudul(t.title) === nama
-    ) || null
-  );
+  return daftar.find((t) => !t.tortoise_id && namaDariJudul(t.title) === nama) || null;
 }
 
 /**
@@ -156,7 +164,7 @@ export async function catatPerawatanHarian(kura, user, opsi = {}) {
 
   // ── 3. Tutup tugas bikinan server, lewat jalur resminya ──
   let tugasDitutup = false;
-  const tugas = cariTugasPerawatan(tugasInsidentil, namaKura);
+  const tugas = cariTugasPerawatan(tugasInsidentil, namaKura, tortoiseId);
   if (tugas) {
     try {
       await claimIncidentalTask(tugas, user, {

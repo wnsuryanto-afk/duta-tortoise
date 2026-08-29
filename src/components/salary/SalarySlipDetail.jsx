@@ -175,7 +175,9 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const hasVeg = (slip.vegetable_pay || 0) > 0 || (slip.vegetable_trips || 0) > 0;
   const hasKasbonDed = (slip.kasbon_deduction || 0) > 0;
   const hasPoinDed = (slip.poin_deduction || 0) > 0;
-  const targetPoin = settings.min_poin_bulanan || 300;
+  // Sama seperti nilai poin: pakai snapshot slip bila ada, supaya penilaian
+  // "Tercapai" pada slip lama tidak ikut berubah saat targetnya diubah.
+  const targetPoin = slip.target_poin_saat_itu || settings.min_poin_bulanan || 300;
 
   return (
     <>

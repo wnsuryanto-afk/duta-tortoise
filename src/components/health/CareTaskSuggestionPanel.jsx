@@ -30,6 +30,7 @@ export default function CareTaskSuggestionPanel({
   diagnoses,
   severity,
   type,
+  tortoiseId,
   tortoiseName,
   tortoiseCode,
   protocols: prefetched,
@@ -92,6 +93,11 @@ export default function CareTaskSuggestionPanel({
 
         await base44.entities.IncidentalTask.create({
           title,
+          // Tautan ke kuranya disimpan sebagai id. Tanpa ini, satu-satunya
+          // penghubung tugas ke kura adalah judulnya, yang harus diurai balik
+          // dan putus begitu nama kuranya diubah.
+          tortoise_id: tortoiseId || undefined,
+          tortoise_code: tortoiseCode || "",
           due_date: today,
           points: CARE_TASK_POINTS,
           status: "pending",

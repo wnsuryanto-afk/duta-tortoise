@@ -161,6 +161,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
               diagnoses={savedRecord.diagnosis}
               severity={savedRecord.severity}
               type="sakit"
+              tortoiseId={savedRecord.tortoise_id}
               tortoiseName={savedRecord.tortoise_name}
               tortoiseCode={savedRecord.tortoise_code}
               protocols={protocols}

@@ -300,6 +300,7 @@ export default function HealthForm({ open, onClose, editData }) {
             diagnoses={selectedDiagnoses}
             severity={form.severity}
             type={form.type}
+            tortoiseId={form.tortoise_id}
             tortoiseName={form.tortoise_name}
             tortoiseCode={tortoises.find((t) => t.id === form.tortoise_id)?.code}
             protocols={diagnosisProtocols}

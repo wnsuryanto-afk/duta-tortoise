@@ -73,6 +73,9 @@ export default async function(req: Request): Promise<Response> {
 
           await base44.asServiceRole.entities.IncidentalTask.create({
             title: taskTitle,
+            // Tautan ke kuranya disimpan sebagai id, bukan hanya lewat judul.
+            tortoise_id: tortoise.id,
+            tortoise_code: tortoise.code || "",
             due_date: today,
             points: CARE_POINTS,
             status: "pending",

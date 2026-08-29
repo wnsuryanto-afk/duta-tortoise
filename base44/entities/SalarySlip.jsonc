@@ -147,6 +147,10 @@
       "default": 0,
       "description": "Snapshot nilai rupiah per poin yang dipakai saat slip dibuat \u2014 tidak berubah surut meski pengaturan diubah"
     },
+    "target_poin_saat_itu": {
+      "type": "number",
+      "description": "Snapshot target poin minimum yang berlaku saat slip dibuat \u2014 supaya penilaian \"Tercapai\" pada slip lama tidak berubah saat targetnya diubah."
+    },
     "poin_bonus": {
       "type": "number",
       "default": 0,

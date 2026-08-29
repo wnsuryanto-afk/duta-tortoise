@@ -1146,6 +1146,7 @@ export default function GuidedHariIni({ user }) {
                     diagnoses={savedSakit.diagnosis}
                     severity={savedSakit.severity}
                     type="sakit"
+                    tortoiseId={savedSakit.tortoise_id}
                     tortoiseName={savedSakit.tortoise_name}
                     tortoiseCode={savedSakit.tortoise_code}
                     protocols={diagnosisProtocols}
