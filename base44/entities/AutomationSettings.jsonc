@@ -194,6 +194,62 @@
       "type": "string",
       "description": "A7 \u2014 Tanggal WIB terakhir daftar belanja otomatis dibuat"
     },
+    "kepala_feeder_digital_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C1 \u2014 Perintah kerja pagi disusun AI dari keadaan kemarin, menggantikan template statis"
+    },
+    "kepala_feeder_digital_jam": {
+      "type": "string",
+      "default": "06:45",
+      "description": "C1 \u2014 Jam WIB kirim perintah kerja pagi (sebelum ringkasan pagi biasa)"
+    },
+    "kepala_feeder_digital_terakhir": {
+      "type": "string",
+      "description": "C1 \u2014 Tanggal WIB terakhir perintah kerja dikirim"
+    },
+    "deteksi_penyakit_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C4 \u2014 Periksa foto rutin untuk tanda penyakit (shell rot, piramiding, mata bengkak)"
+    },
+    "deteksi_penyakit_maks_foto": {
+      "type": "number",
+      "default": 12,
+      "description": "C4 \u2014 Batas foto yang diperiksa per hari, untuk menahan biaya AI"
+    },
+    "deteksi_penyakit_terakhir": {
+      "type": "string",
+      "description": "C4 \u2014 Tanggal WIB terakhir pemeriksaan dijalankan"
+    },
+    "estimasi_nilai_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C8 \u2014 Hitung perkiraan nilai jual tiap kura dari berat, umur, kelamin, dan harga jual nyata"
+    },
+    "estimasi_nilai_terakhir": {
+      "type": "string",
+      "description": "C8 \u2014 Bulan terakhir estimasi dihitung (YYYY-MM)"
+    },
+    "wa_masuk_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C10 \u2014 Terima laporan lewat balasan WhatsApp (butuh webhook Fonnte diarahkan ke fungsi terimaPesanWhatsApp)"
+    },
+    "siapkan_slip_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A5 \u2014 Hitung dan siapkan angka slip mingguan, lalu ingatkan owner untuk menerbitkan"
+    },
+    "siapkan_slip_hari": {
+      "type": "number",
+      "default": 0,
+      "description": "A5 \u2014 Hari kirim pengingat (0=Minggu, mengikuti periode slip Minggu\u2013Sabtu)"
+    },
+    "siapkan_slip_terakhir": {
+      "type": "string",
+      "description": "A5 \u2014 Minggu terakhir pengingat dikirim (tanggal awal minggu)"
+    },
     "updated_at": {
       "type": "string",
       "format": "date-time"
