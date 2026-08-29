@@ -192,6 +192,16 @@
       "type": "boolean",
       "default": false,
       "description": "Ditandai sebagai data test \u2014 tidak masuk laporan"
+    },
+    "stok_dipotong": {
+      "type": "boolean",
+      "default": false,
+      "description": "A6 - Stok bahan untuk checklist ini sudah dikurangi. Penjaga anti-dobel: sekali true, tidak akan dipotong lagi."
+    },
+    "stok_dipotong_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "A6 - Waktu pemotongan stok dijalankan."
     }
   },
   "required": [
