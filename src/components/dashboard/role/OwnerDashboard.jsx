@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
-import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
@@ -29,6 +28,7 @@ import { diPeternakan } from "@/lib/populasiKura";
 import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
+import GrafikUang from "@/components/ui/grafik-uang";
 
 // ─── Helpers ───────────────────────────────────────
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -45,14 +45,32 @@ function greeting(name) {
  * TrendPill bawaan menampilkan persentase; di sini nominal lebih berguna
  * karena owner membandingkan angka rupiah, bukan rasio.
  */
-function TrendBadge({ value, suffix = "" }) {
+/**
+ * TrendBadge — perubahan terhadap bulan lalu.
+ *
+ * Warnanya dulu ditentukan oleh TANDA angkanya saja: naik hijau, turun merah.
+ * Untuk pemasukan dan pertambahan berat itu benar; untuk pengeluaran, biaya
+ * pakan, jam lembur, dan KEMATIAN KURA itu terbalik — kematian bertambah tiga
+ * ekor ditampilkan hijau dengan panah naik, seolah kabar baik.
+ *
+ * `naikItuBaik` memisahkan arah dari maknanya. Bawaannya true karena sebagian
+ * besar pemakaian memang begitu, dan yang sebaliknya menyebutkannya tegas.
+ */
+function TrendBadge({ value, suffix = "", naikItuBaik = true }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">sama</span>;
-  const up = value > 0;
+  const naik = value > 0;
+  const up = naik === naikItuBaik;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${up ? "bg-accent/12 text-accent" : "bg-destructive/12 text-destructive"}`}>
-      {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-      {up ? "+" : "−"}{fmt(Math.abs(value))}{suffix}
-      <span className="font-normal opacity-70">vs bln lalu</span>
+    // "vs bln lalu" dulu ikut di dalam lencana yang sama, sehingga di kolom
+    // sempit lencananya pecah jadi dua baris dengan "vs bln" menggantung
+    // sendirian. Keterangannya dipindah ke luar sebagai baris tersendiri.
+    <span className="inline-flex flex-col items-start gap-0.5">
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${up ? "bg-accent/12 text-accent" : "bg-destructive/12 text-destructive"}`}>
+        {/* Ikon mengikuti ARAH angkanya; warna mengikuti BAIK-BURUKNYA. */}
+        {naik ? <TrendingUp className="w-3 h-3 flex-shrink-0" /> : <TrendingDown className="w-3 h-3 flex-shrink-0" />}
+        {naik ? "+" : "−"}{fmt(Math.abs(value))}{suffix}
+      </span>
+      <span className="text-[10px] text-muted-foreground">vs bulan lalu</span>
     </span>
   );
 }
@@ -390,6 +408,20 @@ export default function OwnerDashboard({ user }) {
       .filter(s => (s.date || s.sale_date || s.created_date || "").startsWith(key))
       .reduce((sum, s) => sum + (s.price || s.amount || 0), 0);
     return { name: MONTH_NAMES_ID[d.getMonth()], value: total };
+  });
+
+  // Deret uang masuk DAN keluar per bulan. Sebelumnya hanya pemasukan yang
+  // digambar, jadi grafiknya tidak pernah bisa menjawab pertanyaan yang
+  // sebenarnya ditanyakan pemilik: bulan mana yang untung.
+  const arusKas6Bulan = Array.from({ length: 6 }).map((_, i) => {
+    const d = subMonths(now, 5 - i);
+    const key = format(d, "yyyy-MM");
+    const bulanIni = activeFinances.filter(f => (f.date || "").startsWith(key));
+    return {
+      label: MONTH_NAMES_ID[d.getMonth()],
+      masuk: bulanIni.filter(f => f.type === "pemasukan").reduce((s, f) => s + (f.amount || 0), 0),
+      keluar: bulanIni.filter(f => f.type === "pengeluaran").reduce((s, f) => s + (f.amount || 0), 0),
+    };
   });
 
   const expenseByCategory = [
@@ -734,7 +766,11 @@ export default function OwnerDashboard({ user }) {
       {/* ── ROW 1: KESEHATAN FINANSIAL ── */}
       <div>
         <SectionTitle icon={DollarSign}>Kesehatan Finansial Bulan Ini</SectionTitle>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Lima kartu sejenis, lima kolom. Sebelumnya kartu Kas Kecil berada di
+            grid terpisah berkolom tiga dengan satu isi saja, jadi ia jatuh ke
+            baris sendiri dan meninggalkan dua pertiga baris kosong — padahal
+            bentuk dan bobotnya sama dengan empat kartu di atasnya. */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <KpiCard icon={TrendingUp} label="Pemasukan" color="bg-green-100 text-green-700" href="/finance"
             value={fmt(incomeThis)}
             sub={<TrendBadge value={incomeThis - incomeLast} />}
@@ -742,7 +778,7 @@ export default function OwnerDashboard({ user }) {
           />
           <KpiCard icon={TrendingDown} label="Pengeluaran" color="bg-red-100 text-red-600" href="/finance"
             value={fmt(expenseThis)}
-            sub={<TrendBadge value={expenseThis - expenseLast} />}
+            sub={<TrendBadge value={expenseThis - expenseLast} naikItuBaik={false} />}
             spark={<Sparkline data={deret7Hari.keluar} positiveIsGood={false} />}
           />
           <KpiCard icon={DollarSign} label="Laba/Rugi Bersih" href="/finance"
@@ -755,9 +791,20 @@ export default function OwnerDashboard({ user }) {
             value={<span className={Number(margin) >= 0 ? "text-green-700" : "text-red-600"}>{margin}%</span>}
             sub={<span className="text-xs text-muted-foreground">Laba ÷ Pemasukan</span>}
           />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <PettyCashWidget />
+        </div>
+
+        {/* Enam bulan uang masuk dan keluar berdampingan. Angka-angka di kartu
+            atas hanya menyebutkan bulan ini; yang menentukan keputusan adalah
+            arahnya, dan itu cuma terbaca dari bentuknya. */}
+        <div className="mt-4 rounded-xl border border-border bg-card p-4">
+          <div className="flex items-baseline justify-between gap-3 mb-1">
+            <p className="text-sm font-semibold">Arus Uang 6 Bulan</p>
+            <Link to="/finance" className="text-xs text-primary hover:underline flex-shrink-0">
+              Laporan Keuangan
+            </Link>
+          </div>
+          <GrafikUang data={arusKas6Bulan} tinggi={230} />
         </div>
       </div>
 
@@ -781,8 +828,14 @@ export default function OwnerDashboard({ user }) {
       {/* ── EXCLUDED DATA WIDGET ── */}
       <ExcludedDataWidget />
 
-      {/* ── WIDGET LABA RUGI REALTIME ── */}
-      <LabaRugiWidget />
+      {/* Widget Laba Rugi dihapus dari sini: seluruh isinya sudah tampil di
+          "Kesehatan Finansial Bulan Ini" satu layar di atas — pemasukan,
+          pengeluaran, dan labanya persis angka yang sama — sedangkan "biaya per
+          ekor/bulan" punya kartunya sendiri di "Nilai & Modal Bisnis" beberapa
+          baris di bawah. Menampilkan angka yang sama tiga kali dalam satu
+          halaman membuat pembacanya ragu apakah ketiganya benar-benar sama.
+          Widgetnya masih dipakai beranda investor dan admin, yang tidak punya
+          baris kartu itu. */}
 
       {/* ── ROW 2: NILAI & MODAL ── */}
       <div>
@@ -895,7 +948,7 @@ export default function OwnerDashboard({ user }) {
             color={deathsThisMonth.length > 0 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-700"}
             href="/death-records"
             value={deathsThisMonth.length}
-            sub={<TrendBadge value={deathsThisMonth.length - deathsLastMonth.length} />}
+            sub={<TrendBadge value={deathsThisMonth.length - deathsLastMonth.length} naikItuBaik={false} />}
           />
           <KpiCard icon={AlertTriangle} label="Pernah Sakit Bln Ini"
             color="bg-orange-100 text-orange-600"
@@ -1009,7 +1062,7 @@ export default function OwnerDashboard({ user }) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Trend vs bln lalu</p>
-            <TrendBadge value={feedExpenseThis - feedExpenseLast} />
+            <TrendBadge value={feedExpenseThis - feedExpenseLast} naikItuBaik={false} />
           </div>
         </div>
       </div>
@@ -1067,7 +1120,7 @@ export default function OwnerDashboard({ user }) {
           <div className="bg-card rounded-xl border border-border p-4">
             <p className="text-sm font-semibold mb-1">Lembur Bulan Ini</p>
             <p className="text-lg font-bold">{totalOtHoursThis} jam — {fmt(totalOtPayThis)}</p>
-            <TrendBadge value={totalOtHoursThis - totalOtHoursLast} suffix=" jam" />
+            <TrendBadge value={totalOtHoursThis - totalOtHoursLast} suffix=" jam" naikItuBaik={false} />
           </div>
         </div>
       </div>

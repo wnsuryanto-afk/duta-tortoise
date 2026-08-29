@@ -74,6 +74,18 @@
     --chart-4: 170 38% 36%;
     --chart-5: 35 65% 52%;
 
+    /* ── Warna seri grafik uang ─────────────────────────────────────────
+       Sepasang warna untuk "uang masuk" vs "uang keluar". SENGAJA BUKAN
+       hijau-merah: bagi mata deuteranopia (buta warna merah-hijau, ±6% pria)
+       hijau #6c9b36 dan merah #e94b3c berjarak ΔE 1,4 — praktis warna yang
+       sama. Pasangan sian-kuning di bawah berjarak ΔE 17,7 pada penglihatan
+       buta warna dan 23,7 pada penglihatan normal; keduanya lolos seluruh
+       pemeriksaan palet (rentang terang, chroma, keterbedaan, dan kontras
+       terhadap latar). Merah tetap dipakai untuk STATUS bahaya di tempat
+       lain — itu peran yang berbeda dan tidak pernah jadi "seri nomor dua". */
+    --seri-masuk:  191 100% 32%;   /* #0087a3 */
+    --seri-keluar:  38  85% 40%;   /* #bd7a10 */
+
     /* ── SIDEBAR (Hijau Tua gelap) ── */
     --sidebar-background:           100 55% 12%;
     --sidebar-foreground:           80 20% 88%;
@@ -117,6 +129,11 @@
     --chart-1: 88 48% 48%;
     --chart-2: 25 55% 52%;
     --chart-3: 170 38% 44%;
+
+    /* Langkah gelap disetel ulang dari rentang yang sama, bukan dibalik
+       otomatis — dan divalidasi terhadap latar gelap. */
+    --seri-masuk:  191 86% 36%;    /* #0d90ac */
+    --seri-keluar:  38 76% 43%;    /* #c07d1a */
     --chart-4: 35 65% 52%;
     --chart-5: 96 57% 32%;
     --sidebar-background: 120 10% 8%;

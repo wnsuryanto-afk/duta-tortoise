@@ -17,6 +17,7 @@ import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
 import KeputusanHariIni from "@/components/dashboard/KeputusanHariIni";
 import ArahMingguIni from "@/components/dashboard/ArahMingguIni";
 import { masukLaporan } from "@/lib/laporan";
+import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -27,6 +28,12 @@ export default function RingkasanPagi() {
   const weekAgo = format(subDays(now, 6), "yyyy-MM-dd");
 
   // ── Queries — shared keys leverage sibling cache (OwnerDashboard, PettyCashWidget, IncidentalTaskCard) ──
+  const { data: enclosures = [] } = useQuery({
+    queryKey: ["enclosures"],
+    queryFn: () => base44.entities.Enclosure.list(),
+    staleTime: 10 * 60 * 1000,
+  });
+
   const { data: tortoises = [], isLoading: tLoading } = useQuery({
     queryKey: ["owner-tortoises"],
     queryFn: () => base44.entities.Tortoise.list("-created_date", 500),
@@ -191,7 +198,13 @@ export default function RingkasanPagi() {
           <span className="text-sm font-semibold text-green-700">Tidak ada yang mendesak hari ini</span>
         </div>
       ) : (
-        <div className={`grid gap-2 ${attention.length === 1 ? "grid-cols-1" : attention.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+        // Susunan mengalir, bukan grid yang menyesuaikan jumlah isinya.
+        // `grid-cols-1` untuk satu peringatan membuat kartunya melar selebar
+        // layar demi satu angka dua digit — bobot visualnya jadi jauh lebih
+        // besar daripada kepentingannya, dan justru saat peringatannya cuma
+        // satu (kabar baik) tampilannya paling dramatis. Sekarang lebar
+        // kartunya tetap; jumlahnya yang menentukan panjang barisnya.
+        <div className="flex flex-wrap gap-2 [&>*]:flex-1 [&>*]:min-w-[9rem] [&>*]:max-w-[15rem]">
           {attention.map((a, i) => (
             <Link
               key={i}
@@ -290,48 +303,70 @@ export default function RingkasanPagi() {
         )}
       </div>
 
-      {/* 3. UANG */}
+      {/* 3. UANG
+          Empat kartu selebar setengah layar untuk empat angka — dan di
+          peternakan yang belum ramai, tiga di antaranya Rp 0. Kartu sebesar itu
+          memberi bobot visual yang sama kepada nol dan kepada puluhan juta.
+          Diganti satu baris rapat: label kecil, angka menonjol, dan pemasukan
+          tujuh hari dibandingkan langsung dengan pengeluarannya karena hanya
+          selisih itu yang berarti. */}
       <div>
         <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Uang</p>
-        <div className="grid grid-cols-2 gap-2">
-          <Link to="/petty-cash" className="bg-card border border-border rounded-xl p-2.5 hover:shadow-md transition-shadow">
-            <p className="text-[10px] text-muted-foreground">💵 Kas Kecil</p>
-            <p className={`text-base font-bold leading-tight ${saldoKas < 0 ? "text-red-600" : "text-green-700"}`}>{fmtRp(saldoKas)}</p>
-          </Link>
-          <Link to="/sales" className="bg-card border border-border rounded-xl p-2.5 hover:shadow-md transition-shadow">
-            <p className="text-[10px] text-muted-foreground">💰 Jual Kemarin</p>
-            <p className="text-base font-bold leading-tight text-foreground">{fmtRp(salesYesterday)}</p>
-          </Link>
-          <Link to="/sales" className="bg-card border border-border rounded-xl p-2.5 hover:shadow-md transition-shadow">
-            <p className="text-[10px] text-muted-foreground">💰 Jual 7 Hari</p>
-            <p className="text-base font-bold leading-tight text-foreground">{fmtRp(sales7)}</p>
-          </Link>
-          <Link to="/finance" className="bg-card border border-border rounded-xl p-2.5 hover:shadow-md transition-shadow">
-            <p className="text-[10px] text-muted-foreground">📉 Pengeluaran 7 Hari</p>
-            <p className="text-base font-bold leading-tight text-red-600">{fmtRp(exp7)}</p>
-          </Link>
+        <div className="rounded-xl border border-border bg-card divide-y divide-border/60">
+          <div className="grid grid-cols-2 divide-x divide-border/60">
+            <Link to="/sales" className="px-3 py-2 hover:bg-muted/40 transition-colors">
+              <p className="text-[10px] text-muted-foreground">Masuk 7 hari</p>
+              <p className="text-base font-bold leading-tight tabular text-[hsl(var(--seri-masuk))]">{fmtRp(sales7)}</p>
+            </Link>
+            <Link to="/finance" className="px-3 py-2 hover:bg-muted/40 transition-colors">
+              <p className="text-[10px] text-muted-foreground">Keluar 7 hari</p>
+              <p className="text-base font-bold leading-tight tabular text-[hsl(var(--seri-keluar))]">{fmtRp(exp7)}</p>
+            </Link>
+          </div>
+
+          {/* Batang perbandingan: mana yang lebih besar terbaca sebelum
+              angkanya dibaca. Muncul hanya bila ada isinya — batang kosong
+              tidak memberi tahu apa pun. */}
+          {(sales7 > 0 || exp7 > 0) && (
+            <div className="px-3 py-2 space-y-1">
+              {(() => {
+                const maks = Math.max(sales7, exp7, 1);
+                const selisih = sales7 - exp7;
+                return (
+                  <>
+                    <div className="flex gap-0.5 h-2">
+                      <div className="rounded-l-full bg-[hsl(var(--seri-masuk))]" style={{ width: `${(sales7 / maks) * 50}%` }} />
+                      <div className="rounded-r-full bg-[hsl(var(--seri-keluar))]" style={{ width: `${(exp7 / maks) * 50}%` }} />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {selisih >= 0 ? "Lebih banyak masuk " : "Lebih banyak keluar "}
+                      <span className="tabular font-semibold text-foreground">{fmtRp(Math.abs(selisih))}</span>
+                      {" "}minggu ini
+                    </p>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 divide-x divide-border/60">
+            <Link to="/petty-cash" className="px-3 py-1.5 hover:bg-muted/40 transition-colors flex items-baseline gap-2">
+              <span className="text-[10px] text-muted-foreground">Kas kecil</span>
+              <span className={`text-xs font-semibold tabular ml-auto ${saldoKas < 0 ? "text-destructive" : "text-foreground"}`}>{fmtRp(saldoKas)}</span>
+            </Link>
+            <Link to="/sales" className="px-3 py-1.5 hover:bg-muted/40 transition-colors flex items-baseline gap-2">
+              <span className="text-[10px] text-muted-foreground">Jual kemarin</span>
+              <span className="text-xs font-semibold tabular ml-auto text-foreground">{fmtRp(salesYesterday)}</span>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* 4. POPULASI */}
-      <Link to="/tortoise" className="block bg-card border border-border rounded-xl p-3 hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-around text-center">
-          <div>
-            <p className="text-lg font-bold text-primary leading-none">{activeTortoises.length}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Aktif</p>
-          </div>
-          <div className="w-px h-8 bg-border" />
-          <div>
-            <p className="text-lg font-bold text-red-500 leading-none">{sickTortoises.length}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Sakit</p>
-          </div>
-          <div className="w-px h-8 bg-border" />
-          <div>
-            <p className="text-lg font-bold text-accent leading-none">{activeBreedings.length}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Breeding</p>
-          </div>
-        </div>
-      </Link>
+      {/* 4. POPULASI
+          Dulu tiga angka telanjang berjajar di kartu selebar layar — angkanya
+          tidak menjawab pertanyaan yang benar-benar dipakai memutuskan: berapa
+          porsinya terhadap seluruh kawanan, dan kandang mana yang sudah penuh. */}
+      <KomposisiKawanan tortoises={tortoises} enclosures={enclosures} />
     </div>
   );
 }
