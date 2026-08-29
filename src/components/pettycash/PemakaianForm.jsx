@@ -10,8 +10,10 @@ import { compressImage } from "@/lib/useImageCompression";
 import { PETTYCASH_CATS as PEMAKAIAN_CATS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
 import { logActivity } from "@/lib/logActivity";
+import { useTestMode } from "@/lib/useTestMode";
 
 export default function PemakaianForm({ currentSaldo, user, role, onClose, onSaved }) {
+  const { testModeTag } = useTestMode();
   const [qty, setQty] = useState("");
   const [hargaSatuan, setHargaSatuan] = useState("");
   const [amountManual, setAmountManual] = useState("");
@@ -191,7 +193,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       if (qtyNum > 0) txPayload.qty = qtyNum;
       if (hargaNum > 0) txPayload.harga_satuan = hargaNum;
 
-      const tx = await base44.entities.FinanceTransaction.create(txPayload);
+      const tx = await base44.entities.FinanceTransaction.create({ ...txPayload, ...testModeTag });
       if (tx?.id) {
         await base44.entities.PettyCashLedger.update(ledger.id, { finance_tx_id: tx.id });
       }

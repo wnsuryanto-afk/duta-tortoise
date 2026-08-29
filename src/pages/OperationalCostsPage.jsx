@@ -16,6 +16,7 @@ import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { useFinanceCategories } from "@/hooks/useEntityCategories";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useTestMode } from "@/lib/useTestMode";
 
 const CATEGORIES = {
   gaji_karyawan: {
@@ -99,6 +100,7 @@ const EMPTY_FORM = {
 };
 
 export default function OperationalCostsPage() {
+  const { testModeTag } = useTestMode();
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const canManage = ["owner", "admin", "manajer"].includes(role);
@@ -153,6 +155,7 @@ export default function OperationalCostsPage() {
       date: form.date,
       description: form.description || `${CATEGORIES[form.category]?.label} — ${form.sub_category || ""}`,
       created_by_name: user?.full_name || user?.email,
+      ...testModeTag,
     });
     qc.invalidateQueries({ queryKey: ["finance-transactions-ops"] });
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });

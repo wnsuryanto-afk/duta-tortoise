@@ -11,6 +11,7 @@ import { useImageCompression } from "@/lib/useImageCompression";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import PakanSearchSelect from "./PakanSearchSelect";
+import { useTestMode } from "@/lib/useTestMode";
 
 const SUMBER_OPTIONS = [
   { value: "beli_pasar", label: "Beli di Pasar" },
@@ -29,6 +30,7 @@ const SUMBER_OPTIONS = [
  *   onClose: (refreshed?: boolean) => void
  */
 export default function PakanMasukDialog({ items, user, role, onClose }) {
+  const { testModeTag } = useTestMode();
   const { compressImage, compressing } = useImageCompression();
   const savingRef = useRef(false);
 
@@ -105,6 +107,7 @@ export default function PakanMasukDialog({ items, user, role, onClose }) {
           date,
           description: `Beli ${delta} ${selectedItem.unit} ${selectedItem.name}`,
           created_by_name: user?.full_name || user?.email || "",
+          ...testModeTag,
         });
       }
 

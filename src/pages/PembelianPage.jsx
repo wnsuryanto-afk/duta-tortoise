@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useTestMode } from "@/lib/useTestMode";
 
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const today = () => format(new Date(), "yyyy-MM-dd");
@@ -61,6 +62,7 @@ function Section({ title, icon: Icon, children, count }) {
 }
 
 export default function PembelianPage() {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   const [tab, setTab] = useState("belum");
@@ -300,6 +302,7 @@ export default function PembelianPage() {
           reference_id: p.id,
           invoice_photo_url: p.bukti_pesanan_url || "",
           created_by_name: user?.full_name || user?.email,
+          ...testModeTag,
         });
       }
 

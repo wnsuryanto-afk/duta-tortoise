@@ -12,8 +12,10 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatRole } from "@/lib/permissions";
+import { useTestMode } from "@/lib/useTestMode";
 
 export default function KasbonForm({ users, usersLoading, onClose }) {
+  const { testModeTag } = useTestMode();
   const { user } = useCurrentUser();
   const [form, setForm] = useState({
     employee_email: "",
@@ -68,6 +70,7 @@ export default function KasbonForm({ users, usersLoading, onClose }) {
           description: `Kasbon ${emp.full_name || emp.email}`,
           reference_id: created.id,
           created_by_name: user?.full_name || user?.email,
+          ...testModeTag,
         });
         await base44.entities.Kasbon.update(created.id, { finance_tx_id: tx.id });
       }

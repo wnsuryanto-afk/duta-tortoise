@@ -26,6 +26,7 @@ import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import ExcludeToggle from "@/components/owner/ExcludeToggle";
 import { masukLaporan } from "@/lib/laporan";
+import { useTestMode } from "@/lib/useTestMode";
 
 const CATEGORIES = {
   penjualan_tortoise: { label: "Penjualan Tortoise",     color: "bg-green-100 text-green-700",   type: "pemasukan"    },
@@ -60,6 +61,7 @@ function guessCategory(text) {
 
 // ── Add Transaction Form ───────────────────────────────────────────────────────
 function AddTransactionForm({ user, onClose, onSaved }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -106,6 +108,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
             harga_satuan: Number(it.harga_satuan) > 0 ? Number(it.harga_satuan) : undefined,
             created_by_name: user?.full_name || user?.email || "",
             ...(photoUrl ? { invoice_photo_url: photoUrl } : {}),
+            ...testModeTag,
           });
         }
         await logActivity({
@@ -155,7 +158,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
     if (qtyNum > 0) payload.qty = qtyNum;
     if (hargaNum > 0) payload.harga_satuan = hargaNum;
     if (invoicePhotoUrl) payload.invoice_photo_url = invoicePhotoUrl;
-    const created = await base44.entities.FinanceTransaction.create(payload);
+    const created = await base44.entities.FinanceTransaction.create({ ...payload, ...testModeTag });
     await logActivity({
       action: "create",
       entity_type: "FinanceTransaction",

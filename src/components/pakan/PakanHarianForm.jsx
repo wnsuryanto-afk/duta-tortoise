@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Camera, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useTestMode } from "@/lib/useTestMode";
 
 const SOURCES = [
   { value: "rumput", label: "Rumput" },
@@ -36,6 +37,7 @@ const EMPTY = {
 };
 
 export default function PakanHarianForm({ open, onClose, user, onSaved }) {
+  const { testModeTag } = useTestMode();
   const [form, setForm] = useState(EMPTY);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -86,6 +88,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
           amount: solar + rokok,
           date: form.log_date,
           description: `Biaya ambil sayur pasar (solar Rp${solar.toLocaleString("id-ID")} + rokok Rp${rokok.toLocaleString("id-ID")}) - ${form.log_date}`,
+          ...testModeTag,
         });
         trip_finance_tx_id = tx.id;
       }
