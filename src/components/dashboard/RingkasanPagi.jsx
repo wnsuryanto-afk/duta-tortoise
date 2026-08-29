@@ -11,7 +11,6 @@ import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { isBatchSegera, getNextMilestone } from "@/lib/breedingCalendarUtils";
 import { categorizeFinding } from "@/lib/temuanCategorize";
-import HarusDibeliWidget from "@/components/dashboard/HarusDibeliWidget";
 import ToolLoanWidget from "@/components/dashboard/ToolLoanWidget";
 import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
 import KeputusanHariIni from "@/components/dashboard/KeputusanHariIni";
@@ -256,8 +255,14 @@ export default function RingkasanPagi({ bagian = "semua" }) {
         </Link>
       )}
 
-      {/* 1.5 HARUS DIBELI + ALAT */}
-      <HarusDibeliWidget />
+      {/* 1.5 ALAT
+          Spanduk "Harus dibeli" dihapus dari sini: barang yang benar-benar
+          gawat sudah punya kartunya sendiri di lapis keputusan di atas — satu
+          barang yang sama bisa muncul dua kali dengan dua nada berbeda — dan
+          sisanya (yang sudah masuk daftar belanja atau pengajuan alat yang
+          disetujui) bukan keputusan hari ini melainkan pekerjaan yang sedang
+          berjalan. Keduanya kini dilaporkan lapis keputusan: yang gawat sebagai
+          kartu, yang berjalan sebagai baris tenang bertautan. */}
       <ToolLoanWidget />
       <ToolRequestWidget />
       </>)}

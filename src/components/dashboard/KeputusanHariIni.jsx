@@ -75,7 +75,7 @@ export default function KeputusanHariIni() {
   const bolehBelanja = canAccess(role, "daftar-belanja");
 
   // Kunci query sengaja disamakan persis dengan pemakai lain (StockPredictionPage,
-  // HarusDibeliWidget, OwnerDashboard) supaya berbagi cache, bukan menarik ulang.
+  // HarusDibeliPage, OwnerDashboard) supaya berbagi cache, bukan menarik ulang.
   const { data: warehouse = [] } = useQuery({
     queryKey: ["warehouse-items"],
     queryFn: () => base44.entities.WarehouseItem.list(),
@@ -99,6 +99,11 @@ export default function KeputusanHariIni() {
   const { data: daftarBelanja = [] } = useQuery({
     queryKey: ["shopping-list-belum"],
     queryFn: () => base44.entities.ShoppingList.filter({ status: "belum_dibeli" }, "-priority", 200),
+    staleTime: 60 * 1000,
+  });
+  const { data: pengajuanAlat = [] } = useQuery({
+    queryKey: ["tool-requests-approved"],
+    queryFn: () => base44.entities.ToolRequest.filter({ status: "disetujui" }, "-request_date", 200),
     staleTime: 60 * 1000,
   });
 
@@ -324,6 +329,23 @@ export default function KeputusanHariIni() {
         : `${aman} barang stoknya aman`
     );
   }
+  // Pembelian yang SUDAH diputuskan dan tinggal dieksekusi. Dulu ini dilaporkan
+  // spanduk "Harus dibeli" tersendiri berwarna kuning di bawah lapis ini —
+  // padahal barang yang gawat sudah punya kartunya sendiri di atas, sehingga
+  // satu barang yang sama bisa muncul dua kali dengan dua nada berbeda. Yang
+  // tersisa di spanduk itu sebenarnya bukan keputusan hari ini melainkan
+  // pekerjaan yang sedang berjalan, jadi tempatnya di baris tenang.
+  const dalamProses = daftarBelanja.length + pengajuanAlat.length;
+  if (dalamProses > 0) {
+    const bagian = [];
+    if (daftarBelanja.length > 0) bagian.push(`${daftarBelanja.length} di daftar belanja`);
+    if (pengajuanAlat.length > 0) bagian.push(`${pengajuanAlat.length} pengajuan alat disetujui`);
+    tenang.push({
+      teks: `${bagian.join(" · ")} — menunggu dibeli`,
+      href: "/harus-dibeli",
+      label: "Lihat rinciannya",
+    });
+  }
   if (bolehSetujui && tanpaFoto > 0) tenang.push(`${tanpaFoto} checklist tanpa foto menunggu diperiksa`);
   if (bolehSetujui && menungguApproval.length === 0) tenang.push("Tidak ada checklist yang menunggu persetujuan");
 
@@ -375,12 +397,22 @@ export default function KeputusanHariIni() {
             Sudah diperiksa, tidak perlu dibuka
           </p>
           <ul className="mt-1 space-y-0.5">
-            {tenang.map((t, i) => (
-              <li key={i} className="text-xs text-muted-foreground flex items-baseline gap-1.5">
-                <Check className="w-3 h-3 text-accent flex-shrink-0 translate-y-0.5" />
-                <span>{t}</span>
-              </li>
-            ))}
+            {tenang.map((t, i) => {
+              const isi = typeof t === "string" ? { teks: t } : t;
+              return (
+                <li key={i} className="text-xs text-muted-foreground flex items-baseline gap-1.5">
+                  <Check className="w-3 h-3 text-accent flex-shrink-0 translate-y-0.5" />
+                  <span>
+                    {isi.teks}
+                    {isi.href && (
+                      <Link to={isi.href} className="ml-1.5 text-primary hover:underline whitespace-nowrap">
+                        {isi.label || "Lihat"} →
+                      </Link>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
