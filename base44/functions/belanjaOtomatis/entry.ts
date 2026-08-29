@@ -80,6 +80,11 @@ Deno.serve(async (req) => {
 
     // 1. Stok pakan.
     for (const f of pakan || []) {
+      // Pakan yang dipanen atau dicari sendiri tidak pernah masuk daftar
+      // belanja. Rumput gajah 180 kg/hari, misalnya, akan muncul sebagai
+      // pesanan 2,5 ton tiap dua minggu — padahal yang dibutuhkan bukan uang,
+      // melainkan orang yang memotongnya.
+      if (f.sumber_sendiri === true) continue;
       const stok = Number(f.current_stock || 0);
       const ideal = Number(f.daily_ideal || 0);
       const min = Number(f.minimum_stock || 0);
