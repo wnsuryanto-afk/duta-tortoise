@@ -80,8 +80,19 @@ export async function tandaiSembuh({ kura, catatan = [], user, tanggal, asal = "
   const nama = kura.tortoise_name || kura.name || tortoiseId;
   const olehNama = user?.full_name || user?.email || "pengelola";
 
+  // Pemanggil yang tidak membawa catatan tetap harus menutup kasusnya — kalau
+  // dibiarkan, kita mengulang persis kesalahan yang berkas ini perbaiki.
+  let sumber = catatan;
+  if (!sumber || sumber.length === 0) {
+    try {
+      sumber = await base44.entities.HealthRecord.filter({ tortoise_id: tortoiseId });
+    } catch {
+      sumber = [];
+    }
+  }
+
   // 1. Tutup kasus yang masih terbuka.
-  const terbuka = kasusSakitTerbuka(catatan).filter((r) => r.tortoise_id === tortoiseId);
+  const terbuka = kasusSakitTerbuka(sumber).filter((r) => r.tortoise_id === tortoiseId);
   for (const r of terbuka) {
     await base44.entities.HealthRecord.update(r.id, {
       is_resolved: true,
