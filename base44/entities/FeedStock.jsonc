@@ -62,6 +62,11 @@
       "default": false,
       "description": "Apakah pakan ini wajib tersedia"
     },
+    "sumber_sendiri": {
+      "type": "boolean",
+      "default": false,
+      "description": "Pakan ini dipanen/dicari sendiri, bukan dibeli. Pemakaiannya tetap dihitung, tetapi TIDAK pernah masuk daftar belanja otomatis \u2014 tanpa penanda ini, rumput yang dipotong sendiri tiap hari akan muncul sebagai pesanan beli berton-ton."
+    },
     "storage_location": {
       "type": "string",
       "enum": [
