@@ -12,6 +12,7 @@ import ProgressRing from "@/components/ui/progress-ring";
 import Illustration, { ChartArt } from "@/components/common/Illustration";
 import { useState, useEffect } from "react";
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
+import { masukLaporan } from "@/lib/laporan";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
@@ -55,7 +56,7 @@ export default function InvestorDashboard({ user }) {
   });
 
   // Finance calcs
-  const activeFin = finances.filter(f => !f.excluded_from_reports);
+  const activeFin = finances.filter(masukLaporan);
   const finThis = activeFin.filter(f => f.date >= thisMonthStart && f.date <= thisMonthEnd);
   const finLast = activeFin.filter(f => f.date >= lastMonthStart && f.date <= lastMonthEnd);
   const incomeThis = finThis.filter(f => f.type === "pemasukan").reduce((s, f) => s + (f.amount || 0), 0);
@@ -80,7 +81,7 @@ export default function InvestorDashboard({ user }) {
   }).sort((a, b) => (a.daysLeft ?? 999) - (b.daysLeft ?? 999));
 
   // Sales this month
-  const salesThisMonth = sales.filter(s => (s.sale_date || "").startsWith(thisMonthKey) && !s.excluded_from_reports);
+  const salesThisMonth = sales.filter(s => (s.sale_date || "").startsWith(thisMonthKey) && masukLaporan(s));
   const salesRevenue = salesThisMonth.reduce((s, x) => s + (x.price || 0), 0);
   const salesLaba = salesThisMonth.filter(x => x.hpp > 0).reduce((s, x) => s + ((x.price||0) - (x.hpp||0)), 0);
 

@@ -25,6 +25,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import ExcludeToggle from "@/components/owner/ExcludeToggle";
+import { masukLaporan } from "@/lib/laporan";
 
 const CATEGORIES = {
   penjualan_tortoise: { label: "Penjualan Tortoise",     color: "bg-green-100 text-green-700",   type: "pemasukan"    },
@@ -291,7 +292,7 @@ export default function FinancePage() {
 
   const isOwner = role === "owner";
 
-  const periodTx    = transactions.filter((t) => t.date?.startsWith(period) && !t.excluded_from_reports);
+  const periodTx    = transactions.filter((t) => t.date?.startsWith(period) && masukLaporan(t));
   const periodTxAll = transactions.filter((t) => t.date?.startsWith(period));
 
   const totalPemasukan  = periodTx.filter((t) => t.type === "pemasukan").reduce((s, t) => s + (t.amount || 0), 0);

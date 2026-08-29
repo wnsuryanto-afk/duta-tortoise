@@ -16,6 +16,7 @@ import ToolLoanWidget from "@/components/dashboard/ToolLoanWidget";
 import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
 import KeputusanHariIni from "@/components/dashboard/KeputusanHariIni";
 import ArahMingguIni from "@/components/dashboard/ArahMingguIni";
+import { masukLaporan } from "@/lib/laporan";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -107,11 +108,11 @@ export default function RingkasanPagi() {
   const waitingMaterials = incidental.filter(t => t.status === "pending" && t.material_status === "waiting_materials").length;
   const saldoKas = ledger.length > 0 ? Math.round(ledger[0].balance_after || 0) : 0;
 
-  const activeSales = sales.filter(s => !s.excluded_from_reports);
+  const activeSales = sales.filter(masukLaporan);
   const salesYesterday = activeSales.filter(s => s.sale_date === yesterday).reduce((s, x) => s + (x.price || 0), 0);
   const sales7 = activeSales.filter(s => s.sale_date >= weekAgo && s.sale_date <= today).reduce((s, x) => s + (x.price || 0), 0);
 
-  const activeFin = finances.filter(f => !f.excluded_from_reports);
+  const activeFin = finances.filter(masukLaporan);
   const exp7 = activeFin.filter(f => f.type === "pengeluaran" && f.date >= weekAgo && f.date <= today).reduce((s, f) => s + (f.amount || 0), 0);
 
   const activeBreedings = breedings.filter(b => ["bertelur", "inkubasi"].includes(b.status));

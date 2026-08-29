@@ -33,8 +33,15 @@ Deno.serve(async (req) => {
           previous_status: tortoise.status || "aktif",
           last_status_change: sale.sale_date || new Date().toISOString().split("T")[0],
         });
-        if (tortoise.enclosure) {
-          const enclosures = await db.entities.Enclosure.filter({ id: tortoise.enclosure });
+        // `filter({ id: tortoise.enclosure })` mencari kandang berdasarkan ID
+        // tetapi menyodorkan NAMA kandang, jadi hasilnya selalu kosong dan
+        // jumlah penghuni tidak pernah benar-benar dikurangi di sini. Nomor
+        // kandang didahulukan; nama hanya dipakai untuk data yang nomornya
+        // belum terisi.
+        if (tortoise.enclosure_id || tortoise.enclosure) {
+          const enclosures = tortoise.enclosure_id
+            ? await db.entities.Enclosure.filter({ id: tortoise.enclosure_id })
+            : await db.entities.Enclosure.filter({ name: tortoise.enclosure });
           const enclosure = enclosures && enclosures[0];
           if (enclosure) {
             await db.entities.Enclosure.update(enclosure.id, {

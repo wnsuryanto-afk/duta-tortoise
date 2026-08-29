@@ -27,6 +27,7 @@ import { id as idLocale } from "date-fns/locale";
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { diPeternakan } from "@/lib/populasiKura";
 import { cariKandang } from "@/lib/kandang";
+import { masukLaporan } from "@/lib/laporan";
 
 // ─── Helpers ───────────────────────────────────────
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -272,7 +273,7 @@ export default function OwnerDashboard({ user }) {
   });
 
   // ── Finance Calcs ─────────────────────────────────
-  const activeFinances = finances.filter(f => !f.excluded_from_reports);
+  const activeFinances = finances.filter(masukLaporan);
   const finThisMonth = activeFinances.filter(f => f.date >= thisMonthStart && f.date <= thisMonthEnd);
   const finLastMonth = activeFinances.filter(f => f.date >= lastMonthStart && f.date <= lastMonthEnd);
 
@@ -374,7 +375,7 @@ export default function OwnerDashboard({ user }) {
   const totalDebt = debtors.reduce((s, b) => s + (b.remaining_balance || 0), 0);
 
   // ── Charts ────────────────────────────────────────
-  const activeSales = sales.filter(s => !s.excluded_from_reports);
+  const activeSales = sales.filter(masukLaporan);
   const last6Months = Array.from({ length: 6 }).map((_, i) => {
     const d = subMonths(now, 5 - i);
     const key = format(d, "yyyy-MM");
@@ -411,8 +412,8 @@ export default function OwnerDashboard({ user }) {
 
   // SP Aktif + filtered logs
   const activeWarnings = warnings.filter(w => w.status === "aktif" || !w.status);
-  const activeOtLogs = otLogs.filter(o => !o.excluded_from_reports);
-  const activeMeasurements = measurements.filter(m => !m.excluded_from_reports);
+  const activeOtLogs = otLogs.filter(masukLaporan);
+  const activeMeasurements = measurements.filter(masukLaporan);
 
   // Lembur bulan ini
   const otThis = activeOtLogs.filter(o => (o.date || "").startsWith(thisMonthKey));
@@ -800,7 +801,7 @@ export default function OwnerDashboard({ user }) {
             <Link to="/sales" className="text-xs text-primary hover:underline flex items-center gap-1">Lihat Semua <ChevronRight className="w-3 h-3" /></Link>
           </div>
           {(() => {
-            const salesThisMonth = sales.filter(s => (s.sale_date || "").startsWith(thisMonthKey) && !s.excluded_from_reports);
+            const salesThisMonth = sales.filter(s => (s.sale_date || "").startsWith(thisMonthKey) && masukLaporan(s));
             const revenueThisMonth = salesThisMonth.reduce((s, x) => s + (x.price || 0), 0);
             const labaThisMonth = salesThisMonth.filter(x => x.hpp > 0).reduce((s, x) => s + ((x.price||0) - (x.hpp||0)), 0);
             const salesWithHpp = salesThisMonth.filter(x => x.hpp > 0 && x.price > 0);

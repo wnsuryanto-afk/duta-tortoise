@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
 import { format as formatDate } from "date-fns";
 import { id } from "date-fns/locale";
+import { masukLaporan } from "@/lib/laporan";
 
 const fmt = n => `Rp ${(n || 0).toLocaleString("id-ID")}`;
 const PIE_COLORS = ["#4ade80", "#f87171", "#60a5fa", "#fbbf24", "#a78bfa", "#fb923c", "#34d399"];
@@ -56,7 +57,7 @@ export default function LabaRugiEnhanced({ period }) {
   });
 
   // Filter by period
-  const periodTx = finances.filter(t => t.date?.startsWith(selectedPeriod) && !t.excluded_from_reports);
+  const periodTx = finances.filter(t => t.date?.startsWith(selectedPeriod) && masukLaporan(t));
   const pemasukan = periodTx.filter(t => t.type === "pemasukan");
   const pengeluaran = periodTx.filter(t => t.type === "pengeluaran");
   const totalPemasukan = pemasukan.reduce((s, t) => s + (t.amount || 0), 0);
@@ -68,12 +69,21 @@ export default function LabaRugiEnhanced({ period }) {
   const monthSlips = salarySlips.filter(s => s.period === selectedPeriod && s.status === "paid");
   const totalGaji = monthSlips.reduce((s, sl) => s + (sl.net_total || 0), 0);
 
-  // PettyCash disbursed
+  // Kas kecil yang DICAIRKAN bulan ini.
+  //
+  // Ini BUKAN biaya, melainkan perpindahan uang dari rekening ke kotak kas.
+  // Biayanya tercatat saat uangnya dibelanjakan: setiap pemakaian kas kecil
+  // sudah membuat FinanceTransaction berkategori "kas_kecil", dan itu sudah
+  // ikut terjumlah di totalPengeluaranFinance di atas. Menambahkan pencairannya
+  // lagi menghitung uang yang sama dua kali — sekali saat keluar dari rekening,
+  // sekali saat dibelanjakan. Angkanya tetap ditampilkan sebagai keterangan
+  // karena berguna, tetapi tidak lagi masuk hitungan biaya.
   const monthPC = pettyCash.filter(p => p.disbursement_date?.startsWith(selectedPeriod) && p.status === "disbursed");
   const totalPC = monthPC.reduce((s, p) => s + (p.amount_requested || 0), 0);
 
-  // Total pengeluaran
-  const totalPengeluaran = totalPengeluaranFinance + totalGaji + totalPC;
+  // Gaji TIDAK punya FinanceTransaction di mana pun, jadi slip gaji adalah
+  // satu-satunya catatannya dan memang harus ditambahkan.
+  const totalPengeluaran = totalPengeluaranFinance + totalGaji;
   const labaRugi = totalPemasukan - totalPengeluaran;
   const marginPct = totalPemasukan > 0 ? ((labaRugi / totalPemasukan) * 100).toFixed(1) : "0.0";
 
@@ -84,10 +94,10 @@ export default function LabaRugiEnhanced({ period }) {
     expenseByCat[c] = (expenseByCat[c] || 0) + (t.amount || 0);
   });
   if (totalGaji > 0) expenseByCat["gaji_karyawan"] = (expenseByCat["gaji_karyawan"] || 0) + totalGaji;
-  if (totalPC > 0) expenseByCat["kas_kecil"] = (expenseByCat["kas_kecil"] || 0) + totalPC;
+  // "kas_kecil" sudah terjumlah dari FinanceTransaction pada perulangan di atas.
 
   // Sales this period
-  const periodSales = sales.filter(s => s.sale_date?.startsWith(selectedPeriod) && !s.excluded_from_reports);
+  const periodSales = sales.filter(s => s.sale_date?.startsWith(selectedPeriod) && masukLaporan(s));
 
   // Chart data
   const barData = [
@@ -172,6 +182,12 @@ export default function LabaRugiEnhanced({ period }) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground text-right">Margin operasional: {marginPct}%</p>
+          {totalPC > 0 && (
+            <p className="text-[11px] text-muted-foreground text-right mt-1 leading-snug">
+              Kas kecil dicairkan: <span className="tabular">Rp {totalPC.toLocaleString("id-ID")}</span> — bukan biaya,
+              biayanya tercatat saat dibelanjakan.
+            </p>
+          )}
         </div>
       </Card>
 

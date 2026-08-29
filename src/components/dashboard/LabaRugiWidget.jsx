@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
+import { masukLaporan } from "@/lib/laporan";
 
 const fmt = n => `Rp ${(n || 0).toLocaleString("id-ID")}`;
 
@@ -23,7 +24,7 @@ export default function LabaRugiWidget() {
   });
 
   const periodFinances = finances.filter(f =>
-    f.date >= thisMonthStart && f.date <= thisMonthEnd && !f.excluded_from_reports
+    f.date >= thisMonthStart && f.date <= thisMonthEnd && masukLaporan(f)
   );
 
   const pemasukan = periodFinances
@@ -35,7 +36,11 @@ export default function LabaRugiWidget() {
     .reduce((s, f) => s + (f.amount || 0), 0);
 
   // Add salary slips and petty cash (from costData breakdown)
-  const totalPengeluaran = pengeluaran + (costData?.breakdown?.gaji_karyawan || 0) + (costData?.breakdown?.petty_cash || 0);
+  // Pencairan kas kecil tidak ditambahkan: itu perpindahan uang ke kotak kas,
+  // bukan biaya. Belanjanya sudah tercatat sebagai FinanceTransaction
+  // berkategori "kas_kecil" dan sudah ikut terjumlah di `pengeluaran`.
+  // Gaji ditambahkan karena tidak punya FinanceTransaction di mana pun.
+  const totalPengeluaran = pengeluaran + (costData?.breakdown?.gaji_karyawan || 0);
   const labaRugi = pemasukan - totalPengeluaran;
   const maxVal = Math.max(pemasukan, totalPengeluaran, 1);
   const incomePct = Math.round((pemasukan / maxVal) * 100);

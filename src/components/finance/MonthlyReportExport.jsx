@@ -8,6 +8,7 @@ import { Download, Loader2, FileText } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import jsPDF from "jspdf";
+import { masukLaporan } from "@/lib/laporan";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const GREEN_DARK = [27, 67, 50];
@@ -181,8 +182,8 @@ export default function MonthlyReportExport({ role }) {
       const settings = companySettings[0] || {};
 
       // Filter by period
-      const periodTx = transactions.filter(t => t.date >= start && t.date <= end && !t.excluded_from_reports);
-      const periodSales = sales.filter(s => (s.sale_date || "").startsWith(period) && !s.excluded_from_reports);
+      const periodTx = transactions.filter(t => t.date >= start && t.date <= end && masukLaporan(t));
+      const periodSales = sales.filter(s => (s.sale_date || "").startsWith(period) && masukLaporan(s));
       const periodHealth = healthRecords.filter(h => (h.date || "").startsWith(period));
       const periodAttendance = attendances.filter(a => (a.date || "").startsWith(period));
       const periodBreedings = breedings.filter(b => (b.egg_laying_date || "").startsWith(period));

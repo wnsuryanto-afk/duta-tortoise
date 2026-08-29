@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { hapusTransaksiPenjualan } from "@/lib/transaksiPenjualan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +24,7 @@ import PageHeader from "@/components/common/PageHeader";
 import { kandangDariNama } from "@/lib/kandang";
 import StatCard from "@/components/dashboard/StatCard";
 import { WalletArt } from "@/components/common/Illustration";
+import { masukLaporan } from "@/lib/laporan";
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
@@ -85,10 +87,10 @@ export default function SalesList() {
   const filteredRiwayat = applyFilters(salesRiwayat);
   const filteredSemua = applyFilters(salesSemua);
 
-  const totalRevenue = enrichedSales.filter(s => !s.excluded_from_reports).reduce((sum, s) => sum + (s.price || 0), 0);
-  const totalLaba = enrichedSales.filter(s => !s.excluded_from_reports && s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
+  const totalRevenue = enrichedSales.filter(masukLaporan).reduce((sum, s) => sum + (s.price || 0), 0);
+  const totalLaba = enrichedSales.filter(s => masukLaporan(s) && s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const salesThisMonth = enrichedSales.filter(s => s.sale_date?.startsWith(currentMonth) && !s.excluded_from_reports);
+  const salesThisMonth = enrichedSales.filter(s => s.sale_date?.startsWith(currentMonth) && masukLaporan(s));
   const revenueThisMonth = salesThisMonth.reduce((sum, s) => sum + (s.price || 0), 0);
   const labaThisMonth = salesThisMonth.filter(s => s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
   const avgMargin = enrichedSales.filter(s => s.hpp > 0 && s.price > 0).length > 0
@@ -123,10 +125,14 @@ export default function SalesList() {
         enclosure_id: kandangKembali?.id || "",
         last_status_change: new Date().toISOString().split("T")[0],
       });
-      // Hapus finance tx terkait
-      if (cancelSale.finance_tx_id) {
-        await base44.entities.FinanceTransaction.delete(cancelSale.finance_tx_id);
-      }
+      // Hapus SEMUA catatan keuangan penjualan ini, dicari lewat reference_id.
+      //
+      // Versi lama menghapus lewat `finance_tx_id` — satu id, satu transaksi.
+      // Penjualan yang terlanjur tercatat dua kali menyisakan yang kembar
+      // selamanya, dan penjualan yang dibuat lewat SaleForm tidak pernah
+      // menyimpan `finance_tx_id` sama sekali sehingga pembatalannya tidak
+      // menghapus apa pun — pemasukannya menggantung sebagai pemasukan hantu.
+      await hapusTransaksiPenjualan(cancelSale.id);
       // Soft cancel sale
       await base44.entities.Sale.update(cancelSale.id, { excluded_from_reports: true, notes: (cancelSale.notes || "") + " [DIBATALKAN]" });
       queryClient.invalidateQueries({ queryKey: ["sales"] });

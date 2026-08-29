@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
+import { catatPemasukanPenjualan } from "@/lib/transaksiPenjualan";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircle2, TrendingUp, TrendingDown, Search } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
@@ -656,13 +657,16 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
       // C) Create FinanceTransaction
       const laba = price - hpp;
       const marginPct = price > 0 ? Math.round((laba / price) * 100) : 0;
-      const finTx = await base44.entities.FinanceTransaction.create({
+      // Otomatisasi server sudah menulis transaksi untuk penjualan ini beberapa
+      // saat setelah Sale.create di atas — beberapa langkah sebelum baris ini.
+      // Membuat yang baru di sini mencatat satu penjualan sebagai pemasukan dua
+      // kali. Yang sudah ada dipakai ulang dan keterangannya diperkaya.
+      const finTx = await catatPemasukanPenjualan(newSale.id, {
         type: "pemasukan",
         category: "penjualan_tortoise",
         amount: price,
         date: form.sale_date,
         description: `Penjualan ${selectedTortoise?.code || selectedTortoise?.name} ke ${form.buyer_name} — Laba Rp ${fmt(laba)}`,
-        reference_id: newSale.id,
         ...(testModeTag || {}),
       });
       // Determine the actual purchase price used

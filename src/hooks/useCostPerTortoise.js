@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { differenceInMonths } from "date-fns";
+import { masukLaporan } from "@/lib/laporan";
+import { diPeternakan } from "@/lib/populasiKura";
 
 /**
  * Hook: hitung biaya per ekor per bulan dari data aktual
@@ -44,7 +46,7 @@ export function useCostPerTortoise(period) {
     const fallback = settings[0]?.hpp_fallback_per_ekor || 100000;
 
     // Finance pengeluaran bulan ini
-    const monthTx = finances.filter(t => t.date?.startsWith(monthKey) && t.type === "pengeluaran" && !t.excluded_from_reports);
+    const monthTx = finances.filter(t => t.date?.startsWith(monthKey) && t.type === "pengeluaran" && masukLaporan(t));
     const totalFinance = monthTx.reduce((s, t) => s + (t.amount || 0), 0);
 
     // Salary slips paid bulan ini
@@ -57,12 +59,16 @@ export function useCostPerTortoise(period) {
       .filter(p => p.disbursement_date?.startsWith(monthKey) && p.status === "disbursed")
       .reduce((s, p) => s + (p.amount_requested || 0), 0);
 
-    const totalPengeluaran = totalFinance + totalGaji + totalPC;
+    // Pencairan kas kecil sengaja TIDAK ditambahkan: itu perpindahan uang ke
+    // kotak kas, bukan biaya. Biayanya sudah tercatat sebagai FinanceTransaction
+    // berkategori "kas_kecil" saat dibelanjakan, dan sudah masuk totalFinance.
+    const totalPengeluaran = totalFinance + totalGaji;
 
-    // Kura aktif
-    const activeCount = tortoises.filter(t =>
-      t.status === "aktif" || t.status === "baby" || t.status === "breeding"
-    ).length;
+    // Semua kura yang masih ada di peternakan — mereka semua makan dan dirawat.
+    // Daftar status yang ditulis tangan melewatkan kura sakit dan karantina,
+    // sehingga biaya dibagi ke lebih sedikit ekor daripada yang sebenarnya ada
+    // dan biaya per ekor terlihat lebih mahal dari kenyataannya.
+    const activeCount = tortoises.filter(diPeternakan).length;
 
     const biayaPerEkor = activeCount > 0 ? Math.round(totalPengeluaran / activeCount) : fallback;
     const isDataAktual = totalPengeluaran > 0;
