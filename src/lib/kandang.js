@@ -143,24 +143,27 @@ export function periksaPemindahan(tortoises = [], enclosures = []) {
  * data kura, bukan dari angka yang disimpan.
  *
  * `Enclosure.current_count` menyimpan angka isi kandang, dan angka itu dipakai
- * memutuskan "kandang penuh". Masalahnya angka itu dipelihara oleh empat jalur
- * yang tidak sepakat, dan tiga lubang membuatnya hanya bisa naik:
+ * memutuskan "kandang penuh". Masalahnya bukan satu kesalahan besar, melainkan
+ * jumlah pemeliharanya: TUJUH jalur berbeda menulis angka itu — dua layar kura,
+ * dialog penetasan, dan empat fungsi di server (onSaleCreated,
+ * createSaleWithSync, recordTortoiseDeath, updateEnclosureCount) — dengan cara
+ * yang tidak sepakat satu sama lain.
  *
- *   - Kura MATI tidak pernah mengurangi. Fungsi recordTortoiseDeath memanggil
- *     Enclosure.get(tortoise.enclosure), padahal `enclosure` berisi NAMA
- *     sementara .get() menerima NOMOR. Pencariannya tidak pernah ketemu.
- *   - Kura TERJUAL tidak pernah mengurangi sama sekali; tidak ada satu pun
- *     kode di alur penjualan yang menyentuh kandang.
- *   - Dialog penetasan MENAMBAH angkanya, bukan menghitung ulang, jadi setiap
- *     kesalahan yang sudah ada ikut terbawa.
- *
- * Dua jalur sisanya memang menghitung ulang, tetapi mencocokkan kura ke kandang
+ * Sebagian menambah atau mengurangi satu, sebagian menghitung ulang. Yang
+ * menghitung ulang pun memakai daftar status yang ditulis tangan
+ * masing-masing, jadi menambah status baru berarti harus ingat menambalnya di
+ * beberapa tempat sekaligus. Dua di antaranya juga mencocokkan kura ke kandang
  * lewat NAMA — justru tautan yang berkas ini dibuat untuk menggantikan.
  *
- * Akibatnya angka tersimpan itu merayap naik dan tidak pernah turun: kandang
- * bisa dinyatakan PENUH padahal setengah penghuninya sudah mati atau terjual.
- * Beranda pemilik sudah menghitungnya langsung dari data kura; fungsi ini
- * memakai cara yang sama supaya peringatan kapasitas menjawab hal yang sama.
+ * Yang benar-benar rusak hanya satu: recordTortoiseDeath memanggil
+ * Enclosure.get(tortoise.enclosure), padahal `enclosure` berisi NAMA sementara
+ * .get() menerima NOMOR, sehingga kura mati tidak pernah mengurangi isinya.
+ * Jalur penjualan TIDAK bermasalah — pemicu onSaleCreated sudah menguranginya.
+ *
+ * Menghitung langsung dari data kura menghapus seluruh kelas masalah ini
+ * sekaligus: tidak ada angka yang perlu dipelihara, tidak ada daftar status
+ * yang bisa menyimpang, dan tidak ada pencocokan nama. Beranda pemilik sudah
+ * melakukannya begitu; fungsi ini menyamakan peringatan kapasitas dengannya.
  *
  * @param {object} kandang satu Enclosure
  * @param {Array} tortoises seluruh kura
