@@ -63,8 +63,12 @@ Deno.serve(async (req) => {
     const hariNomor = new Date(hariIni + "T00:00:00Z").getUTCDay();
     const tanggalNomor = Number(hariIni.slice(8, 10));
 
+    const bulanNomor = Number(hariIni.slice(5, 7));
     const tugasHariIni = (sopTasks || []).filter((t: any) => {
       if (t.is_active !== true) return false;
+      // Task musiman / dua-bulanan hanya berlaku di bulan yang ditentukan.
+      const bulanAktif = Array.isArray(t.bulan_aktif) ? t.bulan_aktif : [];
+      if (bulanAktif.length > 0 && !bulanAktif.includes(bulanNomor)) return false;
       if (t.frequency === "harian") return true;
       if (t.frequency === "mingguan") {
         const hari = Array.isArray(t.weekly_days) ? t.weekly_days : [];
