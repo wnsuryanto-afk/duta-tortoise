@@ -67,6 +67,17 @@
       "default": false,
       "description": "Pakan ini dipanen/dicari sendiri, bukan dibeli. Pemakaiannya tetap dihitung, tetapi TIDAK pernah masuk daftar belanja otomatis \u2014 tanpa penanda ini, rumput yang dipotong sendiri tiap hari akan muncul sebagai pesanan beli berton-ton."
     },
+    "sumber_pakan": {
+      "type": "string",
+      "enum": [
+        "beli",
+        "sendiri",
+        "campuran",
+        "insidentil"
+      ],
+      "default": "beli",
+      "description": "Dari mana pakan ini datang, dan karena itu bagaimana daftar belanja otomatis memperlakukannya. beli = selalu dibeli, masuk daftar begitu sisa hari menipis, dibelanjakan untuk dua pekan. sendiri = selalu dipanen/dicari sendiri, pemakaian tetap dihitung tetapi tidak pernah dibeli. campuran = dicari sendiri lebih dulu, dibeli hanya bila kurang (saat stok menyentuh batas minimum) dan secukupnya 5 hari. insidentil = hanya dipakai saat kebetulan ada, tidak pernah dibeli otomatis dan tidak pernah memicu peringatan habis."
+    },
     "storage_location": {
       "type": "string",
       "enum": [
