@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { hatchRateClutch } from "@/lib/hasilInkubasi";
+import { hitungIsiKandang } from "@/lib/kandang";
 
 function generateBreedingCode(maleN, femaleN, date) {
   const m = (maleN || "JT").substring(0, 3).toUpperCase().replace(/\s/g, "");
@@ -144,6 +145,16 @@ export default function HatchDialog({ open, onClose, breeding }) {
     queryFn: () => base44.entities.Enclosure.list("-created_date", 200),
   });
 
+  // Isi kandang dihitung langsung dari data kura. Angka tersimpan
+  // `current_count` tidak pernah berkurang saat kura mati atau terjual, jadi
+  // kandang baby bisa tampak PENUH dan tidak bisa dipilih padahal masih lega.
+  const { data: semuaKura = [] } = useQuery({
+    queryKey: ["tortoises-untuk-kapasitas"],
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 1000),
+  });
+
+  const isiKandang = (enc) => hitungIsiKandang(enc, semuaKura, enclosures);
+
   // Filter hanya kandang baby (indoor + nama mengandung "baby")
   const babyEnclosures = useMemo(() =>
     enclosures.filter(e =>
@@ -153,7 +164,7 @@ export default function HatchDialog({ open, onClose, breeding }) {
   );
 
   const allBabyFull = babyEnclosures.length > 0 && babyEnclosures.every(e =>
-    e.current_count >= e.max_capacity
+    e.max_capacity > 0 && isiKandang(e) >= e.max_capacity
   );
 
   const selectedEnclosure = babyEnclosures.find(e => e.name === babyEnclosure);
@@ -240,10 +251,13 @@ export default function HatchDialog({ open, onClose, breeding }) {
       }));
       newBabies = await base44.entities.Tortoise.bulkCreate(babyData);
 
-      // Update current_count kandang baby
+      // Angka tersimpan disegarkan dengan hitungan langsung, bukan ditambahkan
+      // ke angka lama — menambah berarti setiap kesalahan yang sudah ada ikut
+      // terbawa selamanya.
       if (babyEnclosure && selectedEnclosure) {
-        const newCount = (selectedEnclosure.current_count || 0) + hatchedCount;
-        await base44.entities.Enclosure.update(selectedEnclosure.id, { current_count: newCount });
+        await base44.entities.Enclosure.update(selectedEnclosure.id, {
+          current_count: isiKandang(selectedEnclosure) + hatchedCount,
+        });
       }
     }
 
@@ -325,10 +339,11 @@ export default function HatchDialog({ open, onClose, breeding }) {
                   <SelectContent>
                     <SelectItem value={null}>Belum ditentukan</SelectItem>
                     {babyEnclosures.map(e => {
-                      const isFull = e.current_count >= e.max_capacity;
+                      const isi = isiKandang(e);
+                      const isFull = e.max_capacity > 0 && isi >= e.max_capacity;
                       return (
                         <SelectItem key={e.id} value={e.name} disabled={isFull}>
-                          {e.name} (isi: {e.current_count}/{e.max_capacity}){isFull ? " — PENUH" : ""}
+                          {e.name} (isi: {isi}/{e.max_capacity}){isFull ? " — PENUH" : ""}
                         </SelectItem>
                       );
                     })}

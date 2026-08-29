@@ -137,3 +137,64 @@ export function periksaPemindahan(tortoises = [], enclosures = []) {
 
   return { sudah, siap, ganda, takDikenal, tanpaKandang, namaGanda };
 }
+
+/**
+ * Berapa ekor kura yang sedang ada di sebuah kandang — dihitung langsung dari
+ * data kura, bukan dari angka yang disimpan.
+ *
+ * `Enclosure.current_count` menyimpan angka isi kandang, dan angka itu dipakai
+ * memutuskan "kandang penuh". Masalahnya angka itu dipelihara oleh empat jalur
+ * yang tidak sepakat, dan tiga lubang membuatnya hanya bisa naik:
+ *
+ *   - Kura MATI tidak pernah mengurangi. Fungsi recordTortoiseDeath memanggil
+ *     Enclosure.get(tortoise.enclosure), padahal `enclosure` berisi NAMA
+ *     sementara .get() menerima NOMOR. Pencariannya tidak pernah ketemu.
+ *   - Kura TERJUAL tidak pernah mengurangi sama sekali; tidak ada satu pun
+ *     kode di alur penjualan yang menyentuh kandang.
+ *   - Dialog penetasan MENAMBAH angkanya, bukan menghitung ulang, jadi setiap
+ *     kesalahan yang sudah ada ikut terbawa.
+ *
+ * Dua jalur sisanya memang menghitung ulang, tetapi mencocokkan kura ke kandang
+ * lewat NAMA — justru tautan yang berkas ini dibuat untuk menggantikan.
+ *
+ * Akibatnya angka tersimpan itu merayap naik dan tidak pernah turun: kandang
+ * bisa dinyatakan PENUH padahal setengah penghuninya sudah mati atau terjual.
+ * Beranda pemilik sudah menghitungnya langsung dari data kura; fungsi ini
+ * memakai cara yang sama supaya peringatan kapasitas menjawab hal yang sama.
+ *
+ * @param {object} kandang satu Enclosure
+ * @param {Array} tortoises seluruh kura
+ * @param {Array} enclosures seluruh kandang (dibutuhkan cariKandang)
+ * @param {string} [kecualikanId] kura yang sedang dipindahkan, agar tidak
+ *   terhitung dua kali saat menghitung isi kandang tujuan
+ */
+export function hitungIsiKandang(kandang, tortoises = [], enclosures = [], kecualikanId) {
+  if (!kandang?.id) return 0;
+  return tortoises.filter(
+    (t) =>
+      t?.id !== kecualikanId &&
+      masihDiPeternakan(t) &&
+      cariKandang(t, enclosures).kandang?.id === kandang.id
+  ).length;
+}
+
+/**
+ * Status yang berarti kura sudah tidak dirawat di peternakan.
+ *
+ * Sengaja didefinisikan lewat pengecualian: status baru yang ditambahkan kelak
+ * otomatis terhitung sebagai masih ada, bukan diam-diam hilang dari hitungan.
+ */
+const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
+
+function masihDiPeternakan(kura) {
+  if (!kura) return false;
+  if (kura.is_archived) return false;
+  return !STATUS_KELUAR.includes(kura.status);
+}
+
+/** Apakah kandang ini sudah penuh menurut hitungan langsung? */
+export function kandangPenuh(kandang, tortoises = [], enclosures = [], kecualikanId) {
+  const kapasitas = Number(kandang?.max_capacity) || 0;
+  if (kapasitas <= 0) return false;
+  return hitungIsiKandang(kandang, tortoises, enclosures, kecualikanId) >= kapasitas;
+}

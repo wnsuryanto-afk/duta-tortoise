@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, Search, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import { hitungIsiKandang } from "@/lib/kandang";
 
 const ENCLOSURE_GROUPS = [
   { label: "🏠 Kandang Barat", prefix: "W" },
@@ -60,6 +61,18 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
     enabled: open,
   });
 
+  // Isi kandang dihitung langsung dari data kura. Angka tersimpan
+  // `current_count` hanya bisa naik — kura mati dan kura terjual tidak pernah
+  // menguranginya — sehingga kandang bisa dinyatakan penuh padahal separuh
+  // penghuninya sudah tidak ada.
+  const { data: semuaKura = [] } = useQuery({
+    queryKey: ["tortoises-untuk-kapasitas"],
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 1000),
+    enabled: open,
+  });
+
+  const isiKandang = (enc) => hitungIsiKandang(enc, semuaKura, enclosures, tortoise?.id);
+
   const filteredEnclosures = useMemo(() => {
     const q = search.toLowerCase();
     return enclosures.filter(e =>
@@ -71,15 +84,17 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
   const grouped = useMemo(() => groupEnclosures(filteredEnclosures), [filteredEnclosures]);
 
   const selectedEnc = enclosures.find(e => e.name === newEnclosure);
-  const isFull = selectedEnc?.max_capacity > 0 && selectedEnc?.current_count >= selectedEnc?.max_capacity;
-  const isNearFull = selectedEnc?.max_capacity > 0 && selectedEnc?.current_count >= selectedEnc?.max_capacity * 0.8;
+  const isiTerpilih = selectedEnc ? isiKandang(selectedEnc) : 0;
+  const isFull = selectedEnc?.max_capacity > 0 && isiTerpilih >= selectedEnc.max_capacity;
+  const isNearFull = selectedEnc?.max_capacity > 0 && isiTerpilih >= selectedEnc.max_capacity * 0.8;
 
   const getCapacityLabel = (enc) => {
     if (!enc.max_capacity || enc.max_capacity === 0) return enc.name;
-    const pct = Math.round((enc.current_count || 0) / enc.max_capacity * 100);
-    if (pct >= 100) return `${enc.name} (${enc.current_count}/${enc.max_capacity}) 🔴`;
-    if (pct >= 80) return `${enc.name} (${enc.current_count}/${enc.max_capacity}) 🟡`;
-    return `${enc.name} (${enc.current_count || 0}/${enc.max_capacity}) ✅`;
+    const isi = isiKandang(enc);
+    const pct = Math.round((isi / enc.max_capacity) * 100);
+    if (pct >= 100) return `${enc.name} (${isi}/${enc.max_capacity}) 🔴`;
+    if (pct >= 80) return `${enc.name} (${isi}/${enc.max_capacity}) 🟡`;
+    return `${enc.name} (${isi}/${enc.max_capacity}) ✅`;
   };
 
   const handleSave = async () => {
@@ -121,21 +136,23 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
     });
 
     try {
+      // Angka tersimpan tetap disegarkan, tetapi dengan hitungan yang sama
+      // dengan yang ditampilkan: lewat nomor kandang, bukan pencocokan nama,
+      // dan menghormati kura yang sudah mati/terjual/diarsipkan.
       const allEnclosures = await base44.entities.Enclosure.list();
-      const allTortoises = await base44.entities.Tortoise.list("-created_date", 500);
-      const activeTortoises = allTortoises.filter(t => t.status !== "terjual" && t.status !== "mati");
+      const allTortoises = await base44.entities.Tortoise.list("-created_date", 1000);
 
-      if (oldEnclosure) {
-        const fromEnc = allEnclosures.find(e => e.name === oldEnclosure);
-        if (fromEnc) {
-          const newCount = activeTortoises.filter(t => t.enclosure === oldEnclosure && t.id !== tortoise.id).length;
-          await base44.entities.Enclosure.update(fromEnc.id, { current_count: newCount });
-        }
+      const kandangAsal = kandangDariNama(oldEnclosure, allEnclosures);
+      if (kandangAsal) {
+        await base44.entities.Enclosure.update(kandangAsal.id, {
+          current_count: hitungIsiKandang(kandangAsal, allTortoises, allEnclosures, tortoise.id),
+        });
       }
-      const toEnc = allEnclosures.find(e => e.name === target);
-      if (toEnc) {
-        const newCount = activeTortoises.filter(t => t.enclosure === target && t.id !== tortoise.id).length + 1;
-        await base44.entities.Enclosure.update(toEnc.id, { current_count: newCount });
+      const kandangTuju = kandangDariNama(target, allEnclosures);
+      if (kandangTuju) {
+        await base44.entities.Enclosure.update(kandangTuju.id, {
+          current_count: hitungIsiKandang(kandangTuju, allTortoises, allEnclosures, tortoise.id) + 1,
+        });
       }
     } catch (_) {}
 
@@ -190,9 +207,9 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
                 isNearFull ? "bg-amber-50 border-amber-200 text-amber-700" :
                 "bg-green-50 border-green-200 text-green-700"
               }`}>
-                {isFull ? `🔴 Kandang penuh! (${selectedEnc.current_count}/${selectedEnc.max_capacity})` :
-                 isNearFull ? `🟡 Hampir penuh: ${selectedEnc.current_count}/${selectedEnc.max_capacity}` :
-                 `✅ Tersedia: ${selectedEnc.current_count || 0}/${selectedEnc.max_capacity || "∞"}`}
+                {isFull ? `🔴 Kandang penuh! (${isiTerpilih}/${selectedEnc.max_capacity})` :
+                 isNearFull ? `🟡 Hampir penuh: ${isiTerpilih}/${selectedEnc.max_capacity}` :
+                 `✅ Tersedia: ${isiTerpilih}/${selectedEnc.max_capacity || "∞"}`}
               </div>
             )}
 
@@ -216,8 +233,9 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
                     <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-1.5">{group.label}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {group.items.map(enc => {
-                        const full = enc.max_capacity > 0 && enc.current_count >= enc.max_capacity;
-                        const near = enc.max_capacity > 0 && enc.current_count >= enc.max_capacity * 0.8;
+                        const isi = isiKandang(enc);
+                        const full = enc.max_capacity > 0 && isi >= enc.max_capacity;
+                        const near = enc.max_capacity > 0 && isi >= enc.max_capacity * 0.8;
                         return (
                           <button
                             key={enc.id}

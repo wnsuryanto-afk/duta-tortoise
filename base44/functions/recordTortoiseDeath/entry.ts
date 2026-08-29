@@ -46,9 +46,22 @@ Deno.serve(async (req) => {
     });
 
     // 4. Update enclosure count
+    //
+    // Sebelumnya baris ini memanggil Enclosure.get(tortoise.enclosure).
+    // `enclosure` berisi NAMA kandang sementara .get() menerima NOMOR, jadi
+    // pencariannya tidak pernah ketemu dan isi kandang tidak pernah berkurang
+    // saat ada kura mati. Angkanya karena itu hanya bisa naik, dan kandang bisa
+    // dinyatakan penuh padahal penghuninya sudah tidak ada.
     const tortoise = await base44.asServiceRole.entities.Tortoise.get(tortoise_id);
-    if (tortoise && tortoise.enclosure) {
-      const enclosure = await base44.asServiceRole.entities.Enclosure.get(tortoise.enclosure);
+    if (tortoise && (tortoise.enclosure_id || tortoise.enclosure)) {
+      const semuaKandang = await base44.asServiceRole.entities.Enclosure.list();
+      const enclosure = tortoise.enclosure_id
+        ? semuaKandang.find((e) => e.id === tortoise.enclosure_id)
+        : semuaKandang.find(
+            (e) =>
+              String(e.name || '').trim().toLowerCase() ===
+              String(tortoise.enclosure || '').trim().toLowerCase()
+          );
       if (enclosure) {
         await base44.asServiceRole.entities.Enclosure.update(enclosure.id, {
           current_count: Math.max(0, (enclosure.current_count || 0) - 1)
