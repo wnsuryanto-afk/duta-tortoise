@@ -121,6 +121,49 @@ export async function notifSekali(base44: any, data: any): Promise<boolean> {
   return true;
 }
 
+/**
+ * Ambil item_id MaintenanceLog dari task_id checklist.
+ *
+ * Bentuk task_id: "<email>__<jenis>__<item_id>__<tanggal>", mis.
+ *   "angsolo98@gmail.com__tugas__sop_6a374c...__2026-08-29"
+ *   "angsolo98@gmail.com__harian__kebersihan_kandang_N2__2026-08-29"
+ */
+export function itemIdDariTaskId(taskId: string): string {
+  const p = String(taskId || "").split("__");
+  return p.length >= 3 ? p[2] : "";
+}
+
+/**
+ * Peta foto bukti kerja pada satu tanggal, dari MaintenanceLog.
+ *
+ * PENTING — kenapa fungsi ini ada:
+ *
+ * Foto bukti kerja disimpan di MaintenanceLog, dan hanya SEBAGIAN yang tersalin
+ * ke DailyChecklist.completed_tasks[].photo_url. Contoh nyata 29 Agustus 2026:
+ * 27 dari 29 log hari itu punya foto, tetapi di checklist Angsolo hanya 1 dari
+ * 10 task yang photo_url-nya terisi.
+ *
+ * Membaca foto dari checklist saja karena itu menghasilkan tuduhan palsu
+ * "dicentang tanpa foto" pada pekerjaan yang fotonya sebenarnya ada. Semua
+ * pemeriksaan foto WAJIB lewat peta ini, bukan lewat checklist saja.
+ *
+ * Kunci peta: "<email>|<item_id>".
+ */
+export async function petaFotoHarian(base44: any, tanggal: string): Promise<Map<string, string>> {
+  const peta = new Map<string, string>();
+  try {
+    const logs = await base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: tanggal });
+    for (const l of logs || []) {
+      if (!l.photo_url || !l.item_id) continue;
+      peta.set(`${l.done_by_email}|${l.item_id}`, l.photo_url);
+    }
+  } catch {
+    // gagal baca log tidak boleh menggagalkan pemeriksaan — peta kosong berarti
+    // pemanggil jatuh kembali ke photo_url di checklist
+  }
+  return peta;
+}
+
 /** Ambil ID SOPTask dari task_id checklist, mis. "...__sop_6a37...__2026-08-29". */
 export function sopIdDariTaskId(taskId: string): string {
   const m = String(taskId || "").match(/sop_([A-Za-z0-9]{12,})/);
