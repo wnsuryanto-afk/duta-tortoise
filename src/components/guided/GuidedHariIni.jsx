@@ -20,6 +20,7 @@ import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
 import { LeafPattern } from "@/components/common/Illustration";
 import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
+import { tandaiSembuh } from "@/lib/kesehatanKura";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 
@@ -240,15 +241,14 @@ export default function GuidedHariIni({ user }) {
     if (sembuhLoading) return;
     setSembuhLoading(t.tortoise_id);
     try {
-      await base44.entities.HealthRecord.create({
-        tortoise_id: t.tortoise_id,
-        tortoise_name: t.tortoise_name,
-        date: today,
-        type: "sembuh",
-        source: "manual",
-        description: `Dilaporkan sembuh oleh ${user.full_name || user.email}.`,
+      // Menutup kasus sakitnya sekalian — tanpa itu, kura yang sudah
+      // dilaporkan sembuh tetap memakai lencana merah SAKIT selamanya.
+      await tandaiSembuh({
+        kura: t,
+        user,
+        tanggal: today,
+        asal: "layar keeper",
       });
-      await base44.entities.Tortoise.update(t.tortoise_id, perubahanSembuh(t, today));
       qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
       qc.invalidateQueries({ queryKey: ["health-records"] });
       showMsg("success", `${t.tortoise_name} ditandai sembuh.`);
