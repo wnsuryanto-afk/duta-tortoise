@@ -77,8 +77,8 @@ export default function KeputusanHariIni() {
   // Kunci query sengaja disamakan persis dengan pemakai lain (StockPredictionPage,
   // HarusDibeliPage, OwnerDashboard) supaya berbagi cache, bukan menarik ulang.
   const { data: warehouse = [] } = useQuery({
-    queryKey: ["warehouse-items"],
-    queryFn: () => base44.entities.WarehouseItem.list(),
+    queryKey: ["warehouse-items", "-name", 500],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
     staleTime: 5 * 60 * 1000,
   });
   const { data: transaksi = [] } = useQuery({

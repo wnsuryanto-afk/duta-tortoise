@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 
 export default function FeedStockAlert() {
   const { data: stocks = [] } = useQuery({
-    queryKey: ["feedstocks"],
-    queryFn: () => base44.entities.FeedStock.list(),
+    queryKey: ["feedstocks", "-name", 300],
+    queryFn: () => base44.entities.FeedStock.list("-name", 300),
   });
 
   const lowStocks = stocks.filter(

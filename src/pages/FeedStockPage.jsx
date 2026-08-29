@@ -63,7 +63,7 @@ export default function FeedStockPage() {
 
   const qc = useQueryClient();
   const { data: stocks = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ["feedstocks"],
+    queryKey: ["feedstocks", "-created_date", 100],
     queryFn: () => base44.entities.FeedStock.list("-created_date", 100),
     staleTime: 5 * 60 * 1000,
     retry: false, // jangan retry otomatis — user bisa tap refresh manual

@@ -35,11 +35,11 @@ export default function UnifiedStokPage() {
   const [inventoryFilter, setInventoryFilter] = useState(null); // for external filter trigger
 
   const { data: feedstocks = [] } = useQuery({
-    queryKey: ["feedstocks"],
+    queryKey: ["feedstocks", "-created_date", 300],
     queryFn: () => base44.entities.FeedStock.list("-created_date", 300),
   });
   const { data: warehouseItems = [] } = useQuery({
-    queryKey: ["warehouse-items"],
+    queryKey: ["warehouse-items", "-created_date", 300],
     queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300),
   });
   const { data: movements = [] } = useQuery({

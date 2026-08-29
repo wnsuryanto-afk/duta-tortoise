@@ -30,12 +30,12 @@ export default function DashboardStokPage() {
   const daysInMonth = today.getDate();
 
   const { data: feedstocks = [] } = useQuery({
-    queryKey: ["feedstocks"],
+    queryKey: ["feedstocks", "-name", 300],
     queryFn: () => base44.entities.FeedStock.list("-name", 300),
   });
 
   const { data: warehouseItems = [] } = useQuery({
-    queryKey: ["warehouse-items"],
+    queryKey: ["warehouse-items", "-name", 300],
     queryFn: () => base44.entities.WarehouseItem.list("-name", 300),
   });
 

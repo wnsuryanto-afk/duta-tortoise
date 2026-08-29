@@ -59,7 +59,7 @@ export default function WarehousePage() {
   const canTransact = ["owner", "manajer", "admin", "kepala_feeder", "keeper"].includes(role);
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ["warehouse-items"],
+    queryKey: ["warehouse-items", "-created_date", 300],
     queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300),
   });
 

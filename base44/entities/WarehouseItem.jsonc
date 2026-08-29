@@ -78,6 +78,34 @@
       "type": "number",
       "default": 7
     },
+    "condition": {
+      "type": "string",
+      "enum": ["baik", "rusak_ringan", "rusak_berat", "hilang"],
+      "default": "baik",
+      "description": "Kondisi fisik barang. Dipakai lencana di Gudang, penanda alat tidak tersedia di SOP Harian, dan sumber \"Barang rusak\" di Harus Dibeli."
+    },
+    "condition_note": {
+      "type": "string",
+      "description": "Keterangan kerusakan dari pelapor."
+    },
+    "condition_photo_url": {
+      "type": "string",
+      "description": "Foto bukti kerusakan."
+    },
+    "condition_reported_by": {
+      "type": "string",
+      "description": "Nama yang melaporkan kondisi terakhir."
+    },
+    "condition_reported_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal laporan kondisi terakhir."
+    },
+    "needs_replacement": {
+      "type": "boolean",
+      "default": false,
+      "description": "Perlu diganti \u2014 diisi otomatis saat kondisinya rusak berat atau hilang. Dibaca Harus Dibeli dan Tahap Yang Kurang untuk mengusulkan pembelian."
+    },
     "notes": {
       "type": "string"
     },

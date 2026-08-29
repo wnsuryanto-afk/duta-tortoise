@@ -74,6 +74,27 @@
       "type": "string",
       "description": "URL link produk (opsional)"
     },
+    "warehouse_item_id": {
+      "type": "string",
+      "description": "Barang gudang yang dimaksud, bila baris ini memang merujuk barang yang sudah terdaftar. Dipakai penerimaan barang untuk mencocokkan tanpa menebak dari nama."
+    },
+    "item_sku": {
+      "type": "string",
+      "description": "SKU barang gudang. Sudah ditulis sejak lama dan dibaca saat penerimaan barang, tetapi field-nya belum pernah ada sehingga pencocokan SKU tidak pernah berhasil."
+    },
+    "pembelian_id": {
+      "type": "string",
+      "description": "Pesanan (PembelianBarang) yang sedang memproses baris ini. Dikosongkan lagi bila pesanannya dibatalkan."
+    },
+    "qty_kurang": {
+      "type": "number",
+      "description": "Sisa yang tidak ikut datang dan dikembalikan ke daftar belanja."
+    },
+    "tanggal_diterima": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal barang benar-benar diterima."
+    },
     "notes": {
       "type": "string",
       "description": "Catatan tambahan"

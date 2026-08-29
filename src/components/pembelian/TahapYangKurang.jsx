@@ -146,6 +146,11 @@ export default function TahapYangKurang({ onSelesai }) {
           // segera, urutan prioritas di tahap berikutnya kehilangan artinya.
           priority: i.nada === "gawat" ? "segera" : "minggu_ini",
           status: "belum_dibeli",
+          // Baris ini memang lahir dari sebuah barang gudang, jadi id-nya
+          // disimpan. Penerimaan barang bisa mencocokkannya tanpa menebak
+          // dari nama — nama yang beda satu spasi membuatnya membuat barang
+          // gudang baru, bukan menambah stok yang lama.
+          warehouse_item_id: i.id || undefined,
           item_sku: i.sku || undefined,
           notes: `Dari tahap "Yang Kurang" — ${i.alasan}.`,
         }),

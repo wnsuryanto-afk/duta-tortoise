@@ -253,7 +253,7 @@ export default function PelletRecipePage() {
     queryFn: () => base44.entities.FeedStock.list(),
   });
   const { data: warehouseItems = [] } = useQuery({
-    queryKey: ["warehouse-items"],
+    queryKey: ["warehouse-items", "-created_date", 300],
     queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300),
   });
 

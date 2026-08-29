@@ -8,8 +8,8 @@ import { id } from "date-fns/locale";
 
 export default function ExpiredItemAlert() {
   const { data: items = [] } = useQuery({
-    queryKey: ["warehouse-items"],
-    queryFn: () => base44.entities.WarehouseItem.list(),
+    queryKey: ["warehouse-items", "-name", 500],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
   });
 
   const today = new Date();

@@ -29,6 +29,7 @@ import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
+import { periksaStok } from "@/lib/stokMenipis";
 import GrafikUang from "@/components/ui/grafik-uang";
 
 // ─── Helpers ───────────────────────────────────────
@@ -164,7 +165,7 @@ export default function OwnerDashboard({ user }) {
 
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["owner-warehouse"],
-    queryFn: () => base44.entities.WarehouseItem.list("-name", 50),
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,
   });
@@ -193,7 +194,7 @@ export default function OwnerDashboard({ user }) {
 
   const { data: feedStocks = [] } = useQuery({
     queryKey: ["owner-feedstocks"],
-    queryFn: () => base44.entities.FeedStock.list("-name", 30),
+    queryFn: () => base44.entities.FeedStock.list("-name", 300),
     enabled: phase2Ready,
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,
@@ -560,17 +561,17 @@ export default function OwnerDashboard({ user }) {
   sickTortoises.slice(0, 3).forEach(t =>
     criticalAlerts.push({ type: "red", msg: `Kura sakit: ${t.name} — ${t.enclosure || "-"}` })
   );
-  warehouseItems.filter(i => i.current_stock <= 0 && i.is_mandatory)
-    .forEach(i => criticalAlerts.push({ type: "red", msg: `Stok habis: ${i.name}` }));
-  warehouseItems.filter(i => i.current_stock > 0 && i.current_stock < i.minimum_stock)
+  // Pakan ikut diperiksa di sini. Sebelumnya hanya barang gudang yang masuk
+  // daftar peringatan, sehingga pakan yang habis tidak memunculkan apa pun.
+  const stokPerlu = periksaStok(warehouseItems, feedStocks, now);
+  stokPerlu.habis.forEach(i =>
+    criticalAlerts.push({ type: "red", msg: `Stok habis: ${i.name}${i._sumber === "pakan" ? " (pakan)" : ""}` })
+  );
+  stokPerlu.menipis
     .slice(0, 3).forEach(i =>
       criticalAlerts.push({ type: "yellow", msg: `Stok menipis: ${i.name} — sisa ${i.current_stock} ${i.unit}` })
     );
-  warehouseItems.filter(i => {
-    if (!i.expired_date) return false;
-    const diff = Math.ceil((new Date(i.expired_date) - now) / 86400000);
-    return diff >= 0 && diff <= 30;
-  }).slice(0, 3).forEach(i => {
+  stokPerlu.kadaluarsa.slice(0, 3).forEach(i => {
     const diff = Math.ceil((new Date(i.expired_date) - now) / 86400000);
     criticalAlerts.push({ type: "yellow", msg: `Obat kadaluarsa ${diff} hari: ${i.name}` });
   });

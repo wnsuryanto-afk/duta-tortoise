@@ -137,6 +137,7 @@ export default function PembelianPage() {
           kategori: hargaItem[s.id]?.kategori || "lainnya",
           label_per_butir: !!hargaItem[s.id]?.per_butir,
           item_sku: s.item_sku || "",
+          warehouse_item_id: s.warehouse_item_id || "",
         }));
 
       const rec = await base44.entities.PembelianBarang.create({
@@ -208,11 +209,20 @@ export default function PembelianPage() {
         const hargaSatuanFinal =
           diterima > 0 ? ((it.harga_satuan || 0) * diterima + porsi) / diterima : 0;
 
-        // Cari / buat WarehouseItem
-        let wi = warehouse.find(
-          (w) => (it.item_sku && w.sku === it.item_sku) ||
-            (w.name || "").toLowerCase() === (it.nama_barang || "").toLowerCase()
-        );
+        // Cari / buat WarehouseItem.
+        //
+        // Urutannya sengaja: id dulu, lalu SKU, nama paling belakang. Nama
+        // adalah pencocokan yang paling mudah meleset — beda satu spasi atau
+        // satu huruf besar dan barangnya dianggap belum ada, lalu dibuatkan
+        // barang gudang BARU dengan stok 0 sementara stok yang lama tidak
+        // pernah bertambah. Itu sumber barang kembar yang selama ini harus
+        // dibereskan lewat alat pembersih duplikat.
+        let wi =
+          (it.warehouse_item_id && warehouse.find((w) => w.id === it.warehouse_item_id)) ||
+          (it.item_sku && warehouse.find((w) => w.sku === it.item_sku)) ||
+          warehouse.find(
+            (w) => (w.name || "").trim().toLowerCase() === (it.nama_barang || "").trim().toLowerCase()
+          );
         if (!wi) {
           const kat = it.kategori === "pakan" ? "lainnya" : it.kategori || "lainnya";
           wi = await base44.entities.WarehouseItem.create({

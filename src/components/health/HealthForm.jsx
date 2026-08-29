@@ -38,13 +38,13 @@ export default function HealthForm({ open, onClose, editData }) {
   });
 
   const { data: warehouseItems = [] } = useQuery({
-    queryKey: ["warehouse-items"],
-    queryFn: () => base44.entities.WarehouseItem.list(),
+    queryKey: ["warehouse-items", "-name", 500],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
   });
 
   const { data: feedStocks = [] } = useQuery({
-    queryKey: ["feed-stocks"],
-    queryFn: () => base44.entities.FeedStock.list(),
+    queryKey: ["feedstocks", "-name", 300],
+    queryFn: () => base44.entities.FeedStock.list("-name", 300),
   });
 
   const { data: diagnosisProtocols = [] } = useQuery({

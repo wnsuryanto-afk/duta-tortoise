@@ -53,6 +53,10 @@
           "harga_satuan": {
             "type": "number"
           },
+          "warehouse_item_id": {
+            "type": "string",
+            "description": "Barang gudang yang dituju, dibawa dari daftar belanja."
+          },
           "item_sku": {
             "type": "string"
           },

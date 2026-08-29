@@ -390,11 +390,11 @@ export default function StockGudangPage() {
   const qc = useQueryClient();
 
   const { data: rawFeed = [] } = useQuery({
-    queryKey: ["feedstocks"],
+    queryKey: ["feedstocks", "-created_date", 300],
     queryFn: () => base44.entities.FeedStock.list("-created_date", 300),
   });
   const { data: rawWH = [] } = useQuery({
-    queryKey: ["warehouse-items"],
+    queryKey: ["warehouse-items", "-created_date", 300],
     queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300),
   });
 

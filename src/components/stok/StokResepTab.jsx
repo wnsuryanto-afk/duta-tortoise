@@ -206,8 +206,8 @@ export default function StokResepTab({ role }) {
 
   const { data: recipes = [], isLoading } = useQuery({ queryKey: ["pellet-recipes"], queryFn: () => base44.entities.PelletRecipe.list("-created_date") });
   const { data: productions = [] } = useQuery({ queryKey: ["pellet-productions"], queryFn: () => base44.entities.PelletProduction.list("-production_date", 100) });
-  const { data: feedItems = [] } = useQuery({ queryKey: ["feedstocks"], queryFn: () => base44.entities.FeedStock.list() });
-  const { data: warehouseItems = [] } = useQuery({ queryKey: ["warehouse-items"], queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300) });
+  const { data: feedItems = [] } = useQuery({ queryKey: ["feedstocks", "-name", 300], queryFn: () => base44.entities.FeedStock.list("-name", 300) });
+  const { data: warehouseItems = [] } = useQuery({ queryKey: ["warehouse-items", "-created_date", 300], queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300) });
 
   const [showForm, setShowForm] = useState(false);
   const [editRecipe, setEditRecipe] = useState(null);

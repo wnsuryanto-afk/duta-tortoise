@@ -94,8 +94,8 @@ export default function IncompleteDataPage() {
   const { data: breedings = [] } = useQuery({ queryKey: ["breedings-planner"], queryFn: () => base44.entities.Breeding.list("-created_date", 200) });
   const { data: sales = [] } = useQuery({ queryKey: ["sales"], queryFn: () => base44.entities.Sale.list("-sale_date", 200) });
   const { data: profiles = [] } = useQuery({ queryKey: ["user-profiles-all"], queryFn: () => base44.entities.UserProfile.list() });
-  const { data: warehouseItems = [] } = useQuery({ queryKey: ["warehouse-items"], queryFn: () => base44.entities.WarehouseItem.list() });
-  const { data: feedStocks = [] } = useQuery({ queryKey: ["feed-stocks"], queryFn: () => base44.entities.FeedStock.list() });
+  const { data: warehouseItems = [] } = useQuery({ queryKey: ["warehouse-items", "-name", 500], queryFn: () => base44.entities.WarehouseItem.list("-name", 500) });
+  const { data: feedStocks = [] } = useQuery({ queryKey: ["feedstocks", "-name", 300], queryFn: () => base44.entities.FeedStock.list("-name", 300) });
   const { data: buyers = [] } = useQuery({ queryKey: ["buyer-profiles"], queryFn: () => base44.entities.BuyerProfile.list() });
   const { data: enclosures = [] } = useQuery({ queryKey: ["enclosures"], queryFn: () => base44.entities.Enclosure.list() });
   const { data: kasbons = [] } = useQuery({ queryKey: ["kasbons"], queryFn: () => base44.entities.Kasbon.list() });
