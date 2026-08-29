@@ -200,16 +200,19 @@ Deno.serve(async (req) => {
       // Kirim hanya bila sudah 80% jalan — sebelum itu belum berarti apa-apa,
       // sesudah tercapai tidak perlu dikejar lagi.
       if (totalPoin < berikut.target * 0.8) continue;
-      // Anti-duplikat: 1x per bulan per karyawan (cek title mengandung bulan)
+      // Anti-duplikat: satu kali per TINGKAT per bulan per karyawan.
+      //
+      // Dulu dicocokkan dari judul ("Kurang" + "Poin"), yang langsung patah
+      // begitu judulnya berubah. Sekarang dicocokkan dari related_entity_id
+      // yang memang dibuat untuk itu — dan karena tingkatnya ikut di dalam
+      // kunci, orang yang sudah melewati Dasar tetap mendapat pengingat saat
+      // mendekati Bagus.
+      const kunciTingkat = `target_poin_${email}_${monthKey}_${berikut.nama}`;
       const existing14 = await base44.asServiceRole.entities.Notification.filter({
         recipient_email: email,
-        category: "lainnya",
+        related_entity_id: kunciTingkat,
       });
-      const alreadyNotif14 = existing14.some(n =>
-        n.title?.includes("Kurang") && n.title?.includes("Poin") &&
-        (n.created_at || n.created_date || "").startsWith(monthKey) &&
-        !n.is_dismissed
-      );
+      const alreadyNotif14 = existing14.some(n => !n.is_dismissed);
       if (alreadyNotif14) continue;
       const sisa = berikut.target - totalPoin;
       const nominal = berikut.bonus > 0 ? ` (bonus Rp ${berikut.bonus.toLocaleString("id-ID")})` : "";
@@ -222,7 +225,7 @@ Deno.serve(async (req) => {
         category: "lainnya",
         action_label: "Lihat Poin Saya",
         action_url: "/rekap-poin-gaji",
-        related_entity_id: `target_poin_${email}_${monthKey}`,
+        related_entity_id: kunciTingkat,
         related_entity_type: "DailyChecklist",
       });
     }
