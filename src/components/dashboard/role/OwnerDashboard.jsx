@@ -56,6 +56,8 @@ function greeting(name) {
  * `naikItuBaik` memisahkan arah dari maknanya. Bawaannya true karena sebagian
  * besar pemakaian memang begitu, dan yang sebaliknya menyebutkannya tegas.
  */
+const BATAS_ALERT = 5;
+
 function TrendBadge({ value, suffix = "", naikItuBaik = true }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">sama</span>;
   const naik = value > 0;
@@ -119,6 +121,7 @@ export default function OwnerDashboard({ user }) {
   // Panel analitik tertutup default: dashboard jadi ringkas,
   // dan query berat fase-3 baru dijalankan saat panel dibuka.
   const [showDetail, setShowDetail] = useState(false);
+  const [alertSemua, setAlertSemua] = useState(false);
   const now = new Date();
   const thisMonthStart = format(startOfMonth(now), "yyyy-MM-dd");
   const thisMonthEnd = format(endOfMonth(now), "yyyy-MM-dd");
@@ -559,6 +562,17 @@ export default function OwnerDashboard({ user }) {
   const pendingChecklists = dailyChecklists.filter(c => c.status === "submitted").length;
   if (pendingChecklists > 0) criticalAlerts.push({ type: "yellow", msg: `${pendingChecklists} checklist belum diapprove` });
 
+  // Daftar ini tidak pernah dibatasi: sebelas peringatan berarti sebelas kotak
+  // selebar layar, dan di peternakan dengan dua puluh kura sakit bisa menjadi
+  // ribuan piksel kotak merah yang harus digulir sebelum sampai ke bagian
+  // berikutnya. Yang merah selalu didahulukan dan selalu terlihat; sisanya
+  // tinggal satu klik, tidak ada yang disembunyikan.
+  const alertUrut = [...criticalAlerts].sort((a, b) =>
+    (a.type === "red" ? 0 : 1) - (b.type === "red" ? 0 : 1)
+  );
+  const alertSisa = alertSemua ? 0 : Math.max(0, alertUrut.length - BATAS_ALERT);
+  const alertTampil = alertSemua ? alertUrut : alertUrut.slice(0, BATAS_ALERT);
+
   const today = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
 
   // ── Salary ranking — pakai data fase 3 ────────────
@@ -699,7 +713,7 @@ export default function OwnerDashboard({ user }) {
           </div>
         ) : (
           <div className="space-y-2 stagger">
-            {criticalAlerts.map((a, i) => (
+            {alertTampil.map((a, i) => (
               <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg transition-transform hover:translate-x-0.5 ${a.type === "red" ? "bg-red-50 border border-red-100 dark:bg-red-950/30 dark:border-red-900" : "bg-amber-50 border border-amber-100 dark:bg-amber-950/30 dark:border-amber-900"}`}>
                 <span className="text-base mt-0.5">{a.type === "red" ? "🔴" : "🟡"}</span>
                 <span className={`text-sm flex-1 ${a.type === "red" ? "text-red-800 dark:text-red-300" : "text-amber-800 dark:text-amber-300"}`}>
@@ -712,26 +726,27 @@ export default function OwnerDashboard({ user }) {
                 </span>
               </div>
             ))}
+            {alertSisa > 0 && (
+              <button
+                type="button"
+                onClick={() => setAlertSemua(true)}
+                className="w-full text-xs text-primary hover:underline py-1.5"
+              >
+                Tampilkan {alertSisa} peringatan lainnya
+              </button>
+            )}
+            {alertSemua && criticalAlerts.length > BATAS_ALERT && (
+              <button
+                type="button"
+                onClick={() => setAlertSemua(false)}
+                className="w-full text-xs text-muted-foreground hover:underline py-1.5"
+              >
+                Ringkas lagi
+              </button>
+            )}
           </div>
         )}
       </div>
-      {/* ── CATATAN OTOMATIS ── */}
-      {catatan.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-4">
-          <SectionTitle icon={StickyNote}>
-            Catatan dari Data Hari Ini
-          </SectionTitle>
-          <p className="text-xs text-muted-foreground -mt-2 mb-3">
-            Dibuat otomatis dari angka di dashboard ini — bukan masukan manual.
-          </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 stagger">
-            {catatan.map((c, i) => (
-              <NoteCard key={i} tone={c.tone} title={c.title}>{c.body}</NoteCard>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ── WIDGET CHECKLIST MENUNGGU APPROVAL ── */}
       {phase2Ready && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -760,9 +775,31 @@ export default function OwnerDashboard({ user }) {
       {/* ── TUGAS INSIDENTIL ── */}
       <IncidentalTaskCard />
 
-      {/* ── DAFTAR BELANJA ── */}
-      <ShoppingListWidget />
+      {/* == ANALISIS MENDALAM (tertutup secara default) == */}
+      <button
+        onClick={() => setShowDetail(v => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <BarChart2 className="w-4 h-4 text-primary" />
+          Analisis Mendalam
+        </span>
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {showDetail ? "Tutup" : "Keuangan bulan ini, belanja, modal, breeding, kesehatan, piutang, SDM"}
+          <ChevronDown className={showDetail ? "w-4 h-4 rotate-180 transition-transform" : "w-4 h-4 transition-transform"} />
+        </span>
+      </button>
 
+      {showDetail && (
+        <div className="space-y-6 animate-fade-in">
+      {/* Dipindahkan ke balik Analisis Mendalam.
+          Ketiganya menjawab pertanyaan bulanan, bukan pertanyaan pagi ini:
+          kesehatan keuangan sebulan, catatan yang dirangkum dari angka yang
+          sudah tampil di layar, dan daftar belanja yang jumlahnya sudah
+          disebut Ringkasan Pagi. Ketiganya menghabiskan 1.060px dari 3.529px
+          bagian yang selalu terlihat — sepertiga layar pertama dipakai untuk
+          hal yang tidak dikerjakan pagi ini. Kesehatan keuangan diletakkan
+          paling atas di sini karena itu yang paling sering dicari. */}
       {/* ── ROW 1: KESEHATAN FINANSIAL ── */}
       <div>
         <SectionTitle icon={DollarSign}>Kesehatan Finansial Bulan Ini</SectionTitle>
@@ -808,23 +845,29 @@ export default function OwnerDashboard({ user }) {
         </div>
       </div>
 
-      {/* == ANALISIS MENDALAM (tertutup secara default) == */}
-      <button
-        onClick={() => setShowDetail(v => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
-      >
-        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <BarChart2 className="w-4 h-4 text-primary" />
-          Analisis Mendalam
-        </span>
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {showDetail ? "Tutup" : "Modal, breeding, kesehatan, piutang, target, SDM"}
-          <ChevronDown className={showDetail ? "w-4 h-4 rotate-180 transition-transform" : "w-4 h-4 transition-transform"} />
-        </span>
-      </button>
 
-      {showDetail && (
-        <div className="space-y-6 animate-fade-in">
+      {/* ── CATATAN OTOMATIS ── */}
+      {catatan.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-4">
+          <SectionTitle icon={StickyNote}>
+            Catatan dari Data Hari Ini
+          </SectionTitle>
+          <p className="text-xs text-muted-foreground -mt-2 mb-3">
+            Dibuat otomatis dari angka di dashboard ini — bukan masukan manual.
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 stagger">
+            {catatan.map((c, i) => (
+              <NoteCard key={i} tone={c.tone} title={c.title}>{c.body}</NoteCard>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* ── DAFTAR BELANJA ── */}
+      <ShoppingListWidget />
+
+
       {/* ── EXCLUDED DATA WIDGET ── */}
       <ExcludedDataWidget />
 
