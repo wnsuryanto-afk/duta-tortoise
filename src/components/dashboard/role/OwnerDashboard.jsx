@@ -18,6 +18,7 @@ import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
 import SopTerkunciCard from "@/components/dashboard/SopTerkunciCard";
 import KuraPerluDiperiksaCard from "@/components/dashboard/KuraPerluDiperiksaCard";
 import PoinBonusTim from "@/components/dashboard/PoinBonusTim";
+import KepatuhanSopCard from "@/components/dashboard/KepatuhanSopCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import PageHeader from "@/components/common/PageHeader";
 import NoteCard from "@/components/common/NoteCard";
@@ -732,6 +733,7 @@ export default function OwnerDashboard({ user }) {
           tidak bertambah panjang di hari yang normal. */}
       <SopTerkunciCard />
       <KuraPerluDiperiksaCard />
+      <KepatuhanSopCard />
       <PoinBonusTim />
 
       {/* ── ROW 13: ALERT KRITIS ── */}
