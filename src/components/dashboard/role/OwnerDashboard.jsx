@@ -22,12 +22,13 @@ import NoteCard from "@/components/common/NoteCard";
 import InfoHint from "@/components/ui/info-hint";
 import { Sparkline } from "@/components/ui/sparkline";
 import { TortoiseArt } from "@/components/common/Illustration";
-import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { diPeternakan } from "@/lib/populasiKura";
 import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
+import { piutangPerPembeli } from "@/lib/piutang";
 
 // ─── Helpers ───────────────────────────────────────
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -370,9 +371,15 @@ export default function OwnerDashboard({ user }) {
   const problemEnclosure = Object.entries(enclosureCases).sort((a, b) => b[1] - a[1])[0];
 
   // ── Piutang ───────────────────────────────────────
-  const debtors = buyerProfiles.filter(b => (b.remaining_balance || 0) > 0)
-    .sort((a, b) => (b.remaining_balance || 0) - (a.remaining_balance || 0));
-  const totalDebt = debtors.reduce((s, b) => s + (b.remaining_balance || 0), 0);
+  //
+  // Dihitung dari PENJUALAN, bukan dari BuyerProfile. Versi lama membaca
+  // `remaining_balance` dari BuyerProfile — field yang tidak ada di sana —
+  // sehingga daftar penunggak selalu kosong dan total piutang selalu Rp 0,
+  // berapa pun uang yang sebenarnya belum masuk. Tidak ada pesan galat; bagian
+  // ini hanya diam.
+  const piutang = piutangPerPembeli(sales.filter(masukLaporan));
+  const debtors = piutang.daftar;
+  const totalDebt = piutang.total;
 
   // ── Charts ────────────────────────────────────────
   const activeSales = sales.filter(masukLaporan);
@@ -509,8 +516,14 @@ export default function OwnerDashboard({ user }) {
     const diff = Math.ceil((new Date(i.expired_date) - now) / 86400000);
     criticalAlerts.push({ type: "yellow", msg: `Obat kadaluarsa ${diff} hari: ${i.name}` });
   });
-  debtors.filter(b => b.payment_due_date && isAfter(now, new Date(b.payment_due_date))).slice(0, 3)
-    .forEach(b => criticalAlerts.push({ type: "yellow", msg: `Piutang jatuh tempo: ${b.buyer_name || b.full_name} — ${fmt(b.remaining_balance)}` }));
+  // `payment_due_date` tidak ada di entitas mana pun di seluruh aplikasi, jadi
+  // "jatuh tempo" tidak pernah bisa dihitung. Umur piutang bisa — dan itu yang
+  // menentukan mana yang perlu ditagih lebih dulu.
+  debtors.filter(b => b.terlamaHari >= 30).slice(0, 3)
+    .forEach(b => criticalAlerts.push({
+      type: "yellow",
+      msg: `Piutang ${b.terlamaHari} hari: ${b.nama} — ${fmt(b.sisa)}`,
+    }));
   const pendingChecklists = dailyChecklists.filter(c => c.status === "submitted").length;
   if (pendingChecklists > 0) criticalAlerts.push({ type: "yellow", msg: `${pendingChecklists} checklist belum diapprove` });
 
@@ -918,14 +931,16 @@ export default function OwnerDashboard({ user }) {
             <p className="text-sm font-semibold mb-3">{fmt(totalDebt)} dari {debtors.length} pembeli</p>
             <div className="space-y-2">
               {debtors.slice(0, 5).map(b => {
-                const overdue = b.payment_due_date && isAfter(now, new Date(b.payment_due_date));
+                const lama = b.terlamaHari >= 30;
                 return (
-                  <div key={b.id} className={`flex items-center justify-between p-2.5 rounded-lg ${overdue ? "bg-red-50 border border-red-200" : "bg-muted/40"}`}>
-                    <div>
-                      <p className={`text-sm font-medium ${overdue ? "text-red-700" : ""}`}>{b.buyer_name || b.full_name}</p>
-                      {b.payment_due_date && <p className="text-xs text-muted-foreground">Jatuh tempo: {format(new Date(b.payment_due_date), "d MMM yyyy", { locale: idLocale })}</p>}
+                  <div key={b.kunci} className={`flex items-center justify-between p-2.5 rounded-lg ${lama ? "bg-red-50 border border-red-200" : "bg-muted/40"}`}>
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium truncate ${lama ? "text-red-700" : ""}`}>{b.nama}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.jumlahNota} nota · tertua {b.terlamaHari} hari
+                      </p>
                     </div>
-                    <p className={`text-sm font-semibold ${overdue ? "text-red-600" : ""}`}>{fmt(b.remaining_balance)}</p>
+                    <p className={`text-sm font-semibold flex-shrink-0 ${lama ? "text-red-600" : ""}`}>{fmt(b.sisa)}</p>
                   </div>
                 );
               })}

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { AlertTriangle } from "lucide-react";
-import { differenceInDays, format } from "date-fns";
+import { differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 
 export default function KeeperAttentionWidget() {
@@ -11,9 +11,9 @@ export default function KeeperAttentionWidget() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: treatments = [] } = useQuery({
-    queryKey: ["treatments-keeper"],
-    queryFn: () => base44.entities.TreatmentSchedule.filter({ status: "aktif" }),
+  const { data: reminders = [] } = useQuery({
+    queryKey: ["health-reminders-keeper"],
+    queryFn: () => base44.entities.HealthReminder.filter({ is_done: false }, "due_date", 100),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -32,9 +32,21 @@ export default function KeeperAttentionWidget() {
     })
     .slice(0, 3);
 
-  // 3. Treatment terlewat (due_date lewat)
-  const overdueTreatments = treatments
-    .filter(t => t.next_date && t.next_date < today)
+  // 3. Pengingat perawatan yang sudah lewat jatuh tempo.
+  //
+  // Versi lama menyaring TreatmentSchedule dengan `t.next_date < today` — dan
+  // `next_date` TIDAK ADA di skema TreatmentSchedule. Nilainya selalu undefined,
+  // penyaringnya selalu kosong, dan bagian ini tidak pernah sekali pun muncul.
+  // Tampilannya pun membaca `tortoise_name` dan `medicine_name` yang juga tidak
+  // ada di sana (skemanya punya `tortoise_names`, jamak).
+  //
+  // Jatuh tempo perawatan sebenarnya disimpan di HealthReminder — entitas yang
+  // memang punya `due_date`, dimajukan otomatis saat pengingatnya diselesaikan.
+  // Sampai sekarang pengingat itu hanya tampil di beranda cadangan yang tidak
+  // dilihat peran mana pun kecuali peninjau, jadi tidak pernah sampai ke keeper.
+  const overdueTreatments = reminders
+    .filter(r => !r.is_done && r.due_date && r.due_date <= today)
+    .sort((a, b) => (a.due_date || "").localeCompare(b.due_date || ""))
     .slice(0, 3);
 
   const hasAlert = sickTortoises.length > 0 || notWeighed.length > 0 || overdueTreatments.length > 0;
@@ -86,8 +98,12 @@ export default function KeeperAttentionWidget() {
           <Link key={tr.id} to="/treatment" className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
             <span className="text-sm">💊</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-amber-800 truncate">{tr.tortoise_name}</p>
-              <p className="text-xs text-amber-600">Treatment {tr.medicine_name} — jatuh tempo {tr.next_date}</p>
+              <p className="text-sm font-semibold text-amber-800 truncate">
+                {tr.tortoise_name || tr.enclosure || "Semua kura"}
+              </p>
+              <p className="text-xs text-amber-600 truncate">
+                {tr.title || tr.type || "Perawatan"} — jatuh tempo {tr.due_date}
+              </p>
             </div>
           </Link>
         ))}

@@ -16,6 +16,7 @@ import SearchableDropdownFilter from "@/components/tutorial/TortoiseDropdownFilt
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { diPeternakan } from "@/lib/populasiKura";
 
 const FREQ_LABELS = {
   harian:       "Harian",
@@ -71,9 +72,15 @@ export default function TreatmentPage() {
     queryKey: ["treatment-logs"],
     queryFn: () => base44.entities.TreatmentLog.list("-done_date", 500),
   });
+  // Penyaringan `status: "aktif"` di server membuat kura SAKIT, breeding, dan
+  // karantina hilang dari seluruh halaman ini — padahal kura sakit justru yang
+  // paling perlu dijadwalkan pengobatan, dan tidak ada satu pun cara memilihnya
+  // dari layar ini. Seluruh kura yang masih ada di peternakan diambil, lalu
+  // disaring dengan aturan populasi bersama.
   const { data: tortoises = [] } = useQuery({
-    queryKey: ["tortoises-active"],
-    queryFn: () => base44.entities.Tortoise.filter({ status: "aktif" }, "name", 200),
+    queryKey: ["tortoises-treatment"],
+    queryFn: () => base44.entities.Tortoise.list("name", 500),
+    select: (data) => (data || []).filter(diPeternakan),
   });
   const { data: reminders = [] } = useQuery({
     queryKey: ["health-reminders-all"],
@@ -699,7 +706,7 @@ export default function TreatmentPage() {
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Semua..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="semua">Semua Kura-kura</SelectItem>
-                    {tortoises.filter(t=>t.status==="aktif").map(t=><SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                    {tortoises.map(t=><SelectItem key={t.id} value={t.name}>{t.name}{t.status && t.status !== "aktif" ? ` — ${t.status}` : ""}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
