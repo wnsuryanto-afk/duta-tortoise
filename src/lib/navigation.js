@@ -134,6 +134,7 @@ export const NAV_SECTIONS = [
 
 // Halaman pengaturan — dipindah ke menu avatar (kanan atas), bukan sidebar.
 export const SETTINGS_ITEMS = [
+  { path: "/otomatisasi",         section: "otomatisasi",         label: "Otomatisasi" },
   { path: "/notifications",       section: "notifications",       label: "Notifikasi" },
   { path: "/vet-contacts",        section: "health",              label: "Kontak Dokter Hewan" },
   { path: "/printer-config",      section: "printer-config",      label: "Printer & Label" },
