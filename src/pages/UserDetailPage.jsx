@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { format, differenceInMonths, differenceInYears, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { suratAktif, suratTertinggi, suratMasihBerlaku } from "@/lib/suratPeringatan";
 
 // ── helpers ──────────────────────────────────────────────────────────
 const ROLE_EMOJIS = { owner: "👑", manajer: "👔", admin: "🛡️", kepala_feeder: "🧑‍🌾", keeper: "🐢", investor: "👁️", viewer: "👁️", kicked: "🚫" };
@@ -304,14 +305,8 @@ export default function UserDetailPage({ userId, onBack }) {
 
   // Warning Letters
   const userWarningLetters = warningLetters.filter(l => l.employee_email === userEmail);
-  const now = new Date();
-  const activeWarnings = userWarningLetters.filter(l => {
-    if (!l.date) return false;
-    const sixMonthsLater = new Date(l.date);
-    sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
-    return sixMonthsLater > now;
-  });
-  const latestActiveSP = activeWarnings.sort((a, b) => b.level > a.level ? 1 : -1)[0];
+  const activeWarnings = suratAktif(userWarningLetters);
+  const latestActiveSP = suratTertinggi(userWarningLetters);
 
   // Completeness check
   const checks = [
@@ -581,8 +576,7 @@ export default function UserDetailPage({ userId, onBack }) {
         <Section title="⚠️ Riwayat Surat Peringatan" icon={null} defaultOpen={activeWarnings.length > 0}>
           <div className="space-y-2">
             {userWarningLetters.map(l => {
-              const expiry = l.date ? new Date(new Date(l.date).setMonth(new Date(l.date).getMonth() + 6)) : null;
-              const isStillActive = expiry && expiry > now;
+              const isStillActive = suratMasihBerlaku(l);
               return (
                 <div key={l.id} className={`flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg border ${isStillActive ? "bg-amber-50 border-amber-200" : "bg-muted/40"}`}>
                   <div>

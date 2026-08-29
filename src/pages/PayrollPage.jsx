@@ -66,15 +66,18 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
     await base44.entities.Kasbon.create({
       employee_name: user.full_name || user.email,
       employee_email: user.email,
-      employee_role: role,
       amount: amt,
       reason_category: form.reason_category,
       reason: form.reason,
       installment_plan: form.installment_plan,
-      installment_amount: perCicilan,
       installments_total: totalCicilan,
       installments_paid: 0,
       request_date: format(new Date(), "yyyy-MM-dd"),
+      // Satu field untuk satu hal. `installment_amount` dulu ditulis di sini
+      // dengan nilai yang persis sama dengan `weekly_deduction` — dan tidak ada
+      // di skema, jadi nilainya dibuang dan setiap pembacaannya jatuh ke
+      // `weekly_deduction` juga. Pembacaannya sengaja dibiarkan berjenjang
+      // untuk berjaga-jaga bila ada data lama yang sempat menyimpannya.
       weekly_deduction: perCicilan,
       total_paid: 0,
       status: "pending",

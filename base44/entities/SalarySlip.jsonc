@@ -234,6 +234,11 @@
       "type": "boolean",
       "default": false,
       "description": "Dikecualikan dari laporan (owner only)"
+    },
+    "is_test_data": {
+      "type": "boolean",
+      "default": false,
+      "description": "Slip dibuat saat Mode Uji. Perhitungan HPP sudah menyaringnya, tetapi field-nya belum pernah ada sehingga penyaringannya tidak pernah berpengaruh."
     }
   },
   "required": [

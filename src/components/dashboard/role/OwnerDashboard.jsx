@@ -28,6 +28,7 @@ import { diPeternakan } from "@/lib/populasiKura";
 import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
+import { suratAktif } from "@/lib/suratPeringatan";
 import GrafikUang from "@/components/ui/grafik-uang";
 
 // ─── Helpers ───────────────────────────────────────
@@ -57,6 +58,22 @@ function greeting(name) {
  * besar pemakaian memang begitu, dan yang sebaliknya menyebutkannya tegas.
  */
 const BATAS_ALERT = 5;
+
+/** Berapa banyak surat peringatan yang ditampilkan sebelum diringkas. */
+const BATAS_SP = 5;
+
+/**
+ * Alasan sebuah surat peringatan, apa adanya dari skemanya.
+ *
+ * Skema WarningLetter menyimpan alasan di `reasons` (daftar) dan keterangan
+ * tambahan di `description`. Widget ini dulu membaca `w.reason` — tunggal,
+ * dan tidak ada di skema — sehingga alasannya selalu tercetak "—".
+ */
+function alasanSurat(surat) {
+  const daftar = Array.isArray(surat?.reasons) ? surat.reasons.filter(Boolean) : [];
+  if (daftar.length) return daftar.join(", ");
+  return surat?.description || "—";
+}
 
 function TrendBadge({ value, suffix = "", naikItuBaik = true }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">sama</span>;
@@ -452,8 +469,14 @@ export default function OwnerDashboard({ user }) {
   const sisaKasbon = (k) => Math.max(0, (k.amount || 0) - (k.total_paid || 0));
   const totalKasbonDebt = activeKasbons.reduce((s, k) => s + sisaKasbon(k), 0);
 
-  // SP Aktif + filtered logs
-  const activeWarnings = warnings.filter(w => w.status === "aktif" || !w.status);
+  // SP Aktif + filtered logs.
+  // Masa berlakunya dihitung dari tanggal surat lewat suratAktif(), sama
+  // persis dengan yang dipakai layar Detail Karyawan.
+  const activeWarnings = suratAktif(warnings);
+  // Surat yang berlaku bisa lebih banyak daripada orangnya.
+  const jumlahKaryawanSP = new Set(
+    activeWarnings.map(w => w.employee_email || w.employee_id || w.employee_name)
+  ).size;
   const activeOtLogs = otLogs.filter(masukLaporan);
   const activeMeasurements = measurements.filter(masukLaporan);
 
@@ -1185,19 +1208,28 @@ export default function OwnerDashboard({ user }) {
           <p className="text-sm text-green-600">✓ Tidak ada SP aktif</p>
         ) : (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{activeWarnings.length} karyawan dalam masa SP</p>
-            {activeWarnings.slice(0, 5).map(w => (
+            {/* Yang dihitung orangnya, bukan suratnya: satu karyawan yang naik
+                dari SP1 ke SP2 punya dua surat berlaku, tapi tetap satu orang. */}
+            <p className="text-sm text-muted-foreground">{jumlahKaryawanSP} karyawan dalam masa SP</p>
+            {activeWarnings.slice(0, BATAS_SP).map(w => (
               <div key={w.id} className="flex items-center justify-between p-2.5 bg-red-50 rounded-lg border border-red-100">
                 <div>
                   <p className="text-sm font-medium text-red-800">{w.employee_name}</p>
-                  <p className="text-xs text-red-600">{w.reason || "—"}</p>
+                  <p className="text-xs text-red-600">{alasanSurat(w)}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-bold text-red-700">SP{w.level || w.warning_level}</span>
-                  <p className="text-xs text-muted-foreground">{w.date || w.issued_date || "—"}</p>
+                  {/* `level` sudah berisi "SP1"/"SP2"/"SP3" — mengawalinya
+                      dengan "SP" lagi membuatnya tercetak "SPSP2". */}
+                  <span className="text-xs font-bold text-red-700">{w.level || "SP"}</span>
+                  <p className="text-xs text-muted-foreground">{w.date || "—"}</p>
                 </div>
               </div>
             ))}
+            {activeWarnings.length > BATAS_SP && (
+              <p className="text-xs text-muted-foreground">
+                +{activeWarnings.length - BATAS_SP} surat lainnya
+              </p>
+            )}
           </div>
         )}
       </div>

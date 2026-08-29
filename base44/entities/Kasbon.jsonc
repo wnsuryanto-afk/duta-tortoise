@@ -45,6 +45,24 @@
       "default": 100000,
       "description": "Potongan per periode gaji yang disepakati (default Rp 100.000)"
     },
+    "installment_plan": {
+      "type": "string",
+      "enum": ["1x", "2x", "4x"],
+      "description": "Rencana cicilan yang dipilih karyawan saat mengajukan."
+    },
+    "installments_total": {
+      "type": "number",
+      "description": "Berapa kali cicilan seharusnya, diturunkan dari installment_plan."
+    },
+    "installments_paid": {
+      "type": "number",
+      "default": 0,
+      "description": "Berapa kali cicilan sudah dipotong. Dipakai layar kasbon untuk menampilkan kemajuannya, mis. \"Cicil 4x (2/4x)\"."
+    },
+    "reason_category": {
+      "type": "string",
+      "description": "Golongan alasan pengajuan, mis. kebutuhan_mendesak atau lainnya."
+    },
     "total_paid": {
       "type": "number",
       "default": 0,
