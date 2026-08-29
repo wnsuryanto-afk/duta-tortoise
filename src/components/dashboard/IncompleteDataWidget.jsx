@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { Link } from "react-router-dom";
+import { diPeternakan } from "@/lib/populasiKura";
 
 export default function IncompleteDataWidget() {
   const [expanded, setExpanded] = useState(false);
@@ -25,7 +26,7 @@ export default function IncompleteDataWidget() {
         .slice(0, 3); // ambil 3 teratas
     
     return [
-      ...getIncomplete(tortoises.filter(t => t.status === "aktif" || t.status === "baby"), "tortoise", "name"),
+      ...getIncomplete(tortoises.filter(diPeternakan), "tortoise", "name"),
       ...getIncomplete(breedings, "breeding", "female_name"),
       ...getIncomplete(sales, "sale", "tortoise_name"),
       ...getIncomplete(profiles, "userProfile", "full_name"),
@@ -37,7 +38,7 @@ export default function IncompleteDataWidget() {
   const breakdown = useMemo(() => {
     const cnt = (items, type) => items.filter(i => getMissingFields(type, i).length > 0).length;
     return [
-      { label: "Kura-kura", count: cnt(tortoises.filter(t => t.status === "aktif" || t.status === "baby"), "tortoise"), emoji: "🐢" },
+      { label: "Kura-kura", count: cnt(tortoises.filter(diPeternakan), "tortoise"), emoji: "🐢" },
       { label: "Breeding", count: cnt(breedings, "breeding"), emoji: "🥚" },
       { label: "Penjualan", count: cnt(sales, "sale"), emoji: "💰" },
       { label: "Karyawan", count: cnt(profiles, "userProfile"), emoji: "👥" },

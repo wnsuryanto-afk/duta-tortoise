@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, CheckCircle2, ClipboardList, Filter } from "lucide-react";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { Link } from "react-router-dom";
+import { diPeternakan } from "@/lib/populasiKura";
 
 function ProgressBar({ done, total }) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 100;
@@ -102,7 +103,7 @@ export default function IncompleteDataPage() {
   const summary = useMemo(() => {
     const count = (items, type) => items.filter(i => getMissingFields(type, i).length > 0).length;
     return {
-      kura: count(tortoises.filter(t => t.status === "aktif" || t.status === "baby"), "tortoise"),
+      kura: count(tortoises.filter(diPeternakan), "tortoise"),
       breeding: count(breedings, "breeding"),
       sale: count(sales, "sale"),
       karyawan: count(profiles, "userProfile"),
@@ -184,7 +185,7 @@ export default function IncompleteDataPage() {
           <Card><CardHeader className="pb-3"><CardTitle className="text-base">🐢 Kura-kura Aktif</CardTitle></CardHeader>
             <CardContent>
               <DataTable 
-                items={tortoises.filter(t => t.status === "aktif" || t.status === "baby")} 
+                items={tortoises.filter(diPeternakan)} 
                 entityType="tortoise" 
                 editPath="/tortoise" 
                 nameField="name" 

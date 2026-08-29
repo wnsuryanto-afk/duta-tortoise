@@ -13,6 +13,7 @@ export const ROLE_LABELS = {
   keeper:         "Keeper",
   kepala_feeder:  "Kepala Feeder",
   investor:       "Investor",
+  viewer:         "Peninjau",
 };
 
 export const ROLE_COLORS = {
@@ -22,6 +23,7 @@ export const ROLE_COLORS = {
   keeper:         "bg-orange-100 text-orange-800 border-orange-300",
   kepala_feeder:  "bg-teal-100 text-teal-800 border-teal-300",
   investor:       "bg-slate-100 text-slate-700 border-slate-300",
+  viewer:         "bg-zinc-100 text-zinc-600 border-zinc-300",
 
   kicked:         "bg-red-100 text-red-600 border-red-300",
 };
@@ -84,6 +86,13 @@ export const NAV_ACCESS = {
     "health", "finance", "breeding-report", "sales-report", "info", "breeding-planner",
     "panduan-pakan", "kritik-saran", "sales", "panduan-penyakit",
   ],
+
+  // "viewer" ada di enum peran User tetapi tidak pernah punya baris di sini,
+  // sehingga canAccess() jatuh ke `?? false` dan pemiliknya melihat sidebar
+  // kosong tanpa penjelasan — sebuah kebetulan, bukan keputusan. Dinyatakan
+  // tegas sebagai kosong: peninjau hanya melihat beranda ringkas. Bila suatu
+  // saat perlu diberi akses, tambahkan section-nya di sini.
+  viewer: [],
 };
 
 export const PAGE_PERMISSIONS = {

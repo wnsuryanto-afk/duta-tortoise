@@ -27,9 +27,12 @@ export default function AnnualGoalWidget({ breedings = [] }) {
   const currentGoal = goals.find(g => g.year === currentYear);
 
   // Hitung total telur tahun ini dari breeding
+  // Dibatasi dan diurutkan. `Sale.filter({})` menarik seluruh riwayat penjualan
+  // tanpa batas setiap kali beranda dibuka, hanya untuk menjumlahkan tahun ini.
   const { data: salesToday = [] } = useQuery({
     queryKey: ["sales-for-goal"],
-    queryFn: () => base44.entities.Sale.filter({}),
+    queryFn: () => base44.entities.Sale.list("-sale_date", 500),
+    staleTime: 5 * 60 * 1000,
   });
   const currentYearRevenue = salesToday
     .filter(s => s.sale_date && s.sale_date.startsWith(String(currentYear)))

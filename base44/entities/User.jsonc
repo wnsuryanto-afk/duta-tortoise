@@ -10,6 +10,7 @@
         "admin",
         "kepala_feeder",
         "keeper",
+        "investor",
         "viewer"
       ],
       "default": "keeper",

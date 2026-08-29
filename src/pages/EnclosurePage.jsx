@@ -12,6 +12,8 @@ import { Plus, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, Shell, A
 import EnclosureForm from "@/components/enclosure/EnclosureForm";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { diPeternakan } from "@/lib/populasiKura";
+import { cariKandang } from "@/lib/kandang";
 
 export default function EnclosurePage() {
   const qc = useQueryClient();
@@ -37,24 +39,28 @@ export default function EnclosurePage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["enclosures"] }); setDeleteTarget(null); },
   });
 
-  // Hitung current_count dari data Tortoise aktual
-  const ACTIVE_STATUSES = ["aktif", "baby", "sakit", "breeding"];
+  // Hitung current_count dari data Tortoise aktual.
+  //
+  // Dihitung per NOMOR kandang, bukan nama: nama lepas begitu kandang diganti
+  // nama, dan kura di dalamnya berhenti terhitung tanpa peringatan. Daftar
+  // status yang ditulis tangan juga diganti aturan bersama — versi lamanya
+  // melewatkan kura karantina, yang tetap menempati kandangnya.
   const countByEnclosure = tortoises.reduce((acc, t) => {
-    if (t.enclosure && ACTIVE_STATUSES.includes(t.status)) {
-      acc[t.enclosure] = (acc[t.enclosure] || 0) + 1;
-    }
+    if (!diPeternakan(t)) return acc;
+    const id = cariKandang(t, enclosures).kandang?.id;
+    if (id) acc[id] = (acc[id] || 0) + 1;
     return acc;
   }, {});
 
   // Gunakan live count dari tortoises (bukan field tersimpan)
-  const getCount = (enc) => countByEnclosure[enc.name] ?? (enc.current_count ?? 0);
+  const getCount = (enc) => countByEnclosure[enc.id] ?? (enc.current_count ?? 0);
 
   // Sinkronkan semua current_count ke database
   const handleSyncAll = async () => {
     setSyncing(true);
     let updated = 0;
     for (const enc of enclosures) {
-      const liveCount = countByEnclosure[enc.name] ?? 0;
+      const liveCount = countByEnclosure[enc.id] ?? 0;
       if ((enc.current_count ?? 0) !== liveCount) {
         await base44.entities.Enclosure.update(enc.id, { current_count: liveCount });
         updated++;
@@ -65,16 +71,21 @@ export default function EnclosurePage() {
     toast.success(updated > 0 ? `${updated} kandang berhasil disinkronkan` : "Semua kandang sudah sinkron");
   };
 
-  // Auto-sinkron saat tortoises & enclosures sudah dimuat
+  // Auto-sinkron saat tortoises & enclosures sudah dimuat.
+  //
+  // Penulisan ini menimpa current_count seluruh kandang dari hitungan di layar,
+  // jadi ia hanya boleh berjalan bila hitungannya memang lengkap. Kegagalan
+  // sengaja ditelan supaya membuka halaman tidak pernah gagal karenanya —
+  // tombol "Sinkronkan" di atas yang melaporkan hasilnya dengan jujur.
   useEffect(() => {
-    if (enclosures.length > 0 && tortoises.length > 0) {
-      for (const enc of enclosures) {
-        const liveCount = countByEnclosure[enc.name] ?? 0;
-        if ((enc.current_count ?? 0) !== liveCount) {
-          base44.entities.Enclosure.update(enc.id, { current_count: liveCount });
-        }
+    if (enclosures.length === 0 || tortoises.length === 0) return;
+    for (const enc of enclosures) {
+      const liveCount = countByEnclosure[enc.id] ?? 0;
+      if ((enc.current_count ?? 0) !== liveCount) {
+        base44.entities.Enclosure.update(enc.id, { current_count: liveCount }).catch(() => {});
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enclosures.length, tortoises.length]);
 
   const typeLabel = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
@@ -84,6 +95,10 @@ export default function EnclosurePage() {
     const cnt = getCount(enc);
     if (!enc.max_capacity) return "normal";
     if (cnt > enc.max_capacity) return "overcrowded";
+    // Isi yang PAS kapasitas dulu ikut disebut "Hampir Penuh" — padahal tidak
+    // ada tempat tersisa sama sekali, dan itu justru yang perlu diketahui saat
+    // memilih kandang tujuan.
+    if (cnt === enc.max_capacity) return "penuh";
     if (cnt >= enc.max_capacity * 0.8) return "warning";
     return "normal";
   }
@@ -96,6 +111,7 @@ export default function EnclosurePage() {
 
   const statusBadge = {
     overcrowded: <Badge className="bg-red-100 text-red-700 border-red-300">Overcrowding!</Badge>,
+    penuh: <Badge className="bg-orange-100 text-orange-700 border-orange-300">Penuh</Badge>,
     warning: <Badge className="bg-amber-100 text-amber-700 border-amber-300">Hampir Penuh</Badge>,
     normal: <Badge className="bg-green-100 text-green-700 border-green-300">Normal</Badge>,
   };
@@ -124,9 +140,14 @@ export default function EnclosurePage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total Kandang", val: enclosures.filter(e=>e.is_active).length, color: "text-primary" },
+          // `is_active` tidak pernah bisa diubah dari mana pun di aplikasi — tidak ada
+          // satu pun layar yang menulisnya. Catatan lama yang dibuat sebelum field
+          // ini ada bernilai undefined, jatuh ke falsy, dan diam-diam hilang dari
+          // hitungan ini padahal kepala halaman di atas menghitungnya. Yang
+          // dikecualikan sekarang hanya yang tegas ditandai tidak aktif.
+          { label: "Total Kandang", val: enclosures.filter(e=>e.is_active !== false).length, color: "text-primary" },
           { label: "Overcrowding", val: enclosures.filter(e=>getStatus(e)==="overcrowded").length, color: "text-red-600" },
-          { label: "Hampir Penuh", val: enclosures.filter(e=>getStatus(e)==="warning").length, color: "text-amber-600" },
+          { label: "Penuh / Hampir", val: enclosures.filter(e=>["penuh","warning"].includes(getStatus(e))).length, color: "text-amber-600" },
           { label: "Total Kapasitas", val: enclosures.reduce((s,e)=>s+(e.max_capacity||0),0), color: "text-primary" },
         ].map(item => (
           <Card key={item.label}>

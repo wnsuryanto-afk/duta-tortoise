@@ -11,6 +11,7 @@ import NoteCard from "@/components/common/NoteCard";
 import ProgressRing from "@/components/ui/progress-ring";
 import Illustration, { ChartArt } from "@/components/common/Illustration";
 import { useState, useEffect } from "react";
+import { ringkasProduksi } from "@/lib/hasilInkubasi";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
@@ -94,9 +95,14 @@ export default function InvestorDashboard({ user }) {
 
   // Tingkat penetasan sepanjang riwayat — satu-satunya ukuran produktivitas
   // breeding yang bisa dibandingkan antar bulan.
-  const totalEggsEver = breedings.reduce((s, b) => s + (b.egg_count || 0), 0);
-  const totalHatched = breedings.reduce((s, b) => s + (b.hatched_count || 0), 0);
-  const hatchRate = totalEggsEver > 0 ? Math.round((totalHatched / totalEggsEver) * 100) : 0;
+  // Hanya clutch yang sudah ada hasilnya yang masuk hitungan. Membagi tetasan
+  // dengan SELURUH telur yang pernah tercatat — termasuk yang masih dierami —
+  // menampilkan angka keberhasilan yang lebih rendah dari kenyataan kepada
+  // orang yang menilai peternakan ini dari angka itu.
+  const produksi = ringkasProduksi(breedings);
+  const totalEggsEver = produksi.telurAdaHasil;
+  const totalHatched = produksi.totalMenetas;
+  const hatchRate = Math.round(produksi.hatchRate);
   const eggsInProgress = activeBreedings.reduce((s, b) => s + (b.egg_count || 0), 0);
 
   const adaDataTren = last6.some(m => m.pemasukan > 0 || m.pengeluaran > 0);
@@ -160,7 +166,9 @@ export default function InvestorDashboard({ user }) {
             <div className="flex items-center gap-4 flex-shrink-0">
               <ProgressRing value={hatchRate} size={84} sublabel="menetas" />
               <div>
-                <p className="text-xs text-muted-foreground">Dari {totalEggsEver} telur tercatat</p>
+                <p className="text-xs text-muted-foreground">
+                  Dari {totalEggsEver} telur yang sudah selesai dierami
+                </p>
                 <p className="stat-value text-xl text-accent mt-0.5">{totalHatched} menetas</p>
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {eggsInProgress} butir sedang diinkubasi

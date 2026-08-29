@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
+import { PERAN_HARIAN } from "@/lib/hitungGaji";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Users, CheckCircle2, Clock, AlertCircle } from "lucide-react";
@@ -23,6 +24,17 @@ export default function AttendanceChartCard() {
   const hadir = todayAttendances.filter(a => a.status === "hadir");
   const izin = todayAttendances.filter(a => a.status === "izin");
   const sakit = todayAttendances.filter(a => a.status === "sakit");
+
+  // Jumlah karyawan sudah diambil di atas tapi tidak pernah dipakai, sehingga
+  // kartu ini menampilkan "Hadir 3" tanpa memberi tahu 3 dari berapa. Yang
+  // penting justru selisihnya: orang yang belum tercatat sama sekali hari ini
+  // — bukan hadir, bukan izin, bukan sakit — dan itulah yang tidak terlihat.
+  //
+  // Penyebutnya hanya peran yang memang mengisi absensi. Menghitung seluruh
+  // akun akan memasukkan pemilik dan investor, yang tidak pernah absen, lalu
+  // melaporkan mereka sebagai "belum tercatat" setiap hari.
+  const totalKaryawan = users.filter((u) => PERAN_HARIAN.includes(u.role)).length;
+  const belumTercatat = Math.max(0, totalKaryawan - todayAttendances.length);
 
   // Grafik 7 hari terakhir
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -60,6 +72,20 @@ export default function AttendanceChartCard() {
           <p className="text-[11px] text-red-700">Sakit</p>
         </div>
       </div>
+
+      {totalKaryawan > 0 && (
+        <p className="text-[11px] text-muted-foreground -mt-2 mb-3">
+          <span className="tabular font-medium text-foreground">
+            {todayAttendances.length} dari {totalKaryawan}
+          </span>{" "}
+          karyawan sudah tercatat hari ini
+          {belumTercatat > 0 && (
+            <span className="text-amber-700 dark:text-amber-400">
+              {" "}· <span className="tabular font-medium">{belumTercatat}</span> belum
+            </span>
+          )}
+        </p>
+      )}
 
       {/* Grafik 7 hari */}
       <p className="text-xs text-muted-foreground mb-2">7 Hari Terakhir</p>

@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import MonthlySalesSummary from "@/components/dashboard/MonthlySalesSummary";
 import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
+import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 // useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
-  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, Target, ChevronRight, ChevronDown, ShieldAlert, ListChecks, StickyNote
+  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, ChevronRight, ChevronDown, ShieldAlert, ListChecks, StickyNote
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
@@ -23,6 +24,9 @@ import { Sparkline } from "@/components/ui/sparkline";
 import { TortoiseArt } from "@/components/common/Illustration";
 import { format, subMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { ringkasProduksi } from "@/lib/hasilInkubasi";
+import { diPeternakan } from "@/lib/populasiKura";
+import { cariKandang } from "@/lib/kandang";
 
 // ─── Helpers ───────────────────────────────────────
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -324,9 +328,14 @@ export default function OwnerDashboard({ user }) {
   const eggsThisMonth = breedings
     .filter(b => (b.egg_laying_date || "").startsWith(thisMonthKey))
     .reduce((s, b) => s + (b.egg_count || 0), 0);
-  const totalHatched = breedings.reduce((s, b) => s + (b.hatched_count || 0), 0);
-  const totalEggsEver = breedings.reduce((s, b) => s + (b.egg_count || 0), 0);
-  const successRate = totalEggsEver > 0 ? pct(totalHatched, totalEggsEver) : "0.0";
+  // Telur yang MASIH dierami tidak boleh masuk penyebut. Versi lama membagi
+  // seluruh tetasan dengan SELURUH telur yang pernah tercatat, sehingga setiap
+  // butir yang belum selesai dierami terhitung sebagai gagal — dengan puluhan
+  // induk yang bertelur rutin, angka keberhasilan jadi jauh lebih rendah dari
+  // kenyataannya, dan makin banyak yang sedang dierami makin buruk kelihatannya.
+  const produksi = ringkasProduksi(breedings);
+  const totalHatched = produksi.totalMenetas;
+  const successRate = produksi.hatchRate.toFixed(1);
   // Best pair
   const breedingBySuccess = [...breedings].sort((a, b) =>
     (b.hatched_count || 0) - (a.hatched_count || 0)
@@ -418,7 +427,14 @@ export default function OwnerDashboard({ user }) {
 
   // ── Top Kandang ───────────────────────────────────
   const enclosureStats = enclosures.map(enc => {
-    const count = tortoises.filter(t => t.enclosure === enc.name && t.status === "aktif" && !t.is_archived).length;
+    // Seluruh penghuni, bukan hanya yang berstatus "aktif": kura sakit,
+    // breeding, dan karantina tetap menempati kandangnya. Menghitung "aktif"
+    // saja membuat kandang yang sudah penuh terlihat lapang — persis saat
+    // pemilik memutuskan ke mana kura berikutnya dipindahkan. Pencocokannya
+    // lewat nomor kandang, bukan nama, agar tidak lepas saat kandang diganti nama.
+    const count = tortoises.filter(
+      (t) => diPeternakan(t) && cariKandang(t, enclosures).kandang?.id === enc.id
+    ).length;
     const sick = sickThisMonth.filter(h => kandangKura.get(h.tortoise_id) === enc.name).length;
     return { name: enc.name, count, sick };
   }).filter(e => e.count > 0).sort((a, b) => b.count - a.count || a.sick - b.sick).slice(0, 5);
@@ -835,8 +851,13 @@ export default function OwnerDashboard({ user }) {
             sub={
               <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                 <div>{totalEggs} total telur inkubasi</div>
-                <div>Menetas bln ini: {hatchedThisMonth}/{eggsThisMonth}</div>
-                <div>Success rate: {successRate}%</div>
+                {/* Dulu ditulis "{hatchedThisMonth}/{eggsThisMonth}", terbaca
+                    sebagai pecahan padahal keduanya kohort yang berbeda: telur
+                    yang MENETAS bulan ini berasal dari clutch yang bertelur
+                    80–105 hari lalu, bukan dari telur yang baru diletakkan
+                    bulan ini. Dipisah jadi dua fakta. */}
+                <div>Menetas bln ini: {hatchedThisMonth} · telur baru: {eggsThisMonth}</div>
+                <div>Success rate: {successRate}% <span className="opacity-70">({produksi.telurAdaHasil} telur selesai)</span></div>
                 {bestPair && <div className="font-medium text-foreground">Terbaik: {bestPair.female_name} × {bestPair.male_name}</div>}
               </div>
             }
@@ -912,38 +933,13 @@ export default function OwnerDashboard({ user }) {
         )}
       </div>
 
-      {/* ── ROW 6: TARGET TAHUNAN ── */}
-      {(goal.revenue_target > 0 || goal.egg_production_target > 0) && (
-        <div className="bg-card rounded-xl border border-border p-4">
-          <SectionTitle icon={Target}>Progress Target {thisYear}</SectionTitle>
-          <div className="space-y-4">
-            {goal.revenue_target > 0 && (
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Revenue</span>
-                  <span className="font-medium">{fmt(ytdIncome)} / {fmt(goal.revenue_target)}</span>
-                </div>
-                <div className="w-full h-2.5 bg-muted rounded-full">
-                  <div className="h-2.5 bg-primary rounded-full" style={{ width: `${Math.min(100, ytdIncome / goal.revenue_target * 100)}%` }} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{pct(ytdIncome, goal.revenue_target)}%</p>
-              </div>
-            )}
-            {goal.egg_production_target > 0 && (
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Telur</span>
-                  <span className="font-medium">{ytdEggs} / {goal.egg_production_target}</span>
-                </div>
-                <div className="w-full h-2.5 bg-muted rounded-full">
-                  <div className="h-2.5 bg-accent rounded-full" style={{ width: `${Math.min(100, ytdEggs / goal.egg_production_target * 100)}%` }} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{pct(ytdEggs, goal.egg_production_target)}%</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* ── ROW 6: TARGET TAHUNAN ──
+          Dulu blok ini hanya MENAMPILKAN target, dan seluruhnya disembunyikan
+          bila belum ada target — padahal tidak ada satu layar pun di aplikasi
+          yang bisa menetapkannya. Editornya sudah lama ada di AnnualGoalWidget,
+          hanya tidak pernah dipasang di mana-mana. Dipasang di sini, sekaligus
+          menghapus salinan read-only-nya. */}
+      <AnnualGoalWidget breedings={breedings} />
 
       {/* ── GRAFIK PENJUALAN & KEHADIRAN (widget yang sebelumnya menganggur) ── */}
       <MonthlySalesSummary sales={sales} />

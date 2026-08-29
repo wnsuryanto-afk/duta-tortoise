@@ -25,6 +25,8 @@ import EmptyState from "@/components/common/EmptyState";
 import CardSkeleton from "@/components/common/Skeleton";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms, canDelete as canDeleteGlobal, isManagerLevel } from "@/lib/permissions";
+import { diPeternakan } from "@/lib/populasiKura";
+import { getMissingFields } from "@/lib/incompleteChecks";
 
 function getEnclosureStatus(enc) {
   if (!enc.max_capacity) return "normal";
@@ -145,20 +147,12 @@ export default function TortoiseList() {
     return sickSet;
   }, [healthRecords]);
 
-  // Gunakan incompleteChecks.js sebagai sumber kebenaran tunggal
-  const isIncomplete = (t) => {
-    if (!t.weight_grams || t.weight_grams === 0) return true;
-    if (!t.shell_length_cm || t.shell_length_cm === 0) return true;
-    if (!t.birth_date) return true;
-    // Gender hanya wajib untuk kura >= 20 cm (bukan baby)
-    const isSmall = (t.shell_length_cm && t.shell_length_cm < 20) || t.age_category === "baby";
-    if (!isSmall && (!t.gender || t.gender === "belum_diketahui")) return true;
-    if (!t.enclosure) return true;
-    if (!t.species) return true;
-    const hasPhoto = (Array.isArray(t.photos) && t.photos.length > 0) || t.photo_url;
-    if (!hasPhoto) return true;
-    return false;
-  };
+  // Komentar di sini dulu menyebut incompleteChecks.js sebagai sumber kebenaran
+  // tunggal, lalu menuliskan ulang seluruh aturannya tepat di bawahnya. Kedua
+  // salinan kebetulan masih sama persis, tetapi satu perubahan pada salah
+  // satunya cukup untuk membuat penghitung di sini dan di halaman "Data Belum
+  // Lengkap" menyebut angka yang berbeda tanpa ada yang menyadarinya.
+  const isIncomplete = (t) => getMissingFields("tortoise", t).length > 0;
 
   // Jumlah kura aktif — dipakai di beberapa tempat pada JSX di bawah.
   const totalAktif = tortoises.filter(t => t.status === "aktif" && !t.is_archived).length;
@@ -544,7 +538,7 @@ export default function TortoiseList() {
               className={`flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-medium transition-colors ${incompleteFilter ? "bg-amber-100 border-amber-400 text-amber-800" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
             >
               ⚠️ Data Belum Lengkap
-              <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${incompleteFilter ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(t => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").filter(isIncomplete).length}</span>
+              <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${incompleteFilter ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"}`}>{tortoises.filter(diPeternakan).filter(isIncomplete).length}</span>
             </button>
 
             {(search || statusFilter !== "semua" || genderFilter !== "semua" || morphFilter !== "semua" || shellTypeFilter !== "semua" || enclosureFilter || provenFilter !== "semua" || speciesFilter !== "semua" || weightFilter !== "semua" || shellLengthFilter !== "semua" || incompleteFilter) && (

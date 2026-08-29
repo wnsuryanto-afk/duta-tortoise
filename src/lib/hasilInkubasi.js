@@ -53,10 +53,22 @@ export function hatchRate(breedings = []) {
  */
 export function ringkasProduksi(clutches = []) {
   const selesai = clutches.filter(adaHasil);
+  const telurSelesai = selesai.reduce((s, c) => s + (Number(c.egg_count) || 0), 0);
+  const totalTelur = clutches.reduce((s, c) => s + (Number(c.egg_count) || 0), 0);
   return {
     totalClutch: clutches.length,
-    totalTelur: clutches.reduce((s, c) => s + (Number(c.egg_count) || 0), 0),
+    /** Seluruh telur yang pernah tercatat, termasuk yang masih dierami. */
+    totalTelur,
+    /**
+     * Telur yang BENAR-BENAR jadi penyebut hatchRate — hanya dari clutch yang
+     * sudah ada hasilnya. Dibuka supaya layar bisa menuliskan pecahannya utuh;
+     * menampilkan `totalMenetas` di sebelah `totalTelur` beserta hatchRate
+     * menghasilkan tiga angka yang tidak mungkin semuanya benar sekaligus.
+     */
+    telurAdaHasil: telurSelesai,
     totalMenetas: selesai.reduce((s, c) => s + (Number(c.hatched_count) || 0), 0),
+    /** Telur yang masih dierami — selisih kedua angka telur di atas. */
+    telurMasihDierami: totalTelur - telurSelesai,
     clutchAdaHasil: selesai.length,
     hatchRate: hatchRate(clutches),
   };
