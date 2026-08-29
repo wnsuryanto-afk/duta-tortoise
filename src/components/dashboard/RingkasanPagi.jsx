@@ -17,6 +17,7 @@ import KeputusanHariIni from "@/components/dashboard/KeputusanHariIni";
 import ArahMingguIni from "@/components/dashboard/ArahMingguIni";
 import { masukLaporan } from "@/lib/laporan";
 import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
+import { saldoTerkini } from "@/lib/kasKecil";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -129,7 +130,9 @@ export default function RingkasanPagi({ bagian = "semua" }) {
   const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
   const activeTortoises = tortoises.filter(t => t.status === "aktif" && !t.is_archived);
   const waitingMaterials = incidental.filter(t => t.status === "pending" && t.material_status === "waiting_materials").length;
-  const saldoKas = ledger.length > 0 ? Math.round(ledger[0].balance_after || 0) : 0;
+  // Aturan urut yang sama dengan halaman Kas Kecil dan dengan fungsi yang
+  // menghitung ulang balance_after — kalau berbeda, angkanya tidak akan cocok.
+  const saldoKas = saldoTerkini(ledger);
 
   const activeSales = sales.filter(masukLaporan);
   const salesYesterday = activeSales.filter(s => s.sale_date === yesterday).reduce((s, x) => s + (x.price || 0), 0);

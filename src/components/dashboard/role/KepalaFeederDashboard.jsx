@@ -15,6 +15,7 @@ import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 import PageHeader from "@/components/common/PageHeader";
 import { TeamArt } from "@/components/common/Illustration";
+import { saldoTerkini } from "@/lib/kasKecil";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
@@ -62,9 +63,12 @@ export default function KepalaFeederDashboard({ user }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: pettyCash = [] } = useQuery({
-    queryKey: ["kf-petty-cash"],
-    queryFn: () => base44.entities.PettyCash.list("-created_date", 10),
+  // Saldo kas kecil ada di PettyCashLedger, bukan di entitas PettyCash.
+  // PettyCash adalah sisa rancangan lama yang tidak pernah ditulis satu layar
+  // pun, jadi membacanya selalu menghasilkan daftar kosong.
+  const { data: pettyCashLedger = [] } = useQuery({
+    queryKey: ["petty-cash-ledger"],
+    queryFn: () => base44.entities.PettyCashLedger.list("-entry_date", 200),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -81,8 +85,10 @@ export default function KepalaFeederDashboard({ user }) {
   const criticalFeedStock = feedStocks.filter(f => f.current_stock <= (f.minimum_stock || 0));
 
   // Kas kecil saldo
-  const latestPettyCash = pettyCash[0] || null;
-  const pettyCashBalance = latestPettyCash?.balance ?? 0;
+  // Field-nya juga keliru: skema PettyCash menyebutnya `current_balance`,
+  // bukan `balance`, jadi angka yang tampil selalu Rp 0 — di layar orang yang
+  // justru memegang kas kecilnya.
+  const pettyCashBalance = saldoTerkini(pettyCashLedger);
   const targetPoin = settings.min_poin_bulanan || 300;
 
   const keepers = allUsers.filter(u => u.role === "keeper");

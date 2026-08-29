@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Wallet } from "lucide-react";
+import { saldoTerkini } from "@/lib/kasKecil";
 
 export default function PettyCashWidget() {
   const { data: ledger = [] } = useQuery({
@@ -10,7 +11,9 @@ export default function PettyCashWidget() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const saldo = ledger.length > 0 ? Math.round(ledger[0].balance_after || 0) : 0;
+  // `ledger[0]` bukan berarti baris terakhir: entry_date berformat tanggal saja,
+  // jadi urutan antar transaksi di hari yang sama ditentukan basis data.
+  const saldo = saldoTerkini(ledger);
   const isNeg = saldo <= 0;
 
   return (

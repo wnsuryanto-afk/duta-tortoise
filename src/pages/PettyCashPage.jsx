@@ -24,6 +24,7 @@ import LedgerHistory from "@/components/pettycash/LedgerHistory";
 import TopUpRequestForm from "@/components/pettycash/TopUpRequestForm";
 import TopUpRequestList from "@/components/pettycash/TopUpRequestList";
 import DisburseProofDialog from "@/components/pettycash/DisburseProofDialog";
+import { saldoTerkini } from "@/lib/kasKecil";
 
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
@@ -149,14 +150,7 @@ export default function PettyCashPage() {
   const [addProofTarget, setAddProofTarget] = useState(null);
   const [proofPreview, setProofPreview] = useState(null);
 
-  const currentSaldo = useMemo(() => {
-    if (ledger.length === 0) return 0;
-    const sorted = [...ledger].sort((a, b) => {
-      const d = (b.entry_date || "").localeCompare(a.entry_date || "");
-      return d !== 0 ? d : (b.created_date || "").localeCompare(a.created_date || "");
-    });
-    return Math.round(sorted[0]?.balance_after || 0);
-  }, [ledger]);
+  const currentSaldo = useMemo(() => saldoTerkini(ledger), [ledger]);
   const isNeg = currentSaldo <= 0;
 
   const invalidate = () => {

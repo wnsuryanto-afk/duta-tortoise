@@ -45,6 +45,11 @@
       "default": false,
       "description": "true jika full_name, hp_whatsapp, join_date, bank_name, dan bank_account_number semua terisi"
     },
+    "theme_preference": {
+      "type": "string",
+      "enum": ["light", "dark", "system"],
+      "description": "Pilihan tema tampilan. Dibaca dan ditulis ThemeContext, tetapi field-nya hanya ada di salinan skema lama di src/entities/ \u2014 bukan yang dipakai Base44 \u2014 sehingga pilihan temanya tidak pernah tersimpan."
+    },
     "tour_completed": {
       "type": "boolean",
       "default": false

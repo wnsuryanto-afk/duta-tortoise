@@ -46,7 +46,10 @@ function EditProfileDialog({ open, onClose, profile, targetUser, onSaved }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     full_name: targetUser?.full_name || "",
-    phone: profile?.phone || "",
+    // Nama field-nya `hp_whatsapp`. `phone` hanya ada di salinan skema lama
+    // di src/entities/ yang tidak pernah dipakai Base44, jadi menulisnya
+    // tidak menyimpan apa pun. Cadangan ke `phone` untuk baris lama.
+    phone: profile?.hp_whatsapp || profile?.phone || "",
     address: profile?.address || "",
     emergency_contact: profile?.emergency_contact || "",
     bank_name: profile?.bank_name || "",
@@ -61,7 +64,7 @@ function EditProfileDialog({ open, onClose, profile, targetUser, onSaved }) {
     if (targetUser?.id) await base44.entities.User.update(targetUser.id, { full_name: form.full_name });
     if (profile?.id) {
       await base44.entities.UserProfile.update(profile.id, {
-        phone: form.phone, address: form.address,
+        hp_whatsapp: form.phone, address: form.address,
         emergency_contact: form.emergency_contact,
         bank_name: form.bank_name,
         bank_account_number: form.bank_account_number,
@@ -304,6 +307,8 @@ export default function UserDetailPage({ userId, onBack }) {
   const isMe = targetUser?.id === currentUser?.id;
 
   // Warning Letters
+  const noHp = profile?.hp_whatsapp || profile?.phone || "";
+
   const userWarningLetters = warningLetters.filter(l => l.employee_email === userEmail);
   const activeWarnings = suratAktif(userWarningLetters);
   const latestActiveSP = suratTertinggi(userWarningLetters);
@@ -311,7 +316,7 @@ export default function UserDetailPage({ userId, onBack }) {
   // Completeness check
   const checks = [
     { label: "Nama Lengkap", done: !!(targetUser?.full_name) },
-    { label: "Nomor Telepon", done: !!(profile?.phone) },
+    { label: "Nomor Telepon", done: !!(profile?.hp_whatsapp || profile?.phone) },
     { label: "Alamat", done: !!(profile?.address) },
     { label: "Kontak Darurat", done: !!(profile?.emergency_contact) },
     { label: "Nomor KTP", done: !!(profile?.id_number) },
@@ -399,8 +404,8 @@ export default function UserDetailPage({ userId, onBack }) {
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
-              {profile?.phone && (
-                <a href={`https://wa.me/${profile.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+              {noHp && (
+                <a href={`https://wa.me/${noHp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="sm" className="gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
                     <MessageCircle className="w-4 h-4" /> WhatsApp
                   </Button>
@@ -436,10 +441,10 @@ export default function UserDetailPage({ userId, onBack }) {
         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
           <InfoRow label="Nama Lengkap" value={targetUser.full_name} />
           <InfoRow label="Email" value={targetUser.email} />
-          <InfoRow label="Nomor Telepon" value={profile?.phone}
-            href={profile?.phone ? `tel:${profile.phone}` : undefined} />
-          <InfoRow label="WhatsApp" value={profile?.phone}
-            href={profile?.phone ? `https://wa.me/${profile.phone.replace(/\D/g, "")}` : undefined} />
+          <InfoRow label="Nomor Telepon" value={noHp}
+            href={noHp ? `tel:${noHp}` : undefined} />
+          <InfoRow label="WhatsApp" value={noHp}
+            href={noHp ? `https://wa.me/${noHp.replace(/\D/g, "")}` : undefined} />
           <InfoRow label="Nomor KTP" value={maskIdNumber(profile?.id_number)} />
           <InfoRow label="Kontak Darurat" value={profile?.emergency_contact} />
           <div className="col-span-2"><InfoRow label="Alamat" value={profile?.address} /></div>

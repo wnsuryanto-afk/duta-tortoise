@@ -100,7 +100,11 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
   const handleReject = async (kasbon) => {
     const alasan = prompt("Alasan penolakan kasbon:");
     if (alasan === null) return;
-    await base44.entities.Kasbon.update(kasbon.id, { status: "rejected", reject_reason: alasan });
+    // `rejection_reason`, bukan `reject_reason` — yang kedua tidak ada di skema
+    // sehingga alasannya hilang. Halaman Kasbon menulis nama yang benar dan
+    // KasbonCard menampilkannya, jadi penolakan dari layar ini saja yang
+    // alasannya tidak pernah muncul.
+    await base44.entities.Kasbon.update(kasbon.id, { status: "rejected", rejection_reason: alasan });
     qc.invalidateQueries({ queryKey: ["kasbons"] });
   };
 
