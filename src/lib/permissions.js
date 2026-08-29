@@ -43,6 +43,8 @@ export const NAV_ACCESS = {
     "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
     "approval-poin", "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja",
     "pengaturan-whatsapp", "log-whatsapp", "temuan-foto",
+    // Menyalakan otomatisasi menyentuh poin, gaji, dan stok sekaligus — owner saja.
+    "otomatisasi",
   ],
   admin: [
     "dashboard", "tortoise", "breeding", "family-tree", "enclosure",
