@@ -59,27 +59,35 @@ Deno.serve(async (req) => {
     };
     const fotoList: Foto[] = [];
 
+    // Sumber foto adalah MaintenanceLog, BUKAN DailyChecklist.
+    //
+    // Foto bukti kerja disimpan di MaintenanceLog dan hanya sebagian tersalin
+    // ke checklist — 29 Agustus 2026 misalnya: 27 dari 29 log punya foto,
+    // sementara di checklist hanya 1 dari 10 task yang terisi. Membaca dari
+    // checklist berarti membuang hampir seluruh bahan pemeriksaan.
     for (const tanggal of [hariIni, kemarin]) {
-      const checklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: tanggal });
-      for (const cl of checklists || []) {
-        for (const t of cl.completed_tasks || []) {
-          if (!t.photo_url) continue;
-          const judul = String(t.task_title || "");
-          // Prioritaskan foto yang memang memperlihatkan kura atau kandang.
-          const relevan = /kura|mandi|bersih|kandang|timbang|periksa|baby|jemur/i.test(judul);
-          if (!relevan) continue;
-          fotoList.push({
-            url: t.photo_url,
-            sumber: "checklist",
-            tanggal,
-            judul,
-            kura: "",
-            kandang: String(t.notes || ""),
-            email: cl.employee_email,
-            nama: cl.employee_name,
-            checklistId: cl.id,
-          });
-        }
+      const logs = await base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: tanggal });
+      for (const l of logs || []) {
+        if (!l.photo_url) continue;
+        if (l.is_test_data === true) continue;
+        const judul = String(l.item_label || "");
+        const kandang = String(l.enclosure_name || "");
+        // Prioritaskan foto yang memang memperlihatkan kura atau kandang.
+        const relevan =
+          /kura|mandi|bersih|kandang|timbang|periksa|baby|jemur|pakan/i.test(judul) ||
+          /^(kebersihan_kandang_|sop_)/.test(String(l.item_id || ""));
+        if (!relevan) continue;
+        fotoList.push({
+          url: l.photo_url,
+          sumber: "checklist",
+          tanggal,
+          judul,
+          kura: "",
+          kandang: kandang === "Tugas Harian" ? "" : kandang,
+          email: l.done_by_email || "",
+          nama: l.done_by || "",
+          checklistId: "",
+        });
       }
     }
 
