@@ -33,18 +33,20 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
 
   if (!slip) return null;
 
-  // Approve slip: HANYA owner. Tandai dibayar + bukti transfer: owner & manajer.
-  // Admin boleh melihat & generate slip, tetapi TIDAK boleh approve/membayar.
-  const canApprove = role === "owner";
-  const canPay = ["owner", "manajer"].includes(role);
+  // Slip mengikuti alur: draft → diperiksa (admin/manajer/owner) → dibayar (owner).
   // Keeper hanya boleh melihat total yang mereka terima — tanpa rincian
   // "nilai per poin" atau rumus perhitungannya. Cukup baris "Bonus Poin".
   const isKeeperView = !["owner", "admin", "manajer"].includes(role);
+  const canReview = ["owner", "admin", "manajer"].includes(role);
+  const canPay = role === "owner";
   const settings = companySettings || {};
   const conf = statusConfig[slip.status] || statusConfig.draft;
   const StatusIcon = conf.icon;
 
   const isWeekly = slip.period_type === "weekly";
+  // Nilai per poin untuk tampilan: pakai snapshot slip bila ada (slip mingguan baru),
+  // jatuh ke pengaturan untuk slip lama/bulanan yang belum menyimpan snapshot.
+  const nilaiPoinDisplay = slip.nilai_poin_saat_itu || settings.nilai_per_poin || 0;
   const periodLabel = isWeekly && slip.week_start
     ? formatWeekLabel(slip.week_start)
     : (isMonthPeriod(slip.period)
@@ -168,7 +170,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
     setTimeout(() => win.print(), 300);
   };
 
-  const grossTotal = (slip.base_salary || 0) + (slip.kpi_bonus || 0) + (slip.overtime_pay || 0) + (slip.vegetable_pay || 0);
+  const grossTotal = (slip.base_salary || 0) + (slip.kpi_bonus || 0) + (slip.overtime_pay || 0) + (slip.vegetable_pay || 0) + (slip.rempesan_pay || 0);
   const hasOvertime = (slip.overtime_pay || 0) > 0;
   const hasVeg = (slip.vegetable_pay || 0) > 0 || (slip.vegetable_trips || 0) > 0;
   const hasKasbonDed = (slip.kasbon_deduction || 0) > 0;
@@ -245,7 +247,11 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                 </tr>
               )}
               <tr>
-                <td className="p-2 border border-border">{isKeeperView ? "Bonus Poin" : `Bonus Poin (${slip.total_poin || 0} poin)`}</td>
+                <td className="p-2 border border-border">
+                  {isKeeperView
+                    ? "Bonus Poin"
+                    : `Bonus Poin (${slip.total_poin || 0} poin × ${fmt(nilaiPoinDisplay)})`}
+                </td>
                 <td className="p-2 border border-border text-right text-green-600 font-medium">+{fmt(slip.poin_bonus)}</td>
               </tr>
               {hasPoinDed && (
@@ -293,6 +299,19 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                   )}
                 </>
               )}
+              {(slip.rempesan_pay || 0) > 0 || (slip.rempesan_trips || 0) > 0 ? (
+                <tr className="bg-blue-50/30">
+                  <td className="p-2 border border-border">
+                    Rempesan ({slip.rempesan_trips || 0} trip)
+                    {slip.rempesan_dates?.length > 0 && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        · {slip.rempesan_dates.map((d) => format(new Date(d), "d MMM", { locale: id })).join(", ")}
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-2 border border-border text-right text-blue-600 font-medium">+{fmt(slip.rempesan_pay)}</td>
+                </tr>
+              ) : null}
               <tr className="bg-muted/30 font-semibold">
                 <td className="p-2 border border-border">Total Bruto</td>
                 <td className="p-2 border border-border text-right">{fmt(grossTotal)}</td>
@@ -391,12 +410,12 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
           <Button variant="outline" onClick={handlePrint} className="gap-2">
             <Printer className="w-4 h-4" /> Cetak / Export PDF
           </Button>
-          {canApprove && slip.status === "draft" && (
+          {canReview && slip.status === "draft" && (
             <Button variant="outline" onClick={handleApprove} className="gap-2 text-blue-600 border-blue-300 hover:bg-blue-50">
-              <CheckCircle2 className="w-4 h-4" /> Approve
+              <CheckCircle2 className="w-4 h-4" /> Tandai Diperiksa
             </Button>
           )}
-          {canPay && slip.status !== "paid" && (
+          {canPay && slip.status === "approved" && (
             <Button onClick={handleOpenPayDialog} className="gap-2">
               <CheckCircle2 className="w-4 h-4" /> Tandai Dibayar
             </Button>

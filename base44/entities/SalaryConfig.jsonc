@@ -14,19 +14,28 @@
     },
     "base_salary": {
       "type": "number",
-      "default": 0
+      "default": 70000,
+      "description": "Tarif harian (upah per hari hadir) untuk peran harian"
     },
     "overtime_rate_per_hour": {
       "type": "number",
-      "default": 0
+      "default": 10000,
+      "description": "Tarif lembur per jam"
     },
     "vegetable_rate_per_trip": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "(Legacy) tarif upah ambil sayur per trip \u2014 kini digantikan rempesan_rate_per_trip"
+    },
+    "rempesan_rate_per_trip": {
+      "type": "number",
+      "default": 30000,
+      "description": "Tarif upah per trip rempesan (bawaan Rp 30.000)"
     },
     "point_value": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "(Legacy) nilai poin lama \u2014 kini memakai CompanySettings.nilai_per_poin"
     },
     "absent_deduction": {
       "type": "number",

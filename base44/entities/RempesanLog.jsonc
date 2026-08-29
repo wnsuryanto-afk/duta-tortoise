@@ -1,0 +1,71 @@
+{
+  "name": "RempesanLog",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nama keeper (snapshot) \u2014 tampilan utama tetap di-resolve dari User"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Email keeper yang melakukan rempesan"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal rempesan dilakukan"
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "Berat hasil rempesan dalam kilogram (wajib)"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto hasil timbangan/rempesan (wajib)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan singkat (opsional)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Status approval: pending (menunggu owner/manajer), approved (masuk slip gaji), rejected"
+    },
+    "trip_value": {
+      "type": "number",
+      "default": 0,
+      "description": "Nilai rupiah trip ini (diisi dari SalaryConfig.rempesan_rate_per_trip saat disetujui)"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "rejection_reason": {
+      "type": "string"
+    },
+    "slip_id": {
+      "type": "string",
+      "description": "ID slip gaji mingguan tempat trip ini masuk (anti-dobel)"
+    },
+    "recorded_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "employee_email",
+    "date",
+    "weight_kg"
+  ]
+}

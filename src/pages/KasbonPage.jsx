@@ -28,11 +28,14 @@ export default function KasbonPage() {
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const isAdmin = ["owner", "admin", "manajer"].includes(role);
+  const isOwner = role === "owner";
   const canApply = !["owner", "investor", "kicked"].includes(role);
 
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [deductTarget, setDeductTarget] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
   // Employee self-apply form state
@@ -44,7 +47,7 @@ export default function KasbonPage() {
     queryFn: () => base44.entities.Kasbon.list("-request_date", 200),
   });
 
-  const { data: users = [] } = useActiveUsers({ enabled: isAdmin });
+  const { data: users = [], isLoading: usersLoading } = useActiveUsers({ enabled: isAdmin });
 
   // Role-based filtering
   const visibleKasbons = useMemo(() => {
@@ -87,18 +90,33 @@ export default function KasbonPage() {
     toast.success("Kasbon disetujui");
   };
 
-  const handleReject = async (kasbon) => {
-    if (!confirm("Tolak pengajuan kasbon ini?")) return;
-    await base44.entities.Kasbon.update(kasbon.id, { status: "rejected" });
-    await logActivity({
-      action: "reject",
-      entity_type: "Kasbon",
-      entity_id: kasbon.id,
-      entity_name: kasbon.employee_name,
-      changes_summary: "Kasbon ditolak",
-    });
-    qc.invalidateQueries({ queryKey: ["kasbons"] });
-    toast.success("Kasbon ditolak");
+  const handleReject = (kasbon) => {
+    setRejectTarget(kasbon);
+    setRejectReason("");
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    if (!rejectReason.trim()) { toast.error("Alasan penolakan wajib diisi"); return; }
+    try {
+      await base44.entities.Kasbon.update(rejectTarget.id, {
+        status: "rejected",
+        rejection_reason: rejectReason.trim(),
+      });
+      await logActivity({
+        action: "reject",
+        entity_type: "Kasbon",
+        entity_id: rejectTarget.id,
+        entity_name: rejectTarget.employee_name,
+        changes_summary: `Kasbon ditolak: ${rejectReason.trim()}`,
+      });
+      qc.invalidateQueries({ queryKey: ["kasbons"] });
+      toast.success("Kasbon ditolak");
+      setRejectTarget(null);
+      setRejectReason("");
+    } catch (err) {
+      toast.error(err.message || "Gagal menolak kasbon");
+    }
   };
 
   const handleApplySubmit = async (e) => {
@@ -266,6 +284,7 @@ export default function KasbonPage() {
                 key={k.id}
                 kasbon={k}
                 isAdmin={isAdmin}
+                isOwner={isOwner}
                 onApprove={handleApprove}
                 onReject={handleReject}
                 onDeduct={setDeductTarget}
@@ -278,7 +297,7 @@ export default function KasbonPage() {
 
       {/* Admin create form */}
       {showAdminForm && (
-        <KasbonForm users={users} onClose={() => setShowAdminForm(false)} />
+        <KasbonForm users={users} usersLoading={usersLoading} onClose={() => setShowAdminForm(false)} />
       )}
 
       {/* Deduction dialog */}
@@ -332,6 +351,33 @@ export default function KasbonPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject dialog (owner only) */}
+      <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tolak Pengajuan Kasbon</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Tolak pengajuan <strong>{rejectTarget?.employee_name}</strong> ({fmt(rejectTarget?.amount || 0)})?
+            </p>
+            <div className="space-y-1.5">
+              <Label>Alasan penolakan (wajib)</Label>
+              <Textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Alasan akan ditampilkan ke karyawan"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Batal</Button>
+              <Button type="button" variant="destructive" onClick={confirmReject}>Tolak Kasbon</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

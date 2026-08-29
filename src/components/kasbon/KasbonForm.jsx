@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatRole } from "@/lib/permissions";
 
-export default function KasbonForm({ users, onClose }) {
+export default function KasbonForm({ users, usersLoading, onClose }) {
   const { user } = useCurrentUser();
   const [form, setForm] = useState({
     employee_email: "",
@@ -97,16 +97,24 @@ export default function KasbonForm({ users, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-1.5">
             <Label>Karyawan *</Label>
-            <Select value={form.employee_email} onValueChange={(v) => setForm(p => ({ ...p, employee_email: v }))}>
-              <SelectTrigger><SelectValue placeholder="Pilih karyawan" /></SelectTrigger>
-              <SelectContent>
-                {eligibleUsers.map(u => (
-                  <SelectItem key={u.id} value={u.email}>
-                    {u.full_name || u.email} · {formatRole(u.role)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {usersLoading ? (
+              <div className="text-sm text-muted-foreground py-2">Memuat daftar karyawan...</div>
+            ) : eligibleUsers.length === 0 ? (
+              <div className="text-sm text-amber-700 py-2 bg-amber-50 border border-amber-200 rounded-md px-3">
+                Tidak ada karyawan yang bisa dipilih. Periksa Manajemen User untuk memastikan ada karyawan aktif (keeper/kepala feeder/admin/manajer).
+              </div>
+            ) : (
+              <Select value={form.employee_email} onValueChange={(v) => setForm(p => ({ ...p, employee_email: v }))}>
+                <SelectTrigger><SelectValue placeholder="Pilih karyawan" /></SelectTrigger>
+                <SelectContent>
+                  {eligibleUsers.map(u => (
+                    <SelectItem key={u.id} value={u.email}>
+                      {u.full_name || u.email} · {formatRole(u.role)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-1.5">

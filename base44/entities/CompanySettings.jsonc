@@ -68,6 +68,16 @@
       "default": 500000,
       "description": "Nilai minimum stok keluar yang memerlukan approval (Rp)"
     },
+    "auto_overtime_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Hitung lembur otomatis dari jam check-in/out. Bila false, jam lembur diisi manual owner/admin di slip."
+    },
+    "poin_bonus_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Aktifkan bonus poin menjadi uang. Bawaan MATI \u2014 poin tetap dicatat sebagai pencapaian tetapi tidak dibayar sampai dinyalakan."
+    },
     "test_mode_active": {
       "type": "boolean",
       "default": false,
