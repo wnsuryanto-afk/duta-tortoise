@@ -575,10 +575,10 @@ export default function BreedingAndEggs() {
               {incubators.map(inc => {
                 // KALKULASI REAL-TIME DARI BREEDING
                 // MENGGUNAKAN HELPER FUNCTIONS DARI breedingUtils
-                const calculatedEggs = calculateIncubatorEggs(inc.name, breedings);
-                const clutches = getClutchesInIncubator(inc.name, breedings);
-                const isFull = isIncubatorFull(inc.name, inc.capacity_eggs, breedings);
-                const isNearFull = isIncubatorNearFull(inc.name, inc.capacity_eggs, breedings);
+                const calculatedEggs = calculateIncubatorEggs(inc.name, breedings, inc.id);
+                const clutches = getClutchesInIncubator(inc.name, breedings, inc.id);
+                const isFull = isIncubatorFull(inc.name, inc.capacity_eggs, breedings, inc.id);
+                const isNearFull = isIncubatorNearFull(inc.name, inc.capacity_eggs, breedings, inc.id);
                 const pct = inc.capacity_eggs && inc.capacity_eggs > 0 
                   ? Math.min(100, Math.round((calculatedEggs / inc.capacity_eggs) * 100)) 
                   : 0;

@@ -43,6 +43,10 @@
     "egg_weight_grams": {
       "type": "number"
     },
+    "incubator_id": {
+      "type": "string",
+      "description": "Inkubator tempat telur ini dierami. Tanpa ini, satu-satunya penghubung clutch ke inkubator adalah namanya \u2014 ganti nama inkubatornya dan seluruh clutch di dalamnya lepas tanpa suara."
+    },
     "incubator_name": {
       "type": "string",
       "description": "Nama inkubator (diambil dari entity Incubator)"

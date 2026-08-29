@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { hatchRateClutch } from "@/lib/hasilInkubasi";
 
 const EGG_STATUS = [
   { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-gray-100",  border: "border-gray-400",  text: "text-gray-700" },
@@ -638,8 +639,10 @@ export default function EggGrid({ breeding, onRefresh }) {
     const fertileCount = records.filter(e => e.status === "fertile").length;
     const infertilCount = records.filter(e => e.status === "infertil").length;
     const gagalCount = records.filter(e => e.status === "gagal").length;
-    const total = records.length;
-    const hatchRate = total > 0 ? Math.round((menetasCount / total) * 100) : 0;
+    // Penyebutnya lewat satu fungsi bersama. Dialog penetasan dulu membaginya
+    // dengan `egg_count`, EggGrid dengan jumlah baris — untuk clutch yang kedua
+    // angkanya berselisih, hasilnya bergantung tombol mana yang ditekan.
+    const hatchRate = hatchRateClutch(breeding, menetasCount);
 
     await base44.entities.Breeding.update(breeding.id, {
       status: "selesai",

@@ -73,3 +73,84 @@ export function ringkasProduksi(clutches = []) {
     hatchRate: hatchRate(clutches),
   };
 }
+
+/**
+ * Jumlah telur sebuah clutch — SATU jawaban untuk pertanyaan yang selama ini
+ * dijawab dua kali dengan angka berbeda.
+ *
+ * Sebuah clutch menyimpan jumlah telurnya di dua tempat: `egg_count` yang
+ * diketik pengguna, dan `egg_records` yang berisi satu baris per telur beserta
+ * statusnya. Keduanya bisa berselisih, dan aplikasi ini sudah tahu: EggGrid
+ * menampilkan lencana "Data telur perlu dicek ulang" saat keduanya beda.
+ *
+ * Selisihnya lahir di formulir clutch. `egg_records` hanya dibuat bila masih
+ * kosong, jadi mengubah `egg_count` pada clutch yang sudah ada tidak pernah
+ * ikut mengubah barisnya. Isi 10 telur, lalu koreksi jadi 12, dan barisnya
+ * tetap 10 selamanya.
+ *
+ * Yang dipakai adalah jumlah BARIS bila barisnya ada. Alasannya: status
+ * "menetas" melekat pada baris, bukan pada `egg_count`. Membagi jumlah telur
+ * menetas dengan angka yang bukan asal-usulnya menghasilkan persentase yang
+ * tidak merujuk apa pun — bisa di atas 100% bila `egg_count` dikoreksi ke
+ * bawah.
+ */
+export function jumlahTelurClutch(clutch) {
+  const baris = clutch?.egg_records;
+  if (Array.isArray(baris) && baris.length > 0) return baris.length;
+  return Number(clutch?.egg_count) || 0;
+}
+
+/**
+ * Persentase keberhasilan satu clutch.
+ *
+ * Dua tombol menutup sebuah clutch — "Selesaikan Inkubasi" di EggGrid dan
+ * dialog penetasan — dan keduanya dulu menghitung dengan penyebut yang
+ * berbeda: EggGrid memakai jumlah baris, dialog penetasan memakai `egg_count`.
+ * Untuk clutch yang kedua angkanya berselisih, hasil yang tersimpan karena itu
+ * bergantung pada tombol mana yang ditekan.
+ */
+export function hatchRateClutch(clutch, menetas) {
+  const telur = jumlahTelurClutch(clutch);
+  const jadi = Number(
+    menetas !== undefined ? menetas : clutch?.hatched_count
+  ) || 0;
+  return telur > 0 ? Math.round((jadi / telur) * 100) : 0;
+}
+
+/**
+ * Selaraskan `egg_records` dengan `egg_count` yang baru.
+ *
+ * Menambah telur berarti menambahkan baris "belum_dicek" di belakang.
+ * Mengurangi telur hanya boleh membuang baris yang BELUM dicek — baris yang
+ * sudah punya hasil adalah catatan telur yang benar-benar ada, dan
+ * membuangnya menghapus kejadian yang sudah tercatat. Bila pengurangan tidak
+ * bisa dipenuhi tanpa mengorbankan baris berhasil, barisnya dibiarkan lebih
+ * banyak dan lencana peringatan di EggGrid tetap muncul.
+ */
+export function selaraskanEggRecords(eggRecords, eggCount) {
+  const baris = Array.isArray(eggRecords) ? [...eggRecords] : [];
+  const target = Number(eggCount) || 0;
+  if (target === baris.length) return baris;
+
+  if (target > baris.length) {
+    for (let i = baris.length; i < target; i += 1) {
+      baris.push({
+        egg_number: i + 1,
+        status: "belum_dicek",
+        check_date: null,
+        hatch_date: null,
+        notes: "",
+      });
+    }
+    return baris;
+  }
+
+  // Buang dari belakang, hanya yang belum dicek.
+  const hasil = [...baris];
+  while (hasil.length > target) {
+    const terakhir = hasil[hasil.length - 1];
+    if (terakhir?.status && terakhir.status !== "belum_dicek") break;
+    hasil.pop();
+  }
+  return hasil.map((b, i) => ({ ...b, egg_number: i + 1 }));
+}

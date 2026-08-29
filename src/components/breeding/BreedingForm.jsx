@@ -14,6 +14,8 @@ import { id as idLocale } from "date-fns/locale";
 import { downloadLabel, generateKodeLabel } from "@/lib/labelUtils";
 import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
 import { recoveryDaysAgo } from "@/lib/parentHealthUtils";
+import { selaraskanEggRecords } from "@/lib/hasilInkubasi";
+import { calculateIncubatorEggs as hitungTelurInkubator } from "@/lib/breedingUtils";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -156,30 +158,33 @@ export default function BreedingForm({ open, onClose, editData }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // KALKULASI REAL-TIME telur di inkubator dari Breeding
-  const calculateIncubatorEggs = (incubatorName) => {
-    // Ambil semua breeding yang sedang aktif (bertelur/inkubasi) di inkubator ini
-    return breedings
-      .filter(b => b.incubator_name === incubatorName && (b.status === "bertelur" || b.status === "inkubasi"))
-      .reduce((sum, b) => sum + (b.egg_count || 0), 0);
-  };
+  // Salinan ketiga dari perhitungan yang sama dulu ada di sini. Sekarang
+  // memakai pustaka bersama, supaya formulir dan halaman inkubator tidak bisa
+  // lagi menjawab "berapa telur di inkubator ini" dengan cara yang berbeda.
+  const hitungTelur = (nama, id) => hitungTelurInkubator(nama, breedings, id);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     setSaving(true);
     const eggCount = form.egg_count ? Number(form.egg_count) : 0;
-    // Auto-generate egg_records jika belum ada
-    const existingRecords = form.egg_records || [];
-    const egg_records = existingRecords.length > 0 ? existingRecords :
-      eggCount > 0 ? Array.from({ length: eggCount }, (_, i) => ({
-        egg_number: i + 1, status: "belum_dicek", check_date: null, hatch_date: null, notes: ""
-      })) : [];
+    // Baris telur diselaraskan dengan jumlah telur, bukan hanya dibuat saat
+    // masih kosong. Dengan aturan lama, mengoreksi jumlah telur pada clutch
+    // yang sudah ada tidak pernah ikut mengubah barisnya: isi 10 lalu koreksi
+    // jadi 12, dan barisnya tetap 10 selamanya. Dari situlah lencana "Data
+    // telur perlu dicek ulang" muncul, dan dari situ pula persentase
+    // keberhasilannya jadi bergantung tombol mana yang menutup clutch-nya.
+    //
+    // Pengurangan hanya membuang baris yang belum dicek — baris yang sudah
+    // punya hasil adalah catatan telur yang benar-benar ada.
+    const egg_records = selaraskanEggRecords(form.egg_records, eggCount);
 
     const data = {
       ...form,
       egg_count: eggCount || undefined,
       egg_records,
+      // Tautan ke inkubatornya disimpan sebagai id, bukan hanya namanya.
+      incubator_id: incubators.find(i => i.name === form.incubator_name)?.id || undefined,
       incubation_temp: form.incubation_temp ? Number(form.incubation_temp) : undefined,
       tray_number: form.tray_number ? Number(form.tray_number) : undefined,
       season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
@@ -328,7 +333,7 @@ export default function BreedingForm({ open, onClose, editData }) {
                 <SelectTrigger className={errors.incubator_name ? "border-red-500" : ""}><SelectValue placeholder="Pilih inkubator..." /></SelectTrigger>
                 <SelectContent>
                   {incubators.filter(i => i.is_active !== false).map(inc => {
-                    const eggs = calculateIncubatorEggs(inc.name);
+                    const eggs = hitungTelur(inc.name, inc.id);
                     return (
                       <SelectItem key={inc.id} value={inc.name}>
                         {inc.name} ({eggs}/{inc.capacity_eggs || "∞"})
@@ -340,7 +345,7 @@ export default function BreedingForm({ open, onClose, editData }) {
               {errors.incubator_name && <p className="text-xs text-red-500">{errors.incubator_name}</p>}
               {form.incubator_name && (() => {
                 const inc = incubators.find(i => i.name === form.incubator_name);
-                const calculatedEggs = calculateIncubatorEggs(form.incubator_name);
+                const calculatedEggs = hitungTelur(form.incubator_name, inc?.id);
                 if (inc && inc.capacity_eggs && calculatedEggs >= inc.capacity_eggs) {
                   return (
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">

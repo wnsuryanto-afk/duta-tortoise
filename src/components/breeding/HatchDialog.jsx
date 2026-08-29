@@ -12,6 +12,7 @@ import { Egg, Loader2, Baby, CheckCircle2, ExternalLink, AlertTriangle, ChevronL
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
+import { hatchRateClutch } from "@/lib/hasilInkubasi";
 
 function generateBreedingCode(maleN, femaleN, date) {
   const m = (maleN || "JT").substring(0, 3).toUpperCase().replace(/\s/g, "");
@@ -201,13 +202,15 @@ export default function HatchDialog({ open, onClose, breeding }) {
     // Hatch rate ikut disimpan. Sebelumnya hanya tombol "Selesaikan Inkubasi"
     // yang mengisinya, jadi clutch yang ditutup dari sini tidak pernah
     // menampilkan angka keberhasilannya di kartu mana pun.
-    const jumlahTelur = Number(breeding.egg_count) || 0;
     await base44.entities.Breeding.update(breeding.id, {
       hatched_count: hatchedCount,
       failed_count: Number(failed) || 0,
       status: "menetas",
       hatch_date: hatchDate,
-      hatch_rate: jumlahTelur > 0 ? Math.round((hatchedCount / jumlahTelur) * 100) : 0,
+      // Penyebutnya lewat fungsi yang sama dengan "Selesaikan Inkubasi".
+      // Membaginya dengan `egg_count` saja bisa menghasilkan angka di atas
+      // 100% bila jumlah telurnya pernah dikoreksi ke bawah.
+      hatch_rate: hatchRateClutch(breeding, hatchedCount),
     });
 
     let newBabies = [];
