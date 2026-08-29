@@ -21,7 +21,14 @@ import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
-export default function RingkasanPagi() {
+/**
+ * @param {boolean} tampilkanArah  Sertakan lapis "Arah Minggu Ini" di sini.
+ *   Beranda pemilik mematikannya dan memasangnya sendiri di balik Analisis
+ *   Mendalam: tren delapan minggu adalah peringatan DINI, bukan pekerjaan pagi
+ *   ini, dan layar pertama disediakan untuk yang dikerjakan hari ini. Beranda
+ *   admin tidak punya tombol semacam itu, jadi bawaannya tetap menyertakan.
+ */
+export default function RingkasanPagi({ tampilkanArah = true }) {
   const now = new Date();
   const today = format(now, "yyyy-MM-dd");
   const yesterday = format(subDays(now, 1), "yyyy-MM-dd");
@@ -179,7 +186,7 @@ export default function RingkasanPagi() {
       <KeputusanHariIni />
 
       {/* 0.5 LAPIS ARAH — peringatan dini, tidak menuntut tindakan hari ini */}
-      <ArahMingguIni />
+      {tampilkanArah && <ArahMingguIni />}
 
       {/* HEADER */}
       <div className="pt-1">

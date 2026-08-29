@@ -29,6 +29,7 @@ import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
 import GrafikUang from "@/components/ui/grafik-uang";
+import ArahMingguIni from "@/components/dashboard/ArahMingguIni";
 
 // ─── Helpers ───────────────────────────────────────
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -693,7 +694,7 @@ export default function OwnerDashboard({ user }) {
       />
 
       {/* ── RINGKASAN PAGI ── */}
-      <RingkasanPagi />
+      <RingkasanPagi tampilkanArah={false} />
 
       {/* ── PERINGATAN KLUSTER PENYAKIT ── */}
       <DiseaseClusterWarningCard canDismiss />
@@ -845,6 +846,13 @@ export default function OwnerDashboard({ user }) {
         </div>
       </div>
 
+
+      {/* Lapis arah dipindahkan ke sini dari Ringkasan Pagi: tren delapan
+          minggu memberi peringatan DINI — kura sakit baru, biaya pakan, telur
+          baru — dan tidak satu pun menuntut tindakan pagi ini. Beranda admin
+          tetap menampilkannya di tempat semula karena tidak punya tombol
+          seperti ini. */}
+      <ArahMingguIni />
 
       {/* ── CATATAN OTOMATIS ── */}
       {catatan.length > 0 && (
