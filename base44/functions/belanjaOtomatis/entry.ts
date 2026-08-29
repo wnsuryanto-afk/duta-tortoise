@@ -79,15 +79,41 @@ Deno.serve(async (req) => {
     };
 
     // 1. Stok pakan.
+    //
+    // Cara belanja mengikuti asal pakannya — satu aturan untuk semua justru
+    // menghasilkan pesanan yang tidak masuk akal. Rumput gajah 180 kg/hari
+    // dengan aturan "beli" akan muncul sebagai pesanan 2,5 ton tiap dua pekan,
+    // padahal yang dibutuhkan bukan uang melainkan orang yang memotongnya.
     for (const f of pakan || []) {
-      // Pakan yang dipanen atau dicari sendiri tidak pernah masuk daftar
-      // belanja. Rumput gajah 180 kg/hari, misalnya, akan muncul sebagai
-      // pesanan 2,5 ton tiap dua minggu — padahal yang dibutuhkan bukan uang,
-      // melainkan orang yang memotongnya.
-      if (f.sumber_sendiri === true) continue;
+      const sumber = f.sumber_pakan || (f.sumber_sendiri === true ? "sendiri" : "beli");
+
+      // Dipanen sendiri, atau hanya dipakai saat kebetulan ada: tidak pernah
+      // dibeli otomatis dan tidak pernah dianggap "habis".
+      if (sumber === "sendiri" || sumber === "insidentil") continue;
+
       const stok = Number(f.current_stock || 0);
       const ideal = Number(f.daily_ideal || 0);
       const min = Number(f.minimum_stock || 0);
+
+      // Campuran: dicari sendiri lebih dulu. Membeli hanya saat pencarian tidak
+      // menutup kebutuhan — ditandai oleh stok yang menyentuh batas minimum —
+      // dan secukupnya saja (5 hari), karena sisanya tetap datang dari kebun.
+      if (sumber === "campuran") {
+        const batas = min > 0 ? min : ideal * 2;
+        if (batas <= 0 || stok > batas) continue;
+        const perlu = ideal > 0 ? ideal * 5 - stok : Math.max(batas * 2 - stok, batas);
+        if (perlu <= 0) continue;
+        await tambah({
+          nama: f.name,
+          jumlah: perlu,
+          satuan: f.unit || "kg",
+          sku: f.sku || "",
+          hargaPerUnit: Number(f.price_per_unit || 0),
+          alasan: "hasil cari sendiri tidak menutup kebutuhan",
+          segera: stok <= 0,
+        });
+        continue;
+      }
 
       if (ideal > 0) {
         const sisaHari = stok / ideal;
