@@ -250,6 +250,11 @@
       "type": "string",
       "description": "A5 \u2014 Minggu terakhir pengingat dikirim (tanggal awal minggu)"
     },
+    "task_kondisional_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "S10 \u2014 Nyalakan/matikan SOP task yang hanya berlaku saat keadaannya ada (cek karantina, catat inkubator)"
+    },
     "updated_at": {
       "type": "string",
       "format": "date-time"
