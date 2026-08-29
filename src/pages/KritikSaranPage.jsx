@@ -80,16 +80,38 @@ export default function KritikSaranPage() {
         submit_date: new Date().toISOString(),
         status: "baru",
       });
-      // Notif ke owner & manajer
-      await base44.entities.Notification.create({
-        recipient_role: "owner",
-        title: `💬 ${TYPE_CONFIG[form.type]?.label} Baru Masuk`,
-        message: `${form.title || form.content.slice(0, 60)} — oleh ${user.full_name}`,
-        type: "info",
-        category: "lainnya",
-        is_read: false,
-        action_url: "/kritik-saran",
-      });
+      // Notif ke owner & manajer.
+      //
+      // Sebelumnya baris ini hanya mengisi `recipient_role: "owner"` tanpa
+      // `recipient_email`. Kedua layar yang membaca notifikasi — lonceng dan
+      // halaman Notifikasi — menyaringnya dengan
+      // filter({ recipient_email: user.email }), jadi catatan tanpa email
+      // tidak pernah cocok dengan siapa pun: setiap masukan yang dikirim
+      // membuat notifikasi yang TIDAK PERNAH terlihat oleh siapa pun.
+      //
+      // Satu notifikasi per orang, seperti yang sudah dilakukan layar lain.
+      try {
+        const semuaUser = await base44.entities.User.list();
+        const penerima = semuaUser.filter((u) => ["owner", "manajer"].includes(u.role));
+        await Promise.all(
+          penerima.map((u) =>
+            base44.entities.Notification.create({
+              recipient_email: u.email,
+              recipient_role: u.role,
+              title: `💬 ${TYPE_CONFIG[form.type]?.label} Baru Masuk`,
+              message: `${form.title || form.content.slice(0, 60)} — oleh ${user.full_name}`,
+              type: "info",
+              category: "lainnya",
+              is_read: false,
+              action_url: "/kritik-saran",
+              created_at: new Date().toISOString(),
+            })
+          )
+        );
+      } catch {
+        // Masukannya sudah tersimpan. Gagal memberi tahu tidak boleh membuat
+        // pengirim mengira masukannya hilang.
+      }
       qc.invalidateQueries({ queryKey: ["feedback-suggestions"] });
       setForm(EMPTY_FORM);
       toast.success("Terima kasih! Masukan kamu sudah dikirim.");

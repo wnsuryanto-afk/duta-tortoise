@@ -10,10 +10,23 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const hourUTC = now.getUTCHours();
-    // UTC+7 = jam lokal, 15:00 WIB = 08:00 UTC
-    const isAfter15WIB = hourUTC >= 8;
+
+    // Tanggal dan jam dihitung dalam WIB, bukan UTC.
+    //
+    // `now.toISOString()` memberi tanggal UTC. Antara 00:00 dan 06:59 WIB,
+    // tanggal UTC masih HARI KEMARIN — jadi kepala feeder yang membuka
+    // aplikasi pagi buta memeriksa checklist kemarin, dan checklist yang baru
+    // dikirim pagi itu tidak terlihat sama sekali.
+    //
+    // Jamnya juga: `hourUTC >= 8` benar dari 15:00 WIB sampai 06:59 WIB
+    // keesokan harinya, jadi pengingat "sudah lewat jam 15:00" masih menyala
+    // sepanjang malam. Dihitung dalam WIB, ia berhenti sendiri saat tengah
+    // malam ketika tanggalnya berganti.
+    //
+    // Pola yang sama dipakai sendDailyApprovalReminder dan sendDailySummary.
+    const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const today = wib.toISOString().split("T")[0];
+    const isAfter15WIB = wib.getUTCHours() >= 15;
 
     const results = [];
 
