@@ -38,8 +38,11 @@ function keMenit(hm) {
 }
 
 /** Apakah task ini terjadwal hari ini? Mengikuti aturan yang sama dengan daftar tugas. */
-function terjadwalHariIni(t, hariNomor, tanggalNomor) {
+function terjadwalHariIni(t, hariNomor, tanggalNomor, bulanNomor) {
   if (t.is_active !== true) return false;
+  // Task musiman / dua-bulanan hanya berlaku di bulan yang ditentukan.
+  const bulanAktif = Array.isArray(t.bulan_aktif) ? t.bulan_aktif : [];
+  if (bulanAktif.length > 0 && !bulanAktif.includes(bulanNomor)) return false;
   if (t.frequency === "harian") return true;
   if (t.frequency === "mingguan") {
     const hari = Array.isArray(t.weekly_days) ? t.weekly_days : [];
@@ -145,13 +148,14 @@ export default function BonusBulanIni({ user }) {
     if (!sopTasks.length) return [];
     const hariNomor = now.getDay();
     const tanggalNomor = now.getDate();
+    const bulanNomor = now.getMonth() + 1;
 
     // Task per-kandang sengaja tidak dihitung di sini: jumlahnya bergantung
     // pada berapa kandang yang tersisa, dan angka setengah benar soal poin
     // hilang lebih berbahaya daripada tidak ada angka sama sekali.
     return sopTasks
       .filter((t) => t.task_scope !== "per_kandang")
-      .filter((t) => terjadwalHariIni(t, hariNomor, tanggalNomor))
+      .filter((t) => terjadwalHariIni(t, hariNomor, tanggalNomor, bulanNomor))
       .filter((t) => {
         const batas = keMenit(t.deadline_time);
         return batas !== null && menitSekarang > batas;
