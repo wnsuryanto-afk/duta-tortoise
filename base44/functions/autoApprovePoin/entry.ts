@@ -4,6 +4,8 @@ import {
   wibTanggal,
   tanggalMundur,
   sopIdDariTaskId,
+  itemIdDariTaskId,
+  petaFotoHarian,
 } from "../../shared/otomatis.ts";
 
 /**
@@ -66,6 +68,26 @@ Deno.serve(async (req) => {
       judulSOP[t.id] = t.title || "";
     }
 
+    // Kebersihan per kandang dicatat sebagai item tersendiri
+    // ("kebersihan_kandang_N2"), bukan sebagai sop_<id>. Kewajiban fotonya
+    // mengikuti task induk "Pembersihan kandang".
+    const kebersihanWajibFoto = (sopTasks || []).some(
+      (t: any) =>
+        t.is_active === true &&
+        t.task_scope === "per_kandang" &&
+        /pembersihan kandang/i.test(t.title || "") &&
+        t.require_photo === true,
+    );
+
+    // Foto bukti kerja hidup di MaintenanceLog dan hanya sebagian tersalin ke
+    // checklist. Tanpa peta ini, checklist yang fotonya lengkap tetap dituduh
+    // "dicentang tanpa foto" dan tidak pernah disetujui otomatis.
+    const petaFoto = new Map<string, string>();
+    for (const tgl of [hariIni, kemarin]) {
+      const p = await petaFotoHarian(base44, tgl);
+      for (const [k, v] of p) petaFoto.set(k, v);
+    }
+
     const sekarang = Date.now();
     const disetujui: string[] = [];
     const ditahan: { nama: string; tanggal: string; alasan: string[] }[] = [];
@@ -99,8 +121,14 @@ Deno.serve(async (req) => {
         if (t.photo_age_warning || t.photo_time_warning) peringatanFoto++;
 
         if (cekFoto) {
+          const itemId = itemIdDariTaskId(t.task_id);
+          const adaFoto =
+            !!t.photo_url || petaFoto.has(`${cl.employee_email}|${itemId}`);
           const sopId = sopIdDariTaskId(t.task_id);
-          if (sopId && wajibFoto[sopId] === true && !t.photo_url) tanpaFoto++;
+          const perluFoto = sopId
+            ? wajibFoto[sopId] === true
+            : itemId.startsWith("kebersihan_kandang_") && kebersihanWajibFoto;
+          if (perluFoto && !adaFoto) tanpaFoto++;
         }
       }
 
