@@ -7,6 +7,8 @@ import {
   sudahWaktunya,
   userPerRole,
   sopIdDariTaskId,
+  itemIdDariTaskId,
+  petaFotoHarian,
 } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
 
@@ -74,8 +76,21 @@ Deno.serve(async (req) => {
     }
 
     // 2. Mutu bukti kerja.
+    //
+    // Foto disimpan di MaintenanceLog dan hanya sebagian tersalin ke checklist.
+    // Membaca dari checklist saja menghasilkan laporan "dicentang tanpa foto"
+    // untuk pekerjaan yang fotonya sebenarnya ada — satu-dua laporan palsu cukup
+    // untuk membuat seluruh ringkasan ini berhenti dipercaya.
+    const petaFoto = await petaFotoHarian(base44, hariIni);
     const wajibFoto: Record<string, boolean> = {};
     for (const t of sopTasks || []) wajibFoto[t.id] = t.require_photo === true;
+    const kebersihanWajibFoto = (sopTasks || []).some(
+      (t: any) =>
+        t.is_active === true &&
+        t.task_scope === "per_kandang" &&
+        /pembersihan kandang/i.test(t.title || "") &&
+        t.require_photo === true,
+    );
 
     let aiTolak = 0;
     let aiGagal = 0;
@@ -86,8 +101,13 @@ Deno.serve(async (req) => {
         if (t.status === "skipped_no_stock") continue;
         if (t.ai_verified === false) { aiTolak++; namaBermasalah.add(cl.employee_name); }
         if (t.ai_status === "gagal") aiGagal++;
+        const itemId = itemIdDariTaskId(t.task_id);
+        const adaFoto = !!t.photo_url || petaFoto.has(`${cl.employee_email}|${itemId}`);
         const sopId = sopIdDariTaskId(t.task_id);
-        if (sopId && wajibFoto[sopId] === true && !t.photo_url) {
+        const perluFoto = sopId
+          ? wajibFoto[sopId] === true
+          : itemId.startsWith("kebersihan_kandang_") && kebersihanWajibFoto;
+        if (perluFoto && !adaFoto) {
           tanpaFoto++;
           namaBermasalah.add(cl.employee_name);
         }
