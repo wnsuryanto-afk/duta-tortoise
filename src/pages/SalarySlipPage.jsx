@@ -20,7 +20,7 @@ import AlurGaji from "@/components/salary/AlurGaji";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 
 const statusConfig = {
-  draft:    { label: "Draft",     color: "bg-gray-100 text-gray-700" },
+  draft:    { label: "Draft",     color: "bg-muted text-foreground" },
   approved: { label: "Disetujui", color: "bg-blue-100 text-blue-700" },
   paid:     { label: "Dibayar",   color: "bg-green-100 text-green-700" },
 };

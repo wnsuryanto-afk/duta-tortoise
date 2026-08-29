@@ -50,7 +50,7 @@ function WarningLetterTab() {
                   <p className="font-semibold">{l.employee_name}</p>
                   {l.acknowledged && <Badge className="bg-green-100 text-green-700 border-0 text-xs">✓ Diakui</Badge>}
                   {!isActive
-                    ? <Badge className="bg-gray-100 text-gray-500 border-0 text-xs">Kadaluarsa</Badge>
+                    ? <Badge className="bg-muted text-muted-foreground border-0 text-xs">Kadaluarsa</Badge>
                     : <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">Aktif</Badge>}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{fmt(l.date)} · {l.issued_by && `Oleh: ${l.issued_by}`}</p>

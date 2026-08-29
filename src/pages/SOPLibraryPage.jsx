@@ -19,7 +19,7 @@ const CATEGORIES = [
   { value: "karantina", label: "Karantina", color: "bg-orange-100 text-orange-800", icon: "🔒" },
   { value: "penjualan", label: "Penjualan", color: "bg-blue-100 text-blue-800", icon: "💰" },
   { value: "administrasi", label: "Administrasi", color: "bg-purple-100 text-purple-800", icon: "📋" },
-  { value: "lainnya", label: "Lainnya", color: "bg-gray-100 text-gray-800", icon: "📄" },
+  { value: "lainnya", label: "Lainnya", color: "bg-muted text-foreground", icon: "📄" },
 ];
 
 const getCat = v => CATEGORIES.find(c => c.value === v) || CATEGORIES[6];

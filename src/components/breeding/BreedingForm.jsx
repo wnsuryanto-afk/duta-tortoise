@@ -442,15 +442,15 @@ export default function BreedingForm({ open, onClose, editData }) {
                       <div className="text-[8px] text-pink-500">📍 {female?.enclosure || "—"}</div>
                     </div>
                     <div className="bg-yellow-50 rounded-lg px-2 py-1">
-                      <div className="text-[8px] text-gray-400">🥚 Jumlah Telur</div>
+                      <div className="text-[8px] text-muted-foreground">🥚 Jumlah Telur</div>
                       <div className="text-[10px] font-bold text-yellow-800">{form.egg_count ? form.egg_count+" butir" : "—"}</div>
                     </div>
                     <div className="bg-green-50 rounded-lg px-2 py-1">
-                      <div className="text-[8px] text-gray-400">📅 Bertelur</div>
+                      <div className="text-[8px] text-muted-foreground">📅 Bertelur</div>
                       <div className="text-[10px] font-bold text-green-800">{tglStr}</div>
                     </div>
                     <div className="col-span-2 bg-orange-50 rounded-lg px-2 py-1">
-                      <div className="text-[8px] text-gray-400">🐣 Est. Menetas</div>
+                      <div className="text-[8px] text-muted-foreground">🐣 Est. Menetas</div>
                       <div className="text-[10px] font-bold text-orange-800">{hatch}</div>
                     </div>
                   </div>
@@ -458,7 +458,7 @@ export default function BreedingForm({ open, onClose, editData }) {
                   <div className="flex flex-col items-center justify-center gap-1 flex-shrink-0">
                     {previewQR
                       ? <img src={previewQR} width={72} height={72} className="rounded-lg border-2 border-green-600" alt="QR" />
-                      : <div className="w-[72px] h-[72px] rounded-lg border-2 border-green-200 bg-green-50 flex items-center justify-center text-[9px] text-gray-400">QR...</div>
+                      : <div className="w-[72px] h-[72px] rounded-lg border-2 border-green-200 bg-green-50 flex items-center justify-center text-[9px] text-muted-foreground">QR...</div>
                     }
                     <div className="text-[7px] bg-green-800 text-white rounded-full px-2 py-0.5 font-bold">F2 · CB</div>
                   </div>

@@ -70,8 +70,8 @@ export default function GuidedPoinSaya({ user }) {
       {/* Header */}
       <div className="pt-6 text-center">
         <Star className="w-10 h-10 text-amber-400 fill-amber-300 mx-auto mb-2" />
-        <h1 className="text-2xl font-bold text-gray-800">Poin Bulan Ini</h1>
-        <p className="text-sm text-gray-500 capitalize">{format(new Date(), "MMMM yyyy", { locale: id })}</p>
+        <h1 className="text-2xl font-bold text-foreground">Poin Bulan Ini</h1>
+        <p className="text-sm text-muted-foreground capitalize">{format(new Date(), "MMMM yyyy", { locale: id })}</p>
       </div>
 
       {/* Total poin besar */}
@@ -114,16 +114,16 @@ export default function GuidedPoinSaya({ user }) {
       {lastMonthPoin > 0 && (
         <div
           className={`rounded-2xl p-4 border flex items-center gap-3 ${
-            naikDariBulanLalu ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"
+            naikDariBulanLalu ? "bg-blue-50 border-blue-200" : "bg-muted border-border"
           }`}
         >
           {naikDariBulanLalu ? (
             <TrendingUp className="w-8 h-8 text-blue-500 flex-shrink-0" />
           ) : (
-            <TrendingDown className="w-8 h-8 text-gray-400 flex-shrink-0" />
+            <TrendingDown className="w-8 h-8 text-muted-foreground flex-shrink-0" />
           )}
           <div>
-            <p className={`font-semibold ${naikDariBulanLalu ? "text-blue-800" : "text-gray-700"}`}>
+            <p className={`font-semibold ${naikDariBulanLalu ? "text-blue-800" : "text-foreground"}`}>
               {naikDariBulanLalu ? "Lebih tinggi" : "Lebih rendah"} {momPct !== null ? `${Math.abs(momPct)}%` : ""} dari bulan lalu
             </p>
             <p className="text-xs text-muted-foreground">
@@ -134,8 +134,8 @@ export default function GuidedPoinSaya({ user }) {
       )}
 
       {/* Riwayat 7 hari */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-        <p className="font-semibold text-gray-700 mb-3">Riwayat 7 Hari Terakhir</p>
+      <div className="bg-card rounded-2xl p-4 border border-gray-100 shadow-sm">
+        <p className="font-semibold text-foreground mb-3">Riwayat 7 Hari Terakhir</p>
         <div className="space-y-2">
           {last7.map((day) => {
             const isToday = day.date === today;
@@ -143,10 +143,10 @@ export default function GuidedPoinSaya({ user }) {
               <div
                 key={day.date}
                 className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${
-                  isToday ? "bg-green-50 border border-green-200" : "bg-gray-50"
+                  isToday ? "bg-green-50 border border-green-200" : "bg-muted"
                 }`}
               >
-                <span className={`text-sm ${isToday ? "font-semibold text-green-700" : "text-gray-600"}`}>
+                <span className={`text-sm ${isToday ? "font-semibold text-green-700" : "text-muted-foreground"}`}>
                   {isToday ? "Hari ini" : format(new Date(day.date + "T00:00:00"), "EEE, d MMM", { locale: id })}
                 </span>
                 <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function GuidedPoinSaya({ user }) {
                   ) : (
                     <span className="text-xs text-gray-300">—</span>
                   )}
-                  {day.count > 0 && <span className="text-xs text-gray-400">{day.count} tugas</span>}
+                  {day.count > 0 && <span className="text-xs text-muted-foreground">{day.count} tugas</span>}
                 </div>
               </div>
             );

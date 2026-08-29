@@ -165,7 +165,7 @@ export default function ProfileSetupPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-amber-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg bg-white shadow-xl border-0">
+      <Card className="w-full max-w-lg bg-card shadow-xl border-0">
         <div className="p-8">
           {/* Header */}
           <div className="text-center mb-8">

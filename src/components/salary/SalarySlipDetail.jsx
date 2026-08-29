@@ -17,7 +17,7 @@ import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySala
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 const statusConfig = {
-  draft:    { label: "Draft",     icon: Clock,        color: "bg-gray-100 text-gray-700" },
+  draft:    { label: "Draft",     icon: Clock,        color: "bg-muted text-foreground" },
   approved: { label: "Disetujui", icon: CheckCircle2, color: "bg-blue-100 text-blue-700" },
   paid:     { label: "Dibayar",   icon: CheckCircle2, color: "bg-green-100 text-green-700" },
 };
@@ -198,7 +198,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
         {/* Printable area */}
         <div ref={printRef}>
           {/* KOP */}
-          <div className="header text-center border-b-2 border-gray-300 pb-3 mb-4">
+          <div className="header text-center border-b-2 border-border pb-3 mb-4">
             {settings.company_logo_url && (
               <img src={settings.company_logo_url} alt="Logo" className="h-12 mx-auto mb-1" />
             )}

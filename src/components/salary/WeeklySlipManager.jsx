@@ -343,7 +343,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
                       <span className="font-semibold">{row.emp.full_name || row.emp.email}</span>
                       <Badge variant="outline" className="text-[11px]">{formatRole(row.emp.role)}</Badge>
                       {row.existingSlip && (
-                        <Badge className={`text-[11px] ${slipStatus === "paid" ? "bg-green-100 text-green-700" : slipStatus === "approved" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+                        <Badge className={`text-[11px] ${slipStatus === "paid" ? "bg-green-100 text-green-700" : slipStatus === "approved" ? "bg-blue-100 text-blue-700" : "bg-muted text-foreground"}`}>
                           {slipStatus === "paid" ? "✓ Dibayar" : slipStatus === "approved" ? "Diperiksa" : "Draft"}
                         </Badge>
                       )}

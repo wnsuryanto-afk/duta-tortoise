@@ -65,7 +65,7 @@ export default function SickTortoiseClosePanel({ user }) {
           ? Math.max(0, Math.round((new Date(today) - new Date(h.since)) / 86400000))
           : null;
         return (
-          <div key={h.id} className="p-3 bg-white rounded-xl border border-red-200 space-y-2">
+          <div key={h.id} className="p-3 bg-card rounded-xl border border-red-200 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-red-800">

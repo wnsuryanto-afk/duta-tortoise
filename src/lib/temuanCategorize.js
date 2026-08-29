@@ -35,8 +35,8 @@ export const CATEGORIES = {
   kualitas_foto: {
     label: "📸 Kualitas Foto",
     icon: "📸",
-    color: "bg-gray-50 border-gray-200",
-    badgeColor: "bg-gray-100 text-gray-500 border-gray-200",
+    color: "bg-muted border-border",
+    badgeColor: "bg-muted text-muted-foreground border-border",
     priority: 5,
   },
 };

@@ -21,7 +21,7 @@ import { toast } from "sonner";
 const TYPE_CONFIG = {
   top_up:      { label: "Top Up",      color: "bg-green-100 text-green-700 border-green-200", sign: "+" },
   pemakaian:   { label: "Pemakaian",   color: "bg-red-100 text-red-700 border-red-200", sign: "−" },
-  penyesuaian: { label: "Penyesuaian", color: "bg-gray-100 text-gray-600 border-gray-200", sign: "±" },
+  penyesuaian: { label: "Penyesuaian", color: "bg-muted text-muted-foreground border-border", sign: "±" },
 };
 
 const CAT_LABELS = PETTYCASH_CAT_LABELS;
@@ -185,7 +185,7 @@ export default function LedgerHistory({ ledger, role }) {
                         <img src={l.proof_photo} alt="nota" className="w-8 h-8 rounded object-cover border hover:opacity-80 transition-opacity" />
                       </button>
                     ) : (l.entry_type === "pemakaian" && l.notes) ? (
-                      <Badge variant="outline" className="text-[10px] py-0 bg-gray-100 text-gray-500 border-gray-200" title={l.notes}>Tanpa nota</Badge>
+                      <Badge variant="outline" className="text-[10px] py-0 bg-muted text-muted-foreground border-border" title={l.notes}>Tanpa nota</Badge>
                     ) : null}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
@@ -200,7 +200,7 @@ export default function LedgerHistory({ ledger, role }) {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className={`text-sm font-bold ${l.entry_type === "top_up" ? "text-green-700" : l.entry_type === "pemakaian" ? "text-red-600" : "text-gray-600"}`}>
+                  <p className={`text-sm font-bold ${l.entry_type === "top_up" ? "text-green-700" : l.entry_type === "pemakaian" ? "text-red-600" : "text-muted-foreground"}`}>
                     {tc.sign} {formatRp(l.amount)}
                   </p>
                   <p className="text-xs text-muted-foreground">Saldo: {formatRp(l.balance_after)}</p>

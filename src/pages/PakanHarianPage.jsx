@@ -118,7 +118,7 @@ export default function PakanHarianPage() {
                       <span className="text-sm font-medium">
                         {l.log_date ? format(new Date(l.log_date), "d MMM yyyy", { locale: idLocale }) : "—"}
                       </span>
-                      <Badge variant="outline" className={`text-[10px] border-0 ${SOURCE_BADGE[l.feed_source] || "bg-gray-100 text-gray-700"}`}>
+                      <Badge variant="outline" className={`text-[10px] border-0 ${SOURCE_BADGE[l.feed_source] || "bg-muted text-foreground"}`}>
                         {srcLabel}
                       </Badge>
                     </div>

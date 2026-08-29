@@ -128,7 +128,7 @@ export default function FotoPenyakitRequestButton({ protocol }) {
                   className={`flex-1 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors ${
                     dueDate === format(new Date(), "yyyy-MM-dd")
                       ? "border-[#E76F00] bg-orange-50 text-[#E76F00]"
-                      : "border-border bg-white text-muted-foreground"
+                      : "border-border bg-card text-muted-foreground"
                   }`}
                 >
                   Hari ini
@@ -139,7 +139,7 @@ export default function FotoPenyakitRequestButton({ protocol }) {
                   className={`flex-1 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors ${
                     dueDate === tomorrow
                       ? "border-[#E76F00] bg-orange-50 text-[#E76F00]"
-                      : "border-border bg-white text-muted-foreground"
+                      : "border-border bg-card text-muted-foreground"
                   }`}
                 >
                   Besok

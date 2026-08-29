@@ -91,7 +91,7 @@ export default function IncompleteDataWidget() {
               <p className="text-xs font-semibold text-amber-700 mb-2">3 Data Perlu Perhatian:</p>
               {incompleteItems.map((item, idx) => (
                 <Link key={item.id} to={getEditLink(item)}>
-                  <div className="flex items-start gap-2 p-2 rounded-lg bg-white border border-amber-200 hover:border-amber-300 transition-colors cursor-pointer">
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-card border border-amber-200 hover:border-amber-300 transition-colors cursor-pointer">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-amber-900 truncate">{item.name}</p>

@@ -30,7 +30,7 @@ export function formatAge(birthDate) {
 export function AgeBadge({ birthDate, className = "" }) {
   if (!birthDate) {
     return (
-      <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 ${className}`}>
+      <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border ${className}`}>
         Umur tidak diketahui
       </span>
     );

@@ -89,7 +89,7 @@ export default function SOPApproval() {
   };
 
   const aiStatusConfig = {
-    belum_diperiksa: { label: "⏳ Belum diperiksa", color: "bg-gray-100 text-gray-500 border-gray-200" },
+    belum_diperiksa: { label: "⏳ Belum diperiksa", color: "bg-muted text-muted-foreground border-border" },
     sedang_diproses: { label: "🔄 Sedang diproses", color: "bg-blue-100 text-blue-600 border-blue-200" },
     selesai: { label: "✅ Diperiksa", color: "bg-green-100 text-green-700 border-green-200" },
     gagal: { label: "❌ Gagal", color: "bg-red-100 text-red-600 border-red-200" },
@@ -624,7 +624,7 @@ export default function SOPApproval() {
                                           const val = e.target.value.trim();
                                           if (val !== (t.owner_note || "").trim()) handleSaveOwnerNote(c, i, val);
                                         }}
-                                        className="w-full h-7 text-xs rounded border border-amber-200 px-2 bg-amber-50/50 focus:bg-white focus:border-amber-400 outline-none"
+                                        className="w-full h-7 text-xs rounded border border-amber-200 px-2 bg-amber-50/50 focus:bg-card focus:border-amber-400 outline-none"
                                       />
                                     )}
                                   </div>

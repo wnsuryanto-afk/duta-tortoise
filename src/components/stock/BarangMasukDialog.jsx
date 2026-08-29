@@ -176,7 +176,7 @@ export default function BarangMasukDialog({ items, user, role, presetItem, onAdd
                 {(invoiceData.items || []).map((it, i) => {
                   const m = matchItem(it.nama);
                   return (
-                    <div key={i} className="flex items-center gap-2 text-xs bg-white rounded border p-1.5">
+                    <div key={i} className="flex items-center gap-2 text-xs bg-card rounded border p-1.5">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{it.nama || "(tanpa nama)"}</p>
                         <p className="text-muted-foreground">{it.qty} {it.satuan} · Rp {Number(it.subtotal || 0).toLocaleString("id-ID")}</p>

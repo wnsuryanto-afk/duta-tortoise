@@ -323,13 +323,13 @@ export default function IncidentalTaskForm({ open, onClose, user }) {
               </div>
             ) : (
               <div className="flex gap-2">
-                <label className="flex-1 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 transition-colors">
+                <label className="flex-1 h-20 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 transition-colors">
                   {uploading ? (
-                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
                   ) : (
-                    <Camera className="w-5 h-5 text-gray-400" />
+                    <Camera className="w-5 h-5 text-muted-foreground" />
                   )}
-                  <span className="text-[11px] text-gray-500 mt-1">📷 Kamera</span>
+                  <span className="text-[11px] text-muted-foreground mt-1">📷 Kamera</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -337,13 +337,13 @@ export default function IncidentalTaskForm({ open, onClose, user }) {
                     onChange={(e) => e.target.files?.[0] && handlePhoto(e.target.files[0])}
                   />
                 </label>
-                <label className="flex-1 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 transition-colors">
+                <label className="flex-1 h-20 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 transition-colors">
                   {uploading ? (
-                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
                   ) : (
-                    <ImageIcon className="w-5 h-5 text-gray-400" />
+                    <ImageIcon className="w-5 h-5 text-muted-foreground" />
                   )}
-                  <span className="text-[11px] text-gray-500 mt-1">🖼️ Galeri</span>
+                  <span className="text-[11px] text-muted-foreground mt-1">🖼️ Galeri</span>
                   <input
                     type="file"
                     accept="image/*"

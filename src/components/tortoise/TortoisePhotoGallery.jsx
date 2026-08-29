@@ -92,7 +92,7 @@ export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnail
             {/* Set as primary */}
             {!p.is_primary && (
               <button type="button" onClick={() => setPrimary(idx)} title="Jadikan foto utama"
-                className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-white text-muted-foreground border shadow opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity flex items-center justify-center">
+                className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-card text-muted-foreground border shadow opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity flex items-center justify-center">
                 <Star className="w-2.5 h-2.5" />
               </button>
             )}

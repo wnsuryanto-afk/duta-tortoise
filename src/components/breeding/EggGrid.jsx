@@ -16,7 +16,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { hatchRateClutch } from "@/lib/hasilInkubasi";
 
 const EGG_STATUS = [
-  { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-gray-100",  border: "border-gray-400",  text: "text-gray-700" },
+  { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-muted",  border: "border-gray-400",  text: "text-foreground" },
   { value: "fertile",     label: "🟢 Fertile",       bg: "bg-green-100", border: "border-green-500", text: "text-green-800" },
   { value: "infertil",    label: "🔴 Infertil",      bg: "bg-red-100",   border: "border-red-500",   text: "text-red-800" },
   { value: "menetas",     label: "🟡 Menetas",       bg: "bg-amber-100", border: "border-amber-500", text: "text-amber-800" },
@@ -24,7 +24,7 @@ const EGG_STATUS = [
 ];
 
 const STATUS_CELL = {
-  belum_dicek: "bg-gray-100 border-gray-300 text-gray-500 border-dashed",
+  belum_dicek: "bg-muted border-border text-muted-foreground border-dashed",
   fertile:     "bg-green-200 border-green-500 text-green-800",
   infertil:    "bg-red-200   border-red-500   text-red-800",
   menetas:     "bg-amber-300 border-amber-500 text-amber-900",
@@ -703,7 +703,7 @@ export default function EggGrid({ breeding, onRefresh }) {
           </span>
         )}
         {summary.infertil > 0 && <span className="px-2 py-1 rounded-full bg-red-100 text-red-700">🔴 Infertil: {summary.infertil}</span>}
-        {summary.belum_dicek > 0 && <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">⬜ Belum Cek: {summary.belum_dicek}</span>}
+        {summary.belum_dicek > 0 && <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground">⬜ Belum Cek: {summary.belum_dicek}</span>}
         {dataMismatch && (
           <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300" title="Total egg_records tidak sama dengan egg_count">
             ⚠️ Data telur perlu dicek ulang
@@ -712,7 +712,7 @@ export default function EggGrid({ breeding, onRefresh }) {
       </div>
 
       {/* Progress bar — sections sum to 100% without overlap */}
-      <div className="h-2 rounded-full bg-gray-100 overflow-hidden flex">
+      <div className="h-2 rounded-full bg-muted overflow-hidden flex">
         <div className="bg-green-400 transition-all" style={{ width: `${(fertileTotal / eggCount) * 100}%` }} />
         <div className="bg-red-300 transition-all" style={{ width: `${(summary.infertil / eggCount) * 100}%` }} />
         <div className="bg-gray-300 transition-all" style={{ width: `${(summary.belum_dicek / eggCount) * 100}%` }} />
@@ -819,7 +819,7 @@ export default function EggGrid({ breeding, onRefresh }) {
             </div>
             <div>
               <div><span className="text-red-600">🔴 Infertil: <strong>{summary.infertil}</strong></span></div>
-              <div><span className="text-gray-500">⬜ Belum Cek: <strong>{summary.belum_dicek}</strong></span></div>
+              <div><span className="text-muted-foreground">⬜ Belum Cek: <strong>{summary.belum_dicek}</strong></span></div>
               {dataMismatch && <div className="text-yellow-600 text-xs mt-1">⚠️ Periksa ulang</div>}
             </div>
           </div>

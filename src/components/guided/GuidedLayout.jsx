@@ -43,7 +43,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
 
   if (!user?.email) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-green-200 border-t-green-700 rounded-full animate-spin" />
       </div>
     );
@@ -58,16 +58,16 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto relative">
+    <div className="min-h-screen bg-muted flex flex-col max-w-lg mx-auto relative">
       {/* ── Slim top bar ── */}
-      <div className="sticky top-0 z-30 bg-white border-b border-gray-100 flex items-center justify-between px-4 py-2.5">
+      <div className="sticky top-0 z-30 bg-card border-b border-gray-100 flex items-center justify-between px-4 py-2.5">
         {/* Di halaman selain Beranda, logo diganti tombol kembali.
             Sebelumnya keeper tidak punya jalan kembali sama sekali —
             satu-satunya cara keluar adalah lewat bottom nav. */}
         {isHome ? (
           <div className="flex items-center gap-2">
             <span className="text-base">🐢</span>
-            <span className="font-bold text-sm text-gray-800">Duta Tortoise</span>
+            <span className="font-bold text-sm text-foreground">Duta Tortoise</span>
           </div>
         ) : (
           <button
@@ -93,18 +93,18 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
       {/* ── Profile menu sheet ── */}
       {profileMenu && (
         <div className="fixed inset-0 z-[60] bg-black/40 flex items-end justify-center" onClick={() => setProfileMenu(false)}>
-          <div className="w-full max-w-lg bg-white rounded-t-3xl p-4 space-y-1 animate-fade-in" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-lg bg-card rounded-t-3xl p-4 space-y-1 animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2 px-1">
-              <p className="font-bold text-gray-800 text-sm">{user.full_name || user.email}</p>
-              <button onClick={() => setProfileMenu(false)}><X className="w-5 h-5 text-gray-400" /></button>
+              <p className="font-bold text-foreground text-sm">{user.full_name || user.email}</p>
+              <button onClick={() => setProfileMenu(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
             </div>
-            <button onClick={() => { setOverlay("poin"); setProfileMenu(false); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 active:scale-95 transition-all">
+            <button onClick={() => { setOverlay("poin"); setProfileMenu(false); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted active:scale-95 transition-all">
               <Star className="w-5 h-5 text-amber-500" />
-              <span className="font-medium text-gray-700 text-sm">Poin Saya</span>
+              <span className="font-medium text-foreground text-sm">Poin Saya</span>
             </button>
-            <button onClick={() => { setOverlay("profil"); setProfileMenu(false); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 active:scale-95 transition-all">
-              <User className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700 text-sm">Profil & Pengaturan</span>
+            <button onClick={() => { setOverlay("profil"); setProfileMenu(false); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted active:scale-95 transition-all">
+              <User className="w-5 h-5 text-muted-foreground" />
+              <span className="font-medium text-foreground text-sm">Profil & Pengaturan</span>
             </button>
             <button onClick={() => base44.auth.logout()} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 text-red-600 active:scale-95 transition-all">
               <LogOut className="w-5 h-5" />
@@ -116,10 +116,10 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
 
       {/* ── Full-screen overlay (Poin / Profil) ── */}
       {overlay && (
-        <div className="fixed inset-0 z-[70] bg-gray-50 max-w-lg mx-auto overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-            <p className="font-bold text-gray-800">{overlay === "poin" ? "⭐ Poin Saya" : "👤 Profil"}</p>
-            <button onClick={() => setOverlay(null)}><X className="w-5 h-5 text-gray-400" /></button>
+        <div className="fixed inset-0 z-[70] bg-muted max-w-lg mx-auto overflow-y-auto">
+          <div className="sticky top-0 bg-card border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+            <p className="font-bold text-foreground">{overlay === "poin" ? "⭐ Poin Saya" : "👤 Profil"}</p>
+            <button onClick={() => setOverlay(null)}><X className="w-5 h-5 text-muted-foreground" /></button>
           </div>
           <div className="p-4">
             {overlay === "poin" && <GuidedPoinSaya user={user} />}
@@ -145,7 +145,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
       <SakitFormDialog open={sakitOpen} onClose={() => setSakitOpen(false)} user={user} />
 
       {/* ── Bottom navigation ── */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-gray-200 z-40 shadow-[0_-2px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-border z-40 shadow-[0_-2px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
         <div className="flex">
           {NAV_ITEMS.map(item => {
             const Icon = item.icon;
@@ -158,7 +158,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all active:scale-90",
-                  isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-gray-400 hover:text-gray-600"
+                  isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-muted-foreground hover:text-muted-foreground"
                 )}
               >
                 {/* Garis di atas ikon menandai halaman aktif — di layar sentuh,
@@ -179,7 +179,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
                 </span>
                 <span className={cn(
                   "text-[9px] font-semibold leading-none",
-                  isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-gray-400"
+                  isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-muted-foreground"
                 )}>
                   {item.label}
                 </span>

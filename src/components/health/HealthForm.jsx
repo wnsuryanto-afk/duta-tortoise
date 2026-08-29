@@ -367,7 +367,7 @@ export default function HealthForm({ open, onClose, editData }) {
                   )}
                 </div>
                 {!editBiayaManual && treatmentItems.length > 0 ? (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-orange-200">
                     <span className="font-semibold text-orange-900">Rp {autoTotalBiaya.toLocaleString("id-ID")}</span>
                     <span className="text-xs text-muted-foreground">(otomatis dari item dipilih)</span>
                   </div>
@@ -377,7 +377,7 @@ export default function HealthForm({ open, onClose, editData }) {
                     value={form.biaya_obat || ""}
                     onChange={(e) => handleChange("biaya_obat", e.target.value)}
                     placeholder="0"
-                    className="bg-white"
+                    className="bg-card"
                   />
                 )}
                 <p className="text-xs text-orange-700">💡 Biaya ini otomatis masuk laporan keuangan (Obat & Perawatan)</p>

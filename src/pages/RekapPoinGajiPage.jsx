@@ -483,7 +483,7 @@ export default function RekapPoinGajiPage() {
                     <Badge className={`text-[10px] ${
                       row.existingSlip.status === "paid" ? "bg-green-100 text-green-700" :
                       row.existingSlip.status === "approved" ? "bg-blue-100 text-blue-700" :
-                      "bg-gray-100 text-gray-700"
+                      "bg-muted text-foreground"
                     }`}>
                       {row.existingSlip.status === "paid" ? "✓ Dibayar" :
                        row.existingSlip.status === "approved" ? "Disetujui" : "Draft"}

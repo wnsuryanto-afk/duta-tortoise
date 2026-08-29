@@ -48,7 +48,7 @@ const CATEGORY_BADGE = {
   kebersihan: "bg-blue-100 text-blue-700",
   pemeriksaan: "bg-amber-100 text-amber-700",
   breeding: "bg-purple-100 text-purple-700",
-  administrasi: "bg-gray-100 text-gray-700",
+  administrasi: "bg-muted text-foreground",
   suplemen: "bg-teal-100 text-teal-700",
   lainnya: "bg-muted text-muted-foreground",
 };
@@ -792,27 +792,27 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   return (
     <div className="space-y-4 pb-4">
       {/* Progress Header */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div className="bg-card rounded-2xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <p className="font-bold text-gray-800">📋 Tugas Hari Ini — {isMinggu ? "Minggu" : "Senin–Sabtu"}</p>
-            <p className="text-xs text-gray-400 capitalize">{todayLabel}</p>
+            <p className="font-bold text-foreground">📋 Tugas Hari Ini — {isMinggu ? "Minggu" : "Senin–Sabtu"}</p>
+            <p className="text-xs text-muted-foreground capitalize">{todayLabel}</p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-green-700">{progressPct}%</p>
-            <p className="text-xs text-gray-400">{doneProgress}/{totalProgress} selesai</p>
+            <p className="text-xs text-muted-foreground">{doneProgress}/{totalProgress} selesai</p>
             <p className="text-xs font-bold text-amber-600 flex items-center gap-0.5 justify-end mt-0.5">
               <Star className="w-3 h-3 fill-current" />{myLogs.reduce((s, l) => s + (l.poin_earned || 0), 0)} poin
             </p>
           </div>
         </div>
-        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+        <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: progressPct === 100 ? "#16a34a" : "linear-gradient(90deg,#4ade80,#16a34a)" }} />
         </div>
         {progressPct === 100 && <p className="text-center text-sm font-bold text-green-700 mt-2">🏆 Semua tugas selesai!</p>}
 
         <div className="flex items-center gap-2 mt-3 flex-wrap">
-          <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-60">
+          <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted disabled:opacity-60">
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} /> {refreshing ? "Memuat..." : "Refresh"}
           </button>
           {showTeamView && (
@@ -880,13 +880,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
                 <span className="text-lg flex-shrink-0 leading-none">🏠</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="text-sm font-semibold text-gray-800">{task.label}</p>
+                    <p className="text-sm font-semibold text-foreground">{task.label}</p>
                     {task.require_photo && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600"><Camera className="w-3 h-3" /> Wajib Foto</span>
                     )}
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda 60 dtk</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">{kebersihanProgress.done} dari {kebersihanProgress.total} kandang selesai</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{kebersihanProgress.done} dari {kebersihanProgress.total} kandang selesai</p>
                   <div className="w-full h-1.5 bg-blue-100 rounded-full mt-2 overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${kebersihanProgress.total ? (kebersihanProgress.done / kebersihanProgress.total) * 100 : 0}%` }} />
                   </div>
@@ -935,7 +935,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           );
         })}
         {sopTaskItems.length === 0 && (
-          <div className="text-center text-sm text-gray-400 py-6">
+          <div className="text-center text-sm text-muted-foreground py-6">
             Belum ada SOPTask aktif untuk hari ini. Tambah/aktifkan task di menu SOP.
           </div>
         )}
@@ -944,7 +944,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       {/* Extra Tasks */}
       {extraTasks.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide px-1">Pekerjaan Tambahan</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1">Pekerjaan Tambahan</p>
           {extraTasks.map(log => (
             <ExtraTaskRow key={log.id} log={log} showTeamView={showTeamView} user={user} onApprove={handleApproveExtra} />
           ))}
@@ -952,7 +952,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       )}
 
       {/* Footer */}
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-3 text-xs text-gray-400 text-center">
+      <div className="rounded-2xl border border-gray-100 bg-card shadow-sm p-3 text-xs text-muted-foreground text-center">
         ✅ Centang tiap kegiatan setelah selesai · 📷 Lampirkan foto dokumentasi · Reset otomatis setiap hari baru
       </div>
 
@@ -1098,18 +1098,18 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
 
   return (
     <div className={`rounded-2xl border-2 transition-all ${
-      isIstirahat ? "border-gray-100 bg-gray-50 opacity-60"
-      : isLocked ? "border-gray-300 bg-gray-100"
+      isIstirahat ? "border-gray-100 bg-muted opacity-60"
+      : isLocked ? "border-border bg-muted"
       : isChecked ? "border-green-300 bg-green-50"
       : task.terlambat ? "border-red-300 bg-red-50"
-      : "border-gray-100 bg-white"
+      : "border-gray-100 bg-card"
     } shadow-sm`}>
       <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi && !isLocked ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
-        <span className="text-xs font-bold text-gray-400 w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
+        <span className="text-xs font-bold text-muted-foreground w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <p className={`text-sm font-semibold ${isChecked || isLocked ? "line-through text-gray-400" : "text-gray-800"}`}>{task.label}</p>
+            <p className={`text-sm font-semibold ${isChecked || isLocked ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.label}</p>
             {requirePhoto && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex-shrink-0">📷 Wajib Foto</span>
             )}
@@ -1127,21 +1127,21 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className="flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /> {task.waktu}</span>
-            {task.keterangan && <span className="text-xs text-gray-400">· {task.keterangan}</span>}
+            <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-3 h-3" /> {task.waktu}</span>
+            {task.keterangan && <span className="text-xs text-muted-foreground">· {task.keterangan}</span>}
           </div>
 
           {isLocked && (
-            <p className={`mt-1 text-[11px] font-medium flex items-center gap-1 ${pulse ? "text-blue-700 scale-[1.02]" : "text-gray-500"} transition-all`}>
-              <CheckCircle2 className={`w-3 h-3 ${pulse ? "text-blue-500" : "text-gray-400"}`} /> {lockedLabel}
+            <p className={`mt-1 text-[11px] font-medium flex items-center gap-1 ${pulse ? "text-blue-700 scale-[1.02]" : "text-muted-foreground"} transition-all`}>
+              <CheckCircle2 className={`w-3 h-3 ${pulse ? "text-blue-500" : "text-muted-foreground"}`} /> {lockedLabel}
             </p>
           )}
 
           {isAbsensi && (
             <p className="text-xs mt-1 font-medium">
               {task.id === "abs_masuk"
-                ? attendance?.check_in ? <span className="text-green-600">✓ Masuk {attendance.check_in}</span> : <span className="text-gray-400">Belum check in</span>
-                : attendance?.check_out ? <span className="text-green-600">✓ Pulang {attendance.check_out}</span> : <span className="text-gray-400">Belum check out</span>
+                ? attendance?.check_in ? <span className="text-green-600">✓ Masuk {attendance.check_in}</span> : <span className="text-muted-foreground">Belum check in</span>
+                : attendance?.check_out ? <span className="text-green-600">✓ Pulang {attendance.check_out}</span> : <span className="text-muted-foreground">Belum check out</span>
               }
             </p>
           )}
@@ -1168,7 +1168,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
           {saveError && (
             <div className="mt-1.5 p-2 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 animate-fade-in">
               <p className="text-[11px] font-medium text-red-700 leading-snug flex-1">Gagal menyimpan — cek sinyal, lalu coba lagi.</p>
-              <button onClick={(e) => { e.stopPropagation(); retryCheck(); }} className="flex-shrink-0 text-[11px] font-bold text-red-700 bg-white border border-red-300 rounded-lg px-2.5 py-1 active:scale-95 transition-all flex items-center gap-1">
+              <button onClick={(e) => { e.stopPropagation(); retryCheck(); }} className="flex-shrink-0 text-[11px] font-bold text-red-700 bg-card border border-red-300 rounded-lg px-2.5 py-1 active:scale-95 transition-all flex items-center gap-1">
                 <RefreshCw className="w-3 h-3" /> Coba Lagi
               </button>
             </div>
@@ -1185,7 +1185,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
                 placeholder="Catatan foto (opsional)..."
                 defaultValue={photoNotes}
                 onBlur={e => { if (e.target.value !== photoNotes) onPhotoNotes(e.target.value); }}
-                className="flex-1 min-w-0 h-8 text-xs rounded-lg border border-gray-200 px-2 bg-gray-50/50 focus:bg-white focus:border-blue-300 outline-none"
+                className="flex-1 min-w-0 h-8 text-xs rounded-lg border border-border px-2 bg-muted/50 focus:bg-card focus:border-blue-300 outline-none"
               />
             </div>
           )}
@@ -1236,8 +1236,8 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
           )}
           {/* Optional photo button (non-require_photo, checked, no photo yet) — camera or gallery */}
           {!requirePhoto && !isIstirahat && !isAbsensi && !isLocked && isChecked && !photoUrl && (
-            <label className={`w-7 h-7 rounded-xl border-2 border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-all ${uploadingPhoto ? "opacity-50" : ""}`}>
-              {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin" /> : <Camera className="w-3.5 h-3.5 text-gray-400" />}
+            <label className={`w-7 h-7 rounded-xl border-2 border-border flex items-center justify-center cursor-pointer hover:border-blue-400 transition-all ${uploadingPhoto ? "opacity-50" : ""}`}>
+              {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" /> : <Camera className="w-3.5 h-3.5 text-muted-foreground" />}
               <input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) onPhotoUpload(e.target.files[0]); e.target.value = ""; }} className="hidden" />
             </label>
           )}
@@ -1246,9 +1246,9 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
           {!isIstirahat && (
             <div className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
               isChecked || isLocked ? "bg-green-500 border-green-500"
-              : isAbsensi ? "border-gray-200 bg-gray-50"
+              : isAbsensi ? "border-border bg-muted"
               : requirePhoto ? "border-red-300 hover:border-red-400"
-              : "border-gray-300 hover:border-green-400"
+              : "border-border hover:border-green-400"
             } ${(isSaving || isLocked) ? "opacity-60" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving && !isLocked) handleClick(); }}>
               {(isChecked || isLocked) ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
             </div>
@@ -1290,13 +1290,13 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove }) {
           <span className="text-lg leading-none">📌</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2 flex-wrap">
-              <p className="text-sm font-semibold text-gray-800">{log.item_label}</p>
+              <p className="text-sm font-semibold text-foreground">{log.item_label}</p>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Tambahan</span>
               {isApproved && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">✓ Approved +{log.poin_earned}p</span>}
-              {isPending && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Menunggu Approval</span>}
+              {isPending && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Menunggu Approval</span>}
             </div>
-            {log.extra_description && <p className="text-xs text-gray-500 mt-0.5">{log.extra_description}</p>}
-            <p className="text-xs text-gray-400 mt-0.5">oleh {log.done_by} · {log.done_at}</p>
+            {log.extra_description && <p className="text-xs text-muted-foreground mt-0.5">{log.extra_description}</p>}
+            <p className="text-xs text-muted-foreground mt-0.5">oleh {log.done_by} · {log.done_at}</p>
             {log.photo_url && <img src={log.photo_url} alt="Foto" className="w-16 h-12 rounded-lg object-cover border mt-1.5" />}
           </div>
 
@@ -1311,12 +1311,12 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove }) {
         {/* Approval actions for admin */}
         {showTeamView && isAdmin && isPending && (
           <div className="mt-3 pt-3 border-t border-amber-200 flex items-center gap-2">
-            <input type="number" value={poinInput} onChange={e => setPoinInput(e.target.value)} className="w-16 h-8 rounded-lg border border-gray-300 text-center text-sm" min="0" max="100" />
-            <span className="text-xs text-gray-500">poin</span>
+            <input type="number" value={poinInput} onChange={e => setPoinInput(e.target.value)} className="w-16 h-8 rounded-lg border border-border text-center text-sm" min="0" max="100" />
+            <span className="text-xs text-muted-foreground">poin</span>
             <button onClick={() => onApprove(log, parseInt(poinInput) || 0)} className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">
               <Check className="w-3 h-3" /> Approve
             </button>
-            <button onClick={() => onApprove(log, 0)} className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-300">
+            <button onClick={() => onApprove(log, 0)} className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-foreground text-xs font-bold rounded-lg hover:bg-gray-300">
               <X className="w-3 h-3" /> Tolak
             </button>
           </div>

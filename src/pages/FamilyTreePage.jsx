@@ -10,7 +10,7 @@ const SOURCE_LABEL = {
   hasil_sendiri: { text: "🐣 CBB", title: "Captive Bred & Born", color: "bg-green-100 text-green-800 border-green-300" },
   import: { text: "📦 CB", title: "Captive Born (Import)", color: "bg-blue-100 text-blue-800 border-blue-300" },
   beli_lokal: { text: "🌍 WC", title: "Wild Caught / Lokal", color: "bg-amber-100 text-amber-800 border-amber-300" },
-  tidak_diketahui: { text: "❓ Unknown", title: "Tidak Diketahui", color: "bg-gray-100 text-gray-700 border-gray-300" },
+  tidak_diketahui: { text: "❓ Unknown", title: "Tidak Diketahui", color: "bg-muted text-foreground border-border" },
 };
 
 // Cari tortoise berdasarkan id ATAU code ATAU name
@@ -78,7 +78,7 @@ const UNKNOWN_NODE = {
 const GENDER_COLOR = {
   jantan: "bg-blue-100 text-blue-700",
   betina: "bg-pink-100 text-pink-700",
-  belum_diketahui: "bg-gray-100 text-gray-700",
+  belum_diketahui: "bg-muted text-foreground",
 };
 const GENDER_LABEL = { jantan: "♂", betina: "♀", belum_diketahui: "?" };
 
@@ -94,7 +94,7 @@ const morphColors = {
   high_yellow: "bg-orange-100 text-orange-700",
   dark: "bg-slate-200 text-slate-700",
   paradox: "bg-indigo-100 text-indigo-700",
-  anerythristic: "bg-gray-200 text-gray-700",
+  anerythristic: "bg-gray-200 text-foreground",
   axanthic: "bg-blue-100 text-blue-700",
   melanistic: "bg-gray-900 text-gray-100",
   mix: "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700",
@@ -128,7 +128,7 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
         <div
           className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
             isUnknown
-              ? "bg-gray-50 border-gray-200 opacity-60"
+              ? "bg-muted border-border opacity-60"
               : isFocus
                 ? "bg-card hover:shadow-sm cursor-pointer border-primary/50 ring-2 ring-primary/20 shadow-md"
                 : "bg-card hover:shadow-sm cursor-pointer"
@@ -138,8 +138,8 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
           {!isUnknown && (tortoise.photos?.[0]?.url || tortoise.photo_url) ? (
             <img src={tortoise.photos?.[0]?.url || tortoise.photo_url} alt={tortoise.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 border" />
           ) : (
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isUnknown ? "bg-gray-100" : "bg-primary/10"}`}>
-              <Shell className={`w-5 h-5 ${isUnknown ? "text-gray-400" : "text-primary"}`} />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isUnknown ? "bg-muted" : "bg-primary/10"}`}>
+              <Shell className={`w-5 h-5 ${isUnknown ? "text-muted-foreground" : "text-primary"}`} />
             </div>
           )}
           <div>

@@ -38,7 +38,7 @@ export default function FeedStockAlert() {
             {lowStocks.map((s) => (
               <div
                 key={s.id}
-                className="flex items-center gap-1.5 text-xs bg-white border border-orange-200 rounded-full px-2.5 py-1"
+                className="flex items-center gap-1.5 text-xs bg-card border border-orange-200 rounded-full px-2.5 py-1"
               >
                 <PackageOpen className="w-3 h-3 text-orange-500" />
                 <span className="font-medium text-orange-900">{s.name}</span>

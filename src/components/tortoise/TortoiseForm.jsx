@@ -703,7 +703,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
                   max={new Date().getFullYear()}
                   value={form.proven_year || ""}
                   onChange={(e) => set("proven_year", e.target.value ? Number(e.target.value) : "")}
-                  className="h-8 text-sm bg-white"
+                  className="h-8 text-sm bg-card"
                 />
               </div>
             )}

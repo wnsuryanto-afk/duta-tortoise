@@ -124,7 +124,7 @@ function ProfileSetupScreen({ user, onComplete }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8">
+      <div className="w-full max-w-lg bg-card rounded-2xl shadow-xl p-8">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🐢</div>
           <h1 className="text-xl font-bold text-green-900 font-heading">Duta Tortoise</h1>

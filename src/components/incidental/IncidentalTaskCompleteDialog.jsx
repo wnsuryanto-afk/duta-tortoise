@@ -92,14 +92,14 @@ export default function IncidentalTaskCompleteDialog({ task, open, onClose, onCo
           {/* Task name */}
           <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
             <p className="text-xs text-orange-600 font-medium">Tugas</p>
-            <p className="text-sm font-semibold text-gray-800">{task?.title}</p>
-            {task?.notes && <p className="text-xs text-gray-500 mt-0.5">{task.notes}</p>}
+            <p className="text-sm font-semibold text-foreground">{task?.title}</p>
+            {task?.notes && <p className="text-xs text-muted-foreground mt-0.5">{task.notes}</p>}
           </div>
 
           {/* Photo upload */}
           {!noPhoto && (
             <div>
-              <p className="text-xs font-medium text-gray-600 mb-1.5">Foto hasil <span className="text-red-500">*</span></p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Foto hasil <span className="text-red-500">*</span></p>
               {preview ? (
                 <div className="relative inline-block">
                   <img src={preview} alt="Bukti" className="h-32 w-44 object-cover rounded-lg border" />
@@ -128,7 +128,7 @@ export default function IncidentalTaskCompleteDialog({ task, open, onClose, onCo
           )}
 
           {/* No photo option */}
-          <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={noPhoto} onChange={e => setNoPhoto(e.target.checked)} className="rounded" />
             Tidak bisa foto (wajib isi alasan)
           </label>
@@ -143,7 +143,7 @@ export default function IncidentalTaskCompleteDialog({ task, open, onClose, onCo
 
           {/* Notes */}
           <div>
-            <p className="text-xs font-medium text-gray-600 mb-1.5">Catatan singkat (opsional)</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Catatan singkat (opsional)</p>
             <Textarea
               placeholder="Catatan hasil pengerjaan..."
               value={notes}

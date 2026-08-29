@@ -152,7 +152,7 @@ export default function GettingStartedChecklist() {
                   className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                     isCompleted 
                       ? "bg-green-50 border-green-200" 
-                      : "bg-white border-blue-200 hover:border-blue-300 hover:shadow-sm"
+                      : "bg-card border-blue-200 hover:border-blue-300 hover:shadow-sm"
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center flex-shrink-0`}>

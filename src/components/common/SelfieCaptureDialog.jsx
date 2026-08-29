@@ -137,7 +137,7 @@ export default function SelfieCaptureDialog({ open, onClose, onCapture, title = 
                 )}
               </div>
               <canvas ref={canvasRef} className="hidden" />
-              <p className="text-xs text-center text-gray-400">Pastikan wajah terlihat jelas 📸</p>
+              <p className="text-xs text-center text-muted-foreground">Pastikan wajah terlihat jelas 📸</p>
               <Button
                 onClick={handleCapture}
                 disabled={!cameraReady}

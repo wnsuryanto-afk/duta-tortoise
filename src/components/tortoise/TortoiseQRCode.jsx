@@ -76,7 +76,7 @@ export default function TortoiseQRCode({ tortoise }) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="border-2 border-border rounded-xl p-3 bg-white">
+      <div className="border-2 border-border rounded-xl p-3 bg-card">
         <img src={qrDataUrl} alt={`QR ${tortoise.name}`} className="w-48 h-48 object-contain" />
       </div>
 

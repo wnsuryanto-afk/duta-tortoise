@@ -7,7 +7,7 @@ import { petaKura, cariInduk, cariKeturunan } from "@/lib/silsilah";
 const GENDER_BG = {
   jantan: "bg-blue-100 border-blue-300 text-blue-800",
   betina: "bg-pink-100 border-pink-300 text-pink-800",
-  belum_diketahui: "bg-gray-100 border-gray-300 text-gray-700",
+  belum_diketahui: "bg-muted border-border text-foreground",
 };
 const GENDER_LABEL = { jantan: "♂", betina: "♀", belum_diketahui: "?" };
 
@@ -20,10 +20,10 @@ function TortoiseBox({ t, isMain = false }) {
   if (isUnknown) {
     return (
       <div className="flex flex-col items-center gap-1 w-28">
-        <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center">
           <Shell className="w-6 h-6 text-gray-300" />
         </div>
-        <p className="text-[10px] text-gray-400 text-center">Tidak didata</p>
+        <p className="text-[10px] text-muted-foreground text-center">Tidak didata</p>
       </div>
     );
   }
