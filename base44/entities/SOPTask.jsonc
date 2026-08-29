@@ -151,6 +151,45 @@
         "type": "string"
       },
       "description": "SKU item gudang yang dibutuhkan (untuk cek stok)"
+    },
+    "pakan_terpakai": {
+      "type": "array",
+      "description": "A6 \u2014 Bahan yang habis terpakai setiap kali task ini dikerjakan. Diisi sekali, lalu stok berkurang sendiri saat task dicentang, sehingga tidak perlu lagi pencatatan pakan manual.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "description": "SKU bahan (PKN-xxxx untuk stok pakan, SKU gudang untuk obat/suplemen)"
+          },
+          "nama": {
+            "type": "string",
+            "description": "Nama bahan, untuk dibaca manusia"
+          },
+          "jumlah": {
+            "type": "number",
+            "description": "Jumlah terpakai sekali kerja, dalam satuan bahan tersebut"
+          },
+          "sumber": {
+            "type": "string",
+            "enum": [
+              "pakan",
+              "gudang"
+            ],
+            "default": "pakan",
+            "description": "Diambil dari Stok Pakan atau dari Gudang"
+          }
+        }
+      }
+    },
+    "terkunci_bahan": {
+      "type": "boolean",
+      "default": false,
+      "description": "A9 \u2014 Diisi otomatis: true bila bahan yang dibutuhkan task ini habis, sehingga task tidak bisa dikerjakan hari ini."
+    },
+    "terkunci_alasan": {
+      "type": "string",
+      "description": "A9 \u2014 Bahan apa yang habis, untuk ditampilkan ke keeper."
     }
   },
   "required": [
