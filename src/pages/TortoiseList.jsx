@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag, HeartPulse } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { sedangSakit } from "@/lib/statusKura";
+import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
 import { TortoiseArt } from "@/components/common/Illustration";
 import TortoiseTerjualTab from "@/components/tortoise/TortoiseTerjualTab";
 import ExportButton from "@/components/common/ExportButton";
@@ -133,19 +134,18 @@ export default function TortoiseList() {
     return "ok";
   };
 
-  // Kura-kura dengan HealthRecord sakit aktif (belum ada follow_up atau follow_up di masa depan)
-  const sickTortoiseIds = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    const sickSet = new Set();
-    healthRecords.forEach(r => {
-      if (r.type === "sakit" && r.tortoise_id) {
-        if (!r.follow_up_date || r.follow_up_date >= today) {
-          sickSet.add(r.tortoise_id);
-        }
-      }
-    });
-    return sickSet;
-  }, [healthRecords]);
+  // Kura dengan kasus sakit yang masih TERBUKA.
+  //
+  // Aturan lama membaca "masih sakit" dari kosongnya follow_up_date. Karena
+  // sebagian besar laporan sakit ringan memang tidak menjadwalkan pemeriksaan
+  // ulang, hampir setiap laporan menandai kuranya sakit selamanya — dan alur
+  // "tandai sembuh" tidak pernah menyentuh catatan itu, jadi lencananya tidak
+  // bisa dipadamkan siapa pun. Sepuluh catatan seperti itu ditemukan pada 29
+  // Agustus 2026, termasuk B106 yang memakai lencana SAKIT dan Sehat sekaligus.
+  //
+  // Sekarang dibaca dari penanda selesai yang ditulis secara sadar saat kura
+  // dinyatakan sembuh. Definisinya ada di lib/kesehatanKura.js.
+  const sickTortoiseIds = useMemo(() => idKuraDenganKasusTerbuka(healthRecords), [healthRecords]);
 
   // Komentar di sini dulu menyebut incompleteChecks.js sebagai sumber kebenaran
   // tunggal, lalu menuliskan ulang seluruh aturannya tepat di bawahnya. Kedua
