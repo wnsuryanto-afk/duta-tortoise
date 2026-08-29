@@ -17,28 +17,36 @@
  * daripada menarik seluruh kura ke browser, dan tetap menangkap kedua sisinya.
  */
 import { base44 } from "@/api/base44Client";
-import { sedangSakit } from "@/lib/statusKura";
+import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
 
 /**
  * Ambil seluruh kura yang sedang sakit menurut kedua penandanya.
  * @returns {Promise<Array>} data kura utuh, tanpa duplikat, terurut nama.
  */
 export async function ambilKuraSakit(batas = 200) {
-  const [lewatCentang, lewatStatus] = await Promise.all([
-    base44.entities.Tortoise.filter({ is_currently_sick: true }, "name", batas),
-    base44.entities.Tortoise.filter({ status: "sakit" }, "name", batas),
+  // Sumber ketiga yang dulu terlewat: kura yang penandanya sudah bersih tetapi
+  // kasus sakitnya di rekam kesehatan belum ditutup. Justru kura seperti inilah
+  // yang paling perlu muncul — selama ia tidak terdaftar di sini, tidak ada
+  // layar mana pun yang bisa menutup kasusnya, dan lencana merahnya menetap.
+  const [semuaKura, catatan] = await Promise.all([
+    base44.entities.Tortoise.list("name", 2000),
+    base44.entities.HealthRecord.list("-date", 500),
   ]);
 
-  const perId = new Map();
-  [...(lewatCentang || []), ...(lewatStatus || [])].forEach((t) => {
-    if (t?.id && !perId.has(t.id)) perId.set(t.id, t);
-  });
+  const idTerbuka = idKuraDenganKasusTerbuka(catatan);
 
   // Kura yang sudah mati, terjual, atau diarsipkan tidak dirawat lagi walau
   // penandanya tertinggal menyala — memunculkannya di daftar perawatan harian
   // hanya menambah tugas untuk kura yang tidak ada.
-  return [...perId.values()]
-    .filter((t) => sedangSakit(t) && !t.is_archived && t.status !== "mati" && t.status !== "terjual")
+  return (semuaKura || [])
+    .filter(
+      (t) =>
+        sedangSakitLengkap(t, idTerbuka) &&
+        !t.is_archived &&
+        t.status !== "mati" &&
+        t.status !== "terjual",
+    )
+    .slice(0, batas)
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 }
 
