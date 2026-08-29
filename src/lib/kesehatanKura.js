@@ -119,5 +119,48 @@ export async function tandaiSembuh({ kura, catatan = [], user, tanggal, asal = "
   // 3. Kembalikan status kura ke keadaan sebelum sakit.
   await base44.entities.Tortoise.update(tortoiseId, perubahanSembuh(kura, tanggal));
 
-  return { kasusDitutup: terbuka.length };
+  // 4. Batalkan tugas perawatan harian yang masih menggantung untuk kura ini.
+  const tugasDibatalkan = await batalkanTugasPerawatan({ tortoiseId, nama, tanggal, olehNama });
+
+  return { kasusDitutup: terbuka.length, tugasDibatalkan };
+}
+
+/**
+ * Batalkan tugas perawatan otomatis yang masih menggantung untuk satu kura.
+ *
+ * Tugas perawatan dibuat tiap hari selama kura berstatus sakit. Yang dulu tidak
+ * pernah terjadi: menutupnya lagi setelah kura sembuh. Pembuatnya memang
+ * berhenti membuat yang baru, tetapi yang terlanjur ada tetap menggantung
+ * sebagai tugas berpoin — pada 29 Agustus 2026 ada 30 tugas semacam itu untuk
+ * enam kura yang semuanya sudah sehat, senilai 450 poin pekerjaan yang tidak
+ * perlu dikerjakan.
+ *
+ * Tugas lama belum menyimpan tortoise_id, jadi pencocokan judul tetap dipakai
+ * sebagai cadangan.
+ */
+export async function batalkanTugasPerawatan({ tortoiseId, nama, tanggal, olehNama }) {
+  let dibatalkan = 0;
+  try {
+    const pending = await base44.entities.IncidentalTask.filter({ status: "pending" });
+    const cocok = (t) => {
+      if (t.created_by_email !== "system") return false;
+      if (t.tortoise_id) return t.tortoise_id === tortoiseId;
+      const judul = String(t.title || "");
+      return /^Perawatan /i.test(judul) && nama && judul.includes(nama);
+    };
+    for (const t of (pending || []).filter(cocok)) {
+      await base44.entities.IncidentalTask.update(t.id, {
+        status: "cancelled",
+        is_active: false,
+        notes:
+          String(t.notes || "") +
+          `\n\nDibatalkan otomatis ${tanggal}: ${nama} sudah dinyatakan sembuh oleh ${olehNama || "pengelola"}.`,
+      });
+      dibatalkan++;
+    }
+  } catch {
+    // Kegagalan membatalkan tugas tidak boleh menggagalkan penandaan sembuh —
+    // penyapu harian di generateDailyCareTasks akan membereskan sisanya.
+  }
+  return dibatalkan;
 }
