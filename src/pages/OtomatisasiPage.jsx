@@ -294,12 +294,17 @@ export default function OtomatisasiPage() {
   });
   const record = records[0] || null;
 
+  // Record-nya dibuat sendiri saat fungsi pertama dipanggil. Bila halaman ini
+  // dibuka lebih dulu, kita mulai dari draf kosong supaya owner tetap bisa
+  // menyalakan sesuatu — penyimpanan pertama yang membuat recordnya.
   useEffect(() => {
-    if (record && !draft) setDraft({ ...record });
-  }, [record, draft]);
+    if (draft || isLoading) return;
+    setDraft(record ? { ...record } : { setting_key: "main" });
+  }, [record, draft, isLoading]);
 
   const berubah = useMemo(() => {
-    if (!draft || !record) return false;
+    if (!draft) return false;
+    if (!record) return Object.keys(draft).length > 1;
     return Object.keys(draft).some((k) => draft[k] !== record[k]);
   }, [draft, record]);
 
@@ -541,7 +546,7 @@ export default function OtomatisasiPage() {
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">Ada perubahan yang belum disimpan.</p>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setDraft({ ...record })}>
+              <Button variant="ghost" size="sm" onClick={() => setDraft(record ? { ...record } : { setting_key: "main" })}>
                 Batalkan
               </Button>
               <Button size="sm" onClick={simpan} disabled={saving}>
