@@ -16,7 +16,7 @@ const DAILY_WAGE = 70000;
 const OVERTIME_PER_HOUR = 10000;
 
 function getWeekLabel(weekStart) {
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
   return `${format(weekStart, "d", { locale: id })} – ${format(weekEnd, "d MMM yyyy", { locale: id })}`;
 }
 
@@ -28,11 +28,11 @@ export default function DailyPayrollReport() {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const weekStart = useMemo(() => {
-    const base = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const base = startOfWeek(new Date(), { weekStartsOn: 0 });
     return addWeeks(base, weekOffset);
   }, [weekOffset]);
 
-  const weekEnd = useMemo(() => endOfWeek(weekStart, { weekStartsOn: 1 }), [weekStart]);
+  const weekEnd = useMemo(() => endOfWeek(weekStart, { weekStartsOn: 0 }), [weekStart]);
 
   // Hari kerja: Senin – Sabtu (6 hari)
   const workDays = useMemo(() => {
@@ -98,10 +98,12 @@ export default function DailyPayrollReport() {
       }
     });
 
+    // Lembur dibulatkan ke BAWAH ke jam penuh (kelebihan < 1 jam tidak dihitung)
+    const otHours = Math.floor(totalOvertime);
     const upahHarian = totalDays * DAILY_WAGE;
-    const upahLembur = Math.round(totalOvertime) * OVERTIME_PER_HOUR;
+    const upahLembur = otHours * OVERTIME_PER_HOUR;
     const total = upahHarian + upahLembur;
-    return { totalDays, totalHours: Math.round(totalHours), totalOvertime: Math.round(totalOvertime), upahHarian, upahLembur, total };
+    return { totalDays, totalHours: Math.round(totalHours), totalOvertime: otHours, upahHarian, upahLembur, total };
   }
 
   const handleExportPDF = () => {
@@ -120,7 +122,7 @@ export default function DailyPayrollReport() {
     y += 10;
 
     const dayLabels = workDays.map((d) => format(d, "EEE\nd/M", { locale: id }));
-    const colW = { no: 8, name: 36, days: 12, h: 10, upah: 22, lembur: 22, total: 26 };
+    const colW = { no: 8, name: 36, days: 12, h: 10, ot: 12, upah: 22, lembur: 22, total: 26 };
     const dayColW = 12;
 
     // Header
@@ -147,6 +149,7 @@ export default function DailyPayrollReport() {
     });
     drawCell("Hari", x, colW.days, "center"); x += colW.days;
     drawCell("Jam", x, colW.h, "center"); x += colW.h;
+    drawCell("Jam Lem", x, colW.ot, "center"); x += colW.ot;
     drawCell("Upah (Rp)", x, colW.upah, "center"); x += colW.upah;
     drawCell("Lembur (Rp)", x, colW.lembur, "center"); x += colW.lembur;
     drawCell("Total (Rp)", x, colW.total, "center");
@@ -172,6 +175,7 @@ export default function DailyPayrollReport() {
       });
       drawCell(String(summ.totalDays), x, colW.days, "center"); x += colW.days;
       drawCell(String(summ.totalHours), x, colW.h, "center"); x += colW.h;
+      drawCell(String(summ.totalOvertime), x, colW.ot, "center"); x += colW.ot;
       drawCell(summ.upahHarian.toLocaleString("id-ID"), x, colW.upah, "center"); x += colW.upah;
       drawCell(summ.upahLembur > 0 ? summ.upahLembur.toLocaleString("id-ID") : "-", x, colW.lembur, "center"); x += colW.lembur;
       drawCell(summ.total.toLocaleString("id-ID"), x, colW.total, "center");
@@ -187,7 +191,7 @@ export default function DailyPayrollReport() {
     drawCell("", x, colW.no, "center"); x += colW.no;
     drawCell("TOTAL", x, colW.name); x += colW.name;
     workDays.forEach(() => { x += dayColW; });
-    x += colW.days + colW.h + colW.upah + colW.lembur;
+    x += colW.days + colW.h + colW.ot + colW.upah + colW.lembur;
     drawCell(grandTotal.toLocaleString("id-ID"), x, colW.total, "center");
 
     doc.save(`Gaji-Harian-${format(weekStart, "yyyy-ww")}.pdf`);
@@ -272,6 +276,7 @@ export default function DailyPayrollReport() {
                   ))}
                   <th className="px-3 py-3 text-center font-semibold whitespace-nowrap">Hari</th>
                   <th className="px-3 py-3 text-center font-semibold whitespace-nowrap">Jam</th>
+                  <th className="px-3 py-3 text-center font-semibold whitespace-nowrap">Jam Lem</th>
                   <th className="px-3 py-3 text-right font-semibold whitespace-nowrap">Upah</th>
                   <th className="px-3 py-3 text-right font-semibold whitespace-nowrap">Lembur</th>
                   <th className="px-3 py-3 text-right font-semibold whitespace-nowrap bg-primary-foreground/10">Total</th>
@@ -280,7 +285,7 @@ export default function DailyPayrollReport() {
               <tbody>
                 {employeeData.length === 0 ? (
                   <tr>
-                    <td colSpan={8 + workDays.length} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={9 + workDays.length} className="text-center py-12 text-muted-foreground">
                       Tidak ada data absensi untuk minggu ini
                     </td>
                   </tr>
@@ -320,6 +325,7 @@ export default function DailyPayrollReport() {
                         })}
                         <td className="px-3 py-3 text-center font-semibold">{summ.totalDays}</td>
                         <td className="px-3 py-3 text-center text-muted-foreground">{summ.totalHours}j</td>
+                        <td className="px-3 py-3 text-center text-muted-foreground">{summ.totalOvertime}j</td>
                         <td className="px-3 py-3 text-right text-primary font-medium">
                           Rp {summ.upahHarian.toLocaleString("id-ID")}
                         </td>
@@ -341,7 +347,7 @@ export default function DailyPayrollReport() {
               {employeeData.length > 0 && (
                 <tfoot>
                   <tr className="bg-muted/40 font-bold border-t-2">
-                    <td className="px-3 py-3" colSpan={2 + workDays.length + 2}></td>
+                    <td className="px-3 py-3" colSpan={2 + workDays.length + 3}></td>
                     <td className="px-3 py-3 text-right text-primary">
                       Rp {employeeData.reduce((s, e) => s + getSummary(e).upahHarian, 0).toLocaleString("id-ID")}
                     </td>

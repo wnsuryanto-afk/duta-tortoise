@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronRight, Settings, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 
 /**
  * Pengaturan tarif gaji mingguan (owner only).
@@ -26,6 +28,35 @@ export default function WeeklyRateSettings() {
     queryFn: () => base44.entities.SalaryConfig.list(),
     staleTime: 60 * 1000,
   });
+
+  const companySettings = useCompanySettings();
+  const [autoOvertime, setAutoOvertime] = useState(true);
+  const [poinBonus, setPoinBonus] = useState(false);
+  const [savingToggles, setSavingToggles] = useState(false);
+
+  useEffect(() => {
+    setAutoOvertime(companySettings.auto_overtime_enabled !== false);
+    setPoinBonus(companySettings.poin_bonus_enabled === true);
+  }, [companySettings.auto_overtime_enabled, companySettings.poin_bonus_enabled, companySettings.id]);
+
+  const saveToggles = async () => {
+    setSavingToggles(true);
+    try {
+      if (companySettings.id) {
+        await base44.entities.CompanySettings.update(companySettings.id, {
+          auto_overtime_enabled: autoOvertime,
+          poin_bonus_enabled: poinBonus,
+        });
+        qc.invalidateQueries({ queryKey: ["company-settings-main"] });
+        toast.success("Pengaturan disimpan");
+      } else {
+        toast.error("Pengaturan perusahaan belum tersedia. Lengkapi data perusahaan dulu.");
+      }
+    } catch (e) {
+      toast.error("Gagal menyimpan: " + (e?.message || "kesalahan"));
+    }
+    setSavingToggles(false);
+  };
 
   // Inisialisasi draft saat configs dimuat / panel dibuka
   const ensureDraft = () => {
@@ -140,6 +171,29 @@ export default function WeeklyRateSettings() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="rounded-lg border border-border p-3 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Pengaturan Perhitungan</p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Hitung lembur otomatis</p>
+                <p className="text-[11px] text-muted-foreground">Bila dimatikan, jam lembur diisi manual per karyawan di slip mingguan. Bawaan aktif.</p>
+              </div>
+              <Switch checked={autoOvertime} onCheckedChange={setAutoOvertime} />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Aktifkan bonus poin</p>
+                <p className="text-[11px] text-muted-foreground">Bila dimatikan, poin tetap dicatat sebagai pencapaian tetapi tidak menjadi uang. Bawaan MATI.</p>
+              </div>
+              <Switch checked={poinBonus} onCheckedChange={setPoinBonus} />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={saveToggles} disabled={savingToggles} size="sm" variant="outline" className="gap-1.5">
+                {savingToggles ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Simpan Pengaturan
+              </Button>
+            </div>
           </div>
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving} className="gap-2" size="sm">

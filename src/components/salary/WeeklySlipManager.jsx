@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { formatRole } from "@/lib/permissions";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import WeeklyRateSettings from "@/components/salary/WeeklyRateSettings";
-import { getWeekOptions, formatWeekLabel, getWeekEnd, safeParseDate } from "@/lib/weeklySalaryUtils";
+import { getWeekOptions, formatWeekLabel, getWeekEnd, safeParseDate, calcWeeklyOvertime } from "@/lib/weeklySalaryUtils";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -42,6 +42,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
   // Keputusan potongan kasbon per karyawan per kasbon: { `${email}__${kasbonId}`: { mode, amount, skipReason } }
   const [kasbonDecisions, setKasbonDecisions] = useState({});
   const [expandedKasbon, setExpandedKasbon] = useState({});
+  const [manualOvertime, setManualOvertime] = useState({});
 
   const weekStartObj = safeParseDate(weekStart);
   const weekEnd = weekStartObj ? format(getWeekEnd(weekStartObj), "yyyy-MM-dd") : "";
@@ -65,11 +66,6 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
     queryFn: () => base44.entities.DailyChecklist.list("-date", 500),
     enabled: !!weekStart,
   });
-  const { data: overtimeLogs = [] } = useQuery({
-    queryKey: ["overtime-week", weekStart, weekEnd],
-    queryFn: () => base44.entities.OvertimeLog.list("-date", 300),
-    enabled: !!weekStart,
-  });
   const { data: rempesanLogs = [] } = useQuery({
     queryKey: ["rempesan-week", weekStart, weekEnd],
     queryFn: () => base44.entities.RempesanLog.list("-date", 300),
@@ -91,10 +87,11 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
   const employees = users.filter((u) => ["keeper", "kepala_feeder"].includes(u.role));
   const nilaiPerPoin = Number(settings.nilai_per_poin) || 0;
   const nilaiNol = nilaiPerPoin === 0;
+  const autoOvertime = settings.auto_overtime_enabled !== false;
+  const poinBonusEnabled = settings.poin_bonus_enabled === true;
 
   const weekAttendances = attendances.filter((a) => a.date >= weekStart && a.date <= weekEnd);
   const weekChecklists = dailyChecklists.filter((c) => c.date >= weekStart && c.date <= weekEnd);
-  const weekOvertime = overtimeLogs.filter((o) => o.date >= weekStart && o.date <= weekEnd);
   const weekRempesan = rempesanLogs.filter((r) => r.date >= weekStart && r.date <= weekEnd && r.status === "approved");
 
   // Inisialisasi keputusan kasbon default (potong weekly_deduction) untuk kasbon tanpa keputusan
@@ -115,9 +112,11 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         return { date: ds, hadir: att?.status === "hadir", rempesan: !!rempesan };
       });
 
-      // Lembur
-      const empOvertime = weekOvertime.filter((o) => o.employee_email === emp.email);
-      const overtimeHours = empOvertime.reduce((s, o) => s + (o.hours || 0), 0);
+      // Lembur — per hari dari jam check-in/out, dibulatkan ke bawah ke jam penuh.
+      // Bila "Hitung lembur otomatis" dimatikan, pakai isian manual owner/admin.
+      const overtimeHours = autoOvertime
+        ? calcWeeklyOvertime(empAtt, days.map((d) => format(d, "yyyy-MM-dd")))
+        : Number(manualOvertime[emp.email] || 0);
       const overtimePay = overtimeHours * overtimeRate;
 
       // Rempesan: dedup per tanggal, maks 1 trip per hari
@@ -136,8 +135,8 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
           (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0) : 0);
         return s + (pts || 0);
       }, 0);
-      // Bila nilai poin 0 → bonus 0 (jangan hitung diam-diam)
-      const poinBonus = nilaiNol ? 0 : poin * nilaiPerPoin;
+      // Bonus poin hanya bila diaktifkan owner & nilai poin > 0
+      const poinBonus = poinBonusEnabled && !nilaiNol ? poin * nilaiPerPoin : 0;
 
       // Kasbon aktif karyawan
       const empKasbons = kasbons.filter((k) => k.employee_email === emp.email && k.status === "approved");
@@ -177,7 +176,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         existingSlip, slipPaid, profile,
       };
     });
-  }, [employees, salaryConfigs, weekAttendances, weekChecklists, weekOvertime, weekRempesan, kasbons, slips, weekStart, nilaiPerPoin, nilaiNol, kasbonDecisions, days, userProfiles]);
+  }, [employees, salaryConfigs, weekAttendances, weekChecklists, weekRempesan, kasbons, slips, weekStart, nilaiPerPoin, nilaiNol, poinBonusEnabled, autoOvertime, manualOvertime, kasbonDecisions, days, userProfiles]);
 
   const totalNet = rekapData.reduce((s, r) => s + r.netTotal, 0);
   const totalPoin = rekapData.reduce((s, r) => s + r.poin, 0);
@@ -292,10 +291,22 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         )}
       </div>
 
-      {nilaiNol && (
+      {poinBonusEnabled && nilaiNol && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-300 text-sm text-red-800 font-medium">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
           Nilai per poin belum diatur (Rp 0). Bonus poin dihitung Rp 0. Atur di halaman Pengaturan Poin.
+        </div>
+      )}
+      {!poinBonusEnabled && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          Bonus poin dimatikan. Poin tetap dicatat sebagai pencapaian tetapi tidak menjadi uang. Nyalakan di Pengaturan Tarif Mingguan bila ingin dibayar.
+        </div>
+      )}
+      {!autoOvertime && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          Hitung lembur otomatis dimatikan. Isi jam lembur manual per karyawan pada tabel di bawah.
         </div>
       )}
       {anyMissing && (
@@ -377,7 +388,20 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
                             </td>
                           ))}
                           <td className="text-center p-1.5 border border-border font-semibold">{row.hadirDays}</td>
-                          <td className="text-center p-1.5 border border-border">{row.overtimeHours}j</td>
+                          <td className="text-center p-1.5 border border-border">
+                            {!autoOvertime && isManagerRole && !row.slipPaid ? (
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={manualOvertime[row.emp.email] ?? row.overtimeHours ?? 0}
+                                onChange={(e) => setManualOvertime((p) => ({ ...p, [row.emp.email]: Number(e.target.value) || 0 }))}
+                                className="h-7 w-14 text-center mx-auto"
+                              />
+                            ) : (
+                              <span>{row.overtimeHours}j</span>
+                            )}
+                          </td>
                           <td className="text-center p-1.5 border border-border">{row.rempesanTrips}</td>
                           <td className="text-right p-1.5 border border-border">{fmt(row.baseSalary)}</td>
                           <td className="text-right p-1.5 border border-border text-blue-600">{fmt(row.overtimePay)}</td>
@@ -400,8 +424,11 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
                     )}
                     <span>Upah rempesan: {fmt(row.rempesanPay)} ({row.rempesanTrips} × {fmt(row.rempesanRate)})</span>
                     <span className="text-amber-700">Poin: {row.poin}</span>
-                    {isManagerRole && (
+                    {isManagerRole && poinBonusEnabled && (
                       <span className="text-amber-700">Bonus poin: {row.poin} × {fmt(row.nilaiPerPoin)} = {fmt(row.poinBonus)}</span>
+                    )}
+                    {isManagerRole && !poinBonusEnabled && (
+                      <span className="text-muted-foreground">Bonus poin dimatikan</span>
                     )}
                   </div>
 

@@ -91,3 +91,28 @@ export function getWeekOptions(maxWeeks = 12) {
   }
   return options;
 }
+
+// Hitung jam kerja dari catatan check-in/check-out (format "HH:mm").
+export function attendanceHours(att) {
+  if (!att?.check_in || !att?.check_out) return 0;
+  const [ih, im] = String(att.check_in).split(":").map(Number);
+  const [oh, om] = String(att.check_out).split(":").map(Number);
+  if (Number.isNaN(ih) || Number.isNaN(im) || Number.isNaN(oh) || Number.isNaN(om)) return 0;
+  return Math.max(0, (oh * 60 + om - ih * 60 - im) / 60);
+}
+
+// Lembur mingguan: dihitung PER HARI (kelebihan jam di atas 8 jam hari itu).
+// Hari dengan jam ≤ 8 → lembur 0. Dijumlahkan ke total mingguan lalu dibulatkan
+// KE BAWAH ke jam penuh (kelebihan < 1 jam tidak dihitung setengah jam).
+export function calcWeeklyOvertime(attendances, dayDateStrings) {
+  let total = 0;
+  for (const ds of dayDateStrings) {
+    const att = attendances.find((a) => a.date === ds);
+    if (!att) continue;
+    const present = att.status === "hadir" || (att.check_in && !att.status);
+    if (!present) continue;
+    const h = attendanceHours(att);
+    if (h > 8) total += (h - 8);
+  }
+  return Math.floor(total);
+}

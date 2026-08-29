@@ -30,6 +30,7 @@ export default function RekapPoinGajiPage() {
   const settings = useCompanySettings();
   const TARGET_POIN_SETTING = settings.min_poin_bulanan || 0;
   const NILAI_PER_POIN_SETTING = settings.nilai_per_poin || 0;
+  const POIN_BONUS_ENABLED = settings.poin_bonus_enabled === true;
 
   const { data: users = [] } = useActiveUsers();
 
@@ -108,7 +109,7 @@ export default function RekapPoinGajiPage() {
       const targetTercapai = totalPoin >= TARGET_POIN_SETTING;
       const selisihPoin = Math.abs(totalPoin - TARGET_POIN_SETTING);
 
-      const bonus = totalPoin * pointValue;
+      const bonus = POIN_BONUS_ENABLED ? totalPoin * pointValue : 0;
       const potonganPoin = 0;
       const kpiBonus = bonus;
 

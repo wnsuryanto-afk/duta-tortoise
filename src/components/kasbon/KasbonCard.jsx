@@ -21,7 +21,7 @@ const methodLabel = {
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
-export default function KasbonCard({ kasbon, isAdmin, onApprove, onReject, onDeduct, onPayoff }) {
+export default function KasbonCard({ kasbon, isAdmin, isOwner, onApprove, onReject, onDeduct, onPayoff }) {
   const [expanded, setExpanded] = useState(false);
   const sisa = (kasbon.amount || 0) - (kasbon.total_paid || 0);
   const pct = kasbon.amount ? Math.round(((kasbon.total_paid || 0) / kasbon.amount) * 100) : 0;
@@ -39,6 +39,9 @@ export default function KasbonCard({ kasbon, isAdmin, onApprove, onReject, onDed
           <p className="text-lg font-bold text-primary">{fmt(kasbon.amount)}</p>
           {kasbon.reason && kasbon.reason !== "-" && (
             <p className="text-xs text-muted-foreground mt-0.5">"{kasbon.reason}"</p>
+          )}
+          {kasbon.status === "rejected" && kasbon.rejection_reason && (
+            <p className="text-xs text-red-600 mt-0.5">Alasan ditolak: "{kasbon.rejection_reason}"</p>
           )}
           <p className="text-xs text-muted-foreground mt-1">
             Diajukan: {kasbon.request_date ? format(new Date(kasbon.request_date), "d MMM yyyy", { locale: id }) : "—"}
@@ -94,7 +97,7 @@ export default function KasbonCard({ kasbon, isAdmin, onApprove, onReject, onDed
 
         {isAdmin && (
           <div className="flex gap-2 flex-shrink-0 flex-wrap">
-            {kasbon.status === "pending" && (
+            {isOwner && kasbon.status === "pending" && (
               <>
                 <Button size="sm" onClick={() => onApprove(kasbon)} className="gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Setujui
