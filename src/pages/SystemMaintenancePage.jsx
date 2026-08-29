@@ -10,6 +10,7 @@ import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
 import TestModeSettings from "@/components/owner/TestModeSettings";
 import PemindahanKandang from "@/components/owner/PemindahanKandang";
 import PenandaSakit from "@/components/owner/PenandaSakit";
+import TransaksiKembar from "@/components/owner/TransaksiKembar";
 import AISaranToggle from "@/components/settings/AISaranToggle";
 
 export default function SystemMaintenancePage() {
@@ -68,6 +69,9 @@ export default function SystemMaintenancePage() {
 
       {/* Keselarasan penanda sakit — membereskan data lama, aman diulang */}
       <PenandaSakit />
+
+      {/* Catatan keuangan kembar — membereskan data lama, aman diulang */}
+      <TransaksiKembar />
 
       {/* Mode Testing */}
       <div>
