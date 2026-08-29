@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
+import BonusBulanIni from "./BonusBulanIni";
 import TugasHariIni from "@/components/sop/TugasHariIni";
 import IncidentalTaskList from "@/components/incidental/IncidentalTaskList";
 import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
@@ -820,6 +821,14 @@ export default function GuidedHariIni({ user }) {
       )}
 
       <div className="px-4 pt-4 space-y-4">
+
+        {/* ══ BONUS BULAN INI ════════════════════════════════
+            Ditaruh di atas daftar tugas, bukan di halaman terpisah: poin baru
+            memotivasi kalau terlihat pada saat orang memutuskan mau mengerjakan
+            tugas berikutnya atau tidak. */}
+        <WidgetErrorBoundary widgetName="Bonus Bulan Ini">
+          <BonusBulanIni user={user} />
+        </WidgetErrorBoundary>
 
         {/* ══ TUGAS HARI INI — JADWAL KERJA ════════════════════════ */}
         <WidgetErrorBoundary widgetName="Tugas Hari Ini">
