@@ -11,6 +11,7 @@ import TestModeSettings from "@/components/owner/TestModeSettings";
 import PemindahanKandang from "@/components/owner/PemindahanKandang";
 import PenandaSakit from "@/components/owner/PenandaSakit";
 import TransaksiKembar from "@/components/owner/TransaksiKembar";
+import BarangKembar from "@/components/owner/BarangKembar";
 import AISaranToggle from "@/components/settings/AISaranToggle";
 
 export default function SystemMaintenancePage() {
@@ -72,6 +73,9 @@ export default function SystemMaintenancePage() {
 
       {/* Catatan keuangan kembar — membereskan data lama, aman diulang */}
       <TransaksiKembar />
+
+      {/* Barang gudang & pakan kembar — membereskan data lama, aman diulang */}
+      <BarangKembar />
 
       {/* Mode Testing */}
       <div>
