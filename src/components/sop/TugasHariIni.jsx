@@ -57,13 +57,21 @@ const CATEGORY_BADGE = {
 function computeLastDueDate(t, todayStr) {
   const today = new Date(todayStr + "T00:00:00");
   const freq = String(t.frequency || "").toLowerCase();
-  if (freq === "harian") return todayStr;
+
+  // Pekerjaan yang jadwalnya lebih jarang daripada bulanan — mis. tiap dua
+  // bulan, atau musiman — tidak bisa dinyatakan lewat harian/mingguan/bulanan
+  // saja. Sebelum kolom ini ada, "2 bulan sekali" hanya tertulis di judul task
+  // sementara sistem tetap menjalankannya tiap bulan.
+  const bulanAktif = Array.isArray(t.bulan_aktif) ? t.bulan_aktif : [];
+  const bulanCocok = (d) => bulanAktif.length === 0 || bulanAktif.includes(d.getMonth() + 1);
+
+  if (freq === "harian") return bulanCocok(today) ? todayStr : null;
   if (freq === "mingguan") {
     const days = Array.isArray(t.weekly_days) ? t.weekly_days : [];
     if (!days.length) return null;
     for (let i = 0; i < 10; i++) {
       const d = new Date(today); d.setDate(d.getDate() - i);
-      if (days.includes(d.getDay())) return format(d, "yyyy-MM-dd");
+      if (days.includes(d.getDay()) && bulanCocok(d)) return format(d, "yyyy-MM-dd");
     }
     return null;
   }
@@ -72,7 +80,7 @@ function computeLastDueDate(t, todayStr) {
     if (!dates.length) return null;
     for (let i = 0; i < 35; i++) {
       const d = new Date(today); d.setDate(d.getDate() - i);
-      if (dates.includes(d.getDate())) return format(d, "yyyy-MM-dd");
+      if (dates.includes(d.getDate()) && bulanCocok(d)) return format(d, "yyyy-MM-dd");
     }
     return null;
   }
