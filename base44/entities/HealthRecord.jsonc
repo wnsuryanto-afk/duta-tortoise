@@ -2,6 +2,20 @@
   "name": "HealthRecord",
   "type": "object",
   "properties": {
+    "is_resolved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Kasus sakit ini sudah ditutup (kura dinyatakan sembuh). Sebelum kolom ini ada, 'masih sakit' dibaca dari kosongnya follow_up_date \u2014 sehingga laporan sakit yang tidak menjadwalkan pemeriksaan ulang menandai kuranya sakit selamanya, dan tidak ada cara menutupnya."
+    },
+    "resolved_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kasus dinyatakan selesai."
+    },
+    "resolved_by": {
+      "type": "string",
+      "description": "Nama yang menyatakan sembuh."
+    },
     "tortoise_id": {
       "type": "string",
       "description": "ID tortoise"
