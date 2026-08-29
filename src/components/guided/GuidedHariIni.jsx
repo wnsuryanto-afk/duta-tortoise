@@ -19,7 +19,7 @@ import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
 import { LeafPattern } from "@/components/common/Illustration";
-import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
+import { perubahanSakit } from "@/lib/statusKura";
 import { tandaiSembuh } from "@/lib/kesehatanKura";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
