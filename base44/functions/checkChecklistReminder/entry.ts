@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { wibNow, wibTanggal, WIB_OFFSET_MS } from '../../shared/otomatis.ts';
 
 // Dipanggil dari frontend (Dashboard) saat user buka app
 // Notif 7: Keeper belum submit checklist setelah jam 15:00
@@ -24,8 +25,8 @@ Deno.serve(async (req) => {
     // malam ketika tanggalnya berganti.
     //
     // Pola yang sama dipakai sendDailyApprovalReminder dan sendDailySummary.
-    const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-    const today = wib.toISOString().split("T")[0];
+    const wib = wibNow();
+    const today = wibTanggal(wib);
     const isAfter15WIB = wib.getUTCHours() >= 15;
 
     const results = [];
@@ -37,8 +38,13 @@ Deno.serve(async (req) => {
         category,
       });
       return existing.some(n => {
+        // `created_at` disimpan dalam UTC, sementara `today` adalah tanggal
+        // WIB. Membandingkan awalannya langsung membuat penjaga ini meleset
+        // antara 00:00 dan 06:59 WIB — pemberitahuan yang sudah dikirim pagi
+        // itu dianggap belum ada, lalu dikirim ulang.
         const ca = n.created_at || n.created_date || "";
-        return ca.startsWith(today) && !n.is_dismissed;
+        const caWib = ca ? wibTanggal(new Date(new Date(ca).getTime() + WIB_OFFSET_MS)) : "";
+        return caWib === today && !n.is_dismissed;
       });
     };
 
