@@ -9,6 +9,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { masukLaporan } from "@/lib/laporan";
+import { clutchAktif } from "@/lib/breedingUtils";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const GREEN_DARK = [27, 67, 50];
@@ -187,7 +188,7 @@ export default function MonthlyReportExport({ role }) {
       const periodHealth = healthRecords.filter(h => (h.date || "").startsWith(period));
       const periodAttendance = attendances.filter(a => (a.date || "").startsWith(period));
       const periodBreedings = breedings.filter(b => (b.egg_laying_date || "").startsWith(period));
-      const activeBreedings = breedings.filter(b => ["bertelur", "inkubasi"].includes(b.status));
+      const activeBreedings = breedings.filter(clutchAktif);
 
       const totalPemasukan = periodTx.filter(t => t.type === "pemasukan").reduce((s, t) => s + (t.amount || 0), 0);
       const totalPengeluaran = periodTx.filter(t => t.type === "pengeluaran").reduce((s, t) => s + (t.amount || 0), 0);

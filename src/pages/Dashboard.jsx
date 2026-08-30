@@ -34,6 +34,7 @@ import QuickActionsBar from "@/components/dashboard/QuickActionsBar";
 import UrgentAlerts from "@/components/dashboard/UrgentAlerts";
 import OperationalToday from "@/components/dashboard/OperationalToday";
 import DashboardSection from "@/components/dashboard/DashboardSection";
+import { clutchAktif } from "@/lib/breedingUtils";
 
 function FallbackDashboard() {
   const { data: tortoises = [] } = useQuery({
@@ -65,7 +66,7 @@ function FallbackDashboard() {
   const sickTortoises = tortoises.filter((t) => sedangSakitLengkap(t, idKasusTerbuka));
   const babyCount = tortoises.filter((t) => t.status === "baby").length;
   const totalEggs = breedings
-    .filter((b) => b.status === "bertelur" || b.status === "inkubasi")
+    .filter(clutchAktif)
     .reduce((sum, b) => sum + (b.egg_count || 0), 0);
   const totalHatched = breedings.reduce((sum, b) => sum + (b.hatched_count || 0), 0);
   const totalEggsEver = breedings.reduce((sum, b) => sum + (b.egg_count || 0), 0);

@@ -18,6 +18,7 @@ import ArahMingguIni from "@/components/dashboard/ArahMingguIni";
 import { masukLaporan } from "@/lib/laporan";
 import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
 import { saldoTerkini } from "@/lib/kasKecil";
+import { clutchAktif } from "@/lib/breedingUtils";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -141,7 +142,7 @@ export default function RingkasanPagi({ bagian = "semua" }) {
   const activeFin = finances.filter(masukLaporan);
   const exp7 = activeFin.filter(f => f.type === "pengeluaran" && f.date >= weekAgo && f.date <= today).reduce((s, f) => s + (f.amount || 0), 0);
 
-  const activeBreedings = breedings.filter(b => ["bertelur", "inkubasi"].includes(b.status));
+  const activeBreedings = breedings.filter(clutchAktif);
   const pakanBaskets = pakan.reduce((s, p) => s + (p.basket_count || 0), 0);
 
   // Penyebut "Hadir X/Y" hanya karyawan harian (keeper & kepala_feeder).

@@ -35,6 +35,7 @@ import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
 import { periksaStok } from "@/lib/stokMenipis";
 import GrafikUang from "@/components/ui/grafik-uang";
+import { clutchAktif } from "@/lib/breedingUtils";
 
 // ─── Helpers ───────────────────────────────────────
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -365,7 +366,7 @@ export default function OwnerDashboard({ user }) {
   const costPerTortoise = activeTortoises.length > 0 ? Math.round(expenseThis / activeTortoises.length) : 0;
 
   // ── Breeding Calcs ────────────────────────────────
-  const activeBreedings = breedings.filter(b => ["bertelur", "inkubasi"].includes(b.status));
+  const activeBreedings = breedings.filter(clutchAktif);
   const totalEggs = activeBreedings.reduce((s, b) => s + (b.egg_count || 0), 0);
   const hatchedThisMonth = breedings
     .filter(b => (b.hatch_date || "").startsWith(thisMonthKey))

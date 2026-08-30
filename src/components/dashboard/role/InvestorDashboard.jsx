@@ -13,6 +13,7 @@ import Illustration, { ChartArt } from "@/components/common/Illustration";
 import { useState, useEffect } from "react";
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { masukLaporan } from "@/lib/laporan";
+import { clutchAktif } from "@/lib/breedingUtils";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
@@ -72,7 +73,7 @@ export default function InvestorDashboard({ user }) {
   const matiCount = tortoises.filter(t => t.status === "mati").length;
 
   // Breeding calcs
-  const activeBreedings = breedings.filter(b => ["bertelur","inkubasi"].includes(b.status));
+  const activeBreedings = breedings.filter(clutchAktif);
   const now2 = new Date();
   const breedingWithCountdown = activeBreedings.map(b => {
     const hatchEnd = b.estimated_hatch_end ? new Date(b.estimated_hatch_end) : null;

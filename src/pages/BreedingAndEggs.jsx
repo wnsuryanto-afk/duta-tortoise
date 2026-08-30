@@ -28,7 +28,7 @@ import EmptyState from "@/components/common/EmptyState";
 import { EggNestArt } from "@/components/common/Illustration";
 import AccessDenied from "@/components/common/AccessDenied";
 import PageTooltip from "@/components/tutorial/PageTooltip";
-import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull } from "@/lib/breedingUtils";
+import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncubatorNearFull, clutchAktif } from "@/lib/breedingUtils";
 import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
 import EggGrid from "@/components/breeding/EggGrid";
 import ClutchOffspringSection from "@/components/breeding/ClutchOffspringSection";
@@ -221,7 +221,7 @@ export default function BreedingAndEggs() {
   // riwayat, bukan hanya batch aktif — batch yang sedang berjalan belum punya
   // hasil, jadi memasukkannya akan menekan angkanya secara keliru.
   const ringkasanBreeding = (() => {
-    const aktif = breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi");
+    const aktif = breedings.filter(clutchAktif);
     const sekarang = new Date();
     const segera = aktif.filter(b => {
       if (!b.estimated_hatch_end) return false;
@@ -229,7 +229,7 @@ export default function BreedingAndEggs() {
       return sisa >= 0 && sisa <= 7;
     }).length;
     const telurRiwayat = breedings
-      .filter(b => b.status !== "bertelur" && b.status !== "inkubasi")
+      .filter(b => !clutchAktif(b))
       .reduce((t, b) => t + (b.egg_count || 0), 0);
     const menetasRiwayat = breedings.reduce((t, b) => t + (b.hatched_count || 0), 0);
     return {
@@ -269,8 +269,8 @@ export default function BreedingAndEggs() {
               <ScanLine className="w-4 h-4 mr-2" />
               Pindai Label
             </Button>
-            {breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi").length > 0 && (
-              <Button variant="outline" onClick={() => { setLabelBreedings(breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")); setShowLabelDialog(true); }}>
+            {breedings.filter(clutchAktif).length > 0 && (
+              <Button variant="outline" onClick={() => { setLabelBreedings(breedings.filter(clutchAktif)); setShowLabelDialog(true); }}>
                 <Printer className="w-4 h-4 mr-2" />
                 Unduh Label Aktif
               </Button>
@@ -356,7 +356,7 @@ export default function BreedingAndEggs() {
                             onDelete={() => handleDelete(b)}
                             onHatch={() => setHatchBreeding(b)}
                           />
-                          {b.egg_laying_date && (b.status === "bertelur" || b.status === "inkubasi") && (
+                          {b.egg_laying_date && clutchAktif(b) && (
                             <button
                               title="Cetak Label Kotak Telur"
                               onClick={() => { setLabelBreedings([b]); setShowLabelDialog(true); }}
@@ -396,7 +396,7 @@ export default function BreedingAndEggs() {
                     </div>
 
                     {/* Label kotak telur (status bertelur / inkubasi) */}
-                    {(b.status === "bertelur" || b.status === "inkubasi") && (
+                    {clutchAktif(b) && (
                       <div className="mt-3 flex items-center gap-3 p-2.5 rounded-xl bg-green-50/60 border border-green-200">
                         <EggQRPreview id={b.id} size={52} />
                         <div className="flex-1 min-w-0">
@@ -801,7 +801,7 @@ export default function BreedingAndEggs() {
       {showLabelDialog && (
         <EggLabelGenerator
           breedings={labelBreedings}
-          allActiveBreedings={breedings.filter(b => b.status === "bertelur" || b.status === "inkubasi")}
+          allActiveBreedings={breedings.filter(clutchAktif)}
           tortoises={tortoises}
           open={showLabelDialog}
           onClose={() => setShowLabelDialog(false)}
