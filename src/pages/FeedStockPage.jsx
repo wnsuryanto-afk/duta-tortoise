@@ -283,10 +283,14 @@ export default function FeedStockPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((s) => {
-            const isLow = s.current_stock <= s.minimum_stock;
-            const incomplete = isItemIncomplete(s, "feedstock");
+            // Bahan nonaktif tidak dilacak stoknya, jadi "hampir habis" tidak
+            // berlaku untuknya: angka nol pada bahan yang memang tidak dicatat
+            // bukan kabar buruk, hanya kolom yang tidak dipakai.
+            const nonaktif = s.is_active === false;
+            const isLow = !nonaktif && s.current_stock <= s.minimum_stock;
+            const incomplete = !nonaktif && isItemIncomplete(s, "feedstock");
             return (
-              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${incomplete ? "border-l-4 border-l-yellow-400" : ""} ${isLow && s.is_mandatory ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
+              <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${nonaktif ? "opacity-55" : ""} ${incomplete ? "border-l-4 border-l-yellow-400" : ""} ${isLow && s.is_mandatory ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
                 onClick={() => setDetailItem(s)}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0 mr-2">
@@ -304,7 +308,8 @@ export default function FeedStockPage() {
                     <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                       <span className="text-xs text-muted-foreground">{CATEGORIES.find(c => c.value === s.category)?.label}</span>
                       {s.sku && <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1 rounded">{s.sku}</span>}
-                      {s.is_mandatory && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠️ Wajib</span>}
+                      {s.is_mandatory && !nonaktif && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">⚠️ Wajib</span>}
+                      {nonaktif && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold">Tidak dilacak</span>}
                     </div>
                     {incomplete && <IncompleteBadges item={s} itemType="feedstock" />}
                   </div>
