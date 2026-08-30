@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { perluDiperhatikan } from "../../shared/stok.ts";
 
 // Dipanggil via entity automation saat StockMovement dibuat
 Deno.serve(async (req) => {
@@ -58,7 +59,10 @@ Deno.serve(async (req) => {
         item = res[0];
       }
 
-      if (item && item.current_stock <= item.minimum_stock) {
+      // Aturan yang sama dengan layar (../../shared/stok.ts). Versi lama
+      // memakai `<= minimum_stock`, sehingga barang bermininum 0 yang stoknya
+      // memang 0 memicu notifikasi tiap kali ada pergerakan.
+      if (item && perluDiperhatikan(item)) {
         const admins = allUsers.filter(u => ["admin", "owner"].includes(u.role));
         const isHabis = item.current_stock === 0;
         for (const admin of admins) {

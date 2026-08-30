@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { clutchAktif } from "../../shared/kura.ts";
+import { perluDiperhatikan, dilacak } from "../../shared/stok.ts";
 
 // Batas pengambilan ditulis tegas. Pemberitahuan otomatis yang membaca daftar
 // tanpa batas mengandalkan bawaan SDK: begitu datanya lewat batas itu,
@@ -265,12 +266,16 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     const feedStocks = await base44.asServiceRole.entities.FeedStock.list('-name', 500);
     const lowFeedItems = feedStocks.filter(f => {
+      if (!dilacak(f)) return false;
       if (f.current_stock <= 0) return false;
       if (f.daily_ideal && f.daily_ideal > 0) {
         return (f.current_stock / f.daily_ideal) <= 7;
       }
-      // Fallback: stok <= min_stock * 3
-      return f.minimum_stock > 0 && f.current_stock <= f.minimum_stock * 3;
+      // Cadangan bila daily_ideal belum diisi: aturan yang sama dengan layar
+      // (../../shared/stok.ts). Ambang lama di sini adalah 300% dari minimum —
+      // tiga kali lebih longgar dari mana pun, sehingga barang yang stoknya
+      // sehat pun ikut dilaporkan sebagai menipis.
+      return perluDiperhatikan(f);
     });
 
     if (lowFeedItems.length > 0) {

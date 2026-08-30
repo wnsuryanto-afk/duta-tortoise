@@ -11,6 +11,7 @@ import {
 import { sendWhatsAppNotification, getSettings, trackAICall } from "../../shared/whatsapp.ts";
 import { terjadwalPada } from "../../shared/jadwalSOP.ts";
 import { clutchAktif, STATUS_KELUAR } from "../../shared/kura.ts";
+import { dilacak } from "../../shared/stok.ts";
 
 
 /**
@@ -92,11 +93,11 @@ Deno.serve(async (req) => {
       .map((h: any) => `${h.tortoise_name}: ${h.description || h.treatment || "perlu dicek"}`);
 
     const pakanHabis = (pakan || [])
-      .filter((f: any) => Number(f.current_stock || 0) <= 0)
+      .filter((f: any) => dilacak(f) && Number(f.current_stock || 0) <= 0)
       .map((f: any) => f.name);
 
     const gudangHabis = (gudang || [])
-      .filter((i: any) => Number(i.minimum_stock || 0) > 0 && Number(i.current_stock || 0) <= 0)
+      .filter((i: any) => dilacak(i) && Number(i.minimum_stock || 0) > 0 && Number(i.current_stock || 0) <= 0)
       .filter((i: any) => !String(i.name || "").toUpperCase().includes("DUPLIKAT"))
       .map((i: any) => i.name);
 

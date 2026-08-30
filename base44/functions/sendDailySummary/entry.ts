@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.ts";
 import { terjadwalPada, tanggalDariWib } from "../../shared/jadwalSOP.ts";
+import { perluDiperhatikan } from "../../shared/stok.ts";
 
 /**
  * Batas pengambilan data untuk ringkasan harian.
@@ -384,10 +385,10 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   const catPriority: Record<string, number> = { obat: 0, vitamin: 1, suplemen: 2 };
   const lowStockItems = [
     ...warehouseItems
-      .filter(i => (i.current_stock || 0) < (i.minimum_stock || 0))
+      .filter(perluDiperhatikan)
       .map(i => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
     ...feedStocks
-      .filter(i => (i.current_stock || 0) < (i.minimum_stock || 0))
+      .filter(perluDiperhatikan)
       .map(i => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
   ];
   lowStockItems.sort((a, b) => {
