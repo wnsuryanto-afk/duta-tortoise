@@ -612,7 +612,10 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     const purchasePrice = isHasilSendiri ? 0 :
       form.purchase_price_input !== "" ? Number(form.purchase_price_input) || 0 :
       selectedTortoise?.purchase_price || 0;
-    const biayaPerBulan = costData?.biayaPerEkor || 100000;
+    // Tarif RATA-RATA beberapa bulan, bukan bulan berjalan. Bulan berjalan bisa
+    // sangat rendah hanya karena pencatatannya belum lengkap, dan angka itu ikut
+    // tersimpan permanen di catatan penjualan ini. Lihat useCostPerTortoise.
+    const biayaPerBulan = costData?.biayaPerEkorRata || costData?.biayaPerEkor || 100000;
     const farmMonths = calcFarmMonths(selectedTortoise, form.sale_date);
     const estimasiPerawatan = farmMonths * biayaPerBulan;
     const shippingCost = Number(form.shipping_cost) || 0;
@@ -683,7 +686,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         profit: laba,
         margin_percent: marginPct,
         purchase_price_original: actualPurchasePrice,
-        care_cost_estimate: calcFarmMonths(selectedTortoise, form.sale_date) * (costData?.biayaPerEkor || 100000),
+        care_cost_estimate: calcFarmMonths(selectedTortoise, form.sale_date) * (costData?.biayaPerEkorRata || costData?.biayaPerEkor || 100000),
         finance_tx_id: finTx?.id || "",
       });
 
