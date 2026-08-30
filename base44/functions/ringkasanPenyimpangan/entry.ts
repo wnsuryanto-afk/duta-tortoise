@@ -11,7 +11,6 @@ import {
   petaFotoHarian,
 } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
-import { STATUS_KELUAR } from "../../shared/kura.ts";
 
 
 /**
