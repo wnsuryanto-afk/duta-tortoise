@@ -80,9 +80,23 @@ export default function KepalaFeederDashboard({ user }) {
 
   const settings = companySettings[0] || {};
 
-  // Stok kritis (mandatory & below minimum)
-  const criticalWarehouseStock = warehouseItems.filter(i => i.is_mandatory && i.current_stock < i.minimum_stock);
-  const criticalFeedStock = feedStocks.filter(f => f.current_stock <= (f.minimum_stock || 0));
+  // Stok kritis — memakai definisi bersama di lib/stokMenipis.js.
+  //
+  // Sebelumnya layar ini punya ambangnya sendiri (`current_stock <= minimum_stock`),
+  // dan karena seluruh angka stok pakan bernilai nol dengan minimum nol, KESEMBILAN
+  // item pakan tampil sebagai kritis setiap hari. Tidak satu pun bisa dihilangkan
+  // dengan bekerja: angkanya memang sengaja dinolkan dan tidak dipelihara.
+  //
+  // Daftar yang isinya selalu sama, setiap hari, berhenti dibaca dalam seminggu —
+  // dan yang ikut berhenti dibaca adalah item yang suatu hari benar-benar habis.
+  const stokTerpantau = periksaStokTerpantau(warehouseItems, feedStocks, stockMovements);
+  const criticalWarehouseStock = stokTerpantau.habis
+    .concat(stokTerpantau.menipis)
+    .filter((i) => i._sumber === "gudang");
+  const criticalFeedStock = stokTerpantau.habis
+    .concat(stokTerpantau.menipis)
+    .filter((i) => i._sumber === "pakan");
+  const stokBelumDicatat = stokTerpantau.takTerpantau.length;
 
   // Kas kecil saldo
   // Field-nya juga keliru: skema PettyCash menyebutnya `current_balance`,
