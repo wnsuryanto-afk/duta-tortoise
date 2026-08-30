@@ -318,6 +318,7 @@ export default function TreatmentPage() {
 
         {/* ── Tab Jadwal Treatment ── */}
         <TabsContent value="jadwal" className="mt-4 space-y-4">
+          <SakelarMusimBertelur canEdit={canEdit} />
           <div className="space-y-2">
             {/* Filter Frekuensi */}
             <div className="flex flex-wrap gap-1.5">
