@@ -31,6 +31,7 @@
  */
 
 import { nilaiPerPoin } from "@/lib/nilaiPoin";
+import { masukLaporan } from "@/lib/laporan";
 
 
 /** Peran yang dibayar harian; sisanya dibayar bulanan flat. */
@@ -56,6 +57,11 @@ export function adalahPeranHarian(role) {
 export function hitungPoin({ checklists = [], bonusRewards = [], email, awal, akhir, periode }) {
   const dariChecklist = checklists
     .filter((c) => c.employee_email === email && c.date >= awal && c.date < akhir)
+    // Checklist Mode Uji dan checklist yang dikecualikan pemilik tidak dibayar.
+    // Tanpa saringan ini, mencoba aplikasi sebagai keeper menaikkan gaji orang
+    // yang perannya sedang ditiru, dan tombol "Kecualikan dari laporan" tidak
+    // berpengaruh apa pun pada uang yang keluar.
+    .filter(masukLaporan)
     .filter((c) => c.status !== "rejected")
     .reduce((total, c) => {
       const poin =
