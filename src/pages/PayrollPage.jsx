@@ -587,57 +587,63 @@ export default function PayrollPage() {
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);
   const monthVegetable = vegetablePickups.filter(v => v.date >= monthStart && v.date <= monthEnd);
 
+  /**
+   * SATU rumus gaji — lib/hitungGaji.js.
+   *
+   * Layar ini menghitung sendiri, dan salinannya adalah yang paling jauh
+   * menyimpang dari tiga salinan yang ada. Tiga selisih yang nyata:
+   *
+   *   1. Poin hanya diambil dari BonusReward. Poin DailyChecklist — sumber
+   *      hampir seluruh poin kiper — tidak dihitung sama sekali. Untuk Agustus
+   *      2026 itu berarti Rp 515.625 tidak muncul (3.722 + 3.153 poin x Rp 75),
+   *      sementara BonusReward bulan itu kosong.
+   *   2. Uang sayur dibaca dari VegetablePickup, yang tidak berisi satu catatan
+   *      pun. Sumber sebenarnya adalah PakanHarian lewat useVegTrips.
+   *   3. Kasbon dijumlahkan tanpa memeriksa sisa maupun apakah sudah dipotong
+   *      untuk periode ini, sehingga kasbon lunas tetap ikut memotong.
+   *
+   * Layar ini memang tidak menerbitkan slip — ia hanya menampilkan. Tapi
+   * namanya "Penggajian Karyawan", dan angka yang ditampilkannya bukan angka
+   * yang dibayarkan. Sekarang ia memanggil pustaka yang sama dengan penerbit.
+   */
   const payrollData = useMemo(() => {
-    return employees.map(emp => {
-      const config = salaryConfigs.find(c => c.role === emp.role);
-      const salaryType = config?.salary_type || "bulanan";
-      const baseSalary = config?.base_salary || 0;
-      const overtimeRate = config?.overtime_rate_per_hour || 0;
-      const vegRate = config?.vegetable_rate_per_trip || 0;
-      const pointValue = config?.point_value || 0;
-      const absentDeduction = config?.absent_deduction || 0;
+    const sumber = {
+      salaryConfigs,
+      checklists: dailyChecklists,
+      bonusRewards,
+      attendances: monthAttendances,
+      overtimeLogs: monthOvertime,
+      vegTripsMap,
+      kasbons,
+      periode: selectedMonth,
+      awal: monthStart,
+      akhir: monthEnd,
+      targetPoin: settings.min_poin_bulanan || 0,
+      companySettings: settings,
+    };
 
-      const empAttendances = monthAttendances.filter(a => a.employee_email === emp.email);
-      const hadirDays = empAttendances.filter(a => a.status === "hadir").length;
-      const absenDays = empAttendances.filter(a => a.status !== "hadir" && a.status !== "izin" && a.status !== "sakit").length;
-
-      const empOvertime = monthOvertime.filter(o => o.employee_email === emp.email);
-      const totalOvertimeHours = empOvertime.reduce((s, o) => s + (o.hours || 0), 0);
-
-      const empVegetable = monthVegetable.filter(v => v.employee_email === emp.email);
-      const totalVegTrips = empVegetable.reduce((s, v) => s + (v.trips || 0), 0);
-
-      const period = selectedMonth;
-      const empBonus = bonusRewards.find(b => b.employee_email === emp.email && b.period === period);
-      const totalPoints = empBonus?.total_points || 0;
-
-      const overtimePay = totalOvertimeHours * overtimeRate;
-      const vegPay = totalVegTrips * vegRate;
-      const pointPay = totalPoints * pointValue;
-
-      // Bagian 3: Logika sesuai tipe gaji
-      let effectiveBaseSalary = baseSalary;
-      let deduction = 0;
-      if (salaryType === "harian") {
-        effectiveBaseSalary = hadirDays * baseSalary;
-        deduction = 0;
-      } else {
-        deduction = absenDays * absentDeduction;
-      }
-
-      // Potongan kasbon aktif karyawan ini
-      const empKasbons = kasbons.filter(k => k.employee_email === emp.email && k.status === "approved");
-      const kasbonDeduction = empKasbons.reduce((s, k) => s + (k.installment_amount || k.weekly_deduction || 0), 0);
-
-      const totalSalary = effectiveBaseSalary + overtimePay + vegPay + pointPay - deduction - kasbonDeduction;
-
+    return employees.map((emp) => {
+      const h = hitungGajiKaryawan(emp, sumber);
       return {
-        emp, config, salaryType, baseSalary, effectiveBaseSalary,
-        hadirDays, absenDays, totalOvertimeHours, overtimePay,
-        totalVegTrips, vegPay, totalPoints, pointPay, deduction, kasbonDeduction, totalSalary,
+        emp,
+        config: h.config,
+        salaryType: h.harian ? "harian" : "bulanan",
+        baseSalary: h.config?.base_salary || 0,
+        effectiveBaseSalary: h.gajiPokok,
+        hadirDays: h.hariHadir,
+        absenDays: h.hariAbsen,
+        totalOvertimeHours: h.jamLembur,
+        overtimePay: h.upahLembur,
+        totalVegTrips: h.tripSayur,
+        vegPay: h.upahSayur,
+        totalPoints: h.totalPoin,
+        pointPay: h.bonusPoin,
+        deduction: h.potonganAbsen,
+        kasbonDeduction: h.potonganKasbon,
+        totalSalary: h.bersih,
       };
     });
-  }, [employees, salaryConfigs, monthAttendances, monthOvertime, monthVegetable, bonusRewards, kasbons, selectedMonth]);
+  }, [employees, salaryConfigs, dailyChecklists, monthAttendances, monthOvertime, vegTripsMap, bonusRewards, kasbons, selectedMonth, monthStart, monthEnd, settings]);
 
   const fmt = (n) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
