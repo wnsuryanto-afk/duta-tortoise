@@ -170,7 +170,43 @@ Deno.serve(async (req) => {
             const sudahAda = await base44.asServiceRole.entities.FinanceTransaction.filter({
               reference_id: slip.id,
             });
-            if (!sudahAda || sudahAda.length === 0) {
+            // Periode ini mungkin SUDAH punya catatan gaji yang dibuat manual
+            // atau lewat pencatatan susulan. Kalau ada, biayanya tidak dicatat
+            // ulang - tetapi juga tidak didiamkan: pemilik diberi tahu supaya ia
+            // yang memutuskan mana yang benar.
+            //
+            // Diam-diam mencatat dua kali dan diam-diam melewatkan sama-sama
+            // buruk; bedanya hanya arah kesalahannya. Yang membuat keduanya
+            // berbahaya adalah DIAM-DIAM-nya. Jadi di sini pilihannya: jangan
+            // catat, lalu katakan.
+            const awalPeriode = slip.week_start || `${(slip.period || "").slice(0, 7)}-01`;
+            const akhirPeriode = slip.week_end || `${(slip.period || "").slice(0, 7)}-31`;
+            const semuaTx = await base44.asServiceRole.entities.FinanceTransaction.list("-date", 500);
+            const bentrok = (semuaTx || []).filter((t: any) =>
+              t.type === "pengeluaran" &&
+              ["gaji", "gaji_karyawan"].includes(t.category) &&
+              String(t.date || "") >= awalPeriode &&
+              String(t.date || "") <= akhirPeriode &&
+              t.reference_id !== slip.id &&
+              !t.is_test_data
+            );
+            if (bentrok.length > 0) {
+              const totalBentrok = bentrok.reduce((n: number, t: any) => n + Number(t.amount || 0), 0);
+              await notifSekali(base44, {
+                recipient_email: slip.paid_by || slip.created_by || "",
+                related_entity_id: `bentrok_gaji_${slip.id}`,
+                title: "Catatan gaji ganda dicegah - perlu diperiksa",
+                message:
+                  `Slip ${slip.employee_name || slip.employee_email} periode ${slip.period || bulan} ditandai dibayar, ` +
+                  `tetapi periode itu sudah punya ${bentrok.length} catatan gaji senilai ${fmtRp(totalBentrok)} yang dibuat di luar slip. ` +
+                  `Biaya dari slip ini TIDAK dicatat supaya tidak dobel. Periksa mana yang benar, lalu hapus atau perbaiki salah satunya.`,
+                type: "warning",
+                priority: "tinggi",
+                category: "keuangan",
+                action_label: "Buka Keuangan",
+                action_url: "/finance",
+              });
+            } else if (!sudahAda || sudahAda.length === 0) {
               const tanggal =
                 slip.paid_date ||
                 slip.payment_date ||
