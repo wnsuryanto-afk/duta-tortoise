@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import ExtraTaskForm from "./ExtraTaskForm";
 import { compressImage } from "@/lib/useImageCompression";
+import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { detectPhotoAge, checkDeadlineTime, runPhotoVerificationInBackground } from "@/lib/photoVerification";
 import AICatatanCard from "./AICatatanCard";
@@ -54,35 +55,28 @@ const CATEGORY_BADGE = {
 };
 
 // ── Carry-over: tanggal jatuh tempo terakhir (terbaru <= hari ini) ──
+//
+// Fungsi ini dulu menyalin ulang aturan jadwal SOP, dan salinannya sudah
+// menyimpang: `mingguan` tanpa weekly_days di sini berarti TIDAK PERNAH,
+// sedangkan di src/lib/kepatuhanSOP.js artinya SETIAP HARI. Tugas seperti itu
+// akan dihitung sebagai terjadwal oleh layar kepatuhan tetapi tidak pernah
+// muncul di daftar tugas — persentase turun tanpa ada yang bisa dikerjakan.
+//
+// Sekarang yang tersisa di sini hanyalah "seberapa jauh ke belakang perlu
+// dicari"; pertanyaan "apakah hari itu jatuh tempo" dijawab satu definisi.
+const JENDELA_MUNDUR = { harian: 1, mingguan: 10, bulanan: 40 };
+
 function computeLastDueDate(t, todayStr) {
-  const today = new Date(todayStr + "T00:00:00");
   const freq = String(t.frequency || "").toLowerCase();
+  const jendela = JENDELA_MUNDUR[freq];
+  if (!jendela) return null;
 
-  // Pekerjaan yang jadwalnya lebih jarang daripada bulanan — mis. tiap dua
-  // bulan, atau musiman — tidak bisa dinyatakan lewat harian/mingguan/bulanan
-  // saja. Sebelum kolom ini ada, "2 bulan sekali" hanya tertulis di judul task
-  // sementara sistem tetap menjalankannya tiap bulan.
-  const bulanAktif = Array.isArray(t.bulan_aktif) ? t.bulan_aktif : [];
-  const bulanCocok = (d) => bulanAktif.length === 0 || bulanAktif.includes(d.getMonth() + 1);
-
-  if (freq === "harian") return bulanCocok(today) ? todayStr : null;
-  if (freq === "mingguan") {
-    const days = Array.isArray(t.weekly_days) ? t.weekly_days : [];
-    if (!days.length) return null;
-    for (let i = 0; i < 10; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      if (days.includes(d.getDay()) && bulanCocok(d)) return format(d, "yyyy-MM-dd");
-    }
-    return null;
-  }
-  if (freq === "bulanan") {
-    const dates = Array.isArray(t.monthly_dates) ? t.monthly_dates : [];
-    if (!dates.length) return null;
-    for (let i = 0; i < 35; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      if (dates.includes(d.getDate()) && bulanCocok(d)) return format(d, "yyyy-MM-dd");
-    }
-    return null;
+  const today = new Date(todayStr + "T00:00:00");
+  for (let i = 0; i < jendela; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const tanggal = format(d, "yyyy-MM-dd");
+    if (terjadwalPada(t, tanggal)) return tanggal;
   }
   return null;
 }
