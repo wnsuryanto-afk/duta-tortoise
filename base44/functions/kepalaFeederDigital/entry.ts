@@ -9,6 +9,7 @@ import {
   sopIdDariTaskId,
 } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getSettings, trackAICall } from "../../shared/whatsapp.ts";
+import { terjadwalPada } from "../../shared/jadwalSOP.ts";
 
 const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 
@@ -60,26 +61,11 @@ Deno.serve(async (req) => {
       ]);
 
     // ── Kumpulkan keadaan ──
-    const hariNomor = new Date(hariIni + "T00:00:00Z").getUTCDay();
-    const tanggalNomor = Number(hariIni.slice(8, 10));
 
-    const bulanNomor = Number(hariIni.slice(5, 7));
-    const tugasHariIni = (sopTasks || []).filter((t: any) => {
-      if (t.is_active !== true) return false;
-      // Task musiman / dua-bulanan hanya berlaku di bulan yang ditentukan.
-      const bulanAktif = Array.isArray(t.bulan_aktif) ? t.bulan_aktif : [];
-      if (bulanAktif.length > 0 && !bulanAktif.includes(bulanNomor)) return false;
-      if (t.frequency === "harian") return true;
-      if (t.frequency === "mingguan") {
-        const hari = Array.isArray(t.weekly_days) ? t.weekly_days : [];
-        return hari.length === 0 || hari.includes(hariNomor);
-      }
-      if (t.frequency === "bulanan") {
-        const tgl = Array.isArray(t.monthly_dates) ? t.monthly_dates : [];
-        return tgl.includes(tanggalNomor);
-      }
-      return false;
-    });
+    // Aturan jadwalnya dipegang satu tempat (../../shared/jadwalSOP.ts) supaya
+    // daftar tugas kepala feeder tidak bisa berbeda dari ringkasan harian dan
+    // dari layar kepatuhan.
+    const tugasHariIni = (sopTasks || []).filter((t: any) => terjadwalPada(t, hariIni));
 
     // Tugas kemarin yang tidak tercentang sama sekali.
     const dikerjakanKemarin = new Set<string>();
