@@ -21,6 +21,7 @@ import {
 import { format, differenceInMonths, differenceInYears, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { suratAktif, suratTertinggi, suratMasihBerlaku } from "@/lib/suratPeringatan";
+import { useVegTrips } from "@/hooks/useVegTrips";
 
 // ── helpers ──────────────────────────────────────────────────────────
 const ROLE_EMOJIS = { owner: "👑", manajer: "👔", admin: "🛡️", kepala_feeder: "🧑‍🌾", keeper: "🐢", investor: "👁️", viewer: "👁️", kicked: "🚫" };
@@ -246,11 +247,11 @@ export default function UserDetailPage({ userId, onBack }) {
     queryFn: () => base44.entities.OvertimeLog.list("-date", 50),
     enabled: !!userId && canView,
   });
-  const { data: vegetables = [] } = useQuery({
-    queryKey: ["veg-user", userId],
-    queryFn: () => base44.entities.VegetablePickup.list("-date", 50),
-    enabled: !!userId && canView,
-  });
+  // Trip sayur dibaca dari PakanHarian (useVegTrips) — sumber yang sama dengan
+  // yang membayar uang sayur di slip. Sebelumnya kartu ini membaca
+  // VegetablePickup, entitas yang tidak berisi satu catatan pun, sehingga
+  // "Trip Sayur" selalu 0 untuk semua orang.
+  const { data: vegTripsMap = {} } = useVegTrips(currentPeriod, !!userId && canView);
   const { data: activityLogs = [] } = useQuery({
     queryKey: ["activity-user", userId],
     queryFn: () => base44.entities.ActivityLog.list("-timestamp", 20),
@@ -283,7 +284,6 @@ export default function UserDetailPage({ userId, onBack }) {
   const userAttendances = attendances.filter(a => a.employee_email === userEmail || a.employee_id === userId);
   const userKasbons = kasbons.filter(k => k.employee_email === userEmail);
   const userOvertimes = overtimes.filter(o => o.employee_email === userEmail);
-  const userVegetables = vegetables.filter(v => v.employee_email === userEmail);
   const userChecklists = checklists.filter(c => c.employee_email === userEmail);
   const userActivityLogs = activityLogs.filter(l => l.user_email === userEmail);
 
@@ -293,8 +293,7 @@ export default function UserDetailPage({ userId, onBack }) {
   const monthOT = userOvertimes.filter(o => o.date >= monthStart && o.date <= monthEnd);
   const totalOTHours = monthOT.reduce((s, o) => s + (o.hours || 0), 0);
 
-  const monthVeg = userVegetables.filter(v => v.date >= monthStart && v.date <= monthEnd);
-  const totalVegTrips = monthVeg.reduce((s, v) => s + (v.trips || 0), 0);
+  const totalVegTrips = vegTripsMap[userEmail]?.trips || 0;
 
   const monthChecklists = userChecklists.filter(c => c.date?.startsWith(currentPeriod));
   const approvedChecklists = monthChecklists.filter(c => c.status === "approved");
