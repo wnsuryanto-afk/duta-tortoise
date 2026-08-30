@@ -144,7 +144,16 @@ export function hitungGajiKaryawan(karyawan, sumber) {
 
   // ── Poin ──
   const poin = hitungPoin({ checklists, bonusRewards, email, awal, akhir, periode });
-  const bonusPoin = poin.total * nilaiPoin;
+  // Sakelar "bonus poin dibayar sebagai uang" (CompanySettings.poin_bonus_enabled)
+  // BAWAANNYA MATI, dan itu disengaja: poin tetap dicatat sebagai pencapaian
+  // tetapi tidak dibayar sampai pemilik menyalakannya.
+  //
+  // Berkas ini dulu tidak memeriksanya sama sekali, sementara Rekap Poin & Gaji
+  // dan slip mingguan memeriksanya. Akibatnya slip untuk orang dan periode yang
+  // sama membayar bonus poin atau tidak, tergantung layar mana yang dipakai
+  // membuatnya - dan tidak ada satu pun tanda bahwa itu terjadi.
+  const bonusPoinDibayar = companySettings?.poin_bonus_enabled === true;
+  const bonusPoin = bonusPoinDibayar ? poin.total * nilaiPoin : 0;
 
   // ── Kehadiran ──
   const absensi = attendances.filter(
