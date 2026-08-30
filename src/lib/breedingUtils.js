@@ -4,6 +4,30 @@
  */
 
 /**
+ * SATU definisi "clutch ini masih berjalan".
+ *
+ * Sebuah clutch yang telurnya sedang dierami bisa berstatus "bertelur" ATAU
+ * "inkubasi" — keduanya berarti telurnya masih ada dan hasilnya belum
+ * diketahui. Aturan itu dulu ditulis ulang di 16 tempat, dan 15 di antaranya
+ * lupa mengecualikan clutch yang diarsipkan; hanya halaman Kalender Breeding
+ * yang memeriksanya. Clutch yang sudah diarsipkan karena itu tetap terhitung
+ * sebagai "sedang dierami" di beranda owner, beranda investor, Ringkasan Pagi,
+ * ekspor laporan bulanan, dan seluruh hitungan isi inkubator.
+ *
+ * Empat fungsi backend punya kesalahan sebaliknya — memeriksa "inkubasi" saja,
+ * sehingga buta terhadap clutch "bertelur". Kembaran definisi ini di sisi
+ * backend ada di base44/shared/kura.ts.
+ */
+export const STATUS_CLUTCH_AKTIF = ["bertelur", "inkubasi"];
+
+/** Apakah clutch ini masih berjalan? */
+export const clutchAktif = (breeding) => {
+  if (!breeding) return false;
+  if (breeding.is_archived) return false;
+  return STATUS_CLUTCH_AKTIF.includes(breeding.status);
+};
+
+/**
  * Apakah clutch ini ada di inkubator tersebut?
  *
  * Dicocokkan lewat `incubator_id` bila clutch-nya punya — tautan yang tidak
@@ -31,7 +55,7 @@ export const milikInkubator = (breeding, incubatorName, incubatorId) => {
  */
 export const calculateIncubatorEggs = (incubatorName, breedings = [], incubatorId) => {
   return breedings
-    .filter(b => milikInkubator(b, incubatorName, incubatorId) && (b.status === "bertelur" || b.status === "inkubasi"))
+    .filter(b => milikInkubator(b, incubatorName, incubatorId) && clutchAktif(b))
     .reduce((sum, b) => sum + (b.egg_count || 0), 0);
 };
 
@@ -42,7 +66,7 @@ export const calculateIncubatorEggs = (incubatorName, breedings = [], incubatorI
  */
 export const calculateTotalIncubatorEggs = (breedings = []) => {
   return breedings
-    .filter(b => b.status === "bertelur" || b.status === "inkubasi")
+    .filter(clutchAktif)
     .reduce((sum, b) => sum + (b.egg_count || 0), 0);
 };
 
@@ -55,7 +79,7 @@ export const calculateTotalIncubatorEggs = (breedings = []) => {
 export const getClutchesInIncubator = (incubatorName, breedings = [], incubatorId) => {
   return breedings.filter(b =>
     milikInkubator(b, incubatorName, incubatorId) &&
-    (b.status === "bertelur" || b.status === "inkubasi")
+    clutchAktif(b)
   );
 };
 
