@@ -57,14 +57,6 @@ export default function PengaturanHPP() {
         .filter(t => t.type === "pengeluaran" && (t.date || "").startsWith(month) && !t.is_test_data && !t.excluded_from_reports)
         .reduce((s, t) => s + (t.amount || 0), 0);
 
-      const totalSalary = allSalarySlips
-        .filter(s => s.status === "paid" && (s.paid_date || "").startsWith(month) && !s.is_test_data && !s.excluded_from_reports)
-        .reduce((s, sl) => s + (sl.net_total || sl.gross_total || 0), 0);
-
-      const totalPettyCash = allPettyCash
-        .filter(p => p.status === "disbursed" && (p.disbursement_date || "").startsWith(month) && !p.is_test_data)
-        .reduce((s, p) => s + (p.amount_requested || 0), 0);
-
       // Hanya totalFinance. Gaji sudah ada di dalamnya sejak slip yang ditandai
       // dibayar membuat FinanceTransaction-nya sendiri (D18), dan pencairan kas
       // kecil bukan biaya - biayanya muncul saat dibelanjakan, juga sebagai
