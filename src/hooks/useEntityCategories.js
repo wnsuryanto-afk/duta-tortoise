@@ -21,7 +21,18 @@ export function useFinanceCategories() {
   const pemasukan = enumValues
     .filter((v) => v === "penjualan_tortoise" || v === "lainnya")
     .map((v) => ({ value: v, label: labelOf(v) }));
-  return { enumValues, pengeluaran, pemasukan, labelOf, isLoading };
+
+  // D18 — Kategori yang boleh dipilih saat MENGETIK transaksi baru.
+  //
+  // Gaji sengaja dikeluarkan dari sini. Sejak slip gaji yang ditandai dibayar
+  // membuat catatan biayanya sendiri, mengetik gaji manual berarti biaya yang
+  // sama masuk dua kali — dan yang berbahaya, keduanya terlihat benar. Angka
+  // gaji lama tetap tampil normal di laporan dan filter, karena `pengeluaran`
+  // di atas tidak diubah; yang ditutup hanya jalan MASUKNYA yang baru.
+  const GAJI = ["gaji", "gaji_karyawan"];
+  const pengeluaranManual = pengeluaran.filter((c) => !GAJI.includes(c.value));
+
+  return { enumValues, pengeluaran, pengeluaranManual, pemasukan, labelOf, isLoading };
 }
 
 // Membaca daftar kategori dari enum schema PettyCashLedger (format pemakaian kas kecil).
