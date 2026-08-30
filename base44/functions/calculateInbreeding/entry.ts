@@ -15,8 +15,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'tortoiseId is required' }, { status: 400 });
     }
 
-    // Get all tortoises to build pedigree
-    const allTortoises = await base44.entities.Tortoise.list();
+    // Batasnya ditulis tegas. Silsilah dirunut dengan mencari indukan di dalam
+    // daftar ini; kalau daftarnya terpotong, leluhur yang hilang membuat
+    // hasilnya melaporkan "tidak ada perkawinan sedarah" justru karena
+    // datanya tidak lengkap — jawaban yang paling berbahaya untuk keputusan
+    // perkawinan.
+    const BATAS = 5000;
+    const allTortoises = await base44.entities.Tortoise.list('-created_date', BATAS);
+    if (allTortoises.length >= BATAS) {
+      return Response.json({
+        error: `Jumlah kura menyentuh batas ${BATAS}; silsilah tidak bisa dipastikan lengkap.`,
+      }, { status: 500 });
+    }
     const tortoise = allTortoises.find(t => t.id === tortoiseId);
     
     if (!tortoise) {

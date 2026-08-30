@@ -2,6 +2,15 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.ts";
 
 /**
+ * Batas pengambilan data untuk ringkasan harian.
+ *
+ * Sebelumnya 200, sementara peternakan ini sudah mencatat 178 kura. Begitu
+ * jumlahnya lewat 200, ringkasan harian akan diam-diam menghitung sebagian
+ * saja — tanpa galat, tanpa tanda apa pun di pesan yang terkirim.
+ */
+const BATAS_AMBIL = 2000;
+
+/**
  * sendDailySummary — kirim ringkasan harian / mingguan / pagi ke grup WhatsApp.
  *
  * Dipanggil oleh scheduled automation dan/atau saat user membuka app
@@ -277,7 +286,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     base44.asServiceRole.entities.PakanHarian.filter({ log_date: wibToday }),
     base44.asServiceRole.entities.TreatmentSchedule.filter({ is_active: true }),
     base44.asServiceRole.entities.StockMovement.filter({ date: wibToday }),
-    base44.asServiceRole.entities.Tortoise.list("-name", 200),
+    base44.asServiceRole.entities.Tortoise.list("-name", BATAS_AMBIL),
   ]);
 
   // ── KEHADIRAN ──
@@ -689,7 +698,7 @@ async function buildMorningSummary(base44, settings, wibToday: string, wibNow: D
     base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true }),
     base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
     base44.asServiceRole.entities.FeedStock.list("-name", 100),
-    base44.asServiceRole.entities.Tortoise.list("-name", 200),
+    base44.asServiceRole.entities.Tortoise.list("-name", BATAS_AMBIL),
     base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
   ]);
 

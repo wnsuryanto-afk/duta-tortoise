@@ -1,5 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+// Batas pengambilan ditulis tegas. Pemberitahuan otomatis yang membaca daftar
+// tanpa batas mengandalkan bawaan SDK: begitu datanya lewat batas itu,
+// peringatan untuk baris-baris sisanya berhenti muncul tanpa galat apa pun —
+// aplikasi tampak tenang justru saat ada yang perlu diperhatikan.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -31,7 +35,7 @@ Deno.serve(async (req) => {
     };
 
     const getEmails = async (roles) => {
-      const allUsers = await base44.asServiceRole.entities.User.list();
+      const allUsers = await base44.asServiceRole.entities.User.list('-created_date', 500);
       return allUsers.filter(u => roles.includes(u.role)).map(u => u.email);
     };
 
@@ -40,7 +44,7 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     const in30days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const in7days  = new Date(now.getTime() + 7  * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const warehouseItems = await base44.asServiceRole.entities.WarehouseItem.list();
+    const warehouseItems = await base44.asServiceRole.entities.WarehouseItem.list('-name', 2000);
     const expiringItems = warehouseItems.filter(i =>
       i.expired_date && i.expired_date <= in30days
     );
@@ -104,7 +108,7 @@ Deno.serve(async (req) => {
     // 2F. KURA BELUM DITIMBANG > 30 HARI
     // ══════════════════════════════════════════════════
     const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const tortoises = await base44.asServiceRole.entities.Tortoise.list();
+    const tortoises = await base44.asServiceRole.entities.Tortoise.list('-created_date', 2000);
     const notWeighed = tortoises.filter(t =>
       ["aktif", "breeding"].includes(t.status) &&
       (!t.last_weighed_date || t.last_weighed_date < last30)
@@ -135,7 +139,7 @@ Deno.serve(async (req) => {
     // Gunakan expected_hatch_start / estimated_hatch_date
     // ══════════════════════════════════════════════════
     const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const breedingRecords = await base44.asServiceRole.entities.Breeding.list();
+    const breedingRecords = await base44.asServiceRole.entities.Breeding.list('-created_date', 2000);
     const nearHatch = breedingRecords.filter(b => {
       if (b.status !== "inkubasi") return false;
       const hatchDate = b.estimated_hatch_start || b.estimated_hatch_date;
@@ -209,7 +213,7 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     // 15. PENGINGAT BELANJA STOK PAKAN (< 7 hari tersisa)
     // ══════════════════════════════════════════════════
-    const feedStocks = await base44.asServiceRole.entities.FeedStock.list();
+    const feedStocks = await base44.asServiceRole.entities.FeedStock.list('-name', 500);
     const lowFeedItems = feedStocks.filter(f => {
       if (f.current_stock <= 0) return false;
       if (f.daily_ideal && f.daily_ideal > 0) {

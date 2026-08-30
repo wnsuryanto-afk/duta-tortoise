@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
 
     const [financeTx, salarySlips, pettyCash, tortoises, settings] = await Promise.all([
-      base44.asServiceRole.entities.FinanceTransaction.list('-date', 200),
+      base44.asServiceRole.entities.FinanceTransaction.list('-date', 5000),
       base44.asServiceRole.entities.SalarySlip.list('-period', 100),
       base44.asServiceRole.entities.PettyCashRequest.list('-request_date', 100),
       base44.asServiceRole.entities.Tortoise.list('name', 2000),

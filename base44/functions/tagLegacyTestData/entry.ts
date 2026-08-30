@@ -27,7 +27,10 @@ Deno.serve(async (req) => {
   }
 
   // 2. Attendance dengan durasi check_in s/d check_out < 5 menit
-  const allAttendance = await base44.asServiceRole.entities.Attendance.list();
+  // Migrasi ini menulis penanda ke tiap baris, jadi daftar yang terpotong
+  // berarti sebagian data uji tidak pernah tertandai — dan tidak ada yang
+  // memberi tahu. Batasnya ditulis tegas; bila tersentuh, jalankan lagi.
+  const allAttendance = await base44.asServiceRole.entities.Attendance.list('-created_date', 5000);
   for (const rec of allAttendance) {
     if (rec.is_test_data) continue;
     if (!rec.check_in || !rec.check_out) continue;
