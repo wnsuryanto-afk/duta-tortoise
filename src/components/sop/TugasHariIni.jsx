@@ -102,7 +102,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const today = format(new Date(), "yyyy-MM-dd");
   const now = new Date();
   const dow = now.getDay();
-  const dom = now.getDate();
   const todayLabel = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
   const isMinggu = dow === 0;
 

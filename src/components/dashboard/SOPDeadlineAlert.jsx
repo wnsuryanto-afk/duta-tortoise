@@ -47,7 +47,6 @@ export default function SOPDeadlineAlert() {
   // Sebelumnya disaring `frequency === "harian"`, sehingga tugas mingguan
   // bertenggat — yang justru paling mudah terlewat karena tidak muncul tiap
   // hari — tidak pernah memicu peringatan ini sama sekali.
-  const now = new Date();
   const urgentTasks = tasks
     .filter((t) => t.di_ubin_kandang !== true && terjadwalPada(t, today))
     .filter((t) => t.deadline_time && !completedTaskIds.has(t.id))
