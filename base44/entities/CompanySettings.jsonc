@@ -40,6 +40,11 @@
       "default": 300,
       "description": "Target minimum poin per bulan per karyawan. Dipakai sebagai tingkat DASAR bila target bertingkat belum diisi."
     },
+    "musim_bertelur_aktif": {
+      "type": "boolean",
+      "default": false,
+      "description": "D26 - Sakelar musim bertelur. Jadwal perawatan berfrekuensi 'musiman' (boost kalsium betina, cek kloaka) hanya muncul di layar kiper selama sakelar ini menyala. Sengaja manual, bukan dari kalender: yang menentukan musim adalah tanda di lapangan - betina mulai gelisah, menggali, mencari tempat bertelur - dan yang melihatnya pemilik, bukan aplikasi."
+    },
     "target_poin_tim": {
       "type": "number",
       "description": "D16 - Total poin SELURUH tim dalam sebulan yang membuka bonus tingkat Dasar. Dibuat bersama karena poin yang tersedia terbatas dan dibagi antar kiper: target Dasar perorangan membuat kiper berebut tugas, karena menaikkan poin sendiri berarti menurunkan poin rekannya. Ambang pribadi min_poin_bulanan tetap berlaku sebagai lantai agar tidak ada yang menumpang penuh pada kerja rekan."
