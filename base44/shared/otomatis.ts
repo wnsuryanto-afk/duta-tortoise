@@ -43,6 +43,22 @@ export function tanggalMundur(hari: number, d: Date = wibNow()): string {
   return wibTanggal(new Date(d.getTime() - hari * 24 * 60 * 60 * 1000));
 }
 
+/**
+ * SATU aturan lembur, kembaran dari `jamLembur` di src/lib/weeklySalaryUtils.js.
+ *
+ * Lembur = menit yang dilewati SETELAH jam selesai shift, dibulatkan ke 0,5 jam
+ * terdekat. Bukan "jam kerja di atas 8": shift peternakan ini 07:00–16:00, yaitu
+ * 9 jam, jadi ambang 8 jam memberi lembur kepada orang yang hanya menjalani
+ * shift normalnya.
+ */
+export function jamLembur(jamPulang: string, jamSelesaiShift = "16:00"): number {
+  const pulang = keMenit(jamPulang, "");
+  const selesai = keMenit(jamSelesaiShift, "16:00");
+  if (!/^\d{1,2}:\d{2}$/.test(String(jamPulang || "").trim())) return 0;
+  if (pulang <= selesai) return 0;
+  return Math.round(((pulang - selesai) / 60) * 2) / 2;
+}
+
 /** Sudah lewat jam yang disetel (WIB)? */
 export function sudahWaktunya(jamSetel: string, bawaan: string): boolean {
   return menitSekarang() >= keMenit(jamSetel || bawaan, bawaan);

@@ -101,9 +101,52 @@ export function attendanceHours(att) {
   return Math.max(0, (oh * 60 + om - ih * 60 - im) / 60);
 }
 
-// Lembur mingguan: dihitung PER HARI (kelebihan jam di atas 8 jam hari itu).
-// Hari dengan jam ≤ 8 → lembur 0. Dijumlahkan ke total mingguan lalu dibulatkan
-// KE BAWAH ke jam penuh (kelebihan < 1 jam tidak dihitung setengah jam).
+export const SHIFT_BAWAAN = { mulai: "07:00", selesai: "16:00" };
+
+// Menit sejak tengah malam dari "HH:mm"; null bila tidak terbaca.
+export function keMenit(hm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hm || "").trim());
+  if (!m) return null;
+  const jam = Number(m[1]);
+  const menit = Number(m[2]);
+  if (jam > 23 || menit > 59) return null;
+  return jam * 60 + menit;
+}
+
+/**
+ * SATU aturan lembur untuk seluruh aplikasi: menit yang dilewati SETELAH jam
+ * selesai shift, dibulatkan ke 0,5 jam terdekat.
+ *
+ * Sebelum ini ada tiga aturan yang berbeda untuk hal yang sama:
+ *
+ *   a. `calcOvertimeHours` di layar check-out — lewat jam selesai shift,
+ *      dibulatkan 0,5 jam. Inilah yang tersimpan ke OvertimeLog, dan OvertimeLog
+ *      inilah yang dibayar rekap bulanan.
+ *   b. `calcWeeklyOvertime` di slip mingguan — jam kerja di atas 8, dijumlahkan
+ *      seminggu, dibulatkan ke bawah. Konstanta 8 itu ditulis mati di kode dan
+ *      mengabaikan shift 07:00–16:00 yang disetel di SalaryConfig — panjangnya
+ *      9 jam. Akibatnya siapa pun yang bekerja shift penuh mengumpulkan sekitar
+ *      1 jam "lembur" setiap hari tanpa pernah tinggal lebih lama.
+ *   c. `autoAttendance` di server — lewat jam selesai shift, tanpa pembulatan.
+ *
+ * Selisihnya nyata. Minggu 23–29 Agustus 2026, dengan tarif Rp 10.000/jam:
+ *   Sholehuddin  aturan (b) 5 jam = Rp 50.000   ·  aturan (a) 0 jam = Rp 0
+ *   Angsolo      aturan (b) 1 jam = Rp 10.000   ·  aturan (a) 0,5 jam = Rp 5.000
+ *
+ * Aturan (a) yang dipakai — keputusan pemilik, dan satu-satunya yang menghormati
+ * jam shift yang benar-benar disetel.
+ */
+export function jamLembur(jamPulang, jamSelesaiShift = SHIFT_BAWAAN.selesai) {
+  const pulang = keMenit(jamPulang);
+  const selesai = keMenit(jamSelesaiShift) ?? keMenit(SHIFT_BAWAAN.selesai);
+  if (pulang === null || selesai === null) return 0;
+  if (pulang <= selesai) return 0;
+  return Math.round(((pulang - selesai) / 60) * 2) / 2;
+}
+
+// Lembur mingguan: jumlah lembur harian, dengan aturan yang sama persis seperti
+// yang dipakai saat check-out. Tidak ada pembulatan kedua di tingkat minggu —
+// membulatkan ke bawah sekali lagi akan membuang setengah jam yang sudah sah.
 export function calcWeeklyOvertime(attendances, dayDateStrings) {
   let total = 0;
   for (const ds of dayDateStrings) {
@@ -111,8 +154,7 @@ export function calcWeeklyOvertime(attendances, dayDateStrings) {
     if (!att) continue;
     const present = att.status === "hadir" || (att.check_in && !att.status);
     if (!present) continue;
-    const h = attendanceHours(att);
-    if (h > 8) total += (h - 8);
+    total += jamLembur(att.check_out, att.shift_end || SHIFT_BAWAAN.selesai);
   }
-  return Math.floor(total);
+  return total;
 }

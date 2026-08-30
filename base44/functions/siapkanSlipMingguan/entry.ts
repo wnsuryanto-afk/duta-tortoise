@@ -1,20 +1,11 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibNow, wibTanggal, notifSekali, userPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibNow, wibTanggal, notifSekali, userPerRole, jamLembur } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
 
 const PERAN_HARIAN = ["keeper", "kepala_feeder"];
 
 function rupiah(n: number): string {
   return "Rp " + Math.round(n || 0).toLocaleString("id-ID");
-}
-
-/** Jam kerja dari check_in/check_out "HH:mm". */
-function jamKerja(att: any): number {
-  if (!att?.check_in || !att?.check_out) return 0;
-  const [ih, im] = String(att.check_in).split(":").map(Number);
-  const [oh, om] = String(att.check_out).split(":").map(Number);
-  if ([ih, im, oh, om].some((x) => Number.isNaN(x))) return 0;
-  return Math.max(0, (oh * 60 + om - ih * 60 - im) / 60);
 }
 
 /**
@@ -98,17 +89,21 @@ Deno.serve(async (req) => {
       );
       const hariHadir = absenSaya.filter((a: any) => a.status === "hadir").length;
 
-      // Lembur dihitung per hari: kelebihan di atas 8 jam, lalu dibulatkan ke bawah.
-      let lemburTotal = 0;
+      // Lembur per hari: menit yang dilewati setelah jam selesai shift — aturan
+      // yang sama persis dengan WeeklySlipManager yang menerbitkan slipnya.
+      //
+      // Sebelumnya di sini (dan di sana) dipakai "jam kerja di atas 8 jam".
+      // Shift peternakan ini 07:00–16:00, sembilan jam, jadi aturan itu memberi
+      // sekitar satu jam lembur setiap hari kepada orang yang hanya menjalani
+      // shift normalnya tanpa pernah tinggal lebih lama.
+      let jamLemburMinggu = 0;
       for (const ds of hariMinggu) {
         const att = absenSaya.find((a: any) => a.date === ds);
         if (!att) continue;
         const hadir = att.status === "hadir" || (att.check_in && !att.status);
         if (!hadir) continue;
-        const j = jamKerja(att);
-        if (j > 8) lemburTotal += j - 8;
+        jamLemburMinggu += jamLembur(String(att.check_out || ""), String(att.shift_end || "16:00"));
       }
-      const jamLembur = Math.floor(lemburTotal);
 
       // Hanya checklist yang SUDAH DISETUJUI yang dihitung — persis seperti
       // WeeklySlipManager, yang benar-benar menerbitkan slipnya.
@@ -154,7 +149,7 @@ Deno.serve(async (req) => {
 
       const nilaiPoin = nilaiPoinUmum > 0 ? nilaiPoinUmum : Number(konfig.point_value || 0);
       const gajiPokok = hariHadir * Number(konfig.base_salary || 0);
-      const upahLembur = jamLembur * Number(konfig.overtime_rate_per_hour || 0);
+      const upahLembur = jamLemburMinggu * Number(konfig.overtime_rate_per_hour || 0);
       const upahRempesan = tripRempesan * Number(konfig.rempesan_rate_per_trip || 0);
       const bonusPoin = poin * nilaiPoin;
       const bruto = gajiPokok + upahLembur + upahRempesan + bonusPoin;
@@ -164,7 +159,7 @@ Deno.serve(async (req) => {
         email: k.email,
         role: k.role,
         hariHadir,
-        jamLembur,
+        jamLembur: jamLemburMinggu,
         poin,
         jumlahMenunggu: menunggu.length,
         poinMenunggu,

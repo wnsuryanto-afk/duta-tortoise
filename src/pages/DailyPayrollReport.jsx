@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { hanyaLaporan } from "@/lib/laporan";
+import { attendanceHours, jamLembur } from "@/lib/weeklySalaryUtils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,9 @@ import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, 
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
 
-// Upah harian default (bisa dikustomisasi)
+// Tarif cadangan, dipakai HANYA bila SalaryConfig belum diisi. Sebelum ini
+// kedua angka ini ditulis mati di berkas ini, jadi laporan ini tetap memakai
+// Rp 70.000/hari meski pemilik sudah menaikkan tarif di Pengaturan Gaji.
 const DAILY_WAGE = 70000;
 const OVERTIME_PER_HOUR = 10000;
 
@@ -56,6 +59,15 @@ export default function DailyPayrollReport() {
     enabled: isAdmin,
   });
 
+  const { data: salaryConfigs = [] } = useQuery({
+    queryKey: ["salary-configs"],
+    queryFn: () => base44.entities.SalaryConfig.list(),
+    enabled: isAdmin,
+  });
+  const konfigHarian = salaryConfigs.find((c) => c.role === "keeper") || {};
+  const tarifHarian = konfigHarian.base_salary || DAILY_WAGE;
+  const tarifLembur = konfigHarian.overtime_rate_per_hour || OVERTIME_PER_HOUR;
+
   // Kelompokkan per karyawan
   const employeeData = useMemo(() => {
     const map = {};
@@ -72,37 +84,27 @@ export default function DailyPayrollReport() {
     return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
   }, [attendances]);
 
-  function calcHours(att) {
-    if (!att?.check_in || !att?.check_out) return 0;
-    const [ih, im] = att.check_in.split(":").map(Number);
-    const [oh, om] = att.check_out.split(":").map(Number);
-    return Math.max(0, (oh * 60 + om - ih * 60 - im) / 60);
-  }
-
-  function calcOvertimeHours(hours) {
-    return Math.max(0, hours - 8);
-  }
-
   function getSummary(emp) {
     let totalDays = 0;
     let totalHours = 0;
-    let totalOvertime = 0;
+    let otHours = 0;
 
     workDays.forEach((day) => {
       const dateStr = format(day, "yyyy-MM-dd");
       const att = emp.days[dateStr];
       if (att?.status === "hadir" || (att?.check_in && !att?.status)) {
         totalDays++;
-        const h = calcHours(att);
-        totalHours += h;
-        totalOvertime += calcOvertimeHours(h);
+        totalHours += attendanceHours(att);
+        // Lembur memakai aturan yang sama dengan seluruh aplikasi: menit yang
+        // dilewati setelah jam selesai shift. Sebelum ini berkas ini punya
+        // salinannya sendiri berbasis "jam kerja di atas 8", yang memberi
+        // lembur kepada orang yang hanya bekerja shift 9 jamnya.
+        otHours += jamLembur(att.check_out, att.shift_end);
       }
     });
 
-    // Lembur dibulatkan ke BAWAH ke jam penuh (kelebihan < 1 jam tidak dihitung)
-    const otHours = Math.floor(totalOvertime);
-    const upahHarian = totalDays * DAILY_WAGE;
-    const upahLembur = otHours * OVERTIME_PER_HOUR;
+    const upahHarian = totalDays * tarifHarian;
+    const upahLembur = otHours * tarifLembur;
     const total = upahHarian + upahLembur;
     return { totalDays, totalHours: Math.round(totalHours), totalOvertime: otHours, upahHarian, upahLembur, total };
   }
@@ -249,9 +251,9 @@ export default function DailyPayrollReport() {
 
       {/* Info upah */}
       <div className="flex gap-3 text-xs text-muted-foreground bg-muted/40 rounded-xl px-4 py-3">
-        <span>Upah harian: <strong className="text-foreground">Rp {DAILY_WAGE.toLocaleString("id-ID")}</strong></span>
+        <span>Upah harian: <strong className="text-foreground">Rp {tarifHarian.toLocaleString("id-ID")}</strong></span>
         <span>•</span>
-        <span>Lembur/jam: <strong className="text-foreground">Rp {OVERTIME_PER_HOUR.toLocaleString("id-ID")}</strong></span>
+        <span>Lembur/jam: <strong className="text-foreground">Rp {tarifLembur.toLocaleString("id-ID")}</strong></span>
         <span>•</span>
         <span>Jam normal: <strong className="text-foreground">8 jam/hari</strong></span>
       </div>

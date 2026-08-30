@@ -38,33 +38,9 @@
  */
 
 import { base44 } from "@/api/base44Client";
+import { SHIFT_BAWAAN, keMenit, jamLembur } from "@/lib/weeklySalaryUtils";
 
-export const SHIFT_BAWAAN = { mulai: "07:00", selesai: "16:00" };
-
-/** Menit sejak tengah malam dari "HH:mm". Mengembalikan null bila tidak terbaca. */
-export function keMenit(hm) {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hm || "").trim());
-  if (!m) return null;
-  const jam = Number(m[1]);
-  const menit = Number(m[2]);
-  if (jam > 23 || menit > 59) return null;
-  return jam * 60 + menit;
-}
-
-/**
- * Jam lembur dari jam pulang terhadap jam selesai shift.
- *
- * Dibulatkan ke 0,5 jam terdekat — aturan yang sudah dipakai aplikasi sejak awal
- * (`calcOvertimeHours`), dipertahankan apa adanya supaya angka lama tidak berubah
- * arti. Yang berubah hanya: sekarang cuma ada SATU salinan aturannya.
- */
-export function jamLembur(jamPulang, jamSelesaiShift = SHIFT_BAWAAN.selesai) {
-  const pulang = keMenit(jamPulang);
-  const selesai = keMenit(jamSelesaiShift) ?? keMenit(SHIFT_BAWAAN.selesai);
-  if (pulang === null || selesai === null) return 0;
-  if (pulang <= selesai) return 0;
-  return Math.round(((pulang - selesai) / 60) * 2) / 2;
-}
+export { SHIFT_BAWAAN, keMenit, jamLembur };
 
 /**
  * Bila satu tanggal terlanjur punya lebih dari satu baris absensi, inilah baris
