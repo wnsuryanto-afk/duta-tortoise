@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibNow, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 const MIN_SAMPEL = 3;
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
     // ── Bentuk harga per gram dari penjualan nyata ──
     const sampel: number[] = [];
     for (const s of sales || []) {
-      if (s.is_test_data === true || s.excluded_from_reports === true) continue;
+      if (!masukLaporan(s)) continue;
       const harga = Number(s.price || 0);
       const berat = Number(s.tortoise_weight || 0);
       if (harga <= 0 || berat <= 0) continue;

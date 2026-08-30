@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { hanyaLaporan } from "../../shared/laporan.ts";
 
 // Hitung ulang total_purchases dan total_spent semua BuyerProfile dari data Sale.
 // Aman dijalankan berkali-kali (idempoten). Bisa untuk satu buyer (buyer_profile_id atau hp)
@@ -17,8 +18,14 @@ Deno.serve(async (req) => {
 
     const db = base44.asServiceRole;
 
-    // Ambil semua Sales sekaligus
-    const allSales = await db.entities.Sale.list('-sale_date', 2000);
+    // Ambil semua Sales sekaligus.
+    //
+    // Penyaringnya tidak boleh dilewat di sini. Membatalkan penjualan di
+    // SalesList memasang `excluded_from_reports: true` pada Sale — bukan
+    // menghapusnya. Tanpa saringan ini, profil pembeli tetap mencatat
+    // penjualan yang sudah dibatalkan sebagai uang yang pernah dibelanjakan,
+    // dan angkanya tidak pernah kembali turun.
+    const allSales = hanyaLaporan(await db.entities.Sale.list('-sale_date', 2000));
 
     // Group by hp_whatsapp
     const salesByHp = {};

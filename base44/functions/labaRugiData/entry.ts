@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { masukLaporan } from "../../shared/laporan.ts";
 
 /**
  * labaRugiData — ringkasan laba-rugi satu periode.
@@ -18,12 +19,6 @@ Deno.serve(async (req) => {
     const db = base44.asServiceRole;
     const url = new URL(req.url);
     const period = url.searchParams.get('period') || new Date().toISOString().slice(0, 7);
-
-    // Data uji dan data yang sengaja dikecualikan harus sama-sama disaring.
-    // Menyaring `excluded_from_reports` saja membuat catatan Mode Uji ikut
-    // masuk laporan keuangan — kelas kesalahan yang dulu membuat laba-rugi di
-    // layar menampilkan pemasukan Rp 109.000.000 dengan margin 98,2%.
-    const masukLaporan = (r) => !r?.excluded_from_reports && !r?.is_test_data;
 
     // 1. FinanceTransaction bulan ini
     const allTx = await db.entities.FinanceTransaction.list('-date', 2000);

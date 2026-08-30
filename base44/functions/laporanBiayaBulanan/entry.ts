@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibNow, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.Tortoise.list("name", 2000),
     ]);
 
-    const layak = (t: any) => !t.is_test_data && !t.excluded_from_reports;
+    const layak = masukLaporan;
 
     const hitungBulan = (bulan: string) => {
       const tx = (finance || []).filter(
