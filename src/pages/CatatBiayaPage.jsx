@@ -48,7 +48,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { logActivity } from "@/lib/logActivity";
@@ -69,7 +69,7 @@ const KATEGORI = [
 ];
 
 export default function CatatBiayaPage() {
-  const user = useCurrentUser();
+  const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const hariIni = format(new Date(), "yyyy-MM-dd");
 
@@ -110,7 +110,7 @@ export default function CatatBiayaPage() {
     [riwayat],
   );
 
-  if (!canAccess(user?.role, "finance")) return <AccessDenied />;
+  if (!canAccess(role, "finance")) return <AccessDenied />;
 
   const nominalAngka = Number(String(nominal).replace(/[^\d]/g, "")) || 0;
   const kategoriTerpilih = KATEGORI.find((k) => k.value === kategori);
