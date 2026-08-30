@@ -494,55 +494,6 @@ function OvertimeDialog({ open, onClose, employees }) {
   );
 }
 
-function VegetableDialog({ open, onClose, employees }) {
-  const qc = useQueryClient();
-  const [form, setForm] = useState({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), trips: "1", notes: "" });
-  const [saving, setSaving] = useState(false);
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
-  const handleSave = async () => {
-    const emp = employees.find(e => e.email === form.employee_email);
-    setSaving(true);
-    await base44.entities.VegetablePickup.create({
-      ...form,
-      trips: Number(form.trips),
-      employee_id: emp?.id || "",
-      employee_name: emp?.full_name || emp?.email || "",
-    });
-    qc.invalidateQueries({ queryKey: ["vegetable-pickups"] });
-    setSaving(false);
-    onClose();
-    setForm({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), trips: "1", notes: "" });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>Catat Pengambilan Sayur</DialogTitle></DialogHeader>
-        <div className="space-y-3 mt-2">
-          <div>
-            <Label>Karyawan *</Label>
-            <Select value={form.employee_email} onValueChange={v => set("employee_email", v)}>
-              <SelectTrigger><SelectValue placeholder="Pilih karyawan" /></SelectTrigger>
-              <SelectContent>
-                {employees.map(e => <SelectItem key={e.id} value={e.email}>{e.full_name || e.email}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Tanggal</Label><Input type="date" value={form.date} onChange={e => set("date", e.target.value)} /></div>
-            <div><Label>Jumlah Trip</Label><Input type="number" value={form.trips} onChange={e => set("trips", e.target.value)} min={1} /></div>
-          </div>
-          <div><Label>Catatan</Label><Input value={form.notes} onChange={e => set("notes", e.target.value)} /></div>
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-            <Button className="flex-1" onClick={handleSave} disabled={saving || !form.employee_email}>{saving ? "..." : "Simpan"}</Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export default function PayrollPage() {
   const { user, role } = useCurrentUser();
@@ -552,7 +503,6 @@ export default function PayrollPage() {
   const [showConfigForm, setShowConfigForm] = useState(false);
   const [editConfig, setEditConfig] = useState(null);
   const [showOvertime, setShowOvertime] = useState(false);
-  const [showVegetable, setShowVegetable] = useState(false);
 
   const monthStart = format(startOfMonth(new Date(selectedMonth + "-01")), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(new Date(selectedMonth + "-01")), "yyyy-MM-dd");
@@ -583,10 +533,6 @@ export default function PayrollPage() {
     queryKey: ["overtime-logs"],
     queryFn: () => base44.entities.OvertimeLog.list("-date", 300),
   });
-  const { data: vegetablePickups = [] } = useQuery({
-    queryKey: ["vegetable-pickups"],
-    queryFn: () => base44.entities.VegetablePickup.list("-date", 300),
-  });
   const { data: bonusRewards = [] } = useQuery({
     queryKey: ["bonus-rewards"],
     queryFn: () => base44.entities.BonusReward.list("-period", 50),
@@ -601,7 +547,6 @@ export default function PayrollPage() {
 
   const monthAttendances = attendances.filter(a => a.date >= monthStart && a.date <= monthEnd);
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);
-  const monthVegetable = vegetablePickups.filter(v => v.date >= monthStart && v.date <= monthEnd);
 
   /**
    * SATU rumus gaji — lib/hitungGaji.js.
@@ -876,26 +821,43 @@ export default function PayrollPage() {
 
         {/* TAB: Log Sayur */}
         <TabsContent value="vegetable" className="mt-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">Log pengambilan sayur {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })}</p>
-            {isOwnerOrManajer && <Button size="sm" onClick={() => setShowVegetable(true)}><Plus className="w-4 h-4 mr-1.5" />Catat Sayur</Button>}
-          </div>
-          {monthVegetable.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">Belum ada log pengambilan sayur bulan ini</Card>
+          {/*
+            Trip sayur dibaca dari PakanHarian (useVegTrips) — sumber yang sama
+            dengan yang membayar uang sayur di slip.
+
+            Sebelumnya tab ini punya formnya sendiri yang menulis ke entitas
+            VegetablePickup, dan penghitung gaji tidak pernah membacanya. Entitas
+            itu kosong, jadi belum ada trip yang hilang; tapi siapa pun yang
+            memakai formnya akan mencatat trip yang tidak pernah dibayar. Form
+            itu dihapus: trip tercatat sendiri saat kiper mencatat pakan dengan
+            sumber "sayur_pasar" atau "campur", satu trip per orang per hari.
+          */}
+          <p className="text-sm text-muted-foreground">
+            Trip ambil sayur {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })} — dihitung otomatis dari catatan pakan harian
+          </p>
+          {Object.keys(vegTripsMap).length === 0 ? (
+            <Card className="p-8 text-center text-muted-foreground">
+              Belum ada trip ambil sayur bulan ini
+            </Card>
           ) : (
             <div className="space-y-2">
-              {monthVegetable.map(v => (
-                <Card key={v.id} className="px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{v.employee_name}</p>
-                    <p className="text-xs text-muted-foreground">{format(new Date(v.date), "d MMM yyyy", { locale: id })} · {v.notes || "–"}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Leaf className="w-4 h-4 text-lime-600" />
-                    <span className="font-semibold text-lime-700">{v.trips} trip</span>
-                  </div>
-                </Card>
-              ))}
+              {Object.entries(vegTripsMap).map(([email, data]) => {
+                const emp = users.find((u) => u.email === email);
+                return (
+                  <Card key={email} className="px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{emp?.full_name || email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(data.dates || []).map((d) => format(new Date(d), "d MMM", { locale: id })).join(" · ") || "–"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Leaf className="w-4 h-4 text-lime-600" />
+                      <span className="font-semibold text-lime-700">{data.trips} trip</span>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -910,9 +872,6 @@ export default function PayrollPage() {
       )}
       {showOvertime && (
         <OvertimeDialog open={showOvertime} onClose={() => setShowOvertime(false)} employees={employees} />
-      )}
-      {showVegetable && (
-        <VegetableDialog open={showVegetable} onClose={() => setShowVegetable(false)} employees={employees} />
       )}
     </div>
   );
