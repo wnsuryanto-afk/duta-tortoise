@@ -376,13 +376,16 @@ export default function GuidedHariIni({ user }) {
     },
     staleTime: 5 * 60 * 1000,
   });
-  const supplemenHariIni = treatmentSchedules.filter(ts => {
-    if (!ts.is_active) return false;
-    if (ts.frequency === "harian") return true;
-    if (ts.frequency === "mingguan" && Array.isArray(ts.weekly_days)) {
-      return ts.weekly_days.includes(todayDayOfWeek);
-    }
-    return false;
+  // Penyaringan jadwal perawatan pindah ke lib/jadwalPerawatan.js.
+  //
+  // Aturan lama di sini hanya mengenali "harian" dan "mingguan dengan daftar
+  // hari terisi", sehingga SEPULUH dari empat belas jadwal tidak pernah tampil
+  // - termasuk dua yang dibuat untuk mencegah egg binding, sebab kematian yang
+  // sudah terjadi di peternakan ini.
+  const supplemenHariIni = jadwalBerlaku(treatmentSchedules, {
+    hari: new Date(),
+    musimBertelur: companySettings?.musim_bertelur_aktif === true,
+    racikanTersedia: racikanRepro > 0,
   }).filter(ts => {
     // ATURAN JEMUR: hanya muncul jika ada kura aktif kategori baby
     const isJemur = (ts.title || "").toLowerCase().includes("jemur");
