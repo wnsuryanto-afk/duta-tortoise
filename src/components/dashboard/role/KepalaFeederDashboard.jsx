@@ -63,6 +63,12 @@ export default function KepalaFeederDashboard({ user }) {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: stockMovements = [] } = useQuery({
+    queryKey: ["kf-stock-movements"],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 10 * 60 * 1000,
+  });
+
   // Saldo kas kecil ada di PettyCashLedger, bukan di entitas PettyCash.
   // PettyCash adalah sisa rancangan lama yang tidak pernah ditulis satu layar
   // pun, jadi membacanya selalu menghasilkan daftar kosong.
