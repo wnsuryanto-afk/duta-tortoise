@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { AlertTriangle, PackageOpen } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { dilacak } from "@/lib/stokMenipis";
 
 export default function FeedStockAlert() {
   const { data: stocks = [] } = useQuery({
@@ -10,8 +11,13 @@ export default function FeedStockAlert() {
     queryFn: () => base44.entities.FeedStock.list("-name", 300),
   });
 
+  // Bahan yang tidak dilacak dikeluarkan lebih dulu. Stok pakan di peternakan
+  // ini sengaja dinonaktifkan karena angkanya tidak dipelihara - rumput dan
+  // kaktus datang dari kebun sendiri dan tidak pernah dicatat masuk-keluarnya.
+  // Tanpa saringan ini, "Kaktus hampir habis" menyala setiap hari dan tidak
+  // pernah bisa dipadamkan dengan bekerja.
   const lowStocks = stocks.filter(
-    (s) => s.is_mandatory && s.current_stock <= s.minimum_stock
+    (s) => dilacak(s) && s.is_mandatory && s.current_stock <= s.minimum_stock
   );
 
   if (lowStocks.length === 0) return null;
