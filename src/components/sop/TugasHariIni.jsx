@@ -83,7 +83,7 @@ function computeLastDueDate(t, todayStr) {
 }
 
 // Cek apakah task sudah dikerjakan di hari sebelumnya (dalam siklus jatuh tempo ini).
-// Log test (is_test_data) diabaikan agar mode uji owner tidak memengaruhi keeper asli.
+// Log uji dan log yang dikecualikan pemilik sama-sama diabaikan (lib/laporan.js).
 function isCompletedPrevCycle(itemKey, lastDueDate, todayStr, scope, userEmail, recentLogs) {
   const logs = (recentLogs || []).filter(l =>
     l.item_id === itemKey && l.is_done && l.period_key &&
