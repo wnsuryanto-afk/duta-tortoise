@@ -4,6 +4,7 @@ import {
   sendWhatsAppNotification,
   getEmployeePhone,
 } from "../../shared/whatsapp.ts";
+import { notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 
 // Dipanggil via entity automation saat SalarySlip dibuat atau status berubah
 Deno.serve(async (req) => {
@@ -192,8 +193,11 @@ Deno.serve(async (req) => {
             );
             if (bentrok.length > 0) {
               const totalBentrok = bentrok.reduce((n: number, t: any) => n + Number(t.amount || 0), 0);
+              // Ke pemilik, bukan ke yang menandai dibayar: ini keputusan
+              // pembukuan, dan slip.paid_by sering kosong.
+              const pemilik = await emailPerRole(base44, ["owner", "manajer", "admin"]);
               await notifSekali(base44, {
-                recipient_email: slip.paid_by || slip.created_by || "",
+                recipient_email: pemilik[0] || slip.paid_by || slip.created_by || "",
                 related_entity_id: `bentrok_gaji_${slip.id}`,
                 title: "Catatan gaji ganda dicegah - perlu diperiksa",
                 message:
