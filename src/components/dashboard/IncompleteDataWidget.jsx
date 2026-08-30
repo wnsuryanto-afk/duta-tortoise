@@ -7,6 +7,7 @@ import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { Link } from "react-router-dom";
 import { diPeternakan } from "@/lib/populasiKura";
+import { dilacak } from "@/lib/stokMenipis";
 
 export default function IncompleteDataWidget() {
   const [expanded, setExpanded] = useState(false);
@@ -31,7 +32,10 @@ export default function IncompleteDataWidget() {
       ...getIncomplete(sales, "sale", "tortoise_name"),
       ...getIncomplete(profiles, "userProfile", "full_name"),
       ...getIncomplete(warehouseItems, "warehouseItem", "name"),
-      ...getIncomplete(feedStocks, "feedStock", "name"),
+      // Bahan pakan yang tidak dilacak tidak dituntut kelengkapan datanya:
+      // harga dan pemasok untuk rumput yang dipanen sendiri memang tidak ada,
+      // dan menuntutnya berarti sembilan baris yang tidak pernah bisa dibereskan.
+      ...getIncomplete(feedStocks.filter(dilacak), "feedStock", "name"),
     ];
   }, [tortoises, breedings, sales, profiles, warehouseItems, feedStocks]);
 
@@ -42,7 +46,7 @@ export default function IncompleteDataWidget() {
       { label: "Breeding", count: cnt(breedings, "breeding"), emoji: "🥚" },
       { label: "Penjualan", count: cnt(sales, "sale"), emoji: "💰" },
       { label: "Karyawan", count: cnt(profiles, "userProfile"), emoji: "👥" },
-      { label: "Gudang", count: cnt(warehouseItems, "warehouseItem") + cnt(feedStocks, "feedStock"), emoji: "🏭" },
+      { label: "Gudang", count: cnt(warehouseItems, "warehouseItem") + cnt(feedStocks.filter(dilacak), "feedStock"), emoji: "🏭" },
     ].filter(b => b.count > 0);
   }, [tortoises, breedings, sales, profiles, warehouseItems, feedStocks]);
 
