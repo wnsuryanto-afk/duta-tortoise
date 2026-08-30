@@ -418,31 +418,17 @@ export default function TortoiseForm({ open, onClose, editData }) {
       });
     }
 
-    // Sync Enclosure current_count jika kandang berubah
+    // Angka isi kandang disegarkan lewat satu pustaka (lib/enclosureCount).
+    //
+    // Blok ini dulu menghitung sendiri, dan salinannya punya tiga kelemahan
+    // sekaligus: mencocokkan kandang lewat nama (bukan nomor, sehingga lepas
+    // begitu kandang diganti nama), hanya mengeluarkan kura "mati"/"terjual"
+    // (kura arsip tetap terhitung), dan memakai rumus "hitung yang lain, lalu
+    // + 1" yang meleset kalau kura yang baru disimpan sudah ikut terbaca.
     if (newEnclosureName !== oldEnclosure) {
-      try {
-        const [allEnc, allTort] = await Promise.all([
-          base44.entities.Enclosure.list(),
-          base44.entities.Tortoise.list("-created_date", 500),
-        ]);
-        const activeTort = allTort.filter(t => t.status !== "terjual" && t.status !== "mati");
-        // Kandang baru
-        if (newEnclosureName) {
-          const toEnc = allEnc.find(e => e.name === newEnclosureName);
-          if (toEnc) {
-            const count = activeTort.filter(t => t.enclosure === newEnclosureName && t.id !== tortoiseId).length + 1;
-            await base44.entities.Enclosure.update(toEnc.id, { current_count: count });
-          }
-        }
-        // Kandang lama (jika edit & pindah)
-        if (oldEnclosure && oldEnclosure !== newEnclosureName) {
-          const fromEnc = allEnc.find(e => e.name === oldEnclosure);
-          if (fromEnc) {
-            const count = activeTort.filter(t => t.enclosure === oldEnclosure && t.id !== tortoiseId).length;
-            await base44.entities.Enclosure.update(fromEnc.id, { current_count: count });
-          }
-        }
-      } catch (_) {}
+      await recalcEnclosureCountsAman(
+        [oldEnclosure, newEnclosureName].filter(Boolean),
+      );
     }
 
     // Auto-insert MeasurementHistory jika berat atau panjang berubah (atau tortoise baru)

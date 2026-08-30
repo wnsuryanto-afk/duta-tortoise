@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { hatchRateClutch } from "@/lib/hasilInkubasi";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 const EGG_STATUS = [
   { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-muted",  border: "border-gray-400",  text: "text-foreground" },
@@ -399,6 +400,8 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
       morph: "normal",
       purchase_price: 0,
     });
+    // Bayi yang menetas langsung menghuni kandang; angkanya harus ikut naik.
+    await recalcEnclosureCountsAman(form.enclosure ? [form.enclosure] : null);
     setSaving(false);
     toast.success(`🐢 Baby ${form.code} berhasil ditambahkan ke kandang ${form.enclosure}`);
     onCreated(newTortoise.id, form.code, form.enclosure);
