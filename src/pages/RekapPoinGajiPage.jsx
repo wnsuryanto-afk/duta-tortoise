@@ -1,3 +1,4 @@
+import { nilaiPerPoin } from "@/lib/nilaiPoin";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
