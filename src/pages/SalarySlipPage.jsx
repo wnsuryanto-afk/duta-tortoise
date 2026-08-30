@@ -11,7 +11,6 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, formatRole } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
-import WeeklySlipManager from "@/components/salary/WeeklySlipManager";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 import AlurGaji from "@/components/salary/AlurGaji";
@@ -32,7 +31,6 @@ const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 export default function SalarySlipPage() {
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
-  const [mode, setMode] = useState("weekly"); // default mingguan
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("");
   const [selectedSlip, setSelectedSlip] = useState(null);
@@ -70,17 +68,18 @@ export default function SalarySlipPage() {
     return s.period || "—";
   };
 
-  // Monthly mode: hanya slip bulanan (period_type !== "weekly")
+  // Slip mingguan tidak diterbitkan lagi (D30), tetapi slip mingguan LAMA tetap
+  // ditampilkan di sini — kalau disaring keluar, riwayatnya tidak bisa dibuka
+  // dari layar mana pun. periodLabelOf sudah memberi label pekan yang benar.
   const filtered = useMemo(() => {
     return slips.filter(s => {
       if (["owner", "manajer", "admin"].includes(s.employee_role)) return false;
       if (!isManagerRole && s.employee_email !== user?.email) return false;
-      if (mode === "monthly" && s.period_type === "weekly") return false;
       const empMatch = filterEmployee === "all" || s.employee_email === filterEmployee;
       const periodMatch = !filterPeriod || s.period === filterPeriod;
       return empMatch && periodMatch;
     });
-  }, [slips, filterEmployee, filterPeriod, isManagerRole, user, mode]);
+  }, [slips, filterEmployee, filterPeriod, isManagerRole, user]);
 
   const byPeriod = useMemo(() => {
     const map = {};
@@ -103,26 +102,10 @@ export default function SalarySlipPage() {
       <div>
         <h1 className="text-3xl font-heading font-bold">Slip Gaji Rutin</h1>
         <p className="text-muted-foreground mt-1">
-          {mode === "weekly"
-            ? "Gaji mingguan karyawan harian (Keeper & Kepala Feeder) — siklus Minggu–Sabtu · klik \"Lihat\" untuk detail, approve & cetak"
-            : "Histori slip gaji bulanan karyawan termasuk bonus poin KPI · klik \"Lihat\" untuk detail & cetak"}
+          Histori slip gaji bulanan karyawan termasuk bonus poin KPI · klik "Lihat" untuk detail &amp; cetak
         </p>
       </div>
 
-      {/* Mode toggle */}
-      <div className="flex gap-2">
-        <Button variant={mode === "weekly" ? "default" : "outline"} size="sm" onClick={() => setMode("weekly")}>
-          📆 Mingguan
-        </Button>
-        <Button variant={mode === "monthly" ? "default" : "outline"} size="sm" onClick={() => setMode("monthly")}>
-          📅 Bulanan (Rekap)
-        </Button>
-      </div>
-
-      {mode === "weekly" ? (
-        <WeeklySlipManager settings={settings} isManagerRole={isManagerRole} user={user} />
-      ) : (
-        <>
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="p-4 flex items-center gap-3">
@@ -290,10 +273,8 @@ export default function SalarySlipPage() {
               })}
             </div>
           )}
-        </>
-      )}
 
-      {/* Slip Detail Modal (monthly mode) */}
+      {/* Slip Detail Modal */}
       {selectedSlip && (
         <SalarySlipDetail
           slip={{ ...selectedSlip, employee_name: resolveName(selectedSlip.employee_email, selectedSlip.employee_name) }}
