@@ -37,11 +37,6 @@ export default function LabaRugiEnhanced({ period }) {
     staleTime: 3 * 60 * 1000,
   });
 
-  const { data: salarySlips = [] } = useQuery({
-    queryKey: ["labarugi-salaries", selectedPeriod],
-    queryFn: () => base44.entities.SalarySlip.list("-period", 200),
-    staleTime: 3 * 60 * 1000,
-  });
 
   const { data: pettyCash = [] } = useQuery({
     queryKey: ["labarugi-pettycash", selectedPeriod],
@@ -64,17 +59,6 @@ export default function LabaRugiEnhanced({ period }) {
   // Pengeluaran from FinanceTransaction
   const totalPengeluaranFinance = pengeluaran.reduce((s, t) => s + (t.amount || 0), 0);
 
-  // Gaji bulan ini — dibaca dari FinanceTransaction berkategori gaji.
-  //
-  // Sebelumnya dijumlahkan dari SalarySlip berstatus "paid" lalu DITAMBAHKAN ke
-  // totalPengeluaranFinance, dengan alasan "gaji tidak punya FinanceTransaction
-  // di mana pun". Alasan itu sudah tidak berlaku sejak D18: slip yang ditandai
-  // dibayar membuat FinanceTransaction-nya sendiri. Menjumlahkan keduanya
-  // membuat setiap gaji terhitung dua kali — dan itu akan mulai terjadi tepat
-  // pada slip pertama yang ditandai dibayar, bukan nanti.
-  const totalGaji = pengeluaran
-    .filter(t => ["gaji", "gaji_karyawan"].includes(t.category))
-    .reduce((s, t) => s + (t.amount || 0), 0);
 
   // Kas kecil yang DICAIRKAN bulan ini.
   //
