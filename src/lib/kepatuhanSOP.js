@@ -89,16 +89,18 @@ export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang =
       .filter((id) => id.startsWith("kebersihan_kandang_")),
   ).size;
 
-  // Kandang hanya dihitung sebagai kewajiban bila tugas induknya memang
-  // terjadwal hari itu — sejak Minggu dibuat lebih ringan, kebersihan kandang
-  // tidak berlaku di hari Minggu.
-  const kebersihanTerjadwal = (sopTasks || []).some(
-    (t) =>
-      t.task_scope === "per_kandang" &&
-      /pembersihan kandang/i.test(t.title || "") &&
-      terjadwalPada(t, tanggal),
+  // Kandang dihitung sebagai kewajiban bila ADA tugas ubin yang terjadwal hari
+  // itu. Sejak D12 satu ubin mencakup beberapa tugas dengan jadwal berbeda:
+  // kebersihan Senin-Sabtu, pemberian pakan tiap hari. Jadi hari Minggu tetap
+  // menuntut kunjungan kandang meski tanpa pembersihan.
+  //
+  // Penandanya kolom di_ubin_kandang, bukan pencocokan judul: judul berubah
+  // saat SOP dirapikan, dan pencocokan judul yang meleset diam-diam membuat
+  // seluruh kewajiban kandang hilang dari hitungan tanpa satu pun peringatan.
+  const adaTugasUbin = (sopTasks || []).some(
+    (t) => t.di_ubin_kandang === true && terjadwalPada(t, tanggal),
   );
-  const kandangTotal = kebersihanTerjadwal ? jumlahKandang : 0;
+  const kandangTotal = adaTugasUbin ? jumlahKandang : 0;
 
   return {
     tanggal,
