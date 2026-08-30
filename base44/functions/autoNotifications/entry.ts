@@ -191,18 +191,29 @@ Deno.serve(async (req) => {
     // Tingkatan target, urut naik. Yang belum diisi dilewati.
     const csList = await base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" });
     const cs = csList[0] || {};
+    // D16 — Tingkat Dasar juga menuntut poin TIM. Aturan yang sama ada di
+    // src/lib/bonus.js untuk sisi layar; keduanya harus diubah bersamaan.
+    // Kalau tidak, kiper melihat "Dasar tercapai" di layar sementara notifikasi
+    // masih mengejarnya — atau sebaliknya, dan tidak ada yang tahu mana benar.
+    const poinTim = Object.values(poinByEmployee).reduce((s: number, n) => s + Number(n || 0), 0);
     const tingkatan = [
-      { nama: "Dasar", target: Number(cs.min_poin_bulanan || 0), bonus: Number(cs.bonus_dasar || 0) },
-      { nama: "Bagus", target: Number(cs.target_poin_bagus || 0), bonus: Number(cs.bonus_bagus || 0) },
-      { nama: "Luar biasa", target: Number(cs.target_poin_luar_biasa || 0), bonus: Number(cs.bonus_luar_biasa || 0) },
+      { nama: "Dasar", target: Number(cs.min_poin_bulanan || 0), targetTim: Number(cs.target_poin_tim || 0), bonus: Number(cs.bonus_dasar || 0) },
+      { nama: "Bagus", target: Number(cs.target_poin_bagus || 0), targetTim: 0, bonus: Number(cs.bonus_bagus || 0) },
+      { nama: "Luar biasa", target: Number(cs.target_poin_luar_biasa || 0), targetTim: 0, bonus: Number(cs.bonus_luar_biasa || 0) },
     ].filter((t) => t.target > 0).sort((a, b) => a.target - b.target);
+
+    const sudahTercapai = (t: any, poin: number) =>
+      poin >= t.target && (t.targetTim <= 0 || poinTim >= t.targetTim);
 
     for (const [email, totalPoin] of Object.entries(poinByEmployee)) {
       // Tingkat terdekat yang BELUM tercapai.
-      const berikut = tingkatan.find((t) => totalPoin < t.target);
+      const berikut = tingkatan.find((t) => !sudahTercapai(t, totalPoin as number));
       if (!berikut) continue;
       // Kirim hanya bila sudah 80% jalan — sebelum itu belum berarti apa-apa,
-      // sesudah tercapai tidak perlu dikejar lagi.
+      // sesudah tercapai tidak perlu dikejar lagi. Bila poin pribadinya sudah
+      // cukup dan yang kurang hanya poin tim, kabarnya tetap dikirim: itu justru
+      // pesan yang paling berguna — ia perlu mengajak rekannya, bukan bekerja
+      // lebih keras sendirian.
       if (totalPoin < berikut.target * 0.8) continue;
       // Anti-duplikat: satu kali per TINGKAT per bulan per karyawan.
       //
@@ -218,12 +229,22 @@ Deno.serve(async (req) => {
       });
       const alreadyNotif14 = existing14.some(n => !n.is_dismissed);
       if (alreadyNotif14) continue;
-      const sisa = berikut.target - totalPoin;
+      const sisa = Math.max(0, berikut.target - (totalPoin as number));
+      const sisaTim = berikut.targetTim > 0 ? Math.max(0, berikut.targetTim - poinTim) : 0;
       const nominal = berikut.bonus > 0 ? ` (bonus Rp ${berikut.bonus.toLocaleString("id-ID")})` : "";
+      const judul = sisa > 0
+        ? `Kurang ${sisa} poin lagi ke tingkat ${berikut.nama}!`
+        : `Tim kurang ${sisaTim} poin lagi ke tingkat ${berikut.nama}`;
+      const isiPribadi = sisa > 0
+        ? `Kamu sudah ${totalPoin} poin bulan ini. Tinggal ${sisa} poin lagi untuk mencapai ${berikut.nama} di ${berikut.target} poin${nominal}.`
+        : `Poin kamu sudah cukup (${totalPoin} poin).`;
+      const isiTim = sisaTim > 0
+        ? ` Tingkat ${berikut.nama} dihitung bersama satu tim: tim kurang ${sisaTim} poin lagi dari ${berikut.targetTim}. Bantu rekanmu supaya terbuka untuk semua.`
+        : "";
       await createNotif({
         recipient_email: email,
-        title: `Kurang ${sisa} poin lagi ke tingkat ${berikut.nama}!`,
-        message: `Kamu sudah ${totalPoin} poin bulan ini. Tinggal ${sisa} poin lagi untuk mencapai ${berikut.nama} di ${berikut.target} poin${nominal}.`,
+        title: judul,
+        message: isiPribadi + isiTim,
         type: "info",
         priority: "rendah",
         category: "lainnya",
