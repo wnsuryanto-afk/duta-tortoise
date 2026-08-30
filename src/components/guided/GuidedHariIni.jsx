@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance } from "@/components/attendance/useGPSLocation";
 import { barisAbsensiSah, catatCheckIn, catatCheckOut } from "@/lib/absensi";
+import { useTestMode } from "@/lib/useTestMode";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import BonusBulanIni from "./BonusBulanIni";
 import TugasHariIni from "@/components/sop/TugasHariIni";
@@ -106,6 +107,7 @@ function Widget({ children, done = false, className = "" }) {
 // ── Main Component ──────────────────────────────────────────────────────
 export default function GuidedHariIni({ user }) {
   const qc = useQueryClient();
+  const { testModeTag } = useTestMode();
   const today = format(new Date(), "yyyy-MM-dd");
 
   // ── Local state ──
@@ -428,6 +430,7 @@ export default function GuidedHariIni({ user }) {
         shiftStart: salaryConfig?.shift_start,
         shiftEnd: salaryConfig?.shift_end,
         selfieUrl,
+        tandaUji: testModeTag,
       }));
     } catch (err) {
       showMsg("error", `Check in gagal tersimpan: ${err.message}. Coba lagi.`);
@@ -478,6 +481,7 @@ export default function GuidedHariIni({ user }) {
         lng: posisi ? posisi.lng : null,
         adaLokasi: !!posisi,
         selfieUrl,
+        tandaUji: testModeTag,
       });
     } catch (err) {
       showMsg("error", `Check out gagal tersimpan: ${err.message}. Coba lagi.`);

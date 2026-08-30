@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { hanyaLaporan } from "@/lib/laporan";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ export default function PayrollReport() {
     queryKey: ["checklists-period", selectedPeriod],
     queryFn: async () => {
       const all = await base44.entities.DailyChecklist.filter({ status: "approved" });
-      return all.filter((c) => c.date?.startsWith(selectedPeriod));
+      return hanyaLaporan(all).filter((c) => c.date?.startsWith(selectedPeriod));
     },
     enabled: isAdmin,
   });

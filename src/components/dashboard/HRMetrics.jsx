@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { hanyaLaporan } from "@/lib/laporan";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, TrendingUp, Clock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -10,9 +11,9 @@ export default function HRMetrics() {
 
   const { data: attendances = [] } = useQuery({
     queryKey: ["attendances-hr"],
-    queryFn: () => base44.entities.Attendance.filter({
+    queryFn: async () => hanyaLaporan(await base44.entities.Attendance.filter({
       date: new Date().toISOString().split('T')[0]
-    }),
+    })),
     enabled: isAdmin,
   });
 
@@ -27,10 +28,10 @@ export default function HRMetrics() {
 
   const { data: overtimeLogs = [] } = useQuery({
     queryKey: ["overtime-month"],
-    queryFn: () => base44.entities.OvertimeLog.list(),
+    queryFn: async () => hanyaLaporan(await base44.entities.OvertimeLog.list()),
     enabled: isAdmin,
   });
-  const monthOvertime = overtimeLogs.filter(o => o.date.startsWith(currentMonth));
+  const monthOvertime = overtimeLogs.filter(o => String(o.date || "").startsWith(currentMonth));
   const totalOvertimeHours = monthOvertime.reduce((sum, o) => sum + (o.hours || 0), 0);
 
   if (!isAdmin) return null;

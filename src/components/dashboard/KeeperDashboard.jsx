@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getCurrentPosition, haversineDistance } from "@/components/attendance/useGPSLocation";
 import { barisAbsensiSah, catatCheckIn, catatCheckOut } from "@/lib/absensi";
+import { useTestMode } from "@/lib/useTestMode";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
@@ -32,6 +33,7 @@ function getMinutesUntil(timeStr) {
 export default function KeeperDashboard() {
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
+  const { testModeTag } = useTestMode();
   const today = format(new Date(), "yyyy-MM-dd");
   const currentPeriod = format(new Date(), "yyyy-MM");
   const [checkLoading, setCheckLoading] = useState(false);
@@ -134,6 +136,7 @@ export default function KeeperDashboard() {
         lat, lng, verified,
         shiftStart: salaryConfig?.shift_start,
         shiftEnd: salaryConfig?.shift_end,
+        tandaUji: testModeTag,
       });
       if (sudahAda) setLocationWarning("Kamu sudah check in hari ini — absensinya tidak dicatat dua kali.");
     } catch (err) {
@@ -182,6 +185,7 @@ export default function KeeperDashboard() {
         lat: posisi ? posisi.lat : null,
         lng: posisi ? posisi.lng : null,
         adaLokasi: !!posisi,
+        tandaUji: testModeTag,
       });
     } catch (err) {
       setGpsError(`Check out gagal tersimpan: ${err.message}. Coba lagi.`);

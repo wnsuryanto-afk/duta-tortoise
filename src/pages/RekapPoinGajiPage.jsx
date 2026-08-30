@@ -17,6 +17,7 @@ import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import AlurGaji from "@/components/salary/AlurGaji";
 import { useVegTrips } from "@/hooks/useVegTrips";
+import { hanyaLaporan } from "@/lib/laporan";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -61,12 +62,12 @@ export default function RekapPoinGajiPage() {
 
   const { data: attendances = [] } = useQuery({
     queryKey: ["attendances-all"],
-    queryFn: () => base44.entities.Attendance.list("-date", 500),
+    queryFn: async () => hanyaLaporan(await base44.entities.Attendance.list("-date", 500)),
   });
 
   const { data: overtimeLogs = [] } = useQuery({
     queryKey: ["overtime-logs"],
-    queryFn: () => base44.entities.OvertimeLog.list("-date", 300),
+    queryFn: async () => hanyaLaporan(await base44.entities.OvertimeLog.list("-date", 300)),
   });
 
   const { data: vegTripsMap = {} } = useVegTrips(selectedMonth);

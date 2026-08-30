@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { hanyaLaporan } from "@/lib/laporan";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,17 +59,17 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
   });
   const { data: attendances = [] } = useQuery({
     queryKey: ["attendances-week", weekStart, weekEnd],
-    queryFn: () => base44.entities.Attendance.list("-date", 500),
+    queryFn: async () => hanyaLaporan(await base44.entities.Attendance.list("-date", 500)),
     enabled: !!weekStart,
   });
   const { data: dailyChecklists = [] } = useQuery({
     queryKey: ["checklists-week", weekStart, weekEnd],
-    queryFn: () => base44.entities.DailyChecklist.list("-date", 500),
+    queryFn: async () => hanyaLaporan(await base44.entities.DailyChecklist.list("-date", 500)),
     enabled: !!weekStart,
   });
   const { data: rempesanLogs = [] } = useQuery({
     queryKey: ["rempesan-week", weekStart, weekEnd],
-    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
+    queryFn: async () => hanyaLaporan(await base44.entities.RempesanLog.list("-date", 300)),
     enabled: !!weekStart,
   });
   const { data: kasbons = [] } = useQuery({

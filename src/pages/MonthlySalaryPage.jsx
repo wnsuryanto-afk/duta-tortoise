@@ -4,6 +4,7 @@ import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useVegTrips } from "@/hooks/useVegTrips";
+import { hanyaLaporan } from "@/lib/laporan";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,7 +56,7 @@ export default function MonthlySalaryPage() {
     queryKey: ["checklists-salary", period],
     queryFn: async () => {
       const all = await base44.entities.DailyChecklist.filter({ status: "approved" });
-      return all.filter((c) => c.date?.startsWith(period));
+      return hanyaLaporan(all).filter((c) => c.date?.startsWith(period));
     },
     enabled: isAdmin,
   });
@@ -64,7 +65,7 @@ export default function MonthlySalaryPage() {
     queryKey: ["attendance-salary", period],
     queryFn: async () => {
       const all = await base44.entities.Attendance.list("-date", 1000);
-      return all.filter((a) => a.date?.startsWith(period));
+      return hanyaLaporan(all).filter((a) => a.date?.startsWith(period));
     },
     enabled: isAdmin,
   });
@@ -73,7 +74,7 @@ export default function MonthlySalaryPage() {
     queryKey: ["overtime-salary", period],
     queryFn: async () => {
       const all = await base44.entities.OvertimeLog.list("-date", 500);
-      return all.filter((o) => o.date?.startsWith(period));
+      return hanyaLaporan(all).filter((o) => o.date?.startsWith(period));
     },
     enabled: isAdmin,
   });

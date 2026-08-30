@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { hanyaLaporan } from "@/lib/laporan";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export default function DailyPayrollReport() {
     queryKey: ["attendance-week", dateFrom],
     queryFn: async () => {
       const all = await base44.entities.Attendance.list("-date", 500);
-      return all.filter((a) => {
+      return hanyaLaporan(all).filter((a) => {
         const d = parseISO(a.date);
         return isWithinInterval(d, { start: weekStart, end: weekEnd });
       });

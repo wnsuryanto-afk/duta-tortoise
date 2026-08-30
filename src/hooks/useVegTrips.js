@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { hanyaLaporan } from "@/lib/laporan";
 
 /**
  * Hook untuk menghitung trip ambil sayur dari PakanHarian.
@@ -14,7 +15,7 @@ export function useVegTrips(period, enabled = true) {
   return useQuery({
     queryKey: ["veg-trips", period],
     queryFn: async () => {
-      const all = await base44.entities.PakanHarian.list("-log_date", 500);
+      const all = hanyaLaporan(await base44.entities.PakanHarian.list("-log_date", 500));
       const byEmail = {};
 
       all.forEach((p) => {
