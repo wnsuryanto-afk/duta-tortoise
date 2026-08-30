@@ -23,6 +23,7 @@ import { perubahanSakit } from "@/lib/statusKura";
 import { tandaiSembuh } from "@/lib/kesehatanKura";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
+import { KANDANG_LIST } from "@/lib/kandang";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
