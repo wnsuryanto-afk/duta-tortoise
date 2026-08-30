@@ -60,11 +60,9 @@ function workDuration(checkIn) {
   return `${Math.floor(diff / 60)} jam ${diff % 60} menit`;
 }
 
-const KANDANG_LIST = [
-  "W1","W2","W3","W4","W5",
-  "E1","E2","E3","E4","E5",
-  "N1","N2","N3","L1","L2",
-];
+// Daftar kandang tinggal satu tempat: src/lib/kandang.js. Kartu kepatuhan di
+// dashboard memakai daftar yang sama, supaya penyebutnya tidak pernah beda
+// dari yang dilihat kiper di layar ini.
 
 const GEJALA_LIST = [
   { id: "tidak_makan",  label: "Tidak mau makan",  icon: "🍃" },
