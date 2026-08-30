@@ -8,6 +8,7 @@ import {
   emailPerRole,
 } from "../../shared/otomatis.ts";
 import { getSettings, trackAICall } from "../../shared/whatsapp.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 /**
  * C4 — Deteksi dini penyakit dari foto yang sudah ada.
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
       const logs = await base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: tanggal });
       for (const l of logs || []) {
         if (!l.photo_url) continue;
-        if (l.is_test_data === true) continue;
+        if (!masukLaporan(l)) continue;
         const judul = String(l.item_label || "");
         const kandang = String(l.enclosure_name || "");
         // Prioritaskan foto yang memang memperlihatkan kura atau kandang.

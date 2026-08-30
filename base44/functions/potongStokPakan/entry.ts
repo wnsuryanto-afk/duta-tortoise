@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, wibTanggal, tanggalMundur, sopIdDariTaskId } from "../../shared/otomatis.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 /**
  * A6 — Stok berkurang sendiri saat task pakan/suplemen dicentang.
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
 
       for (const cl of checklists || []) {
         if (cl.stok_dipotong === true) continue;
-        if (cl.is_test_data === true) continue;
+        if (!masukLaporan(cl)) continue;
 
         let adaYangDipotong = false;
 

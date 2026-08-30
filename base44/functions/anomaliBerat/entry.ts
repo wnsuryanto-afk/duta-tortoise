@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 /** Status yang berarti kura sudah tidak ada lagi di peternakan (samakan dengan populasiKura.js). */
 const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
     // Kelompokkan riwayat per kura, urut naik menurut tanggal.
     const perKura = new Map<string, any[]>();
     for (const m of ukuran || []) {
-      if (m.is_test_data === true || m.excluded_from_reports === true) continue;
+      if (!masukLaporan(m)) continue;
       if (!m.tortoise_id || !m.weight_grams) continue;
       if (!perKura.has(m.tortoise_id)) perKura.set(m.tortoise_id, []);
       perKura.get(m.tortoise_id)!.push(m);

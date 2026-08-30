@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import {
+import { masukLaporan } from "../../shared/laporan.ts";
   getOtomatis,
   wibTanggal,
   tanggalMundur,
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
       const checklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: tanggal });
 
       for (const cl of checklists || []) {
-        if (cl.is_test_data === true) continue;
+        if (!masukLaporan(cl)) continue;
         const tugas = Array.isArray(cl.completed_tasks) ? cl.completed_tasks : [];
         const jamJam = tugas
           .map((t: any) => jamDari(t.recorded_at || t.photo_taken_at))

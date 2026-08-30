@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibNow, wibTanggal, notifSekali, userPerRole } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 const PERAN_HARIAN = ["keeper", "kepala_feeder"];
 
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
       const konfig: any = (konfigGaji || []).find((c: any) => c.role === k.role) || {};
 
       const absenSaya = (absensi || []).filter(
-        (a: any) => a.employee_email === k.email && dalamMinggu(String(a.date || "")) && !a.is_test_data,
+        (a: any) => a.employee_email === k.email && dalamMinggu(String(a.date || "")) && masukLaporan(a),
       );
       const hariHadir = absenSaya.filter((a: any) => a.status === "hadir").length;
 
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
         (c: any) =>
           c.employee_email === k.email &&
           dalamMinggu(String(c.date || "")) &&
-          !c.is_test_data,
+          masukLaporan(c),
       );
       const poin = checklistSaya
         .filter((c: any) => c.status === "approved")

@@ -5,6 +5,7 @@ import {
   getEmployeePhone,
 } from "../../shared/whatsapp.ts";
 import { notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 // Dipanggil via entity automation saat SalarySlip dibuat atau status berubah
 Deno.serve(async (req) => {
@@ -189,7 +190,7 @@ Deno.serve(async (req) => {
               String(t.date || "") >= awalPeriode &&
               String(t.date || "") <= akhirPeriode &&
               t.reference_id !== slip.id &&
-              !t.is_test_data
+              masukLaporan(t)
             );
             if (bentrok.length > 0) {
               const totalBentrok = bentrok.reduce((n: number, t: any) => n + Number(t.amount || 0), 0);
