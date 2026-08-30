@@ -35,8 +35,18 @@ Deno.serve(async (req) => {
     }
 
     const breedings = await base44.asServiceRole.entities.Breeding.list("-egg_laying_date", 200);
+    // Clutch AKTIF = "bertelur" ATAU "inkubasi".
+    //
+    // Fungsi ini dulu hanya memeriksa "inkubasi", sementara enam tempat lain di
+    // aplikasi (beranda owner, beranda investor, Ringkasan Pagi, ekspor laporan,
+    // dan dua fungsi di lib/breedingUtils) memakai pasangan keduanya. Selisih
+    // itu bukan teori: satu-satunya clutch yang sedang dierami sekarang
+    // (C23 x A40, 22 telur, 12 Agustus) berstatus "bertelur" — jadi pengingat
+    // yang dibuat khusus untuk membangunkan pencatatan inkubator justru diam
+    // pada satu-satunya clutch yang perlu dicatat.
+    const STATUS_AKTIF = ["bertelur", "inkubasi"];
     const sedangInkubasi = (breedings || []).filter(
-      (b: any) => b.status === "inkubasi" && !b.is_archived,
+      (b: any) => STATUS_AKTIF.includes(b.status) && !b.is_archived,
     );
 
     if (sedangInkubasi.length === 0) {
