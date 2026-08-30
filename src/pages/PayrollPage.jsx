@@ -19,6 +19,9 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AlurGaji from "@/components/salary/AlurGaji";
 import AccessDenied from "@/components/common/AccessDenied";
+import { hitungGajiKaryawan } from "@/lib/hitungGaji";
+import { useVegTrips } from "@/hooks/useVegTrips";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 
 const MAX_KASBON = 1000000;
 
@@ -553,6 +556,19 @@ export default function PayrollPage() {
 
   const monthStart = format(startOfMonth(new Date(selectedMonth + "-01")), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(new Date(selectedMonth + "-01")), "yyyy-MM-dd");
+  // lib/hitungGaji memakai batas atas EKSKLUSIF (date < akhir); memberi
+  // tanggal terakhir bulan akan membuang catatan hari terakhir.
+  const monthEndExclusive = format(
+    new Date(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1)),
+    "yyyy-MM-dd",
+  );
+
+  const settings = useCompanySettings();
+  const { data: vegTripsMap = {} } = useVegTrips(selectedMonth);
+  const { data: dailyChecklists = [] } = useQuery({
+    queryKey: ["payroll-daily-checklists", selectedMonth],
+    queryFn: () => base44.entities.DailyChecklist.list("-date", 1000),
+  });
 
   const { data: users = [] } = useActiveUsers();
   const { data: salaryConfigs = [] } = useQuery({
@@ -617,7 +633,7 @@ export default function PayrollPage() {
       kasbons,
       periode: selectedMonth,
       awal: monthStart,
-      akhir: monthEnd,
+      akhir: monthEndExclusive,
       targetPoin: settings.min_poin_bulanan || 0,
       companySettings: settings,
     };
@@ -643,7 +659,7 @@ export default function PayrollPage() {
         totalSalary: h.bersih,
       };
     });
-  }, [employees, salaryConfigs, dailyChecklists, monthAttendances, monthOvertime, vegTripsMap, bonusRewards, kasbons, selectedMonth, monthStart, monthEnd, settings]);
+  }, [employees, salaryConfigs, dailyChecklists, monthAttendances, monthOvertime, vegTripsMap, bonusRewards, kasbons, selectedMonth, monthStart, monthEndExclusive, settings]);
 
   const fmt = (n) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
