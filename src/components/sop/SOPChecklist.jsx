@@ -143,16 +143,35 @@ export default function SOPChecklist() {
 
   const getTaskPoints = (task) => isDeadlinePassed(task) ? 0 : (task.points || 0);
 
+  /**
+   * Tugas yang benar-benar jatuh tempo hari ini.
+   *
+   * Layar ini dulu menyaring `t.frequency === "harian"`. Dari 36 task aktif
+   * hanya 8 yang berfrekuensi harian; sisanya tersimpan sebagai `mingguan`
+   * dengan daftar hari — termasuk hampir seluruh pekerjaan inti peternakan.
+   * Artinya 26 task tidak pernah bisa dicentang di sini, sementara rumus
+   * kepatuhan tetap menghitungnya sebagai terjadwal. Persentasenya turun
+   * karena layarnya, bukan karena kipernya.
+   *
+   * Task yang dikerjakan lewat ubin kandang sengaja dikecualikan: tempatnya di
+   * layar Hari Ini, dan menampilkannya di dua tempat membuat poinnya terhitung
+   * dua kali.
+   */
+  const tugasHariIni = useMemo(
+    () => (tasks || []).filter((t) => t.di_ubin_kandang !== true && terjadwalPada(t, today)),
+    [tasks, today],
+  );
+
   const totalPoints = useMemo(() => {
-    return tasks
+    return tugasHariIni
       .filter((t) => checked[t.id] && !getLockInfo(t))
       .reduce((sum, t) => sum + getTaskPoints(t), 0);
-  }, [tasks, checked, allDoneMap]);
+  }, [tugasHariIni, checked, allDoneMap]);
 
   const handleSubmit = async () => {
     if (!user) return;
     setSubmitting(true);
-    const completedTasks = tasks
+    const completedTasks = tugasHariIni
       .filter((t) => (checked[t.id] || skipped[t.id]) && !getLockInfo(t))
       .map((t) => ({
         task_id: t.id,
@@ -256,7 +275,7 @@ export default function SOPChecklist() {
       <SOPVideoTask />
 
       {KATEGORI.map((cat) => {
-        const catTasks = tasks.filter((t) => t.category === cat && tugasHariIni.includes(t));
+        const catTasks = tugasHariIni.filter((t) => t.category === cat);
         if (catTasks.length === 0) return null;
         return (
           <Card key={cat}>
@@ -380,13 +399,17 @@ export default function SOPChecklist() {
         );
       })}
 
-      {tasks.length === 0 && (
+      {tugasHariIni.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
-          <p>Belum ada task SOP aktif. Admin perlu menambahkan task terlebih dahulu.</p>
+          <p>
+            {tasks.length === 0
+              ? "Belum ada task SOP aktif. Admin perlu menambahkan task terlebih dahulu."
+              : "Tidak ada tugas yang jatuh tempo hari ini di luar ubin kandang."}
+          </p>
         </div>
       )}
 
-      {tasks.length > 0 && (
+      {tugasHariIni.length > 0 && (
         <Card className="p-4 space-y-3">
           <Textarea
             placeholder="Catatan umum hari ini (opsional)"
