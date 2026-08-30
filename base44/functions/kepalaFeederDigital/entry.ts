@@ -10,6 +10,7 @@ import {
 } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getSettings, trackAICall } from "../../shared/whatsapp.ts";
 import { terjadwalPada } from "../../shared/jadwalSOP.ts";
+import { clutchAktif } from "../../shared/kura.ts";
 
 const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 

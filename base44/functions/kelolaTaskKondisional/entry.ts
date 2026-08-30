@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis } from "../../shared/otomatis.ts";
+import { clutchAktif } from "../../shared/kura.ts";
 
 /**
  * Menyalakan dan mematikan SOP task yang hanya berlaku saat keadaannya ada.

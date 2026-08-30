@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { clutchAktif } from "../../shared/kura.ts";
 
 // Batas pengambilan ditulis tegas. Pemberitahuan otomatis yang membaca daftar
 // tanpa batas mengandalkan bawaan SDK: begitu datanya lewat batas itu,
