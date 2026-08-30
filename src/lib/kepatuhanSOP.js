@@ -1,3 +1,4 @@
+import { masukLaporan } from "./laporan";
 /**
  * kepatuhanSOP.js — berapa persen tugas terjadwal yang benar-benar dikerjakan.
  *
@@ -63,7 +64,7 @@ export function terjadwalPada(t, tanggal) {
  * @returns {{ tanggal, selesai, terjadwal, persen, kandangSelesai, kandangTotal }}
  */
 export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang = 0) {
-  const logHariIni = (logs || []).filter((l) => l.period_key === tanggal && !l.is_test_data);
+  const logHariIni = (logs || []).filter((l) => l.period_key === tanggal && masukLaporan(l));
 
   // ── Tugas harian biasa (bukan per-kandang) ──
   // Yang dikeluarkan dari hitungan ini hanya tugas yang dikerjakan lewat ubin

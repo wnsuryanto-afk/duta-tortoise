@@ -31,6 +31,7 @@ import PhotoPreviewModal from "./PhotoPreviewModal";
 import UkurFormDialog from "./UkurFormDialog";
 import TimbangBabyDialog from "./TimbangBabyDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
+import { masukLaporan } from "@/lib/laporan";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
@@ -86,7 +87,7 @@ function computeLastDueDate(t, todayStr) {
 function isCompletedPrevCycle(itemKey, lastDueDate, todayStr, scope, userEmail, recentLogs) {
   const logs = (recentLogs || []).filter(l =>
     l.item_id === itemKey && l.is_done && l.period_key &&
-    !l.is_test_data &&
+    masukLaporan(l) &&
     l.period_key >= lastDueDate && l.period_key < todayStr
   );
   if (scope === "pribadi") return logs.some(l => l.done_by_email === userEmail);
@@ -156,7 +157,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const doneByOtherMap = useMemo(() => {
     const m = {};
     (allLogsToday || []).forEach(l => {
-      if (!l.is_done || l.is_test_data) return;
+      if (!l.is_done || !masukLaporan(l)) return;
       if ((l.done_by_email || "") === user?.email) return;
       if (!l.item_id) return;
       if (!m[l.item_id]) m[l.item_id] = { name: l.done_by || "karyawan lain", time: l.done_at || "" };
@@ -436,7 +437,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     const total = activeEnclosures.length;
     const doneSet = new Set();
     (allLogsToday || []).forEach(l => {
-      if (!l.is_done || l.is_test_data) return;
+      if (!l.is_done || !masukLaporan(l)) return;
       if (l.item_id && l.item_id.startsWith("kebersihan_kandang_")) {
         doneSet.add(l.item_id.replace("kebersihan_kandang_", ""));
       }
@@ -507,7 +508,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         const existing = await base44.entities.MaintenanceLog.filter({
           item_id: task.id, period_key: today, is_done: true,
         });
-        const byOther = existing.find(l => l.done_by_email !== user?.email && !l.is_test_data);
+        const byOther = existing.find(l => l.done_by_email !== user?.email && masukLaporan(l));
         if (byOther) {
           return { type: "done", name: byOther.done_by || "karyawan lain", time: byOther.done_at || "" };
         }

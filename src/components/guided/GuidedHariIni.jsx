@@ -26,6 +26,7 @@ import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 import { kandangWajib, tugasUbinKandang, poinUbinKandang } from "@/lib/kandang";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { jadwalBerlaku } from "@/lib/jadwalPerawatan";
+import { masukLaporan } from "@/lib/laporan";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -205,7 +206,7 @@ export default function GuidedHariIni({ user }) {
   const allKandangDoneMap = useMemo(() => {
     const m = {};
     allKebersihanLogs.forEach(l => {
-      if (!l.is_done || l.is_test_data) return;
+      if (!l.is_done || !masukLaporan(l)) return;
       // format baru / TugasHariIni: item_id "kebersihan_kandang_E4"
       if (l.item_id && l.item_id.startsWith("kebersihan_kandang_")) {
         const k = l.item_id.replace("kebersihan_kandang_", "");

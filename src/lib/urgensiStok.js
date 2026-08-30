@@ -1,3 +1,4 @@
+import { masukLaporan } from "./laporan";
 /**
  * urgensiStok.js — SUMBER TUNGGAL penilaian "seberapa gawat sebuah barang".
  *
@@ -43,7 +44,7 @@ const STATUS_TERPAKAI = ["selesai", "disetujui"];
  */
 export function adalahPemakaian(t) {
   if (!t) return false;
-  if (t.is_test_data) return false;
+  if (!masukLaporan(t)) return false;
   if (t.status && !STATUS_TERPAKAI.includes(t.status)) return false;
   const jenis = t.type || t.transaction_type;
   return jenis === "keluar" || jenis === "pakai";
