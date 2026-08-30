@@ -51,7 +51,7 @@ export default function BreedingBatchDetail({ batch, onClose }) {
   // `egg_count` yang sudah dikoreksi ke bawah bisa menghasilkan angka di atas
   // 100%. EggGrid sudah memasang lencana peringatan untuk selisih itu; layar
   // ini dulu justru memakai angka yang salah sisi.
-  const hatchRate = hatchRateClutch(batch)
+  const hatchRate = hatchRateClutch(batch);
 
   return (
     <Dialog open={!!batch} onOpenChange={onClose}>
