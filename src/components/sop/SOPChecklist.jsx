@@ -13,12 +13,37 @@ import { id } from "date-fns/locale";
 import PhotoUploadWithWatermark from "./PhotoUploadWithWatermark";
 import SOPVideoTask from "./SOPVideoTask";
 import { useTestMode } from "@/lib/useTestMode";
+import { terjadwalPada } from "@/lib/kepatuhanSOP";
+
+/**
+ * Urutan kategori yang ditampilkan.
+ *
+ * Sebelumnya daftar ini ditulis langsung di dalam JSX dan hanya berisi enam
+ * kategori, sementara skema SOPTask punya delapan. Akibatnya task berkategori
+ * "perawatan" dan "suplemen" tidak pernah muncul di layar ini sama sekali —
+ * termasuk "Mandikan kura + cek", tugas harian bernilai 10 poin. Kategori yang
+ * hilang tidak menimbulkan galat apa pun; task-nya hanya lenyap.
+ *
+ * Kalau enum di base44/entities/SOPTask.jsonc bertambah, tambahkan di sini.
+ */
+const KATEGORI = [
+  "pakan",
+  "kebersihan",
+  "pemeriksaan",
+  "perawatan",
+  "suplemen",
+  "breeding",
+  "administrasi",
+  "lainnya",
+];
 
 const categoryColors = {
   pakan: "bg-green-100 text-green-700",
   kebersihan: "bg-blue-100 text-blue-700",
   pemeriksaan: "bg-amber-100 text-amber-700",
   breeding: "bg-purple-100 text-purple-700",
+  perawatan: "bg-indigo-100 text-indigo-700",
+  suplemen: "bg-teal-100 text-teal-700",
   administrasi: "bg-muted text-foreground",
   lainnya: "bg-muted text-muted-foreground",
 };
@@ -230,8 +255,8 @@ export default function SOPChecklist() {
       {/* Video wajib tonton harian */}
       <SOPVideoTask />
 
-      {["pakan", "kebersihan", "pemeriksaan", "breeding", "administrasi", "lainnya"].map((cat) => {
-        const catTasks = tasks.filter((t) => t.category === cat && t.frequency === "harian");
+      {KATEGORI.map((cat) => {
+        const catTasks = tasks.filter((t) => t.category === cat && tugasHariIni.includes(t));
         if (catTasks.length === 0) return null;
         return (
           <Card key={cat}>
