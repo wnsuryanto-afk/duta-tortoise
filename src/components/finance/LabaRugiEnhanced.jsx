@@ -64,9 +64,17 @@ export default function LabaRugiEnhanced({ period }) {
   // Pengeluaran from FinanceTransaction
   const totalPengeluaranFinance = pengeluaran.reduce((s, t) => s + (t.amount || 0), 0);
 
-  // Salary slips paid
-  const monthSlips = salarySlips.filter(s => s.period === selectedPeriod && s.status === "paid");
-  const totalGaji = monthSlips.reduce((s, sl) => s + (sl.net_total || 0), 0);
+  // Gaji bulan ini — dibaca dari FinanceTransaction berkategori gaji.
+  //
+  // Sebelumnya dijumlahkan dari SalarySlip berstatus "paid" lalu DITAMBAHKAN ke
+  // totalPengeluaranFinance, dengan alasan "gaji tidak punya FinanceTransaction
+  // di mana pun". Alasan itu sudah tidak berlaku sejak D18: slip yang ditandai
+  // dibayar membuat FinanceTransaction-nya sendiri. Menjumlahkan keduanya
+  // membuat setiap gaji terhitung dua kali — dan itu akan mulai terjadi tepat
+  // pada slip pertama yang ditandai dibayar, bukan nanti.
+  const totalGaji = pengeluaran
+    .filter(t => ["gaji", "gaji_karyawan"].includes(t.category))
+    .reduce((s, t) => s + (t.amount || 0), 0);
 
   // Kas kecil yang DICAIRKAN bulan ini.
   //
@@ -80,9 +88,9 @@ export default function LabaRugiEnhanced({ period }) {
   const monthPC = pettyCash.filter(p => p.disbursement_date?.startsWith(selectedPeriod) && p.status === "disbursed");
   const totalPC = monthPC.reduce((s, p) => s + (p.amount_requested || 0), 0);
 
-  // Gaji TIDAK punya FinanceTransaction di mana pun, jadi slip gaji adalah
-  // satu-satunya catatannya dan memang harus ditambahkan.
-  const totalPengeluaran = totalPengeluaranFinance + totalGaji;
+  // Gaji sudah termasuk di totalPengeluaranFinance (lihat di atas), jadi tidak
+  // ditambahkan lagi. totalGaji hanya dipakai sebagai rincian.
+  const totalPengeluaran = totalPengeluaranFinance;
   const labaRugi = totalPemasukan - totalPengeluaran;
   const marginPct = totalPemasukan > 0 ? ((labaRugi / totalPemasukan) * 100).toFixed(1) : "0.0";
 
@@ -92,8 +100,8 @@ export default function LabaRugiEnhanced({ period }) {
     const c = t.category || "lainnya";
     expenseByCat[c] = (expenseByCat[c] || 0) + (t.amount || 0);
   });
-  if (totalGaji > 0) expenseByCat["gaji_karyawan"] = (expenseByCat["gaji_karyawan"] || 0) + totalGaji;
-  // "kas_kecil" sudah terjumlah dari FinanceTransaction pada perulangan di atas.
+  // "gaji_karyawan" dan "kas_kecil" sudah terjumlah dari FinanceTransaction
+  // pada perulangan di atas — menambahkannya lagi menggandakan irisan diagram.
 
   // Sales this period
   const periodSales = sales.filter(s => s.sale_date?.startsWith(selectedPeriod) && masukLaporan(s));
