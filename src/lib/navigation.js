@@ -95,6 +95,7 @@ export const NAV_SECTIONS = [
     blurb: "Penjualan, biaya, dan kas",
     items: [
       { path: "/finance",           section: "finance",           label: "Laporan Keuangan",   icon: TrendingUp, desc: "Pemasukan & pengeluaran" },
+      { path: "/catat-biaya",    section: "finance",       label: "Catat Pengeluaran", icon: Wallet,        desc: "Catat biaya rutin dalam tiga ketukan" },
       { path: "/sales",             section: "sales",             label: "Penjualan Kura",     icon: DollarSign, desc: "Catatan penjualan" },
       { path: "/crm",               section: "crm",               label: "Data Pembeli",       icon: Users,      desc: "Pembeli & piutang" },
       { path: "/petty-cash",        section: "petty-cash",        label: "Kas Kecil",          icon: Wallet,     desc: "Pengeluaran harian" },
