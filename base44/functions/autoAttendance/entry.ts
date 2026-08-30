@@ -5,6 +5,7 @@ import {
   tanggalMundur,
   keMenit,
   jamDari,
+  jamLemburBerbukti,
 } from "../../shared/otomatis.ts";
 
 /**
@@ -20,6 +21,56 @@ import {
  * fungsi ini, isinya tidak ditimpa — hanya kolom kosong yang dilengkapi.
  */
 const PENANDA = "Otomatis dari checklist";
+
+/**
+ * Satu OvertimeLog per orang per tanggal, dibuat/diperbarui/dinolkan.
+ *
+ * Kolom `Attendance.overtime_hours` tidak dibayar oleh layar mana pun — yang
+ * dibayar adalah `OvertimeLog.hours` dikali tarif. Jadi menulis yang pertama
+ * tanpa yang kedua sama dengan tidak membayar lemburnya sama sekali.
+ *
+ * Jam pulang di sini bisa MAJU sepanjang hari saat task berikutnya dicentang,
+ * jadi baris yang sudah ada diperbarui, bukan ditambah. Bila lemburnya jatuh ke
+ * nol (mis. yang tercatat setelah jam shift ternyata cuma centang absensi),
+ * baris lamanya ikut dinolkan supaya tidak ada sisa yang terlanjur terbayar.
+ */
+async function simpanLembur(
+  base44: any,
+  cl: any,
+  tanggal: string,
+  lembur: number,
+  jamPulang: string,
+) {
+  try {
+    const lama = await base44.asServiceRole.entities.OvertimeLog.filter({
+      employee_email: cl.employee_email,
+      date: tanggal,
+    });
+    const catatan = `Lembur otomatis dari checklist, tugas terakhir ${jamPulang}`;
+
+    if (lama && lama.length > 0) {
+      if (Number(lama[0].hours || 0) !== lembur) {
+        await base44.asServiceRole.entities.OvertimeLog.update(lama[0].id, {
+          hours: lembur,
+          notes: catatan,
+        });
+      }
+      return;
+    }
+    if (lembur <= 0) return;
+
+    await base44.asServiceRole.entities.OvertimeLog.create({
+      employee_id: cl.employee_id || "",
+      employee_name: cl.employee_name || cl.employee_email,
+      employee_email: cl.employee_email,
+      date: tanggal,
+      hours: lembur,
+      notes: catatan,
+    });
+  } catch {
+    // gagal mencatat lembur tidak boleh menggagalkan pengisian absensinya
+  }
+}
 
 Deno.serve(async (req) => {
   try {
@@ -54,7 +105,20 @@ Deno.serve(async (req) => {
         const masuk = jamJam[0];
         const pulang = jamJam[jamJam.length - 1];
         const telat = Math.max(0, keMenit(masuk) - keMenit(shiftStart, "07:00"));
-        const lembur = Math.max(0, (keMenit(pulang) - keMenit(shiftEnd, "16:00")) / 60);
+
+        // Lembur memakai aturan tunggal aplikasi: menit setelah jam selesai
+        // shift, dibulatkan ke 0,5 jam, dan hanya bila ada tugas BUKAN-absensi
+        // yang tercatat setelah jam itu.
+        //
+        // Sebelum ini fungsi ini memakai rumusnya sendiri (tanpa pembulatan)
+        // dan — yang lebih parah — hanya menulis `overtime_hours` di baris
+        // absensi. Tidak ada satu pun layar gaji yang membaca kolom itu; yang
+        // dibayar adalah OvertimeLog. Jadi setiap lembur yang ditemukan fungsi
+        // ini tidak pernah dibayar sepeser pun.
+        const lembur = jamLemburBerbukti(
+          { check_out: pulang, shift_end: shiftEnd },
+          cl,
+        );
 
         const adaSebelumnya = await base44.asServiceRole.entities.Attendance.filter({
           employee_email: cl.employee_email,
@@ -72,11 +136,12 @@ Deno.serve(async (req) => {
             check_out: pulang,
             status: "hadir",
             late_minutes: telat,
-            overtime_hours: Number(lembur.toFixed(2)),
+            overtime_hours: lembur,
             shift_start: shiftStart,
             shift_end: shiftEnd,
             notes: PENANDA,
           });
+          await simpanLembur(base44, cl, tanggal, lembur, pulang);
           hasil.push(`buat ${cl.employee_name} ${tanggal} ${masuk}–${pulang}`);
           continue;
         }
@@ -90,10 +155,11 @@ Deno.serve(async (req) => {
             check_in: masuk,
             check_out: pulang,
             late_minutes: telat,
-            overtime_hours: Number(lembur.toFixed(2)),
+            overtime_hours: lembur,
             shift_start: shiftStart,
             shift_end: shiftEnd,
           });
+          await simpanLembur(base44, cl, tanggal, lembur, pulang);
           hasil.push(`perbarui ${cl.employee_name} ${tanggal} ${masuk}–${pulang}`);
         } else {
           // Entri manusia — hanya lengkapi yang kosong, jangan menimpa.
