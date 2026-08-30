@@ -449,7 +449,27 @@ export default function TreatmentPage() {
                           )}
                           {schedule.apply_to_all && <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Semua</span>}
                           {pct === 100 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">✓ Semua Selesai</span>}
+                          {sedangMundur(schedule) && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold">⏸ Mundur — racikan tersedia</span>
+                          )}
+                          {schedule.frequency === "musiman" && !musimAktif && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold">⏸ Menunggu musim bertelur</span>
+                          )}
                         </div>
+                        {/* Sebuah jadwal yang tidak muncul di layar kiper harus MENGATAKAN kenapa.
+                            Mekanisme tersembunyi persis yang membuat dua jadwal pencegah egg binding
+                            diam selama berbulan-bulan tanpa ada yang menyadarinya. */}
+                        {sedangMundur(schedule) && (
+                          <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                            Tidak muncul di layar kiper sekarang: kandungannya sudah ada di dalam racikan Duta Repro yang tersedia.
+                            Begitu racikan habis, jadwal ini muncul lagi sendiri.
+                          </p>
+                        )}
+                        {schedule.frequency === "musiman" && !musimAktif && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Tidak muncul di layar kiper sampai sakelar musim bertelur di atas dinyalakan.
+                          </p>
+                        )}
                         {schedule.frequency === "mingguan" && schedule.weekly_days?.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-0.5">Hari: {schedule.weekly_days.map(d => DAY_NAMES[d]).join(", ")}</p>
                         )}
