@@ -72,7 +72,12 @@ export default function BonusBulanIni({ user }) {
 
   const { data: checklists = [] } = useQuery({
     queryKey: ["bonus-checklists", user?.email, monthKey],
-    queryFn: () => base44.entities.DailyChecklist.filter({ employee_email: user.email }),
+    // Diurutkan menurun dan diberi batas yang tertulis. Tanpa urutan, baris
+    // mana yang tersisa saat daftarnya terpotong ditentukan sekehendak basis
+    // data — dan yang dibutuhkan layar ini justru bulan berjalan. Seorang
+    // karyawan menambah sekitar 30 checklist per bulan, jadi batas ini cukup
+    // untuk lebih dari setahun sementara bulan berjalan selalu ada di depan.
+    queryFn: () => base44.entities.DailyChecklist.filter({ employee_email: user.email }, "-date", 400),
     enabled: !!user?.email,
     staleTime: 3 * 60 * 1000,
   });
