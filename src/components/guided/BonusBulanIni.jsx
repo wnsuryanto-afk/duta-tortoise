@@ -26,7 +26,8 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
-import { Star, Trophy, Clock, TrendingUp, Flame } from "lucide-react";
+import { Star, Trophy, Clock, TrendingUp, Flame, Users } from "lucide-react";
+import { statusBonus } from "@/lib/bonus";
 
 const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
@@ -123,25 +124,25 @@ export default function BonusBulanIni({ user }) {
     return n;
   }, [checklists, now]);
 
-  // ── Tingkatan target ──
-  const tingkatan = useMemo(() => {
-    if (!settings) return [];
-    return [
-      { nama: "Dasar", target: Number(settings.min_poin_bulanan || 0), bonus: Number(settings.bonus_dasar || 0) },
-      { nama: "Bagus", target: Number(settings.target_poin_bagus || 0), bonus: Number(settings.bonus_bagus || 0) },
-      { nama: "Luar biasa", target: Number(settings.target_poin_luar_biasa || 0), bonus: Number(settings.bonus_luar_biasa || 0) },
-    ]
-      .filter((t) => t.target > 0)
-      .sort((a, b) => a.target - b.target);
-  }, [settings]);
+  // ── Tingkatan target (D16: tingkat Dasar bergantung pada poin TIM) ──
+  const { data: checklistTim = [] } = useQuery({
+    queryKey: ["bonus-checklists-tim", monthKey],
+    queryFn: () => base44.entities.DailyChecklist.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const tercapai = useMemo(
-    () => [...tingkatan].reverse().find((t) => poinBulanIni >= t.target) || null,
-    [tingkatan, poinBulanIni],
+  const poinTim = useMemo(
+    () =>
+      (checklistTim || [])
+        .filter((c) => String(c.date || "").startsWith(monthKey))
+        .filter((c) => c.status !== "rejected" && !c.is_test_data)
+        .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0),
+    [checklistTim, monthKey],
   );
-  const berikut = useMemo(
-    () => tingkatan.find((t) => poinBulanIni < t.target) || null,
-    [tingkatan, poinBulanIni],
+
+  const { tingkatan, tercapai, berikut, kurangPribadi, kurangTim } = useMemo(
+    () => statusBonus({ settings, poinPribadi: poinBulanIni, poinTim }),
+    [settings, poinBulanIni, poinTim],
   );
 
   const nilaiPoin = Number(settings?.nilai_per_poin || 0);
@@ -253,11 +254,34 @@ export default function BonusBulanIni({ user }) {
       {/* Sisa menuju tingkat berikutnya */}
       <div className="px-4 pb-3 pt-1">
         {berikut ? (
-          <p className="text-sm text-green-900 dark:text-green-100">
-            Kurang <strong className="tabular-nums">{(berikut.target - poinBulanIni).toLocaleString("id-ID")} poin</strong> lagi
-            ke <strong>{berikut.nama}</strong>
-            {berikut.bonus > 0 && <> — bonus {rupiah(berikut.bonus)}</>}.
-          </p>
+          <div className="space-y-1.5">
+            {kurangPribadi > 0 && (
+              <p className="text-sm text-green-900 dark:text-green-100">
+                Kurang <strong className="tabular-nums">{kurangPribadi.toLocaleString("id-ID")} poin</strong> lagi
+                ke <strong>{berikut.nama}</strong>
+                {berikut.bonus > 0 && <> — bonus {rupiah(berikut.bonus)}</>}.
+              </p>
+            )}
+            {/* Kalau yang kurang adalah poin TIM, bekerja lebih keras sendirian
+                tidak akan menutupnya. Kiper perlu tahu itu, supaya ia mengajak
+                rekannya alih-alih mengejar angka yang tidak bisa ia gerakkan. */}
+            {kurangTim > 0 && (
+              <p className="text-sm text-green-900 dark:text-green-100 flex items-start gap-1.5">
+                <Users className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>
+                  {kurangPribadi > 0 ? "Selain itu, tim" : "Poin Anda sudah cukup. Tim"} kurang{" "}
+                  <strong className="tabular-nums">{kurangTim.toLocaleString("id-ID")} poin</strong> lagi
+                  untuk membuka <strong>{berikut.nama}</strong> — ini dihitung bersama, jadi bantu rekan Anda.
+                </span>
+              </p>
+            )}
+            {kurangPribadi === 0 && kurangTim === 0 && (
+              <p className="text-sm text-green-900 dark:text-green-100">
+                Menuju <strong>{berikut.nama}</strong>
+                {berikut.bonus > 0 && <> — bonus {rupiah(berikut.bonus)}</>}.
+              </p>
+            )}
+          </div>
         ) : (
           <p className="text-sm font-semibold text-green-800 dark:text-green-200">
             🎉 Semua tingkat tercapai bulan ini. Terima kasih, kerja Anda kelihatan.
