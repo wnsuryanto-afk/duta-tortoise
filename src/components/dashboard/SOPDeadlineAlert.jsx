@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { AlertTriangle, Clock } from "lucide-react";
 import { format } from "date-fns";
 
@@ -42,10 +43,14 @@ export default function SOPDeadlineAlert() {
     return null;
   }
 
-  // Filter task harian dengan deadline_time yang belum selesai
+  // Tugas yang jatuh tempo HARI INI dengan deadline_time yang belum selesai.
+  // Sebelumnya disaring `frequency === "harian"`, sehingga tugas mingguan
+  // bertenggat — yang justru paling mudah terlewat karena tidak muncul tiap
+  // hari — tidak pernah memicu peringatan ini sama sekali.
   const now = new Date();
   const urgentTasks = tasks
-    .filter((t) => t.frequency === "harian" && t.deadline_time && !completedTaskIds.has(t.id))
+    .filter((t) => t.di_ubin_kandang !== true && terjadwalPada(t, today))
+    .filter((t) => t.deadline_time && !completedTaskIds.has(t.id))
     .map((t) => ({ ...t, minutesLeft: getMinutesUntil(t.deadline_time) }))
     .filter((t) => t.minutesLeft !== null && t.minutesLeft <= 60 && t.minutesLeft >= -30)
     .sort((a, b) => a.minutesLeft - b.minutesLeft);

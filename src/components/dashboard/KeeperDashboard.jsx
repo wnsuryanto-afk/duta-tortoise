@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -215,12 +216,21 @@ export default function KeeperDashboard() {
   const overtime = todayAttendance?.overtime_hours || 0;
 
   const completedTaskIds = new Set((todayChecklist?.completed_tasks || []).map((t) => t.task_id));
-  const totalDailyTasks = tasks.filter((t) => t.frequency === "harian" && t.is_active).length;
-  const doneCount = tasks.filter((t) => t.frequency === "harian" && completedTaskIds.has(t.id)).length;
+
+  // `frequency === "harian"` bukan cara mengetahui tugas hari ini: sebagian
+  // besar pekerjaan tersimpan sebagai `mingguan` dengan daftar hari. Memakai
+  // pintasan itu membuat penyebut di sini (8) jauh lebih kecil daripada yang
+  // dipakai layar kepatuhan, sehingga "sudah 6 dari 8" terbaca hampir selesai
+  // padahal masih ada tugas terjadwal yang belum tersentuh.
+  const tugasHariIni = tasks.filter(
+    (t) => t.di_ubin_kandang !== true && terjadwalPada(t, today),
+  );
+  const totalDailyTasks = tugasHariIni.length;
+  const doneCount = tugasHariIni.filter((t) => completedTaskIds.has(t.id)).length;
   const sopSubmitted = todayChecklist?.status === "submitted" || todayChecklist?.status === "approved";
 
-  const urgentSOP = tasks
-    .filter((t) => t.frequency === "harian" && t.deadline_time && !completedTaskIds.has(t.id))
+  const urgentSOP = tugasHariIni
+    .filter((t) => t.deadline_time && !completedTaskIds.has(t.id))
     .map((t) => ({ ...t, minutesLeft: getMinutesUntil(t.deadline_time) }))
     .filter((t) => t.minutesLeft !== null && t.minutesLeft <= 60 && t.minutesLeft >= -30)
     .sort((a, b) => a.minutesLeft - b.minutesLeft);
