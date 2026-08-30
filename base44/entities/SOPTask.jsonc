@@ -194,6 +194,11 @@
       "default": false,
       "description": "A9 \u2014 Diisi otomatis: true bila bahan yang dibutuhkan task ini habis, sehingga task tidak bisa dikerjakan hari ini."
     },
+    "di_ubin_kandang": {
+      "type": "boolean",
+      "default": false,
+      "description": "D12: dikerjakan lewat ubin kandang di layar kiper, bukan sebagai baris tersendiri. Satu ketukan pada satu kandang menyelesaikan SEMUA task bertanda ini sekaligus, dan poinnya dijumlahkan. Dipakai karena kiper memang mendatangi tiap kandang satu kali: membersihkan, memberi pakan, dan mengecek kesehatan dalam kunjungan yang sama. Ditandai lewat kolom ini, bukan lewat pencocokan judul, supaya mengganti nama task tidak diam-diam mematikan poinnya."
+    },
     "terkunci_alasan": {
       "type": "string",
       "description": "A9 \u2014 Bahan apa yang habis, untuk ditampilkan ke keeper."
