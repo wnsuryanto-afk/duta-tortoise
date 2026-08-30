@@ -75,9 +75,28 @@ export function sudahKadaluarsa(item, sekarang = new Date()) {
  */
 export function semuaStok(barangGudang = [], pakan = []) {
   return [
-    ...barangGudang.map((i) => ({ ...i, _sumber: "gudang" })),
-    ...pakan.map((i) => ({ ...i, _sumber: "pakan" })),
+    ...barangGudang.filter(dilacak).map((i) => ({ ...i, _sumber: "gudang" })),
+    ...pakan.filter(dilacak).map((i) => ({ ...i, _sumber: "pakan" })),
   ];
+}
+
+/**
+ * Bahan yang memang dilacak sebagai stok.
+ *
+ * Sebagian bahan tidak pernah dicatat masuk-keluarnya karena datang dari kebun
+ * sendiri - rumput 180 kg dan kaktus 15 kg per hari tidak dibeli, dipanen. Untuk
+ * bahan seperti itu angka stok tidak akan pernah benar, dan peringatan yang
+ * dihitung darinya tidak akan pernah bisa dipadamkan dengan bekerja.
+ *
+ * Ditandai lewat `is_active` alih-alih dihapus, supaya daily_ideal dan batas
+ * minimumnya tetap tersimpan: angka itu satu-satunya catatan berapa banyak kura
+ * di sini benar-benar makan, dan tetap dibutuhkan bila kelak pakannya dibeli.
+ *
+ * Bawaannya AKTIF: bahan yang belum pernah disentuh kolom ini tetap dilacak
+ * seperti biasa, jadi menambah bahan baru tidak diam-diam menghilang.
+ */
+export function dilacak(item) {
+  return item?.is_active !== false;
 }
 
 /**
