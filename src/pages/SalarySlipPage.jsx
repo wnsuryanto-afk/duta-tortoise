@@ -21,6 +21,10 @@ const statusConfig = {
   draft:    { label: "Draft",     color: "bg-muted text-foreground" },
   approved: { label: "Disetujui", color: "bg-blue-100 text-blue-700" },
   paid:     { label: "Dibayar",   color: "bg-green-100 text-green-700" },
+  // Slip yang dibatalkan tetap ditampilkan, tidak dihapus: alasan pembatalannya
+  // ada di kolom catatan, dan riwayat yang hilang lebih membingungkan daripada
+  // riwayat yang bertanda.
+  dibatalkan: { label: "Dibatalkan", color: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 line-through" },
 };
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
