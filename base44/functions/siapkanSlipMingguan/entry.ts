@@ -157,7 +157,13 @@ Deno.serve(async (req) => {
       const gajiPokok = hariHadir * Number(konfig.base_salary || 0);
       const upahLembur = jamLembur * Number(konfig.overtime_rate_per_hour || 0);
       const upahRempesan = tripRempesan * Number(konfig.rempesan_rate_per_trip || 0);
-      const bonusPoin = poin * nilaiPoin;
+      // Sakelar "bonus poin dibayar sebagai uang" (CompanySettings.poin_bonus_enabled)
+      // harus dihormati di sini juga. Dua generator slip lain memeriksanya;
+      // fungsi ini tidak, sehingga slip untuk orang dan periode yang sama bisa
+      // membayar bonus poin atau tidak tergantung jalur mana yang dipakai —
+      // tanpa satu pun tanda bahwa itu terjadi.
+      const bonusPoinDibayar = companySettings?.[0]?.poin_bonus_enabled === true;
+      const bonusPoin = bonusPoinDibayar ? poin * nilaiPoin : 0;
       const bruto = gajiPokok + upahLembur + upahRempesan + bonusPoin;
 
       baris.push({
