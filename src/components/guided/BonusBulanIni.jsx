@@ -28,6 +28,7 @@ import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { Star, Trophy, Clock, TrendingUp, Flame, Users } from "lucide-react";
 import { statusBonus } from "@/lib/bonus";
+import { terjadwalPada } from "@/lib/kepatuhanSOP";
 
 const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
@@ -36,24 +37,6 @@ function keMenit(hm) {
   const [h, m] = String(hm || "").split(":").map(Number);
   if (!Number.isFinite(h)) return null;
   return h * 60 + (Number.isFinite(m) ? m : 0);
-}
-
-/** Apakah task ini terjadwal hari ini? Mengikuti aturan yang sama dengan daftar tugas. */
-function terjadwalHariIni(t, hariNomor, tanggalNomor, bulanNomor) {
-  if (t.is_active !== true) return false;
-  // Task musiman / dua-bulanan hanya berlaku di bulan yang ditentukan.
-  const bulanAktif = Array.isArray(t.bulan_aktif) ? t.bulan_aktif : [];
-  if (bulanAktif.length > 0 && !bulanAktif.includes(bulanNomor)) return false;
-  if (t.frequency === "harian") return true;
-  if (t.frequency === "mingguan") {
-    const hari = Array.isArray(t.weekly_days) ? t.weekly_days : [];
-    return hari.length === 0 || hari.includes(hariNomor);
-  }
-  if (t.frequency === "bulanan") {
-    const tgl = Array.isArray(t.monthly_dates) ? t.monthly_dates : [];
-    return tgl.includes(tanggalNomor);
-  }
-  return false;
 }
 
 export default function BonusBulanIni({ user }) {
@@ -152,16 +135,14 @@ export default function BonusBulanIni({ user }) {
   // ── Tugas yang tenggatnya sudah lewat hari ini (B3) ──
   const lewatTenggat = useMemo(() => {
     if (!sopTasks.length) return [];
-    const hariNomor = now.getDay();
-    const tanggalNomor = now.getDate();
-    const bulanNomor = now.getMonth() + 1;
+    const tanggalHariIni = format(now, "yyyy-MM-dd");
 
     // Task per-kandang sengaja tidak dihitung di sini: jumlahnya bergantung
     // pada berapa kandang yang tersisa, dan angka setengah benar soal poin
     // hilang lebih berbahaya daripada tidak ada angka sama sekali.
     return sopTasks
       .filter((t) => t.task_scope !== "per_kandang")
-      .filter((t) => terjadwalHariIni(t, hariNomor, tanggalNomor, bulanNomor))
+      .filter((t) => terjadwalPada(t, tanggalHariIni))
       .filter((t) => {
         const batas = keMenit(t.deadline_time);
         return batas !== null && menitSekarang > batas;
