@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList, Syringe, Home, Tent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
-import { formatDateIndonesian } from "@/lib/formatIndonesian";
 
 export default function OperationalToday() {
   const navigate = useNavigate();

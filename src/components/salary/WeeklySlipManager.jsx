@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { formatRole } from "@/lib/permissions";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import WeeklyRateSettings from "@/components/salary/WeeklyRateSettings";
-import { getWeekOptions, formatWeekLabel, getWeekEnd, safeParseDate, calcWeeklyOvertime } from "@/lib/weeklySalaryUtils";
+import { getWeekOptions, getWeekEnd, safeParseDate, calcWeeklyOvertime } from "@/lib/weeklySalaryUtils";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
 import { masukLaporan } from "@/lib/laporan";

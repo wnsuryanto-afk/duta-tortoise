@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Wallet, Plus, Minus, Scale, Clock, CheckCircle2, XCircle, Banknote, TrendingDown, ImagePlus } from "lucide-react";
+import { Wallet, Plus, Minus, Scale, Clock, CheckCircle2, XCircle, Banknote, ImagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";

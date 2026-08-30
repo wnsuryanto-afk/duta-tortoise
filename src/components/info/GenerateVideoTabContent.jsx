@@ -5,8 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Youtube, Trash2, Sparkles, PlayCircle } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
 
 const TOPICS = [
   { label: "Perawatan Harian", query: "cara merawat sulcata tortoise harian", category: "dasar" },

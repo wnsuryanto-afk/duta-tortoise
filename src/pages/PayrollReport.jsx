@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { FileDown, Star, Trophy, Gift, CheckCircle2, Clock } from "lucide-react";
-import { format, subMonths, startOfMonth } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
 

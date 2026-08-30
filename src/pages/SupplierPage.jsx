@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Pencil, Trash2, ExternalLink, Phone, Star, Package, Search } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { isManagerLevel } from "@/lib/permissions";
-import AccessDenied from "@/components/common/AccessDenied";
 
 function StarRating({ rating }) {
   return (

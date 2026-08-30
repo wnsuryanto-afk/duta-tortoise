@@ -2,8 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { LogOut, User, Calendar, CheckCircle2, XCircle, Clock, ToggleRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LogOut, Calendar, CheckCircle2, XCircle, Clock, ToggleRight } from "lucide-react";
 
 const ROLE_LABELS = {
   keeper: "Keeper",

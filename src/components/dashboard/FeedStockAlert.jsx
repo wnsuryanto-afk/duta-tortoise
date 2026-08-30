@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { AlertTriangle, PackageOpen, Link } from "lucide-react";
+import { AlertTriangle, PackageOpen } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 

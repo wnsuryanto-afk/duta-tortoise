@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, Calendar, AlertTriangle, Trophy, Egg, Baby, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addDays, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
-import { id } from "date-fns/locale";
+import { Heart, Calendar, AlertTriangle, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
 
 const MONTHS_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 

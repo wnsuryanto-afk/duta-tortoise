@@ -4,9 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, Shell, AlertTriangle, RefreshCw } from "lucide-react";
 import EnclosureForm from "@/components/enclosure/EnclosureForm";
@@ -85,7 +83,7 @@ export default function EnclosurePage() {
         base44.entities.Enclosure.update(enc.id, { current_count: liveCount }).catch(() => {});
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [enclosures.length, tortoises.length]);
 
   const typeLabel = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };

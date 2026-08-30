@@ -5,12 +5,10 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Printer, Plus, Wifi, Network, Usb, Star, Trash2, Edit2, Zap,
-  CheckCircle2, XCircle, Loader2, Info, ChevronRight, ChevronLeft,
-  AlertTriangle, Settings2, MapPin, RefreshCw
+  CheckCircle2, XCircle, Loader2, Info, ChevronRight, ChevronLeft, Settings2, MapPin, RefreshCw
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter

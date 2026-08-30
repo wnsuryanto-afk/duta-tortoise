@@ -1,7 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
-import { format } from "date-fns";
 
 export default function PrintAllLabelsDialog({ open, onClose, items }) {
   const handlePrint = () => {

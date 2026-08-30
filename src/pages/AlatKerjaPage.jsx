@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Wrench, Plus, Undo2, Loader2, Clock, PackageX,
+  Wrench, Plus, Undo2, Loader2, PackageX,
 } from "lucide-react";
 import { safeFormatDate, safeDaysSince } from "@/lib/safeDate";
 import LoanForm from "@/components/tools/LoanForm";
