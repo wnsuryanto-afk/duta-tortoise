@@ -25,7 +25,11 @@ async function fetchContext(message) {
   }
   if (lower.includes("stok") || lower.includes("gudang") || lower.includes("habis")) {
     const items = await base44.entities.WarehouseItem.list();
-    const low = items.filter(i => i.current_stock <= i.minimum_stock * 1.2);
+    // Ambang yang sama dengan layar (lib/stokMenipis). Versi lama memakai
+    // ambangnya sendiri (120% dari minimum) dan tidak menyaring barang yang
+    // dinonaktifkan, sehingga jawaban chat menyebut 46 barang sementara
+    // beranda menyebut 20 — untuk pertanyaan yang sama.
+    const low = items.filter((i) => dilacak(i) && (stokHabis(i) || stokMenipis(i)));
     parts.push(`Item stok rendah (${low.length}): ${low.slice(0,5).map(i => `${i.name} (${i.current_stock} ${i.unit})`).join(", ")}`);
   }
   if (lower.includes("absensi") || lower.includes("hadir")) {

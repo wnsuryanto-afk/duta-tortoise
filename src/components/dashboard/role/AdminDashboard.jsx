@@ -124,7 +124,9 @@ export default function AdminDashboard({ user, role = "admin" }) {
 
   const sickTortoises = tortoises.filter(t => t.status === "sakit" || t.is_currently_sick);
 
-  const criticalStocks = warehouseItems.filter(i => i.current_stock < i.minimum_stock && i.is_mandatory);
+  // `dilacak` ikut disaring seperti pada pakan di baris berikutnya — sebelumnya
+  // hanya pakan yang menghormati barang yang dinonaktifkan, gudang tidak.
+  const criticalStocks = warehouseItems.filter(i => dilacak(i) && i.current_stock < i.minimum_stock && i.is_mandatory);
   // Bahan pakan yang tidak dilacak dikeluarkan - lihat lib/stokMenipis.js.
   const criticalFeed = feedStocks.filter(f => dilacak(f) && f.current_stock < f.minimum_stock && f.is_mandatory);
   const totalCritical = criticalStocks.length + criticalFeed.length;

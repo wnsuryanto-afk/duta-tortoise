@@ -31,8 +31,16 @@ export default function UrgentAlerts() {
     return diffDays <= 30;
   });
 
-  // Stok menipis
-  const lowStock = warehouseItems.filter(item => item.current_stock <= item.minimum_stock);
+  // Stok yang perlu diperhatikan — aturan dari lib/stokMenipis.
+  //
+  // Saringan lama `current_stock <= minimum_stock` menghasilkan 46 barang dari
+  // 46 barang berstok nol. Dua sebabnya: barang yang minimumnya 0 dan memang
+  // sengaja tidak distok (obat resep dokter, misalnya) lolos lewat 0 <= 0, dan
+  // barang yang sudah dinonaktifkan tetap ikut. Peringatan yang selalu menyala
+  // untuk semua barang sama saja dengan tidak ada peringatan.
+  const lowStock = warehouseItems.filter(
+    (item) => dilacak(item) && (stokHabis(item) || stokMenipis(item)),
+  );
   const lowFeed = lowStock.filter(item => item.category === 'pakan' || item.category === 'sayuran');
 
   // Kandang overcrowding

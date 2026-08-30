@@ -480,7 +480,11 @@ export default function MonthlyReportExport({ role }) {
 
       // Stok kritis
       const warehouseItems = await base44.entities.WarehouseItem.list("-name", 100);
-      const criticalItems = warehouseItems.filter(i => i.current_stock <= (i.minimum_stock || 0));
+      // Aturan yang sama dengan layar peringatan (lib/stokMenipis), bukan
+      // `<= minimum_stock` yang meloloskan setiap barang bermininum 0.
+      const criticalItems = warehouseItems.filter(
+        (i) => dilacak(i) && (stokHabis(i) || stokMenipis(i)),
+      );
       if (criticalItems.length > 0) {
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
