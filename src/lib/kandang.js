@@ -240,3 +240,36 @@ export function kandangWajib(enclosures = []) {
   });
   return hasil.length > 0 ? hasil : [...KANDANG_LIST];
 }
+
+/**
+ * D12 - Tugas yang dikerjakan lewat SATU ubin kandang.
+ *
+ * Sebelumnya ubin kandang hanya membayar kebersihan (8 poin), sementara
+ * "Pemberian pakan + cek kesehatan" (15 poin per kandang, tiap hari) berskala
+ * per_kandang tetapi TIDAK punya jalur pencatatan sama sekali: selama 13 hari
+ * data nyata, tugas itu tercatat nol kali. Tugas paling inti di peternakan
+ * bernilai nol poin, dan laporan kepatuhan menampilkannya 0% selamanya.
+ *
+ * Perbaikannya mengikuti kenyataan di lapangan, bukan sebaliknya: kiper
+ * mendatangi tiap kandang SATU kali dan mengerjakan semuanya dalam kunjungan
+ * itu. Jadi satu ubin = satu kunjungan = semua tugas bertanda di_ubin_kandang
+ * yang terjadwal hari itu, dengan poin dijumlahkan. Tidak ada ketukan tambahan
+ * untuk kiper, dan tidak ada lagi pekerjaan yang tidak terbayar.
+ *
+ * Jadwalnya dihitung per hari, bukan sekali dipatok, karena kedua tugas ini
+ * jadwalnya BERBEDA: kebersihan Senin-Sabtu, pakan tiap hari termasuk Minggu.
+ * Maka Senin-Sabtu ubin bernilai 8+15=23 poin, dan Minggu bernilai 15 poin.
+ */
+export function tugasUbinKandang(sopTasks = [], terjadwalPada, tanggal) {
+  return (sopTasks || []).filter(
+    (t) => t?.di_ubin_kandang === true && terjadwalPada(t, tanggal),
+  );
+}
+
+/** Poin satu kandang untuk tanggal tertentu = jumlah poin semua tugas ubin yang terjadwal. */
+export function poinUbinKandang(sopTasks = [], terjadwalPada, tanggal) {
+  return tugasUbinKandang(sopTasks, terjadwalPada, tanggal).reduce(
+    (n, t) => n + (Number(t.points) || 0),
+    0,
+  );
+}
