@@ -1051,7 +1051,7 @@ export default function GuidedHariIni({ user }) {
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-base">🏠</span>
-                <span className="font-semibold text-foreground">Kebersihan Kandang</span>
+                <span className="font-semibold text-foreground">Kunjungan Kandang</span>
                 {requirePhotoKebersihan && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600"><Camera className="w-3 h-3" /> Wajib Foto</span>
                 )}
@@ -1080,7 +1080,25 @@ export default function GuidedHariIni({ user }) {
                 <p className={`text-xs font-semibold ${kandangNotice.tone === "error" ? "text-red-700" : "text-blue-700"}`}>{kandangNotice.text}</p>
               </div>
             )}
-            <p className="text-xs text-muted-foreground mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Tap kandang yang sudah selesai dikunjungi ·{" "}
+              <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>
+              {requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}
+            </p>
+            {tugasUbin.length > 0 && (
+              <div className="mb-3 rounded-lg bg-muted/60 border border-border px-3 py-2">
+                <p className="text-[11px] font-semibold text-muted-foreground mb-1">Satu tap kandang mencakup:</p>
+                <ul className="space-y-0.5">
+                  {tugasUbin.map(t => (
+                    <li key={t.id} className="text-[11px] text-foreground flex items-baseline gap-1.5">
+                      <span className="text-green-600">✓</span>
+                      <span>{t.title}</span>
+                      <span className="text-muted-foreground">+{t.points}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="grid grid-cols-5 gap-2">
               {daftarKandang.map(k => {
