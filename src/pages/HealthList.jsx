@@ -1,3 +1,4 @@
+import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -117,8 +118,11 @@ export default function HealthList() {
   const ringkasanSehat = (() => {
     const bulanIni = format(new Date(), "yyyy-MM");
     return {
+      // Definisi lengkap: bendera pada kura ATAU kasus kesehatan yang masih
+      // terbuka. Halaman ini punya kedua datanya, jadi tidak ada alasan memakai
+      // yang setengah.
       sedangSakit: tortoises.filter(
-        t => !t.is_archived && (t.status === "sakit" || t.is_currently_sick)
+        t => !t.is_archived && sedangSakitLengkap(t, idKuraDenganKasusTerbuka(records))
       ).length,
       bulanIni: records.filter(r => (r.date || "").startsWith(bulanIni) && r.type === "sakit").length,
     };

@@ -1,3 +1,4 @@
+import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format, differenceInMonths, differenceInYears } from "date-fns";
@@ -219,7 +220,10 @@ export default function TortoisePassport() {
   })).filter(d => d.berat || d.panjang);
 
   const lastHealth = healthRecords[0];
-  const isSick = tortoise.status === "sakit" || tortoise.is_currently_sick;
+  // Kasus yang masih terbuka ikut dihitung sakit, bukan hanya bendera pada
+  // kura. Paspor yang menyatakan "sehat" padahal kasusnya belum ditutup adalah
+  // dokumen yang salah - dan paspor sering dicetak untuk pembeli.
+  const isSick = sedangSakitLengkap(tortoise, idKuraDenganKasusTerbuka(healthRecords));
 
   const speciesLabel = {
     sulcata: "Sulcata (African Spurred)", red_foot: "Red Foot", leopard: "Leopard",

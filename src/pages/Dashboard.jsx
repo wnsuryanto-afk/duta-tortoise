@@ -1,3 +1,5 @@
+import { diPeternakan } from "@/lib/populasiKura";
+import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -39,14 +41,28 @@ function FallbackDashboard() {
     queryFn: () => base44.entities.Tortoise.list("-created_date", 50), // turun dari 300
     staleTime: 10 * 60 * 1000,
   });
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["dashboard-health-records"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
   const { data: breedings = [] } = useQuery({
     queryKey: ["breedings"],
     queryFn: () => base44.entities.Breeding.list("-created_date", 30), // turun dari 200
     staleTime: 10 * 60 * 1000,
   });
 
-  const activeTortoises = tortoises.filter((t) => t.status === "aktif" || t.status === "baby");
-  const sickTortoises = tortoises.filter((t) => t.status === "sakit" || t.is_currently_sick);
+  // Dihitung dengan MENGECUALIKAN yang sudah keluar, bukan daftar putih status.
+  // Keterangan di kartunya sendiri sudah menyebut aturan yang benar ("yang
+  // terjual, mati, atau diarsipkan tidak dihitung") - kodenya yang tertinggal:
+  // daftar putih ["aktif","baby"] ikut membuang kura berstatus sakit dan
+  // breeding, sehingga jumlah kura TURUN begitu ada yang ditandai sakit.
+  const activeTortoises = tortoises.filter(diPeternakan);
+  // "Sakit" memakai definisi lengkap: bendera pada kura ATAU kasus kesehatan
+  // yang masih terbuka. Membaca bendera saja melewatkan kura yang kasusnya
+  // belum ditutup - kebalikan dari badge SAKIT palsu yang dulu terjadi.
+  const idKasusTerbuka = idKuraDenganKasusTerbuka(healthRecords);
+  const sickTortoises = tortoises.filter((t) => sedangSakitLengkap(t, idKasusTerbuka));
   const babyCount = tortoises.filter((t) => t.status === "baby").length;
   const totalEggs = breedings
     .filter((b) => b.status === "bertelur" || b.status === "inkubasi")
