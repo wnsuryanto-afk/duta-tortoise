@@ -63,16 +63,20 @@ Deno.serve(async (req) => {
         (t: any) => t.type === "pengeluaran" && String(t.date || "").startsWith(bulan) && layak(t),
       );
       const totalFinance = tx.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
-      const totalGaji = (slip || [])
-        .filter((s: any) => s.period === bulan && s.status === "paid" && layak(s))
-        .reduce((s: number, sl: any) => s + Number(sl.net_total || sl.gross_total || 0), 0);
+
+      // D18 — Gaji tidak lagi dijumlahkan dari SalarySlip. Slip yang ditandai
+      // dibayar membuat FinanceTransaction-nya sendiri, jadi gajinya sudah ada
+      // di totalFinance; menjumlahkan keduanya membuat gaji terhitung dua kali.
+      const totalGaji = tx
+        .filter((t: any) => ["gaji", "gaji_karyawan"].includes(t.category))
+        .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
 
       const perKategori: Record<string, number> = {};
       for (const t of tx) {
         const c = t.category || "lainnya";
         perKategori[c] = (perKategori[c] || 0) + Number(t.amount || 0);
       }
-      return { total: totalFinance + totalGaji, totalFinance, totalGaji, perKategori };
+      return { total: totalFinance, totalFinance, totalGaji, perKategori };
     };
 
     const ini = hitungBulan(periode);
