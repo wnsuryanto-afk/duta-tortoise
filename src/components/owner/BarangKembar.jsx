@@ -5,168 +5,78 @@ import { toast } from "sonner";
 import { Package, AlertTriangle, Check, Loader2, HelpCircle, Merge, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InfoHint from "@/components/ui/info-hint";
-import { periksaBarangKembar, PENUNJUK_BARANG } from "@/lib/barangKembar";
 import { cn } from "@/lib/utils";
-
-/** Sebanyak ini barang yang ditarik sekali jalan. */
-const BATAS = 1000;
-
-/** Sebanyak ini baris riwayat yang ditarik per entitas penunjuk. */
-const BATAS_RUJUKAN = 2000;
 
 /**
  * BarangKembar — menyatukan barang gudang & pakan yang terdaftar dua kali.
  *
- * Penerimaan barang dulu mencocokkan barang lewat NAMA. Nama yang beda satu
- * spasi atau satu huruf besar dianggap barang lain, lalu dibuatkan barang baru
- * berstok 0 sementara stok yang lama tidak pernah bertambah. Pencocokannya
- * sudah memakai id, jadi yang baru tidak lagi kembar — tetapi barang yang
- * terlanjur ganda masih ada, memecah stok dan riwayatnya jadi dua.
+ * Layar ini TIDAK menghitung apa pun sendiri. Seluruh aturannya ada di fungsi
+ * `gabungBarangKembar`, dan layar ini hanya menampilkan laporannya lalu
+ * meminta izin menjalankannya.
  *
- * Pengaman yang sama dengan alat pemeliharaan lainnya:
+ * Sempat ada dua alat untuk pekerjaan yang sama: fungsi itu, dan salinan
+ * aturan di sisi peramban. Keduanya berbeda dalam hal-hal kecil yang justru
+ * berbahaya — daftar entitas penunjuk, cara menormalkan nama, cara
+ * menjumlahkan stok saat sebuah barang punya tiga entri. Dua alat untuk satu
+ * pekerjaan adalah pola yang sama dengan yang menyebabkan sebagian besar cacat
+ * di aplikasi ini, jadi salinannya dihapus.
  *
- *   1. Laporan lebih dulu, tanpa mengubah apa pun. Jumlah barang, stok
- *      gabungannya, dan berapa baris riwayat yang akan dipindahkan disebutkan
- *      di muka.
- *   2. Hanya yang PASTI yang digabung: nama sama setelah dinormalkan DAN
- *      satuannya sama. Yang satuannya beda dipisah ke daftar RAGU dan tidak
- *      disentuh — menjumlahkan 3 karung dengan 50 kg menghasilkan angka yang
- *      tidak berarti apa-apa.
- *   3. Riwayatnya dipindahkan LEBIH DULU, barangnya dihapus belakangan. Enam
- *      entitas menunjuk ke id barang; bila salah satu pemindahan gagal,
- *      barangnya tidak jadi dihapus sehingga tidak ada riwayat yang menunjuk
- *      ke barang yang sudah tidak ada.
- *   4. Aman diulang. Setelah digabung tidak ada lagi yang kembar.
+ * Dijalankan di server juga lebih aman untuk pekerjaan ini: pemindahan riwayat
+ * memakai hak service-role, sehingga tidak bisa gagal separuh jalan karena
+ * pengguna yang menekan tombolnya tidak punya izin menulis ke salah satu dari
+ * sembilan entitas penunjuk itu.
  */
 export default function BarangKembar() {
   const qc = useQueryClient();
-  const [sibuk, setSibuk] = useState(null);
+  const [sibuk, setSibuk] = useState(false);
   const [hasilAkhir, setHasilAkhir] = useState(null);
   const [buka, setBuka] = useState(false);
 
-  const { data: gudang = [], isLoading: muatGudang } = useQuery({
-    queryKey: ["barang-kembar-gudang"],
-    queryFn: () => base44.entities.WarehouseItem.list("-created_date", BATAS),
+  // Tanpa `konfirmasi`, fungsinya hanya melapor — tidak mengubah apa pun.
+  const { data: laporan, isLoading } = useQuery({
+    queryKey: ["barang-kembar-laporan"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("gabungBarangKembar", {});
+      return res?.data ?? res;
+    },
+    staleTime: 60 * 1000,
   });
-  const { data: pakan = [], isLoading: muatPakan } = useQuery({
-    queryKey: ["barang-kembar-pakan"],
-    queryFn: () => base44.entities.FeedStock.list("-created_date", BATAS),
-  });
-
-  const isLoading = muatGudang || muatPakan;
-  const laporan = periksaBarangKembar(gudang, pakan);
-  // Yang masih berisi stok sudah pasti dibiarkan, dan itu sudah ketahuan
-  // sekarang — jangan dihitung sebagai pekerjaan, supaya angka di tombol tidak
-  // menjanjikan lebih dari yang akan terjadi.
-  const bertandaBisaHapus = laporan.bertanda.filter((b) => !b.adaStok);
-  const totalKerja = laporan.totalHapus + bertandaBisaHapus.length;
-  const menyentuhBatas = gudang.length >= BATAS || pakan.length >= BATAS;
-
-  /**
-   * Pindahkan seluruh riwayat yang menunjuk ke `dariId` menjadi ke `keId`.
-   *
-   * `hitung` dinaikkan per baris yang benar-benar berpindah, bukan di akhir.
-   * Bila pemindahan gagal di tengah, sebagian baris sudah terlanjur pindah —
-   * dan laporan yang menyebut nol akan menutupi kenyataan itu. Yang sudah
-   * pindah tidak menimbulkan masalah: barangnya tidak jadi dihapus, stok
-   * induknya tidak jadi diubah, dan menjalankan alat ini lagi akan
-   * meneruskan sisanya.
-   */
-  const pindahkanRujukan = async (dariId, keId, namaInduk, hitung) => {
-    for (const { entitas, kolom, kolomNama } of PENUNJUK_BARANG) {
-      const E = base44.entities[entitas];
-      if (!E) continue;
-      const baris = await E.filter({ [kolom]: dariId }, "-created_date", BATAS_RUJUKAN);
-      for (const b of baris || []) {
-        const ubah = { [kolom]: keId };
-        if (kolomNama) ubah[kolomNama] = namaInduk;
-        await E.update(b.id, ubah);
-        hitung.n += 1;
-      }
-    }
-  };
-
-  /**
-   * Berapa baris riwayat yang menunjuk barang ini?
-   *
-   * Barang bertanda yang tidak punya induk tidak bisa memindahkan riwayatnya
-   * ke mana pun. Ia hanya boleh dihapus bila memang tidak membawa apa-apa,
-   * jadi rujukannya dihitung dulu — bukan diasumsikan nol.
-   */
-  const hitungRujukan = async (id) => {
-    let jumlah = 0;
-    for (const { entitas, kolom } of PENUNJUK_BARANG) {
-      const E = base44.entities[entitas];
-      if (!E) continue;
-      const baris = await E.filter({ [kolom]: id }, "-created_date", BATAS_RUJUKAN);
-      jumlah += (baris || []).length;
-    }
-    return jumlah;
-  };
 
   const jalankan = async () => {
-    if (totalKerja === 0 || sibuk) return;
-    setSibuk({ sudah: 0, total: totalKerja });
+    if (sibuk) return;
+    setSibuk(true);
     setHasilAkhir(null);
+    try {
+      const res = await base44.functions.invoke("gabungBarangKembar", { konfirmasi: true });
+      const hasil = res?.data ?? res;
+      if (hasil?.error) throw new Error(hasil.error);
+      setHasilAkhir(hasil);
 
-    let digabung = 0;
-    let gagal = 0;
-    let dihapus = 0;
-    let ditahan = 0;
-    const hitung = { n: 0 };
+      const bagian = [];
+      if (hasil.digabung) bagian.push(`${hasil.digabung} digabung`);
+      if (hasil.bertanda_dihapus) bagian.push(`${hasil.bertanda_dihapus} bertanda dihapus`);
+      toast.success(
+        `${bagian.join(", ") || "Tidak ada perubahan"}. ${hasil.rujukan_dipindah || 0} baris riwayat dipindahkan.`
+      );
 
-    for (const grup of laporan.kembar) {
-      const Entity = grup.sumber === "pakan" ? base44.entities.FeedStock : base44.entities.WarehouseItem;
-      for (const kembar of grup.hapus) {
-        try {
-          // Urutannya penting: riwayat dipindahkan dulu. Kalau langkah ini
-          // gagal, barangnya tidak jadi dihapus dan tidak ada yang yatim.
-          await pindahkanRujukan(kembar.id, grup.induk.id, grup.induk.name, hitung);
-          await Entity.update(grup.induk.id, { current_stock: grup.stokGabungan });
-          await Entity.delete(kembar.id);
-          digabung += 1;
-        } catch {
-          gagal += 1;
-        }
-        setSibuk({ sudah: digabung + gagal, total: totalKerja });
-      }
+      // invalidateQueries sudah memicu pengambilan ulang; memanggil refetch()
+      // lagi hanya menghasilkan dua permintaan untuk data yang sama.
+      ["barang-kembar-laporan", "warehouse-items", "feedstocks", "stock-movements"].forEach((k) =>
+        qc.invalidateQueries({ queryKey: [k] })
+      );
+    } catch (e) {
+      toast.error("Gagal: " + (e?.message || "tidak diketahui"));
     }
-
-    // ── Barang bertanda duplikat yang tidak punya induk ──
-    //
-    // Penandanya sudah menyatakan niat manusia, jadi tidak perlu ditebak lagi.
-    // Yang diperiksa di sini hanya apakah menghapusnya menghilangkan sesuatu:
-    // stok yang masih ada, atau riwayat yang tidak punya tempat pindah. Yang
-    // seperti itu dibiarkan dan dilaporkan, bukan dihapus diam-diam.
-    for (const { item, sumber } of bertandaBisaHapus) {
-      const Entity = sumber === "pakan" ? base44.entities.FeedStock : base44.entities.WarehouseItem;
-      try {
-        // Stoknya sudah dipastikan nol di atas. Yang tersisa: apakah masih ada
-        // riwayat yang menunjuknya — kalau ada, tidak ada tempat memindahkannya,
-        // jadi barangnya dibiarkan dan dilaporkan.
-        if ((await hitungRujukan(item.id)) > 0) ditahan += 1;
-        else { await Entity.delete(item.id); dihapus += 1; }
-      } catch {
-        gagal += 1;
-      }
-      setSibuk({ sudah: digabung + dihapus + ditahan + gagal, total: totalKerja });
-    }
-
-    setSibuk(null);
-    setHasilAkhir({ digabung, gagal, dihapus, ditahan, rujukanPindah: hitung.n });
-    ["barang-kembar-gudang", "barang-kembar-pakan", "warehouse-items", "feedstocks", "stock-movements"]
-      .forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-
-    const bagian = [];
-    if (digabung) bagian.push(`${digabung} digabung`);
-    if (dihapus) bagian.push(`${dihapus} bertanda dihapus`);
-    if (ditahan) bagian.push(`${ditahan} bertanda dibiarkan (masih ada riwayat yang menunjuknya)`);
-    if (gagal === 0) toast.success(`${bagian.join(", ") || "Tidak ada perubahan"}. ${hitung.n} baris riwayat dipindahkan.`);
-    else if (digabung === 0 && dihapus === 0) toast.error(`Gagal memproses ${gagal} barang. Tidak ada yang dihapus; coba lagi nanti.`);
-    else toast.warning(`${bagian.join(", ")}, ${gagal} gagal dan dibiarkan apa adanya.`);
+    setSibuk(false);
   };
 
   if (isLoading) return <div className="h-32 rounded-xl shimmer" />;
+
+  const akanGabung = laporan?.akan_digabung || 0;
+  const ragu = laporan?.perlu_keputusan_manusia || 0;
+  const bertanda = laporan?.bertanda || [];
+  const akanHapusBertanda = laporan?.akan_dihapus_bertanda || 0;
+  const totalKerja = akanGabung + akanHapusBertanda;
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -178,138 +88,117 @@ export default function BarangKembar() {
           <h3 className="font-heading font-semibold text-[15px] leading-tight flex items-center gap-1">
             Satukan barang kembar
             <InfoHint title="Kenapa bisa kembar" variant="info" size={13}>
-              Penerimaan barang dulu mencocokkan barang lewat <b>namanya</b>. Nama yang
-              beda satu spasi atau satu huruf besar dianggap barang lain, lalu dibuatkan
-              barang baru berstok 0 sementara stok yang lama tidak pernah bertambah.
-              Pencocokannya sekarang memakai id, jadi yang baru tidak lagi kembar. Alat
-              ini membereskan data lama.
+              Penerimaan barang dulu mencocokkan barang lewat <b>namanya</b>. Nama yang beda
+              satu spasi atau satu huruf besar dianggap barang lain, lalu dibuatkan barang
+              baru berstok 0 sementara stok yang lama tidak pernah bertambah. Pencocokannya
+              sekarang memakai id, jadi yang baru tidak lagi kembar. Alat ini membereskan
+              data lama.
             </InfoHint>
           </h3>
           <p className="text-[11px] text-muted-foreground">
-            Membereskan data lama · aman diulang · {laporan.diperiksa} barang diperiksa
+            Membereskan data lama · aman diulang · dijalankan di server
           </p>
         </div>
       </div>
 
       <div className="rounded-lg bg-muted/40 border border-border px-3 py-1.5 divide-y divide-border/60">
-        <div className="flex items-start gap-2.5 py-1.5">
-          <Check className="w-4 h-4 flex-shrink-0 mt-0.5 text-accent" />
-          <p className="text-sm min-w-0 flex-1">
-            <span className="font-bold tabular">{laporan.diperiksa - totalKerja}</span>{" "}
-            <span className="text-muted-foreground">barang tidak disentuh</span>
-          </p>
-        </div>
+        {totalKerja === 0 && ragu === 0 && bertanda.length === 0 && (
+          <div className="flex items-start gap-2.5 py-1.5">
+            <Check className="w-4 h-4 flex-shrink-0 mt-0.5 text-accent" />
+            <p className="text-sm text-muted-foreground min-w-0 flex-1">
+              Tidak ada barang kembar.
+            </p>
+          </div>
+        )}
 
-        {laporan.totalHapus > 0 && (
+        {akanGabung > 0 && (
           <div className="flex items-start gap-2.5 py-1.5">
             <Merge className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
             <div className="min-w-0 flex-1">
               <p className="text-sm">
-                <span className="font-bold tabular">{laporan.totalHapus}</span>{" "}
-                <span className="text-muted-foreground">
-                  barang kembar akan disatukan, jadi {laporan.kembar.length} barang
-                </span>
+                <span className="font-bold tabular">{akanGabung}</span>{" "}
+                <span className="text-muted-foreground">barang kembar akan disatukan</span>
               </p>
               <p className="text-[11px] text-muted-foreground/80 mt-0.5 leading-snug">
-                Stoknya dijumlahkan, dan seluruh riwayatnya dipindahkan ke barang yang
-                paling lama — itu yang paling banyak dirujuk, jadi paling sedikit yang
-                perlu diubah.
+                Stoknya dijumlahkan, dan seluruh riwayatnya dipindahkan ke barang yang paling
+                lama — itu yang paling banyak dirujuk, jadi paling sedikit yang perlu diubah.
               </p>
             </div>
           </div>
         )}
 
-        {laporan.bertanda.length > 0 && (
+        {bertanda.length > 0 && (
           <div className="flex items-start gap-2.5 py-1.5">
             <Tag className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
             <div className="min-w-0 flex-1">
               <p className="text-sm">
-                <span className="font-bold tabular">{laporan.bertanda.length}</span>{" "}
+                <span className="font-bold tabular">{bertanda.length}</span>{" "}
                 <span className="text-muted-foreground">
                   barang sudah ditandai duplikat
-                  {laporan.bertanda.length !== bertandaBisaHapus.length
-                    ? ` — ${bertandaBisaHapus.length} akan dihapus, sisanya masih berisi`
+                  {bertanda.length !== akanHapusBertanda
+                    ? ` — ${akanHapusBertanda} akan dihapus, sisanya masih berisi`
                     : ""}
                 </span>
               </p>
               <p className="text-[11px] text-muted-foreground/80 mt-0.5 leading-snug">
                 Tidak ada barang lain bernama sama untuk menampung riwayatnya, jadi yang
                 dihapus hanya yang benar-benar tidak membawa apa-apa: stok nol dan tidak
-                dirujuk riwayat mana pun. Yang masih berisi dibiarkan.
+                dirujuk riwayat mana pun.
               </p>
             </div>
           </div>
         )}
 
-        {laporan.ragu.length > 0 && (
+        {ragu > 0 && (
           <div className="flex items-start gap-2.5 py-1.5">
             <HelpCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-muted-foreground" />
             <div className="min-w-0 flex-1">
               <p className="text-sm">
-                <span className="font-bold tabular">{laporan.ragu.length}</span>{" "}
+                <span className="font-bold tabular">{ragu}</span>{" "}
                 <span className="text-muted-foreground">nama sama tapi satuannya beda</span>
               </p>
               <p className="text-[11px] text-muted-foreground/80 mt-0.5 leading-snug">
-                Tidak disentuh. Menjumlahkan 3 karung dengan 50 kg menghasilkan angka
-                yang tidak berarti apa-apa — ini keputusan Anda, lewat halaman Gudang.
+                Tidak disentuh. Menjumlahkan 3 karung dengan 50 kg menghasilkan angka yang
+                tidak berarti apa-apa — ini keputusan Anda, lewat halaman Gudang.
               </p>
             </div>
           </div>
         )}
-
-        {menyentuhBatas && (
-          <div className="flex items-start gap-2.5 py-1.5">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
-            <p className="text-[11px] text-muted-foreground min-w-0 flex-1 leading-snug">
-              Barang yang diperiksa menyentuh batas {BATAS}. Mungkin ada yang belum
-              terperiksa — jalankan lagi setelah yang ini selesai.
-            </p>
-          </div>
-        )}
       </div>
 
-      {(totalKerja > 0 || laporan.ragu.length > 0) && (
-        <button
-          type="button"
-          onClick={() => setBuka((b) => !b)}
-          className="text-[11px] text-primary hover:underline"
-        >
+      {(totalKerja > 0 || ragu > 0 || bertanda.length > 0) && (
+        <button type="button" onClick={() => setBuka((b) => !b)}
+          className="text-[11px] text-primary hover:underline">
           {buka ? "Sembunyikan rinciannya" : "Lihat rinciannya"}
         </button>
       )}
 
       {buka && (
         <div className="space-y-1.5 max-h-64 overflow-y-auto">
-          {laporan.kembar.map((k) => (
-            <div key={`${k.sumber}-${k.kunci}`} className="text-[11px] rounded-lg border border-border px-2.5 py-1.5">
-              <p className="font-medium truncate">
-                {k.induk.name}{" "}
-                <span className="text-muted-foreground font-normal">
-                  ({k.sumber === "pakan" ? "pakan" : "gudang"})
-                </span>
-              </p>
+          {(laporan?.rencana_gabung || []).map((r, i) => (
+            <div key={`g-${i}`} className="text-[11px] rounded-lg border border-border px-2.5 py-1.5">
+              <p className="font-medium truncate">{r.induk?.name}</p>
               <p className="text-muted-foreground">
-                {k.hapus.length + 1} entri → 1 · stok jadi{" "}
-                <span className="tabular font-medium">{k.stokGabungan}</span> {k.satuan}
+                menyerap &ldquo;{r.kembar?.name}&rdquo; · stok {r.induk?.stok ?? 0} + {r.kembar?.stok ?? 0} {r.induk?.unit}
               </p>
             </div>
           ))}
-          {laporan.bertanda.map((b) => (
-            <div key={`tanda-${b.item.id}`} className="text-[11px] rounded-lg border border-border px-2.5 py-1.5">
-              <p className="font-medium truncate">{b.item.name}</p>
+          {bertanda.map((b, i) => (
+            <div key={`t-${i}`} className="text-[11px] rounded-lg border border-border px-2.5 py-1.5">
+              <p className="font-medium truncate">{b.name}</p>
               <p className="text-muted-foreground">
                 bertanda duplikat ·{" "}
-                {b.adaStok
-                  ? `masih berisi ${b.item.current_stock} ${b.item.unit || ""} — dibiarkan`
+                {b.stok > 0
+                  ? `masih berisi ${b.stok} ${b.unit || ""} — dibiarkan`
                   : "stok kosong — dihapus bila tidak ada riwayat yang menunjuknya"}
               </p>
             </div>
           ))}
-          {laporan.ragu.map((r) => (
-            <div key={`ragu-${r.sumber}-${r.kunci}`} className="text-[11px] rounded-lg border border-dashed border-border px-2.5 py-1.5">
-              <p className="font-medium truncate">{r.daftar[0]?.name}</p>
+          {(laporan?.perlu_keputusan || []).map((r, i) => (
+            <div key={`r-${i}`} className="text-[11px] rounded-lg border border-dashed border-border px-2.5 py-1.5">
+              <p className="font-medium truncate">{r.induk?.name}</p>
               <p className="text-muted-foreground">
-                satuan beda: {r.daftar.map((x) => `${x.current_stock ?? 0} ${x.unit || "—"}`).join(" vs ")} · dibiarkan
+                satuan beda: {r.induk?.stok ?? 0} {r.induk?.unit || "—"} vs {r.kembar?.stok ?? 0} {r.kembar?.unit || "—"} · dibiarkan
               </p>
             </div>
           ))}
@@ -317,25 +206,25 @@ export default function BarangKembar() {
       )}
 
       {hasilAkhir && (
-        <p className="text-[11px] text-muted-foreground">
-          Selesai: {hasilAkhir.digabung} disatukan
-          {hasilAkhir.dihapus > 0 ? `, ${hasilAkhir.dihapus} bertanda dihapus` : ""}
-          {hasilAkhir.ditahan > 0 ? `, ${hasilAkhir.ditahan} bertanda dibiarkan` : ""},{" "}
-          {hasilAkhir.rujukanPindah} baris riwayat dipindahkan
-          {hasilAkhir.gagal > 0 ? `, ${hasilAkhir.gagal} gagal` : ""}.
-        </p>
+        <div className="text-[11px] text-muted-foreground space-y-0.5">
+          <p>
+            Selesai: {hasilAkhir.digabung || 0} disatukan
+            {hasilAkhir.bertanda_dihapus ? `, ${hasilAkhir.bertanda_dihapus} bertanda dihapus` : ""},{" "}
+            {hasilAkhir.rujukan_dipindah || 0} baris riwayat dipindahkan.
+          </p>
+          {(hasilAkhir.bertanda_dibiarkan || []).map((t, i) => (
+            <p key={i} className="flex items-start gap-1">
+              <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5 text-amber-600" />
+              <span>Dibiarkan: {t}</span>
+            </p>
+          ))}
+        </div>
       )}
 
-      <Button
-        onClick={jalankan}
-        disabled={totalKerja === 0 || !!sibuk}
-        className={cn("w-full", totalKerja === 0 && "opacity-60")}
-      >
+      <Button onClick={jalankan} disabled={totalKerja === 0 || sibuk}
+        className={cn("w-full", totalKerja === 0 && "opacity-60")}>
         {sibuk ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Menyatukan {sibuk.sudah}/{sibuk.total}…
-          </>
+          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyatukan…</>
         ) : totalKerja === 0 ? (
           "Tidak ada barang kembar"
         ) : (
