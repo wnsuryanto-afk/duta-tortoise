@@ -110,15 +110,30 @@ Deno.serve(async (req) => {
       }
       const jamLembur = Math.floor(lemburTotal);
 
-      const poin = (checklists || [])
-        .filter(
-          (c: any) =>
-            c.employee_email === k.email &&
-            dalamMinggu(String(c.date || "")) &&
-            c.status !== "rejected" &&
-            !c.is_test_data,
-        )
+      // Hanya checklist yang SUDAH DISETUJUI yang dihitung — persis seperti
+      // WeeklySlipManager, yang benar-benar menerbitkan slipnya.
+      //
+      // Sebelumnya di sini dipakai `status !== "rejected"`, yang ikut
+      // menghitung checklist yang masih menunggu persetujuan. Akibatnya pesan
+      // ini menyebut angka rupiah yang lebih besar daripada slip yang nanti
+      // benar-benar keluar, tanpa ada yang menjelaskan selisihnya.
+      const checklistSaya = (checklists || []).filter(
+        (c: any) =>
+          c.employee_email === k.email &&
+          dalamMinggu(String(c.date || "")) &&
+          !c.is_test_data,
+      );
+      const poin = checklistSaya
+        .filter((c: any) => c.status === "approved")
         .reduce((t: number, c: any) => t + Number(c.approved_points || c.total_points_claimed || 0), 0);
+
+      // Yang masih menunggu disebut terpisah: poinnya belum masuk hitungan,
+      // tetapi akan masuk bila disetujui sebelum slipnya diterbitkan.
+      const menunggu = checklistSaya.filter((c: any) => c.status === "submitted");
+      const poinMenunggu = menunggu.reduce(
+        (t: number, c: any) => t + Number(c.approved_points || c.total_points_claimed || 0),
+        0,
+      );
 
       const tanggalRempesan = new Set(
         (rempesan || [])
@@ -151,6 +166,8 @@ Deno.serve(async (req) => {
         hariHadir,
         jamLembur,
         poin,
+        jumlahMenunggu: menunggu.length,
+        poinMenunggu,
         tripRempesan,
         gajiPokok,
         upahLembur,
@@ -178,6 +195,9 @@ Deno.serve(async (req) => {
           `  ${b.hariHadir} hari hadir · ${b.poin} poin · ${b.jamLembur} jam lembur · ${b.tripRempesan} trip rempesan\n` +
           `  Pokok ${rupiah(b.gajiPokok)} + poin ${rupiah(b.bonusPoin)} + lembur ${rupiah(b.upahLembur)} + rempesan ${rupiah(b.upahRempesan)}\n` +
           `  *Bruto ${rupiah(b.bruto)}*` +
+          (b.jumlahMenunggu > 0
+            ? `\n  ⏳ ${b.jumlahMenunggu} checklist (${b.poinMenunggu} poin) masih menunggu persetujuan — setujui dulu bila ingin ikut terhitung`
+            : "") +
           (b.sisaKasbon > 0 ? `\n  ⚠️ Sisa kasbon ${rupiah(b.sisaKasbon)} — potongannya Anda yang tentukan` : ""),
       )
       .join("\n\n");
