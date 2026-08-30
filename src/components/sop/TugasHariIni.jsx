@@ -285,10 +285,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // ── Bangun task dari SOPTask (hormati frequency + weekly_days + monthly_dates) ──
   const sopTaskItems = useMemo(() => {
     const items = [];
-    const kebersihanAnchor = sopTasks.find(t =>
-      t.is_active && t.category === "kebersihan" && (t.title || "").toLowerCase().includes("all kandang")
-    );
-    const kebersihanPoints = kebersihanAnchor?.points ?? 0;
+    // D12 - Ubin kandang mencakup beberapa tugas sekaligus (kebersihan + pakan +
+    // cek kesehatan). Baris pengantar di daftar SOP harus menyebut TOTAL poinnya,
+    // bukan poin kebersihan saja, kalau tidak kiper melihat angka yang lebih kecil
+    // dari yang sebenarnya ia dapat.
+    const tugasUbin = sopTasks.filter(t => t.is_active && t.di_ubin_kandang === true);
+    const kebersihanAnchor = tugasUbin[0] || null;
+    const kebersihanPoints = tugasUbin.reduce((n, t) => n + (Number(t.points) || 0), 0);
 
     sopTasks
       .filter(t => t.is_active)
@@ -304,20 +307,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           if (prevDone) return; // sudah dikerjakan di hari sebelumnya → sembunyikan
         }
         const terlambat = isOverdue && !existingLogItemIds.has(`sop_${t.id}`);
-        if (titleLower.includes("all kandang") || titleLower.includes("semua kandang")) {
-          if (t.category === "kebersihan") {
+        if (t.di_ubin_kandang === true || titleLower.includes("all kandang") || titleLower.includes("semua kandang")) {
+          if (t.id === kebersihanAnchor?.id) {
             // SATU PINTU: kebersihan per-kandang hanya dikerjakan di layar ubin (GuidedHariIni)
             // yang mewajibkan foto + jeda 60 dtk. Di daftar SOP tampilkan satu baris pengantar.
             items.push({
               id: `kebersihan_kandang_intro`,
-              label: `Kebersihan kandang — dikerjakan di layar Kandang`,
+              label: `Kunjungan kandang — dikerjakan di layar Kandang`,
               waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
               icon: "🏠",
               keterangan: "",
               points: kebersihanPoints,
               badge: "kebersihan",
               badgeColor: CATEGORY_BADGE.kebersihan,
-              require_photo: kebersihanAnchor?.require_photo || false,
+              require_photo: tugasUbin.some(x => x.require_photo === true),
               terlambat,
               isKebersihanIntro: true,
               noCheck: true,
