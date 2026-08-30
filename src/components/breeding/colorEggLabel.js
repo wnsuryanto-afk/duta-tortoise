@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import { petaKura, cariInduk } from "@/lib/silsilah";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -6,32 +7,39 @@ import { id as idLocale } from "date-fns/locale";
 // Foundation (tanpa induk tercatat) = 0; anak = 1 + max(gen induk).
 export function computeGeneration(breeding, tortoises = []) {
   if (!tortoises || !tortoises.length) return "F1 · Captive-bred";
-  const byKey = new Map();
-  for (const t of tortoises) {
-    if (t?.id) byKey.set(String(t.id), t);
-    if (t?.code) byKey.set(String(t.code), t);
-    if (t?.name) byKey.set(String(t.name), t);
-  }
-  const findT = (id, name) => {
-    if (id && byKey.has(String(id))) return byKey.get(String(id));
-    if (name && byKey.has(String(name))) return byKey.get(String(name));
-    return null;
-  };
+
+  // Pencarian induk memakai satu definisi (lib/silsilah), bukan Map sendiri.
+  //
+  // Map lama menyimpan id, kode dan nama dalam SATU wadah tanpa normalisasi.
+  // Tiga akibatnya nyata pada data peternakan ini:
+  //   - Kode/nama tidak dinormalkan, padahal ada kura yang namanya tersimpan
+  //     dengan spasi di belakang ("B116 "). Rujukan induk "B116" tidak cocok,
+  //     induknya dianggap tidak ada, dan generasinya turun satu tingkat.
+  //   - Satu wadah untuk tiga jenis kunci: kura yang kodenya sama dengan nama
+  //     kura lain saling menimpa diam-diam.
+  //   - Tidak ada penjagaan nama ganda; yang terpilih adalah yang kebetulan
+  //     terakhir dimuat.
+  //
+  // Angka ini dicetak ke label yang ditempel di telur, jadi kesalahannya ikut
+  // keluar ke rak inkubator dan tidak bisa dikoreksi dari layar.
+  const peta = petaKura(tortoises);
+
   const memo = new Map();
   function genOf(t, depth) {
     if (!t || depth > 6) return 0;
     const key = t.id || t.code || t.name;
     if (memo.has(key)) return memo.get(key);
     memo.set(key, 0);
-    const pm = t.parent_male ? byKey.get(String(t.parent_male)) : null;
-    const pf = t.parent_female ? byKey.get(String(t.parent_female)) : null;
+    const pm = cariInduk(t.parent_male, peta);
+    const pf = cariInduk(t.parent_female, peta);
     let g = 0;
     if (pm || pf) g = 1 + Math.max(genOf(pm, depth + 1), genOf(pf, depth + 1));
     memo.set(key, g);
     return g;
   }
-  const male = findT(breeding?.male_id, breeding?.male_name);
-  const female = findT(breeding?.female_id, breeding?.female_name);
+
+  const male = cariInduk(breeding?.male_id, peta) || cariInduk(breeding?.male_name, peta);
+  const female = cariInduk(breeding?.female_id, peta) || cariInduk(breeding?.female_name, peta);
   const clutch = 1 + Math.max(genOf(male, 0), genOf(female, 0));
   return `F${clutch} · Captive-bred`;
 }
