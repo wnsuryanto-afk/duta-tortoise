@@ -182,40 +182,53 @@ export default function RekapPoinGajiPage() {
     );
   }
 
+  /**
+   * SATU susunan data slip, dipakai tombol per-orang MAUPUN "Generate Semua".
+   *
+   * Sebelumnya keduanya menyusun objek yang sama secara terpisah, dan salinan
+   * di "Generate Semua" tertinggal: ia tidak menulis nilai_poin_saat_itu,
+   * target_poin_saat_itu, maupun attend_days. Akibatnya nyata dan sempat
+   * tersimpan - dua slip Agustus 2026 punya bonus poin Rp 166.450 dengan
+   * catatan nilai poin 0, dan gaji pokok terisi dengan hari hadir 0. Slip
+   * seperti itu tidak bisa direkonstruksi lagi setelah tarifnya berubah.
+   *
+   * Karena itu susunannya sekarang hanya ada di satu tempat.
+   */
+  const bangunDataSlip = (row) => ({
+    employee_id: row.emp.id,
+    employee_name: row.emp.full_name || row.emp.email,
+    employee_email: row.emp.email,
+    employee_role: row.emp.role,
+    period: selectedMonth,
+    period_type: "monthly",
+    base_salary: row.effectiveBase,
+    attend_days: row.hadirDays,
+    kpi_bonus: row.kpiBonus,
+    overtime_pay: row.overtimePay,
+    vegetable_pay: row.vegPay,
+    vegetable_trips: row.vegTrips,
+    vegetable_trip_dates: row.vegDates,
+    absent_deduction: row.deduction,
+    kasbon_deduction: row.kasbonDeduction,
+    kasbon_ids: row.kasbonIdsToDeduct,
+    kasbon_remaining: row.kasbonRemaining,
+    net_total: row.netTotal,
+    total_poin: row.totalPoin,
+    // Snapshot tarif & target SAAT slip dibuat. Tanpa ini, rincian
+    // "N poin x Rp X" pada slip lama ikut berubah setiap kali tarifnya diubah,
+    // sehingga tidak lagi cocok dengan jumlah yang benar-benar dibayarkan.
+    nilai_poin_saat_itu: row.pointValue,
+    target_poin_saat_itu: TARGET_POIN_SETTING,
+    poin_bonus: row.bonus,
+    poin_deduction: row.potonganPoin,
+    poin_status: row.targetTercapai ? "Tercapai" : `Kurang ${row.selisihPoin} poin`,
+    status: "draft",
+    generated_date: format(new Date(), "yyyy-MM-dd"),
+  });
+
   const handleGenerateSlip = async (row) => {
     setGenerating(row.emp.id);
-    const data = {
-      employee_id: row.emp.id,
-      employee_name: row.emp.full_name || row.emp.email,
-      employee_email: row.emp.email,
-      employee_role: row.emp.role,
-      period: selectedMonth,
-      base_salary: row.effectiveBase,
-      kpi_bonus: row.kpiBonus,
-      overtime_pay: row.overtimePay,
-      vegetable_pay: row.vegPay,
-      vegetable_trips: row.vegTrips,
-      vegetable_trip_dates: row.vegDates,
-      absent_deduction: row.deduction,
-      kasbon_deduction: row.kasbonDeduction,
-      kasbon_ids: row.kasbonIdsToDeduct,
-      kasbon_remaining: row.kasbonRemaining,
-      net_total: row.netTotal,
-      total_poin: row.totalPoin,
-      // Nama field-nya `nilai_poin_saat_itu`, bukan `point_value` — yang lama
-      // tidak ada di skema sehingga dibuang, dan slip bulanan jadi tidak punya
-      // snapshot sama sekali. Rincian "N poin × Rp X" pada slip lama karena itu
-      // ikut berubah saat nilai poin diubah, sehingga tidak lagi cocok dengan
-      // jumlah yang benar-benar dibayarkan. Slip mingguan tidak kena karena
-      // WeeklySlipManager sudah menulis field yang benar.
-      nilai_poin_saat_itu: row.pointValue,
-      target_poin_saat_itu: TARGET_POIN_SETTING,
-      poin_bonus: row.bonus,
-      poin_deduction: row.potonganPoin,
-      poin_status: row.targetTercapai ? "Tercapai" : `Kurang ${row.selisihPoin} poin`,
-      status: "draft",
-      generated_date: format(new Date(), "yyyy-MM-dd"),
-    };
+    const data = bangunDataSlip(row);
     let slipId;
     if (row.existingSlip) {
       await base44.entities.SalarySlip.update(row.existingSlip.id, data);
@@ -262,30 +275,7 @@ export default function RekapPoinGajiPage() {
   const handleGenerateAll = async () => {
     setGenerating("all");
     for (const row of rekapData) {
-      const data = {
-        employee_id: row.emp.id,
-        employee_name: row.emp.full_name || row.emp.email,
-        employee_email: row.emp.email,
-        employee_role: row.emp.role,
-        period: selectedMonth,
-        base_salary: row.effectiveBase,
-        kpi_bonus: row.kpiBonus,
-        overtime_pay: row.overtimePay,
-        vegetable_pay: row.vegPay,
-        vegetable_trips: row.vegTrips,
-        vegetable_trip_dates: row.vegDates,
-        absent_deduction: row.deduction,
-        kasbon_deduction: row.kasbonDeduction,
-        kasbon_ids: row.kasbonIdsToDeduct,
-        kasbon_remaining: row.kasbonRemaining,
-        net_total: row.netTotal,
-        total_poin: row.totalPoin,
-        poin_bonus: row.bonus,
-        poin_deduction: row.potonganPoin,
-        poin_status: row.targetTercapai ? "Tercapai" : `Kurang ${row.selisihPoin} poin`,
-        status: "draft",
-        generated_date: format(new Date(), "yyyy-MM-dd"),
-      };
+      const data = bangunDataSlip(row);
       let slipId;
       if (row.existingSlip) {
         await base44.entities.SalarySlip.update(row.existingSlip.id, data);
