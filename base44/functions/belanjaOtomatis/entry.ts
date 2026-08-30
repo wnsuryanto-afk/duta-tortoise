@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       if (params.segera) mendesak.push(params.nama);
     };
 
-    // 1. Stok pakanAktif.
+    // 1. Stok pakan.
     //
     // Cara belanja mengikuti asal pakannya — satu aturan untuk semua justru
     // menghasilkan pesanan yang tidak masuk akal. Rumput gajah 180 kg/hari
