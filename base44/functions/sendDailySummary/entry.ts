@@ -359,9 +359,22 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     const myIncidental = todayIncidental.filter(t =>
       !t.assigned_to_email || t.assigned_to_email === cl.employee_email
     ).length;
-    const Y = Math.max(Y_sop + myIncidental, X);
-    const pct = Y > 0 ? Math.min(100, Math.round((X / Y) * 100)) : 0;
-    let line = `• ${cl.employee_name}: ${X}/${Y} selesai (${pct}%)`;
+    // Angka per orang ditulis sebagai JUMLAH, bukan persentase.
+    //
+    // src/lib/kepatuhanSOP.js memutuskan hal ini dengan alasan yang tegas:
+    // sebagian besar tugas berskala "bersama" — sekali dikerjakan siapa pun,
+    // selesai untuk semua. Membagi persentasenya per orang membuat angka
+    // seseorang jatuh hanya karena rekannya lebih dulu mengerjakan, bukan
+    // karena ia lalai. Pesan ini masuk ke grup WhatsApp yang dibaca kipernya
+    // sendiri, jadi "Angsolo: 6/17 selesai (35%)" adalah tuduhan yang tidak
+    // dimaksudkan siapa pun.
+    //
+    // Rumus lamanya juga menutupi gejalanya sendiri: penyebut dinaikkan ke X
+    // bila X melebihi jumlah tugas terjadwal, supaya hasilnya tidak lewat 100%.
+    // Yang perlu diperbaiki bukan tampilannya, melainkan pembaginya.
+    const myIncidentalCount = myIncidental;
+    let line = `• ${cl.employee_name}: ${X} tugas`;
+    if (myIncidentalCount > 0) line += ` (termasuk ${myIncidentalCount} tugas insidental)`;
     if (settings.daily_summary_show_points === true) {
       line += ` (${cl.total_points_claimed || 0} poin)`;
     }
@@ -374,6 +387,16 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     .slice(0, 6);
   if (taskLines.length > 0 || belumSelesai.length > 0) {
     lines.push("✅ *TUGAS HARI INI*");
+    // Kepatuhan diukur untuk TIM, satu angka untuk hari itu — bukan satu angka
+    // per orang. Penyebutnya jumlah tugas terjadwal; pembilangnya tugas yang
+    // sudah tersentuh siapa pun.
+    const selesaiTim = scheduledToday.filter(t =>
+      allCompletedTitles.has((t.title || "").toLowerCase())
+    ).length;
+    if (Y_sop > 0) {
+      const pctTim = Math.round((selesaiTim / Y_sop) * 100);
+      lines.push(`Kepatuhan tim: ${selesaiTim}/${Y_sop} tugas (${pctTim}%)`);
+    }
     lines.push(...taskLines);
     if (belumSelesai.length > 0) {
       lines.push(`⚠️ Belum selesai: ${belumSelesai.join(", ")}`);
