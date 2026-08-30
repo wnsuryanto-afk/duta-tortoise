@@ -14,6 +14,7 @@ import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { hatchRateClutch } from "@/lib/hasilInkubasi";
 import { hitungIsiKandang } from "@/lib/kandang";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 function generateBreedingCode(maleN, femaleN, date) {
   const m = (maleN || "JT").substring(0, 3).toUpperCase().replace(/\s/g, "");
@@ -251,13 +252,12 @@ export default function HatchDialog({ open, onClose, breeding }) {
       }));
       newBabies = await base44.entities.Tortoise.bulkCreate(babyData);
 
-      // Angka tersimpan disegarkan dengan hitungan langsung, bukan ditambahkan
-      // ke angka lama — menambah berarti setiap kesalahan yang sudah ada ikut
-      // terbawa selamanya.
+      // Dihitung ulang dari data, bukan "hitungan lama + jumlah bayi".
+      // Rumus tambah itu benar hanya kalau `semuaKura` belum memuat bayi yang
+      // baru saja dibuat — asumsi yang bergantung pada waktu penyegaran cache,
+      // bukan pada data. Menghitung ulang selalu benar dan aman diulang.
       if (babyEnclosure && selectedEnclosure) {
-        await base44.entities.Enclosure.update(selectedEnclosure.id, {
-          current_count: isiKandang(selectedEnclosure) + hatchedCount,
-        });
+        await recalcEnclosureCountsAman([selectedEnclosure.name]);
       }
     }
 
