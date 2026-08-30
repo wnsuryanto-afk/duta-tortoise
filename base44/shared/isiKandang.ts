@@ -27,14 +27,9 @@
  *    Karena itu di sini dipakai daftar status yang KELUAR.
  */
 
-const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
-const BATAS = 2000;
+import { diPeternakan } from "./kura.ts";
 
-function masihDiPeternakan(t: any): boolean {
-  if (!t) return false;
-  if (t.is_archived) return false;
-  return !STATUS_KELUAR.includes(t.status);
-}
+const BATAS = 2000;
 
 function namaSama(a: any, b: any): boolean {
   return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
@@ -79,7 +74,7 @@ export async function segarkanIsiKandang(
     // kandang lepas begitu kandangnya diganti nama.
     const count = (tortoises || []).filter(
       (t: any) =>
-        masihDiPeternakan(t) &&
+        diPeternakan(t) &&
         (t.enclosure_id ? t.enclosure_id === enc.id : namaSama(t.enclosure, enc.name)),
     ).length;
 
