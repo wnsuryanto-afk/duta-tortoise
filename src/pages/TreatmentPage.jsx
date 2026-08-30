@@ -121,6 +121,30 @@ function SakelarMusimBertelur({ canEdit }) {
 }
 
 export default function TreatmentPage() {
+  // Keadaan yang membuat sebuah jadwal DIAM di layar kiper. Ditampilkan di
+  // kartunya masing-masing supaya tidak ada jadwal yang terlihat aktif padahal
+  // tidak pernah muncul - kesalahan yang pernah membuat dua jadwal pencegah
+  // egg binding diam berbulan-bulan.
+  const { data: pengaturanMusim } = useQuery({
+    queryKey: ["company-settings-musim"],
+    queryFn: async () => {
+      const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
+      return res[0] || null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const musimAktif = pengaturanMusim?.musim_bertelur_aktif === true;
+
+  const { data: stokRacikan = 0 } = useQuery({
+    queryKey: ["stok-racikan-repro"],
+    queryFn: async () => {
+      const res = await base44.entities.WarehouseItem.filter({ sku: "VIT-REP00" });
+      return Number(res?.[0]?.current_stock || 0);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const sedangMundur = (j) => j?.nonaktif_bila_racikan_ada === true && stokRacikan > 0;
+
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
   const canEdit = ["admin", "owner", "manajer"].includes(role);
