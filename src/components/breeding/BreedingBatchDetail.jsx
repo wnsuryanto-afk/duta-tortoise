@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { getBreedingMilestones } from "@/lib/breedingCalendarUtils";
+import { hatchRateClutch } from "@/lib/hasilInkubasi";
 
 const STATUS_LABEL = {
   bertelur: "Bertelur",
@@ -42,9 +43,15 @@ export default function BreedingBatchDetail({ batch, onClose }) {
   if (!batch) return null;
   const m = getBreedingMilestones(batch);
   const statusLabel = STATUS_LABEL[batch.status] || batch.status;
-  const hatchRate = batch.egg_count > 0
-    ? Math.round(((batch.hatched_count || 0) / batch.egg_count) * 100)
-    : 0;
+  // Penyebutnya dari lib/hasilInkubasi, bukan `egg_count` mentah.
+  //
+  // Sebuah clutch menyimpan jumlah telurnya di dua tempat yang bisa berselisih
+  // (`egg_count` yang diketik, dan `egg_records` yang berisi satu baris per
+  // telur). Status "menetas" melekat pada BARIS, jadi membaginya dengan
+  // `egg_count` yang sudah dikoreksi ke bawah bisa menghasilkan angka di atas
+  // 100%. EggGrid sudah memasang lencana peringatan untuk selisih itu; layar
+  // ini dulu justru memakai angka yang salah sisi.
+  const hatchRate = hatchRateClutch(batch)
 
   return (
     <Dialog open={!!batch} onOpenChange={onClose}>

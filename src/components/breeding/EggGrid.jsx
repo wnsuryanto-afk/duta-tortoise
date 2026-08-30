@@ -471,7 +471,11 @@ function SelesaikanDialog({ breeding, eggRecords, onClose, onConfirm }) {
   const infertilCount = eggRecords.filter(e => e.status === "infertil").length;
   const gagalCount = eggRecords.filter(e => e.status === "gagal").length;
   const total = eggRecords.length;
-  const hatchRate = total > 0 ? Math.round((menetasCount / total) * 100) : 0;
+  // Angka yang ditampilkan di dialog ini harus sama persis dengan angka yang
+  // nanti TERSIMPAN saat tombolnya ditekan (lihat hatchRateClutch di
+  // handleSelesaikan). Menghitungnya terpisah di sini berarti pratinjau dan
+  // hasil simpan bisa berbeda tanpa ada yang menyadarinya.
+  const hatchRate = hatchRateClutch({ egg_records: eggRecords }, menetasCount);
 
   const handleConfirm = async () => {
     setSaving(true);
