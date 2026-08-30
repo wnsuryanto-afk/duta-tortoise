@@ -116,6 +116,43 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 6. Bulan berjalan tanpa catatan gaji.
+    //
+    // Ini pemeriksaan yang paling sering menyelamatkan laporan, dan justru yang
+    // paling tidak terlihat. Data yang SALAH menonjol cepat: angkanya aneh, ada
+    // yang protes. Data yang TIDAK ADA tidak menonjol sama sekali - laporan
+    // laba/rugi tetap tampil rapi dengan total yang lebih kecil, dan justru
+    // terbaca sebagai kabar baik.
+    //
+    // Nyatanya pernah terjadi: gaji terakhir tercatat 4 Juli, lalu dua bulan
+    // penuh berlalu tanpa satu pun catatan gaji meski tim tetap bekerja dan
+    // tetap dibayar - sekitar Rp 9 juta hilang dari laporan tanpa satu pun
+    // peringatan. Karena itu yang diperiksa bukan "apakah angkanya masuk akal",
+    // melainkan "apakah ada catatannya sama sekali".
+    try {
+      const bulanIni = hariIni.slice(0, 7);
+      const [tx, slip] = await Promise.all([
+        base44.asServiceRole.entities.FinanceTransaction.list("-date", 500),
+        base44.asServiceRole.entities.SalarySlip.list("-period", 100),
+      ]);
+      const adaTxGaji = (tx || []).some(
+        (t: any) =>
+          String(t.date || "").startsWith(bulanIni) &&
+          ["gaji", "gaji_karyawan"].includes(t.category) &&
+          !t.is_test_data,
+      );
+      const adaSlipDibayar = (slip || []).some(
+        (s: any) => s.period === bulanIni && s.status === "paid" && !s.is_test_data,
+      );
+      if (!adaTxGaji && !adaSlipDibayar) {
+        temuan.push(
+          `Belum ada satu pun catatan gaji untuk bulan ${bulanIni}. Selama tidak dicatat, ` +
+          `laporan laba/rugi dan biaya per ekor menghitung gaji sebagai nol - labanya ` +
+          `terlihat lebih besar daripada yang sebenarnya.`,
+        );
+      }
+    } catch { /* pemeriksaan tambahan tidak boleh menggagalkan yang lain */ }
+
     if (temuan.length === 0) {
       await setOtomatis(base44, otomatis, { higiene_terakhir: hariIni });
       return Response.json({ success: true, bersih: true });
