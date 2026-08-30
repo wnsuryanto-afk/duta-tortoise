@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { diPeternakan } from "../../shared/kura.ts";
 
 /**
  * getKuraDiamReport — Deteksi kura diam (lama tidak tersentuh pencatatan).
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
     // 1. Semua kura aktif (bukan mati/terjual/diarsipkan)
     const tortoises = await svc.entities.Tortoise.list('-created_date', 2000);
     const activeTortoises = tortoises.filter(t =>
-      !['mati', 'terjual', 'diarsipkan'].includes(t.status) && !t.is_archived
+      diPeternakan(t)
     );
 
     // 2. Sumber aktivitas per-kura (parallel fetch)

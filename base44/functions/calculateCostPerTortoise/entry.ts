@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { masukLaporan } from "../../shared/laporan.ts";
+import { diPeternakan } from "../../shared/kura.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -53,8 +54,7 @@ Deno.serve(async (req) => {
     //
     // Dengan aturan pengecualian, status baru yang ditambahkan kelak otomatis
     // terhitung sebagai masih ada, bukan diam-diam hilang dari pembagi.
-    const STATUS_KELUAR = ['mati', 'terjual', 'diarsipkan'];
-    const activeCount = tortoises.filter(t => !t.is_archived && !STATUS_KELUAR.includes(t.status)).length;
+    const activeCount = tortoises.filter(diPeternakan).length;
 
     let costPerTortoise = 0, isActual = false;
     if (activeCount > 0 && totalPengeluaran > 0) { costPerTortoise = Math.round(totalPengeluaran/activeCount); isActual = true; }

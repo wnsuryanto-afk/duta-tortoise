@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { masukLaporan } from "../../shared/laporan.ts";
+import { diPeternakan } from "../../shared/kura.ts";
 
 /**
  * labaRugiData — ringkasan laba-rugi satu periode.
@@ -80,9 +81,8 @@ Deno.serve(async (req) => {
     // makan dan dirawat. Daftar status yang ditulis tangan melewatkan kura
     // sakit dan karantina, sehingga biaya dibagi ke lebih sedikit ekor dan
     // biaya per ekor terlihat lebih mahal dari kenyataannya.
-    const statusKeluar = ['mati', 'terjual', 'diarsipkan'];
     const activeCount = allTortoises.filter(
-      (t) => !t.is_archived && !statusKeluar.includes(t.status)
+      diPeternakan
     ).length;
 
     const settings = await db.entities.CompanySettings.filter({ setting_key: 'main' });
