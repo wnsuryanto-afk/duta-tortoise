@@ -1,4 +1,5 @@
 import { nilaiPerPoin } from "@/lib/nilaiPoin";
+import { hitungGajiKaryawan } from "@/lib/hitungGaji";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
@@ -77,93 +78,66 @@ export default function RekapPoinGajiPage() {
 
   const employees = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
 
+  /**
+   * SATU rumus gaji — lib/hitungGaji.js.
+   *
+   * Halaman ini dulu menuliskan ulang seluruh perhitungan gaji baris demi
+   * baris: nilai poin, gaji pokok, potongan absen, lembur, uang sayur, kasbon,
+   * sampai penjumlahan akhir. Rumusnya memang sudah disamakan dengan pustaka
+   * secara manual, tetapi tidak ada apa pun yang menjaganya tetap sama — dan
+   * halaman inilah yang benar-benar MENERBITKAN slip. Setiap perbaikan di
+   * pustaka (mis. sakelar poin_bonus_enabled, atau menyaring data Mode Uji)
+   * harus diingat untuk disalin ke sini, dan sejarahnya menunjukkan itu tidak
+   * terjadi.
+   *
+   * Sekarang halaman ini memanggil pustakanya, lalu hanya memetakan hasilnya ke
+   * nama kolom yang dipakai tabel dan penyusun slip di bawah.
+   */
   const rekapData = useMemo(() => {
-    return employees.map(emp => {
-      const config = salaryConfigs.find(c => c.role === emp.role);
-      const daily = ["keeper", "kepala_feeder"].includes(emp.role);
-      // SATU DEFINISI — lihat lib/nilaiPoin.js. Sebelumnya berkas ini
-      // mendahulukan tarif per peran lalu jatuh ke angka 200 yang tidak muncul
-      // di mana pun lagi, sehingga slip bisa memakai tarif ketiga yang berbeda
-      // dari layar kiper maupun dari pengaturan.
-      const pointValue = nilaiPerPoin(settings, config) || (daily ? 200 : 0);
-      const baseSalary = config?.base_salary || 0;
-      const salaryType = daily ? "harian" : "bulanan";
-      const absentDeduction = config?.absent_deduction || 0;
-      const overtimeRate = config?.overtime_rate_per_hour || 0;
-      const vegRate = config?.vegetable_rate_per_trip || 0;
+    const sumber = {
+      salaryConfigs,
+      checklists: dailyChecklists,
+      bonusRewards,
+      attendances,
+      overtimeLogs,
+      vegTripsMap,
+      kasbons,
+      periode: selectedMonth,
+      awal: monthStart,
+      akhir: monthEnd,
+      targetPoin: TARGET_POIN_SETTING,
+      companySettings: settings,
+    };
 
-      // Poin dari BonusReward (existing)
-      const empBonus = bonusRewards.find(b => b.employee_email === emp.email && b.period === selectedMonth);
-      const bonusPoin = empBonus?.total_points || 0;
-
-      // Poin dari DailyChecklist bulan ini
-      const empChecklists = dailyChecklists.filter(c =>
-        c.employee_email === emp.email &&
-        c.date >= monthStart &&
-        c.date < monthEnd
-      );
-      const checklistPoin = empChecklists
-        .filter((c) => c.status !== "rejected")
-        .reduce((s, c) => {
-          const pts = c.approved_points || c.total_points_claimed ||
-            (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0) : 0);
-          return s + (pts || 0);
-        }, 0);
-
-      const totalPoin = bonusPoin + checklistPoin;
-      const targetTercapai = totalPoin >= TARGET_POIN_SETTING;
-      const selisihPoin = Math.abs(totalPoin - TARGET_POIN_SETTING);
-
-      const bonus = POIN_BONUS_ENABLED ? totalPoin * pointValue : 0;
-      const potonganPoin = 0;
-      const kpiBonus = bonus;
-
-      // Gaji pokok
-      const empAttendances = attendances.filter(a => a.employee_email === emp.email && a.date >= monthStart && a.date < monthEnd);
-      const hadirDays = empAttendances.filter(a => a.status === "hadir").length;
-      const absenDays = empAttendances.filter(a => a.status !== "hadir" && a.status !== "izin" && a.status !== "sakit").length;
-
-      const empOvertime = overtimeLogs.filter(o => o.employee_email === emp.email && o.date >= monthStart && o.date < monthEnd);
-      const totalOvertimeHours = empOvertime.reduce((s, o) => s + (o.hours || 0), 0);
-      const overtimePay = totalOvertimeHours * overtimeRate;
-
-      const vegData = vegTripsMap[emp.email] || { trips: 0, dates: [] };
-      const totalVegTrips = daily ? vegData.trips : 0;
-      const vegPay = totalVegTrips * vegRate;
-
-      let effectiveBase = salaryType === "harian" ? hadirDays * baseSalary : baseSalary;
-      let deduction = salaryType === "harian" ? 0 : absenDays * absentDeduction;
-
-      const empKasbons = kasbons.filter(k => k.employee_email === emp.email && k.status === "approved");
-      let kasbonDeduction = 0;
-      let kasbonRemaining = 0;
-      const kasbonIdsToDeduct = [];
-      empKasbons.forEach(k => {
-        const sisaK = (k.amount || 0) - (k.total_paid || 0);
-        if (sisaK <= 0) return;
-        // Anti-dobel: skip jika sudah dipotong untuk periode ini via slip
-        const alreadyDeducted = (k.deduction_log || []).some(d => d.salary_period === selectedMonth && d.salary_slip_id);
-        if (alreadyDeducted) { kasbonRemaining += sisaK; return; }
-        const deduction = Math.min(k.weekly_deduction || 100000, sisaK);
-        kasbonDeduction += deduction;
-        kasbonIdsToDeduct.push(k.id);
-        kasbonRemaining += (sisaK - deduction);
-      });
-
-      const netTotal = effectiveBase + overtimePay + vegPay + kpiBonus - deduction - kasbonDeduction;
-
-      // Existing slip for this period
-      const existingSlip = slips.find(s => s.employee_email === emp.email && s.period === selectedMonth);
-
+    return employees.map((emp) => {
+      const h = hitungGajiKaryawan(emp, sumber);
       return {
-        emp, config, totalPoin, targetTercapai, selisihPoin,
-        bonus, potonganPoin, kpiBonus, netTotal, effectiveBase,
-        overtimePay, vegPay, vegTrips: totalVegTrips, vegDates: vegData.dates,
-        deduction, kasbonDeduction, kasbonIdsToDeduct, kasbonRemaining, hadirDays,
-        existingSlip, pointValue,
+        emp,
+        config: h.config,
+        totalPoin: h.totalPoin,
+        targetTercapai: h.targetTercapai,
+        selisihPoin: h.selisihPoin,
+        bonus: h.bonusPoin,
+        potonganPoin: 0,
+        kpiBonus: h.bonusPoin,
+        netTotal: h.bersih,
+        effectiveBase: h.gajiPokok,
+        overtimePay: h.upahLembur,
+        vegPay: h.upahSayur,
+        vegTrips: h.tripSayur,
+        vegDates: h.tanggalSayur,
+        deduction: h.potonganAbsen,
+        kasbonDeduction: h.potonganKasbon,
+        kasbonIdsToDeduct: h.idKasbonDipotong,
+        kasbonRemaining: h.sisaKasbon,
+        hadirDays: h.hariHadir,
+        pointValue: h.nilaiPoin,
+        existingSlip: slips.find(
+          (sl) => sl.employee_email === emp.email && sl.period === selectedMonth,
+        ),
       };
     });
-  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegTripsMap, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING, settings, POIN_BONUS_ENABLED]);
+  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegTripsMap, selectedMonth, monthStart, monthEnd, TARGET_POIN_SETTING, settings]);
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
