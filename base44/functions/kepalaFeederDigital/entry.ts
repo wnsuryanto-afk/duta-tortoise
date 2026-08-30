@@ -100,7 +100,9 @@ Deno.serve(async (req) => {
       .filter((i: any) => !String(i.name || "").toUpperCase().includes("DUPLIKAT"))
       .map((i: any) => i.name);
 
-    const inkubasi = (breedings || []).filter((b: any) => b.status === "inkubasi" && !b.is_archived);
+    // Laporan pagi harus menyebut clutch yang sedang dierami, apa pun
+    // statusnya di antara "bertelur" dan "inkubasi" (../../shared/kura.ts).
+    const inkubasi = (breedings || []).filter(clutchAktif);
     const menetasDekat = inkubasi
       .filter((b: any) => {
         const t = b.estimated_hatch_start || b.estimated_hatch_date;

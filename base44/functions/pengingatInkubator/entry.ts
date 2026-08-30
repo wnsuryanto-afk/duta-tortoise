@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import {
+import { clutchAktif } from "../../shared/kura.ts";
   getOtomatis,
   setOtomatis,
   wibTanggal,
@@ -44,10 +45,7 @@ Deno.serve(async (req) => {
     // (C23 x A40, 22 telur, 12 Agustus) berstatus "bertelur" — jadi pengingat
     // yang dibuat khusus untuk membangunkan pencatatan inkubator justru diam
     // pada satu-satunya clutch yang perlu dicatat.
-    const STATUS_AKTIF = ["bertelur", "inkubasi"];
-    const sedangInkubasi = (breedings || []).filter(
-      (b: any) => STATUS_AKTIF.includes(b.status) && !b.is_archived,
-    );
+    const sedangInkubasi = (breedings || []).filter(clutchAktif);
 
     if (sedangInkubasi.length === 0) {
       // Tidak ada telur — tandai supaya tidak diperiksa berulang hari ini.

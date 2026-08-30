@@ -141,7 +141,10 @@ Deno.serve(async (req) => {
     const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const breedingRecords = await base44.asServiceRole.entities.Breeding.list('-created_date', 2000);
     const nearHatch = breedingRecords.filter(b => {
-      if (b.status !== "inkubasi") return false;
+      // Clutch aktif = "bertelur" ATAU "inkubasi" (../../shared/kura.ts).
+      // Menyaring "inkubasi" saja membuat peringatan "hampir menetas" diam
+      // pada clutch yang statusnya belum sempat diubah.
+      if (!clutchAktif(b)) return false;
       const hatchDate = b.estimated_hatch_start || b.estimated_hatch_date;
       return hatchDate && hatchDate >= today && hatchDate <= in3days;
     });

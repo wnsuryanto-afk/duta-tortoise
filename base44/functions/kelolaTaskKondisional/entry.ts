@@ -45,9 +45,11 @@ const ATURAN: Aturan[] = [
     keterangan: "Catat suhu & kelembapan inkubator",
     aktifBila: async (base44) => {
       const breedings = await base44.asServiceRole.entities.Breeding.list("-egg_laying_date", 200);
-      const inkubasi = (breedings || []).filter(
-        (b: any) => b.status === "inkubasi" && !b.is_archived,
-      );
+      // Task "catat suhu inkubator" harus menyala selama telurnya ada —
+      // status "bertelur" maupun "inkubasi" (../../shared/kura.ts). Menyaring
+      // "inkubasi" saja membuat task ini mati justru di clutch yang sedang
+      // dierami sekarang.
+      const inkubasi = (breedings || []).filter(clutchAktif);
       const telur = inkubasi.reduce((s: number, b: any) => s + Number(b.egg_count || 0), 0);
       return {
         aktif: inkubasi.length > 0,
