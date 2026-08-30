@@ -84,7 +84,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
   const { pemasukan, pengeluaranManual } = useFinanceCategories();
   const catOptions = form.type === "pemasukan"
     ? (pemasukan.length ? pemasukan : [{ value: "penjualan_tortoise", label: "Penjualan Tortoise" }, { value: "lainnya", label: "Lainnya" }])
-    : (pengeluaranManual.length ? pengeluaranManual : Object.entries(CATEGORIES).filter(([, v]) => (v.type === "pengeluaran" || v.type === "both") && !["gaji", "gaji_karyawan"].includes(v.value)).map(([k, v]) => ({ value: k, label: v.label })).filter((c) => !["gaji", "gaji_karyawan"].includes(c.value)));
+    : (pengeluaranManual.length ? pengeluaranManual : Object.entries(CATEGORIES).filter(([k, v]) => (v.type === "pengeluaran" || v.type === "both") && !["gaji", "gaji_karyawan"].includes(k)).map(([k, v]) => ({ value: k, label: v.label })));
 
   const qtyNum = Number(form.qty) || 0;
   const hargaNum = Number(form.harga_satuan) || 0;
