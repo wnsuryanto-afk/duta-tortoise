@@ -1,3 +1,4 @@
+import { dilacak } from "@/lib/stokMenipis";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -56,7 +57,9 @@ export default function UnifiedStokPage() {
 
   // ── Summary stats ────────────────────────────────────────────────
   const allItems = [
-    ...feedstocks.map(f => ({ ...f, _src: "feed", _price: f.price_per_unit || 0 })),
+    // Bahan pakan yang tidak dilacak tidak ikut hitungan kritis maupun nilai
+    // persediaan: angkanya nol karena memang tidak dicatat, bukan karena habis.
+    ...feedstocks.filter(dilacak).map(f => ({ ...f, _src: "feed", _price: f.price_per_unit || 0 })),
     ...warehouseItems.map(w => ({ ...w, _src: "warehouse", _price: w.purchase_price || 0 })),
   ];
 

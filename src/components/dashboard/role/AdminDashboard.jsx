@@ -1,3 +1,4 @@
+import { dilacak } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
 import HRMetrics from "@/components/dashboard/HRMetrics";
@@ -124,7 +125,8 @@ export default function AdminDashboard({ user, role = "admin" }) {
   const sickTortoises = tortoises.filter(t => t.status === "sakit" || t.is_currently_sick);
 
   const criticalStocks = warehouseItems.filter(i => i.current_stock < i.minimum_stock && i.is_mandatory);
-  const criticalFeed = feedStocks.filter(f => f.current_stock < f.minimum_stock && f.is_mandatory);
+  // Bahan pakan yang tidak dilacak dikeluarkan - lihat lib/stokMenipis.js.
+  const criticalFeed = feedStocks.filter(f => dilacak(f) && f.current_stock < f.minimum_stock && f.is_mandatory);
   const totalCritical = criticalStocks.length + criticalFeed.length;
 
   const pendingApprovalCount = pendingChecklists.length + stockMovements.length + kasbons.length;
