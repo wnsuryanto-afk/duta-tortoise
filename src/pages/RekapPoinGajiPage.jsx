@@ -1,4 +1,3 @@
-import { nilaiPerPoin } from "@/lib/nilaiPoin";
 import { hitungGajiKaryawan } from "@/lib/hitungGaji";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -32,7 +31,7 @@ export default function RekapPoinGajiPage() {
   const settings = useCompanySettings();
   const TARGET_POIN_SETTING = settings.min_poin_bulanan || 0;
   const NILAI_PER_POIN_SETTING = settings.nilai_per_poin || 0;
-  const POIN_BONUS_ENABLED = settings.poin_bonus_enabled === true;
+  // Sakelar bonus poin dihormati di dalam lib/hitungGaji.js, tidak lagi di sini.
 
   const { data: users = [] } = useActiveUsers();
 
