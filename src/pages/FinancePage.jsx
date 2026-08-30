@@ -221,6 +221,13 @@ function AddTransactionForm({ user, onClose, onSaved }) {
             {catOptions.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
+        {form.type === "pengeluaran" && (
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Gaji karyawan tidak diketik di sini. Tandai slip gaji sebagai{" "}
+            <Link to="/salary-slip" className="text-primary underline underline-offset-2">dibayar</Link>{" "}
+            dan catatan biayanya dibuat sendiri — supaya gaji yang sama tidak masuk dua kali.
+          </p>
+        )}
       </div>
 
       {/* Qty + Harga Satuan */}
