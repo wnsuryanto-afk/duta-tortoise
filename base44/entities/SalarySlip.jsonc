@@ -178,7 +178,8 @@
       "enum": [
         "draft",
         "approved",
-        "paid"
+        "paid",
+        "dibatalkan"
       ],
       "default": "draft",
       "description": "draft \u2192 approved (diperiksa admin) \u2192 paid (dibayar owner)"
