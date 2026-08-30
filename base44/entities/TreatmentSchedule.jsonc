@@ -87,6 +87,11 @@
       "type": "boolean",
       "default": false
     },
+    "nonaktif_bila_racikan_ada": {
+      "type": "boolean",
+      "default": false,
+      "description": "D24 - Jadwal ini MUNDUR selama racikan Duta Repro (VIT-REP00) ada stoknya, karena kandungannya sudah termasuk di dalam racikan. Dipakai untuk kalsium harian, asam folat harian, dan vitamin E: menjalankan keduanya berarti dosis dobel. Sengaja BUKAN mematikan jadwal - kalau racikan habis dan belum diracik ulang, jadwal ini hidup lagi dengan sendirinya, supaya betina tidak kehilangan kalsium tepat pada jeda antar-batch."
+    },
     "is_active": {
       "type": "boolean",
       "default": true
