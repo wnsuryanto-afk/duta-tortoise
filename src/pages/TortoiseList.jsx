@@ -27,6 +27,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms, canDelete as canDeleteGlobal, isManagerLevel } from "@/lib/permissions";
 import { diPeternakan } from "@/lib/populasiKura";
 import { getMissingFields } from "@/lib/incompleteChecks";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 function getEnclosureStatus(enc) {
   if (!enc.max_capacity) return "normal";
@@ -233,7 +234,10 @@ export default function TortoiseList() {
   const handleDelete = async (tortoise) => {
     if (confirm(`Hapus ${tortoise.name}?`)) {
       await base44.entities.Tortoise.delete(tortoise.id);
+      // Kura yang dihapus berhenti menghuni kandangnya.
+      await recalcEnclosureCountsAman(tortoise.enclosure ? [tortoise.enclosure] : null);
       queryClient.invalidateQueries({ queryKey: ["tortoises"] });
+      queryClient.invalidateQueries({ queryKey: ["enclosures"] });
     }
   };
   const handleMove = (tortoise) => setMoveTarget(tortoise);

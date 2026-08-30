@@ -25,6 +25,7 @@ import { kandangDariNama } from "@/lib/kandang";
 import StatCard from "@/components/dashboard/StatCard";
 import { WalletArt } from "@/components/common/Illustration";
 import { masukLaporan } from "@/lib/laporan";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
@@ -135,6 +136,10 @@ export default function SalesList() {
       await hapusTransaksiPenjualan(cancelSale.id);
       // Soft cancel sale
       await base44.entities.Sale.update(cancelSale.id, { excluded_from_reports: true, notes: (cancelSale.notes || "") + " [DIBATALKAN]" });
+      // Kuranya kembali menghuni kandang; angkanya harus ikut naik lagi.
+      // Menjual menghitung ulang, membatalkan penjualan dulu tidak — sehingga
+      // kura yang kembali tidak pernah terhitung sampai ada kejadian lain.
+      await recalcEnclosureCountsAman(cancelEnclosure ? [cancelEnclosure] : null);
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["tortoises"] });
       queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });

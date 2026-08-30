@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PenLine, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 /**
  * RenameEnclosureDialog — mengganti nama kandang.
@@ -87,6 +88,11 @@ export default function RenameEnclosureDialog({ open, onClose, enclosureName, to
       (id) => base44.entities.Tortoise.update(id, { enclosure: namaBersih }),
       { serentak: 4, onKemajuan: (sudah, total) => setKemajuan({ sudah, total }) }
     );
+
+    // Ganti nama memindahkan kura antar "nama kandang" di mata hitungan yang
+    // mencocokkan lewat nama. Tanpa penyegaran ini, isi kandang lama dan baru
+    // sama-sama meleset sampai ada kejadian lain yang kebetulan menghitung ulang.
+    await recalcEnclosureCountsAman();
 
     qc.invalidateQueries({ queryKey: ["tortoises"] });
     qc.invalidateQueries({ queryKey: ["enclosures"] });
