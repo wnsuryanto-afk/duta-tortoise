@@ -30,14 +30,6 @@ export default function PengaturanHPP() {
     queryKey: ["finance-transactions-hpp"],
     queryFn: () => base44.entities.FinanceTransaction.list("-date", 500),
   });
-  const { data: allSalarySlips = [] } = useQuery({
-    queryKey: ["salary-slips-hpp"],
-    queryFn: () => base44.entities.SalarySlip.list("-period", 200),
-  });
-  const { data: allPettyCash = [] } = useQuery({
-    queryKey: ["petty-cash-hpp"],
-    queryFn: () => base44.entities.PettyCashRequest.list("-request_date", 200),
-  });
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-hpp"],
     queryFn: () => base44.entities.Tortoise.list("name", 2000),
@@ -80,7 +72,7 @@ export default function PengaturanHPP() {
         cost_per_tortoise: costPer,
       };
     }).filter(m => m.cost_per_tortoise != null);
-  }, [allFinanceTx, allSalarySlips, allPettyCash, tortoises]);
+  }, [allFinanceTx, tortoises]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -132,8 +124,9 @@ export default function PengaturanHPP() {
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
           <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-blue-800">
-            <p><strong>Rumus biaya aktual:</strong> Total semua pengeluaran bulan ini ÷ Jumlah kura aktif</p>
-            <p className="mt-1">Pengeluaran mencakup: FinanceTransaction (semua kategori pengeluaran), SalarySlip (status paid), dan PettyCashRequest (status disbursed).</p>
+            <p><strong>Rumus biaya aktual:</strong> Total pengeluaran bulan ini ÷ Jumlah kura di peternakan</p>
+            <p className="mt-1">Pengeluaran dihitung dari FinanceTransaction saja. Gaji sudah termasuk di dalamnya — slip yang ditandai dibayar membuat catatan biayanya sendiri. Pencairan kas kecil tidak dihitung di sini: biayanya muncul saat uangnya dibelanjakan, juga sebagai FinanceTransaction. Data uji dan catatan yang dikecualikan tidak ikut.</p>
+            <p className="mt-1">Pembaginya memakai jumlah kura <strong>saat ini</strong> untuk semua bulan, termasuk bulan-bulan lampau — riwayat populasi per bulan belum disimpan, jadi biaya per ekor bulan lama hanya perkiraan kasar.</p>
           </div>
         </div>
       </Card>
