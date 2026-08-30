@@ -25,6 +25,7 @@ import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 import { kandangWajib, tugasUbinKandang, poinUbinKandang } from "@/lib/kandang";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
+import { jadwalBerlaku } from "@/lib/jadwalPerawatan";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -148,6 +149,17 @@ export default function GuidedHariIni({ user }) {
       return res[0] || null;
     },
     staleTime: 10 * 60 * 1000,
+  });
+
+  // Stok racikan Duta Repro (VIT-REP00). Selama racikan ada, jadwal kalsium /
+  // asam folat / vitamin E harian mundur - kandungannya sudah di dalam racikan.
+  const { data: racikanRepro = 0 } = useQuery({
+    queryKey: ["stok-racikan-repro"],
+    queryFn: async () => {
+      const res = await base44.entities.WarehouseItem.filter({ sku: "VIT-REP00" });
+      return Number(res?.[0]?.current_stock || 0);
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: salaryConfig } = useQuery({
@@ -384,7 +396,7 @@ export default function GuidedHariIni({ user }) {
   // sudah terjadi di peternakan ini.
   const supplemenHariIni = jadwalBerlaku(treatmentSchedules, {
     hari: new Date(),
-    musimBertelur: companySettings?.musim_bertelur_aktif === true,
+    musimBertelur: settings?.musim_bertelur_aktif === true,
     racikanTersedia: racikanRepro > 0,
   }).filter(ts => {
     // ATURAN JEMUR: hanya muncul jika ada kura aktif kategori baby
