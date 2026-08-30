@@ -19,19 +19,56 @@ export default async function(req: Request): Promise<Response> {
       (t.status === "sakit" || t.is_currently_sick === true) && !t.is_archived
     );
 
+    // PENYAPU: batalkan tugas perawatan untuk kura yang sudah TIDAK sakit.
+    //
+    // Dulu fungsi ini hanya berhenti MEMBUAT tugas baru saat kura sembuh, dan
+    // tidak pernah menutup yang terlanjur ada. Karena tugas dibuat setiap hari
+    // selama kura sakit, sisanya menumpuk sebagai tugas berpoin yang tidak
+    // perlu dikerjakan: pada 29 Agustus 2026 ada 30 tugas menggantung untuk
+    // enam kura yang semuanya sudah sehat, senilai 450 poin.
+    //
+    // Penyapu berjalan lebih dulu, dan tetap berjalan walaupun tidak ada kura
+    // sakit sama sekali.
+    const idSakit = new Set(sickTortoises.map((t) => t.id));
+    const namaSakit = sickTortoises.map((t) => t.code || t.name).filter(Boolean);
+    const semuaPending = await base44.asServiceRole.entities.IncidentalTask.filter({ status: "pending" });
+    let cancelled = 0;
+    for (const t of semuaPending || []) {
+      if (t.created_by_email !== "system") continue;
+      const judul = String(t.title || "");
+      if (!/^Perawatan /i.test(judul)) continue;
+      const masihSakit = t.tortoise_id
+        ? idSakit.has(t.tortoise_id)
+        : namaSakit.some((n) => judul.includes(n));
+      if (masihSakit) continue;
+      await base44.asServiceRole.entities.IncidentalTask.update(t.id, {
+        status: "cancelled",
+        is_active: false,
+        notes: String(t.notes || "") + " | Dibatalkan otomatis " + today + ": kura sudah tidak berstatus sakit.",
+      });
+      cancelled++;
+    }
+
     if (sickTortoises.length === 0) {
-      return Response.json({ success: true, created: 0, skipped: 0, total_sick: 0 });
+      return Response.json({ success: true, created: 0, skipped: 0, cancelled, total_sick: 0 });
     }
 
     // 2. Ambil protokol diagnosis aktif
     const protocols = await base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true });
 
-    // 3. Ambil tugas pending hari ini untuk cek duplikat
-    const existingTasks = await base44.asServiceRole.entities.IncidentalTask.filter({
-      status: "pending",
-      due_date: today,
-    });
-    const existingTitles = new Set(existingTasks.map(t => (t.title || "").toLowerCase()));
+    // 3. Cek duplikat terhadap SELURUH tugas yang masih pending, bukan hanya
+    //    yang bertanggal hari ini.
+    //
+    //    Pemeriksaan lama hanya melihat due_date hari ini, jadi tiap hari
+    //    terbit satu tugas baru walaupun tugas kemarin belum dikerjakan.
+    //    Satu kura dengan satu diagnosis cukup punya satu tugas terbuka:
+    //    kalau yang kemarin belum selesai, menambah yang baru tidak membuatnya
+    //    lebih cepat dikerjakan, hanya menggandakan poinnya.
+    const existingTitles = new Set(
+      (semuaPending || [])
+        .filter((t) => t.status === "pending")
+        .map((t) => (t.title || "").toLowerCase()),
+    );
 
     let created = 0;
     let skipped = 0;
@@ -94,7 +131,7 @@ export default async function(req: Request): Promise<Response> {
       }
     }
 
-    return Response.json({ success: true, created, skipped, total_sick: sickTortoises.length });
+    return Response.json({ success: true, created, skipped, cancelled, total_sick: sickTortoises.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

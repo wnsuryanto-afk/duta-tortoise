@@ -9,14 +9,14 @@ import { Badge } from "@/components/ui/badge";
 const GENDER_BG = {
   jantan: "bg-blue-100 border-blue-300 text-blue-800",
   betina: "bg-pink-100 border-pink-300 text-pink-800",
-  belum_diketahui: "bg-gray-100 border-gray-300 text-gray-700",
+  belum_diketahui: "bg-muted border-border text-foreground",
 };
 const GENDER_LABEL = { jantan: "♂ Jantan", betina: "♀ Betina", belum_diketahui: "? Belum Diketahui" };
 const STATUS_COLORS = {
   aktif: "bg-green-100 text-green-700",
   baby: "bg-amber-100 text-amber-700",
   sakit: "bg-red-100 text-red-700",
-  terjual: "bg-gray-200 text-gray-600",
+  terjual: "bg-gray-200 text-muted-foreground",
 };
 
 export default function ClutchOffspringSection({ breeding }) {

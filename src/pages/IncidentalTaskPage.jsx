@@ -53,7 +53,7 @@ export default function IncidentalTaskPage() {
     if (t.status === "usulan")
       return { label: "Menunggu Persetujuan", color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
     if (t.status === "cancelled")
-      return { label: "Dibatalkan", color: "bg-gray-100 text-gray-600 border-gray-200" };
+      return { label: "Dibatalkan", color: "bg-muted text-muted-foreground border-border" };
     if (t.status === "pending")
       return { label: "Belum dikerjakan", color: "bg-amber-100 text-amber-700 border-amber-200" };
     const cl = checklists.find((c) => c.id === t.daily_checklist_id);
@@ -137,7 +137,7 @@ export default function IncidentalTaskPage() {
           <p className="text-xs text-muted-foreground">Dikerjakan</p>
         </Card>
         <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-gray-500">{stats.cancelled}</p>
+          <p className="text-2xl font-bold text-muted-foreground">{stats.cancelled}</p>
           <p className="text-xs text-muted-foreground">Dibatalkan</p>
         </Card>
         {isManagerLevel(role) && (

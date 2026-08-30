@@ -29,7 +29,7 @@ export default function ExcludeToggle({ record, entityName, queryKey, onToggled 
   return (
     <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
       {isExcluded && (
-        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-600 font-semibold border border-gray-300">
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 text-muted-foreground font-semibold border border-border">
           🚫 TEST
         </span>
       )}
@@ -40,7 +40,7 @@ export default function ExcludeToggle({ record, entityName, queryKey, onToggled 
         title={isExcluded ? "Klik untuk masukkan kembali ke laporan" : "Klik untuk keluarkan dari laporan"}
         className={`text-[10px] px-2 py-1 rounded-full font-medium border transition-all whitespace-nowrap ${
           isExcluded
-            ? "bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200"
+            ? "bg-muted text-muted-foreground border-border hover:bg-gray-200"
             : "bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
         } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >

@@ -105,7 +105,7 @@ export default function HealthReminderAlert() {
             return (
               <div
                 key={reminder.id}
-                className={`flex items-center gap-3 px-5 py-3 ${daysLeft < 0 ? "bg-red-50" : daysLeft === 0 ? "bg-orange-50" : "bg-white"}`}
+                className={`flex items-center gap-3 px-5 py-3 ${daysLeft < 0 ? "bg-red-50" : daysLeft === 0 ? "bg-orange-50" : "bg-card"}`}
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${conf.color}`}>
                   <Icon className="w-4 h-4" />

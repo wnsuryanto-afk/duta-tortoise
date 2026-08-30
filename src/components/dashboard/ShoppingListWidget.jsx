@@ -208,7 +208,7 @@ function ShoppingItem({ item, onUpdate }) {
       {/* Nama barang diberi baris sendiri. Versi lama menaruhnya sebaris dengan
           badge memakai `truncate` tanpa min-w-0 — di layar sempit elemen itu
           menyusut sampai nol lebar, sehingga yang tersisa hanya badge & harga. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-border hover:shadow-sm transition-shadow">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2.5 bg-card rounded-lg border border-border hover:shadow-sm transition-shadow">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground leading-snug break-words">
             {item.nama_barang || "(nama belum diisi)"}

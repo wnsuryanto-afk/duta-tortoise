@@ -24,7 +24,7 @@ export default function WelcomeScreen({ user, profile }) {
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
           <motion.div
-            className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center z-10"
+            className="relative bg-card rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center z-10"
             initial={{ scale: 0.85, y: 30, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.85, y: 30, opacity: 0 }}

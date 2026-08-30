@@ -7,8 +7,8 @@ const statusConfig = {
   breeding: { label: "Breeding", className: "bg-purple-100 text-purple-700 border-purple-300" },
   karantina: { label: "Karantina", className: "bg-orange-100 text-orange-700 border-orange-300" },
   mati: { label: "Mati", className: "bg-gray-800 text-white border-gray-700" },
-  terjual: { label: "Terjual", className: "bg-gray-300 text-gray-700 border-gray-300" },
-  diarsipkan: { label: "Diarsipkan", className: "bg-gray-100 text-gray-500 border-gray-200" },
+  terjual: { label: "Terjual", className: "bg-gray-300 text-foreground border-border" },
+  diarsipkan: { label: "Diarsipkan", className: "bg-muted text-muted-foreground border-border" },
 };
 
 export default function StatusBadge({ status }) {

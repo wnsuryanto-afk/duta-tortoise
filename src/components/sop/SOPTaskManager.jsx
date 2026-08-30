@@ -20,7 +20,7 @@ const categoryColors = {
   kebersihan: "bg-blue-100 text-blue-700",
   pemeriksaan: "bg-amber-100 text-amber-700",
   breeding: "bg-purple-100 text-purple-700",
-  administrasi: "bg-gray-100 text-gray-700",
+  administrasi: "bg-muted text-foreground",
   lainnya: "bg-muted text-muted-foreground",
 };
 

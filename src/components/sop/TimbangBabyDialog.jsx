@@ -133,10 +133,10 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
         {/* Progress */}
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="font-semibold text-gray-700">{done} dari {total} baby selesai</span>
-            <span className="text-gray-400">{pct}%</span>
+            <span className="font-semibold text-foreground">{done} dari {total} baby selesai</span>
+            <span className="text-muted-foreground">{pct}%</span>
           </div>
-          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: allDone ? "#16a34a" : "linear-gradient(90deg,#f9a8d4,#db2777)" }} />
           </div>
         </div>
@@ -149,8 +149,8 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
           <div className="space-y-3 border-2 border-pink-200 rounded-xl p-3 bg-pink-50/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-gray-800">{selected.name || selected.code}</p>
-                <p className="text-xs text-gray-400">{selected.code} {selected.enclosure ? `· 📍 ${selected.enclosure}` : ""}</p>
+                <p className="text-sm font-bold text-foreground">{selected.name || selected.code}</p>
+                <p className="text-xs text-muted-foreground">{selected.code} {selected.enclosure ? `· 📍 ${selected.enclosure}` : ""}</p>
               </div>
               <button type="button" onClick={() => { setSelected(null); resetForm(); }} className="text-xs text-blue-600 font-medium hover:underline">
                 Ganti baby
@@ -172,7 +172,7 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
                 {preview ? (
                   <img src={preview} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="flex items-center gap-1.5 text-xs text-gray-400"><Camera className="w-4 h-4" /> Ambil / pilih foto</span>
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Camera className="w-4 h-4" /> Ambil / pilih foto</span>
                 )}
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handlePhoto(e.target.files[0]); e.target.value = ""; }} />
               </label>
@@ -183,14 +183,14 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
           </div>
         ) : !allDone && total > 0 ? (
           <div className="space-y-1 max-h-60 overflow-y-auto">
-            <p className="text-xs text-gray-400 px-1 mb-1">Pilih baby untuk ditimbang:</p>
+            <p className="text-xs text-muted-foreground px-1 mb-1">Pilih baby untuk ditimbang:</p>
             {babies.map((b) => {
               const isDone = doneIds.has(b.id);
               return (
-                <button key={b.id} type="button" onClick={() => setSelected(b)} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-left ${isDone ? "bg-green-50 border-green-200" : "bg-white border-gray-200 hover:border-pink-300"}`}>
+                <button key={b.id} type="button" onClick={() => setSelected(b)} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-left ${isDone ? "bg-green-50 border-green-200" : "bg-card border-border hover:border-pink-300"}`}>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{b.name || b.code}</p>
-                    <p className="text-xs text-gray-400">{b.code} {b.enclosure ? `· 📍 ${b.enclosure}` : ""}</p>
+                    <p className="text-sm font-medium text-foreground">{b.name || b.code}</p>
+                    <p className="text-xs text-muted-foreground">{b.code} {b.enclosure ? `· 📍 ${b.enclosure}` : ""}</p>
                   </div>
                   {isDone ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <span className="text-xs text-pink-600 font-medium">Timbang</span>}
                 </button>
@@ -200,7 +200,7 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
         ) : null}
 
         {total === 0 && (
-          <p className="text-center text-sm text-gray-400 py-4">Tidak ada baby terdaftar saat ini.</p>
+          <p className="text-center text-sm text-muted-foreground py-4">Tidak ada baby terdaftar saat ini.</p>
         )}
 
         <DialogFooter>

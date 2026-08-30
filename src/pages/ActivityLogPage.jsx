@@ -21,7 +21,7 @@ const ACTION_META = {
   transfer: { label: "TRANSFER",  color: "bg-purple-100 text-purple-700 border-purple-300", icon: "🔄" },
   checkin:  { label: "CHECK IN",  color: "bg-teal-100 text-teal-700 border-teal-300",       icon: "🕐" },
   checkout: { label: "CHECK OUT", color: "bg-cyan-100 text-cyan-700 border-cyan-300",       icon: "🕔" },
-  login:    { label: "MASUK",     color: "bg-gray-100 text-gray-700 border-gray-300",       icon: "🔑" },
+  login:    { label: "MASUK",     color: "bg-muted text-foreground border-border",       icon: "🔑" },
 };
 
 const ENTITY_ICONS = {
@@ -62,7 +62,7 @@ function formatTimestamp(ts) {
 // ── Detail Modal ─────────────────────────────────────────────────────────────
 function ActivityDetailModal({ log, onClose }) {
   if (!log) return null;
-  const meta = ACTION_META[log.action] || { label: log.action, color: "bg-gray-100", icon: "📄" };
+  const meta = ACTION_META[log.action] || { label: log.action, color: "bg-muted", icon: "📄" };
   const hasChangesDetail = Array.isArray(log.changes_detail) && log.changes_detail.length > 0;
 
   return (
@@ -369,7 +369,7 @@ export default function ActivityLogPage() {
             </thead>
             <tbody>
               {filtered.map((log, i) => {
-                const meta = ACTION_META[log.action] || { label: log.action, color: "bg-gray-100 text-gray-700 border-gray-300", icon: "📄" };
+                const meta = ACTION_META[log.action] || { label: log.action, color: "bg-muted text-foreground border-border", icon: "📄" };
                 return (
                   <tr
                     key={log.id || i}

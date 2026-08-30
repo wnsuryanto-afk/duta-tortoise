@@ -199,7 +199,7 @@ export default function WarehouseItemForm({ open, editData, onClose, onBarcode }
                 🔴 WAJIB
               </button>
               <button type="button" onClick={() => set("is_mandatory", false)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${!form.is_mandatory ? "bg-gray-200 text-gray-700 border-gray-300" : "bg-background border-border hover:bg-muted"}`}>
+                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${!form.is_mandatory ? "bg-gray-200 text-foreground border-border" : "bg-background border-border hover:bg-muted"}`}>
                 ⚪ TIDAK WAJIB
               </button>
             </div>

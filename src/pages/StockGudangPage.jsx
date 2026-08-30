@@ -110,7 +110,7 @@ function ItemCard({ item, onAdjust, onEdit, onDelete, canEdit, canDelete }) {
               item._displayCat === "obat"    ? "bg-red-100 text-red-700" :
               item._displayCat === "vitamin" ? "bg-green-100 text-green-700" :
               item._displayCat === "alat"    ? "bg-blue-100 text-blue-700" :
-              "bg-gray-100 text-gray-700"
+              "bg-muted text-foreground"
             }`}>
               {item._displayCat === "pakan" ? "🥬 Pakan" :
                item._displayCat === "obat" ? "💊 Obat" :

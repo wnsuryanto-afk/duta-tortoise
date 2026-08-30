@@ -398,7 +398,7 @@ export default function DiagnosisPanel({ selectedDiagnoses, warehouseItems = [],
     cukup:       { label: "✓ Cukup",        color: "text-green-700 bg-green-50 border-green-200" },
     hampir_habis:{ label: "⚠ Menipis",      color: "text-amber-700 bg-amber-50 border-amber-200" },
     habis:       { label: "✗ Habis",         color: "text-red-700 bg-red-50 border-red-200" },
-    unknown:     { label: "? Tidak Didata",  color: "text-gray-600 bg-gray-50 border-gray-200" },
+    unknown:     { label: "? Tidak Didata",  color: "text-muted-foreground bg-muted border-border" },
   };
 
   const hasLowStock = allStockItems.some(s => ["habis", "hampir_habis"].includes(getStockStatus(s)));

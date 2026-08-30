@@ -23,7 +23,7 @@ const SOURCE_BADGE = {
   rumput: "bg-green-100 text-green-700",
   sayur_pasar: "bg-orange-100 text-orange-700",
   campur: "bg-blue-100 text-blue-700",
-  lainnya: "bg-gray-100 text-gray-700",
+  lainnya: "bg-muted text-foreground",
 };
 
 const EMPTY = {
@@ -255,7 +255,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
                   <Input type="number" min={0} value={form.trip_cost_rokok} onChange={e => set("trip_cost_rokok", e.target.value)} className="mt-0.5" placeholder="25000" />
                 </div>
               </div>
-              <p className="text-[10px] text-gray-500">Upah anak tidak dicatat di sini — sudah masuk gaji harian</p>
+              <p className="text-[10px] text-muted-foreground">Upah anak tidak dicatat di sini — sudah masuk gaji harian</p>
             </div>
           )}
 

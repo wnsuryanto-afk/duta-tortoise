@@ -41,7 +41,7 @@ const CATEGORIES = {
   kas_kecil:          { label: "Kas Kecil",              color: "bg-indigo-100 text-indigo-700", type: "pengeluaran"  },
   solar_bbm:          { label: "Solar / BBM",            color: "bg-amber-100 text-amber-700",   type: "pengeluaran"  },
   rokok:              { label: "Rokok",                  color: "bg-stone-100 text-stone-700",   type: "pengeluaran"  },
-  lainnya:            { label: "Lainnya",                color: "bg-gray-100 text-gray-700",     type: "both"          },
+  lainnya:            { label: "Lainnya",                color: "bg-muted text-foreground",     type: "both"          },
 };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({
@@ -313,7 +313,7 @@ export default function FinancePage() {
   const TxRow = ({ tx }) => {
     const conf = CATEGORIES[tx.category] || CATEGORIES.lainnya;
     return (
-      <Card className={`p-3 flex items-start gap-3 ${tx.excluded_from_reports ? "opacity-60 border-dashed border-gray-300" : ""}`}>
+      <Card className={`p-3 flex items-start gap-3 ${tx.excluded_from_reports ? "opacity-60 border-dashed border-border" : ""}`}>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm mt-0.5 ${tx.type === "pemasukan" ? "bg-green-100" : "bg-red-100"}`}>
           {tx.type === "pemasukan" ? "↑" : "↓"}
         </div>

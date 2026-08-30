@@ -169,7 +169,14 @@ Deno.serve(async (req) => {
     results.push(`near_hatch: ${nearHatch.length}`);
 
     // ══════════════════════════════════════════════════
-    // 14. HAMPIR CAPAI TARGET POIN (250–299, 1x per bulan)
+    // 14. HAMPIR CAPAI TARGET POIN
+    //
+    // B2 — dulu angkanya ditulis mati di sini: 250–299 poin, target 300.
+    // Target sebenarnya di pengaturan adalah ribuan poin, jadi syarat itu
+    // terlewati dalam dua hari kerja dan pengingatnya praktis tidak pernah
+    // berbunyi di saat yang berarti. Sekarang targetnya dibaca dari
+    // CompanySettings, dan pengingat dikirim saat seseorang sudah di 80%
+    // menuju tingkat berikutnya — masih cukup waktu untuk dikejar.
     // ══════════════════════════════════════════════════
     const monthKey = today.substring(0, 7); // YYYY-MM
     const monthStart = monthKey + "-01";
@@ -181,30 +188,48 @@ Deno.serve(async (req) => {
       if (!poinByEmployee[cl.employee_email]) poinByEmployee[cl.employee_email] = 0;
       poinByEmployee[cl.employee_email] += (cl.approved_points || cl.total_points_claimed || 0);
     }
+    // Tingkatan target, urut naik. Yang belum diisi dilewati.
+    const csList = await base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" });
+    const cs = csList[0] || {};
+    const tingkatan = [
+      { nama: "Dasar", target: Number(cs.min_poin_bulanan || 0), bonus: Number(cs.bonus_dasar || 0) },
+      { nama: "Bagus", target: Number(cs.target_poin_bagus || 0), bonus: Number(cs.bonus_bagus || 0) },
+      { nama: "Luar biasa", target: Number(cs.target_poin_luar_biasa || 0), bonus: Number(cs.bonus_luar_biasa || 0) },
+    ].filter((t) => t.target > 0).sort((a, b) => a.target - b.target);
+
     for (const [email, totalPoin] of Object.entries(poinByEmployee)) {
-      if (totalPoin < 250 || totalPoin >= 300) continue;
-      // Anti-duplikat: 1x per bulan per karyawan (cek title mengandung bulan)
+      // Tingkat terdekat yang BELUM tercapai.
+      const berikut = tingkatan.find((t) => totalPoin < t.target);
+      if (!berikut) continue;
+      // Kirim hanya bila sudah 80% jalan — sebelum itu belum berarti apa-apa,
+      // sesudah tercapai tidak perlu dikejar lagi.
+      if (totalPoin < berikut.target * 0.8) continue;
+      // Anti-duplikat: satu kali per TINGKAT per bulan per karyawan.
+      //
+      // Dulu dicocokkan dari judul ("Kurang" + "Poin"), yang langsung patah
+      // begitu judulnya berubah. Sekarang dicocokkan dari related_entity_id
+      // yang memang dibuat untuk itu — dan karena tingkatnya ikut di dalam
+      // kunci, orang yang sudah melewati Dasar tetap mendapat pengingat saat
+      // mendekati Bagus.
+      const kunciTingkat = `target_poin_${email}_${monthKey}_${berikut.nama}`;
       const existing14 = await base44.asServiceRole.entities.Notification.filter({
         recipient_email: email,
-        category: "lainnya",
+        related_entity_id: kunciTingkat,
       });
-      const alreadyNotif14 = existing14.some(n =>
-        n.title?.includes("Kurang") && n.title?.includes("Poin") &&
-        (n.created_at || n.created_date || "").startsWith(monthKey) &&
-        !n.is_dismissed
-      );
+      const alreadyNotif14 = existing14.some(n => !n.is_dismissed);
       if (alreadyNotif14) continue;
-      const sisa = 300 - totalPoin;
+      const sisa = berikut.target - totalPoin;
+      const nominal = berikut.bonus > 0 ? ` (bonus Rp ${berikut.bonus.toLocaleString("id-ID")})` : "";
       await createNotif({
         recipient_email: email,
-        title: `Kurang ${sisa} Poin Lagi untuk Bonus Penuh!`,
-        message: `Kamu sudah ${totalPoin} poin bulan ini. Tinggal ${sisa} poin lagi untuk capai target 300 poin.`,
+        title: `Kurang ${sisa} poin lagi ke tingkat ${berikut.nama}!`,
+        message: `Kamu sudah ${totalPoin} poin bulan ini. Tinggal ${sisa} poin lagi untuk mencapai ${berikut.nama} di ${berikut.target} poin${nominal}.`,
         type: "info",
         priority: "rendah",
         category: "lainnya",
         action_label: "Lihat Poin Saya",
         action_url: "/rekap-poin-gaji",
-        related_entity_id: `target_poin_${email}_${monthKey}`,
+        related_entity_id: kunciTingkat,
         related_entity_type: "DailyChecklist",
       });
     }

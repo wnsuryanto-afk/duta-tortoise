@@ -40,7 +40,7 @@ export default function TestModeBanner() {
         <button
           onClick={handleTurnOff}
           disabled={turning}
-          className="text-xs font-semibold bg-white text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 whitespace-nowrap"
+          className="text-xs font-semibold bg-card text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 whitespace-nowrap"
         >
           {turning ? "Mematikan..." : "Matikan Test Mode"}
         </button>

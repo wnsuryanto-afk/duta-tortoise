@@ -379,7 +379,7 @@ export default function UserDetailPage({ userId, onBack }) {
                   <Badge variant="outline" className={`text-xs ${ROLE_COLORS[isKicked ? "kicked" : targetUser.role] || ROLE_COLORS.keeper}`}>
                     {ROLE_EMOJIS[isKicked ? "kicked" : targetUser.role]} {isKicked ? "Nonaktif" : (ROLE_LABELS[targetUser.role] || "Keeper")}
                   </Badge>
-                  <Badge variant="outline" className={`text-xs ${isKicked ? "bg-gray-100 text-gray-600 border-gray-300" : "bg-green-100 text-green-700 border-green-300"}`}>
+                  <Badge variant="outline" className={`text-xs ${isKicked ? "bg-muted text-muted-foreground border-border" : "bg-green-100 text-green-700 border-green-300"}`}>
                     {isKicked ? "⚫ Nonaktif" : "🟢 Aktif"}
                   </Badge>
                   {isMe && <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">Anda</Badge>}

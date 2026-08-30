@@ -37,7 +37,7 @@ export default function DiseaseClusterCard({ cluster: c, onDismiss }) {
             {c.tortoises.map((t, i) => (
               <span
                 key={i}
-                className="text-[11px] bg-white border border-orange-200 rounded-full px-2 py-0.5 text-orange-800"
+                className="text-[11px] bg-card border border-orange-200 rounded-full px-2 py-0.5 text-orange-800"
               >
                 {t.name} · {t.enclosure} · {format(parseISO(t.date), "d MMM", { locale: idLocale })}
               </span>

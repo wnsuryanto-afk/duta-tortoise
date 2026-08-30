@@ -19,7 +19,7 @@ const categoryColors = {
   kebersihan: "bg-blue-100 text-blue-700",
   pemeriksaan: "bg-amber-100 text-amber-700",
   breeding: "bg-purple-100 text-purple-700",
-  administrasi: "bg-gray-100 text-gray-700",
+  administrasi: "bg-muted text-foreground",
   lainnya: "bg-muted text-muted-foreground",
 };
 
@@ -280,7 +280,7 @@ export default function SOPChecklist() {
                         <p className="text-[11px] text-red-500 mt-0.5">⚠️ Batas waktu {task.deadline_time} sudah lewat — task ini tidak mendapat poin</p>
                       )}
                       {isLocked && (
-                        <p className="text-[11px] text-gray-400 mt-0.5">
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           {lockInfo.type === "done"
                             ? `✅ Sudah dikerjakan ${lockInfo.name}${lockInfo.time ? ` · ${lockInfo.time}` : ""}`
                             : `👤 Tugas ${lockInfo.name}`

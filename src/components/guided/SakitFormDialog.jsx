@@ -10,7 +10,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { perubahanSakit } from "@/lib/statusKura";
 import { format } from "date-fns";
-import { X, Loader2, CheckCircle2 } from "lucide-react";
+import { X, Loader2, CheckCircle2, Mic, Square, Sparkles } from "lucide-react";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import SickTortoisePicker from "@/components/health/SickTortoisePicker";
 import CareTaskSuggestionPanel from "@/components/health/CareTaskSuggestionPanel";
 
@@ -56,6 +57,83 @@ export default function SakitFormDialog({ open, onClose, user }) {
     enabled: open,
     staleTime: 5 * 60 * 1000,
   });
+
+  // ── C3 — Lapor pakai suara ──
+  //
+  // Keeper sedang di kandang, tangan kotor, dan kura sakit tidak menunggu
+  // seseorang selesai mengetik. Yang diucapkan masuk ke catatan apa adanya,
+  // lalu AI mencoba mengisi diagnosis, tingkat keparahan, dan tindakan.
+  //
+  // Aturan yang dipegang: AI hanya mengisi kolom yang MASIH KOSONG. Apa pun
+  // yang sudah dipilih keeper tidak pernah ditimpa — orang yang melihat kuranya
+  // langsung lebih tahu daripada mesin yang membaca kalimat.
+  const [parsingSuara, setParsingSuara] = useState(false);
+  const [pesanSuara, setPesanSuara] = useState("");
+
+  const prosesUcapan = async (teks) => {
+    if (teks === "__MIC_DENIED__") {
+      setPesanSuara("Mikrofon belum diizinkan. Buka pengaturan browser untuk mengizinkan, atau ketik seperti biasa.");
+      return;
+    }
+    if (!teks || !teks.trim()) return;
+
+    setNotes((prev) => (prev ? `${prev} ${teks}` : teks));
+    setPesanSuara("");
+    setParsingSuara(true);
+    try {
+      const daftarDiagnosis = protocols
+        .map((p) => `${p.diagnosis_code} = ${p.diagnosis_name}`)
+        .join("; ");
+      const hasil = await base44.integrations.Core.InvokeLLM({
+        prompt:
+          `Keeper peternakan kura melaporkan kura sakit dengan suara. Ubah menjadi data terstruktur.\n\n` +
+          `Ucapan: "${teks}"\n\n` +
+          `Pilihan diagnosis yang tersedia (kode = nama): ${daftarDiagnosis || "(belum ada)"}\n\n` +
+          `Aturan:\n` +
+          `- diagnosis_codes: HANYA kode dari daftar di atas yang benar-benar cocok. Kosongkan bila tidak yakin.\n` +
+          `- severity: ringan, sedang, berat, atau kritis. Kosongkan bila tidak tergambar dari ucapan.\n` +
+          `- treatment: tindakan yang DISEBUT keeper sudah/akan dilakukan. Jangan mengarang tindakan medis.\n` +
+          `- Lebih baik mengosongkan daripada menebak.\n\n` +
+          `Jawab HANYA dengan JSON.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            diagnosis_codes: { type: "array", items: { type: "string" } },
+            severity: { type: "string" },
+            treatment: { type: "string" },
+          },
+        },
+      });
+
+      const terisi = [];
+      const kode = (hasil?.diagnosis_codes || []).filter((c) =>
+        protocols.some((p) => p.diagnosis_code === c),
+      );
+      if (kode.length > 0 && diagnosis.length === 0) {
+        setDiagnosis(kode);
+        terisi.push("diagnosis");
+      }
+      if (hasil?.severity && !severity && SEVERITIES.some((s) => s.value === hasil.severity)) {
+        setSeverity(hasil.severity);
+        terisi.push("tingkat keparahan");
+      }
+      if (hasil?.treatment && !treatment.trim()) {
+        setTreatment(String(hasil.treatment));
+        terisi.push("tindakan");
+      }
+
+      setPesanSuara(
+        terisi.length > 0
+          ? `Terisi otomatis: ${terisi.join(", ")}. Mohon diperiksa dan dibetulkan bila kurang tepat.`
+          : "Ucapan sudah masuk ke catatan. Diagnosis dan tingkat keparahan silakan dipilih sendiri.",
+      );
+    } catch {
+      setPesanSuara("Ucapan sudah masuk ke catatan, tapi pengisian otomatis sedang tidak bisa dipakai.");
+    }
+    setParsingSuara(false);
+  };
+
+  const suara = useVoiceInput({ lang: "id-ID", onResult: prosesUcapan });
 
   if (!open) return null;
 
@@ -134,7 +212,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/50 flex items-end justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="px-5 py-4 flex items-center justify-between" style={{ backgroundColor: "#1B4332" }}>
           <div className="flex items-center gap-2 text-white">
@@ -242,10 +320,49 @@ export default function SakitFormDialog({ open, onClose, user }) {
 
             {/* Catatan tambahan (opsional) */}
             <div>
-              <p className="text-xs font-semibold mb-1.5" style={{ color: "#1B4332" }}>
-                Catatan Tambahan (opsional)
-              </p>
-              <p className="text-xs font-semibold text-gray-700 mb-1.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs font-semibold" style={{ color: "#1B4332" }}>
+                  Catatan Tambahan (opsional)
+                </p>
+                {suara.supported && (
+                  <button
+                    type="button"
+                    onClick={suara.toggle}
+                    disabled={parsingSuara}
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border-2 transition-all active:scale-95 disabled:opacity-50 ${
+                      suara.listening
+                        ? "border-red-400 bg-red-50 text-red-600 animate-pulse"
+                        : "border-[#1B4332] bg-card text-[#1B4332]"
+                    }`}
+                  >
+                    {parsingSuara ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Membaca...</>
+                    ) : suara.listening ? (
+                      <><Square className="w-3 h-3" /> Selesai bicara</>
+                    ) : (
+                      <><Mic className="w-3.5 h-3.5" /> Lapor pakai suara</>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {suara.listening && (
+                <div className="mb-2 p-2.5 rounded-xl bg-red-50 border border-red-200">
+                  <p className="text-[11px] font-semibold text-red-700 mb-0.5">Sedang mendengarkan...</p>
+                  <p className="text-xs text-foreground italic min-h-[1rem]">
+                    {suara.interim || "Contoh: kura E3 kode 14 matanya bengkak, sudah saya kasih salep"}
+                  </p>
+                </div>
+              )}
+
+              {pesanSuara && !suara.listening && (
+                <div className="mb-2 p-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-blue-700 leading-snug">{pesanSuara}</p>
+                </div>
+              )}
+
+              <p className="text-xs font-semibold text-foreground mb-1.5">
                 Perlakuan / tindakan * (wajib diisi)
               </p>
               <textarea
@@ -253,7 +370,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
                 value={treatment}
                 onChange={e => setTreatment(e.target.value)}
                 placeholder="Apa yang dilakukan untuk kura ini? Pilih diagnosis dulu, saran perawatan terisi otomatis."
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none mb-3"
+                className="w-full border border-border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none mb-3"
               />
               <textarea
                 rows={2}

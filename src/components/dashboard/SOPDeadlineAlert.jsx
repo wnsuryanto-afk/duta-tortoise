@@ -79,7 +79,7 @@ export default function SOPDeadlineAlert() {
                     isOverdue ? "text-red-600" : isVeryUrgent ? "text-orange-500" : "text-yellow-600"
                   }`}
                 />
-                <span className={`font-medium ${isOverdue ? "text-red-700" : "text-gray-800"}`}>
+                <span className={`font-medium ${isOverdue ? "text-red-700" : "text-foreground"}`}>
                   {task.title}
                 </span>
               </div>

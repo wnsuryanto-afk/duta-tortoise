@@ -27,6 +27,7 @@ import LayarTimPage from '@/pages/LayarTimPage';
 import HubPage from '@/pages/HubPage';
 import PembelianPage from '@/pages/PembelianPage';
 import TortoiseLabelPage from '@/pages/TortoiseLabelPage';
+import OtomatisasiPage from '@/pages/OtomatisasiPage';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -155,6 +156,7 @@ const AuthenticatedApp = () => {
         <Route path="/layar-tim" element={<LayarTimPage />} />
         <Route path="/area/:areaId" element={<HubPage />} />
         <Route path="/label-kura" element={<TortoiseLabelPage />} />
+        <Route path="/otomatisasi" element={<OtomatisasiPage />} />
         <Route path="/pembelian" element={<PembelianPage />} />
         <Route path="/tugas-insidentil" element={<IncidentalTaskPage />} />
         <Route path="/daftar-belanja" element={<DaftarBelanjaPage />} />

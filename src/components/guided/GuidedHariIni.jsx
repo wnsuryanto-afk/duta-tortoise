@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
+import BonusBulanIni from "./BonusBulanIni";
 import TugasHariIni from "@/components/sop/TugasHariIni";
 import IncidentalTaskList from "@/components/incidental/IncidentalTaskList";
 import SelfieCaptureDialog from "@/components/common/SelfieCaptureDialog";
@@ -18,7 +19,8 @@ import { compressImage } from "@/lib/useImageCompression";
 import { syncPhotoToChecklist } from "@/lib/syncPhotoToChecklist";
 import { canonicalKandangItemId, canonicalKandangCheckKey, matchKandangLog } from "@/lib/taskLock";
 import { LeafPattern } from "@/components/common/Illustration";
-import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
+import { perubahanSakit } from "@/lib/statusKura";
+import { tandaiSembuh } from "@/lib/kesehatanKura";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 
@@ -94,7 +96,7 @@ function PoinFlash({ poin }) {
 // ── Widget wrapper ────────────────────────────────────────────────────
 function Widget({ children, done = false, className = "" }) {
   return (
-    <div className={`rounded-2xl border-2 transition-all ${done ? "border-green-300 bg-green-50" : "border-gray-100 bg-white"} shadow-sm ${className}`}>
+    <div className={`rounded-2xl border-2 transition-all ${done ? "border-green-300 bg-green-50" : "border-gray-100 bg-card"} shadow-sm ${className}`}>
       {children}
     </div>
   );
@@ -239,15 +241,14 @@ export default function GuidedHariIni({ user }) {
     if (sembuhLoading) return;
     setSembuhLoading(t.tortoise_id);
     try {
-      await base44.entities.HealthRecord.create({
-        tortoise_id: t.tortoise_id,
-        tortoise_name: t.tortoise_name,
-        date: today,
-        type: "sembuh",
-        source: "manual",
-        description: `Dilaporkan sembuh oleh ${user.full_name || user.email}.`,
+      // Menutup kasus sakitnya sekalian — tanpa itu, kura yang sudah
+      // dilaporkan sembuh tetap memakai lencana merah SAKIT selamanya.
+      await tandaiSembuh({
+        kura: t,
+        user,
+        tanggal: today,
+        asal: "layar keeper",
       });
-      await base44.entities.Tortoise.update(t.tortoise_id, perubahanSembuh(t, today));
       qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
       qc.invalidateQueries({ queryKey: ["health-records"] });
       showMsg("success", `${t.tortoise_name} ditandai sembuh.`);
@@ -821,6 +822,14 @@ export default function GuidedHariIni({ user }) {
 
       <div className="px-4 pt-4 space-y-4">
 
+        {/* ══ BONUS BULAN INI ════════════════════════════════
+            Ditaruh di atas daftar tugas, bukan di halaman terpisah: poin baru
+            memotivasi kalau terlihat pada saat orang memutuskan mau mengerjakan
+            tugas berikutnya atau tidak. */}
+        <WidgetErrorBoundary widgetName="Bonus Bulan Ini">
+          <BonusBulanIni user={user} />
+        </WidgetErrorBoundary>
+
         {/* ══ TUGAS HARI INI — JADWAL KERJA ════════════════════════ */}
         <WidgetErrorBoundary widgetName="Tugas Hari Ini">
           <IncidentalTaskList user={user} />
@@ -839,7 +848,7 @@ export default function GuidedHariIni({ user }) {
                 ? Math.max(0, Math.round((new Date(today) - new Date(h.since)) / 86400000))
                 : null;
               return (
-                <div key={h.id} className="p-3 bg-white rounded-xl border border-red-200 space-y-2">
+                <div key={h.id} className="p-3 bg-card rounded-xl border border-red-200 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-red-800">
@@ -927,7 +936,7 @@ export default function GuidedHariIni({ user }) {
                         </button>
                         <button
                           onClick={() => dismissSembuhPrompt(h.tortoise_id)}
-                          className="flex-1 text-xs font-bold text-gray-700 bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200"
+                          className="flex-1 text-xs font-bold text-foreground bg-muted px-3 py-2 rounded-lg hover:bg-gray-200"
                         >
                           Belum, lanjut besok
                         </button>
@@ -938,13 +947,13 @@ export default function GuidedHariIni({ user }) {
               );
             })}
             {kritisNotifs.map(n => (
-              <div key={n.id} className="flex items-start gap-2 bg-white rounded-xl border border-amber-200 p-2.5">
+              <div key={n.id} className="flex items-start gap-2 bg-card rounded-xl border border-amber-200 p-2.5">
                 <Bell className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-amber-800">{n.title}</p>
                   {n.message && <p className="text-xs text-amber-700">{n.message}</p>}
                 </div>
-                <button onClick={() => dismissNotif(n.id)}><X className="w-4 h-4 text-gray-400" /></button>
+                <button onClick={() => dismissNotif(n.id)}><X className="w-4 h-4 text-muted-foreground" /></button>
               </div>
             ))}
           </div>
@@ -956,7 +965,7 @@ export default function GuidedHariIni({ user }) {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <MapPin className="w-4 h-4 text-green-700" />
-              <span className="font-semibold text-gray-800">Absensi</span>
+              <span className="font-semibold text-foreground">Absensi</span>
               {hasCheckedOut && (
                 <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">✓ Selesai</span>
               )}
@@ -964,7 +973,7 @@ export default function GuidedHariIni({ user }) {
 
             {!hasCheckedIn && (
               <div>
-                <p className="text-sm text-gray-500 mb-3">Belum mulai kerja hari ini</p>
+                <p className="text-sm text-muted-foreground mb-3">Belum mulai kerja hari ini</p>
                 <button
                   onClick={startCheckIn}
                   disabled={loading}
@@ -972,14 +981,14 @@ export default function GuidedHariIni({ user }) {
                 >
                   {loading ? "Tunggu sebentar..." : "📸 CHECK IN — Selfie & Mulai Kerja"}
                 </button>
-                {farmConfigured && <p className="text-xs text-center text-gray-400 mt-2 flex items-center justify-center gap-1"><MapPin className="w-3 h-3" /> GPS diperlukan</p>}
+                {farmConfigured && <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1"><MapPin className="w-3 h-3" /> GPS diperlukan</p>}
               </div>
             )}
 
             {hasCheckedIn && !hasCheckedOut && (
               <div>
                 <p className="text-sm text-green-700 font-medium mb-1">✓ Masuk jam {attendance.check_in}</p>
-                <p className="text-xs text-gray-500 mb-3">Sudah bekerja {workDuration(attendance.check_in)}</p>
+                <p className="text-xs text-muted-foreground mb-3">Sudah bekerja {workDuration(attendance.check_in)}</p>
                 <button
                   onClick={startCheckOut}
                   disabled={loading}
@@ -987,7 +996,7 @@ export default function GuidedHariIni({ user }) {
                 >
                   {loading ? "Tunggu sebentar..." : "📸 CHECK OUT — Selfie & Selesai Kerja"}
                 </button>
-                {farmConfigured && <p className="text-xs text-center text-gray-400 mt-2">GPS diperlukan untuk check out</p>}
+                {farmConfigured && <p className="text-xs text-center text-muted-foreground mt-2">GPS diperlukan untuk check out</p>}
               </div>
             )}
 
@@ -1026,17 +1035,17 @@ export default function GuidedHariIni({ user }) {
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-base">🏠</span>
-                <span className="font-semibold text-gray-800">Kebersihan Kandang</span>
+                <span className="font-semibold text-foreground">Kebersihan Kandang</span>
                 {requirePhotoKebersihan && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600"><Camera className="w-3 h-3" /> Wajib Foto</span>
                 )}
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda 60 dtk</span>
               </div>
-              <span className="text-xs text-gray-500">{settledKandangCount}/{KANDANG_LIST.length} selesai</span>
+              <span className="text-xs text-muted-foreground">{settledKandangCount}/{KANDANG_LIST.length} selesai</span>
             </div>
 
             {/* Progress bar */}
-            <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
+            <div className="w-full h-1.5 bg-muted rounded-full mb-3 overflow-hidden">
               <div className="h-full bg-green-500 rounded-full transition-all duration-300"
                 style={{ width: `${(settledKandangCount / KANDANG_LIST.length) * 100}%` }} />
             </div>
@@ -1055,7 +1064,7 @@ export default function GuidedHariIni({ user }) {
                 <p className={`text-xs font-semibold ${kandangNotice.tone === "error" ? "text-red-700" : "text-blue-700"}`}>{kandangNotice.text}</p>
               </div>
             )}
-            <p className="text-xs text-gray-400 mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>
+            <p className="text-xs text-muted-foreground mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>
 
             <div className="grid grid-cols-5 gap-2">
               {KANDANG_LIST.map(k => {
@@ -1070,9 +1079,9 @@ export default function GuidedHariIni({ user }) {
                     title={other ? `Sudah dikerjakan ${other.done_by}${other.done_at ? ` jam ${other.done_at}` : ""}` : (done ? "Sudah kamu kerjakan" : "Tap jika sudah dibersihkan")}
                     className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all ${
                       done ? "bg-green-500 text-white shadow-md active:scale-90"
-                      : other ? "bg-gray-200 text-gray-500 border border-gray-300"
+                      : other ? "bg-gray-200 text-muted-foreground border border-border"
                       : isPending ? "bg-amber-100 text-amber-600 animate-pulse active:scale-90"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-90"
+                      : "bg-muted text-muted-foreground hover:bg-gray-200 active:scale-90"
                     }`}
                   >
                     {(done || other) ? <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" /> : null}
@@ -1105,7 +1114,7 @@ export default function GuidedHariIni({ user }) {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Heart className="w-4 h-4 text-rose-500" />
-              <span className="font-semibold text-gray-800">Kondisi Kura Hari Ini</span>
+              <span className="font-semibold text-foreground">Kondisi Kura Hari Ini</span>
             </div>
 
             {kondisiOk === null && sakitReports.length === 0 ? (
@@ -1126,13 +1135,13 @@ export default function GuidedHariIni({ user }) {
                     <span className="font-bold text-red-700 text-sm">Ada yang Sakit</span>
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 text-center mt-2">💡 Kura tidak mau makan atau gerak lambat? Pilih "Ada yang Sakit"</p>
+                <p className="text-xs text-muted-foreground text-center mt-2">💡 Kura tidak mau makan atau gerak lambat? Pilih "Ada yang Sakit"</p>
               </>
             ) : kondisiOk === true && sakitReports.length === 0 ? (
               <div className="flex items-center gap-3 p-3 bg-green-100 rounded-xl">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
                 <p className="font-semibold text-green-800">Kondisi normal hari ini ✓</p>
-                <button onClick={() => setKondisiOk(null)} className="ml-auto text-xs text-gray-400 underline">Ubah</button>
+                <button onClick={() => setKondisiOk(null)} className="ml-auto text-xs text-muted-foreground underline">Ubah</button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -1163,10 +1172,10 @@ export default function GuidedHariIni({ user }) {
 
             {/* Form laporan sakit — inline */}
             {showSakitForm && (
-              <div className="mt-4 space-y-3 p-4 bg-white rounded-2xl border border-red-200">
+              <div className="mt-4 space-y-3 p-4 bg-card rounded-2xl border border-red-200">
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold text-gray-700 text-sm">Laporan Kura Sakit</p>
-                  <button onClick={() => setShowSakitForm(false)}><X className="w-4 h-4 text-gray-400" /></button>
+                  <p className="font-semibold text-foreground text-sm">Laporan Kura Sakit</p>
+                  <button onClick={() => setShowSakitForm(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
                 </div>
                 <TortoiseSearchSelect
                   tortoises={tortoises}
@@ -1203,7 +1212,7 @@ export default function GuidedHariIni({ user }) {
                             return { ...prev, diagnosis: next, severity: nextSeverity, treatment: nextTreatment };
                           })}
                           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                            sel ? "text-white border-[#1B4332]" : "bg-gray-50 border-gray-200 text-gray-600"
+                            sel ? "text-white border-[#1B4332]" : "bg-muted border-border text-muted-foreground"
                           }`}
                           style={sel ? { backgroundColor: "#1B4332" } : {}}
                         >
@@ -1223,7 +1232,7 @@ export default function GuidedHariIni({ user }) {
                         className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                           sakitForm.severity === s.value
                             ? "text-white border-[#1B4332]"
-                            : "bg-gray-50 border-gray-200 text-gray-600"
+                            : "bg-muted border-border text-muted-foreground"
                         }`}
                         style={sakitForm.severity === s.value ? { backgroundColor: "#1B4332" } : {}}
                       >
@@ -1241,9 +1250,9 @@ export default function GuidedHariIni({ user }) {
                     value={sakitForm.treatment}
                     onChange={e => setSakitForm(prev => ({ ...prev, treatment: e.target.value }))}
                     placeholder="Apa yang dilakukan untuk kura ini? Pilih diagnosis dulu, saran perawatan akan terisi otomatis."
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
                   />
-                  <p className="text-[11px] text-gray-500 mt-1">
+                  <p className="text-[11px] text-muted-foreground mt-1">
                     Ini yang akan muncul di layar tim setiap hari sampai kura dinyatakan sembuh.
                   </p>
                 </div>
@@ -1252,7 +1261,7 @@ export default function GuidedHariIni({ user }) {
                   value={sakitForm.description}
                   onChange={e => setSakitForm(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Catatan tambahan (opsional)..."
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
+                  className="w-full border border-border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
                 />
                 <p className="text-xs text-green-600 font-semibold text-center">+15 poin untuk laporan ini</p>
                 <button
@@ -1270,23 +1279,23 @@ export default function GuidedHariIni({ user }) {
         </WidgetErrorBoundary>
 
         {/* ══ WIDGET 5: AKSI CEPAT ═══════════════════════════════ */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-sm font-semibold text-gray-700 mb-3">Aksi Cepat</p>
+        <div className="bg-card rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-sm font-semibold text-foreground mb-3">Aksi Cepat</p>
           <div className="grid grid-cols-3 gap-2">
-            <a href="/warehouse" className="flex flex-col items-center gap-1.5 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 active:scale-95 transition-all">
-              <Package className="w-5 h-5 text-gray-600" />
-              <span className="text-xs font-medium text-gray-700 text-center">Ambil Stok</span>
+            <a href="/warehouse" className="flex flex-col items-center gap-1.5 p-3 bg-muted rounded-xl hover:bg-muted active:scale-95 transition-all">
+              <Package className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs font-medium text-foreground text-center">Ambil Stok</span>
             </a>
             <button
               onClick={() => setShowCatatan(v => !v)}
-              className="flex flex-col items-center gap-1.5 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
+              className="flex flex-col items-center gap-1.5 p-3 bg-muted rounded-xl hover:bg-muted active:scale-95 transition-all"
             >
-              <ClipboardList className="w-5 h-5 text-gray-600" />
-              <span className="text-xs font-medium text-gray-700 text-center">Catatan</span>
+              <ClipboardList className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs font-medium text-foreground text-center">Catatan</span>
             </button>
-            <a href="/health" className="flex flex-col items-center gap-1.5 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 active:scale-95 transition-all">
-              <Heart className="w-5 h-5 text-gray-600" />
-              <span className="text-xs font-medium text-gray-700 text-center">Kesehatan</span>
+            <a href="/health" className="flex flex-col items-center gap-1.5 p-3 bg-muted rounded-xl hover:bg-muted active:scale-95 transition-all">
+              <Heart className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs font-medium text-foreground text-center">Kesehatan</span>
             </a>
           </div>
 
@@ -1297,7 +1306,7 @@ export default function GuidedHariIni({ user }) {
                 value={catatan}
                 onChange={e => setCatatan(e.target.value)}
                 placeholder="Tulis catatan hari ini..."
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
+                className="w-full border border-border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-400 outline-none"
               />
               <button
                 onClick={handleSimpanCatatan}
@@ -1323,7 +1332,7 @@ export default function GuidedHariIni({ user }) {
         {attendance?.selfie_checkin_url && (
           <div className="flex items-center gap-2 px-1">
             <img src={attendance.selfie_checkin_url} alt="Selfie masuk" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
-            <span className="text-xs text-gray-400">Selfie masuk {attendance.check_in}</span>
+            <span className="text-xs text-muted-foreground">Selfie masuk {attendance.check_in}</span>
           </div>
         )}
 
@@ -1332,11 +1341,11 @@ export default function GuidedHariIni({ user }) {
             <p className="font-bold text-green-800 text-base">🏆 Ringkasan Hari Ini</p>
             <div className="space-y-1.5">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Kandang dibersihkan</span>
+                <span className="text-muted-foreground">Kandang dibersihkan</span>
                 <span className="font-semibold">{kandangSaved.size} kandang</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Kondisi kura</span>
+                <span className="text-muted-foreground">Kondisi kura</span>
                 <span className={`font-semibold ${sakitReports.length > 0 ? "text-orange-600" : "text-green-700"}`}>
                   {sakitReports.length > 0 ? `${sakitReports.length} dilaporkan` : kondisiOk === true ? "Semua baik ✓" : "Belum dicek"}
                 </span>
@@ -1469,9 +1478,9 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="text-base">💊</span>
-            <span className="font-semibold text-gray-800">Suplemen & Vitamin Hari Ini</span>
+            <span className="font-semibold text-foreground">Suplemen & Vitamin Hari Ini</span>
           </div>
-          <span className="text-xs text-gray-500">{done.size}/{items.length}</span>
+          <span className="text-xs text-muted-foreground">{done.size}/{items.length}</span>
         </div>
         {allDone ? (
           <p className="text-sm font-semibold text-green-700">✓ Semua suplemen hari ini selesai</p>
@@ -1486,19 +1495,19 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
                 <div
                   key={item.id}
                   className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                    isDone ? "bg-green-50 border-green-400" : isSkipped ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200 hover:border-yellow-400"
+                    isDone ? "bg-green-50 border-green-400" : isSkipped ? "bg-muted border-border" : "bg-card border-border hover:border-yellow-400"
                   }`}
                 >
                   <span className="text-xl flex-shrink-0">💊</span>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium text-gray-800 ${isSkipped ? "line-through text-gray-400" : ""}`}>{item.title}</p>
+                    <p className={`text-sm font-medium text-foreground ${isSkipped ? "line-through text-muted-foreground" : ""}`}>{item.title}</p>
                     {stockLow && !isDone && !isSkipped && (
                       <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-0.5">
                         <AlertTriangle className="w-3 h-3" /> ⚠️ Stok belum tersedia
                       </p>
                     )}
                     {isSkipped && (
-                      <p className="text-[11px] text-gray-500 mt-0.5">⏭️ Dilewati - stok kosong</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">⏭️ Dilewati - stok kosong</p>
                     )}
                   </div>
                   {isDone && <span className="text-xs text-green-600 font-bold flex-shrink-0">+5</span>}
@@ -1508,7 +1517,7 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
                         <button
                           onClick={() => handleSkip(item)}
                           disabled={processingId === item.id}
-                          className="text-[10px] font-bold px-2 py-1 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+                          className="text-[10px] font-bold px-2 py-1 rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-50"
                         >
                           Dilewati
                         </button>
@@ -1517,7 +1526,7 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
                         onClick={() => handleToggle(item)}
                         disabled={processingId === item.id}
                         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          stockLow ? "border-gray-300" : "border-gray-300 hover:border-yellow-400"
+                          stockLow ? "border-border" : "border-border hover:border-yellow-400"
                         } disabled:opacity-50`}
                         title={stockLow ? "Tetap centang dengan keterangan" : "Tandai selesai"}
                       />

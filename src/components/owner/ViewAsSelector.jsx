@@ -156,7 +156,7 @@ export default function ViewAsSelector({ open, onClose }) {
               type="checkbox"
               checked={testSave}
               onChange={(e) => setTestSave(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              className="mt-0.5 w-4 h-4 rounded border-border text-amber-600 focus:ring-amber-500"
             />
             <div>
               <p className="text-xs font-semibold text-amber-700 flex items-center gap-1">🧪 Mode uji — simpan data sebagai test</p>

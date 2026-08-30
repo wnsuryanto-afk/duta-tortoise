@@ -30,7 +30,7 @@ const CATEGORIES = [
   { value: "suplemen", label: "🧪 Suplemen", color: "bg-purple-100 text-purple-700" },
   { value: "alat_kerja", label: "🔧 Alat Kerja", color: "bg-blue-100 text-blue-700" },
   { value: "peralatan", label: "⚙️ Peralatan", color: "bg-cyan-100 text-cyan-700" },
-  { value: "lainnya", label: "📦 Lainnya", color: "bg-gray-100 text-gray-700" },
+  { value: "lainnya", label: "📦 Lainnya", color: "bg-muted text-foreground" },
 ];
 
 function StockBadge({ item }) {
@@ -44,7 +44,7 @@ function ConditionBadge({ item }) {
   const config = {
     rusak_ringan: { label: "⚠️ Rusak ringan", cls: "bg-orange-100 text-orange-700 border-orange-200" },
     rusak_berat: { label: "🔴 Rusak berat", cls: "bg-red-100 text-red-700 border-red-200" },
-    hilang: { label: "❓ Hilang", cls: "bg-gray-200 text-gray-700 border-gray-300" },
+    hilang: { label: "❓ Hilang", cls: "bg-gray-200 text-foreground border-border" },
   };
   const c = config[item.condition] || config.rusak_ringan;
   return <Badge className={`text-[10px] ${c.cls}`}>{c.label}</Badge>;

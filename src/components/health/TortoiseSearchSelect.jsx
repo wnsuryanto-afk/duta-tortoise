@@ -100,7 +100,7 @@ export default function TortoiseSearchSelect({
 
   if (loading) {
     return (
-      <div className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm text-gray-400 flex items-center gap-2">
+      <div className="w-full border border-border rounded-xl px-3 py-3 text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin" /> Memuat daftar kura...
       </div>
     );
@@ -127,40 +127,40 @@ export default function TortoiseSearchSelect({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`w-full border border-gray-300 rounded-xl px-3 py-3 text-sm text-left flex items-center justify-between focus:ring-2 ${ring} outline-none`}
+          className={`w-full border border-border rounded-xl px-3 py-3 text-sm text-left flex items-center justify-between focus:ring-2 ${ring} outline-none`}
         >
-          <span className={selected ? "text-gray-800" : "text-gray-400"}>
+          <span className={selected ? "text-foreground" : "text-muted-foreground"}>
             {selected
               ? `${selected.code || selected.name} — kandang ${selected.enclosure || "?"}`
               : `-- ${placeholder} --`}
           </span>
-          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         </button>
       ) : (
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ketik kode/nama kura (cth: C2)..."
-            className={`w-full border border-gray-300 rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-2 ${ring} outline-none`}
+            className={`w-full border border-border rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-2 ${ring} outline-none`}
           />
         </div>
       )}
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg flex flex-col max-h-72">
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-card shadow-lg flex flex-col max-h-72">
           {/* Saringan cepat per-kandang (form pembiakan) — tetap di atas saat daftar digulir */}
           {showKandangFilter && kandangOptions.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 p-2 border-b border-gray-100 bg-gray-50/80">
+            <div className="flex flex-wrap gap-1.5 p-2 border-b border-gray-100 bg-muted/80">
               <button
                 type="button"
                 onClick={() => setKandang("")}
                 className={`text-[11px] px-2 py-1 rounded-full border font-medium transition-colors ${
                   kandang === ""
                     ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                    : "bg-card border-border text-muted-foreground hover:bg-muted"
                 }`}
               >
                 Semua
@@ -173,7 +173,7 @@ export default function TortoiseSearchSelect({
                   className={`text-[11px] px-2 py-1 rounded-full border font-medium transition-colors ${
                     kandang === k
                       ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                      : "bg-card border-border text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {k}
@@ -185,7 +185,7 @@ export default function TortoiseSearchSelect({
           {/* Daftar — dapat digulir, kotak ketik tetap di atas */}
           <div className="overflow-y-auto flex-1">
             {filtered.length === 0 ? (
-              <div className="p-4 text-sm text-gray-500 text-center">
+              <div className="p-4 text-sm text-muted-foreground text-center">
                 {query.trim()
                   ? `Kura tidak ditemukan untuk "${query.trim()}"`
                   : "Tidak ada kura yang cocok"}
@@ -200,9 +200,9 @@ export default function TortoiseSearchSelect({
                     onClick={() => handleSelect(t.id)}
                     className="w-full text-left px-3 py-2.5 hover:bg-green-50 border-b border-gray-50 last:border-0 min-h-[44px]"
                   >
-                    <p className="text-sm text-gray-800">
+                    <p className="text-sm text-foreground">
                       <span className="font-mono font-semibold">{t.code || t.name}</span>
-                      <span className="text-gray-500">
+                      <span className="text-muted-foreground">
                         {" "}— kandang {t.enclosure || "?"} — {GENDER_LABEL[t.gender] || t.gender || "?"}
                       </span>
                     </p>

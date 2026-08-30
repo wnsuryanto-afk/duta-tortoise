@@ -45,7 +45,7 @@ function ExpiredBadge({ date, item, onSetExpired }) {
   if (!date) {
     return (
       <button onClick={() => onSetExpired(item)} title="Set tanggal kadaluarsa"
-        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 border border-dashed border-gray-300 hover:bg-gray-200 transition-colors whitespace-nowrap">
+        className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-dashed border-border hover:bg-gray-200 transition-colors whitespace-nowrap">
         ⚪ Set Exp
       </button>
     );
@@ -174,7 +174,7 @@ function ItemDetailDialog({ item, onClose, onEdit, onUploadPhoto, canEdit }) {
             : <div className="w-24 h-24 rounded-xl border-2 border-dashed border-border bg-muted/50 flex items-center justify-center text-4xl">{catIcon(item)}</div>
           }
           {canEdit && (
-            <button onClick={() => onUploadPhoto(item)} className="absolute -bottom-2 -right-2 bg-white border border-border rounded-full p-1.5 shadow-sm hover:bg-muted transition-colors">
+            <button onClick={() => onUploadPhoto(item)} className="absolute -bottom-2 -right-2 bg-card border border-border rounded-full p-1.5 shadow-sm hover:bg-muted transition-colors">
               <Camera className="w-3.5 h-3.5 text-primary" />
             </button>
           )}

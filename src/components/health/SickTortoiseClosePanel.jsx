@@ -10,8 +10,7 @@
  */
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { perubahanSembuh } from "@/lib/statusKura";
+import { tandaiSembuh } from "@/lib/kesehatanKura";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { format } from "date-fns";
 import { Heart, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -31,15 +30,15 @@ export default function SickTortoiseClosePanel({ user }) {
     if (sembuhLoading) return;
     setSembuhLoading(t.tortoise_id);
     try {
-      await base44.entities.HealthRecord.create({
-        tortoise_id: t.tortoise_id,
-        tortoise_name: t.tortoise_name,
-        date: today,
-        type: "sembuh",
-        source: "manual",
-        description: `Ditandai sembuh oleh ${user?.full_name || user?.email || "pengelola"} dari halaman Rekam Kesehatan.`,
+      // Menutup kasus, mencatat riwayat, dan mengembalikan status — ketiganya
+      // sekaligus. Sebelumnya hanya dua yang terakhir dijalankan, sehingga
+      // lencana merah SAKIT tetap menyala walau kuranya sudah dinyatakan sembuh.
+      await tandaiSembuh({
+        kura: t,
+        user,
+        tanggal: today,
+        asal: "halaman Rekam Kesehatan",
       });
-      await base44.entities.Tortoise.update(t.tortoise_id, perubahanSembuh(t, today));
       qc.invalidateQueries({ queryKey: ["sick-tortoises-close-panel"] });
       qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
       qc.invalidateQueries({ queryKey: ["health-records"] });
@@ -66,7 +65,7 @@ export default function SickTortoiseClosePanel({ user }) {
           ? Math.max(0, Math.round((new Date(today) - new Date(h.since)) / 86400000))
           : null;
         return (
-          <div key={h.id} className="p-3 bg-white rounded-xl border border-red-200 space-y-2">
+          <div key={h.id} className="p-3 bg-card rounded-xl border border-red-200 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-red-800">

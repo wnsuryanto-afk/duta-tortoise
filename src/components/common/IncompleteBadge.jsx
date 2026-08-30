@@ -34,7 +34,7 @@ export default function IncompleteBadge({ missingFields = [], onEdit }) {
 
       {/* Tooltip */}
       {show && !onEdit && (
-        <div className="absolute z-50 bottom-full left-0 mb-1 w-52 bg-white border border-amber-200 rounded-xl shadow-lg p-2.5 text-xs">
+        <div className="absolute z-50 bottom-full left-0 mb-1 w-52 bg-card border border-amber-200 rounded-xl shadow-lg p-2.5 text-xs">
           <p className="font-semibold text-amber-800 mb-1.5">Field belum diisi:</p>
           <ul className="space-y-0.5">
             {missingFields.map(f => (

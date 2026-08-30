@@ -106,7 +106,7 @@ export default function BarcodeModal({ open, onClose, item }) {
         </DialogHeader>
         <div className="space-y-4 py-2">
           {/* Preview label 5×3cm */}
-          <div className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-4 bg-white mx-auto" style={{ width: "200px" }}>
+          <div className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-4 bg-card mx-auto" style={{ width: "200px" }}>
             <p className="text-xs font-bold text-center mb-1 truncate">{item.name}</p>
             <BarcodeCanvas value={item.code || item.name} id="barcode-main-canvas" />
             <p className="text-[10px] font-mono text-center text-muted-foreground mt-1">

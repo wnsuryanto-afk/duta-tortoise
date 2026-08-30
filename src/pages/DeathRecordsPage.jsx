@@ -39,8 +39,8 @@ function DeathCard({ tortoise, onClick }) {
           {primaryPhoto ? (
             <img src={primaryPhoto} alt={tortoise.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border grayscale" />
           ) : (
-            <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <Skull className="w-7 h-7 text-gray-400" />
+            <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+              <Skull className="w-7 h-7 text-muted-foreground" />
             </div>
           )}
           <div className="flex-1 min-w-0 space-y-1">
@@ -63,7 +63,7 @@ function DeathCard({ tortoise, onClick }) {
               <p className="text-xs text-muted-foreground">Kandang terakhir: {tortoise.enclosure}</p>
             )}
             {tortoise.death_notes && (
-              <p className="text-xs text-gray-500 line-clamp-2 italic">"{tortoise.death_notes}"</p>
+              <p className="text-xs text-muted-foreground line-clamp-2 italic">"{tortoise.death_notes}"</p>
             )}
           </div>
         </div>
@@ -341,7 +341,7 @@ export default function DeathRecordsPage() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Skull className="w-6 h-6 text-gray-600" /> Catatan Kematian
+            <Skull className="w-6 h-6 text-muted-foreground" /> Catatan Kematian
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {statsThisYear} kura mati tahun ini · {statsThisMonth} bulan ini

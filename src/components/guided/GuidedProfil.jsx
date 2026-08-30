@@ -47,56 +47,56 @@ export default function GuidedProfil({ user, onSwitchToNormal }) {
         <div className="w-20 h-20 rounded-full bg-green-100 border-4 border-green-300 flex items-center justify-center mb-3">
           <span className="text-3xl font-bold text-green-700">{initials}</span>
         </div>
-        <h1 className="text-xl font-bold text-gray-800">{user?.full_name || user?.email}</h1>
+        <h1 className="text-xl font-bold text-foreground">{user?.full_name || user?.email}</h1>
         <span className="mt-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
           {ROLE_LABELS[user?.role] || user?.role}
         </span>
-        <p className="text-xs text-gray-400 mt-1">{user?.email}</p>
+        <p className="text-xs text-muted-foreground mt-1">{user?.email}</p>
       </div>
 
       {/* Slip gaji bulan ini */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-        <p className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <div className="bg-card rounded-2xl p-4 border border-gray-100 shadow-sm">
+        <p className="font-semibold text-foreground mb-3 flex items-center gap-2">
           💰 Gaji {format(new Date(), "MMMM yyyy", { locale: id })}
         </p>
         {slip ? (
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Gaji Pokok</span>
-              <span className="font-semibold text-gray-800">{formatRp(slip.base_salary)}</span>
+              <span className="text-sm text-muted-foreground">Gaji Pokok</span>
+              <span className="font-semibold text-foreground">{formatRp(slip.base_salary)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Bonus Poin</span>
+              <span className="text-sm text-muted-foreground">Bonus Poin</span>
               <span className="font-semibold text-green-700">+{formatRp(slip.poin_bonus)}</span>
             </div>
             {slip.absent_deduction > 0 && (
               <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Potongan Absen</span>
+                <span className="text-sm text-muted-foreground">Potongan Absen</span>
                 <span className="font-semibold text-red-600">-{formatRp(slip.absent_deduction)}</span>
               </div>
             )}
             <div className="border-t pt-2 flex justify-between">
-              <span className="font-bold text-gray-700">Take Home Pay</span>
+              <span className="font-bold text-foreground">Take Home Pay</span>
               <span className="font-bold text-lg text-green-700">{formatRp(slip.net_total)}</span>
             </div>
             <div className="flex justify-center mt-1">
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                 slip.status === "paid" ? "bg-green-100 text-green-700" :
                 slip.status === "approved" ? "bg-blue-100 text-blue-700" :
-                "bg-gray-100 text-gray-500"
+                "bg-muted text-muted-foreground"
               }`}>
                 {slip.status === "paid" ? "✓ Sudah dibayar" : slip.status === "approved" ? "Disetujui" : "Draft"}
               </span>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-gray-400 text-center py-2">Slip gaji belum dibuat bulan ini</p>
+          <p className="text-sm text-muted-foreground text-center py-2">Slip gaji belum dibuat bulan ini</p>
         )}
       </div>
 
       {/* Absensi bulan ini */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-        <p className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <div className="bg-card rounded-2xl p-4 border border-gray-100 shadow-sm">
+        <p className="font-semibold text-foreground mb-3 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-blue-500" />
           Absensi Bulan Ini
         </p>
@@ -122,12 +122,12 @@ export default function GuidedProfil({ user, onSwitchToNormal }) {
       {/* Switch ke tampilan normal */}
       <button
         onClick={onSwitchToNormal}
-        className="w-full flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center gap-3 p-4 bg-card rounded-2xl border border-gray-100 shadow-sm hover:bg-muted transition-colors"
       >
         <ToggleRight className="w-5 h-5 text-blue-500" />
         <div className="text-left flex-1">
-          <p className="font-semibold text-gray-700">Tampilan Normal</p>
-          <p className="text-xs text-gray-400">Beralih ke menu lengkap</p>
+          <p className="font-semibold text-foreground">Tampilan Normal</p>
+          <p className="text-xs text-muted-foreground">Beralih ke menu lengkap</p>
         </div>
         <span className="text-xs text-blue-500 font-medium">Aktifkan →</span>
       </button>

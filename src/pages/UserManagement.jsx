@@ -252,7 +252,7 @@ export default function UserManagement() {
                     <Badge variant="outline" className={`text-xs hidden sm:inline-flex ${isKicked ? ROLE_COLORS.kicked : (ROLE_COLORS[u.role] || ROLE_COLORS.keeper)}`}>
                       {isKicked ? "Nonaktif" : (ROLE_LABELS[u.role] || "Keeper")}
                     </Badge>
-                    <Badge variant="outline" className={`text-xs ${isKicked ? "bg-gray-100 text-gray-500 border-gray-200" : "bg-green-100 text-green-700 border-green-200"}`}>
+                    <Badge variant="outline" className={`text-xs ${isKicked ? "bg-muted text-muted-foreground border-border" : "bg-green-100 text-green-700 border-green-200"}`}>
                       {isKicked ? "⚫" : "🟢"}
                     </Badge>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />

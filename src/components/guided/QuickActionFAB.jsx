@@ -25,10 +25,10 @@ export default function QuickActionFAB({ onLaporSakit, onCatatPakan, onTugasHari
 
       {open && (
         <div className="fixed inset-0 z-[60] bg-black/50 flex items-end justify-center p-4" onClick={() => setOpen(false)}>
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl overflow-hidden animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
-              <p className="font-bold text-gray-800">Aksi Cepat</p>
-              <button onClick={() => setOpen(false)}><X className="w-5 h-5 text-gray-400" /></button>
+              <p className="font-bold text-foreground">Aksi Cepat</p>
+              <button onClick={() => setOpen(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
             </div>
             <div className="p-4 space-y-3">
               <button

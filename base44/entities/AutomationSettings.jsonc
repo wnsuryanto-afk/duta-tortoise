@@ -1,0 +1,288 @@
+{
+  "name": "AutomationSettings",
+  "type": "object",
+  "description": "Saklar dan ambang batas untuk semua otomatisasi baru. Satu record saja (setting_key = 'main'). SEMUA saklar default MATI \u2014 tidak ada perilaku yang berubah sampai owner menyalakannya.",
+  "properties": {
+    "setting_key": {
+      "type": "string",
+      "default": "main",
+      "description": "Key unik (selalu 'main') untuk pola single-record"
+    },
+    "auto_approve_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A1 \u2014 Setujui poin checklist otomatis bila tidak ada tanda mencurigakan"
+    },
+    "auto_approve_max_points": {
+      "type": "number",
+      "default": 150,
+      "description": "A1 \u2014 Di atas jumlah poin ini, checklist selalu masuk antrian manusia"
+    },
+    "auto_approve_tunda_menit": {
+      "type": "number",
+      "default": 60,
+      "description": "A1 \u2014 Tunggu sekian menit setelah checklist dikirim sebelum disetujui otomatis, supaya owner sempat melihat lebih dulu"
+    },
+    "auto_approve_wajib_foto_lolos_ai": {
+      "type": "boolean",
+      "default": true,
+      "description": "A1 \u2014 Tahan checklist bila ada foto yang ditolak AI atau pemeriksaan AI gagal"
+    },
+    "auto_approve_tahan_tanpa_foto": {
+      "type": "boolean",
+      "default": true,
+      "description": "A1 \u2014 Tahan checklist bila ada task wajib-foto yang dicentang tanpa foto"
+    },
+    "auto_attendance_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A3 \u2014 Isi absensi otomatis dari jam centang task pertama & terakhir"
+    },
+    "shift_start": {
+      "type": "string",
+      "default": "07:00",
+      "description": "A3 \u2014 Jam mulai shift (HH:mm WIB) untuk menghitung keterlambatan"
+    },
+    "shift_end": {
+      "type": "string",
+      "default": "16:00",
+      "description": "A3 \u2014 Jam selesai shift (HH:mm WIB) untuk menghitung lembur"
+    },
+    "eskalasi_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A4 \u2014 Pengingat bertingkat bila checklist belum masuk"
+    },
+    "eskalasi_jam_keeper": {
+      "type": "string",
+      "default": "10:00",
+      "description": "A4 \u2014 Jam WIB pengingat pertama ke karyawan sendiri"
+    },
+    "eskalasi_jam_kepala": {
+      "type": "string",
+      "default": "13:00",
+      "description": "A4 \u2014 Jam WIB pengingat kedua ke kepala feeder"
+    },
+    "eskalasi_jam_owner": {
+      "type": "string",
+      "default": "16:00",
+      "description": "A4 \u2014 Jam WIB pengingat terakhir ke owner"
+    },
+    "eskalasi_terakhir": {
+      "type": "string",
+      "description": "A4 \u2014 Penanda anti-dobel, format 'YYYY-MM-DD|level'"
+    },
+    "arsip_notif_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A15 \u2014 Arsipkan notifikasi lama secara otomatis"
+    },
+    "arsip_notif_umur_hari": {
+      "type": "number",
+      "default": 7,
+      "description": "A15 \u2014 Umur notifikasi (hari) sebelum diarsipkan"
+    },
+    "arsip_notif_terakhir": {
+      "type": "string",
+      "description": "A15 \u2014 Tanggal WIB terakhir arsip dijalankan"
+    },
+    "anomali_berat_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A11 \u2014 Deteksi kura yang turun berat atau berhenti tumbuh"
+    },
+    "anomali_turun_persen": {
+      "type": "number",
+      "default": 5,
+      "description": "A11 \u2014 Penurunan berat (persen) yang dianggap tidak wajar"
+    },
+    "anomali_stagnan_hari": {
+      "type": "number",
+      "default": 90,
+      "description": "A11 \u2014 Berapa hari berat boleh tidak naik sebelum ditandai stagnan"
+    },
+    "anomali_terakhir": {
+      "type": "string",
+      "description": "A11 \u2014 Tanggal WIB terakhir pemeriksaan dijalankan"
+    },
+    "inkubator_reminder_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A10 \u2014 Pengingat catat suhu & kelembapan hanya saat ada telur inkubasi"
+    },
+    "inkubator_jam": {
+      "type": "string",
+      "default": "08:00",
+      "description": "A10 \u2014 Jam WIB pengingat inkubator"
+    },
+    "inkubator_terakhir": {
+      "type": "string",
+      "description": "A10 \u2014 Tanggal WIB terakhir pengingat dikirim"
+    },
+    "higiene_data_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A12 \u2014 Laporan kebersihan data mingguan ke admin"
+    },
+    "higiene_hari": {
+      "type": "number",
+      "default": 1,
+      "description": "A12 \u2014 Hari kirim (0=Minggu, 1=Senin, ... 6=Sabtu)"
+    },
+    "higiene_terakhir": {
+      "type": "string",
+      "description": "A12 \u2014 Tanggal WIB terakhir laporan dikirim"
+    },
+    "laporan_biaya_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A13 \u2014 Laporan biaya per ekor otomatis tiap awal bulan"
+    },
+    "laporan_biaya_tanggal": {
+      "type": "number",
+      "default": 1,
+      "description": "A13 \u2014 Tanggal pengiriman tiap bulan"
+    },
+    "laporan_biaya_terakhir": {
+      "type": "string",
+      "description": "A13 \u2014 Bulan terakhir laporan dikirim (YYYY-MM)"
+    },
+    "ringkasan_penyimpangan_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A14 \u2014 Ganti ringkasan owner dengan laporan khusus penyimpangan"
+    },
+    "ringkasan_penyimpangan_jam": {
+      "type": "string",
+      "default": "17:00",
+      "description": "A14 \u2014 Jam WIB kirim laporan penyimpangan"
+    },
+    "ringkasan_penyimpangan_terakhir": {
+      "type": "string",
+      "description": "A14 \u2014 Tanggal WIB terakhir laporan penyimpangan dikirim"
+    },
+    "ringkasan_penyimpangan_diam_bila_aman": {
+      "type": "boolean",
+      "default": true,
+      "description": "A14 \u2014 Tidak mengirim apa pun bila tidak ada penyimpangan"
+    },
+    "kunci_sop_stok_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A9 \u2014 Tandai task yang bahannya habis sebagai tidak bisa dikerjakan"
+    },
+    "kunci_sop_terakhir": {
+      "type": "string",
+      "description": "A9 \u2014 Tanggal WIB terakhir pemeriksaan bahan dijalankan"
+    },
+    "potong_stok_pakan_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A6 \u2014 Kurangi stok pakan otomatis saat task pakan dicentang"
+    },
+    "belanja_otomatis_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A7 \u2014 Buat item daftar belanja otomatis saat sisa stok menipis"
+    },
+    "belanja_ambang_hari": {
+      "type": "number",
+      "default": 7,
+      "description": "A7 \u2014 Sisa berapa hari sebelum item masuk daftar belanja"
+    },
+    "belanja_terakhir": {
+      "type": "string",
+      "description": "A7 \u2014 Tanggal WIB terakhir daftar belanja otomatis dibuat"
+    },
+    "kepala_feeder_digital_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C1 \u2014 Perintah kerja pagi disusun AI dari keadaan kemarin, menggantikan template statis"
+    },
+    "kepala_feeder_digital_jam": {
+      "type": "string",
+      "default": "06:45",
+      "description": "C1 \u2014 Jam WIB kirim perintah kerja pagi (sebelum ringkasan pagi biasa)"
+    },
+    "kepala_feeder_digital_terakhir": {
+      "type": "string",
+      "description": "C1 \u2014 Tanggal WIB terakhir perintah kerja dikirim"
+    },
+    "deteksi_penyakit_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C4 \u2014 Periksa foto rutin untuk tanda penyakit (shell rot, piramiding, mata bengkak)"
+    },
+    "deteksi_penyakit_maks_foto": {
+      "type": "number",
+      "default": 12,
+      "description": "C4 \u2014 Batas foto yang diperiksa per hari, untuk menahan biaya AI"
+    },
+    "deteksi_penyakit_terakhir": {
+      "type": "string",
+      "description": "C4 \u2014 Tanggal WIB terakhir pemeriksaan dijalankan"
+    },
+    "estimasi_nilai_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C8 \u2014 Hitung perkiraan nilai jual tiap kura dari berat, umur, kelamin, dan harga jual nyata"
+    },
+    "estimasi_nilai_terakhir": {
+      "type": "string",
+      "description": "C8 \u2014 Bulan terakhir estimasi dihitung (YYYY-MM)"
+    },
+    "wa_masuk_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "C10 \u2014 Terima laporan lewat balasan WhatsApp (butuh webhook Fonnte diarahkan ke fungsi terimaPesanWhatsApp)"
+    },
+    "siapkan_slip_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A5 \u2014 Hitung dan siapkan angka slip mingguan, lalu ingatkan owner untuk menerbitkan"
+    },
+    "siapkan_slip_hari": {
+      "type": "number",
+      "default": 0,
+      "description": "A5 \u2014 Hari kirim pengingat (0=Minggu, mengikuti periode slip Minggu\u2013Sabtu)"
+    },
+    "siapkan_slip_terakhir": {
+      "type": "string",
+      "description": "A5 \u2014 Minggu terakhir pengingat dikirim (tanggal awal minggu)"
+    },
+    "task_kondisional_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "S10 \u2014 Nyalakan/matikan SOP task yang hanya berlaku saat keadaannya ada (cek karantina, catat inkubator)"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "Email user terakhir mengubah"
+    }
+  },
+  "required": [
+    "setting_key"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
+}

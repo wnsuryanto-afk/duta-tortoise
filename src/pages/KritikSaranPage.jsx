@@ -19,7 +19,7 @@ const STATUS_CONFIG = {
   baru:             { label: "Baru",            color: "bg-yellow-100 text-yellow-700" },
   dibaca:           { label: "Dibaca",           color: "bg-blue-100 text-blue-700" },
   ditindaklanjuti:  { label: "Ditindaklanjuti",  color: "bg-green-100 text-green-700" },
-  ditutup:          { label: "Ditutup",          color: "bg-gray-100 text-gray-600" },
+  ditutup:          { label: "Ditutup",          color: "bg-muted text-muted-foreground" },
 };
 
 const TYPE_CONFIG = {

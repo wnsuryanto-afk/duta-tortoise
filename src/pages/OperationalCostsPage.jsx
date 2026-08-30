@@ -78,7 +78,7 @@ const CATEGORIES = {
   lainnya: {
     label: "Lainnya",
     icon: TrendingDown,
-    color: "bg-gray-100 text-gray-700",
+    color: "bg-muted text-foreground",
     chartColor: "#6B7280",
     subCategories: [],
   },

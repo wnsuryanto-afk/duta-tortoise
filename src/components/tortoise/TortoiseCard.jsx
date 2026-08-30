@@ -56,12 +56,12 @@ const sourceLabel = {
   ltc:            { text: "⏳ LTC",  color: "bg-orange-100 text-orange-800 border-orange-300",title: "Long Term Captive" },
   import:         { text: "✈️ Import", color: "bg-blue-100 text-blue-800 border-blue-300",   title: "Import" },
   beli_lokal:     { text: "🛒 Lokal", color: "bg-teal-100 text-teal-800 border-teal-300",    title: "Beli Lokal" },
-  tidak_diketahui:{ text: "❓ Unknown", color: "bg-gray-100 text-gray-700 border-gray-300",  title: "Asal Tidak Diketahui" },
+  tidak_diketahui:{ text: "❓ Unknown", color: "bg-muted text-foreground border-border",  title: "Asal Tidak Diketahui" },
 };
 
 // Background warna untuk card berdasarkan kondisi
 function getCardBg(tortoise) {
-  if (tortoise.status === "mati") return "bg-gray-100 border-gray-400 opacity-80";
+  if (tortoise.status === "mati") return "bg-muted border-gray-400 opacity-80";
   // Dibaca lewat kedua penandanya agar kartu tidak tampak sehat sementara
   // penghitung "Sakit" di kepala halaman ikut menghitungnya.
   if (sedangSakit(tortoise)) return "bg-red-50 border-red-200";
@@ -99,7 +99,7 @@ const morphColors = {
   high_yellow: "bg-orange-100 text-orange-700",
   dark: "bg-slate-200 text-slate-700",
   paradox: "bg-indigo-100 text-indigo-700",
-  anerythristic: "bg-gray-200 text-gray-700",
+  anerythristic: "bg-gray-200 text-foreground",
   axanthic: "bg-blue-100 text-blue-700",
   melanistic: "bg-gray-900 text-gray-100",
   mix: "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700",
@@ -241,7 +241,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
             )}
             <IncompleteBadge missingFields={missingFields} onEdit={onEdit ? () => onEdit(tortoise) : undefined} />
             {tortoise.age_category === "baby" && photos.length === 0 && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600 border border-gray-300">
+              <span className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground border border-border">
                 📷 Belum ada foto
               </span>
             )}
@@ -293,7 +293,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700 text-white font-semibold">💀 Mati</span>
               {tortoise.death_date && <span className="text-[10px] text-muted-foreground">{format(new Date(tortoise.death_date), "d MMM yyyy", { locale: id })}</span>}
-              {tortoise.death_cause && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-700">{tortoise.death_cause.replace(/_/g, " ")}</span>}
+              {tortoise.death_cause && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-foreground">{tortoise.death_cause.replace(/_/g, " ")}</span>}
             </div>
           )}
           {/* Umur otomatis dari birth_date */}
@@ -338,7 +338,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
           )}
           {/* Harga beli — kecil & samar di bawah kartu */}
           {tortoise.purchase_price > 0 && (
-            <p className="text-[10px] text-gray-400 mt-1.5">
+            <p className="text-[10px] text-muted-foreground mt-1.5">
               Beli: {showPrice ? `Rp ${tortoise.purchase_price.toLocaleString("id-ID")}` : "🔒"}
             </p>
           )}

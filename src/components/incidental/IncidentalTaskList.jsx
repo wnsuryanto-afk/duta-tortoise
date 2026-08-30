@@ -91,13 +91,13 @@ export default function IncidentalTaskList({ user }) {
           <span className="text-lg flex-shrink-0">✅</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-semibold text-gray-400 line-through">{task.title}</p>
+              <p className="text-sm font-semibold text-muted-foreground line-through">{task.title}</p>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-200 text-green-800">
                 ✓ Selesai
               </span>
-              {task.done_at && <span className="text-[10px] text-gray-400">{task.done_at}</span>}
+              {task.done_at && <span className="text-[10px] text-muted-foreground">{task.done_at}</span>}
             </div>
-            {task.done_notes && <p className="text-xs text-gray-500 mt-0.5">{task.done_notes}</p>}
+            {task.done_notes && <p className="text-xs text-muted-foreground mt-0.5">{task.done_notes}</p>}
             {task.done_photo_url && (
               <img
                 src={task.done_photo_url}
@@ -119,17 +119,17 @@ export default function IncidentalTaskList({ user }) {
           <div
             key={task.id}
             className={`rounded-2xl border-2 shadow-sm p-3.5 flex items-start gap-3 ${
-              isWaiting ? "border-gray-200 bg-gray-50 opacity-70" : "border-orange-300 bg-orange-50"
+              isWaiting ? "border-border bg-muted opacity-70" : "border-orange-300 bg-orange-50"
             }`}
           >
             <span className="text-lg flex-shrink-0">{isWaiting ? "⏳" : "📌"}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className={`text-sm font-semibold ${isWaiting ? "text-gray-500" : "text-gray-800"}`}>
+                <p className={`text-sm font-semibold ${isWaiting ? "text-muted-foreground" : "text-foreground"}`}>
                   {task.title}
                 </p>
                 {isWaiting ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-muted-foreground">
                     Menunggu Barang
                   </span>
                 ) : (
@@ -141,7 +141,7 @@ export default function IncidentalTaskList({ user }) {
                   +{task.points} poin
                 </span>
               </div>
-              {task.notes && <p className="text-xs text-gray-600 mt-0.5">{task.notes}</p>}
+              {task.notes && <p className="text-xs text-muted-foreground mt-0.5">{task.notes}</p>}
               {hasSubSteps && (
                 <div className="mt-1.5 space-y-1">
                   {subSteps.map((step, si) => (
@@ -152,7 +152,7 @@ export default function IncidentalTaskList({ user }) {
                         disabled={subStepSaving === `${task.id}_${si}` || task.status === "done"}
                         className="mt-0.5"
                       />
-                      <span className={`text-xs ${step.is_checked ? "line-through text-gray-400" : "text-gray-700"}`}>
+                      <span className={`text-xs ${step.is_checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
                         {step.label}
                       </span>
                     </label>
@@ -160,7 +160,7 @@ export default function IncidentalTaskList({ user }) {
                 </div>
               )}
               {isWaiting && missingItems.length > 0 && (
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Menunggu:{" "}
                   {missingItems
                     .map((i) => `${i.item_name} (${i.quantity}${i.unit ? ` ${i.unit}` : ""})`)
@@ -168,7 +168,7 @@ export default function IncidentalTaskList({ user }) {
                 </p>
               )}
               {task.due_date && (
-                <p className={`text-xs mt-0.5 ${isWaiting ? "text-gray-400" : "text-orange-600"}`}>
+                <p className={`text-xs mt-0.5 ${isWaiting ? "text-muted-foreground" : "text-orange-600"}`}>
                   Tenggat: {task.due_date}
                 </p>
               )}
@@ -176,16 +176,16 @@ export default function IncidentalTaskList({ user }) {
                 <img
                   src={task.photo_url}
                   alt="Acuan"
-                  className="w-16 h-12 rounded-lg object-cover border border-gray-200 mt-1.5"
+                  className="w-16 h-12 rounded-lg object-cover border border-border mt-1.5"
                 />
               )}
             </div>
             {isWaiting ? (
               <div
-                className="flex-shrink-0 w-8 h-8 rounded-xl border-2 border-gray-300 bg-gray-100 flex items-center justify-center"
+                className="flex-shrink-0 w-8 h-8 rounded-xl border-2 border-border bg-muted flex items-center justify-center"
                 title="Menunggu barang tersedia"
               >
-                <Lock className="w-4 h-4 text-gray-400" />
+                <Lock className="w-4 h-4 text-muted-foreground" />
               </div>
             ) : (
               <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
@@ -193,7 +193,7 @@ export default function IncidentalTaskList({ user }) {
                   onClick={() => setConfirmTask(task)}
                   disabled={processingId === task.id || (hasSubSteps && !allSubDone)}
                   className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center active:scale-95 disabled:opacity-50 transition-transform ${
-                    allSubDone ? "border-orange-400 bg-white" : "border-gray-300 bg-gray-100"
+                    allSubDone ? "border-orange-400 bg-card" : "border-border bg-muted"
                   }`}
                   title={allSubDone ? "Tandai selesai" : `Centang semua langkah dulu (${subChecked}/${subSteps.length})`}
                 >
@@ -204,7 +204,7 @@ export default function IncidentalTaskList({ user }) {
                   )}
                 </button>
                 {hasSubSteps && (
-                  <span className={`text-[9px] font-semibold ${allSubDone ? "text-green-600" : "text-gray-400"}`}>
+                  <span className={`text-[9px] font-semibold ${allSubDone ? "text-green-600" : "text-muted-foreground"}`}>
                     {subChecked}/{subSteps.length}
                   </span>
                 )}

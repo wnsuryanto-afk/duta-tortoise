@@ -85,7 +85,7 @@ export default function DosisKalkulator({ selectedDiagnoses, tortoiseId, tortois
 
       {/* Input berat manual jika tidak ada di data */}
       {needsManualBerat && (
-        <div className="flex items-center gap-3 bg-white rounded-lg border border-blue-200 p-3">
+        <div className="flex items-center gap-3 bg-card rounded-lg border border-blue-200 p-3">
           <Label className="text-sm text-blue-800 whitespace-nowrap">Berat kura (kg):</Label>
           <Input
             type="number"
@@ -111,7 +111,7 @@ export default function DosisKalkulator({ selectedDiagnoses, tortoiseId, tortois
       {/* Panel per diagnosis */}
       <div className="space-y-4">
         {matchedProtocols.map(({ diag, protocol }) => (
-          <div key={diag} className="bg-white rounded-xl border border-blue-100 overflow-hidden">
+          <div key={diag} className="bg-card rounded-xl border border-blue-100 overflow-hidden">
             {/* Header diagnosis */}
             <div className="flex items-center gap-2 px-3 py-2 bg-blue-100">
               <p className="text-sm font-semibold text-blue-900 flex-1">

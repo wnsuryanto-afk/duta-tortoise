@@ -279,7 +279,7 @@ export default function TortoisePhotoLightbox({
             type="button"
             onClick={handleDownload}
             disabled={downloading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-medium hover:bg-white/90 active:scale-95 transition disabled:opacity-60"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-card text-black font-medium hover:bg-white/90 active:scale-95 transition disabled:opacity-60"
           >
             {downloading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

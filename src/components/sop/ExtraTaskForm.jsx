@@ -121,11 +121,11 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
               ) : (
                 <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-xl p-4 cursor-pointer hover:bg-muted/50 transition-colors">
                   {uploading ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   ) : (
-                    <Camera className="w-5 h-5 text-gray-400" />
+                    <Camera className="w-5 h-5 text-muted-foreground" />
                   )}
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     {uploading ? "Mengupload..." : "Pilih / Ambil Foto"}
                   </span>
                   <input
@@ -139,7 +139,7 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
               )}
             </div>
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Pekerjaan akan tampil dengan label "Tambahan". Poin ditentukan Owner/Manajer saat approval.
           </p>
           <Button

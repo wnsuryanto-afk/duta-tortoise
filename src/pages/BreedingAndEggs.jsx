@@ -193,9 +193,9 @@ export default function BreedingAndEggs() {
     pertengahan: { badge: "bg-yellow-100 text-yellow-800 border-yellow-300", label: "🥚 Pertengahan" },
     mendekati:   { badge: "bg-orange-100 text-orange-800 border-orange-300", label: "🥚 Mendekati Menetas" },
     aktif:       { badge: "bg-red-100 text-red-800 border-red-300",          label: "🚨 Masa Penetasan!" },
-    terlewat:    { badge: "bg-gray-200 text-gray-700 border-gray-400",       label: "⚠️ Lewat Estimasi" },
+    terlewat:    { badge: "bg-gray-200 text-foreground border-gray-400",       label: "⚠️ Lewat Estimasi" },
     menetas:     { badge: "bg-primary/10 text-primary border-primary/30",    label: "✅ Sudah Menetas" },
-    gagal:       { badge: "bg-gray-100 text-gray-600 border-gray-300",       label: "❌ Gagal" },
+    gagal:       { badge: "bg-muted text-muted-foreground border-border",       label: "❌ Gagal" },
     selesai:     { badge: "bg-green-100 text-green-800 border-green-400",    label: "✅ Selesai" },
   };
 

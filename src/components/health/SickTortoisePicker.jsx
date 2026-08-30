@@ -46,7 +46,7 @@ export default function SickTortoisePicker({
 
   if (loading) {
     return (
-      <div className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm text-gray-400 flex items-center gap-2">
+      <div className="w-full border border-border rounded-xl px-3 py-3 text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin" /> Memuat daftar kura...
       </div>
     );
@@ -72,33 +72,33 @@ export default function SickTortoisePicker({
     <div className="relative" ref={ref}>
       {open ? (
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ketik kode kura (cth: B6, A42)..."
-            className={`w-full border border-gray-300 rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-2 ${ring} outline-none`}
+            className={`w-full border border-border rounded-xl pl-9 pr-3 py-3 text-sm focus:ring-2 ${ring} outline-none`}
           />
         </div>
       ) : (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`w-full border border-gray-300 rounded-xl px-3 py-3 text-sm text-left flex items-center justify-between focus:ring-2 ${ring} outline-none`}
+          className={`w-full border border-border rounded-xl px-3 py-3 text-sm text-left flex items-center justify-between focus:ring-2 ${ring} outline-none`}
         >
-          <span className={selected ? "text-gray-800" : "text-gray-400"}>
+          <span className={selected ? "text-foreground" : "text-muted-foreground"}>
             {selected
               ? `${selected.code || selected.name} — ${selected.enclosure || "?"}`
               : "-- Pilih kura --"}
           </span>
-          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         </button>
       )}
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-border bg-card shadow-lg">
           {filtered.length === 0 ? (
-            <div className="p-3 text-sm text-gray-400 text-center">Tidak ditemukan</div>
+            <div className="p-3 text-sm text-muted-foreground text-center">Tidak ditemukan</div>
           ) : (
             filtered.map((t) => (
               <button
@@ -111,8 +111,8 @@ export default function SickTortoisePicker({
                 }}
                 className="flex w-full items-center justify-between px-3 py-2.5 text-sm hover:bg-green-50 text-left border-b border-gray-50 last:border-0"
               >
-                <span className="font-medium text-gray-800">{t.code || t.name}</span>
-                <span className="text-xs text-gray-500">{t.enclosure || "?"}</span>
+                <span className="font-medium text-foreground">{t.code || t.name}</span>
+                <span className="text-xs text-muted-foreground">{t.enclosure || "?"}</span>
               </button>
             ))
           )}

@@ -42,7 +42,7 @@ export default function TemuanCard({ finding, isRecurring, onPhotoClick, onSakit
               </Badge>
             )}
             {isResolved && (
-              <Badge className="text-[10px] bg-gray-100 text-gray-500 border border-gray-200">
+              <Badge className="text-[10px] bg-muted text-muted-foreground border border-border">
                 {finding.status === "ignored" ? "Diabaikan" : "✓ Ditangani"}
               </Badge>
             )}
@@ -86,7 +86,7 @@ export default function TemuanCard({ finding, isRecurring, onPhotoClick, onSakit
           <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100" onClick={() => onResolve(finding, "manual")}>
             <CheckCircle2 className="w-3 h-3" /> Sudah ditangani
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1 bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100" onClick={() => onIgnore(finding)}>
+          <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1 bg-muted border-border text-muted-foreground hover:bg-muted" onClick={() => onIgnore(finding)}>
             <XCircle className="w-3 h-3" /> Abaikan
           </Button>
         </div>

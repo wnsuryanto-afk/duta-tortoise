@@ -54,7 +54,7 @@ function WatermarkedPhoto({ src, alt, className }) {
 
 function QRDisplay({ url }) {
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&format=png&margin=6&color=1a3a0a`;
-  return <img src={qrSrc} alt="QR Code Passport" className="w-36 h-36 rounded-xl border-4 border-white shadow-lg bg-white" />;
+  return <img src={qrSrc} alt="QR Code Passport" className="w-36 h-36 rounded-xl border-4 border-white shadow-lg bg-card" />;
 }
 
 function PhotoCarousel({ photos }) {
@@ -84,7 +84,7 @@ function PhotoCarousel({ photos }) {
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
             {photos.map((_, i) => (
               <button key={i} onClick={() => setIdx(i)}
-                className={`w-2 h-2 rounded-full transition-all ${i === idx ? "bg-white scale-125" : "bg-white/50"}`} />
+                className={`w-2 h-2 rounded-full transition-all ${i === idx ? "bg-card scale-125" : "bg-white/50"}`} />
             ))}
           </div>
         </>

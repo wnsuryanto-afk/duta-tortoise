@@ -179,7 +179,7 @@ export default function IncidentalTaskUsulanReview({ task, open, onClose, onReso
                   className={`rounded-lg border-2 px-2 py-2 text-center transition-all ${
                     bobot === o.value
                       ? "border-orange-400 bg-orange-50 text-orange-700"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-orange-200"
+                      : "border-border bg-card text-muted-foreground hover:border-orange-200"
                   }`}
                 >
                   <p className="text-xs font-semibold">{o.label}</p>
