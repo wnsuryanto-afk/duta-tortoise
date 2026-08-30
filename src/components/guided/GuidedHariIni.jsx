@@ -23,7 +23,8 @@ import { perubahanSakit } from "@/lib/statusKura";
 import { tandaiSembuh } from "@/lib/kesehatanKura";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
-import { KANDANG_LIST } from "@/lib/kandang";
+import { kandangWajib, tugasUbinKandang, poinUbinKandang } from "@/lib/kandang";
+import { terjadwalPada } from "@/lib/kepatuhanSOP";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -537,7 +538,7 @@ export default function GuidedHariIni({ user }) {
 
   // Poin hari ini (dideklarasikan setelah poinKebersihan)
   // settled = dikerjakan sendiri ATAU dikerjakan rekan (tidak menggandakan poin, tapi menghitung sebagai selesai)
-  const settledKandangCount = KANDANG_LIST.filter(k =>
+  const settledKandangCount = daftarKandang.filter(k =>
     kandangSaved.has(k) || (allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email)
   ).length;
   const poinKandang = kandangSaved.size * poinKebersihan;
@@ -763,22 +764,22 @@ export default function GuidedHariIni({ user }) {
 
             {/* Cincin kemajuan kandang — bentuk lingkaran lebih cepat dibaca
                 daripada tulisan "3/8" saat layar dilirik sekilas. */}
-            {KANDANG_LIST.length > 0 && (
+            {daftarKandang.length > 0 && (
               <div className="relative flex-shrink-0 w-[62px] h-[62px]">
                 <svg viewBox="0 0 62 62" className="w-full h-full -rotate-90">
                   <circle cx="31" cy="31" r="26" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="6" />
                   <circle
                     cx="31" cy="31" r="26" fill="none"
-                    stroke={settledKandangCount >= KANDANG_LIST.length ? "#bef264" : "#ffffff"}
+                    stroke={settledKandangCount >= daftarKandang.length ? "#bef264" : "#ffffff"}
                     strokeWidth="6" strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 26}
-                    strokeDashoffset={2 * Math.PI * 26 * (1 - settledKandangCount / KANDANG_LIST.length)}
+                    strokeDashoffset={2 * Math.PI * 26 * (1 - settledKandangCount / daftarKandang.length)}
                     style={{ transition: "stroke-dashoffset .9s cubic-bezier(.16,1,.3,1)" }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
                   <span className="text-sm font-bold tabular">
-                    {settledKandangCount}<span className="opacity-60">/{KANDANG_LIST.length}</span>
+                    {settledKandangCount}<span className="opacity-60">/{daftarKandang.length}</span>
                   </span>
                   <span className="text-[8px] text-green-100/80 mt-0.5">kandang</span>
                 </div>
@@ -1045,7 +1046,7 @@ export default function GuidedHariIni({ user }) {
 
         {/* ══ WIDGET 3: KEBERSIHAN KANDANG ═══════════════════════ */}
         <WidgetErrorBoundary widgetName="Kebersihan Kandang">
-        <Widget done={settledKandangCount === KANDANG_LIST.length}>
+        <Widget done={settledKandangCount === daftarKandang.length}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 flex-wrap">
@@ -1056,13 +1057,13 @@ export default function GuidedHariIni({ user }) {
                 )}
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda 60 dtk</span>
               </div>
-              <span className="text-xs text-muted-foreground">{settledKandangCount}/{KANDANG_LIST.length} selesai</span>
+              <span className="text-xs text-muted-foreground">{settledKandangCount}/{daftarKandang.length} selesai</span>
             </div>
 
             {/* Progress bar */}
             <div className="w-full h-1.5 bg-muted rounded-full mb-3 overflow-hidden">
               <div className="h-full bg-green-500 rounded-full transition-all duration-300"
-                style={{ width: `${(settledKandangCount / KANDANG_LIST.length) * 100}%` }} />
+                style={{ width: `${(settledKandangCount / daftarKandang.length) * 100}%` }} />
             </div>
 
             {cooldownSec > 0 && (
@@ -1082,7 +1083,7 @@ export default function GuidedHariIni({ user }) {
             <p className="text-xs text-muted-foreground mb-3">Tap kandang yang sudah dibersihkan · <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>{requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}</p>
 
             <div className="grid grid-cols-5 gap-2">
-              {KANDANG_LIST.map(k => {
+              {daftarKandang.map(k => {
                 const done = kandangDone.has(k);
                 const isPending = pendingKandang === k;
                 const other = (allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email) ? allKandangDoneMap[k] : null;
@@ -1107,7 +1108,7 @@ export default function GuidedHariIni({ user }) {
               })}
             </div>
 
-            {settledKandangCount === KANDANG_LIST.length && (
+            {settledKandangCount === daftarKandang.length && (
               <p className="text-center text-sm font-semibold text-green-700 mt-3">✓ Semua kandang sudah dibersihkan!</p>
             )}
 
