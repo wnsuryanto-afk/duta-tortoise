@@ -11,6 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, Target, AlertTriangle, ArrowRight } from "lucide-react";
 import { useCompanySettings } from "@/lib/useCompanySettings";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { nilaiPoinBentrok } from "@/lib/nilaiPoin";
 
 function formatRp(val) {
   return "Rp " + Number(val || 0).toLocaleString("id-ID");
@@ -24,6 +27,15 @@ export default function TargetPoinSettings() {
   const targetBagus = Number(settings.target_poin_bagus) || 0;
   const targetLuarBiasa = Number(settings.target_poin_luar_biasa) || 0;
   const nilaiUnset = nilai === 0;
+
+  const { data: salaryConfigs = [] } = useQuery({
+    queryKey: ["target-poin-salary-configs"],
+    queryFn: () => base44.entities.SalaryConfig.list(),
+    staleTime: 10 * 60 * 1000,
+  });
+  const bentrok = (salaryConfigs || [])
+    .map((c) => ({ role: c.role, ...(nilaiPoinBentrok(settings, c) || {}) }))
+    .filter((b) => b.peran);
 
   return (
     <Card>
@@ -53,6 +65,28 @@ export default function TargetPoinSettings() {
           <div className="flex items-center gap-2 text-xs text-red-700 p-2.5 rounded-lg bg-red-50 border border-red-200">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             Nilai per poin belum diatur. Bonus poin dihitung Rp 0.
+          </div>
+        )}
+
+        {/* Nilai poin tersimpan di dua tempat. Selisih di antaranya tidak boleh
+            diselesaikan diam-diam: yang menanggung akibatnya adalah kiper, di
+            slip gajinya — tempat paling buruk untuk menemukannya. */}
+        {bentrok.length > 0 && (
+          <div className="text-xs text-amber-800 dark:text-amber-200 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 space-y-1.5">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              Dua nilai poin yang berbeda tersimpan
+            </div>
+            <p>
+              Pengaturan umum memakai <strong>{formatRp(nilai)}</strong> per poin, tetapi
+              tarif per peran masih menyebut angka lain:{" "}
+              {bentrok.map((b) => `${b.role} ${formatRp(b.peran)}`).join(", ")}.
+            </p>
+            <p>
+              Yang dipakai sekarang adalah <strong>{formatRp(nilai)}</strong> — sama dengan yang
+              dilihat kiper di ponselnya. Samakan tarif per peran di halaman Gaji supaya tidak ada
+              angka yang tertinggal.
+            </p>
           </div>
         )}
 
