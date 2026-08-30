@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { masukLaporan } from "../../shared/laporan.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -17,13 +18,13 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.CompanySettings.list('setting_key', 5),
     ]);
 
-    const totalFinance = financeTx.filter(t => t.type === 'pengeluaran' && (t.date||'').startsWith(month) && !t.is_test_data && !t.excluded_from_reports).reduce((s,t)=>s+(t.amount||0),0);
+    const totalFinance = financeTx.filter(t => t.type === 'pengeluaran' && (t.date||'').startsWith(month) && masukLaporan(t)).reduce((s,t)=>s+(t.amount||0),0);
     // D18 — Gaji diambil dari FinanceTransaction, bukan dari SalarySlip. Slip
     // yang ditandai dibayar membuat catatan keuangannya sendiri, jadi gajinya
     // sudah ada di totalFinance. Menjumlahkan slip lagi di sini membuat setiap
     // gaji terhitung dua kali dan biaya per ekor ikut menggelembung.
-    const totalSalary = financeTx.filter(t => t.type === 'pengeluaran' && (t.date||'').startsWith(month) && ['gaji','gaji_karyawan'].includes(t.category) && !t.is_test_data && !t.excluded_from_reports).reduce((s,t)=>s+(t.amount||0),0);
-    const totalPettyCash = pettyCash.filter(p => p.status==='disbursed' && (p.disbursement_date||'').startsWith(month) && !p.is_test_data).reduce((s,t)=>s+(t.amount_requested||0),0);
+    const totalSalary = financeTx.filter(t => t.type === 'pengeluaran' && (t.date||'').startsWith(month) && ['gaji','gaji_karyawan'].includes(t.category) && masukLaporan(t)).reduce((s,t)=>s+(t.amount||0),0);
+    const totalPettyCash = pettyCash.filter(p => p.status==='disbursed' && (p.disbursement_date||'').startsWith(month) && masukLaporan(p)).reduce((s,t)=>s+(t.amount_requested||0),0);
 
     // Pencairan kas kecil TIDAK ditambahkan ke biaya. Mencairkan kas kecil adalah
     // memindahkan uang ke kotak kas, bukan mengeluarkannya; biayanya baru muncul

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, wibNow, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getSettings, getEmployeePhone } from "../../shared/whatsapp.ts";
+import { masukLaporan } from "../../shared/laporan.ts";
 
 const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 
@@ -139,10 +140,10 @@ Deno.serve(async (req) => {
         (t: any) =>
           String(t.date || "").startsWith(bulanIni) &&
           ["gaji", "gaji_karyawan"].includes(t.category) &&
-          !t.is_test_data,
+          masukLaporan(t),
       );
       const adaSlipDibayar = (slip || []).some(
-        (s: any) => s.period === bulanIni && s.status === "paid" && !s.is_test_data,
+        (s: any) => s.period === bulanIni && s.status === "paid" && masukLaporan(s),
       );
       if (!adaTxGaji && !adaSlipDibayar) {
         temuan.push(
