@@ -33,16 +33,3 @@ Deno.serve(async (req) => {
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
-
-async function recalculateEnclosureCount(base44, enclosure_id) {
-  const tortoises = await base44.asServiceRole.entities.Tortoise.filter({
-    enclosure: enclosure_id
-  });
-  
-  const activeStatuses = ['aktif', 'baby', 'sakit', 'breeding', 'karantina'];
-  const count = tortoises.filter(t => activeStatuses.includes(t.status)).length;
-  
-  await base44.asServiceRole.entities.Enclosure.update(enclosure_id, {
-    current_count: count
-  });
-}
