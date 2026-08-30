@@ -58,6 +58,66 @@ function getPeriodRange(freq) {
   return { start: now, end: now };
 }
 
+
+/**
+ * Sakelar musim bertelur.
+ *
+ * Jadwal berfrekuensi "musiman" - boost kalsium betina dan cek kloaka - hanya
+ * muncul di layar kiper selama sakelar ini menyala. Sengaja dijalankan manusia,
+ * bukan kalender: yang menandai musim adalah betina yang mulai gelisah dan
+ * menggali, dan yang melihatnya pemilik, bukan aplikasi.
+ *
+ * Sampai 30 Agustus 2026, frekuensi "musiman" tidak pernah ditangani sama
+ * sekali, sehingga kedua jadwal itu tidak pernah tampil satu kali pun. B119
+ * mati karena egg binding pada 24 Juni.
+ */
+function SakelarMusimBertelur({ canEdit }) {
+  const qc = useQueryClient();
+  const [menyimpan, setMenyimpan] = useState(false);
+  const { data: settings } = useQuery({
+    queryKey: ["company-settings-musim"],
+    queryFn: async () => {
+      const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
+      return res[0] || null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const aktif = settings?.musim_bertelur_aktif === true;
+
+  const ubah = async (nilai) => {
+    if (!settings?.id || menyimpan) return;
+    setMenyimpan(true);
+    try {
+      await base44.entities.CompanySettings.update(settings.id, { musim_bertelur_aktif: nilai });
+      qc.invalidateQueries({ queryKey: ["company-settings-musim"] });
+      qc.invalidateQueries({ queryKey: ["company-settings"] });
+      toast.success(nilai ? "Musim bertelur dinyalakan - jadwal musiman mulai muncul di layar kiper" : "Musim bertelur dimatikan");
+    } catch {
+      toast.error("Gagal menyimpan");
+    } finally {
+      setMenyimpan(false);
+    }
+  };
+
+  return (
+    <div className={`rounded-xl border p-4 flex items-start gap-3 ${aktif ? "border-pink-300 bg-pink-50 dark:bg-pink-950/30 dark:border-pink-800" : "border-border bg-card"}`}>
+      <div className="flex-1">
+        <p className="font-semibold text-sm text-foreground">
+          Musim bertelur {aktif ? "sedang berlangsung" : "belum dinyalakan"}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+          Selama sakelar ini menyala, <strong>Boost Kalsium Betina</strong> dan <strong>Cek Kloaka Betina</strong> muncul
+          setiap hari di layar kiper. Nyalakan saat betina mulai gelisah, menggali, atau mencari tempat bertelur &mdash;
+          bukan menurut kalender. Kekurangan kalsium saat betina gravid adalah pemicu egg binding.
+        </p>
+      </div>
+      {canEdit && (
+        <Switch checked={aktif} onCheckedChange={ubah} disabled={menyimpan || !settings?.id} aria-label="Musim bertelur" />
+      )}
+    </div>
+  );
+}
+
 export default function TreatmentPage() {
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
