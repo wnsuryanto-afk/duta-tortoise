@@ -163,7 +163,7 @@ export default function RekapPoinGajiPage() {
         existingSlip, pointValue,
       };
     });
-  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegTripsMap, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING]);
+  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegTripsMap, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING, settings, POIN_BONUS_ENABLED]);
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
