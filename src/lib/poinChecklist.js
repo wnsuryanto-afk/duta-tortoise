@@ -106,3 +106,27 @@ export function ringkasPoin(checklists = []) {
   }
   return { disetujui, menunggu, jumlahMenunggu };
 }
+
+/**
+ * Bila satu orang punya lebih dari satu checklist pada tanggal yang sama,
+ * inilah yang dipakai: yang sudah diputuskan lebih dulu, lalu yang paling awal
+ * dibuat.
+ *
+ * `daftar[0]` — yang dipakai di tiga tempat sebelum ini — menyerahkan pilihannya
+ * pada urutan sekehendak basis data, jadi dua jalur yang membaca tanggal yang
+ * sama bisa menempel pada baris yang berbeda. Checklist hari itu dibuat oleh
+ * tiga jalur (tab Checklist SOP, Tugas Hari Ini, dan klaim tugas insidentil),
+ * jadi baris kembar bukan hal yang mustahil: pada 30 Mei 2026 satu orang punya
+ * empat baris untuk satu hari.
+ */
+export function checklistSah(daftar = []) {
+  const hidup = (daftar || []).filter(Boolean);
+  if (hidup.length === 0) return null;
+  const urutanStatus = { approved: 0, rejected: 1, submitted: 2, draft: 3 };
+  return hidup.slice().sort((a, b) => {
+    const sa = urutanStatus[a.status] ?? 9;
+    const sb = urutanStatus[b.status] ?? 9;
+    if (sa !== sb) return sa - sb;
+    return String(a.created_date || "").localeCompare(String(b.created_date || ""));
+  })[0];
+}

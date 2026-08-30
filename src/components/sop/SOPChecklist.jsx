@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { checklistSah } from "@/lib/poinChecklist";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export default function SOPChecklist() {
   const [taskNotes, setTaskNotes] = useState({});
   const [taskPhotos, setTaskPhotos] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [generalNotes, setGeneralNotes] = useState("");
   const [skipped, setSkipped] = useState({});
 
@@ -73,7 +75,7 @@ export default function SOPChecklist() {
         employee_email: user.email,
         date: today,
       });
-      return results[0] || null;
+      return checklistSah(results);
     },
     enabled: !!user?.email,
   });
@@ -127,6 +129,25 @@ export default function SOPChecklist() {
   const handleSubmit = async () => {
     if (!user) return;
     setSubmitting(true);
+
+    // `todayChecklist` dibaca dari cache kueri, dan tab ini bukan satu-satunya
+    // jalur yang membuat checklist hari ini — Tugas Hari Ini dan tugas
+    // insidentil juga. Tanpa baca ulang di sini, checklist kedua untuk tanggal
+    // yang sama bisa lahir, dan poin hari itu terhitung dua kali.
+    let sudahAda = null;
+    try {
+      sudahAda = checklistSah(
+        await base44.entities.DailyChecklist.filter({ employee_email: user.email, date: today }),
+      );
+    } catch {
+      sudahAda = null;
+    }
+    if (sudahAda) {
+      queryClient.invalidateQueries({ queryKey: ["checklist-today"] });
+      setSubmitting(false);
+      return;
+    }
+
     const completedTasks = tasks
       .filter((t) => (checked[t.id] || skipped[t.id]) && !getLockInfo(t))
       .map((t) => ({
@@ -140,18 +161,24 @@ export default function SOPChecklist() {
         skip_reason: skipped[t.id] ? "Stok kosong" : null,
       }));
 
-    await base44.entities.DailyChecklist.create({
-      date: today,
-      employee_id: user.id,
-      employee_name: user.full_name || user.email,
-      employee_email: user.email,
-      completed_tasks: completedTasks,
-      total_points_claimed: totalPoints,
-      status: "submitted",
-      notes: generalNotes,
-      ...testModeTag,
-    });
-    queryClient.invalidateQueries({ queryKey: ["checklist-today"] });
+    try {
+      await base44.entities.DailyChecklist.create({
+        date: today,
+        employee_id: user.id,
+        employee_name: user.full_name || user.email,
+        employee_email: user.email,
+        completed_tasks: completedTasks,
+        total_points_claimed: totalPoints,
+        status: "submitted",
+        notes: generalNotes,
+        ...testModeTag,
+      });
+    } catch (e) {
+      setSubmitError(`Checklist gagal dikirim: ${e.message || e}. Coba lagi.`);
+      setSubmitting(false);
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["checklist-today"] });
     setSubmitting(false);
   };
 
@@ -377,6 +404,9 @@ export default function SOPChecklist() {
             <Send className="w-4 h-4 mr-2" />
             {submitting ? "Menyimpan..." : `Submit Checklist (${totalPoints} poin${Object.values(skipped).filter(Boolean).length > 0 ? `, ${Object.values(skipped).filter(Boolean).length} dilewati` : ""})`}
           </Button>
+          {submitError && (
+            <p className="text-xs text-red-600 mt-2">{submitError}</p>
+          )}
         </Card>
       )}
     </div>
