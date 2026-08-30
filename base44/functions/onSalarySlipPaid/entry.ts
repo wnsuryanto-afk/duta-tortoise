@@ -146,6 +146,55 @@ Deno.serve(async (req) => {
           }
         }
 
+        // ── D18: slip yang dibayar MEMBUAT catatan biayanya sendiri ──
+        //
+        // Sebelumnya tidak ada yang membuatnya. Gaji hanya masuk laporan bila
+        // pemilik mengetiknya manual di halaman keuangan, dan ketika ia berhenti
+        // mengetik, laporan biaya berhenti menyebut gaji tanpa satu pun tanda:
+        // dari 5 Juli sampai 30 Agustus 2026 seluruh pengeluaran yang tercatat
+        // berjumlah Rp 701.000, semuanya kas kecil, sementara tim tetap dibayar.
+        //
+        // Sekarang slip adalah SATU-SATUNYA sumber. Karena catatan ini yang
+        // dihitung laporan, penjumlahan SalarySlip terpisah sudah dihapus dari
+        // labaRugiData, laporanBiayaBulanan, dan calculateCostPerTortoise -
+        // membiarkan keduanya berarti setiap gaji terhitung dua kali.
+        //
+        // reference_id diisi nomor slip dan diperiksa lebih dulu, jadi menandai
+        // ulang slip yang sama tidak pernah membuat catatan kedua. Blok ini
+        // sengaja diletakkan SEBELUM pemeriksaan duplikat notifikasi di bawah,
+        // yang berhenti lebih awal (return) dan akan ikut melewatkan pencatatan
+        // biaya bila ditaruh sesudahnya.
+        try {
+          const nominal = Number(slip.net_total ?? slip.gross_total ?? 0);
+          if (nominal > 0) {
+            const sudahAda = await base44.asServiceRole.entities.FinanceTransaction.filter({
+              reference_id: slip.id,
+            });
+            if (!sudahAda || sudahAda.length === 0) {
+              const tanggal =
+                slip.paid_date ||
+                slip.payment_date ||
+                new Date().toISOString().slice(0, 10);
+              await base44.asServiceRole.entities.FinanceTransaction.create({
+                type: "pengeluaran",
+                category: "gaji_karyawan",
+                amount: nominal,
+                date: tanggal,
+                description:
+                  `Gaji ${slip.employee_name || slip.employee_email || "karyawan"} ` +
+                  `periode ${slip.week_start ? `${slip.week_start} s/d ${slip.week_end || ""}`.trim() : (slip.period || bulan)}`,
+                reference_id: slip.id,
+                created_by_name: "Otomatis dari slip gaji",
+              });
+            }
+          }
+        } catch {
+          // Gagal mencatat biaya tidak boleh membatalkan penandaan "dibayar" -
+          // gajinya memang sudah ditransfer. Pemeriksaan mingguan di higieneData
+          // akan menyebut bulan tanpa catatan gaji, jadi kegagalan ini tidak
+          // hilang diam-diam.
+        }
+
         // Dedup: cek apakah notifikasi "ditransfer" sudah pernah dibuat untuk slip ini
         const existing = await base44.asServiceRole.entities.Notification.filter({
           recipient_email: slip.employee_email,
