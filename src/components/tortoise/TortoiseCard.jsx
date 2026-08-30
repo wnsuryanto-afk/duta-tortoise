@@ -60,11 +60,17 @@ const sourceLabel = {
 };
 
 // Background warna untuk card berdasarkan kondisi
-function getCardBg(tortoise) {
+//
+// `sakit` datang dari pemanggil, yang sudah tahu kasus kesehatan mana yang
+// masih terbuka. Kartunya harus memakai jawaban yang SAMA dengan penghitung
+// "Sakit" di kepala halaman — kalau tidak, seekor kura bisa ikut terhitung
+// sakit di atas sementara kartunya tampak sehat.
+//
+// Penandanya di data kura tetap ikut dibaca sebagai cadangan, untuk pemanggil
+// yang belum menyodorkan jawaban itu.
+function getCardBg(tortoise, sakit) {
   if (tortoise.status === "mati") return "bg-muted border-gray-400 opacity-80";
-  // Dibaca lewat kedua penandanya agar kartu tidak tampak sehat sementara
-  // penghitung "Sakit" di kepala halaman ikut menghitungnya.
-  if (sedangSakit(tortoise)) return "bg-red-50 border-red-200";
+  if (sakit || sedangSakit(tortoise)) return "bg-red-50 border-red-200";
   if (tortoise.status === "terjual") return "bg-yellow-50 border-yellow-200";
   if (tortoise.status === "baby") return "bg-sky-50 border-sky-200";
   if (tortoise.is_proven) return "bg-green-50 border-green-200";
@@ -190,7 +196,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
-  const cardBg = getCardBg(tortoise);
+  const cardBg = getCardBg(tortoise, isSick);
   const missingFields = getMissingFields("tortoise", tortoise);
   const activelySick = isSick || healthStatus === "critical";
 
