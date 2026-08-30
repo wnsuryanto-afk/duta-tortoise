@@ -11,6 +11,7 @@ import {
   petaFotoHarian,
 } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
+import { dilacak } from "../../shared/stok.ts";
 
 
 /**
@@ -145,6 +146,9 @@ Deno.serve(async (req) => {
     // 5. Stok pakan menipis.
     const ambangHari = Number(otomatis.belanja_ambang_hari ?? 7);
     const pakanMenipis = (pakan || []).filter((f: any) => {
+      // Sembilan record pakan seluruhnya dinonaktifkan pemilik; tanpa saringan
+      // ini semuanya dilaporkan "menipis" tiap hari.
+      if (!dilacak(f)) return false;
       const ideal = Number(f.daily_ideal || 0);
       const stok = Number(f.current_stock || 0);
       if (ideal > 0) return stok / ideal <= ambangHari;

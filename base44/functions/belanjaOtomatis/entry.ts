@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { dilacak } from "../../shared/stok.ts";
 
 /**
  * A7 — Daftar belanja terisi sendiri sebelum stok habis.
@@ -155,6 +156,8 @@ Deno.serve(async (req) => {
     for (const i of gudang || []) {
       const nama = String(i.name || "");
       if (nama.toUpperCase().includes("DUPLIKAT")) continue;
+      // Barang yang dinonaktifkan pemilik tidak ikut dibelanjakan.
+      if (!dilacak(i)) continue;
       const stok = Number(i.current_stock || 0);
       const min = Number(i.minimum_stock || 0);
       if (min <= 0 || stok > min) continue;
@@ -163,7 +166,12 @@ Deno.serve(async (req) => {
         jumlah: Math.max(min * 2 - stok, min),
         satuan: i.unit || "pcs",
         sku: i.sku || "",
-        hargaPerUnit: Number(i.price_per_unit || i.unit_price || 0),
+        // WarehouseItem menyimpan harganya di `purchase_price`. Dua nama yang
+        // dibaca sebelumnya — price_per_unit dan unit_price — tidak ada di
+        // skema, jadi setiap baris daftar belanja yang dibuat fungsi ini
+        // tercatat berharga Rp 0 dan total estimasinya selalu nol.
+        // (FeedStock memang memakai price_per_unit; hanya gudang yang beda.)
+        hargaPerUnit: Number(i.purchase_price || 0),
         warehouseItemId: i.id,
         alasan: stok <= 0 ? "stok habis" : `stok ${stok} di bawah minimum ${min}`,
         segera: stok <= 0,
