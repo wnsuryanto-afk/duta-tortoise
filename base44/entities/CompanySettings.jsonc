@@ -40,6 +40,10 @@
       "default": 300,
       "description": "Target minimum poin per bulan per karyawan. Dipakai sebagai tingkat DASAR bila target bertingkat belum diisi."
     },
+    "target_poin_tim": {
+      "type": "number",
+      "description": "D16 - Total poin SELURUH tim dalam sebulan yang membuka bonus tingkat Dasar. Dibuat bersama karena poin yang tersedia terbatas dan dibagi antar kiper: target Dasar perorangan membuat kiper berebut tugas, karena menaikkan poin sendiri berarti menurunkan poin rekannya. Ambang pribadi min_poin_bulanan tetap berlaku sebagai lantai agar tidak ada yang menumpang penuh pada kerja rekan."
+    },
     "target_poin_bagus": {
       "type": "number",
       "description": "B1 - Tingkat kedua: poin per bulan untuk bonus 'Bagus'. Harus di atas min_poin_bulanan."
