@@ -405,6 +405,14 @@ export default function GuidedHariIni({ user }) {
     return true;
   });
 
+  // Berapa jadwal yang HARUSNYA muncul hari ini tetapi mundur karena racikan.
+  const suplemenMundur = (treatmentSchedules || []).filter(
+    (ts) =>
+      ts.is_active === true &&
+      ts.nonaktif_bila_racikan_ada === true &&
+      racikanRepro > 0
+  ).length;
+
   const flashPoin = (label, poin) => {
     setPoinFlash({ label, poin });
     setTimeout(() => setPoinFlash(null), 2000);
@@ -1047,6 +1055,21 @@ export default function GuidedHariIni({ user }) {
         </WidgetErrorBoundary>
 
         {/* ══ WIDGET 2: SUPLEMEN ══════════════════════════════════ */}
+        {/* Tugas suplemen yang mundur karena racikan tersedia disebut sekali,
+            dengan alasannya. Tugas yang hilang tanpa keterangan terbaca sebagai
+            aplikasi rusak - dan kiper yang bingung akan memberi suplemennya
+            sendiri, yang justru membuat dosisnya dobel. */}
+        {suplemenMundur > 0 && (
+          <div className="bg-card rounded-xl border border-border p-3.5 flex items-start gap-2.5">
+            <span className="text-base leading-none mt-0.5">🧪</span>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">{suplemenMundur} tugas suplemen sedang tidak perlu.</span>{" "}
+              Kalsium, asam folat, dan vitamin E sudah termasuk di dalam racikan Duta Repro yang diberikan hari ini.
+              Jangan memberi tambahan lagi &mdash; dosisnya bisa dobel. Tugasnya kembali sendiri kalau racikan habis.
+            </p>
+          </div>
+        )}
+
         {supplemenHariIni.length > 0 && (
           <WidgetErrorBoundary widgetName="Suplemen">
             <WidgetSuplemen
