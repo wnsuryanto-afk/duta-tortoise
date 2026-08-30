@@ -36,10 +36,14 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.WarehouseItem.list("name", 500),
       base44.asServiceRole.entities.FeedStock.list("name", 200),
     ]);
+    // Bahan nonaktif dilewati. Bahan yang tidak dicatat masuk-keluarnya - mis.
+    // rumput dan kaktus dari kebun sendiri - angka stoknya tidak pernah benar,
+    // jadi bertindak atasnya berarti bertindak atas angka karangan.
+    const pakanAktif = (pakan || []).filter((f: any) => f?.is_active !== false);
 
     const stokBySku = new Map<string, any>();
     for (const i of gudang || []) if (i.sku) stokBySku.set(String(i.sku), i);
-    for (const f of pakan || []) if (f.sku) stokBySku.set(String(f.sku), f);
+    for (const f of pakanAktif || []) if (f.sku) stokBySku.set(String(f.sku), f);
 
     const terkunci: string[] = [];
     const dilepas: string[] = [];

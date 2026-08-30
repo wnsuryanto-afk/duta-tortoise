@@ -35,6 +35,10 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.WarehouseItem.list("name", 500),
       base44.asServiceRole.entities.ShoppingList.list("-created_date", 300),
     ]);
+    // Bahan nonaktif dilewati. Bahan yang tidak dicatat masuk-keluarnya - mis.
+    // rumput dan kaktus dari kebun sendiri - angka stoknya tidak pernah benar,
+    // jadi bertindak atasnya berarti bertindak atas angka karangan.
+    const pakanAktif = (pakan || []).filter((f: any) => f?.is_active !== false);
 
     // Apa yang sudah ada di daftar dan belum dibeli — jangan ditambah lagi.
     const sudahAda = new Set(
@@ -78,13 +82,13 @@ Deno.serve(async (req) => {
       if (params.segera) mendesak.push(params.nama);
     };
 
-    // 1. Stok pakan.
+    // 1. Stok pakanAktif.
     //
     // Cara belanja mengikuti asal pakannya — satu aturan untuk semua justru
     // menghasilkan pesanan yang tidak masuk akal. Rumput gajah 180 kg/hari
     // dengan aturan "beli" akan muncul sebagai pesanan 2,5 ton tiap dua pekan,
     // padahal yang dibutuhkan bukan uang melainkan orang yang memotongnya.
-    for (const f of pakan || []) {
+    for (const f of pakanAktif || []) {
       const sumber = f.sumber_pakan || (f.sumber_sendiri === true ? "sendiri" : "beli");
 
       // Dipanen sendiri, atau hanya dipakai saat kebetulan ada: tidak pernah
