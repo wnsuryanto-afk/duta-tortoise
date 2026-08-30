@@ -12,6 +12,7 @@ import { TrendingUp, Egg, Download, BarChart2 } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import html2canvas from "html2canvas";
+import { ringkasTelurDicek } from "@/lib/hasilInkubasi";
 
 const MORPH_COLORS = [
   "#2D5016","#6B9B37","#8B5E3C","#C19A6B","#4A7C23","#A0522D",
@@ -47,18 +48,9 @@ export default function BreedingStatsSection({ breedings = [] }) {
         } catch { return false; }
       });
       const totalEggs = inMonth.reduce((s, b) => s + (b.egg_count || 0), 0);
-      // Hatch rate per bulan: menetas / telur dicek (pakai egg_records)
-      let monthChecked = 0, monthHatched = 0;
-      inMonth.forEach(b => {
-        const records = b.egg_records || [];
-        records.forEach(e => {
-          if (e.status !== "belum_dicek") {
-            monthChecked++;
-            if (e.status === "menetas") monthHatched++;
-          }
-        });
-      });
-      const hatchRate = monthChecked > 0 ? Math.round((monthHatched / monthChecked) * 100) : 0;
+      // Satu aturan — lib/hasilInkubasi.ringkasTelurDicek.
+      const { menetas: monthHatched, persen } = ringkasTelurDicek(inMonth);
+      const hatchRate = Math.round(persen);
       return {
         month: format(date, "MMM yy", { locale: id }),
         telur: totalEggs,
@@ -78,29 +70,15 @@ export default function BreedingStatsSection({ breedings = [] }) {
       t.source === "hasil_sendiri" && t.birth_date?.startsWith(String(currentYear))
     ).length;
 
-    // Hatch rate overall: total menetas / total telur yang SUDAH DICEK (bukan belum_dicek)
-    let totalChecked = 0;
-    let totalHatchedFromRecords = 0;
-    breedings.forEach(b => {
-      const records = b.egg_records || [];
-      if (records.length === 0 && b.egg_count > 0) {
-        // No per-egg records → all are "belum_dicek" → jangan masuk pembagi
-        return;
-      }
-      records.forEach(e => {
-        if (e.status !== "belum_dicek") {
-          totalChecked++;
-          if (e.status === "menetas") totalHatchedFromRecords++;
-        }
-      });
-    });
-    // Fallback: if no per-egg records, use aggregated hatched_count from completed breedings
-    if (totalChecked === 0) {
-      const completed = thisYear.filter(b => b.status === "menetas" || b.status === "selesai");
-      totalChecked = completed.reduce((s, b) => s + (b.egg_count || 0), 0);
-      totalHatchedFromRecords = completed.reduce((s, b) => s + (b.hatched_count || 0), 0);
-    }
-    const hatchRateOverall = totalChecked > 0 ? ((totalHatchedFromRecords / totalChecked) * 100).toFixed(1) : "0";
+    // Aturan yang sama dengan grafik bulanan di atas, dari satu pustaka —
+    // termasuk jalur cadangan untuk clutch lama tanpa baris per telur, yang
+    // dulu ditulis berbeda di sini.
+    const {
+      dicek: totalChecked,
+      menetas: totalHatchedFromRecords,
+      persen: persenOverall,
+    } = ringkasTelurDicek(breedings);
+    const hatchRateOverall = persenOverall.toFixed(1);
 
     return { totalEggs, totalHatched: actualBabiesThisYear, totalHatchedFromRecords, totalChecked, hatchRateOverall };
   }, [breedings, tortoises, currentYear]);
