@@ -225,5 +225,21 @@ export const PENUNJUK_BARANG = [
   { entitas: "ItemUsage", kolom: "item_id", kolomNama: "item_name" },
   { entitas: "WarehouseTransaction", kolom: "item_id", kolomNama: "item_name" },
   { entitas: "ItemBorrow", kolom: "item_id", kolomNama: "item_name" },
+  { entitas: "MaintenanceLog", kolom: "item_id", kolomNama: null },
+  { entitas: "Purchase", kolom: "item_id", kolomNama: null },
   { entitas: "ToolLoan", kolom: "warehouse_item_id", kolomNama: null },
+  { entitas: "ShoppingList", kolom: "warehouse_item_id", kolomNama: null },
 ];
+
+/**
+ * Catatan: daftar ini semula hanya berisi enam entitas. Tiga yang terakhir —
+ * MaintenanceLog, Purchase, dan ShoppingList — terlewat, padahal ketiganya
+ * menyimpan penunjuk ke id barang. Artinya versi sebelumnya bisa menghapus
+ * sebuah barang sambil meninggalkan baris di ketiganya menunjuk barang yang
+ * sudah tidak ada — persis kegagalan yang alat ini dibuat untuk menghindarinya.
+ *
+ * Yang paling perlu diingat: `ShoppingList.warehouse_item_id` justru
+ * ditambahkan di perbaikan modul Stok pada berkas ini juga. Menambah sebuah
+ * penunjuk baru berarti daftar ini ikut bertambah; kalau tidak, alat ini
+ * berbohong tentang apa yang aman dihapus.
+ */
