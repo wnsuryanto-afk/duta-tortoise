@@ -372,9 +372,8 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     // Rumus lamanya juga menutupi gejalanya sendiri: penyebut dinaikkan ke X
     // bila X melebihi jumlah tugas terjadwal, supaya hasilnya tidak lewat 100%.
     // Yang perlu diperbaiki bukan tampilannya, melainkan pembaginya.
-    const myIncidentalCount = myIncidental;
     let line = `• ${cl.employee_name}: ${X} tugas`;
-    if (myIncidentalCount > 0) line += ` (termasuk ${myIncidentalCount} tugas insidental)`;
+    if (myIncidental > 0) line += ` (+${myIncidental} insidental)`;
     if (settings.daily_summary_show_points === true) {
       line += ` (${cl.total_points_claimed || 0} poin)`;
     }
