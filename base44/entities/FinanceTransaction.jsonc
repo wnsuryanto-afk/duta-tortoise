@@ -21,6 +21,9 @@
         "solar_bbm",
         "rokok",
         "kas_kecil",
+        "listrik",
+        "air",
+        "perawatan_kandang",
         "lainnya"
       ]
     },
