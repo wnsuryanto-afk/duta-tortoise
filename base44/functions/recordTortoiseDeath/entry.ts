@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { segarkanIsiKandang } from "../../shared/isiKandang.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -53,21 +54,8 @@ Deno.serve(async (req) => {
     // saat ada kura mati. Angkanya karena itu hanya bisa naik, dan kandang bisa
     // dinyatakan penuh padahal penghuninya sudah tidak ada.
     const tortoise = await base44.asServiceRole.entities.Tortoise.get(tortoise_id);
-    if (tortoise && (tortoise.enclosure_id || tortoise.enclosure)) {
-      const semuaKandang = await base44.asServiceRole.entities.Enclosure.list();
-      const enclosure = tortoise.enclosure_id
-        ? semuaKandang.find((e) => e.id === tortoise.enclosure_id)
-        : semuaKandang.find(
-            (e) =>
-              String(e.name || '').trim().toLowerCase() ===
-              String(tortoise.enclosure || '').trim().toLowerCase()
-          );
-      if (enclosure) {
-        await base44.asServiceRole.entities.Enclosure.update(enclosure.id, {
-          current_count: Math.max(0, (enclosure.current_count || 0) - 1)
-        });
-      }
-    }
+    await segarkanIsiKandang(base44.asServiceRole,
+      tortoise?.enclosure ? [tortoise.enclosure] : null);
 
     // 5. Kirim notifikasi ke owner
     const owners = await base44.asServiceRole.entities.User.filter({ role: 'admin' });

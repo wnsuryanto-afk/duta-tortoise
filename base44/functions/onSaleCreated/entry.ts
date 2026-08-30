@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { segarkanIsiKandang } from "../../shared/isiKandang.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -38,17 +39,10 @@ Deno.serve(async (req) => {
         // jumlah penghuni tidak pernah benar-benar dikurangi di sini. Nomor
         // kandang didahulukan; nama hanya dipakai untuk data yang nomornya
         // belum terisi.
-        if (tortoise.enclosure_id || tortoise.enclosure) {
-          const enclosures = tortoise.enclosure_id
-            ? await db.entities.Enclosure.filter({ id: tortoise.enclosure_id })
-            : await db.entities.Enclosure.filter({ name: tortoise.enclosure });
-          const enclosure = enclosures && enclosures[0];
-          if (enclosure) {
-            await db.entities.Enclosure.update(enclosure.id, {
-              current_count: Math.max(0, (enclosure.current_count || 0) - 1),
-            });
-          }
-        }
+        // Dihitung ulang, bukan dikurangi satu: penjualan yang sama juga
+        // disentuh createSaleWithSync, dan dua "-1" untuk satu kejadian
+        // membuat angkanya meleset permanen.
+        await segarkanIsiKandang(db, tortoise.enclosure ? [tortoise.enclosure] : null);
       }
     }
 

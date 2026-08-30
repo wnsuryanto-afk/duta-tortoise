@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { segarkanIsiKandang } from "../../shared/isiKandang.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -24,14 +25,15 @@ Deno.serve(async (req) => {
           sale_channel: sale.platform || 'langsung'
         });
 
-        if (tortoise.enclosure) {
-          const enclosure = await base44.asServiceRole.entities.Enclosure.get(tortoise.enclosure);
-          if (enclosure) {
-            await base44.asServiceRole.entities.Enclosure.update(tortoise.enclosure, {
-              current_count: Math.max(0, (enclosure.current_count || 0) - 1)
-            });
-          }
-        }
+        // Isi kandang DIHITUNG ULANG, bukan dikurangi satu.
+        //
+        // Baris lama memanggil Enclosure.get(tortoise.enclosure) — `enclosure`
+        // berisi NAMA sedangkan .get() menerima NOMOR, jadi pencariannya tidak
+        // pernah ketemu dan angkanya tidak pernah berkurang. Kalaupun ketemu,
+        // "-1" di sini bertabrakan dengan "-1" milik onSaleCreated untuk
+        // penjualan yang sama. Menghitung ulang aman dijalankan berkali-kali.
+        await segarkanIsiKandang(base44.asServiceRole,
+          tortoise.enclosure ? [tortoise.enclosure] : null);
       }
     }
 
