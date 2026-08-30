@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { Star, Trophy, Clock, TrendingUp, Flame, Users } from "lucide-react";
 import { statusBonus } from "@/lib/bonus";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
+import { masukLaporan } from "@/lib/laporan";
 
 const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
@@ -83,7 +84,7 @@ export default function BonusBulanIni({ user }) {
   const poinBulanIni = useMemo(() => {
     return (checklists || [])
       .filter((c) => String(c.date || "").startsWith(monthKey))
-      .filter((c) => c.status !== "rejected" && !c.is_test_data)
+      .filter((c) => c.status !== "rejected" && masukLaporan(c))
       .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0);
   }, [checklists, monthKey]);
 
@@ -118,7 +119,7 @@ export default function BonusBulanIni({ user }) {
     () =>
       (checklistTim || [])
         .filter((c) => String(c.date || "").startsWith(monthKey))
-        .filter((c) => c.status !== "rejected" && !c.is_test_data)
+        .filter((c) => c.status !== "rejected" && masukLaporan(c))
         .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0),
     [checklistTim, monthKey],
   );

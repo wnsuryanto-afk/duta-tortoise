@@ -7,6 +7,7 @@ import { Sparkline } from "@/components/ui/sparkline";
 import InfoHint from "@/components/ui/info-hint";
 import { deretMingguan, bacaArah } from "@/lib/tren";
 import { cn } from "@/lib/utils";
+import { masukLaporan } from "@/lib/laporan";
 
 /**
  * ArahMingguIni — lapis kedua beranda: ke mana keadaan sedang bergerak.
@@ -112,17 +113,15 @@ export default function ArahMingguIni() {
 
   if (!siap) return null;
 
-  const bukanUjiCoba = (r) => !r.excluded_from_reports && !r.is_test_data;
-
   const sakit = deretMingguan(kesehatan, {
     tanggal: (r) => r.date,
-    saring: (r) => r.type === "sakit" && bukanUjiCoba(r),
+    saring: (r) => r.type === "sakit" && masukLaporan(r),
   });
 
   const pakan = deretMingguan(keuangan, {
     tanggal: (r) => r.date,
     nilai: (r) => r.amount || 0,
-    saring: (r) => r.type === "pengeluaran" && r.category === "pakan" && bukanUjiCoba(r),
+    saring: (r) => r.type === "pengeluaran" && r.category === "pakan" && masukLaporan(r),
   });
 
   const telur = deretMingguan(breeding, {

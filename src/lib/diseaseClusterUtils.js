@@ -7,6 +7,7 @@
  * Tidak menulis/mengubah data apa pun — semua dihitung dari record yang ada.
  */
 import { differenceInCalendarDays, parseISO, format } from "date-fns";
+import { masukLaporan } from "./laporan";
 
 const DIAGNOSIS_LABELS = {
   infeksi_saluran_pernapasan: "Infeksi Saluran Pernapasan",
@@ -63,7 +64,7 @@ export function detectDiseaseClusters(healthRecords, enclosureMap = {}) {
   // Bangun "event" per diagnosis dari catatan sakit.
   const events = [];
   healthRecords.forEach((h) => {
-    if (!h || h.is_test_data || h.excluded_from_reports) return;
+    if (!masukLaporan(h)) return;
     if (h.type !== "sakit") return;
     if (!h.date) return;
     const name = h.tortoise_name || "—";

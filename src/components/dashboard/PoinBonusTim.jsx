@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { Trophy, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { tingkatanBonus, tingkatTercapai } from "@/lib/bonus";
+import { masukLaporan } from "@/lib/laporan";
 
 const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const PERAN = ["keeper", "kepala_feeder"];
@@ -55,7 +56,7 @@ export default function PoinBonusTim() {
           (c) =>
             String(c.date || "").startsWith(monthKey) &&
             c.status !== "rejected" &&
-            !c.is_test_data,
+            masukLaporan(c),
         )
         .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0),
     [checklists, monthKey],
@@ -72,7 +73,7 @@ export default function PoinBonusTim() {
               c.employee_email === u.email &&
               String(c.date || "").startsWith(monthKey) &&
               c.status !== "rejected" &&
-              !c.is_test_data,
+              masukLaporan(c),
           )
           .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0);
 

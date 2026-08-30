@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { diPeternakan } from "@/lib/populasiKura";
 import { Info, Save, Loader2, Settings } from "lucide-react";
+import { masukLaporan } from "@/lib/laporan";
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
@@ -54,7 +55,7 @@ export default function PengaturanHPP() {
 
     return months.map(month => {
       const totalFinance = allFinanceTx
-        .filter(t => t.type === "pengeluaran" && (t.date || "").startsWith(month) && !t.is_test_data && !t.excluded_from_reports)
+        .filter(t => t.type === "pengeluaran" && (t.date || "").startsWith(month) && masukLaporan(t))
         .reduce((s, t) => s + (t.amount || 0), 0);
 
       // Hanya totalFinance. Gaji sudah ada di dalamnya sejak slip yang ditandai

@@ -17,6 +17,7 @@ import { base44 } from "@/api/base44Client";
 import { format, subDays, addDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
+import { masukLaporan } from "@/lib/laporan";
   Users, Camera, CameraOff, Clock, AlertTriangle, CheckCircle2,
   ChevronLeft, ChevronRight, MapPin, Timer, ImageOff, Eye, FileEdit, WifiOff
 } from "lucide-react";
@@ -263,7 +264,7 @@ export default function LayarTimPage() {
 
   // Gabung per email; abaikan data uji agar statistik tidak tercemar
   const rows = checklists
-    .filter((c) => !c.is_test_data && !c.excluded_from_reports)
+    .filter(masukLaporan)
     .map((c) => ({
       key: c.employee_email || c.id,
       checklist: c,
