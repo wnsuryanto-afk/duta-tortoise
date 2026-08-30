@@ -567,10 +567,28 @@ export default function OwnerDashboard({ user }) {
   );
   // Pakan ikut diperiksa di sini. Sebelumnya hanya barang gudang yang masuk
   // daftar peringatan, sehingga pakan yang habis tidak memunculkan apa pun.
-  const stokPerlu = periksaStok(warehouseItems, feedStocks, now);
+  //
+  // Item yang angkanya tidak pernah diperbarui dikeluarkan dari daftar habis:
+  // "Stok habis: Kaktus" muncul setiap hari selama tiga bulan bukan karena
+  // kaktusnya habis, melainkan karena angkanya dinolkan dan tidak pernah
+  // disentuh lagi. Peringatan yang tidak bisa dihilangkan dengan bekerja akan
+  // diabaikan, dan bersamanya ikut terabaikan peringatan yang suatu hari benar.
+  const stokPerlu = periksaStokTerpantau(warehouseItems, feedStocks, stockMovements, now);
   stokPerlu.habis.forEach(i =>
     criticalAlerts.push({ type: "red", msg: `Stok habis: ${i.name}${i._sumber === "pakan" ? " (pakan)" : ""}` })
   );
+  // Satu kalimat untuk seluruh item yang tidak terpantau, bukan satu alarm per
+  // item. Yang perlu diputuskan pemilik hanya satu: mau dicatat atau tidak.
+  if (stokPerlu.takTerpantau.length > 0) {
+    const sejak = stokPerlu.pergerakanTerakhirKeseluruhan;
+    criticalAlerts.push({
+      type: "yellow",
+      msg:
+        `${stokPerlu.takTerpantau.length} item stok belum pernah dicatat pergerakannya` +
+        (sejak ? ` sejak ${sejak}` : "") +
+        ` — angkanya belum bisa dipakai`,
+    });
+  }
   stokPerlu.menipis
     .slice(0, 3).forEach(i =>
       criticalAlerts.push({ type: "yellow", msg: `Stok menipis: ${i.name} — sisa ${i.current_stock} ${i.unit}` })
