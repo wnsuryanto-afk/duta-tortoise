@@ -18,12 +18,6 @@ export function useCostPerTortoise(period) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: salarySlips = [] } = useQuery({
-    queryKey: ["hpp-salaries", monthKey],
-    queryFn: () => base44.entities.SalarySlip.list("-period", 200),
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: pettyCash = [] } = useQuery({
     queryKey: ["hpp-pettycash", monthKey],
     queryFn: () => base44.entities.PettyCashRequest.list("-disbursement_date", 200),
@@ -49,10 +43,16 @@ export function useCostPerTortoise(period) {
     const monthTx = finances.filter(t => t.date?.startsWith(monthKey) && t.type === "pengeluaran" && masukLaporan(t));
     const totalFinance = monthTx.reduce((s, t) => s + (t.amount || 0), 0);
 
-    // Salary slips paid bulan ini
-    const totalGaji = salarySlips
-      .filter(s => s.period === monthKey && s.status === "paid")
-      .reduce((s, sl) => s + (sl.net_total || 0), 0);
+    // Gaji bulan ini — dibaca dari FinanceTransaction berkategori gaji, BUKAN
+    // dari SalarySlip.
+    //
+    // Angka ini dipakai LabaRugiWidget sebagai rincian pengeluaran. Selama
+    // sumbernya SalarySlip, ia menghitung uang yang berbeda dari totalFinance:
+    // begitu slip pertama ditandai dibayar, onSalarySlipPaid membuat
+    // FinanceTransaction-nya (sudah masuk totalFinance) DAN slipnya sendiri
+    // masih terbaca di sini — gaji yang sama muncul dua kali di beranda.
+    // Membacanya dari kategori membuat rincian ini selalu berupa bagian dari
+    // total, bukan tambahan di luarnya.
 
     // PettyCash disbursed bulan ini
     const totalPC = pettyCash
@@ -117,6 +117,7 @@ export function useCostPerTortoise(period) {
       const c = t.category || "lainnya";
       byCat[c] = (byCat[c] || 0) + (t.amount || 0);
     });
+    const totalGaji = (byCat["gaji"] || 0) + (byCat["gaji_karyawan"] || 0);
 
     return {
       period: monthKey,
@@ -138,7 +139,7 @@ export function useCostPerTortoise(period) {
         petty_cash: totalPC,
       },
     };
-  }, [finances, salarySlips, pettyCash, tortoises, settings, monthKey]);
+  }, [finances, pettyCash, tortoises, settings, monthKey]);
 }
 
 /**

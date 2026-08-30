@@ -35,12 +35,15 @@ export default function LabaRugiWidget() {
     .filter(f => f.type === "pengeluaran")
     .reduce((s, f) => s + (f.amount || 0), 0);
 
-  // Add salary slips and petty cash (from costData breakdown)
-  // Pencairan kas kecil tidak ditambahkan: itu perpindahan uang ke kotak kas,
-  // bukan biaya. Belanjanya sudah tercatat sebagai FinanceTransaction
-  // berkategori "kas_kecil" dan sudah ikut terjumlah di `pengeluaran`.
-  // Gaji ditambahkan karena tidak punya FinanceTransaction di mana pun.
-  const totalPengeluaran = pengeluaran + (costData?.breakdown?.gaji_karyawan || 0);
+  // Tidak ada yang ditambahkan di luar FinanceTransaction.
+  //
+  // Pencairan kas kecil adalah perpindahan uang ke kotak kas, bukan biaya —
+  // belanjanya sudah tercatat berkategori "kas_kecil". Gaji juga TIDAK
+  // ditambahkan lagi: sejak D18, slip yang ditandai dibayar membuat
+  // FinanceTransaction-nya sendiri, jadi gajinya sudah ada di `pengeluaran`.
+  // Menambahkan breakdown.gaji_karyawan di atasnya akan menghitung setiap gaji
+  // dua kali mulai dari slip pertama yang ditandai dibayar.
+  const totalPengeluaran = pengeluaran;
   const labaRugi = pemasukan - totalPengeluaran;
   const maxVal = Math.max(pemasukan, totalPengeluaran, 1);
   const incomePct = Math.round((pemasukan / maxVal) * 100);
