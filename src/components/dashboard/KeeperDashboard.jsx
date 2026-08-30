@@ -12,7 +12,8 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
+import { getCurrentPosition, haversineDistance } from "@/components/attendance/useGPSLocation";
+import { barisAbsensiSah, catatCheckIn, catatCheckOut } from "@/lib/absensi";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
@@ -42,7 +43,7 @@ export default function KeeperDashboard() {
     queryKey: ["attendance-today", user?.email, today],
     queryFn: async () => {
       const res = await base44.entities.Attendance.filter({ employee_email: user.email, date: today });
-      return res[0] || null;
+      return barisAbsensiSah(res);
     },
     enabled: !!user?.email,
     refetchInterval: 30000,
@@ -127,20 +128,24 @@ export default function KeeperDashboard() {
       setGpsError(err.message);
     }
 
-    await base44.entities.Attendance.create({
-      employee_id: user.id,
-      employee_name: user.full_name || user.email,
-      employee_email: user.email,
-      date: today,
-      check_in: nowStr(),
-      status: "hadir",
-      check_in_lat: lat,
-      check_in_lng: lng,
-      location_verified: verified,
-      shift_start: salaryConfig?.shift_start || "08:00",
-      shift_end: salaryConfig?.shift_end || "16:00",
-    });
-    queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
+    try {
+      const { sudahAda } = await catatCheckIn({
+        user, tanggal: today, jam: nowStr(),
+        lat, lng, verified,
+        shiftStart: salaryConfig?.shift_start,
+        shiftEnd: salaryConfig?.shift_end,
+      });
+      if (sudahAda) setLocationWarning("Kamu sudah check in hari ini — absensinya tidak dicatat dua kali.");
+    } catch (err) {
+      setGpsError(`Check in gagal tersimpan: ${err.message}. Coba lagi.`);
+      setCheckLoading(false);
+      return;
+    }
+
+    // Tunggu kuerinya benar-benar segar sebelum tombolnya dilepas. Melepas lebih
+    // dulu membuka jendela beberapa ratus milidetik di mana tombol sudah aktif
+    // sementara `hasCheckedIn` masih false — di situlah baris kembar lahir.
+    await queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
     setCheckLoading(false);
   };
 
@@ -150,13 +155,13 @@ export default function KeeperDashboard() {
     setGpsError(null);
     setLocationWarning(null);
 
+    let posisi = null;
     if (farmConfigured) {
       // GPS gagal tidak mengunci check out — lihat catatan di GuidedHariIni.
       let pos = null;
       try {
         pos = await getCurrentPosition();
-      } catch (err) {
-        setGpsError(null);
+      } catch {
         setLocationWarning("GPS tidak terbaca. Check out tetap dicatat, tapi ditandai tanpa lokasi.");
       }
       if (pos) {
@@ -167,44 +172,24 @@ export default function KeeperDashboard() {
           return;
         }
       }
-      const checkoutTime = nowStr();
-      const shiftEnd = todayAttendance.shift_end || salaryConfig?.shift_end || "16:00";
-      const overtimeHours = calcOvertimeHours(checkoutTime, shiftEnd);
-      await base44.entities.Attendance.update(todayAttendance.id, {
-        check_out: checkoutTime,
-        check_out_lat: pos ? pos.lat : null,
-        check_out_lng: pos ? pos.lng : null,
-        checkout_location_verified: !!pos,
-        overtime_hours: overtimeHours,
-      });
-      if (overtimeHours > 0) {
-        await base44.entities.OvertimeLog.create({
-          employee_name: todayAttendance.employee_name,
-          employee_email: todayAttendance.employee_email,
-          date: today,
-          hours: overtimeHours,
-          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
-        });
-      }
-    } else {
-      const checkoutTime = nowStr();
-      const shiftEnd = todayAttendance.shift_end || salaryConfig?.shift_end || "16:00";
-      const overtimeHours = calcOvertimeHours(checkoutTime, shiftEnd);
-      await base44.entities.Attendance.update(todayAttendance.id, {
-        check_out: checkoutTime,
-        overtime_hours: overtimeHours,
-      });
-      if (overtimeHours > 0) {
-        await base44.entities.OvertimeLog.create({
-          employee_name: todayAttendance.employee_name,
-          employee_email: todayAttendance.employee_email,
-          date: today,
-          hours: overtimeHours,
-          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
-        });
-      }
+      posisi = pos;
     }
-    queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
+
+    try {
+      await catatCheckOut({
+        absensi: { ...todayAttendance, shift_end: todayAttendance.shift_end || salaryConfig?.shift_end },
+        jam: nowStr(),
+        lat: posisi ? posisi.lat : null,
+        lng: posisi ? posisi.lng : null,
+        adaLokasi: !!posisi,
+      });
+    } catch (err) {
+      setGpsError(`Check out gagal tersimpan: ${err.message}. Coba lagi.`);
+      setCheckLoading(false);
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
     queryClient.invalidateQueries({ queryKey: ["overtime-logs"] });
     setCheckLoading(false);
   };
