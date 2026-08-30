@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibNow, wibTanggal, notifSekali, userPerRole, jamLembur } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibNow, wibTanggal, notifSekali, userPerRole, jamLemburBerbukti } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
 
 const PERAN_HARIAN = ["keeper", "kepala_feeder"];
@@ -89,8 +89,9 @@ Deno.serve(async (req) => {
       );
       const hariHadir = absenSaya.filter((a: any) => a.status === "hadir").length;
 
-      // Lembur per hari: menit yang dilewati setelah jam selesai shift — aturan
-      // yang sama persis dengan WeeklySlipManager yang menerbitkan slipnya.
+      // Lembur per hari: menit yang dilewati setelah jam selesai shift, DAN
+      // hanya bila ada tugas tercatat setelah jam itu — aturan yang sama persis
+      // dengan WeeklySlipManager yang menerbitkan slipnya.
       //
       // Sebelumnya di sini (dan di sana) dipakai "jam kerja di atas 8 jam".
       // Shift peternakan ini 07:00–16:00, sembilan jam, jadi aturan itu memberi
@@ -102,7 +103,10 @@ Deno.serve(async (req) => {
         if (!att) continue;
         const hadir = att.status === "hadir" || (att.check_in && !att.status);
         if (!hadir) continue;
-        jamLemburMinggu += jamLembur(String(att.check_out || ""), String(att.shift_end || "16:00"));
+        const cl = (checklists || []).find(
+          (c: any) => c.date === ds && c.employee_email === k.email,
+        );
+        jamLemburMinggu += jamLemburBerbukti(att, cl);
       }
 
       // Hanya checklist yang SUDAH DISETUJUI yang dihitung — persis seperti

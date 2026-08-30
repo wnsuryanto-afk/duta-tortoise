@@ -474,7 +474,7 @@ export default function GuidedHariIni({ user }) {
     }
 
     try {
-      await catatCheckOut({
+      const { lembur, lemburKasar, adaBukti } = await catatCheckOut({
         absensi: { ...attendance, shift_end: attendance.shift_end || salaryConfig?.shift_end },
         jam: nowStr(),
         lat: posisi ? posisi.lat : null,
@@ -483,6 +483,9 @@ export default function GuidedHariIni({ user }) {
         selfieUrl,
         tandaUji: testModeTag,
       });
+      if (!adaBukti && lemburKasar > 0 && lembur === 0) {
+        showMsg("warn", "Kamu pulang lewat jam shift, tapi tidak ada tugas yang tercatat setelah jam itu — lembur belum dihitung. Centang dulu pekerjaan sore ini.");
+      }
     } catch (err) {
       showMsg("error", `Check out gagal tersimpan: ${err.message}. Coba lagi.`);
       setLoading(false);

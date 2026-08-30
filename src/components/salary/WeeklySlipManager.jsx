@@ -116,7 +116,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
       // Lembur — per hari dari jam check-in/out, dibulatkan ke bawah ke jam penuh.
       // Bila "Hitung lembur otomatis" dimatikan, pakai isian manual owner/admin.
       const overtimeHours = autoOvertime
-        ? calcWeeklyOvertime(empAtt, days.map((d) => format(d, "yyyy-MM-dd")))
+        ? calcWeeklyOvertime(empAtt, days.map((d) => format(d, "yyyy-MM-dd")), weekChecklists)
         : Number(manualOvertime[emp.email] || 0);
       const overtimePay = overtimeHours * overtimeRate;
 

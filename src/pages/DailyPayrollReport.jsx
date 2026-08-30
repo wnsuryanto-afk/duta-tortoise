@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { hanyaLaporan } from "@/lib/laporan";
-import { attendanceHours, jamLembur } from "@/lib/weeklySalaryUtils";
+import { attendanceHours, jamLemburBerbukti } from "@/lib/weeklySalaryUtils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,15 @@ export default function DailyPayrollReport() {
     enabled: isAdmin,
   });
 
+  const { data: checklists = [] } = useQuery({
+    queryKey: ["checklists-week-payroll", dateFrom],
+    queryFn: async () => {
+      const all = await base44.entities.DailyChecklist.list("-date", 500);
+      return hanyaLaporan(all).filter((c) => c.date >= dateFrom && c.date <= dateTo);
+    },
+    enabled: isAdmin,
+  });
+
   const { data: salaryConfigs = [] } = useQuery({
     queryKey: ["salary-configs"],
     queryFn: () => base44.entities.SalaryConfig.list(),
@@ -96,10 +105,12 @@ export default function DailyPayrollReport() {
         totalDays++;
         totalHours += attendanceHours(att);
         // Lembur memakai aturan yang sama dengan seluruh aplikasi: menit yang
-        // dilewati setelah jam selesai shift. Sebelum ini berkas ini punya
-        // salinannya sendiri berbasis "jam kerja di atas 8", yang memberi
-        // lembur kepada orang yang hanya bekerja shift 9 jamnya.
-        otHours += jamLembur(att.check_out, att.shift_end);
+        // dilewati setelah jam selesai shift, dan hanya bila ada tugas tercatat
+        // setelah jam itu. Sebelum ini berkas ini punya salinannya sendiri
+        // berbasis "jam kerja di atas 8", yang memberi lembur kepada orang yang
+        // hanya bekerja shift 9 jamnya.
+        const cl = checklists.find((c) => c.date === dateStr && c.employee_email === emp.email);
+        otHours += jamLemburBerbukti(att, cl);
       }
     });
 

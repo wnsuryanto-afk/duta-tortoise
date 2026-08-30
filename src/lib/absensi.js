@@ -38,7 +38,7 @@
  */
 
 import { base44 } from "@/api/base44Client";
-import { SHIFT_BAWAAN, keMenit, jamLembur } from "@/lib/weeklySalaryUtils";
+import { SHIFT_BAWAAN, keMenit, jamLembur, adaBuktiKerjaLembur } from "@/lib/weeklySalaryUtils";
 
 export { SHIFT_BAWAAN, keMenit, jamLembur };
 
@@ -104,11 +104,35 @@ export async function catatCheckIn({ user, tanggal, jam, lat, lng, verified, shi
  * Menulis `overtime_hours` di baris absensi (untuk dilihat orangnya) DAN membuat
  * `OvertimeLog` (yang benar-benar dibayar). Bila OvertimeLog untuk orang dan
  * tanggal yang sama sudah ada, yang lama diperbarui — tidak dibuat baris kedua.
+ *
+ * Lembur hanya masuk OvertimeLog bila ADA BUKTI KERJA setelah jam selesai shift
+ * — lihat `adaBuktiKerjaLembur`. Tanpa bukti, jam pulangnya tetap tercatat dan
+ * tetap terlihat, tetapi tidak menjadi upah.
  */
-export async function catatCheckOut({ absensi, jam, lat, lng, adaLokasi, selfieUrl, tandaUji }) {
-  if (!absensi?.id) return { lembur: 0 };
+export async function catatCheckOut({ absensi, jam, lat, lng, adaLokasi, selfieUrl, checklist, tandaUji }) {
+  if (!absensi?.id) return { lembur: 0, lemburKasar: 0, adaBukti: true };
 
-  const lembur = jamLembur(jam, absensi.shift_end || SHIFT_BAWAAN.selesai);
+  const shiftEnd = absensi.shift_end || SHIFT_BAWAAN.selesai;
+  const lemburKasar = jamLembur(jam, shiftEnd);
+
+  // Checklist boleh dititipkan pemanggil bila layarnya sudah memuatnya; kalau
+  // tidak, dibaca sendiri di sini. Pemeriksaan bukti tidak boleh bergantung
+  // pada layar mana yang kebetulan sudah memuat data yang tepat.
+  let harian = checklist;
+  if (lemburKasar > 0 && harian === undefined) {
+    try {
+      const cl = await base44.entities.DailyChecklist.filter({
+        employee_email: absensi.employee_email,
+        date: absensi.date,
+      });
+      harian = (cl || [])[0] || null;
+    } catch {
+      harian = undefined; // gagal baca → dianggap tidak tahu, lembur tetap dihitung
+    }
+  }
+
+  const adaBukti = lemburKasar <= 0 ? true : adaBuktiKerjaLembur(harian, shiftEnd);
+  const lembur = adaBukti ? lemburKasar : 0;
 
   await base44.entities.Attendance.update(absensi.id, {
     check_out: jam,
@@ -121,7 +145,7 @@ export async function catatCheckOut({ absensi, jam, lat, lng, adaLokasi, selfieU
 
   if (lembur > 0) await simpanLembur(absensi, lembur, jam, tandaUji);
 
-  return { lembur };
+  return { lembur, lemburKasar, adaBukti };
 }
 
 /** Satu OvertimeLog per orang per tanggal — dibuat bila belum ada, diperbarui bila sudah. */

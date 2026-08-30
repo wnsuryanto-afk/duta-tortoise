@@ -144,17 +144,76 @@ export function jamLembur(jamPulang, jamSelesaiShift = SHIFT_BAWAAN.selesai) {
   return Math.round(((pulang - selesai) / 60) * 2) / 2;
 }
 
+// Tugas absensi bukan bukti kerja: mencentang "Absensi jam pulang" pukul 16:15
+// hanya membuktikan bahwa orangnya mencentang absensi, bukan bahwa ia bekerja.
+const JUDUL_BUKAN_KERJA = /absensi/i;
+
+/** Jam-jam tugas yang tercatat pada satu checklist, "HH:mm", sudah terurut. */
+export function jamTugasTercatat(checklist) {
+  const tugas = Array.isArray(checklist?.completed_tasks) ? checklist.completed_tasks : [];
+  return tugas
+    .filter((t) => !JUDUL_BUKAN_KERJA.test(String(t?.task_title || "")))
+    .map((t) => String(t?.recorded_at || t?.photo_taken_at || "").trim())
+    .filter((j) => keMenit(j) !== null)
+    .sort();
+}
+
+/**
+ * Apakah lembur hari ini punya bukti kerja?
+ *
+ * Kekhawatiran pemilik, dengan kata-katanya sendiri: "kalau tidak bekerja,
+ * tetapi dia hanya duduk-duduk diam, apakah dia juga dapat lembur?" Dengan
+ * aturan jam murni jawabannya ya — tinggal lebih lama saja sudah dibayar.
+ *
+ * Jadi lembur baru dihitung bila ada tugas yang TERCATAT pada atau setelah jam
+ * selesai shift. Tiga keadaan, dan yang ketiga yang paling perlu dijaga:
+ *
+ *   · Ada tugas tercatat >= jam selesai shift → ada bukti, lembur dihitung.
+ *   · Ada tugas tercatat, tetapi semuanya sebelum jam selesai shift
+ *                                             → bukti bahwa tidak ada pekerjaan
+ *                                               setelah jam pulang, lembur nol.
+ *   · TIDAK ADA satu pun tugas yang punya jam
+ *                                             → aplikasi tidak tahu, bukan tahu
+ *                                               bahwa orangnya diam. Catatan lama
+ *                                               (sebelum `recorded_at` mulai
+ *                                               ditulis) semuanya begini. Lembur
+ *                                               tetap dihitung — kekosongan data
+ *                                               kami sendiri tidak boleh memotong
+ *                                               upah orang secara surut.
+ *
+ * Diuji pada data sungguhan Angsolo:
+ *   29 Agu 2026 — pulang 16:16, tugas terakhir 14:43        → 0 jam (dulu 0,5)
+ *   23 Jul 2026 — pulang 16:16, pakan siang tercatat 16:14  → 0,5 jam (tetap)
+ *   16 Jul 2026 — pulang 16:32, tidak ada jam tercatat      → 0,5 jam (tetap)
+ */
+export function adaBuktiKerjaLembur(checklist, jamSelesaiShift = SHIFT_BAWAAN.selesai) {
+  const jam = jamTugasTercatat(checklist);
+  if (jam.length === 0) return true; // tidak tahu bukan berarti tahu tidak bekerja
+  const batas = keMenit(jamSelesaiShift) ?? keMenit(SHIFT_BAWAAN.selesai);
+  return jam.some((j) => keMenit(j) >= batas);
+}
+
+/** Lembur satu hari, sudah disaring oleh bukti kerja. */
+export function jamLemburBerbukti(att, checklist) {
+  const kasar = jamLembur(att?.check_out, att?.shift_end || SHIFT_BAWAAN.selesai);
+  if (kasar <= 0) return 0;
+  return adaBuktiKerjaLembur(checklist, att?.shift_end || SHIFT_BAWAAN.selesai) ? kasar : 0;
+}
+
 // Lembur mingguan: jumlah lembur harian, dengan aturan yang sama persis seperti
 // yang dipakai saat check-out. Tidak ada pembulatan kedua di tingkat minggu —
 // membulatkan ke bawah sekali lagi akan membuang setengah jam yang sudah sah.
-export function calcWeeklyOvertime(attendances, dayDateStrings) {
+export function calcWeeklyOvertime(attendances, dayDateStrings, checklists = []) {
   let total = 0;
   for (const ds of dayDateStrings) {
     const att = attendances.find((a) => a.date === ds);
     if (!att) continue;
     const present = att.status === "hadir" || (att.check_in && !att.status);
     if (!present) continue;
-    total += jamLembur(att.check_out, att.shift_end || SHIFT_BAWAAN.selesai);
+    const cl = (checklists || []).find(
+      (c) => c.date === ds && c.employee_email === att.employee_email,
+    );
+    total += jamLemburBerbukti(att, cl);
   }
   return total;
 }

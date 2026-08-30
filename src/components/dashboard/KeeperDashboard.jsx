@@ -179,14 +179,20 @@ export default function KeeperDashboard() {
     }
 
     try {
-      await catatCheckOut({
+      const { lembur, lemburKasar, adaBukti } = await catatCheckOut({
         absensi: { ...todayAttendance, shift_end: todayAttendance.shift_end || salaryConfig?.shift_end },
         jam: nowStr(),
         lat: posisi ? posisi.lat : null,
         lng: posisi ? posisi.lng : null,
         adaLokasi: !!posisi,
+        checklist: todayChecklist,
         tandaUji: testModeTag,
       });
+      if (!adaBukti && lemburKasar > 0 && lembur === 0) {
+        setLocationWarning(
+          "Kamu pulang lewat jam shift, tapi tidak ada tugas yang tercatat setelah jam itu — jadi lembur belum dihitung. Centang dulu pekerjaan yang kamu kerjakan sore ini.",
+        );
+      }
     } catch (err) {
       setGpsError(`Check out gagal tersimpan: ${err.message}. Coba lagi.`);
       setCheckLoading(false);

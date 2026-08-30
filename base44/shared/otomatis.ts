@@ -59,6 +59,37 @@ export function jamLembur(jamPulang: string, jamSelesaiShift = "16:00"): number 
   return Math.round(((pulang - selesai) / 60) * 2) / 2;
 }
 
+/**
+ * Apakah lembur hari itu punya bukti kerja? Kembaran `adaBuktiKerjaLembur` di
+ * src/lib/weeklySalaryUtils.js — lihat penjelasan lengkapnya di sana.
+ *
+ * Ringkasnya: ada tugas tercatat pada atau setelah jam selesai shift → ada
+ * bukti. Ada tugas tercatat tetapi semuanya sebelum itu → tidak ada lembur.
+ * Tidak ada satu pun tugas yang punya jam → aplikasi tidak tahu, dan tidak tahu
+ * bukan alasan memotong upah orang.
+ *
+ * Tugas yang judulnya mengandung "absensi" tidak dihitung sebagai bukti:
+ * mencentang "Absensi jam pulang" pukul 16:15 hanya membuktikan pencentangan.
+ */
+export function adaBuktiKerjaLembur(checklist: any, jamSelesaiShift = "16:00"): boolean {
+  const tugas = Array.isArray(checklist?.completed_tasks) ? checklist.completed_tasks : [];
+  const jam = tugas
+    .filter((t: any) => !/absensi/i.test(String(t?.task_title || "")))
+    .map((t: any) => jamDari(String(t?.recorded_at || t?.photo_taken_at || "")))
+    .filter(Boolean);
+  if (jam.length === 0) return true;
+  const batas = keMenit(jamSelesaiShift, "16:00");
+  return jam.some((j: string) => keMenit(j, "00:00") >= batas);
+}
+
+/** Lembur satu hari, sudah disaring oleh bukti kerja. */
+export function jamLemburBerbukti(att: any, checklist: any): number {
+  const shiftEnd = String(att?.shift_end || "16:00");
+  const kasar = jamLembur(String(att?.check_out || ""), shiftEnd);
+  if (kasar <= 0) return 0;
+  return adaBuktiKerjaLembur(checklist, shiftEnd) ? kasar : 0;
+}
+
 /** Sudah lewat jam yang disetel (WIB)? */
 export function sudahWaktunya(jamSetel: string, bawaan: string): boolean {
   return menitSekarang() >= keMenit(jamSetel || bawaan, bawaan);
