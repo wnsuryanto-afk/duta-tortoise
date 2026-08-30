@@ -135,26 +135,14 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
       moved_by: user?.full_name || user?.email || "-",
     });
 
-    try {
-      // Angka tersimpan tetap disegarkan, tetapi dengan hitungan yang sama
-      // dengan yang ditampilkan: lewat nomor kandang, bukan pencocokan nama,
-      // dan menghormati kura yang sudah mati/terjual/diarsipkan.
-      const allEnclosures = await base44.entities.Enclosure.list();
-      const allTortoises = await base44.entities.Tortoise.list("-created_date", 1000);
-
-      const kandangAsal = kandangDariNama(oldEnclosure, allEnclosures);
-      if (kandangAsal) {
-        await base44.entities.Enclosure.update(kandangAsal.id, {
-          current_count: hitungIsiKandang(kandangAsal, allTortoises, allEnclosures, tortoise.id),
-        });
-      }
-      const kandangTuju = kandangDariNama(target, allEnclosures);
-      if (kandangTuju) {
-        await base44.entities.Enclosure.update(kandangTuju.id, {
-          current_count: hitungIsiKandang(kandangTuju, allTortoises, allEnclosures, tortoise.id) + 1,
-        });
-      }
-    } catch (_) {}
+    // Angka kandang disegarkan lewat satu pustaka (lib/enclosureCount), yang
+    // kini memakai hitungan yang sama dengan yang ditampilkan di layar Kandang.
+    // Sebelumnya blok ini menghitung sendiri di sini — benar, tetapi hanya di
+    // layar ini; jalur lain memanggil pustaka yang aturannya lebih longgar dan
+    // menimpanya kembali.
+    await recalcEnclosureCountsAman(
+      [oldEnclosure, target].filter(Boolean),
+    );
 
     onMoved();
     onClose();

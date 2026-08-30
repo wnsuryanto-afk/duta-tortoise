@@ -8,6 +8,7 @@ import InfoHint from "@/components/ui/info-hint";
 import { periksaPemindahan, tulisKandang } from "@/lib/kandang";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 /**
  * PemindahanKandang — mengisi nomor kandang pada kura yang belum punya.
@@ -57,10 +58,15 @@ export default function PemindahanKandang() {
       { serentak: 4, onKemajuan: (sudah, t) => setSibuk({ sudah, total: t }) }
     );
 
+    // Pemindahan massal mengubah penghuni banyak kandang sekaligus dan dulu
+    // tidak menyegarkan satu angka pun.
+    await recalcEnclosureCountsAman();
+
     setSibuk(null);
     setHasilAkhir(hasil);
     qc.invalidateQueries({ queryKey: ["tortoises-pemindahan"] });
     qc.invalidateQueries({ queryKey: ["tortoises"] });
+    qc.invalidateQueries({ queryKey: ["enclosures"] });
 
     const { nada, teks } = ringkasHasil(hasil, "kura");
     if (nada === "berhasil") toast.success(teks);
