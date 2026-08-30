@@ -387,6 +387,20 @@ export default function KepalaFeederDashboard({ user }) {
       {/* ── PAKAN HARI INI ── */}
       <PakanHarianWidget />
 
+      {/* Stok yang angkanya belum pernah dicatat disebut sekali, dengan kata
+          yang benar — bukan sebagai sederet alarm merah yang tidak bisa
+          dihilangkan dengan bekerja. */}
+      {stokBelumDicatat > 0 && (
+        <div className="bg-card rounded-xl border border-border p-3.5 flex items-start gap-2.5">
+          <Package className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span className="font-semibold text-foreground">{stokBelumDicatat} item stok belum dicatat pergerakannya.</span>{" "}
+            Angkanya belum bisa dipakai, jadi tidak ditampilkan sebagai stok kritis.
+            Catat barang masuk dan keluar dulu supaya peringatan stok berarti.
+          </p>
+        </div>
+      )}
+
       {/* ── SECTION STOK KRITIS ── */}
       {(criticalWarehouseStock.length > 0 || criticalFeedStock.length > 0) && (
         <div className="bg-card rounded-xl border border-red-200 p-4">
