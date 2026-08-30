@@ -75,6 +75,46 @@ export function ringkasProduksi(clutches = []) {
 }
 
 /**
+ * Ringkasan hatch rate dari BARIS TELUR, bukan dari angka ringkas clutch.
+ *
+ * `hatchRate()` di atas menyaring per CLUTCH: clutch yang belum ada hasilnya
+ * dikeluarkan seluruhnya. Fungsi ini menyaring per TELUR: telur yang masih
+ * "belum_dicek" dikeluarkan dari penyebut, meskipun clutch-nya sudah ditutup.
+ *
+ * Bedanya baru terlihat pada clutch yang ditutup sementara sebagian telurnya
+ * belum sempat diperiksa. `hatchRate()` menghitung telur itu sebagai gagal;
+ * fungsi ini tidak menghitungnya sama sekali. Untuk data Duta Tortoise saat
+ * ini keduanya menghasilkan angka yang sama persis (49/72 = 68,1%) karena
+ * setiap clutch yang selesai sudah diperiksa seluruh telurnya.
+ *
+ * Aturan ini dulu ditulis DUA KALI di BreedingStatsSection — sekali untuk grafik
+ * bulanan, sekali untuk ringkasan tahunan — dengan jalur cadangan yang berbeda
+ * di antara keduanya.
+ *
+ * @returns {{ dicek: number, menetas: number, persen: number }}
+ */
+export function ringkasTelurDicek(breedings = []) {
+  let dicek = 0;
+  let menetas = 0;
+  for (const b of breedings || []) {
+    for (const e of b?.egg_records || []) {
+      if (e?.status === "belum_dicek") continue;
+      dicek += 1;
+      if (e?.status === "menetas") menetas += 1;
+    }
+  }
+  // Jalur cadangan untuk clutch lama yang tidak punya baris per telur sama
+  // sekali: pakai angka ringkasnya, dan hanya dari clutch yang sudah ada
+  // hasilnya — sama dengan aturan hatchRate() di atas.
+  if (dicek === 0) {
+    const selesai = (breedings || []).filter(adaHasil);
+    dicek = selesai.reduce((s, c) => s + (Number(c.egg_count) || 0), 0);
+    menetas = selesai.reduce((s, c) => s + (Number(c.hatched_count) || 0), 0);
+  }
+  return { dicek, menetas, persen: dicek > 0 ? (menetas / dicek) * 100 : 0 };
+}
+
+/**
  * Jumlah telur sebuah clutch — SATU jawaban untuk pertanyaan yang selama ini
  * dijawab dua kali dengan angka berbeda.
  *
