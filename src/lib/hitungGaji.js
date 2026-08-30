@@ -30,6 +30,9 @@
  * gaji yang sudah berjalan.
  */
 
+import { nilaiPerPoin } from "@/lib/nilaiPoin";
+
+
 /** Peran yang dibayar harian; sisanya dibayar bulanan flat. */
 export const PERAN_HARIAN = ["keeper", "kepala_feeder"];
 

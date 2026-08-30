@@ -128,6 +128,7 @@ export default function MonthlySalaryPage() {
         periode: period,
         awal,
         akhir: akhirPeriode,
+        companySettings,
       });
 
       // Nama lama dipertahankan supaya tabel, ekspor PDF, dan kartu ringkasan
