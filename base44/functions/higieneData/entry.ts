@@ -2,8 +2,8 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, wibNow, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getSettings, getEmployeePhone } from "../../shared/whatsapp.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { STATUS_KELUAR } from "../../shared/kura.ts";
 
-const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 
 /**
  * A12 — Laporan kebersihan data mingguan, dikirim ke admin (bukan ke owner).

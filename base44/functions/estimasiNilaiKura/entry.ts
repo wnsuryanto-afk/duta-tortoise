@@ -1,8 +1,8 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibNow, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { STATUS_KELUAR } from "../../shared/kura.ts";
 
-const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 const MIN_SAMPEL = 3;
 
 function median(angka: number[]): number {

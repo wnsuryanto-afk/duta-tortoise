@@ -11,8 +11,8 @@ import {
   petaFotoHarian,
 } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
+import { STATUS_KELUAR } from "../../shared/kura.ts";
 
-const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 
 /**
  * A14 — Laporan khusus penyimpangan untuk owner.

@@ -10,9 +10,8 @@ import {
 } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getSettings, trackAICall } from "../../shared/whatsapp.ts";
 import { terjadwalPada } from "../../shared/jadwalSOP.ts";
-import { clutchAktif } from "../../shared/kura.ts";
+import { clutchAktif, STATUS_KELUAR } from "../../shared/kura.ts";
 
-const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 
 /**
  * C1 — "Kepala Feeder Digital": perintah kerja pagi yang disusun dari keadaan,

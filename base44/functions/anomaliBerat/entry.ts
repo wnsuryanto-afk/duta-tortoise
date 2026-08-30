@@ -1,9 +1,8 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { STATUS_KELUAR } from "../../shared/kura.ts";
 
-/** Status yang berarti kura sudah tidak ada lagi di peternakan (samakan dengan populasiKura.js). */
-const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
 
 /**
  * A11 — Deteksi kura yang turun berat atau berhenti tumbuh.
