@@ -50,8 +50,11 @@ export default function KepatuhanSopCard() {
     staleTime: 30 * 60 * 1000,
   });
 
+  // Penyebut = kandang yang memang ditugaskan ke kiper (KANDANG_LIST) dan
+  // sedang berisi kura. Memakai jumlah baris Enclosure salah: di sana ada
+  // Bonsai 1-4 dan Baby 1-3 yang bukan kandang kebersihan harian.
   const jumlahKandang = useMemo(
-    () => (enclosures || []).filter((e) => e.is_active !== false).length,
+    () => kandangWajib(enclosures).length,
     [enclosures],
   );
 
