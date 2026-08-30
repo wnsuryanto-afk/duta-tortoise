@@ -16,6 +16,7 @@ import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { Trophy, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { tingkatanBonus, tingkatTercapai } from "@/lib/bonus";
 
 const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const PERAN = ["keeper", "kepala_feeder"];
@@ -88,7 +89,7 @@ export default function PoinBonusTim() {
         };
       })
       .sort((a, b) => b.poin - a.poin);
-  }, [users, checklists, tingkatan, settings, monthKey]);
+  }, [users, checklists, tingkatan, settings, monthKey, poinTim]);
 
   if (!settings || tingkatan.length === 0 || baris.length === 0) return null;
 
