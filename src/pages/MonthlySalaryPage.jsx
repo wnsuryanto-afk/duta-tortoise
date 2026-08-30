@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wallet, Star, Clock, FileDown, Users } from "lucide-react";
 import { hitungGajiKaryawan } from "@/lib/hitungGaji";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
 import AlurGaji from "@/components/salary/AlurGaji";
@@ -25,6 +26,7 @@ function fmtRp(val) {
 
 export default function MonthlySalaryPage() {
   const { role } = useCurrentUser();
+  const companySettings = useCompanySettings();
   const [period, setPeriod] = useState(MONTH_OPTIONS[0].value);
 
   const isAdmin = ["owner", "admin", "manajer"].includes(role);
