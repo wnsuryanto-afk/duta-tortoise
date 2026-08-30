@@ -80,7 +80,11 @@ export default function RekapPoinGajiPage() {
     return employees.map(emp => {
       const config = salaryConfigs.find(c => c.role === emp.role);
       const daily = ["keeper", "kepala_feeder"].includes(emp.role);
-      const pointValue = (config?.point_value && config.point_value > 0) ? config.point_value : (daily ? 200 : 0);
+      // SATU DEFINISI — lihat lib/nilaiPoin.js. Sebelumnya berkas ini
+      // mendahulukan tarif per peran lalu jatuh ke angka 200 yang tidak muncul
+      // di mana pun lagi, sehingga slip bisa memakai tarif ketiga yang berbeda
+      // dari layar kiper maupun dari pengaturan.
+      const pointValue = nilaiPerPoin(settings, config) || (daily ? 200 : 0);
       const baseSalary = config?.base_salary || 0;
       const salaryType = daily ? "harian" : "bulanan";
       const absentDeduction = config?.absent_deduction || 0;
