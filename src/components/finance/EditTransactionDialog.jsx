@@ -56,8 +56,18 @@ export default function EditTransactionDialog({ tx, user, canDelete, onClose, on
     amount: tx.amount || "",
   });
 
-  const { pemasukan, pengeluaran } = useFinanceCategories();
-  const catOpts = form.type === "pemasukan" ? pemasukan : pengeluaran;
+  const { pemasukan, pengeluaran, pengeluaranManual } = useFinanceCategories();
+  // D18 — Gaji tidak lagi bisa DIPILIH untuk transaksi baru, tapi transaksi
+  // gaji LAMA harus tetap bisa disunting tanpa kehilangan kategorinya. Jadi
+  // daftarnya adalah kategori manual ditambah kategori yang sedang dipakai
+  // catatan ini — kalau tidak, membuka gaji lama lalu menekan simpan akan diam-
+  // diam memindahkannya ke kategori pertama yang kebetulan ada di daftar.
+  const catOpts =
+    form.type === "pemasukan"
+      ? pemasukan
+      : pengeluaranManual.some((c) => c.value === form.category)
+        ? pengeluaranManual
+        : [...pengeluaranManual, ...pengeluaran.filter((c) => c.value === form.category)];
   const ddCats = catOpts.length ? catOpts : Object.entries(CATEGORIES).map(([k, v]) => ({ value: k, label: v }));
 
   const qty = Number(form.qty) || 0;
