@@ -33,7 +33,7 @@ import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
-import { periksaStok } from "@/lib/stokMenipis";
+import { periksaStokTerpantau } from "@/lib/stokMenipis";
 import GrafikUang from "@/components/ui/grafik-uang";
 
 // ─── Helpers ───────────────────────────────────────
@@ -202,6 +202,14 @@ export default function OwnerDashboard({ user }) {
     enabled: phase2Ready,
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,
+  });
+
+  // Riwayat pergerakan stok dibutuhkan untuk membedakan "habis" dari
+  // "tidak pernah dicatat" — dua keadaan yang selama ini tertukar.
+  const { data: stockMovements = [] } = useQuery({
+    queryKey: ["owner-stock-movements"],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: sales = [] } = useQuery({
