@@ -78,10 +78,13 @@ function AddTransactionForm({ user, onClose, onSaved }) {
   const [invoicePhotoUrl, setInvoicePhotoUrl] = useState(null);
   const [splitMode, setSplitMode] = useState("single");
 
-  const { pemasukan, pengeluaran } = useFinanceCategories();
+  // D18 — pengeluaranManual, bukan pengeluaran: gaji tidak lagi boleh diketik
+  // di sini karena slip gaji yang ditandai dibayar sudah membuat catatannya
+  // sendiri. Filter dan laporan tetap memakai daftar lengkap.
+  const { pemasukan, pengeluaranManual } = useFinanceCategories();
   const catOptions = form.type === "pemasukan"
     ? (pemasukan.length ? pemasukan : [{ value: "penjualan_tortoise", label: "Penjualan Tortoise" }, { value: "lainnya", label: "Lainnya" }])
-    : (pengeluaran.length ? pengeluaran : Object.entries(CATEGORIES).filter(([, v]) => v.type === "pengeluaran" || v.type === "both").map(([k, v]) => ({ value: k, label: v.label })));
+    : (pengeluaranManual.length ? pengeluaranManual : Object.entries(CATEGORIES).filter(([, v]) => (v.type === "pengeluaran" || v.type === "both") && !["gaji", "gaji_karyawan"].includes(v.value)).map(([k, v]) => ({ value: k, label: v.label })).filter((c) => !["gaji", "gaji_karyawan"].includes(c.value)));
 
   const qtyNum = Number(form.qty) || 0;
   const hargaNum = Number(form.harga_satuan) || 0;
