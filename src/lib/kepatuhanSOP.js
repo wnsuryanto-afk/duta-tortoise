@@ -66,8 +66,13 @@ export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang =
   const logHariIni = (logs || []).filter((l) => l.period_key === tanggal && !l.is_test_data);
 
   // ── Tugas harian biasa (bukan per-kandang) ──
+  // Yang dikeluarkan dari hitungan ini hanya tugas yang dikerjakan lewat ubin
+  // kandang (dihitung terpisah di bawah). Tugas berskala per_kandang yang TIDAK
+  // ada di ubin — mis. "Pemberian pakan kura siang" — tetap dicatat sebagai satu
+  // baris sop_<id> biasa, jadi ia harus ikut dihitung di sini. Mengeluarkannya
+  // hanya karena berlabel per_kandang membuatnya hilang dari kedua angka.
   const terjadwalList = (sopTasks || []).filter(
-    (t) => t.task_scope !== "per_kandang" && terjadwalPada(t, tanggal),
+    (t) => t.di_ubin_kandang !== true && terjadwalPada(t, tanggal),
   );
   // Tugas yang bahannya sedang habis tidak dihitung sebagai kewajiban: menuntut
   // pekerjaan yang bahannya nol lalu menurunkan angka kepatuhan karenanya
