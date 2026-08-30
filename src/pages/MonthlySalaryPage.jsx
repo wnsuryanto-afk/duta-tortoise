@@ -156,7 +156,7 @@ export default function MonthlySalaryPage() {
         netSalary: h.bersih,
       };
     }).sort((a, b) => b.netSalary - a.netSalary);
-  }, [salaryConfigs, users, attendances, checklists, bonusRewards, overtimeLogs, vegTripsMap, kasbons, userProfiles, period]);
+  }, [salaryConfigs, users, attendances, checklists, bonusRewards, overtimeLogs, vegTripsMap, kasbons, userProfiles, period, companySettings]);
 
   const totalNet = salaryData.reduce((s, e) => s + e.netSalary, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === period)?.label || period;
