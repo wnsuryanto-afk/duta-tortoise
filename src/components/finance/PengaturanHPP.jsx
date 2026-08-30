@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { diPeternakan } from "@/lib/populasiKura";
 import { Info, Save, Loader2, Settings } from "lucide-react";
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
@@ -64,8 +65,17 @@ export default function PengaturanHPP() {
         .filter(p => p.status === "disbursed" && (p.disbursement_date || "").startsWith(month) && !p.is_test_data)
         .reduce((s, p) => s + (p.amount_requested || 0), 0);
 
-      const total = totalFinance + totalSalary + totalPettyCash;
-      const activeCount = tortoises.filter(t => ["aktif", "breeding", "baby"].includes(t.status)).length;
+      // Hanya totalFinance. Gaji sudah ada di dalamnya sejak slip yang ditandai
+      // dibayar membuat FinanceTransaction-nya sendiri (D18), dan pencairan kas
+      // kecil bukan biaya - biayanya muncul saat dibelanjakan, juga sebagai
+      // FinanceTransaction. Menjumlahkan ketiganya menghitung sebagian biaya dua
+      // kali dan menggelembungkan HPP setiap kura.
+      const total = totalFinance;
+      // Definisi populasi yang sama dengan seluruh aplikasi: yang dikecualikan
+      // adalah yang sudah keluar, bukan daftar putih status. Daftar putih
+      // melewatkan kura berstatus "sakit", sehingga kura yang sakit menghilang
+      // dari pembagi dan menaikkan biaya per ekor semua kura lain.
+      const activeCount = tortoises.filter(diPeternakan).length;
 
       const costPer = (activeCount > 0 && total > 0) ? Math.round(total / activeCount) : null;
 
