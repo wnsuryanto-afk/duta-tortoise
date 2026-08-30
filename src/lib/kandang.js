@@ -3,7 +3,7 @@
  *
  * Layar kiper (GuidedHariIni) memakai daftar tetap ini sebagai ubin kandang.
  * Entity `Enclosure` berisi lebih banyak baris (Bonsai 1-4, Baby 1-3) yang
- * bukan kandang kebersihan harian — memakai jumlah baris Enclosure sebagai
+ * bukan kandang kebersihan harian - memakai jumlah baris Enclosure sebagai
  * penyebut membuat angka kepatuhan terlihat rendah padahal kiper sudah
  * menyelesaikan semua kandang yang memang ditugaskan.
  */
@@ -14,9 +14,9 @@ export const KANDANG_LIST = [
 ];
 
 /**
- * Kandang yang wajib dibersihkan hari ini: kandang pada KANDANG_LIST yang
- * masih aktif DAN berisi kura. Kandang kosong tidak dituntut — menghitungnya
- * sebagai kewajiban membuat kepatuhan tidak pernah bisa 100%.
+ * Kandang yang wajib dibersihkan: kandang pada KANDANG_LIST yang masih aktif
+ * DAN berisi kura. Kandang kosong tidak dituntut - menghitungnya sebagai
+ * kewajiban membuat kepatuhan tidak pernah bisa mencapai 100%.
  *
  * @param {Array} enclosures daftar Enclosure (boleh kosong)
  * @returns {string[]} kode kandang
@@ -30,7 +30,7 @@ export function kandangWajib(enclosures = []) {
   }
   const hasil = KANDANG_LIST.filter((kode) => {
     const e = peta.get(kode);
-    if (!e) return true;              // tidak dikenal di Enclosure → tetap wajib
+    if (!e) return true; // tidak dikenal di Enclosure -> tetap wajib
     if (e.is_active === false) return false;
     return Number(e.current_count || 0) > 0;
   });
