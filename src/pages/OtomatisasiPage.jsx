@@ -93,6 +93,13 @@ const GRUP = [
           { field: "eskalasi_jam_owner", label: "Ke owner", tipe: "text", bantu: "HH:mm WIB" },
         ],
       },
+      {
+        kode: "S10", fn: "kelolaTaskKondisional", saklar: "task_kondisional_enabled",
+        nama: "Task yang menyesuaikan keadaan",
+        isi: "Task karantina hanya menyala selama kandangnya berpenghuni, task inkubator hanya selama ada telur. Dipasang sebagai task harian biasa, keduanya jadi poin gratis di hari kosong; dimatikan manual, keduanya lupa dinyalakan justru di hari yang penting.",
+        jadwal: "tiap jam",
+        jejak: null,
+      },
     ],
   },
   {
