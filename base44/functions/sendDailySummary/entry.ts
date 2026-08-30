@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.ts";
+import { terjadwalPada, tanggalDariWib } from "../../shared/jadwalSOP.ts";
 
 /**
  * Batas pengambilan data untuk ringkasan harian.
@@ -226,36 +227,24 @@ ${ctx}`;
   }
 }
 
+/**
+ * Apakah task terjadwal pada hari yang diwakili `wib`?
+ *
+ * Dulu aturannya ditulis di sini dan diulang lagi persis di bawah sebagai
+ * isTaskScheduledForDate. Dua salinan itu sama-sama meleset dari definisi di
+ * src/lib/kepatuhanSOP.js dalam dua hal: keduanya mengabaikan `bulan_aktif`
+ * (sehingga tugas "2 bulan sekali, bulan ganjil" diumumkan juga di bulan
+ * genap), dan keduanya menganggap `bulanan` tanpa monthly_dates berarti setiap
+ * hari, padahal artinya belum dijadwalkan. Sekarang keduanya memanggil satu
+ * definisi bersama di ../../shared/jadwalSOP.ts.
+ */
 function isTaskScheduledToday(task, wib: Date) {
-  if (task.is_active === false) return false;
-  const freq = task.frequency || "harian";
-  if (freq === "harian") return true;
-  const todayDow = wib.getUTCDay();
-  if (freq === "mingguan") {
-    if (!Array.isArray(task.weekly_days) || task.weekly_days.length === 0) return true;
-    return task.weekly_days.includes(todayDow);
-  }
-  if (freq === "bulanan") {
-    if (!Array.isArray(task.monthly_dates) || task.monthly_dates.length === 0) return true;
-    return task.monthly_dates.includes(wib.getUTCDate());
-  }
-  return true;
+  return terjadwalPada(task, tanggalDariWib(wib));
 }
 
+/** Alias historis — sama persis, dipertahankan agar pemanggil lama tetap jalan. */
 function isTaskScheduledForDate(task, wib: Date) {
-  if (task.is_active === false) return false;
-  const freq = task.frequency || "harian";
-  if (freq === "harian") return true;
-  const dow = wib.getUTCDay();
-  if (freq === "mingguan") {
-    if (!Array.isArray(task.weekly_days) || task.weekly_days.length === 0) return true;
-    return task.weekly_days.includes(dow);
-  }
-  if (freq === "bulanan") {
-    if (!Array.isArray(task.monthly_dates) || task.monthly_dates.length === 0) return true;
-    return task.monthly_dates.includes(wib.getUTCDate());
-  }
-  return true;
+  return terjadwalPada(task, tanggalDariWib(wib));
 }
 
 // ── RINGKASAN SORE ──
