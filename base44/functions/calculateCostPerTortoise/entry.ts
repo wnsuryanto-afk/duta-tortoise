@@ -20,7 +20,18 @@ Deno.serve(async (req) => {
     const totalFinance = financeTx.filter(t => t.type === 'pengeluaran' && (t.date||'').startsWith(month) && !t.is_test_data && !t.excluded_from_reports).reduce((s,t)=>s+(t.amount||0),0);
     const totalSalary = salarySlips.filter(s => s.status==='paid' && (s.paid_date||'').startsWith(month) && !s.is_test_data && !s.excluded_from_reports).reduce((s,t)=>s+(t.net_total||t.gross_total||0),0);
     const totalPettyCash = pettyCash.filter(p => p.status==='disbursed' && (p.disbursement_date||'').startsWith(month) && !p.is_test_data).reduce((s,t)=>s+(t.amount_requested||0),0);
-    const totalPengeluaran = totalFinance + totalSalary + totalPettyCash;
+
+    // Pencairan kas kecil TIDAK ditambahkan ke biaya. Mencairkan kas kecil adalah
+    // memindahkan uang ke kotak kas, bukan mengeluarkannya; biayanya baru muncul
+    // saat dibelanjakan, dan saat itu ia sudah tercatat sebagai FinanceTransaction
+    // yang ikut di totalFinance. Menjumlahkan keduanya membuat setiap rupiah kas
+    // kecil terhitung dua kali, dan biaya per ekor ikut menggelembung.
+    //
+    // Alasan yang sama sudah tertulis di labaRugiData/entry.ts dan diterapkan di
+    // sana; berkas ini luput. Dua fungsi yang menghitung "total pengeluaran"
+    // dengan aturan berbeda memberi pemilik dua jawaban yang keduanya terlihat
+    // resmi. Angkanya tetap dilaporkan terpisah sebagai keterangan.
+    const totalPengeluaran = totalFinance + totalSalary;
     const activeCount = tortoises.filter(t => ['aktif','breeding','baby'].includes(t.status)).length;
 
     let costPerTortoise = 0, isActual = false;
