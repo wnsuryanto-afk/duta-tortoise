@@ -18,6 +18,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { ListChecks } from "lucide-react";
+import { kandangWajib } from "@/lib/kandang";
 import {
   kepatuhanBeberapaHari,
   rataRataPersen,
