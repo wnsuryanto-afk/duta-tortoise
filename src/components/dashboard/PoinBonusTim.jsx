@@ -44,14 +44,21 @@ export default function PoinBonusTim() {
     staleTime: 3 * 60 * 1000,
   });
 
-  const tingkatan = useMemo(() => {
-    if (!settings) return [];
-    return [
-      { nama: "Dasar", target: Number(settings.min_poin_bulanan || 0), bonus: Number(settings.bonus_dasar || 0) },
-      { nama: "Bagus", target: Number(settings.target_poin_bagus || 0), bonus: Number(settings.bonus_bagus || 0) },
-      { nama: "Luar biasa", target: Number(settings.target_poin_luar_biasa || 0), bonus: Number(settings.bonus_luar_biasa || 0) },
-    ].filter((t) => t.target > 0).sort((a, b) => a.target - b.target);
-  }, [settings]);
+  const tingkatan = useMemo(() => tingkatanBonus(settings), [settings]);
+
+  // D16 - Poin tim dihitung lebih dulu karena tingkat Dasar bergantung padanya.
+  const poinTim = useMemo(
+    () =>
+      (checklists || [])
+        .filter(
+          (c) =>
+            String(c.date || "").startsWith(monthKey) &&
+            c.status !== "rejected" &&
+            !c.is_test_data,
+        )
+        .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0),
+    [checklists, monthKey],
+  );
 
   const baris = useMemo(() => {
     const nilaiPoin = Number(settings?.nilai_per_poin || 0);
@@ -68,8 +75,9 @@ export default function PoinBonusTim() {
           )
           .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0);
 
-        const tercapai = [...tingkatan].reverse().find((t) => poin >= t.target) || null;
-        const berikut = tingkatan.find((t) => poin < t.target) || null;
+        const tercapai =
+          [...tingkatan].reverse().find((t) => tingkatTercapai(t, poin, poinTim)) || null;
+        const berikut = tingkatan.find((t) => !tingkatTercapai(t, poin, poinTim)) || null;
         return {
           nama: u.full_name || u.email,
           poin,
