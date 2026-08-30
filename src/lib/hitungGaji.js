@@ -125,18 +125,19 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     awal,
     akhir,
     targetPoin = 0,
+    companySettings = null,
   } = sumber;
 
   const email = karyawan.email;
   const config = salaryConfigs.find((c) => c.role === karyawan.role) || {};
   const harian = adalahPeranHarian(karyawan.role);
 
+  // SATU DEFINISI — lihat lib/nilaiPoin.js. Sebelumnya berkas ini
+  // mendahulukan SalaryConfig.point_value sementara layar kiper dan penyiapan
+  // slip otomatis mendahulukan CompanySettings.nilai_per_poin, sehingga slip
+  // gaji bisa memakai tarif yang berbeda dari yang dijanjikan di layar.
   const nilaiPoin =
-    config.point_value && config.point_value > 0
-      ? config.point_value
-      : harian
-        ? NILAI_POIN_BAWAAN
-        : 0;
+    nilaiPerPoin(companySettings, config) || (harian ? NILAI_POIN_BAWAAN : 0);
 
   // ── Poin ──
   const poin = hitungPoin({ checklists, bonusRewards, email, awal, akhir, periode });
