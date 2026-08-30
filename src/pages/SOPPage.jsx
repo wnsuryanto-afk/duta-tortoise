@@ -1,6 +1,5 @@
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SOPChecklist from "@/components/sop/SOPChecklist";
 import TugasHariIni from "@/components/sop/TugasHariIni";
 import SOPApproval from "@/components/sop/SOPApproval";
 import SOPTaskManager from "@/components/sop/SOPTaskManager";
@@ -22,7 +21,6 @@ export default function SOPPage() {
       <Tabs defaultValue="tugas">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="tugas">📋 Tugas Hari Ini</TabsTrigger>
-          <TabsTrigger value="checklist">Checklist Poin</TabsTrigger>
           {isAdmin && <TabsTrigger value="approval">Verifikasi</TabsTrigger>}
           <TabsTrigger value="kpi">KPI & Poin</TabsTrigger>
           {canManageSOP && <TabsTrigger value="tasks">Kelola SOP</TabsTrigger>}
@@ -32,9 +30,6 @@ export default function SOPPage() {
           <TugasHariIni user={user} showTeamView={isAdmin} />
         </TabsContent>
 
-        <TabsContent value="checklist" className="mt-6">
-          <SOPChecklist />
-        </TabsContent>
         {isAdmin && (
           <TabsContent value="approval" className="mt-6">
             <SOPApproval />
