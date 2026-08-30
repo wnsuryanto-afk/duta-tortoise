@@ -63,12 +63,6 @@ export default function KepalaFeederDashboard({ user }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: stockMovements = [] } = useQuery({
-    queryKey: ["kf-stock-movements"],
-    queryFn: () => base44.entities.StockMovement.list("-date", 500),
-    staleTime: 10 * 60 * 1000,
-  });
-
   // Saldo kas kecil ada di PettyCashLedger, bukan di entitas PettyCash.
   // PettyCash adalah sisa rancangan lama yang tidak pernah ditulis satu layar
   // pun, jadi membacanya selalu menghasilkan daftar kosong.
@@ -95,14 +89,13 @@ export default function KepalaFeederDashboard({ user }) {
   //
   // Daftar yang isinya selalu sama, setiap hari, berhenti dibaca dalam seminggu —
   // dan yang ikut berhenti dibaca adalah item yang suatu hari benar-benar habis.
-  const stokTerpantau = periksaStokTerpantau(warehouseItems, feedStocks, stockMovements);
+  const stokTerpantau = periksaStok(warehouseItems, feedStocks);
   const criticalWarehouseStock = stokTerpantau.habis
     .concat(stokTerpantau.menipis)
     .filter((i) => i._sumber === "gudang");
   const criticalFeedStock = stokTerpantau.habis
     .concat(stokTerpantau.menipis)
     .filter((i) => i._sumber === "pakan");
-  const stokBelumDicatat = stokTerpantau.takTerpantau.length;
 
   // Kas kecil saldo
   // Field-nya juga keliru: skema PettyCash menyebutnya `current_balance`,
@@ -386,20 +379,6 @@ export default function KepalaFeederDashboard({ user }) {
 
       {/* ── PAKAN HARI INI ── */}
       <PakanHarianWidget />
-
-      {/* Stok yang angkanya belum pernah dicatat disebut sekali, dengan kata
-          yang benar — bukan sebagai sederet alarm merah yang tidak bisa
-          dihilangkan dengan bekerja. */}
-      {stokBelumDicatat > 0 && (
-        <div className="bg-card rounded-xl border border-border p-3.5 flex items-start gap-2.5">
-          <Package className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            <span className="font-semibold text-foreground">{stokBelumDicatat} item stok belum dicatat pergerakannya.</span>{" "}
-            Angkanya belum bisa dipakai, jadi tidak ditampilkan sebagai stok kritis.
-            Catat barang masuk dan keluar dulu supaya peringatan stok berarti.
-          </p>
-        </div>
-      )}
 
       {/* ── SECTION STOK KRITIS ── */}
       {(criticalWarehouseStock.length > 0 || criticalFeedStock.length > 0) && (

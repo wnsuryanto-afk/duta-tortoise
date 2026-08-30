@@ -33,7 +33,7 @@ import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
-import { periksaStokTerpantau } from "@/lib/stokMenipis";
+import { periksaStok } from "@/lib/stokMenipis";
 import GrafikUang from "@/components/ui/grafik-uang";
 
 // ─── Helpers ───────────────────────────────────────
@@ -202,14 +202,6 @@ export default function OwnerDashboard({ user }) {
     enabled: phase2Ready,
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,
-  });
-
-  // Riwayat pergerakan stok dibutuhkan untuk membedakan "habis" dari
-  // "tidak pernah dicatat" — dua keadaan yang selama ini tertukar.
-  const { data: stockMovements = [] } = useQuery({
-    queryKey: ["owner-stock-movements"],
-    queryFn: () => base44.entities.StockMovement.list("-date", 500),
-    staleTime: 10 * 60 * 1000,
   });
 
   const { data: sales = [] } = useQuery({
@@ -576,27 +568,16 @@ export default function OwnerDashboard({ user }) {
   // Pakan ikut diperiksa di sini. Sebelumnya hanya barang gudang yang masuk
   // daftar peringatan, sehingga pakan yang habis tidak memunculkan apa pun.
   //
-  // Item yang angkanya tidak pernah diperbarui dikeluarkan dari daftar habis:
-  // "Stok habis: Kaktus" muncul setiap hari selama tiga bulan bukan karena
-  // kaktusnya habis, melainkan karena angkanya dinolkan dan tidak pernah
-  // disentuh lagi. Peringatan yang tidak bisa dihilangkan dengan bekerja akan
-  // diabaikan, dan bersamanya ikut terabaikan peringatan yang suatu hari benar.
-  const stokPerlu = periksaStokTerpantau(warehouseItems, feedStocks, stockMovements, now);
+  // Bahan yang memang tidak dilacak (is_active=false) sudah disaring di
+  // lib/stokMenipis.js, jadi stok pakan yang sengaja dinolkan tidak lagi
+  // memunculkan "Stok habis" setiap hari. Penyaringnya memakai penanda yang
+  // DISETEL pemilik, bukan tebakan dari riwayat pergerakan: gudang direstok
+  // dengan menyunting angkanya langsung tanpa membuat catatan pergerakan, jadi
+  // menebak dari riwayat akan membungkam peringatan obat yang benar-benar habis.
+  const stokPerlu = periksaStok(warehouseItems, feedStocks, now);
   stokPerlu.habis.forEach(i =>
     criticalAlerts.push({ type: "red", msg: `Stok habis: ${i.name}${i._sumber === "pakan" ? " (pakan)" : ""}` })
   );
-  // Satu kalimat untuk seluruh item yang tidak terpantau, bukan satu alarm per
-  // item. Yang perlu diputuskan pemilik hanya satu: mau dicatat atau tidak.
-  if (stokPerlu.takTerpantau.length > 0) {
-    const sejak = stokPerlu.pergerakanTerakhirKeseluruhan;
-    criticalAlerts.push({
-      type: "yellow",
-      msg:
-        `${stokPerlu.takTerpantau.length} item stok belum pernah dicatat pergerakannya` +
-        (sejak ? ` sejak ${sejak}` : "") +
-        ` — angkanya belum bisa dipakai`,
-    });
-  }
   stokPerlu.menipis
     .slice(0, 3).forEach(i =>
       criticalAlerts.push({ type: "yellow", msg: `Stok menipis: ${i.name} — sisa ${i.current_stock} ${i.unit}` })
