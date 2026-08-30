@@ -40,7 +40,20 @@ Deno.serve(async (req) => {
     // FinanceTransaction, jadi sudah termasuk di totalFinance. Ia tetap
     // dikembalikan sebagai rincian.
     const totalPengeluaran = totalFinance;
-    const activeCount = tortoises.filter(t => ['aktif','breeding','baby'].includes(t.status)).length;
+    // Populasi dihitung dengan MENGECUALIKAN yang sudah keluar, bukan dengan
+    // daftar putih status yang ditulis tangan. Aturan yang sama ada di
+    // src/lib/populasiKura.js (diPeternakan) - keduanya harus tetap sepakat.
+    //
+    // Daftar putih ['aktif','breeding','baby'] melewatkan status 'sakit', yang
+    // ada di skema dan akan dipakai. Akibatnya terbalik dari kenyataan: begitu
+    // seekor kura ditandai sakit, ia hilang dari pembagi, biaya per ekor semua
+    // kura lain NAIK, dan HPP setiap penjualan berikutnya ikut naik - karena
+    // ada yang sakit. Padahal kura sakit tetap makan, bahkan lebih mahal.
+    //
+    // Dengan aturan pengecualian, status baru yang ditambahkan kelak otomatis
+    // terhitung sebagai masih ada, bukan diam-diam hilang dari pembagi.
+    const STATUS_KELUAR = ['mati', 'terjual', 'diarsipkan'];
+    const activeCount = tortoises.filter(t => !t.is_archived && !STATUS_KELUAR.includes(t.status)).length;
 
     let costPerTortoise = 0, isActual = false;
     if (activeCount > 0 && totalPengeluaran > 0) { costPerTortoise = Math.round(totalPengeluaran/activeCount); isActual = true; }
