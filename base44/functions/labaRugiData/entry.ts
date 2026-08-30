@@ -41,10 +41,20 @@ Deno.serve(async (req) => {
       pengeluaranByCat[cat] = (pengeluaranByCat[cat] || 0) + (t.amount || 0);
     });
 
-    // 2. SalarySlip bulan ini
-    const allSlips = await db.entities.SalarySlip.filter({}, '-period', 1000);
-    const monthSlips = allSlips.filter(s => s.period === period && s.status === 'paid' && masukLaporan(s));
-    const totalGaji = monthSlips.reduce((s, slip) => s + (slip.net_total || 0), 0);
+    // 2. Gaji bulan ini
+    //
+    // D18 — Gaji TIDAK lagi dijumlahkan dari SalarySlip. Sejak slip yang
+    // ditandai dibayar membuat FinanceTransaction-nya sendiri, gajinya sudah
+    // ikut terhitung di totalPengeluaran di atas. Menjumlahkan keduanya berarti
+    // setiap gaji terhitung DUA KALI — persis jebakan yang menunggu di kode
+    // lama: aman selama semua slip masih draf, salah pada hari pertama ada slip
+    // yang ditandai dibayar, dan tidak ada satu pun tanda bahwa itu terjadi.
+    //
+    // Angkanya tetap dilaporkan terpisah sebagai rincian, tapi diambil dari
+    // sumber yang sama dengan totalnya, bukan dari sumber kedua.
+    const totalGaji = monthTx
+      .filter(t => t.type === 'pengeluaran' && ['gaji', 'gaji_karyawan'].includes(t.category))
+      .reduce((s, t) => s + (t.amount || 0), 0);
 
     // 3. PettyCash bulan ini
     const allPettyCash = await db.entities.PettyCashRequest.filter({}, '-disbursement_date', 500);
@@ -67,7 +77,7 @@ Deno.serve(async (req) => {
     // FinanceTransaction saat dibelanjakan dan sudah masuk totalPengeluaran.
     // Menambahkannya membuat setiap rupiah kas kecil terhitung dua kali.
     // (Angkanya tetap dilaporkan terpisah di bawah, sebagai keterangan.)
-    const grandTotalPengeluaran = totalPengeluaran + totalGaji;
+    const grandTotalPengeluaran = totalPengeluaran;
 
     const allTortoises = await db.entities.Tortoise.filter({}, '-name', 2000);
 
