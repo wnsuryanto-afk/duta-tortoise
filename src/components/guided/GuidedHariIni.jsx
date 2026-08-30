@@ -504,17 +504,33 @@ export default function GuidedHariIni({ user }) {
     setSelfieMode(null);
   };
 
-  // Poin kebersihan kandang dari SOPTask (dinamis)
-  const { data: sopTasksKebersihan = [] } = useQuery({
-    queryKey: ["sop-tasks-kebersihan"],
-    queryFn: () => base44.entities.SOPTask.filter({ category: "kebersihan" }),
+  // D12 - Satu ubin kandang = satu kunjungan = semua tugas per-kandang yang
+  // terjadwal hari itu. Poinnya dijumlahkan dari SOPTask, jadi mengubah nilai
+  // tugas di pengaturan langsung terlihat di sini tanpa menyentuh kode.
+  const { data: sopTasksAktif = [] } = useQuery({
+    queryKey: ["sop-tasks-aktif"],
+    queryFn: () => base44.entities.SOPTask.filter({ is_active: true }, "title", 200),
     staleTime: 10 * 60 * 1000,
   });
-  const kebersihanAnchor = sopTasksKebersihan.find(t =>
-    t.is_active === true && (t.title || "").toLowerCase().includes("all kandang")
-  ) || sopTasksKebersihan.find(t => t.is_active === true);
-  const poinKebersihan = kebersihanAnchor?.points ?? 5;
-  const requirePhotoKebersihan = kebersihanAnchor?.require_photo ?? false;
+  const { data: enclosures = [] } = useQuery({
+    queryKey: ["guided-enclosures"],
+    queryFn: () => base44.entities.Enclosure.list("name", 100),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  // D15 - Kandang kosong tidak dituntut. Begitu ada kura masuk, kandangnya
+  // kembali muncul sebagai kewajiban dengan sendirinya.
+  const daftarKandang = useMemo(() => kandangWajib(enclosures), [enclosures]);
+
+  const tugasUbin = useMemo(
+    () => tugasUbinKandang(sopTasksAktif, terjadwalPada, today),
+    [sopTasksAktif, today],
+  );
+  const poinKebersihan = useMemo(
+    () => poinUbinKandang(sopTasksAktif, terjadwalPada, today),
+    [sopTasksAktif, today],
+  );
+  const requirePhotoKebersihan = tugasUbin.some(t => t.require_photo === true);
   const kandangCameraRef = useRef(null);
   const [pendingKandang, setPendingKandang] = useState(null);
   // ── Jeda minimum 60 detik antar kandang (anti centang beruntun) ──
