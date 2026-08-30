@@ -25,6 +25,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { ringkasPoin } from "@/lib/poinChecklist";
 import { format } from "date-fns";
 import { Star, Trophy, Clock, TrendingUp, Flame } from "lucide-react";
 
@@ -96,12 +97,16 @@ export default function BonusBulanIni({ user }) {
   });
 
   // ── Poin bulan ini ──
-  const poinBulanIni = useMemo(() => {
-    return (checklists || [])
-      .filter((c) => String(c.date || "").startsWith(monthKey))
-      .filter((c) => c.status !== "rejected" && !c.is_test_data)
-      .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0);
-  }, [checklists, monthKey]);
+  //
+  // Hanya poin yang SUDAH DISETUJUI. Sebelum ini klaim yang belum diperiksa
+  // ikut dihitung penuh, jadi angka di layar ini naik saat checklist dikirim
+  // lalu menyusut lagi setelah pemilik memangkasnya. Urutan itu yang paling
+  // merugikan: janji dulu, tarik kemudian. Yang menunggu sekarang disebut
+  // terpisah, tidak dihilangkan.
+  const { disetujui: poinBulanIni, menunggu: poinMenungguBulan, jumlahMenunggu } = useMemo(
+    () => ringkasPoin((checklists || []).filter((c) => String(c.date || "").startsWith(monthKey))),
+    [checklists, monthKey],
+  );
 
   // ── Berapa hari berturut-turut mengisi checklist ──
   const streak = useMemo(() => {
@@ -200,6 +205,12 @@ export default function BonusBulanIni({ user }) {
               <p className="text-xs text-green-800/80 dark:text-green-300/80 mt-0.5">
                 ≈ {rupiah(upahPoin)}
                 {bonusTingkat > 0 && ` + bonus ${rupiah(bonusTingkat)}`}
+              </p>
+            )}
+            {poinMenungguBulan > 0 && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                ⏳ {poinMenungguBulan.toLocaleString("id-ID")} poin dari {jumlahMenunggu} checklist
+                masih menunggu persetujuan — belum masuk hitungan di atas.
               </p>
             )}
           </div>

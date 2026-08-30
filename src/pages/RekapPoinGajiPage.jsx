@@ -18,6 +18,7 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import AlurGaji from "@/components/salary/AlurGaji";
 import { useVegTrips } from "@/hooks/useVegTrips";
 import { hanyaLaporan } from "@/lib/laporan";
+import { ringkasPoin } from "@/lib/poinChecklist";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -98,13 +99,11 @@ export default function RekapPoinGajiPage() {
         c.date >= monthStart &&
         c.date < monthEnd
       );
-      const checklistPoin = empChecklists
-        .filter((c) => c.status !== "rejected")
-        .reduce((s, c) => {
-          const pts = c.approved_points || c.total_points_claimed ||
-            (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0) : 0);
-          return s + (pts || 0);
-        }, 0);
+      // Hanya checklist yang SUDAH DISETUJUI yang menjadi rupiah. Sebelum ini
+      // penyaringnya `status !== "rejected"`, jadi klaim yang belum diperiksa
+      // ikut dibayar penuh — lihat catatan di lib/poinChecklist.js.
+      const { disetujui: checklistPoin, menunggu: poinMenungguBulan, jumlahMenunggu } =
+        ringkasPoin(empChecklists);
 
       const totalPoin = bonusPoin + checklistPoin;
       const targetTercapai = totalPoin >= TARGET_POIN_SETTING;
@@ -154,6 +153,7 @@ export default function RekapPoinGajiPage() {
       return {
         emp, config, totalPoin, targetTercapai, selisihPoin,
         bonus, potonganPoin, kpiBonus, netTotal, effectiveBase,
+        poinMenungguBulan, jumlahMenunggu,
         overtimePay, vegPay, vegTrips: totalVegTrips, vegDates: vegData.dates,
         deduction, kasbonDeduction, kasbonIdsToDeduct, kasbonRemaining, hadirDays,
         existingSlip, pointValue,
@@ -428,6 +428,11 @@ export default function RekapPoinGajiPage() {
                       {row.totalPoin}p × {fmt(row.pointValue)}
                       {row.potonganPoin > 0 && ` − ${fmt(row.potonganPoin)}`}
                     </p>
+                    {row.poinMenungguBulan > 0 && (
+                      <p className="text-[10px] text-amber-600">
+                        ⏳ {row.poinMenungguBulan}p dari {row.jumlahMenunggu} checklist belum disetujui
+                      </p>
+                    )}
                   </div>
 
                   {/* Gaji Pokok */}

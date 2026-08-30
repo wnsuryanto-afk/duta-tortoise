@@ -30,6 +30,8 @@
  * gaji yang sudah berjalan.
  */
 
+import { ringkasPoin } from "@/lib/poinChecklist";
+
 /** Peran yang dibayar harian; sisanya dibayar bulanan flat. */
 export const PERAN_HARIAN = ["keeper", "kepala_feeder"];
 
@@ -46,28 +48,25 @@ export function adalahPeranHarian(role) {
 /**
  * Poin seorang karyawan pada satu periode.
  *
- * Checklist yang ditolak tidak dihitung. Poin yang sudah disetujui menang atas
- * poin yang baru diklaim; bila keduanya kosong, poin dijumlahkan dari tugas
- * yang tercentang.
+ * Hanya checklist yang SUDAH DISETUJUI yang menghasilkan poin. Sebelum ini
+ * penyaringnya `status !== "rejected"`, yang ikut menghitung klaim yang belum
+ * diperiksa siapa pun — dan menghitungnya PENUH, karena
+ * `0 || total_points_claimed` jatuh ke klaimnya. Lihat catatan lengkapnya di
+ * lib/poinChecklist.js.
+ *
+ * `menunggu` dikembalikan terpisah supaya pemanggil bisa menyebutnya apa adanya
+ * alih-alih membiarkan poin itu menghilang tanpa penjelasan.
  */
 export function hitungPoin({ checklists = [], bonusRewards = [], email, awal, akhir, periode }) {
-  const dariChecklist = checklists
-    .filter((c) => c.employee_email === email && c.date >= awal && c.date < akhir)
-    .filter((c) => c.status !== "rejected")
-    .reduce((total, c) => {
-      const poin =
-        c.approved_points ||
-        c.total_points_claimed ||
-        (Array.isArray(c.completed_tasks)
-          ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0)
-          : 0);
-      return total + (poin || 0);
-    }, 0);
+  const punyaSaya = checklists.filter(
+    (c) => c.employee_email === email && c.date >= awal && c.date < akhir,
+  );
+  const { disetujui: dariChecklist, menunggu, jumlahMenunggu } = ringkasPoin(punyaSaya);
 
   const bonus = bonusRewards.find((b) => b.employee_email === email && b.period === periode);
   const dariBonus = bonus?.total_points || 0;
 
-  return { dariChecklist, dariBonus, total: dariChecklist + dariBonus };
+  return { dariChecklist, dariBonus, menunggu, jumlahMenunggu, total: dariChecklist + dariBonus };
 }
 
 /**

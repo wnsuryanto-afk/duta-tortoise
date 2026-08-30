@@ -13,6 +13,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
+import { poinDisetujui } from "@/lib/poinChecklist";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +99,7 @@ export default function PengaturanPoinPage() {
       employees.map((emp) => {
         const config = salaryConfigs.find((c) => c.role === emp.role) || {};
         const empApproved = approved30.filter((c) => c.employee_email === emp.email);
-        const poin30 = empApproved.reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
+        const poin30 = empApproved.reduce((s, c) => s + poinDisetujui(c), 0);
         const hadirDays30 = attendances.filter((a) => a.employee_email === emp.email && a.status === "hadir" && a.date >= cutoffStr).length;
         const isDaily = ["keeper", "kepala_feeder"].includes(emp.role);
         const monthlyBase = isDaily ? hadirDays30 * (config.base_salary || 0) : config.base_salary || 0;
@@ -118,7 +119,7 @@ export default function PengaturanPoinPage() {
       const nm = u?.full_name || c.employee_name || "—";
       names.add(nm);
       byDate[c.date] = byDate[c.date] || { date: c.date };
-      byDate[c.date][nm] = (byDate[c.date][nm] || 0) + (c.approved_points || c.total_points_claimed || 0);
+      byDate[c.date][nm] = (byDate[c.date][nm] || 0) + poinDisetujui(c);
     });
     return { barData: Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date)), empNames: [...names] };
   }, [approved30, users]);
@@ -135,15 +136,15 @@ export default function PengaturanPoinPage() {
   );
 
   const summary = useMemo(() => {
-    const totalPoin30 = approved30.reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
+    const totalPoin30 = approved30.reduce((s, c) => s + poinDisetujui(c), 0);
     const perDay = {};
     approved30.forEach((c) => {
-      perDay[c.date] = (perDay[c.date] || 0) + (c.approved_points || c.total_points_claimed || 0);
+      perDay[c.date] = (perDay[c.date] || 0) + poinDisetujui(c);
     });
     const dayVals = Object.values(perDay);
     const totalThisMonth = approved30
       .filter((c) => (c.date || "").startsWith(thisMonthKey))
-      .reduce((s, c) => s + (c.approved_points || c.total_points_claimed || 0), 0);
+      .reduce((s, c) => s + poinDisetujui(c), 0);
     return {
       avgPerDay: totalPoin30 / 30,
       maxDay: dayVals.length ? Math.max(...dayVals) : 0,

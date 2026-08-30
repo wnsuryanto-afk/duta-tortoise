@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { poinDisetujui, poinDiklaim } from "@/lib/poinChecklist";
 import { format, subDays, addDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -83,7 +84,9 @@ function KeeperCard({ checklist, attendance }) {
 
   const kandangNoPhoto = kandang.filter((t) => !t.photo_url).length;
   const withPhoto = tasks.filter((t) => t.photo_url).length;
-  const totalPoin = checklist?.approved_points ?? checklist?.total_points_claimed ?? 0;
+  // Layar ini menampilkan keadaan hari ini, bukan uang: untuk checklist yang
+  // masih menunggu, yang pantas ditampilkan adalah klaimnya.
+  const totalPoin = checklist?.status === "approved" ? poinDisetujui(checklist) : poinDiklaim(checklist);
 
   // Foto menyusul: jarak jam centang vs jam foto diambil > 20 menit
   const lateProof = tasks

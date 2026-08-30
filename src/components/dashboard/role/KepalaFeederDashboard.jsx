@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
+import { poinDisetujui, poinDiklaim } from "@/lib/poinChecklist";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import {
@@ -98,7 +99,7 @@ export default function KepalaFeederDashboard({ user }) {
   monthChecklists
     .filter(c => (c.date || "").startsWith(thisMonthKey) && c.status === "approved")
     .forEach(c => {
-      poinByKeeper[c.employee_email] = (poinByKeeper[c.employee_email] || 0) + (c.approved_points || c.total_points_claimed || 0);
+      poinByKeeper[c.employee_email] = (poinByKeeper[c.employee_email] || 0) + poinDisetujui(c);
     });
 
   // Ringkasan tim untuk header — dihitung dari data yang sudah ada di layar ini
@@ -140,6 +141,10 @@ export default function KepalaFeederDashboard({ user }) {
         status: "rejected",
         approved_by: user?.full_name || user?.email,
         approved_at: new Date().toISOString(),
+        // Checklist yang pernah disetujui lalu ditolak menyimpan poin lamanya
+        // bila tidak dinolkan di sini — layar penolakan satunya sudah begitu.
+        approved_points: 0,
+        rejection_reason: "Ditolak dari Beranda Kepala Feeder",
       });
     },
     onSuccess: () => {
@@ -150,14 +155,22 @@ export default function KepalaFeederDashboard({ user }) {
 
   const [approveAllLoading, setApproveAllLoading] = useState(false);
   const handleApproveAll = async () => {
-    if (!window.confirm(`Setujui semua ${pendingChecklists.length} checklist?`)) return;
+    // "Setujui semua" menyetujui KLAIM PENUH tanpa satu pun dibuka. Karena
+    // klaim rutin dipangkas saat diperiksa satu per satu (369 → 145 poin pada
+    // 4 Agustus 2026), jumlah poinnya disebut di pertanyaannya — bukan cuma
+    // jumlah checklistnya.
+    const totalPoin = pendingChecklists.reduce((s, c) => s + poinDiklaim(c), 0);
+    if (!window.confirm(
+      `Setujui ${pendingChecklists.length} checklist sekaligus, sebesar ${totalPoin.toLocaleString("id-ID")} poin?\n\n` +
+      `Semua tugas disetujui sesuai klaim, tanpa diperiksa satu per satu.`,
+    )) return;
     setApproveAllLoading(true);
     for (const c of pendingChecklists) {
       await base44.entities.DailyChecklist.update(c.id, {
         status: "approved",
         approved_by: user?.full_name || user?.email,
         approved_at: new Date().toISOString(),
-        approved_points: c.total_points_claimed || 0,
+        approved_points: poinDiklaim(c),
       });
     }
     setApproveAllLoading(false);

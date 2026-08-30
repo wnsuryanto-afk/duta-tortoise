@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { ringkasPoin } from "@/lib/poinChecklist";
 import { hanyaLaporan } from "@/lib/laporan";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -130,12 +131,11 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
       const rempesanPay = rempesanTrips * rempesanRate;
 
       // Poin dari checklist approved
-      const empChecklists = weekChecklists.filter((c) => c.employee_email === emp.email && c.status === "approved");
-      const poin = empChecklists.reduce((s, c) => {
-        const pts = c.approved_points || c.total_points_claimed ||
-          (Array.isArray(c.completed_tasks) ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0) : 0);
-        return s + (pts || 0);
-      }, 0);
+      const empChecklists = weekChecklists.filter((c) => c.employee_email === emp.email);
+      // `approved_points` diperiksa sebagai ANGKA, bukan lewat `||`: nol yang
+      // berasal dari keputusan pemilik (semua centang dibuka lalu disetujui)
+      // harus tetap nol, bukan jatuh kembali ke klaim penuh.
+      const { disetujui: poin, menunggu: poinMenunggu, jumlahMenunggu } = ringkasPoin(empChecklists);
       // Bonus poin hanya bila diaktifkan owner & nilai poin > 0
       const poinBonus = poinBonusEnabled && !nilaiNol ? poin * nilaiPerPoin : 0;
 
@@ -171,7 +171,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         emp, config, dailyRate, overtimeRate, rempesanRate,
         hadirDays, dayMarkers, overtimeHours, overtimePay,
         rempesanTrips, rempesanDates, rempesanPay,
-        poin, poinBonus, nilaiPerPoin,
+        poin, poinMenunggu, jumlahMenunggu, poinBonus, nilaiPerPoin,
         empKasbons, kasbonPlan, kasbonDeduction, kasbonRemaining,
         baseSalary, grossTotal, netTotal, missingDays,
         existingSlip, slipPaid, profile,

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { poinDisetujui } from "@/lib/poinChecklist";
 import { hanyaLaporan } from "@/lib/laporan";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
@@ -62,7 +63,7 @@ export default function PayrollReport() {
       };
     }
     employeeMap[c.employee_email].approvedDays += 1;
-    employeeMap[c.employee_email].approvedPoints += c.approved_points || 0;
+    employeeMap[c.employee_email].approvedPoints += poinDisetujui(c);
   });
 
   // Merge with bonus reward records

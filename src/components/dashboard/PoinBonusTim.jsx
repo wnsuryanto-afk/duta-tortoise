@@ -13,6 +13,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { ringkasPoin } from "@/lib/poinChecklist";
 import { format } from "date-fns";
 import { Trophy, Star } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -58,21 +59,21 @@ export default function PoinBonusTim() {
     return (users || [])
       .filter((u) => PERAN.includes(u.role))
       .map((u) => {
-        const poin = (checklists || [])
-          .filter(
-            (c) =>
-              c.employee_email === u.email &&
-              String(c.date || "").startsWith(monthKey) &&
-              c.status !== "rejected" &&
-              !c.is_test_data,
-          )
-          .reduce((t, c) => t + Number(c.approved_points || c.total_points_claimed || 0), 0);
+        // Hanya poin yang sudah disetujui. Klaim yang belum diperiksa dulu
+        // ikut terhitung penuh di sini, sehingga peringkat tim berubah sendiri
+        // setiap kali pemilik memangkas sebuah checklist.
+        const { disetujui: poin, menunggu: poinMenunggu } = ringkasPoin(
+          (checklists || []).filter(
+            (c) => c.employee_email === u.email && String(c.date || "").startsWith(monthKey),
+          ),
+        );
 
         const tercapai = [...tingkatan].reverse().find((t) => poin >= t.target) || null;
         const berikut = tingkatan.find((t) => poin < t.target) || null;
         return {
           nama: u.full_name || u.email,
           poin,
+          poinMenunggu,
           tercapai,
           berikut,
           upah: poin * nilaiPoin,

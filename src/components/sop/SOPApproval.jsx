@@ -257,6 +257,9 @@ export default function SOPApproval() {
       await base44.entities.DailyChecklist.update(c.id, {
         status: "approved",
         approved_by: user?.full_name || user?.email,
+        // Beranda Kepala Feeder mencatat waktunya, layar ini tidak — jadi kapan
+        // sebuah checklist disetujui bergantung pada layar mana yang dipakai.
+        approved_at: new Date().toISOString(),
         approved_points: willApprove,
       });
       await logActivity({
@@ -287,6 +290,7 @@ export default function SOPApproval() {
       await base44.entities.DailyChecklist.update(c.id, {
         status: "rejected",
         approved_by: user?.full_name || user?.email,
+        approved_at: new Date().toISOString(),
         approved_points: 0,
         rejection_reason: reason,
       });
