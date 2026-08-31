@@ -38,10 +38,20 @@ Deno.serve(async (req) => {
       entity_type: 'Tortoise',
       entity_id: tortoise_id,
       entity_name: death_data.tortoise_name,
-      changes: {
-        before: { status: tortoiseBefore?.status },
-        after: { status: 'mati' }
-      },
+      // Bentuknya harus `changes_detail` + `changes_summary`, bukan `changes`.
+      // Kolom `changes` tidak ada di skema ActivityLog, jadi selama ini
+      // snapshot sebelum/sesudah pada catatan kematian kura dibuang diam-diam:
+      // barisnya tetap tersimpan, tapi kolom "apa yang berubah" selalu kosong.
+      // Bentuk di bawah sama dengan yang ditulis src/lib/logActivity.js.
+      changes_detail: [
+        {
+          field: 'status',
+          label: 'Status',
+          old_value: String(tortoiseBefore?.status ?? '-'),
+          new_value: 'mati',
+        },
+      ],
+      changes_summary: `Status: ${tortoiseBefore?.status ?? '-'} → mati`,
       notes: `Status diubah ke "mati" - DeathRecord created: ${deathRecord.id}`,
       timestamp: new Date().toISOString()
     });
