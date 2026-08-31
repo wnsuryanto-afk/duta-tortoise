@@ -637,7 +637,8 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     setSaving(true);
     setSaveError("");
     try {
-      const hpp = calcHpp();
+      const rincian = rincianHpp();
+      const hpp = rincian.total;
       const price = Number(form.price);
       const today = new Date().toISOString().split("T")[0];
 
@@ -670,7 +671,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
 
       // C) Create FinanceTransaction
       const laba = price - hpp;
-      const marginPct = price > 0 ? Math.round((laba / price) * 100) : 0;
+      const marginPct = marginPersen(price, hpp);
       // Otomatisasi server sudah menulis transaksi untuk penjualan ini beberapa
       // saat setelah Sale.create di atas — beberapa langkah sebelum baris ini.
       // Membuat yang baru di sini mencatat satu penjualan sebagai pemasukan dua
@@ -683,11 +684,12 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         description: `Penjualan ${selectedTortoise?.code || selectedTortoise?.name} ke ${form.buyer_name} — Laba Rp ${fmt(laba)}`,
         ...(testModeTag || {}),
       });
-      // Determine the actual purchase price used
-      const isHasilSendiriForSave = selectedTortoise?.source === "hasil_sendiri" || selectedTortoise?.code?.startsWith?.("BB-");
-      const actualPurchasePrice = isHasilSendiriForSave ? 0 :
-        form.purchase_price_input !== "" ? Number(form.purchase_price_input) || 0 :
-        selectedTortoise?.purchase_price || 0;
+      // Modal: harga beli untuk kura yang dibeli, biaya induk selama pengeraman
+      // untuk kura hasil tetasan sendiri. Diambil dari rincian yang sama dengan
+      // yang membentuk hpp di atas — kalau dihitung ulang di sini, ketiganya
+      // bisa berbeda dan hpp ≠ modal + perawatan + ongkir.
+      const isHasilSendiriForSave = rincian.dariFarm;
+      const actualPurchasePrice = rincian.modal;
 
       // Update Sale with additional fields & finance_tx_id
       await base44.entities.Sale.update(newSale.id, {
@@ -697,7 +699,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         profit: laba,
         margin_percent: marginPct,
         purchase_price_original: actualPurchasePrice,
-        care_cost_estimate: calcFarmMonths(selectedTortoise, form.sale_date) * (costData?.biayaPerEkorRata || costData?.biayaPerEkor || 100000),
+        care_cost_estimate: rincian.perawatan,
         finance_tx_id: finTx?.id || "",
       });
 
@@ -871,7 +873,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
           })()}
           {step === 1 && <StepDataPembeli form={form} onChange={onChange} errors={errors} />}
           {step === 2 && <StepDetailPenjualan form={form} onChange={onChange} errors={errors} />}
-          {step === 3 && <StepReview form={form} tortoise={selectedTortoise} costData={costData} formData={form} />}
+          {step === 3 && <StepReview form={form} tortoise={selectedTortoise} costData={costData} breedings={breedings} formData={form} />}
         </div>
 
         {errors.tortoise_id && step === 0 && (
