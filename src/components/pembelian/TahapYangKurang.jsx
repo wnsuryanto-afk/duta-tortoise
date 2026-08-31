@@ -126,7 +126,7 @@ export default function TahapYangKurang({ onSelesai }) {
       ...i,
       terdaftar: sudahDidaftar(i, penandaSudah),
     }));
-  }, [semuaBarang, warehouse, pergerakan, transaksi, sopTasks, penandaSudah]);
+  }, [semuaBarang, warehouse, pergerakan, sopTasks, penandaSudah]);
 
   const bisaDipilih = baris.filter((i) => !i.terdaftar);
   const terdaftarCount = baris.length - bisaDipilih.length;
