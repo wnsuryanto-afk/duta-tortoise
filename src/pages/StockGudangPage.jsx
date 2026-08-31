@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canPerformAction } from "@/lib/permissions";
+import { statusStok } from "@/lib/stokMenipis";
 import { format } from "date-fns";
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ const LOCATION_OPTIONS = [
 const STOCK_FILTER = [
   { value: "semua",        label: "Semua Stok" },
   { value: "habis",        label: "❌ Habis" },
-  { value: "hampir_habis", label: "⚠️ Hampir Habis" },
+  { value: "menipis", label: "⚠️ Hampir Habis" },
   { value: "aman",         label: "✅ Aman" },
 ];
 
@@ -63,11 +64,14 @@ function formatRp(val) {
   return "Rp " + Number(val).toLocaleString("id-ID");
 }
 
-// Normalise a FeedStock or WarehouseItem into unified shape
+// Normalise a FeedStock or WarehouseItem into unified shape.
+// Status stoknya diambil dari lib/stokMenipis, bukan dihitung ulang di sini.
+// Versi lama memakai `<= minimum_stock`, sehingga barang bermininum 0 yang
+// stoknya 0 dilabeli "hampir_habis" DAN "habis" sekaligus di layar berbeda.
 function normalise(item, source) {
-  const isLow = item.current_stock <= item.minimum_stock;
-  const isEmpty = item.current_stock === 0;
-  const stockStatus = isEmpty ? "habis" : isLow ? "hampir_habis" : "aman";
+  const stockStatus = statusStok(item);
+  const isEmpty = stockStatus === "habis";
+  const isLow = stockStatus === "menipis";
 
   let displayCat = source === "feed" ? "pakan" : item.category || "lainnya";
   if (displayCat === "alat_kerja" || displayCat === "peralatan") displayCat = "alat";
