@@ -34,5 +34,6 @@
     "employee_email",
     "date",
     "trips"
-  ]
+  ],
+  "description": "[USANG 31-08-2026] TIDAK DIPAKAI. Pengambilan sayur dicatat lewat PakanHarian. Dibiarkan ada agar data lama (bila ada) tidak hilang; jangan dipakai untuk fitur baru."
 }

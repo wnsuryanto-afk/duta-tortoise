@@ -50,5 +50,6 @@
     "amount",
     "description",
     "date"
-  ]
+  ],
+  "description": "[USANG 31-08-2026] TIDAK DIPAKAI. Kas kecil yang hidup memakai PettyCashRequest + KasKecil. Dibiarkan ada agar data lama (bila ada) tidak hilang; jangan dipakai untuk fitur baru."
 }

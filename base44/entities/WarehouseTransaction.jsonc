@@ -50,5 +50,6 @@
     "date",
     "unit",
     "created_by_name"
-  ]
+  ],
+  "description": "[USANG 31-08-2026] TIDAK DIPAKAI — buku stok kedua yang tidak pernah ditulis. Buku yang hidup adalah StockMovement. Dibiarkan ada agar data lama (bila ada) tidak hilang; jangan dipakai untuk fitur baru."
 }

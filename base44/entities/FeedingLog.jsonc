@@ -64,5 +64,6 @@
     "date",
     "fed_by_email",
     "fed_by_name"
-  ]
+  ],
+  "description": "[USANG 31-08-2026] TIDAK DIPAKAI — tidak pernah ditulis berkas mana pun. Pemakaian pakan yang sebenarnya ada di StockMovement (type keluar, item_type feedstock). Dibiarkan ada agar data lama (bila ada) tidak hilang; jangan dipakai untuk fitur baru."
 }

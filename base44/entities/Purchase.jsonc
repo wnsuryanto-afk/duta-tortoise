@@ -149,5 +149,6 @@
     "price",
     "payment_status"
   ],
-  "type": "object"
+  "type": "object",
+  "description": "[USANG 31-08-2026] TIDAK DIPAKAI — kembaran lama PembelianBarang. JANGAN tulis ke sini; alur pembelian yang hidup memakai PembelianBarang. Dibiarkan ada agar data lama (bila ada) tidak hilang; jangan dipakai untuk fitur baru."
 }
