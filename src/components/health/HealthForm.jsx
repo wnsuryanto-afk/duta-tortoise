@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
+import { barisPengambilan } from "@/lib/pemakaianBarang";
 import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
@@ -149,33 +150,61 @@ export default function HealthForm({ open, onClose, editData }) {
       }
     }
 
-    // Auto-create FinanceTransaction jika ada biaya_obat dan type sakit/obat
-    if (data.biaya_obat > 0 && (data.type === "sakit" || data.type === "obat")) {
-      const diagDesc = (data.diagnoses || []).slice(0, 2).join(", ");
-      const txDesc = `Obat: ${data.tortoise_name}${diagDesc ? " - " + diagDesc : ""}`;
-      const existingTxId = editData?.finance_tx_id;
-      if (existingTxId) {
-        await base44.entities.FinanceTransaction.update(existingTxId, {
-          amount: data.biaya_obat,
-          date: data.date,
-          description: txDesc,
-        });
-      } else {
-        const tx = await base44.entities.FinanceTransaction.create({
-          type: "pengeluaran",
-          category: "obat_perawatan",
-          amount: data.biaya_obat,
-          date: data.date,
-          description: txDesc,
-          reference_id: savedRecord?.id || editData?.id || "",
-          ...testModeTag,
-        });
-        if (tx?.id && savedRecord?.id) {
-          await base44.entities.HealthRecord.update(savedRecord.id, { finance_tx_id: tx.id });
-        }
+    // ── Obat yang dipakai keluar dari gudang ──
+    //
+    // Sampai 31-08-2026 bagian ini TIDAK ADA. Formulir ini sudah lama punya
+    // pemilih obat lengkap dengan pemeriksa stok, tapi menyimpannya tidak
+    // pernah memotong stok apa pun dan tidak pernah menulis pergerakan barang.
+    // Obat dipakai, stok gudang tidak bergerak, dan kura yang diobati tidak
+    // menanggung biayanya.
+    //
+    // Penanda stok_dipotong yang menjaga agar pemotongan tidak berulang saat
+    // catatan yang sama disimpan ulang atau disunting.
+    const idCatatan = savedRecord?.id || editData?.id;
+    const perluPotong =
+      (cleanItems.length > 0) && !editData?.stok_dipotong && !!idCatatan;
+
+    if (perluPotong) {
+      const kura = tortoises.find((t) => t.id === data.tortoise_id);
+      const pemakai = await base44.auth.me().catch(() => null);
+      for (const it of cleanItems) {
+        const gudang = warehouseItems.find((w) => w.id === it.item_id);
+        if (!gudang || !(Number(it.quantity) > 0)) continue;
+        const stokSetelah = Math.max(0, (Number(gudang.current_stock) || 0) - Number(it.quantity));
+        try {
+          await base44.entities.WarehouseItem.update(gudang.id, { current_stock: stokSetelah });
+          await base44.entities.StockMovement.create(
+            barisPengambilan({
+              item: gudang,
+              jumlah: it.quantity,
+              hargaSatuan: Number(it.unit_price) || Number(gudang.purchase_price) || 0,
+              nilai: Math.round(Number(it.subtotal) || 0),
+              kodeKura: kura?.code || data.tortoise_name || "",
+              tanggal: data.date,
+              user: pemakai,
+              stokSetelah,
+              catatan: `Pengobatan ${data.tortoise_name}${(data.diagnoses || []).length ? " — " + (data.diagnoses || []).slice(0, 2).join(", ") : ""}.`,
+            })
+          );
+        } catch { /* satu bahan gagal tidak boleh membatalkan catatan kesehatannya */ }
       }
-      queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
+      try {
+        await base44.entities.HealthRecord.update(idCatatan, { stok_dipotong: true });
+      } catch { /* penandaan gagal; pemotongan berikutnya dicegah manual */ }
+      queryClient.invalidateQueries({ queryKey: ["warehouse-items"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
     }
+
+    // FinanceTransaction untuk biaya_obat SENGAJA TIDAK dibuat lagi di sini.
+    //
+    // Uang untuk obat sudah keluar saat obatnya DIBELI — penerimaan barang
+    // mencatatnya sebagai pengeluaran. Mencatatnya sekali lagi saat obatnya
+    // dipakai membuat rupiah yang sama muncul dua kali di laba rugi, dan
+    // membesar tiap kali seekor kura diobati.
+    //
+    // Peran biaya_obat di sini adalah PEMBEBANAN ke seekor kura, bukan
+    // pengeluaran baru: angkanya menempel ke harga pokok kura lewat catatan
+    // pergerakan barang di atas.
     queryClient.invalidateQueries({ queryKey: ["health"] });
     queryClient.invalidateQueries({ queryKey: ["health-records"] });
     queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
