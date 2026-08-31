@@ -1,4 +1,5 @@
 import { masukLaporan } from "./laporan";
+import { dilacak } from "./stokMenipis";
 /**
  * urgensiStok.js — SUMBER TUNGGAL penilaian "seberapa gawat sebuah barang".
  *
@@ -127,9 +128,19 @@ export function barangPenguncikSOP(sopTasks = [], warehouse = []) {
  * datanya kosong — menebak-nebak di sini berarti mengisi kartu keputusan
  * dengan hal yang belum tentu masalah.
  */
-export function tingkatUrgensi({ sisaHari, menguncSOP = false }) {
+export function tingkatUrgensi({ sisaHari, menguncSOP = false, wajib = false }) {
   if (menguncSOP) return "gawat";
-  if (sisaHari === -1) return "gawat";
+  // Stok nol pada barang yang TIDAK ditandai wajib bukan kabar buruk: 43 dari
+  // 125 barang gudang berstok nol karena memang sengaja tidak distok — obat
+  // resep dokter, suku cadang lampu, alat yang dipinjam saat perlu. Aturan
+  // lama menaikkan semuanya ke "gawat", jadi beranda menyebut 46 barang
+  // setiap hari dan tidak satu pun bisa dipadamkan dengan bekerja.
+  //
+  // Gerbang `is_mandatory` ini SENGAJA sama dengan stokHabis() di
+  // lib/stokMenipis.js. Dua berkas ini sama-sama mengaku sumber tunggal;
+  // selama ambangnya beda, beranda dan daftar belanja akan selalu berbeda
+  // angka betapapun rapinya masing-masing.
+  if (sisaHari === -1) return wajib ? "gawat" : "aman";
   if (!Number.isFinite(sisaHari)) return "aman";
   if (sisaHari <= AMBANG_GAWAT_HARI) return "gawat";
   if (sisaHari <= AMBANG_WASPADA_HARI) return "waspada";
@@ -147,11 +158,17 @@ const URUTAN = { gawat: 0, waspada: 1, aman: 2 };
 export function nilaiUrgensiStok(warehouse = [], transactions = [], sopTasks = []) {
   const { idMengunci } = barangPenguncikSOP(sopTasks, warehouse);
 
+  // Saringan `dilacak` ditaruh DI SINI, bukan di tiap pemanggil. Sebelumnya
+  // tiap layar harus ingat menyaringnya sendiri, dan KeputusanHariIni lupa —
+  // sehingga tiga barang bertanda [DUPLIKAT - ABAIKAN] tetap muncul di kartu
+  // keputusan beranda meski sudah dinonaktifkan berhari-hari sebelumnya.
   return warehouse
+    .filter(dilacak)
     .map((item) => {
       const sisaHari = hitungSisaHari(item, transactions);
       const menguncSOP = idMengunci.has(item.id);
-      const tingkat = tingkatUrgensi({ sisaHari, menguncSOP });
+      const wajib = !!item.is_mandatory;
+      const tingkat = tingkatUrgensi({ sisaHari, menguncSOP, wajib });
       return { ...item, sisaHari, menguncSOP, tingkat, alasan: alasanUrgensi({ sisaHari, menguncSOP }) };
     })
     .sort((a, b) => {
