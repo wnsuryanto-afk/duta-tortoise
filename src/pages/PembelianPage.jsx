@@ -675,10 +675,55 @@ export default function PembelianPage() {
       <Dialog open={!!terimaTarget} onOpenChange={(v) => !v && setTerimaTarget(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Barang Datang</DialogTitle></DialogHeader>
+
+          {/*
+            Mode ringkas: daftar baca-saja + satu tombol. Kolom jumlah di
+            belakangnya sudah terisi sejumlah pesanan, jadi "Semua cocok" hanya
+            meneruskan angka yang sama — bukan jalan pintas yang melewatkan
+            langkah, melainkan menghilangkan pengetikan yang memang tidak perlu.
+          */}
+          {!rinciTerima ? (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-border divide-y divide-border">
+                {(terimaTarget?.items || []).map((it, idx) => (
+                  <div key={idx} className="flex items-baseline justify-between gap-2 px-3 py-2">
+                    <span className="text-sm leading-snug min-w-0">{it.nama_barang}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap tabular">
+                      {it.jumlah_pesan} {it.satuan}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                {(terimaTarget?.items || []).length} barang · {rp(terimaTarget?.total_bayar)} termasuk ongkir.
+                Ongkirnya dibagi ke harga per satuan, jadi harga pokoknya sama dengan uang yang keluar.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setRinciTerima(true)}
+                className="text-xs text-primary underline underline-offset-2"
+              >
+                Ada yang kurang, beda jumlah, atau perlu tanggal kedaluwarsa? Atur per barang
+              </button>
+
+              <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-muted/40 border border-border text-[11px] text-muted-foreground">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                <span>
+                  “Semua cocok” tidak mengisi tanggal kedaluwarsa. Untuk obat dan vitamin, tanggal itu
+                  yang menentukan botol mana diambil lebih dulu — isi lewat “Atur per barang”, atau
+                  pindai kemasannya nanti lewat scan kedaluwarsa.
+                </span>
+              </div>
+            </div>
+          ) : (
+          <>
           <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 mb-2">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             <span>
-              Isi jumlah yang benar-benar datang. Selisihnya otomatis kembali ke daftar belanja.
+              Jumlahnya sudah terisi sesuai pesanan — ubah hanya yang tidak sesuai.
+              Selisihnya otomatis kembali ke daftar belanja.
               Tanggal kedaluwarsa jadi dasar urutan pengambilan stok.
             </span>
           </div>
@@ -710,11 +755,15 @@ export default function PembelianPage() {
               </div>
             ))}
           </div>
+          </>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setTerimaTarget(null)}>Batal</Button>
             <Button onClick={prosesTerima} disabled={busy} className="gap-1.5">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
-              Terima & Tambah Stok
+              {rinciTerima
+                ? "Terima & Tambah Stok"
+                : `Semua cocok — terima ${(terimaTarget?.items || []).length} barang`}
             </Button>
           </DialogFooter>
         </DialogContent>
