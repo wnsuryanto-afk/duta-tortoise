@@ -7,6 +7,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { hitungSisaHari, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { dilacak } from "@/lib/stokMenipis";
 
 function urgencyLabel(days) {
   if (days === null || days === Infinity) return { label: "—", color: "text-muted-foreground bg-muted border-border", icon: null };
@@ -81,8 +82,13 @@ export default function StockPredictionPage() {
     [pergerakan, transactions]
   );
 
+  // Barang yang dinonaktifkan tidak ikut diprediksi. Tanpa saringan ini,
+  // 3 barang bertanda [DUPLIKAT - ABAIKAN] dan 9 bahan pakan yang sengaja
+  // tidak dilacak tetap muncul sebagai "kritis" — halaman ini menyebut 55 item
+  // kritis sementara daftar belanja hanya menyebut 39. Aturan yang sama
+  // dipakai seluruh layar stok: lib/stokMenipis.js.
   const warehouseWithDays = useMemo(() =>
-    warehouseItems.map(i => ({ ...i, estimatedDays: hitungSisaHari(i, riwayatPakai) }))
+    warehouseItems.filter(dilacak).map(i => ({ ...i, estimatedDays: hitungSisaHari(i, riwayatPakai) }))
       .sort((a, b) => {
         const da = a.estimatedDays === Infinity ? 9999 : a.estimatedDays;
         const db = b.estimatedDays === Infinity ? 9999 : b.estimatedDays;
@@ -92,7 +98,7 @@ export default function StockPredictionPage() {
   );
 
   const feedWithDays = useMemo(() =>
-    feedStockItems.map(i => {
+    feedStockItems.filter(dilacak).map(i => {
       const daily = i.daily_ideal || 0;
       const days = daily > 0 ? i.current_stock / daily : Infinity;
       return { ...i, estimatedDays: i.current_stock <= 0 ? -1 : days };
