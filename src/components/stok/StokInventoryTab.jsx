@@ -45,7 +45,7 @@ function SourceBadge({ src }) {
 }
 
 // Category-based placeholder icons
-const CAT_ICONS = { pakan: "🥬", sayuran: "🥬", buah: "🍎", rumput: "🌿", hay: "🌾", pelet: "🟤", obat: "💊", vitamin: "🌿", suplemen: "💉", alat_kerja: "🔧", peralatan: "🔧", alat: "🔧", lainnya: "📦" };
+const CAT_ICONS = { pakan: "🥬", sayuran: "🥬", buah: "🍎", rumput: "🌿", hay: "🌾", pelet: "🟤", obat: "💊", vitamin: "🌿", suplemen: "💉", habis_pakai: "🩹", alat_kerja: "🔧", peralatan: "🔧", alat: "🔧", lainnya: "📦" };
 function catIcon(item) { return CAT_ICONS[item._cat] || CAT_ICONS[item.category] || "📦"; }
 
 // ── Expired Date Badge ─────────────────────────────────────────────────
