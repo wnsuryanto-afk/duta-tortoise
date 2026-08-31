@@ -6,7 +6,7 @@ const FEED_PREFIX = {
 };
 const WH_PREFIX = {
   obat: "OBT", vitamin: "VIT", suplemen: "SPM", peralatan: "ALT",
-  alat_kerja: "ALT", pakan: "PKN", lainnya: "LNN",
+  habis_pakai: "ALT", alat_kerja: "ALT", pakan: "PKN", lainnya: "LNN",
 };
 
 function getNextSKU(prefix, existingSkus) {
