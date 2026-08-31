@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { AlertTriangle, Package, ArrowUpDown, HandCoins, FlaskConical, TrendingDown } from "lucide-react";
+import { AlertTriangle, Package, ArrowUpDown, HandCoins, FlaskConical, TrendingDown, LayoutDashboard } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
@@ -140,6 +140,9 @@ export default function UnifiedStokPage() {
           <TabsTrigger value="resep" className="gap-1.5">
             <FlaskConical className="w-3.5 h-3.5" /> Resep & Produksi
           </TabsTrigger>
+          <TabsTrigger value="ringkasan" className="gap-1.5">
+            <LayoutDashboard className="w-3.5 h-3.5" /> Ringkasan
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory" className="mt-4">
@@ -153,6 +156,9 @@ export default function UnifiedStokPage() {
         </TabsContent>
         <TabsContent value="resep" className="mt-4">
           <StokResepTab role={role} />
+        </TabsContent>
+        <TabsContent value="ringkasan" className="mt-4">
+          <DashboardStokPage />
         </TabsContent>
       </Tabs>
     </div>
