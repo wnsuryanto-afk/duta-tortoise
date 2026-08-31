@@ -1,3 +1,4 @@
+import { diPeternakan } from "@/lib/populasiKura";
 /**
  * kandang.js — menyambungkan kura ke kandangnya lewat nomor, bukan nama.
  *
@@ -187,13 +188,12 @@ export function hitungIsiKandang(kandang, tortoises = [], enclosures = [], kecua
  * Sengaja didefinisikan lewat pengecualian: status baru yang ditambahkan kelak
  * otomatis terhitung sebagai masih ada, bukan diam-diam hilang dari hitungan.
  */
-const STATUS_KELUAR = ["mati", "terjual", "diarsipkan"];
-
-function masihDiPeternakan(kura) {
-  if (!kura) return false;
-  if (kura.is_archived) return false;
-  return !STATUS_KELUAR.includes(kura.status);
-}
+// Definisinya ada di lib/populasiKura.js, tidak diulang di sini. Sebelumnya
+// daftar status yang sama ditulis di LIMA tempat dengan tiga nama berbeda
+// (STATUS_KELUAR, STATUS_TUTUP, dan sekali lagi apa adanya di dalam kartu
+// kura). Isinya kebetulan masih sama semua — tapi "kebetulan sama" bukan
+// jaminan, dan tiga di antaranya tidak terlihat oleh scripts/cek-kembar.mjs.
+const masihDiPeternakan = diPeternakan;
 
 /** Apakah kandang ini sudah penuh menurut hitungan langsung? */
 export function kandangPenuh(kandang, tortoises = [], enclosures = [], kecualikanId) {

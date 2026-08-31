@@ -23,6 +23,7 @@ import { base44 } from "@/api/base44Client";
 import TortoisePhotoLightbox from "./TortoisePhotoLightbox";
 import { TortoiseArt } from "@/components/common/Illustration";
 import { sedangSakit } from "@/lib/statusKura";
+import { diPeternakan } from "@/lib/populasiKura";
 
 function PriceField({ label }) {
   return (
@@ -376,7 +377,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
               onClick={() => window.open(`/passport?id=${tortoise.id}`, "_blank")}>
               <FileText className="w-3 h-3" />
             </Button>
-            {onSell && !["terjual", "mati", "diarsipkan"].includes(tortoise.status) && (
+            {onSell && diPeternakan(tortoise) && (
               <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Jual Kura Ini" onClick={() => onSell(tortoise)}>
                 <ShoppingBag className="w-3 h-3" />
               </Button>

@@ -1,3 +1,4 @@
+import { STATUS_KELUAR } from "@/lib/populasiKura";
 /**
  * statusKura.js — aturan perpindahan status kura.
  *
@@ -71,7 +72,12 @@ export function perubahanSakit(kura, tanggal) {
  * Status yang berarti kura tidak lagi dirawat di peternakan.
  * Kura dengan status ini tidak mungkin "sedang sakit".
  */
-export const STATUS_TUTUP = ["mati", "terjual", "diarsipkan"];
+/**
+ * Nama lain untuk STATUS_KELUAR di lib/populasiKura.js — dipertahankan supaya
+ * pemanggil yang sudah ada tidak perlu diubah, tapi isinya tidak lagi ditulis
+ * ulang di sini. Satu daftar, satu tempat.
+ */
+export const STATUS_TUTUP = STATUS_KELUAR;
 
 /**
  * SATU definisi "kura ini sedang sakit".
