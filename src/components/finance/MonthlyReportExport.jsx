@@ -10,6 +10,7 @@ import { id as idLocale } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
+import { perluDiperhatikan } from "@/lib/stokMenipis";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const GREEN_DARK = [27, 67, 50];
@@ -491,9 +492,7 @@ export default function MonthlyReportExport({ role }) {
       const warehouseItems = await base44.entities.WarehouseItem.list("-name", 100);
       // Aturan yang sama dengan layar peringatan (lib/stokMenipis), bukan
       // `<= minimum_stock` yang meloloskan setiap barang bermininum 0.
-      const criticalItems = warehouseItems.filter(
-        (i) => dilacak(i) && (stokHabis(i) || stokMenipis(i)),
-      );
+      const criticalItems = warehouseItems.filter(perluDiperhatikan);
       if (criticalItems.length > 0) {
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
