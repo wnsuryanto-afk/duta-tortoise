@@ -13,6 +13,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircle2, TrendingUp, TrendingDown, Search } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
 import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
+import { hitungHppKura, marginPersen } from "@/lib/hppKura";
 import { differenceInMonths } from "date-fns";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
@@ -27,21 +28,10 @@ function calcAgeMonths(birthDate) {
   return differenceInMonths(new Date(), new Date(birthDate));
 }
 
-// Hitung bulan di farm — prioritas: purchase_date → created_date → birth_date (hasil_sendiri)
-function calcFarmMonths(tortoise, endDate) {
-  if (!tortoise) return 0;
-  const end = endDate ? new Date(endDate) : new Date();
-  // Kura hasil sendiri: pakai birth_date (lahir di farm)
-  if (tortoise.source === "hasil_sendiri" && tortoise.birth_date) {
-    return Math.max(0, differenceInMonths(end, new Date(tortoise.birth_date)));
-  }
-  // Prioritas: purchase_date → created_date
-  const entryDate = tortoise.purchase_date || tortoise.created_date;
-  if (entryDate) {
-    return Math.max(0, differenceInMonths(end, new Date(entryDate)));
-  }
-  return 0;
-}
+// calcFarmMonths dihapus. Lama di peternakan, biaya perawatan, biaya induk,
+// dan total HPP sekarang punya satu definisi di lib/hppKura.js — dipakai oleh
+// layar review DAN oleh handleSave, supaya angka yang dilihat pemilik sama
+// dengan angka yang tersimpan. Sebelumnya keduanya memakai tarif yang berbeda.
 
 function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
