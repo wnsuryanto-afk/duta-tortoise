@@ -125,14 +125,14 @@ Deno.serve(async (req) => {
     await prosesDuplikat(freshFeed, "feedstock", base44.asServiceRole.entities.FeedStock);
     await prosesDuplikat(freshWH, "warehouse", base44.asServiceRole.entities.WarehouseItem);
 
-    // ─── SIMPAN HASIL DETEKSI SATUAN BEDA KE DB (agar halaman bisa baca) ───
-    // Kita simpan di CompanySettings key "duplikat_pending" sebagai JSON notes
-    const existingSettings = await base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" });
-    if (existingSettings[0]) {
-      await base44.asServiceRole.entities.CompanySettings.update(existingSettings[0].id, {
-        notes: JSON.stringify(duplikatSatuanBeda),
-      });
-    }
+    // Penulisan hasil deteksi ke CompanySettings dihapus. Tiga alasan:
+    //   1. Kolom `notes` tidak ada di skema CompanySettings, jadi JSON-nya
+    //      dibuang diam-diam — tidak pernah benar-benar tersimpan.
+    //   2. Komentarnya menyebut baris "duplikat_pending", tapi kodenya menulis
+    //      ke baris "main" — pengaturan perusahaan yang sebenarnya.
+    //   3. Tidak ada satu pun layar yang membacanya kembali.
+    // Datanya tetap tersedia: `duplikatSatuanBeda` sudah ikut dikembalikan di
+    // ringkasan hasil di bawah, yang memang dibaca pemanggilnya.
 
     const summary = {
       hapusDuplikatCount,

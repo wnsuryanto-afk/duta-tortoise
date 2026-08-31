@@ -25,7 +25,7 @@ export default function TourController() {
     if (isTutorialCompleted(user.email)) return;
 
     // Cek DB flag (untuk cross-device sync)
-    const dbCompleted = profile?.tutorial_completed === true || profile?.tour_completed === true || profile?.tour_skipped === true;
+    const dbCompleted = profile?.tour_completed === true || profile?.tour_skipped === true;
     if (dbCompleted) {
       // Sync ke localStorage per-user
       localStorage.setItem(`tour_done_${user.email}`, "true");

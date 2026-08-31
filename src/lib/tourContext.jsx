@@ -93,7 +93,10 @@ export async function markTutorialCompletedInDB(userEmail) {
   try {
     const profiles = await base44.entities.UserProfile.filter({ user_email: userEmail });
     if (profiles.length > 0) {
-      await base44.entities.UserProfile.update(profiles[0].id, { tutorial_completed: true, tour_completed: true });
+      // Hanya tour_completed. `tutorial_completed` tidak ada di skema
+      // UserProfile, jadi ia dibuang diam-diam — menuliskannya membuat kode
+      // ini tampak punya dua penanda padahal cuma satu yang bekerja.
+      await base44.entities.UserProfile.update(profiles[0].id, { tour_completed: true });
     }
   } catch (_) {}
 }
