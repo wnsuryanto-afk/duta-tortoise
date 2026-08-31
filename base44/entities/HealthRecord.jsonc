@@ -150,10 +150,15 @@
         }
       }
     },
+    "stok_dipotong": {
+      "type": "boolean",
+      "default": false,
+      "description": "Stok gudang untuk treatment_items sudah dipotong dan pergerakannya tercatat. Penanda ini yang mencegah pemotongan berulang setiap kali catatan disimpan ulang atau disunting."
+    },
     "biaya_obat": {
       "type": "number",
       "default": 0,
-      "description": "Biaya obat/treatment (Rp)"
+      "description": "Biaya obat/treatment (Rp) \u2014 BEBAN KE KURA, bukan pengeluaran baru. Uangnya sudah keluar saat obatnya dibeli; mencatatnya lagi di sini membuat rupiah yang sama terhitung dua kali di laba rugi."
     },
     "biaya_obat_manual": {
       "type": "boolean",
