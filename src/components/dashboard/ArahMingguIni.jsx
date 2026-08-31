@@ -127,7 +127,7 @@ export default function ArahMingguIni() {
   const telur = deretMingguan(breeding, {
     tanggal: (r) => r.egg_laying_date,
     nilai: (r) => r.egg_count || 0,
-    saring: bukanUjiCoba,
+    saring: masukLaporan,
   });
 
   // toFixed menghasilkan titik desimal ("2.1"); dalam bahasa Indonesia

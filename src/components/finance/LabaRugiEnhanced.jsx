@@ -50,6 +50,12 @@ export default function LabaRugiEnhanced({ period }) {
     staleTime: 3 * 60 * 1000,
   });
 
+  const { data: salarySlips = [] } = useQuery({
+    queryKey: ["labarugi-salaryslips", selectedPeriod],
+    queryFn: () => base44.entities.SalarySlip.list("-period", 500),
+    staleTime: 3 * 60 * 1000,
+  });
+
   // Filter by period
   const periodTx = finances.filter(t => t.date?.startsWith(selectedPeriod) && masukLaporan(t));
   const pemasukan = periodTx.filter(t => t.type === "pemasukan");
@@ -89,6 +95,10 @@ export default function LabaRugiEnhanced({ period }) {
 
   // Sales this period
   const periodSales = sales.filter(s => s.sale_date?.startsWith(selectedPeriod) && masukLaporan(s));
+
+  // Slip gaji bulanan untuk rincian gaji_karyawan
+  const monthSlips = salarySlips
+    .filter(s => s.period === selectedPeriod && s.status === "paid" && masukLaporan(s));
 
   // Chart data
   const barData = [

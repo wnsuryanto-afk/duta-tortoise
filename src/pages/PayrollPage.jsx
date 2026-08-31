@@ -636,9 +636,6 @@ export default function PayrollPage() {
               <Button variant="outline" size="sm" onClick={() => setShowOvertime(true)}>
                 <Clock className="w-4 h-4 mr-1.5" /> Catat Lembur
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowVegetable(true)}>
-                <Leaf className="w-4 h-4 mr-1.5" /> Catat Sayur
-              </Button>
             </>
           )}
         </div>
