@@ -273,7 +273,7 @@ function ItemDetailDialog({ item, onClose, onEdit, onUploadPhoto, canEdit }) {
 }
 
 // ── Item Form ─────────────────────────────────────────────────────────
-const EMPTY = { type: "pakan", name: "", unit: "kg", current_stock: 0, minimum_stock: 1, price: 0, location: "", is_mandatory: false, notes: "", category: "sayuran", daily_ideal: "" };
+const EMPTY = { type: "pakan", name: "", unit: "kg", current_stock: 0, minimum_stock: 1, price: 0, location: "", is_mandatory: false, notes: "", category: "sayuran", daily_ideal: "", needs_replacement: false };
 
 function ItemForm({ item, onClose }) {
   const qc = useQueryClient();
@@ -291,6 +291,7 @@ function ItemForm({ item, onClose }) {
     category: item._src === "feed" ? (item.category || "sayuran") : (item.category || "obat"),
     expired_date: item.expired_date || "",
     daily_ideal: item.daily_ideal ?? "",
+    needs_replacement: item.needs_replacement || false,
   } : EMPTY);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(item?.photo_url || null);
@@ -331,7 +332,12 @@ function ItemForm({ item, onClose }) {
       else await base44.entities.FeedStock.create(data);
     } else {
       const catMap = { obat: "obat", vitamin: "vitamin", suplemen: "suplemen", alat: "alat_kerja", lainnya: "lainnya" };
-      const data = { name: form.name, category: catMap[form.type] || form.type || "lainnya", unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), purchase_price: Number(form.price), is_mandatory: form.is_mandatory, location: form.location, notes: form.notes, photo_url, expired_date: form.expired_date || null };
+      // needs_replacement dibaca tahap "Yang Kurang" di halaman Belanja: barang
+      // yang rusak perlu diganti berapa pun sisa stoknya, dan penilaian sisa
+      // hari tidak menangkap itu. Sebelumnya hanya bisa diisi lewat form di
+      // halaman /warehouse yang sudah digabung ke sini — tanpa penggantinya,
+      // cabang "rusak" di halaman Belanja tidak akan pernah menyala lagi.
+      const data = { name: form.name, category: catMap[form.type] || form.type || "lainnya", unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), purchase_price: Number(form.price), is_mandatory: form.is_mandatory, location: form.location, notes: form.notes, photo_url, expired_date: form.expired_date || null, needs_replacement: !!form.needs_replacement };
       if (item?.id) await base44.entities.WarehouseItem.update(item.id, data);
       else await base44.entities.WarehouseItem.create(data);
     }
@@ -450,6 +456,12 @@ function ItemForm({ item, onClose }) {
           <input type="checkbox" id="mand" checked={!!form.is_mandatory} onChange={e => set("is_mandatory", e.target.checked)} className="w-4 h-4 accent-primary" />
           <Label htmlFor="mand" className="text-xs cursor-pointer">⚠️ Barang Wajib</Label>
         </div>
+        {!isFeed && (
+          <div className="flex items-center gap-2 pt-5">
+            <input type="checkbox" id="rusak" checked={!!form.needs_replacement} onChange={e => set("needs_replacement", e.target.checked)} className="w-4 h-4 accent-primary" />
+            <Label htmlFor="rusak" className="text-xs cursor-pointer">🔧 Rusak, perlu diganti</Label>
+          </div>
+        )}
       </div>
 
       {/* Expired date for warehouse medical items */}
