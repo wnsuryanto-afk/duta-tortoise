@@ -867,9 +867,10 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
       {/* Cetak Label */}
       {labelItems && (
         <WarehouseLabelModal open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
-
-        <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />
       )}
+
+      {/* Scan label cetak untuk menemukan barangnya */}
+      <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />
     </div>
   );
 }
