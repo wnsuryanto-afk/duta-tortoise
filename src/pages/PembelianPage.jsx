@@ -701,6 +701,28 @@ export default function PembelianPage() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Barang Datang</DialogTitle></DialogHeader>
 
+          {/* Peringatan lompatan harga — muncul di kedua mode, sebelum tombol. */}
+          {(terimaTarget?.items || []).some((it) => lompatanHarga(it)) && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 mb-1">
+              <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800 space-y-1">
+                <p><strong>Harga beberapa barang melompat jauh dari harga gudang.</strong> Penyebab
+                  tersering bukan harga naik, tapi satuannya beda — gudang per ampul, struk per botol;
+                  gudang per gram, struk per kemasan. Menerima akan menimpa harga gudangnya.</p>
+                {(terimaTarget?.items || []).map((it, idx) => {
+                  const l = lompatanHarga(it);
+                  if (!l) return null;
+                  return (
+                    <p key={idx} className="font-mono text-[11px]">
+                      {it.nama_barang}: {rp(l.lama)} → {rp(l.baru)} per {l.satuan}
+                      {" "}({l.kali.toFixed(1)}× lebih {l.naik ? "mahal" : "murah"})
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/*
             Mode ringkas: daftar baca-saja + satu tombol. Kolom jumlah di
             belakangnya sudah terisi sejumlah pesanan, jadi "Semua cocok" hanya
