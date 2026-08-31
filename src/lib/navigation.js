@@ -74,16 +74,11 @@ export const NAV_SECTIONS = [
     color: "text-blue-500",
     blurb: "Gudang, pembelian, dan alat kerja",
     items: [
-      { path: "/pembelian",        section: "daftar-belanja", label: "Belanja",                 icon: ShoppingCart,  desc: "Satu alur: yang kurang → dipesan → diterima → stok & biaya tercatat" },
-      { path: "/stok-unified",     section: "stock-gudang",   label: "Stok & Gudang",           icon: LayoutGrid,    desc: "Barang, pakan, dan pergerakan stok" },
-      { path: "/harus-dibeli",     section: "harus-dibeli",   label: "Rincian Yang Kurang",     icon: AlertTriangle, desc: "Rincian per sumber — ringkasannya ada di tahap pertama Belanja" },
+      { path: "/pembelian",        section: "daftar-belanja", label: "Belanja",                 icon: ShoppingCart,  desc: "Satu alur: yang kurang → prediksi habis → dipesan → diterima → stok & biaya tercatat" },
+      { path: "/stok-unified",     section: "stock-gudang",   label: "Stok & Gudang",           icon: LayoutGrid,    desc: "Barang gudang & pakan jadi satu daftar, plus pergerakan, peminjaman, resep, dan ringkasan nilai" },
       { path: "/daftar-belanja",   section: "daftar-belanja", label: "Tugas Menunggu Barang",   icon: ShoppingCart,  desc: "Tugas tim yang tertahan karena barangnya belum ada" },
-      { path: "/dashboard-stok",   section: "warehouse",      label: "Ringkasan Stok",          icon: LayoutGrid,    desc: "Nilai & sebaran stok" },
-      { path: "/warehouse",        section: "warehouse",      label: "Gudang Gazebo",           icon: Package,       desc: "Barang di gudang gazebo" },
-      { path: "/feed-stock",       section: "feed-stock",     label: "Stok Pakan",              icon: Leaf,          desc: "Persediaan pakan" },
       { path: "/alat-kerja",       section: "alat-kerja",     label: "Alat Kerja",              icon: Wrench,        desc: "Peminjaman & kondisi alat" },
       { path: "/supplier",         section: "supplier",       label: "Pemasok",                 icon: Truck,         desc: "Daftar & riwayat pembelian" },
-      { path: "/stock-prediction", section: "warehouse",      label: "Prediksi Stok",           icon: AlertTriangle, desc: "Perkiraan kehabisan per barang, lengkap dengan sisa harinya" },
     ],
   },
   {

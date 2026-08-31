@@ -120,9 +120,16 @@ const AuthenticatedApp = () => {
         <Route path="/sop" element={<SOPPage />} />
         <Route path="/payroll" element={<PayrollReport />} />
         <Route path="/breeding-report" element={<BreedingReport />} />
-        <Route path="/feed-stock" element={<FeedStockPage />} />
+        <Route path="/feed-stock" element={<Navigate to="/stok-unified" replace />} />
         <Route path="/daily-payroll" element={<DailyPayrollReport />} />
-        <Route path="/warehouse" element={<WarehousePage />} />
+        {/*
+          Enam rute di bawah diarahkan, bukan dihapus. Tautan lama dari
+          pesan WhatsApp, bookmark, dan halaman lain tetap sampai ke tempat
+          yang benar — kalau langsung dihapus, semuanya jadi halaman kosong.
+          Isi ketiganya sudah ada di /stok-unified (tab Inventaris & Ringkasan)
+          dan /pembelian (tab Yang Kurang & Prediksi Habis).
+        */}
+        <Route path="/warehouse" element={<Navigate to="/stok-unified" replace />} />
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/info" element={<InfoPage />} />
         <Route path="/treatment" element={<TreatmentPage />} />
@@ -147,7 +154,7 @@ const AuthenticatedApp = () => {
         <Route path="/maintenance-schedule" element={<MaintenanceSchedulePage />} />
         <Route path="/printer-config" element={<PrinterConfigPage />} />
         <Route path="/breeder-ranking" element={<BreederRankingPage />} />
-        <Route path="/stock-prediction" element={<StockPredictionPage />} />
+        <Route path="/stock-prediction" element={<Navigate to="/pembelian" replace />} />
         <Route path="/petty-cash" element={<PettyCashPage />} />
         <Route path="/supplier" element={<SupplierPage />} />
         <Route path="/pellet-recipe" element={<PelletRecipePage />} />
@@ -162,7 +169,7 @@ const AuthenticatedApp = () => {
         <Route path="/pembelian" element={<PembelianPage />} />
         <Route path="/tugas-insidentil" element={<IncidentalTaskPage />} />
         <Route path="/daftar-belanja" element={<DaftarBelanjaPage />} />
-        <Route path="/harus-dibeli" element={<HarusDibeliPage />} />
+        <Route path="/harus-dibeli" element={<Navigate to="/pembelian" replace />} />
         <Route path="/alat-kerja" element={<AlatKerjaPage />} />
         <Route path="/pengaturan-whatsapp" element={<PengaturanWhatsAppPage />} />
         <Route path="/log-whatsapp" element={<WhatsAppLogPage />} />
@@ -170,9 +177,9 @@ const AuthenticatedApp = () => {
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
         <Route path="/catatan-saran" element={<CatatanSaranPage />} />
         <Route path="/temuan-foto" element={<TemuanFotoPage />} />
-        <Route path="/stock-gudang" element={<StockGudangPage />} />
+        <Route path="/stock-gudang" element={<Navigate to="/stok-unified" replace />} />
         <Route path="/rekap-poin-gaji" element={<RekapPoinGajiPage />} />
-        <Route path="/dashboard-stok" element={<DashboardStokPage />} />
+        <Route path="/dashboard-stok" element={<Navigate to="/stok-unified" replace />} />
         <Route path="/stok-unified" element={<UnifiedStokPage />} />
         <Route path="/panduan-pakan" element={<PanduanPakanPage />} />
         <Route path="/pakan-harian" element={<PakanHarianPage />} />
