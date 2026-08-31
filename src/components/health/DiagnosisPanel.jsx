@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, Copy, Phone, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { statusStok } from "@/lib/stokMenipis";
 
 const DISEASE_GUIDES = {
   "Infeksi Saluran Pernapasan": {
@@ -389,8 +390,13 @@ export default function DiagnosisPanel({ selectedDiagnoses, warehouseItems = [],
           || feedStocks.find(i => i.name?.toLowerCase().includes(lower) || lower.includes(i.name?.toLowerCase()));
     }
     if (!item) return "unknown";
-    if (item.current_stock <= 0) return "habis";
-    if (item.current_stock < item.minimum_stock) return "hampir_habis";
+    // Ambang dari lib/stokMenipis, sama dengan yang dipakai daftar belanja.
+    // Kalau panel ini bilang "cukup" sementara daftar belanja bilang "habis",
+    // protokol pengobatan dijalankan dengan bahan yang tidak ada.
+    const st = statusStok(item);
+    if (st === "tidak_dilacak") return "unknown";
+    if (st === "habis") return "habis";
+    if (st === "menipis") return "hampir_habis";
     return "cukup";
   };
 
