@@ -14,6 +14,7 @@ import { Loader2, ChevronRight, ChevronLeft, Shell, User, DollarSign, CheckCircl
 import { useTestMode } from "@/lib/useTestMode";
 import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
 import { hitungHppKura, marginPersen } from "@/lib/hppKura";
+import { biayaBarangKura } from "@/lib/pemakaianBarang";
 import { differenceInMonths } from "date-fns";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
@@ -562,6 +563,16 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     staleTime: 5 * 60 * 1000,
   });
 
+  // Pengambilan barang gudang yang dibebankan ke seekor kura — obat, vitamin,
+  // habis pakai. Tanpa ini, kura yang diobati berbulan-bulan punya harga pokok
+  // yang sama persis dengan kura yang tidak pernah sakit, dan justru terlihat
+  // paling menguntungkan saat dijual.
+  const { data: pergerakanStok = [] } = useQuery({
+    queryKey: ["stock-movements", "-date", 500],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Auto-select preSelectedTortoiseId on mount
   useEffect(() => {
     if (preSelectedTortoiseId && tortoises.length > 0 && !initialized) {
@@ -631,6 +642,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     hargaBeliInput: form.purchase_price_input,
     ongkir: form.shipping_cost,
     tanggalJual: form.sale_date,
+    biayaObat: biayaBarangKura(pergerakanStok, selectedTortoise).total,
   });
 
   const handleSave = async () => {
