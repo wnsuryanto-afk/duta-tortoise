@@ -9,9 +9,13 @@ export default [
     files: [
       "src/components/**/*.{js,mjs,cjs,jsx}",
       "src/pages/**/*.{js,mjs,cjs,jsx}",
+      // Pustaka dan hook ikut diperiksa. Sebelumnya src/lib diabaikan
+      // seluruhnya — padahal di situlah aturan-aturan inti aplikasi tinggal.
+      "src/lib/**/*.{js,mjs,cjs,jsx}",
+      "src/hooks/**/*.{js,mjs,cjs,jsx}",
       "src/Layout.jsx",
     ],
-    ignores: ["src/lib/**/*", "src/components/ui/**/*"],
+    ignores: ["src/components/ui/**/*"],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
     languageOptions: {
@@ -35,6 +39,18 @@ export default [
       "unused-imports": pluginUnusedImports,
     },
     rules: {
+      // Variabel yang dipakai tapi tidak ada.
+      //
+      // Ini yang menjatuhkan halaman Pembelian 31-08-2026: saat kueri
+      // WarehouseTransaction dihapus, satu sisa `transaksi` tertinggal di
+      // daftar dependensi useMemo. Build tetap hijau — Vite tidak memeriksa
+      // nama variabel — dan halamannya baru mati saat dibuka orang:
+      // "transaksi is not defined".
+      //
+      // Aturan ini SEBENARNYA sudah ada di pluginJs.configs.recommended yang
+      // di-spread di atas, tapi blok `rules` di bawah menimpanya bulat-bulat.
+      // Jadi selama ini ia mati tanpa ada yang sadar.
+      "no-undef": "error",
       "no-unused-vars": "off",
       "react/jsx-uses-vars": "error",
       "react/jsx-uses-react": "error",
