@@ -54,6 +54,17 @@ const hariIni = () => new Date().toISOString().split("T")[0];
 
 const KATEGORI = ["obat", "vitamin", "alat_kerja", "pakan", "lainnya"];
 
+/**
+ * Satuan gudang yang dihitung CURAH, bukan per kemasan.
+ *
+ * Marketplace menjual "6 x 1 kg maltodextrin"; gudang menyimpannya dalam gram.
+ * Kalau jumlah dari struk (6) dipakai apa adanya, stok hanya bertambah 6 gram
+ * dan harga per gram tercatat Rp 19.900 — seribu kali lipat harga sebenarnya.
+ * Kesalahan ini tidak melempar error apa pun; ia cuma membuat ongkos racikan
+ * salah selamanya. Terjadi nyata pada tujuh bahan Duta Repro.
+ */
+const SATUAN_CURAH = new Set(["gram", "g", "gr", "kg", "ml", "cc", "liter", "l", "mg"]);
+
 const WARNA_YAKIN = {
   tinggi: "bg-green-100 text-green-700 border-green-200",
   sedang: "bg-amber-100 text-amber-700 border-amber-200",
@@ -131,6 +142,10 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
             // Kalau padanan gudangnya sudah ketemu, ikut kategori barang itu.
             kategori: KATEGORI.includes(cocok?.category) ? cocok.category : "lainnya",
             satuan: cocok?.unit || "pcs",
+            // Berapa satuan gudang dalam SATU kemasan yang dibeli. 1 untuk
+            // barang hitungan (botol, pcs, ampul); harus diisi untuk barang
+            // curah (gram, ml) yang dijual per kemasan.
+            isi: 1,
             ikut: true,
           });
         });
@@ -148,6 +163,12 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
 
   const hargaSatuan = (r) => (r.tafsir === "subtotal" ? r.jikaSubtotal?.harga_satuan : r.jikaSatuan?.harga_satuan) || 0;
   const subtotal = (r) => (r.tafsir === "subtotal" ? r.jikaSubtotal?.subtotal : r.jikaSatuan?.subtotal) || 0;
+
+  // Jumlah dan harga yang benar-benar disimpan: dalam SATUAN GUDANG, bukan
+  // dalam kemasan marketplace.
+  const jumlahGudang = (r) => (Number(r.jumlah) || 0) * (Number(r.isi) || 1);
+  const hargaGudang = (r) => (jumlahGudang(r) > 0 ? subtotal(r) / jumlahGudang(r) : 0);
+  const perluIsi = (r) => SATUAN_CURAH.has(String(r.satuan || "").toLowerCase()) && (Number(r.isi) || 1) === 1;
 
   const dipilih = baris.filter((r) => r.ikut);
   const belumDipetakan = dipilih.filter((r) => !r.sku).length;
@@ -197,11 +218,13 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
             ? `Dicatat dari screenshot pesanan ${p.toko || ""}. Sudah dibayar, menunggu barang datang.`
             : `Dicatat dari screenshot pesanan ${p.toko || ""}. BELUM DIBAYAR saat dicatat — pastikan pembayarannya sebelum menandai barang datang.`,
           items: rows.map((r) => ({
-            nama_barang: r.namaStruk,
-            jumlah_pesan: Number(r.jumlah) || 0,
+            nama_barang: (Number(r.isi) || 1) > 1
+              ? `${r.namaStruk} — ${r.jumlah} kemasan @${r.isi} ${r.satuan}`
+              : r.namaStruk,
+            jumlah_pesan: jumlahGudang(r),
             jumlah_diterima: 0,
             satuan: r.satuan || "pcs",
-            harga_satuan: hargaSatuan(r),
+            harga_satuan: hargaGudang(r),
             kategori: r.kategori || "lainnya",
             label_per_butir: false,
             item_sku: r.sku || "",
