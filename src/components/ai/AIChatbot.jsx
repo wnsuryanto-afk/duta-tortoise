@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Bot, User } from "lucide-react";
 import useCurrentUser from "@/lib/useCurrentUser";
+import { perluDiperhatikan } from "@/lib/stokMenipis";
 
 const QUICK_REPLIES = [
   "Kura-kura belum ditimbang minggu ini?",
@@ -29,7 +30,7 @@ async function fetchContext(message) {
     // ambangnya sendiri (120% dari minimum) dan tidak menyaring barang yang
     // dinonaktifkan, sehingga jawaban chat menyebut 46 barang sementara
     // beranda menyebut 20 — untuk pertanyaan yang sama.
-    const low = items.filter((i) => dilacak(i) && (stokHabis(i) || stokMenipis(i)));
+    const low = items.filter(perluDiperhatikan);
     parts.push(`Item stok rendah (${low.length}): ${low.slice(0,5).map(i => `${i.name} (${i.current_stock} ${i.unit})`).join(", ")}`);
   }
   if (lower.includes("absensi") || lower.includes("hadir")) {
