@@ -408,14 +408,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   }, [sopTasks, today, rotasiUkur, enclosures, existingLogItemIds, recentLogs, user?.email]);
 
   // Reminder timbang
-  const timbangToday = tortoises.filter(t => {
-    // Baby ditangani oleh task tunggal "Timbang, ukur & foto SEMUA baby (2 minggu sekali)"
-    // — jangan buat task per-baby di sini.
-    if (t.age_category === "baby" || t.status === "baby") return false;
-    if (!["aktif", "baby"].includes(t.status) || !t.last_weighed_date || !t.weighing_interval_days) return false;
-    try { return differenceInCalendarDays(now, parseISO(t.last_weighed_date)) >= t.weighing_interval_days; }
-    catch { return false; }
-  }).slice(0, 5);
+  // Aturan lengkapnya di lib/jadwalTimbang.js. Baby dibuang di sini karena
+  // sudah ditangani satu task gabungan ("Timbang, ukur & foto SEMUA baby").
+  const timbangToday = kuraPerluDitimbang(tortoises, { sekarang: now, tanpaBaby: true }).slice(0, 5);
 
   const timbangItems = timbangToday.map(t => ({
     id: `timbang_${t.id}`, label: `Timbang: ${t.name}`, waktu: "Saat ada waktu",

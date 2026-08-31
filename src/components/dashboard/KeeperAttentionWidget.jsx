@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { sedangSakit } from "@/lib/populasiKura";
+import { kuraPerluDitimbang, alasanTimbang } from "@/lib/jadwalTimbang";
 
 export default function KeeperAttentionWidget() {
   const { data: tortoises = [] } = useQuery({
@@ -25,13 +26,7 @@ export default function KeeperAttentionWidget() {
   const sickTortoises = tortoises.filter(sedangSakit);
 
   // 2. Belum ditimbang (lewat interval)
-  const notWeighed = tortoises
-    .filter(t => ["aktif", "baby"].includes(t.status) && t.last_weighed_date && t.weighing_interval_days)
-    .filter(t => {
-      const daysSince = differenceInDays(now, new Date(t.last_weighed_date));
-      return daysSince > (t.weighing_interval_days || 30);
-    })
-    .slice(0, 3);
+  const notWeighed = kuraPerluDitimbang(tortoises, { sekarang: now }).slice(0, 3);
 
   // 3. Pengingat perawatan yang sudah lewat jatuh tempo.
   //
@@ -83,18 +78,15 @@ export default function KeeperAttentionWidget() {
             </div>
           </Link>
         ))}
-        {notWeighed.map(t => {
-          const daysSince = differenceInDays(now, new Date(t.last_weighed_date));
-          return (
-            <div key={t.id} className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-              <span className="text-sm">⚖️</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-amber-800 truncate">{t.name}</p>
-                <p className="text-xs text-amber-600">Belum timbang {daysSince} hari (interval: {t.weighing_interval_days}h)</p>
-              </div>
+        {notWeighed.map(t => (
+          <div key={t.id} className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+            <span className="text-sm">⚖️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800 truncate">{t.name}</p>
+              <p className="text-xs text-amber-600">{alasanTimbang(t, now)}</p>
             </div>
-          );
-        })}
+          </div>
+        ))}
         {overdueTreatments.map(tr => (
           <Link key={tr.id} to="/treatment" className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
             <span className="text-sm">💊</span>
