@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wallet, Star, Clock, FileDown, Users } from "lucide-react";
-import { hitungGajiKaryawan } from "@/lib/hitungGaji";
+import { hitungGajiKaryawan, PERAN_BERGAJI } from "@/lib/hitungGaji";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
@@ -98,7 +98,7 @@ export default function MonthlySalaryPage() {
   const salaryData = useMemo(() => {
     const empMap = {};
     users.forEach((u) => {
-      if (!["keeper", "kepala_feeder"].includes(u.role)) return;
+      if (!PERAN_BERGAJI.includes(u.role)) return;
       if (!u.email) return;
       const profile = userProfiles.find((p) => p.user_email === u.email);
       empMap[u.email] = {

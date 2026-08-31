@@ -1,4 +1,4 @@
-import { hitungGajiKaryawan } from "@/lib/hitungGaji";
+import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
@@ -75,7 +75,7 @@ export default function RekapPoinGajiPage() {
   const monthStart = selectedMonth + "-01";
   const monthEnd = format(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1), "yyyy-MM") + "-01";
 
-  const employees = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
+  const employees = karyawanBergaji(users);
 
   /**
    * SATU rumus gaji — lib/hitungGaji.js.

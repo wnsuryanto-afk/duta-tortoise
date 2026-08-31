@@ -19,7 +19,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AlurGaji from "@/components/salary/AlurGaji";
 import AccessDenied from "@/components/common/AccessDenied";
-import { hitungGajiKaryawan } from "@/lib/hitungGaji";
+import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
 import { useVegTrips } from "@/hooks/useVegTrips";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 
@@ -543,7 +543,12 @@ export default function PayrollPage() {
   });
 
   // Bagian 4: Exclude owner & investor dari rekap gaji
-  const employees = users.filter(u => !EXCLUDED_ROLES.includes(u.role) && u.role !== "kicked" && u.role !== "investor");
+  // Definisi bersama, sama dengan layar yang menerbitkan slip. Saringan lama
+  // "semua kecuali owner/investor/kicked" ikut memasukkan admin dan manajer —
+  // dua orang yang tidak akan pernah menerima slip dari aplikasi ini, dan yang
+  // gaji pokoknya dihitung flat tanpa memandang kehadiran. Lihat PERAN_BERGAJI
+  // di lib/hitungGaji.js.
+  const employees = karyawanBergaji(users);
 
   const monthAttendances = attendances.filter(a => a.date >= monthStart && a.date <= monthEnd);
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);
