@@ -11,6 +11,7 @@ import jsPDF from "jspdf";
 import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { perluDiperhatikan } from "@/lib/stokMenipis";
+import { diPeternakan } from "@/lib/populasiKura";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const GREEN_DARK = [27, 67, 50];
@@ -201,7 +202,12 @@ export default function MonthlyReportExport({ role }) {
       const laba = totalPemasukan - totalPengeluaran;
       const margin = totalPemasukan > 0 ? ((laba / totalPemasukan) * 100).toFixed(1) : "0.0";
 
-      const activeTortoises = tortoises.filter(t => ["aktif", "baby"].includes(t.status));
+      // Dihitung dengan MENGECUALIKAN yang sudah keluar, bukan daftar putih
+      // status — alasan yang sama seperti di Dashboard.jsx. Daftar putih
+      // ["aktif","baby"] ikut membuang kura sakit, karantina, dan breeding,
+      // sehingga populasi di laporan bulanan TURUN begitu ada satu kura
+      // ditandai sakit. Angka itu lalu dicetak jadi PDF dan dikirim keluar.
+      const activeTortoises = tortoises.filter(diPeternakan);
       const soldTortoises = tortoises.filter(t => t.status === "terjual" && (t.last_status_change || "").startsWith(period));
       const deadTortoises = tortoises.filter(t => t.status === "mati" && (t.death_date || "").startsWith(period));
       const hatchedThisMonth = breedings.filter(b => (b.hatch_date || "").startsWith(period)).reduce((s, b) => s + (b.hatched_count || 0), 0);
