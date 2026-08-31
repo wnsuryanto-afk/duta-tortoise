@@ -6,11 +6,24 @@ import { AlertTriangle, Package, Leaf, Clock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import { hitungSisaHari, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { hitungSisaHari, gabungRiwayatPemakaian, tingkatUrgensi, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import { dilacak } from "@/lib/stokMenipis";
 
-function urgencyLabel(days) {
+/**
+ * Halaman ini dulu menghitung sendiri siapa yang "kritis": `sisaHari < 7`.
+ * Karena hitungSisaHari mengembalikan -1 untuk stok kosong, SETIAP barang
+ * berstok nol lolos saringan itu — termasuk gelas ukur, pinset, dan termometer
+ * yang tidak dipakai habis dan memang tidak distok. Hasilnya spanduk merah
+ * "41 item kritis (stok < 7 hari)" yang isinya sebagian besar bukan masalah,
+ * dan yang tidak bisa dipadamkan dengan bekerja — jadi lama-lama tidak dibaca.
+ *
+ * Sekarang penilaiannya diserahkan ke tingkatUrgensi() di lib/urgensiStok.js,
+ * aturan yang sama dengan beranda dan daftar belanja. Stok kosong hanya gawat
+ * bila barangnya ditandai wajib distok.
+ */
+function urgencyLabel(days, tingkat) {
   if (days === null || days === Infinity) return { label: "—", color: "text-muted-foreground bg-muted border-border", icon: null };
+  if (days < 0 && tingkat !== "gawat") return { label: "Kosong — tidak wajib distok", color: "text-muted-foreground bg-muted border-border", icon: "⚪" };
   if (days < 0) return { label: "Stok Habis!", color: "text-red-700 bg-red-100 border-red-200", icon: "🚨" };
   if (days <= AMBANG_GAWAT_HARI) return { label: `${Math.round(days)} hari — Segera Restock!`, color: "text-red-700 bg-red-100 border-red-200", icon: "🔴" };
   if (days < 7) return { label: `${Math.round(days)} hari — Perlu Dipesan`, color: "text-amber-700 bg-amber-100 border-amber-200", icon: "🟠" };
@@ -19,7 +32,7 @@ function urgencyLabel(days) {
 }
 
 function StockCard({ item, estimatedDays }) {
-  const u = urgencyLabel(estimatedDays);
+  const u = urgencyLabel(estimatedDays, item.tingkat);
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 hover:shadow-card-hover transition-all">
@@ -88,7 +101,10 @@ export default function StockPredictionPage() {
   // kritis sementara daftar belanja hanya menyebut 39. Aturan yang sama
   // dipakai seluruh layar stok: lib/stokMenipis.js.
   const warehouseWithDays = useMemo(() =>
-    warehouseItems.filter(dilacak).map(i => ({ ...i, estimatedDays: hitungSisaHari(i, riwayatPakai) }))
+    warehouseItems.filter(dilacak).map(i => {
+      const estimatedDays = hitungSisaHari(i, riwayatPakai);
+      return { ...i, estimatedDays, tingkat: tingkatUrgensi({ sisaHari: estimatedDays, wajib: !!i.is_mandatory }) };
+    })
       .sort((a, b) => {
         const da = a.estimatedDays === Infinity ? 9999 : a.estimatedDays;
         const db = b.estimatedDays === Infinity ? 9999 : b.estimatedDays;
@@ -101,7 +117,8 @@ export default function StockPredictionPage() {
     feedStockItems.filter(dilacak).map(i => {
       const daily = i.daily_ideal || 0;
       const days = daily > 0 ? i.current_stock / daily : Infinity;
-      return { ...i, estimatedDays: i.current_stock <= 0 ? -1 : days };
+      const estimatedDays = i.current_stock <= 0 ? -1 : days;
+      return { ...i, estimatedDays, tingkat: tingkatUrgensi({ sisaHari: estimatedDays, wajib: !!i.is_mandatory }) };
     }).sort((a, b) => {
       const da = a.estimatedDays === Infinity ? 9999 : a.estimatedDays;
       const db = b.estimatedDays === Infinity ? 9999 : b.estimatedDays;
@@ -112,8 +129,8 @@ export default function StockPredictionPage() {
 
   if (!canAccess(role, "warehouse")) return <AccessDenied />;
 
-  const criticalWarehouse = warehouseWithDays.filter(i => i.estimatedDays < 7);
-  const criticalFeed = feedWithDays.filter(i => i.estimatedDays < 7);
+  const criticalWarehouse = warehouseWithDays.filter(i => i.tingkat === "gawat");
+  const criticalFeed = feedWithDays.filter(i => i.tingkat === "gawat");
 
   const isLoading = wLoading || fLoading || tLoading;
 
@@ -132,7 +149,7 @@ export default function StockPredictionPage() {
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-5 h-5 text-red-600" />
             <p className="font-semibold text-red-800">
-              {criticalWarehouse.length + criticalFeed.length} item kritis (stok &lt; 7 hari)!
+              {criticalWarehouse.length + criticalFeed.length} barang perlu diputuskan hari ini
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -150,7 +167,8 @@ export default function StockPredictionPage() {
         {[
           { label: "🟢 Aman (>14 hari)", color: "text-green-700 bg-green-50 border-green-200" },
           { label: "🟡 Perhatian (7–14 hari)", color: "text-amber-700 bg-amber-50 border-amber-200" },
-          { label: "🔴 Kritis (<7 hari)", color: "text-red-700 bg-red-50 border-red-200" },
+          { label: `🔴 Gawat (≤${AMBANG_GAWAT_HARI} hari, atau habis & wajib distok)`, color: "text-red-700 bg-red-50 border-red-200" },
+          { label: "⚪ Kosong tapi tidak wajib distok", color: "text-muted-foreground bg-muted border-border" },
         ].map(l => (
           <span key={l.label} className={`px-3 py-1 rounded-full border font-medium ${l.color}`}>{l.label}</span>
         ))}
