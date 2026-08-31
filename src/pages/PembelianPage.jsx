@@ -42,14 +42,9 @@ import { useTestMode } from "@/lib/useTestMode";
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const today = () => format(new Date(), "yyyy-MM-dd");
 
-// Kategori menentukan perlakuan uang: alat kerja = aset, sisanya = biaya
-const KATEGORI = ["obat", "vitamin", "alat_kerja", "pakan", "lainnya"];
-const KATEGORI_FINANCE = {
-  obat: "obat_perawatan",
-  vitamin: "vitamin_suplemen",
-  pakan: "pakan",
-  lainnya: "operasional",
-};
+// Aturan aset vs biaya tinggal di src/lib/kategoriBarang.js — lihat catatan di
+// sana soal kenapa ia tidak boleh ditulis sebagai "bukan alat kerja".
+const KATEGORI = KATEGORI_PEMBELIAN;
 
 // ShoppingList hanya punya SATU kolom nama: `nama_barang` (ada di skema,
 // wajib). `item_name` adalah sisa impor generasi pertama yang tidak pernah
@@ -307,8 +302,9 @@ export default function PembelianPage() {
           status: "aktif",
         });
 
-        // Alat kerja dianggap aset, tidak masuk biaya operasional
-        if (it.kategori !== "alat_kerja") {
+        // Hanya barang tahan lama yang jadi aset. Habis pakai — jarum, spuit,
+        // kasa, alkohol — masuk biaya seperti obat.
+        if (masukBiaya(it.kategori)) {
           totalBiaya += hargaSatuanFinal * diterima;
         }
 
