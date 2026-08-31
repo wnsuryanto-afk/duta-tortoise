@@ -245,7 +245,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
               <MultiImagePicker
                 images={images}
                 onChange={setImages}
-                hint="Satu screenshot per pesanan. Boleh beberapa pesanan sekaligus — tiap gambar dibaca sebagai pesanan yang berbeda."
+                hint="Satu screenshot per pesanan — tiap gambar dibaca sebagai pesanan yang berbeda. Maksimal 5 sekali baca; kalau pesanannya lebih banyak, simpan dulu yang lima ini lalu ulangi. Tiap putaran berdiri sendiri, tidak ada yang tertimpa."
               />
               {error && <p className="text-xs text-red-600">{error}</p>}
               <Button type="button" className="w-full" disabled={images.length === 0 || loading} onClick={handleScan}>
