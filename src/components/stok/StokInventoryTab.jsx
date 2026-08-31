@@ -14,6 +14,13 @@ import { canPerformAction } from "@/lib/permissions";
 import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { statusStok, URUTAN_STATUS, stokHabis } from "@/lib/stokMenipis";
+// Dibawa dari halaman /warehouse dan /feed-stock yang digabungkan ke sini,
+// supaya penggabungan tidak menghilangkan kemampuan: saringan kelengkapan data,
+// generate SKU massal, dan pemindai QR untuk menemukan barang dari label cetak.
+import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
+import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
+import QRScannerDialog from "@/components/stock/QRScannerDialog";
+import { toast } from "sonner";
 
 function formatRp(v) { return "Rp " + Number(v || 0).toLocaleString("id-ID"); }
 
@@ -521,7 +528,36 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [selected, setSelected] = useState({});
   const [labelItems, setLabelItems] = useState(null);
+  const [lengkapFilter, setLengkapFilter] = useState("semua");
+  const [showScanner, setShowScanner] = useState(false);
+  const [generatingSKU, setGeneratingSKU] = useState(false);
   const selectedCount = Object.keys(selected).length;
+
+  // Kelengkapan dinilai dengan aturan berbeda untuk pakan dan gudang: barang
+  // gudang juga wajib punya harga beli, bahan pakan tidak. Karena tab ini
+  // menyatukan keduanya, jenisnya diambil dari penanda _src tiap baris.
+  const belumLengkap = (i) => isItemIncomplete(i, i._src === "feed" ? "feedstock" : "warehouse");
+
+  const handleGenerateSKU = async () => {
+    setGeneratingSKU(true);
+    try {
+      await base44.functions.invoke("backfillSKU", {});
+      qc.invalidateQueries({ queryKey: ["feedstocks"] });
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      toast.success("SKU dibuatkan untuk barang yang belum punya.");
+    } catch (e) {
+      toast.error(`Gagal membuat SKU: ${e?.message || "tidak diketahui"}`);
+    }
+    setGeneratingSKU(false);
+  };
+
+  // Scan label cetak → langsung buka detail barangnya.
+  const handleScanResult = (sku) => {
+    setShowScanner(false);
+    const found = allItems.find((i) => (i.sku || "").toUpperCase() === String(sku).toUpperCase());
+    if (found) { setDetailItem(found); return; }
+    toast.error(`SKU ${sku} tidak ada di gudang maupun pakan.`);
+  };
 
   const allItems = useMemo(() => [
     ...feedstocks.map(i => ({ ...i, _src: "feed", _price: i.price_per_unit || 0, _loc: i.storage_location || "gudang", _cat: "pakan" })),
@@ -535,16 +571,26 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
   const filtered = useMemo(() => {
     return allItems
       .filter(i => {
-        const matchSearch = !search || i.name?.toLowerCase().includes(search.toLowerCase());
+        const q = search.toLowerCase();
+        const matchSearch = !search || i.name?.toLowerCase().includes(q) || (i.sku || "").toLowerCase().includes(q);
         const matchCat = catFilter === "semua" || i._cat === catFilter;
         const s = stockStatus(i);
         const matchStock = stockFilter === "semua" || s === stockFilter;
-        return matchSearch && matchCat && matchStock;
+        const inc = belumLengkap(i);
+        const matchLengkap = lengkapFilter === "semua" || (lengkapFilter === "belum" ? inc : !inc);
+        return matchSearch && matchCat && matchStock && matchLengkap;
       })
       .sort((a, b) => {
+        // Saat menyaring "belum lengkap", yang paling banyak kurangnya di atas —
+        // itu yang paling cepat menghemat waktu untuk dibereskan.
+        if (lengkapFilter === "belum") {
+          const skor = (x) => [!x.photo_url, !x.sku, !(x._price > 0)].filter(Boolean).length;
+          const beda = skor(b) - skor(a);
+          if (beda !== 0) return beda;
+        }
         return URUTAN_STATUS[stockStatus(a)] - URUTAN_STATUS[stockStatus(b)];
       });
-  }, [allItems, search, catFilter, stockFilter]);
+  }, [allItems, search, catFilter, stockFilter, lengkapFilter]);
 
   const criticalMandatory = allItems.filter(i => i.is_mandatory && ["habis", "menipis"].includes(stockStatus(i))).length;
   const mandatoryEmpty    = allItems.filter(stokHabis).length;
@@ -583,7 +629,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[160px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cari nama barang..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+          <Input placeholder="Cari nama / SKU…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         <Select value={catFilter} onValueChange={setCatFilter}>
           <SelectTrigger className="w-36 h-9 text-xs"><SelectValue /></SelectTrigger>
@@ -607,7 +653,19 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
             <SelectItem value="aman">🟢 Aman</SelectItem>
           </SelectContent>
         </Select>
+        <DataLengkapFilter
+          items={allItems}
+          isIncomplete={belumLengkap}
+          lengkapFilter={lengkapFilter}
+          onChangeLengkap={setLengkapFilter}
+          isAdmin={canEdit}
+          onGenerateSKU={handleGenerateSKU}
+          generatingSKU={generatingSKU}
+        />
         <div className="flex items-center gap-2 ml-auto">
+          <Button variant="outline" className="gap-1.5 h-9 text-sm" onClick={() => setShowScanner(true)}>
+            <QrCode className="w-4 h-4" /> Scan Barang
+          </Button>
           {criticalMandatory > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold border border-red-300">
               <AlertTriangle className="w-3.5 h-3.5" /> {criticalMandatory} wajib kritis!
