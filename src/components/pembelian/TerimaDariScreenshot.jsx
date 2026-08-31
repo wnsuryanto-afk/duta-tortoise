@@ -86,10 +86,14 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
   const handleScan = async () => {
     setLoading(true); setError("");
     try {
+      // img.file, BUKAN img.blob. Blob hasil canvas tidak punya nama berkas dan
+      // ditolak Base44 dengan "'file' field is an empty object" — kegagalan yang
+      // baru ketahuan saat lima screenshot Shopee sungguhan diunggah.
       const urls = [];
       for (const img of images) {
-        if (!img.blob) continue;
-        const r = await base44.integrations.Core.UploadFile({ file: img.blob });
+        const berkas = img.file || img.blob;
+        if (!berkas) continue;
+        const r = await base44.integrations.Core.UploadFile({ file: berkas });
         if (r?.file_url) urls.push(r.file_url);
       }
       if (urls.length === 0) throw new Error("Gambarnya gagal diunggah.");
