@@ -55,7 +55,7 @@ for (const p of berkas("src")) {
   if (p.startsWith("src/lib/")) continue; // pustaka boleh saling pakai
   const s = fs.readFileSync(p, "utf8");
 
-  // Nama yang benar-benar di-import (menangani import multi-baris).
+  // Nama yang benar-benar di-import: bentuk bernama, default, dan namespace.
   const diimport = new Set();
   for (const m of s.matchAll(/import\s*\{([^}]*)\}\s*from/gs)) {
     for (const bagian of m[1].split(",")) {
@@ -63,10 +63,22 @@ for (const p of berkas("src")) {
       if (nama) diimport.add(nama);
     }
   }
-  // Nama yang didefinisikan di berkas ini sendiri.
+  for (const m of s.matchAll(/import\s+(\w+)\s*(?:,|from)/g)) diimport.add(m[1]);
+  for (const m of s.matchAll(/import\s+\*\s+as\s+(\w+)/g)) diimport.add(m[1]);
+
+  // Nama yang didefinisikan di berkas ini sendiri — termasuk yang datang lewat
+  // destructuring. Tanpa ini, prop komponen seperti
+  // `function DataLengkapFilter({ isIncomplete })` akan dikira pemakaian
+  // fungsi pustaka bernama sama, dan laporannya jadi penuh temuan palsu.
   const lokal = new Set(
     [...s.matchAll(/(?:^|\s)(?:function|const|let|var|class)\s+(\w+)/g)].map((m) => m[1]),
   );
+  for (const m of s.matchAll(/\{([^{}]*)\}\s*(?:=|=>|\)|,)/g)) {
+    for (const bagian of m[1].split(",")) {
+      const nama = bagian.trim().split(/[:=]/)[0].trim();
+      if (/^\w+$/.test(nama)) lokal.add(nama);
+    }
+  }
 
   // Buang komentar dan string sebelum mencari pemakaian — inilah yang dulu
   // membuat skrip lama tertipu oleh path di dalam komentar.
