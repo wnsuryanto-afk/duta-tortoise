@@ -371,25 +371,35 @@ function StepDetailPenjualan({ form, onChange, errors }) {
 }
 
 // ── STEP 4: Review HPP & Laba ──
-function StepReview({ form, tortoise, costData }) {
+function StepReview({ form, tortoise, costData, breedings = [] }) {
   const [showTooltip, setShowTooltip] = useState(false);
-  const biayaPerBulan = costData?.biayaPerEkor || 100000;
+  // Tarif yang sama persis dengan yang dipakai handleSave. Sebelumnya layar ini
+  // memakai biayaPerEkor (bulan berjalan) sementara yang tersimpan memakai
+  // biayaPerEkorRata (rata-rata beberapa bulan) — pemilik menyetujui satu angka
+  // lalu aplikasi menyimpan angka yang lain.
+  const biayaPerBulan = costData?.biayaPerEkorRata || costData?.biayaPerEkor || 100000;
   const isDataAktual = costData?.isDataAktual;
-  const farmMonths = calcFarmMonths(tortoise, form.sale_date);
 
-  // Determine purchase price: use form input > tortoise data > 0
-  const isHasilSendiri = tortoise?.source === "hasil_sendiri" || tortoise?.code?.startsWith?.("BB-");
-  const purchasePrice = isHasilSendiri ? 0 :
-    form.purchase_price_input !== "" ? Number(form.purchase_price_input) || 0 :
-    tortoise?.purchase_price || 0;
-  const purchasePriceEmpty = !isHasilSendiri && purchasePrice === 0;
+  const hppRinci = hitungHppKura({
+    kura: tortoise,
+    breedings,
+    tarifPerBulan: biayaPerBulan,
+    hargaBeliInput: form.purchase_price_input,
+    ongkir: form.shipping_cost,
+    tanggalJual: form.sale_date,
+  });
 
-  const estimasiPerawatan = farmMonths * biayaPerBulan;
-  const shippingCost = Number(form.shipping_cost) || 0;
-  const totalHpp = purchasePrice + estimasiPerawatan + shippingCost;
+  const isHasilSendiri = hppRinci.dariFarm;
+  const purchasePrice = hppRinci.modal;
+  const purchasePriceEmpty = hppRinci.modalKosong;
+  const farmMonths = hppRinci.bulan;
+  const estimasiPerawatan = hppRinci.perawatan;
+  const shippingCost = hppRinci.ongkir;
+  const totalHpp = hppRinci.total;
   const price = Number(form.price) || 0;
   const laba = price - totalHpp;
-  const margin = price > 0 ? Math.round((laba / price) * 100) : 0;
+  const margin = marginPersen(price, totalHpp);
+  const induk = hppRinci.induk;
 
   // Tentukan tanggal masuk farm untuk display
   const entryDateRaw = isHasilSendiri ? tortoise?.birth_date : (tortoise?.purchase_date || tortoise?.created_date);
