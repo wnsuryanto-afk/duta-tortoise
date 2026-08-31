@@ -80,7 +80,21 @@ export default function OperationalToday() {
         </div>
       ),
     },
-    {
+    /*
+      Kartu "Perawatan Kandang" hanya muncul kalau memang ADA jadwalnya.
+
+      MaintenanceSchedule tidak pernah ditulis oleh berkas mana pun —
+      halaman /maintenance-schedule hanya bisa MENCENTANG jadwal, tidak
+      membuatnya. Jadi kartu ini selalu menampilkan angka 0 dan menautkan ke
+      halaman kosong. Angka nol yang tidak pernah berubah mengajari orang
+      mengabaikan seluruh baris kartu ini, termasuk kartu di sebelahnya yang
+      isinya sungguhan.
+
+      Pekerjaan berulang di peternakan ini sudah ditangani tugas SOP (52 tugas
+      aktif). Kalau nanti diputuskan MaintenanceSchedule memang tidak dipakai,
+      halaman dan tabelnya bisa dihapus sekalian.
+    */
+    ...(todayMaintenance.length === 0 ? [] : [{
       title: "Perawatan Kandang",
       icon: Home,
       color: "text-chart-3",
@@ -96,7 +110,7 @@ export default function OperationalToday() {
           </div>
         </div>
       ),
-    },
+    }]),
     {
       title: "Karantina",
       icon: Tent,
