@@ -396,9 +396,40 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                       </div>
                     </div>
 
+                    {/*
+                      Isi per kemasan — hanya muncul kalau satuan gudangnya curah.
+                      Untuk botol/pcs/ampul tidak ada yang perlu dikonversi.
+                    */}
+                    {SATUAN_CURAH.has(String(r.satuan || "").toLowerCase()) && (
+                      <div className="space-y-1">
+                        <div className="flex items-end gap-2">
+                          <div className="w-32">
+                            <p className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                              Isi per kemasan ({r.satuan})
+                            </p>
+                            <Input
+                              type="number" min={1} className="h-8 text-xs"
+                              value={r.isi}
+                              onChange={(e) => ubah(r.kunci, { isi: Number(e.target.value) || 1 })}
+                            />
+                          </div>
+                          <p className="text-[11px] text-muted-foreground pb-1.5">
+                            {r.jumlah} kemasan × {r.isi} = <strong>{jumlahGudang(r).toLocaleString("id-ID")} {r.satuan}</strong>
+                          </p>
+                        </div>
+                        {perluIsi(r) && (
+                          <p className="text-[10px] text-amber-700 leading-snug">
+                            Gudang menyimpan barang ini dalam <strong>{r.satuan}</strong>, tapi marketplace
+                            menjualnya per kemasan. Isi berapa {r.satuan} dalam satu kemasan (mis. 1 kg = 1000),
+                            kalau tidak stoknya hanya bertambah {r.jumlah} {r.satuan}.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-[11px] text-muted-foreground font-mono flex-1">
-                        {r.jumlah} {r.satuan} × {rp(hargaSatuan(r))} = <strong>{rp(subtotal(r))}</strong>
+                        {jumlahGudang(r).toLocaleString("id-ID")} {r.satuan} × {rp(hargaGudang(r))} = <strong>{rp(subtotal(r))}</strong>
                       </p>
                       {/* Kategori menentukan alat kerja dicatat sebagai aset, bukan biaya. */}
                       <select
@@ -434,6 +465,17 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                   </button>
                 </div>
               </div>
+
+              {dipilih.some(perluIsi) && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">
+                    <strong>{dipilih.filter(perluIsi).length} barang curah belum diisi berapa per kemasannya.</strong>{" "}
+                    Kalau dibiarkan, stoknya bertambah sejumlah kemasan (mis. 6) alih-alih isinya
+                    (6.000 gram), dan harga per gramnya tercatat seribu kali lipat.
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
                 <p className="text-sm">
