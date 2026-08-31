@@ -145,62 +145,7 @@ function AddItemDialog({ open, onClose, onSaved }) {
   );
 }
 
-function BoughtInputDialog({ open, item, onClose, onSaved }) {
-  const [qtyAktual, setQtyAktual] = useState(item?.jumlah || "");
-  const [hargaAktual, setHargaAktual] = useState(item?.total_est || "");
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    await base44.entities.ShoppingList.update(item.id, {
-      status: "sudah_dibeli",
-      qty_aktual: parseFloat(qtyAktual) || 0,
-      harga_aktual: parseFloat(hargaAktual) || 0,
-      tanggal_dibeli: new Date().toISOString().split("T")[0],
-    });
-    setSaving(false);
-    onSaved();
-    onClose();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Detail Pembelian</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3 mt-2">
-          <p className="text-sm font-medium text-foreground">{item?.nama_barang}</p>
-          <div className="space-y-1.5">
-            <Label>Qty Aktual Dibeli ({item?.satuan})</Label>
-            <Input type="number" min="0" step="0.1" value={qtyAktual} onChange={e => setQtyAktual(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Harga Aktual Total (Rp)</Label>
-            <Input type="number" min="0" value={hargaAktual} onChange={e => setHargaAktual(e.target.value)} />
-          </div>
-          <div className="flex gap-2 pt-1">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-            <Button type="submit" className="flex-1" disabled={saving}>{saving ? "Menyimpan..." : "Konfirmasi Dibeli"}</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function ShoppingItem({ item, onUpdate }) {
-  const [updatingStatus, setUpdatingStatus] = useState(null);
-  const [showBoughtDialog, setShowBoughtDialog] = useState(false);
-
-  const handleDipesan = async () => {
-    setUpdatingStatus("sudah_dipesan");
-    await base44.entities.ShoppingList.update(item.id, { status: "sudah_dipesan" });
-    setUpdatingStatus(null);
-    onUpdate();
-  };
-
   const badge = STATUS_BADGE[item.status] || STATUS_BADGE.belum_dibeli;
 
   return (
@@ -228,31 +173,33 @@ function ShoppingItem({ item, onUpdate }) {
           </div>
           {item.notes && <p className="text-xs text-muted-foreground mt-0.5 italic">{item.notes}</p>}
         </div>
+        {/*
+          Dua tombol jalan pintas — "Dipesan" dan "Dibeli" — DIHAPUS dari sini.
+
+          Keduanya hanya mengubah status baris ini dan tidak melakukan apa pun
+          selain itu: stok gudang tidak bertambah, batch tidak dibuat, dan
+          uangnya tidak pernah tercatat keluar. Barangnya lenyap dari daftar
+          belanja sementara gudang tidak tahu ia sudah ada dan laba rugi tidak
+          tahu uangnya sudah keluar. "Dipesan" bahkan lebih buruk: barisnya
+          keluar dari daftar belanja tanpa membuat pesanan, jadi ia tidak
+          muncul di mana pun — tidak di "belum dibeli", tidak di "menunggu
+          barang".
+
+          Satu-satunya jalan yang lengkap ada di halaman Pembelian:
+          pilih barang → tandai dipesan → barang datang → stok, batch, dan
+          biayanya tercatat sekaligus.
+        */}
         <div className="flex gap-1.5 shrink-0 self-end sm:self-auto">
-          {item.status === "belum_dibeli" && (
-            <Button size="sm" variant="outline" className="text-xs h-7 px-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
-              disabled={updatingStatus === "sudah_dipesan"} onClick={handleDipesan}>
-              <Clock className="w-3 h-3 mr-1" />
-              Dipesan
-            </Button>
-          )}
           {item.status !== "sudah_dibeli" && (
-            <Button size="sm" variant="outline" className="text-xs h-7 px-2 border-green-300 text-green-700 hover:bg-green-50"
-              onClick={() => setShowBoughtDialog(true)}>
-              <CheckCircle2 className="w-3 h-3 mr-1" />
-              Dibeli
+            <Button asChild size="sm" variant="outline" className="text-xs h-7 px-2">
+              <Link to="/pembelian">
+                <ShoppingCart className="w-3 h-3 mr-1" />
+                Proses di Pembelian
+              </Link>
             </Button>
           )}
         </div>
       </div>
-      {showBoughtDialog && (
-        <BoughtInputDialog
-          open={showBoughtDialog}
-          item={item}
-          onClose={() => setShowBoughtDialog(false)}
-          onSaved={onUpdate}
-        />
-      )}
     </>
   );
 }
