@@ -25,6 +25,7 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Download, Printer, Info, Loader2 } from "lucide-react";
 import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload";
 import { gambarLabel, namaBerkasLabel } from "@/lib/labelBarang";
@@ -48,6 +49,29 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
   const [previews, setPreviews] = useState([]);
   const [membuat, setMembuat] = useState(false);
   const [menandai, setMenandai] = useState(false);
+  // Tanggal kedaluwarsa diisi DI SINI, tepat sebelum labelnya dicetak.
+  // Itu satu-satunya saat orangnya sedang memegang botolnya dan bisa membaca
+  // tanggal di kemasannya. Menyuruhnya kembali ke halaman pembelian untuk
+  // mengisi tanggal, lalu kembali lagi ke sini untuk mencetak, adalah cara
+  // pasti membuat kolom itu tetap kosong selamanya.
+  const [tanggal, setTanggal] = useState({});
+  const [menyimpanTgl, setMenyimpanTgl] = useState(false);
+
+  const expOf = (b) => (tanggal[b.id] !== undefined ? tanggal[b.id] : b.tanggal_expired || "");
+  const adaPerubahanTgl = batches.some((b) => expOf(b) !== (b.tanggal_expired || ""));
+
+  const simpanTanggal = async () => {
+    setMenyimpanTgl(true);
+    for (const b of batches) {
+      const baru = expOf(b);
+      if (baru === (b.tanggal_expired || "")) continue;
+      try {
+        await base44.entities.BatchBarang.update(b.id, { tanggal_expired: baru || null });
+      } catch { /* satu gagal tidak boleh membatalkan sisanya */ }
+    }
+    qc.invalidateQueries({ queryKey: ["batch-barang"] });
+    setMenyimpanTgl(false);
+  };
 
   useEffect(() => {
     if (!open || batches.length === 0) { setPreviews([]); return; }
@@ -57,14 +81,17 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
       const out = [];
       for (const b of batches) {
         const c = document.createElement("canvas");
-        await gambarLabelBatch(c, b);
+        // Pratinjau ikut memakai tanggal yang BARU diketik, belum disimpan —
+        // supaya orangnya melihat labelnya berubah dan tahu isiannya masuk.
+        await gambarLabelBatch(c, { ...b, tanggal_expired: expOf(b) });
         if (batal) return;
         out.push({ batch: b, dataUrl: c.toDataURL("image/png") });
       }
       if (!batal) { setPreviews(out); setMembuat(false); }
     })();
     return () => { batal = true; };
-  }, [open, batches]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, batches, tanggal]);
 
   const tandaiDicetak = async (daftar) => {
     setMenandai(true);
@@ -117,10 +144,20 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
 
         {tanpaExp > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-            <strong>{tanpaExp} batch belum punya tanggal kedaluwarsa.</strong> Labelnya tetap dibuat
-            dan tertulis “tidak dicatat”. Urutan pengambilan stok memakai tanggal itu, jadi batch
-            tanpa tanggal tidak pernah diprioritaskan — isi dulu lewat “Barang Datang → Atur per barang”
-            bila masih terbaca di kemasannya.
+            <strong>{tanpaExp} batch belum punya tanggal kedaluwarsa.</strong> Isi di kolom tanggal
+            tiap baris di bawah — baca dari kemasannya, sekarang, selagi botolnya di tangan.
+            Urutan pengambilan stok memakai tanggal ini; batch tanpa tanggal tidak pernah
+            diprioritaskan, jadi ia yang tertinggal di rak sampai kedaluwarsa betulan.
+            Kalau memang tidak tercetak di kemasan (mis. bahan racikan curah), biarkan kosong.
+          </div>
+        )}
+
+        {adaPerubahanTgl && (
+          <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-primary/40 bg-primary/5">
+            <p className="text-xs">Ada tanggal kedaluwarsa yang belum disimpan.</p>
+            <Button size="sm" onClick={simpanTanggal} disabled={menyimpanTgl}>
+              {menyimpanTgl && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />} Simpan tanggal
+            </Button>
           </div>
         )}
 
@@ -146,11 +183,20 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
               {previews.map(({ batch, dataUrl }) => (
                 <div key={batch.id} className="border rounded-lg p-3 flex items-center gap-3">
                   <img src={dataUrl} alt={batch.batch_code} className="border rounded bg-white" style={{ height: 72 }} />
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 space-y-1">
                     <p className="text-sm font-medium truncate">{batch.nama_barang}</p>
                     <p className="text-xs text-muted-foreground font-mono truncate">{batch.batch_code}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground flex-shrink-0">Exp</span>
+                      <Input
+                        type="date"
+                        className="h-7 text-xs"
+                        value={expOf(batch)}
+                        onChange={(e) => setTanggal((t) => ({ ...t, [batch.id]: e.target.value }))}
+                      />
+                    </div>
                     {batch.label_dicetak && (
-                      <Badge variant="secondary" className="text-[10px] mt-1">sudah pernah dicetak</Badge>
+                      <Badge variant="secondary" className="text-[10px]">sudah pernah dicetak</Badge>
                     )}
                   </div>
                   <Button size="sm" variant="outline" onClick={() => unduhSatu({ batch, dataUrl })} disabled={menandai}>
