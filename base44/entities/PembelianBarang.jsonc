@@ -67,11 +67,13 @@
             "type": "number"
           },
           "kategori": {
-            "description": "Menentukan biaya vs aset: alat_kerja dicatat sebagai aset",
+            "description": "Menentukan biaya vs aset: HANYA alat_kerja dan peralatan yang dicatat sebagai aset. habis_pakai (jarum, spuit, kasa, alkohol) masuk biaya seperti obat \u2014 lihat src/lib/kategoriBarang.js",
             "enum": [
               "obat",
               "vitamin",
+              "habis_pakai",
               "alat_kerja",
+              "peralatan",
               "pakan",
               "lainnya"
             ],
