@@ -15,6 +15,7 @@ import {
   ShoppingCart, PackageX, Loader2, CheckCircle2,
 } from "lucide-react";
 import BoughtItemDialog from "@/components/pettycash/BoughtItemDialog";
+import { perluDiperhatikan } from "@/lib/stokMenipis";
 
 const fmtRp = (n) => "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
 
@@ -108,7 +109,14 @@ export default function HarusDibeliPage() {
     return warehouse
       .filter((w) =>
         ["obat", "vitamin", "suplemen"].includes(w.category) &&
-        (w.current_stock || 0) <= (w.minimum_stock || 0) &&
+        // Aturan yang sama dengan seluruh aplikasi (lib/stokMenipis).
+        //
+        // Saringan lama `current_stock <= minimum_stock` meloloskan setiap
+        // barang yang minimumnya 0 lewat 0 <= 0 — termasuk obat resep dokter
+        // yang memang sengaja tidak distok, dan barang bertanda
+        // [DUPLIKAT - ABAIKAN]. Halaman ini karena itu menampilkan daftar beli
+        // yang isinya sebagian besar barang yang tidak perlu dibeli.
+        perluDiperhatikan(w) &&
         !sopIds.has(w.id) &&
         !rusakIds.has(w.id)
       )
@@ -134,7 +142,7 @@ export default function HarusDibeliPage() {
     const rusakIds = new Set(barangRusak.map((i) => i.item_id).filter(Boolean));
     return warehouse
       .filter((w) =>
-        (w.current_stock || 0) < (w.minimum_stock || 0) &&
+        perluDiperhatikan(w) &&
         !sopIds.has(w.id) &&
         !obatIds.has(w.id) &&
         !rusakIds.has(w.id)
