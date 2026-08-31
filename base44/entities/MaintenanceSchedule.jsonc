@@ -56,5 +56,6 @@
   "required": [
     "enclosure_name",
     "task_type"
-  ]
+  ],
+  "description": "[USANG 31-08-2026] TIDAK DIPAKAI — barisnya ada tapi seluruhnya is_active: false, dan tidak ada kode yang bisa membuat atau mengaktifkannya. Pekerjaan berulang ditangani SOPTask, hasilnya dicatat ke MaintenanceLog (yang HIDUP, jangan ikut dianggap usang). Dibiarkan ada agar data lama tidak hilang; jangan dipakai untuk fitur baru."
 }

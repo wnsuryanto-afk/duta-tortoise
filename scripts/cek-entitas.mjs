@@ -27,7 +27,7 @@ import path from "path";
 /** Sengaja tidak dipakai lagi. Datanya dibiarkan, tapi jangan dipakai lagi. */
 const USANG = new Set([
   "PettyCash", "PettyCashTransaction", "Purchase", "VegetablePickup",
-  "FeedingLog", "WarehouseTransaction",
+  "FeedingLog", "WarehouseTransaction", "MaintenanceSchedule",
 ]);
 
 /** Ditulis backend/otomatisasi saja, atau dibaca lewat cara yang tidak terbaca skrip ini. */

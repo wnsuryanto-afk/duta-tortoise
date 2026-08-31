@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardList, Syringe, Home, Tent } from "lucide-react";
+import { ClipboardList, Syringe, Tent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 
@@ -84,20 +84,6 @@ export default function OperationalToday() {
         </div>
       ),
     },
-    /*
-      Kartu "Perawatan Kandang" hanya muncul kalau memang ADA jadwalnya.
-
-      MaintenanceSchedule tidak pernah ditulis oleh berkas mana pun —
-      halaman /maintenance-schedule hanya bisa MENCENTANG jadwal, tidak
-      membuatnya. Jadi kartu ini selalu menampilkan angka 0 dan menautkan ke
-      halaman kosong. Angka nol yang tidak pernah berubah mengajari orang
-      mengabaikan seluruh baris kartu ini, termasuk kartu di sebelahnya yang
-      isinya sungguhan.
-
-      Pekerjaan berulang di peternakan ini sudah ditangani tugas SOP (52 tugas
-      aktif). Kalau nanti diputuskan MaintenanceSchedule memang tidak dipakai,
-      halaman dan tabelnya bisa dihapus sekalian.
-    */
     {
       title: "Karantina",
       icon: Tent,
