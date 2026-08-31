@@ -30,6 +30,11 @@ import {
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
+// Halaman /stock-prediction digabungkan ke sini sebagai satu tahap. Isinya
+// menjawab pertanyaan yang sama dengan tahap "Yang Kurang" — kapan sebuah
+// barang habis — hanya lebih rinci per barang. Selama ia berdiri sendiri,
+// ia menghitung ulang urgensinya sendiri dan menyebut angka yang berbeda.
+import StockPredictionPage from "@/pages/StockPredictionPage";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useTestMode } from "@/lib/useTestMode";
 
@@ -373,6 +378,7 @@ export default function PembelianPage() {
   // di layar lain.
   const TABS = [
     { id: "kurang", label: "Yang Kurang", n: null },
+    { id: "prediksi", label: "Prediksi Habis", n: null },
     { id: "belum", label: "Daftar Belanja", n: belumDibeli.length },
     { id: "menunggu", label: "Menunggu Barang", n: menunggu.length },
     { id: "riwayat", label: "Riwayat", n: riwayat.length },
@@ -426,6 +432,8 @@ export default function PembelianPage() {
         <Section title="Barang yang stoknya menipis atau habis" icon={AlertTriangle}>
           <TahapYangKurang onSelesai={() => setTab("belum")} />
         </Section>
+      ) : tab === "prediksi" ? (
+        <StockPredictionPage />
       ) : isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
       ) : tab === "belum" ? (

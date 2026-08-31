@@ -1,4 +1,9 @@
 import { dilacak, perluDiperhatikan, stokHabis } from "@/lib/stokMenipis";
+// Halaman /dashboard-stok digabungkan ke sini sebagai tab. Isinya ringkasan
+// atas persediaan yang sama yang didaftar tab Inventaris — nilai stok, yang
+// akan kadaluarsa, pemakaian pakan, dan pengeluaran bulan ini. Berdiri
+// sendiri, ia punya saringan stok kritisnya sendiri dan menyebut angka lain.
+import DashboardStokPage from "@/pages/DashboardStokPage";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
