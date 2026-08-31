@@ -37,6 +37,40 @@ import { masukLaporan } from "@/lib/laporan";
 /** Peran yang dibayar harian; sisanya dibayar bulanan flat. */
 export const PERAN_HARIAN = ["keeper", "kepala_feeder"];
 
+/**
+ * Peran yang benar-benar menerima slip gaji dari aplikasi ini.
+ *
+ * Tiga layar menghitung gaji, dan sebelum daftar ini ada mereka memakai
+ * definisi "karyawan" yang berbeda:
+ *
+ *   /salary dan /rekap-poin-gaji : ["keeper", "kepala_feeder"]  → 2 orang
+ *   /payroll-gaji                : semua kecuali owner/investor/kicked
+ *                                  → 4 orang, ikut admin dan manajer
+ *
+ * Hanya /rekap-poin-gaji yang benar-benar menerbitkan SalarySlip, dan ia hanya
+ * mengenal dua peran itu. Jadi /payroll-gaji — layar yang justru bernama
+ * "Penggajian Karyawan" — menampilkan baris gaji untuk orang yang tidak akan
+ * pernah menerima slip.
+ *
+ * Dampaknya bukan sekadar baris nyasar. Admin dan manajer bukan peran harian,
+ * jadi gaji pokoknya dihitung FLAT tanpa memandang kehadiran (lihat gajiPokok
+ * di bawah). Akun admin "duta tortoise" punya base_salary Rp 250.000 dan nol
+ * catatan kehadiran — sehingga total penggajian di layar itu lebih besar
+ * Rp 250.000 setiap bulan daripada yang benar-benar dibayarkan.
+ *
+ * Daftar ini disetel mengikuti KENYATAAN hari ini (siapa yang bisa dapat
+ * slip), bukan siapa yang punya SalaryConfig. Bila kelak admin atau manajer
+ * memang digaji lewat aplikasi ini, yang harus diubah adalah penerbit slipnya
+ * lebih dulu — bukan daftar ini sendirian, karena itu hanya memindahkan
+ * selisihnya ke tempat lain.
+ */
+export const PERAN_BERGAJI = ["keeper", "kepala_feeder"];
+
+/** Karyawan yang perhitungan gajinya berarti — dipakai ketiga layar gaji. */
+export function karyawanBergaji(users = []) {
+  return (users || []).filter((u) => u && PERAN_BERGAJI.includes(u.role));
+}
+
 /** Nilai poin bawaan untuk peran harian bila konfigurasi belum diisi. */
 export const NILAI_POIN_BAWAAN = 200;
 
