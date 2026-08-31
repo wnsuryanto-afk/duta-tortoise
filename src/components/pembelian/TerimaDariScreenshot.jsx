@@ -33,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScanLine, Loader2, CheckCircle2, AlertTriangle, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const rp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -51,6 +52,7 @@ const LABEL_YAKIN = {
 
 export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
   const qc = useQueryClient();
+  const { user } = useCurrentUser();
   const [open, setOpen] = useState(false);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -124,6 +126,17 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
   const belumDipetakan = dipilih.filter((r) => !r.sku).length;
   const totalNilai = dipilih.reduce((s, r) => s + subtotal(r), 0);
 
+  // Ongkir dan biaya layanan ikut dicatat sebagai pengeluaran, tapi TIDAK
+  // masuk nilai stok. Uang yang keluar dari kantong lebih besar daripada nilai
+  // barangnya — pada pesanan Vigantol E, barangnya Rp 49.980 sementara total
+  // pesanan Rp 50.980. Versi pertama komponen ini membuang selisih itu, jadi
+  // laba rugi selalu lebih kecil dari kenyataan.
+  const pesananDipakai = new Set(dipilih.map((r) => r.iPesanan));
+  const ongkirTotal = (pesanan?.pesanan || []).reduce(
+    (s, p, i) => (pesananDipakai.has(i) ? s + (Number(p.ongkir) || 0) : s),
+    0,
+  );
+
   const handleSimpan = async () => {
     if (dipilih.length === 0) return;
     setMenyimpan(true);
@@ -158,15 +171,22 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
           purchase_price: hargaSatuan(r) || item.purchase_price || 0,
         });
 
+        // by_email WAJIB di skema StockMovement — tanpa itu penyimpanan
+        // ditolak 422 dan barangnya sudah terlanjur bertambah stok di baris
+        // sebelumnya. Ketahuan saat mencoba memasukkan pesanan Vigantol E.
         await base44.entities.StockMovement.create({
           item_id: item.id,
           item_name: item.name,
+          item_sku: item.sku || null,
           type: "masuk",
           quantity: Number(r.jumlah) || 0,
           unit: item.unit || "pcs",
+          unit_price: hargaSatuan(r),
           total_value: subtotal(r),
           date: new Date().toISOString().split("T")[0],
           status: "selesai",
+          by_email: user?.email || "",
+          by_name: user?.full_name || user?.email || "",
           notes: `Dari screenshot pesanan ${r.toko} — dibaca AI, dipastikan manual.`,
         });
 
@@ -180,14 +200,20 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
     // laba rugi tidak dipenuhi puluhan baris kecil dari satu kali belanja.
     if (berhasil > 0 && totalNilai > 0) {
       try {
+        // Kategori harus salah satu dari enum FinanceTransaction. Versi
+        // pertama memakai "peralatan", yang tidak ada di daftar sah — seluruh
+        // catatan biayanya akan ditolak sementara stok sudah bertambah.
         await base44.entities.FinanceTransaction.create({
           type: "pengeluaran",
-          category: "peralatan",
-          amount: totalNilai,
+          category: "lainnya",
+          qty: dipilih.length,
+          amount: totalNilai + ongkirTotal,
           date: new Date().toISOString().split("T")[0],
-          description: `Belanja online ${dipilih.length} barang dari ${
-            new Set(dipilih.map((r) => r.toko)).size
-          } toko — dimasukkan dari screenshot pesanan.`,
+          description:
+            `Belanja online ${dipilih.length} barang dari ` +
+            `${new Set(dipilih.map((r) => r.toko)).size} toko — dimasukkan dari screenshot pesanan.` +
+            (ongkirTotal > 0 ? ` Barang ${rp(totalNilai)} + ongkir/biaya layanan ${rp(ongkirTotal)}.` : ""),
+          created_by_name: user?.full_name || user?.email || "",
         });
       } catch { /* stok sudah masuk; catatan biaya bisa ditambah manual */ }
     }
