@@ -38,6 +38,7 @@ import TerimaDariScreenshot from "@/components/pembelian/TerimaDariScreenshot";
 import StockPredictionPage from "@/pages/StockPredictionPage";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useTestMode } from "@/lib/useTestMode";
+import { KATEGORI_PEMBELIAN, KATEGORI_FINANCE, masukBiaya } from "@/lib/kategoriBarang";
 
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const today = () => format(new Date(), "yyyy-MM-dd");
