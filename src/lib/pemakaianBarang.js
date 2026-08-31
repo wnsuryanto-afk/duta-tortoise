@@ -63,6 +63,55 @@ export function biayaBarangKura(pergerakan = [], kura) {
 }
 
 /**
+ * Total nilai barang yang SUDAH dibebankan ke kura tertentu, seluruh kura.
+ *
+ * Dipakai useCostPerTortoise untuk mengeluarkannya dari kolam biaya bersama.
+ * Tanpa pengurangan ini, obat terhitung DUA KALI: sekali saat dibeli (masuk
+ * total pengeluaran, lalu dibagi rata ke semua kura sebagai tarif perawatan
+ * bulanan), dan sekali lagi saat diambil untuk seekor kura (menempel langsung
+ * ke harga pokoknya). Rupiah yang sama, dua tempat.
+ *
+ * @param {string} awalanBulan opsional "YYYY-MM" untuk membatasi ke satu bulan
+ */
+export function biayaTerbebanKura(pergerakan = [], awalanBulan = null) {
+  return pergerakan.reduce((t, m) => {
+    if (!adalahPemakaian(m)) return t;
+    if (!RAPI(m.tortoise_code)) return t;
+    if (awalanBulan && !String(m.date || "").startsWith(awalanBulan)) return t;
+    return t + (Number(m.total_value) || 0);
+  }, 0);
+}
+
+/**
+ * Susun satu baris pergerakan "barang keluar untuk pengobatan".
+ *
+ * Dipakai layar pindai DAN formulir kesehatan, supaya keduanya menulis bentuk
+ * yang sama persis. Dua penyusun terpisah pasti melenceng — dan yang melenceng
+ * di sini adalah angka yang menempel ke harga pokok seekor kura.
+ */
+export function barisPengambilan({ item, jumlah, hargaSatuan, nilai, keperluan, kodeKura, tanggal, user, catatan, stokSetelah }) {
+  return {
+    item_id: item.id,
+    item_type: "warehouse",
+    item_name: item.name,
+    item_sku: item.sku || "",
+    type: "keluar",
+    quantity: Number(jumlah) || 0,
+    unit: item.unit || "pcs",
+    unit_price: hargaSatuan,
+    total_value: nilai,
+    stock_after: stokSetelah,
+    keperluan: keperluan || KEPERLUAN_KURA,
+    tortoise_code: kodeKura || "",
+    date: tanggal,
+    status: "selesai",
+    by_email: user?.email || "",
+    by_name: user?.full_name || user?.email || "",
+    notes: catatan || "",
+  };
+}
+
+/**
  * Nilai satu pengambilan: jumlah × harga beli barang saat ini.
  *
  * Harga diambil dari purchase_price barang, BUKAN dari batch. Selama batch
