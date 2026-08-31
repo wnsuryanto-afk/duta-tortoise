@@ -552,6 +552,16 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     queryFn: () => base44.entities.BuyerProfile.list("-last_purchase_date", 200),
   });
 
+  // Clutch dibutuhkan untuk menghitung biaya induk kura hasil tetasan sendiri.
+  // Tanpa daftar ini, hitungHppKura tidak menemukan clutch asal dan biaya
+  // induknya jatuh ke nol — persis kesalahan yang membuat 32 penjualan baby
+  // tercatat bermargin 99%.
+  const { data: breedings = [] } = useQuery({
+    queryKey: ["breedings-hpp"],
+    queryFn: () => base44.entities.Breeding.list("-egg_laying_date", 200),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Auto-select preSelectedTortoiseId on mount
   useEffect(() => {
     if (preSelectedTortoiseId && tortoises.length > 0 && !initialized) {
@@ -608,21 +618,20 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
   const next = () => { if (validateStep()) setStep(s => s + 1); };
   const back = () => setStep(s => s - 1);
 
-  const calcHpp = () => {
-    const isHasilSendiri = selectedTortoise?.source === "hasil_sendiri" || selectedTortoise?.code?.startsWith?.("BB-");
-    // Use form input if filled, else fallback to tortoise.purchase_price, hasil_sendiri always 0
-    const purchasePrice = isHasilSendiri ? 0 :
-      form.purchase_price_input !== "" ? Number(form.purchase_price_input) || 0 :
-      selectedTortoise?.purchase_price || 0;
-    // Tarif RATA-RATA beberapa bulan, bukan bulan berjalan. Bulan berjalan bisa
-    // sangat rendah hanya karena pencatatannya belum lengkap, dan angka itu ikut
-    // tersimpan permanen di catatan penjualan ini. Lihat useCostPerTortoise.
-    const biayaPerBulan = costData?.biayaPerEkorRata || costData?.biayaPerEkor || 100000;
-    const farmMonths = calcFarmMonths(selectedTortoise, form.sale_date);
-    const estimasiPerawatan = farmMonths * biayaPerBulan;
-    const shippingCost = Number(form.shipping_cost) || 0;
-    return purchasePrice + estimasiPerawatan + shippingCost;
-  };
+  // Tarif RATA-RATA beberapa bulan, bukan bulan berjalan. Bulan berjalan bisa
+  // sangat rendah hanya karena pencatatannya belum lengkap, dan angka itu ikut
+  // tersimpan permanen di catatan penjualan ini. Lihat useCostPerTortoise.
+  const tarifPerBulan = costData?.biayaPerEkorRata || costData?.biayaPerEkor || 100000;
+
+  // Satu perhitungan, dipakai untuk menyimpan DAN untuk layar review.
+  const rincianHpp = () => hitungHppKura({
+    kura: selectedTortoise,
+    breedings,
+    tarifPerBulan,
+    hargaBeliInput: form.purchase_price_input,
+    ongkir: form.shipping_cost,
+    tanggalJual: form.sale_date,
+  });
 
   const handleSave = async () => {
     setSaving(true);
