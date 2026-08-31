@@ -38,6 +38,19 @@ export function aktifSehat(kura) {
   return !!kura && !kura.is_archived && kura.status === "aktif";
 }
 
+/**
+ * Kura yang sedang sakit.
+ *
+ * Ditulis ulang di empat layar dengan tiga bentuk berbeda: dua memakai
+ * `status === "sakit" || is_currently_sick`, satu menambah `!is_archived`,
+ * satu hanya membaca `is_currently_sick`. Kura yang sudah diarsipkan tetap
+ * terhitung sakit di sebagian layar.
+ */
+export function sedangSakit(kura) {
+  if (!kura || kura.is_archived) return false;
+  return kura.status === "sakit" || kura.is_currently_sick === true;
+}
+
 /** Seluruh kura yang masih ada di peternakan. */
 export function hanyaDiPeternakan(tortoises = []) {
   return tortoises.filter(diPeternakan);

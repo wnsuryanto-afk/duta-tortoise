@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { AlertTriangle } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
+import { sedangSakit } from "@/lib/populasiKura";
 
 export default function KeeperAttentionWidget() {
   const { data: tortoises = [] } = useQuery({
@@ -21,7 +22,7 @@ export default function KeeperAttentionWidget() {
   const now = new Date();
 
   // 1. Kura sakit
-  const sickTortoises = tortoises.filter(t => t.status === "sakit" || t.is_currently_sick);
+  const sickTortoises = tortoises.filter(sedangSakit);
 
   // 2. Belum ditimbang (lewat interval)
   const notWeighed = tortoises

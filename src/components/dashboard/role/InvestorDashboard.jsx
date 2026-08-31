@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
+import { diPeternakan, sedangSakit } from "@/lib/populasiKura";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
@@ -67,8 +68,10 @@ export default function InvestorDashboard({ user }) {
   const margin = incomeThis > 0 ? (profit / incomeThis * 100).toFixed(1) : "0.0";
 
   // Tortoise calcs
-  const activeTortoises = tortoises.filter(t => ["aktif","baby"].includes(t.status));
-  const sickTortoises = tortoises.filter(t => t.status === "sakit" || t.is_currently_sick);
+  // Daftar status yang ditulis tangan melewatkan kura sakit dan karantina —
+  // yang tetap makan dan tetap milik peternakan. Lihat lib/populasiKura.
+  const activeTortoises = tortoises.filter(diPeternakan);
+  const sickTortoises = tortoises.filter(sedangSakit);
   const terjualCount = tortoises.filter(t => t.status === "terjual").length;
   const matiCount = tortoises.filter(t => t.status === "mati").length;
 

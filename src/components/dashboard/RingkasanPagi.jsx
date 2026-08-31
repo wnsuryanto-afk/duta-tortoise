@@ -19,6 +19,7 @@ import { masukLaporan } from "@/lib/laporan";
 import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
 import { saldoTerkini } from "@/lib/kasKecil";
 import { clutchAktif } from "@/lib/breedingUtils";
+import { diPeternakan, sedangSakit } from "@/lib/populasiKura";
 
 const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
@@ -128,8 +129,14 @@ export default function RingkasanPagi({ bagian = "semua" }) {
   const temuanKesehatanCount = aiFindings.filter(f => f.category === "kesehatan_kura").length;
 
   // ── Calcs ──
-  const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
-  const activeTortoises = tortoises.filter(t => t.status === "aktif" && !t.is_archived);
+  // Populasi dan "sakit" memakai definisi bersama (lib/populasiKura).
+  //
+  // Saringan lama `status === "aktif"` kebetulan masih benar hari ini karena
+  // belum ada kura berstatus sakit/karantina. Begitu satu kura ditandai sakit,
+  // ia hilang dari populasi di layar ini tapi tetap terhitung di Laba Rugi dan
+  // HPP — dan biaya per ekor ikut bergeser tanpa ada yang mengubah apa pun.
+  const sickTortoises = tortoises.filter(sedangSakit);
+  const activeTortoises = tortoises.filter(diPeternakan);
   const waitingMaterials = incidental.filter(t => t.status === "pending" && t.material_status === "waiting_materials").length;
   // Aturan urut yang sama dengan halaman Kas Kecil dan dengan fungsi yang
   // menghitung ulang balance_after — kalau berbeda, angkanya tidak akan cocok.
