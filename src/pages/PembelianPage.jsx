@@ -86,6 +86,11 @@ export default function PembelianPage() {
   const [form, setForm] = useState({ platform: "", ongkir: 0, biaya_admin: 0, bukti: "" });
   const [hargaItem, setHargaItem] = useState({});
   const [terimaForm, setTerimaForm] = useState({});
+  // Penerimaan dibuka dalam mode ringkas. Kolom jumlah sudah terisi sejumlah
+  // yang dipesan sejak awal, jadi pada kasus yang paling sering — semuanya
+  // datang lengkap — tidak ada yang perlu diketik. Menampilkan tujuh kotak isian
+  // yang tidak akan disentuh membuat orang mengira dirinya harus mengetik ulang.
+  const [rinciTerima, setRinciTerima] = useState(false);
 
   const { data: shopping = [], isLoading } = useQuery({
     queryKey: ["pembelian-shopping"],
@@ -196,6 +201,7 @@ export default function PembelianPage() {
       init[idx] = { diterima: it.jumlah_pesan, expired: "", per_butir: !!it.label_per_butir };
     });
     setTerimaForm(init);
+    setRinciTerima(false);
     setTerimaTarget(p);
   };
 
