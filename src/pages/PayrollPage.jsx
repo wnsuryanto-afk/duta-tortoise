@@ -308,9 +308,6 @@ const ROLE_OPTIONS = [
   { value: "keeper", label: "Keeper" },
 ];
 
-// Roles yang dikecualikan dari laporan gaji
-const EXCLUDED_ROLES = ["owner", "investor"];
-
 function SalaryConfigDialog({ open, onClose, editData }) {
   const qc = useQueryClient();
   const [form, setForm] = useState(editData || {
