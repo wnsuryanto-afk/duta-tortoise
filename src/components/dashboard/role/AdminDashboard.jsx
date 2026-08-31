@@ -1,4 +1,4 @@
-import { dilacak } from "@/lib/stokMenipis";
+import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
 import HRMetrics from "@/components/dashboard/HRMetrics";
@@ -124,11 +124,11 @@ export default function AdminDashboard({ user, role = "admin" }) {
 
   const sickTortoises = tortoises.filter(t => t.status === "sakit" || t.is_currently_sick);
 
-  // `dilacak` ikut disaring seperti pada pakan di baris berikutnya — sebelumnya
-  // hanya pakan yang menghormati barang yang dinonaktifkan, gudang tidak.
-  const criticalStocks = warehouseItems.filter(i => dilacak(i) && i.current_stock < i.minimum_stock && i.is_mandatory);
-  // Bahan pakan yang tidak dilacak dikeluarkan - lihat lib/stokMenipis.js.
-  const criticalFeed = feedStocks.filter(f => dilacak(f) && f.current_stock < f.minimum_stock && f.is_mandatory);
+  // Satu aturan dari lib/stokMenipis untuk keduanya. Versi lama menulis
+  // `dilacak && < minimum && is_mandatory` di dua baris terpisah — kombinasi
+  // yang benar, tapi ditulis ulang di setiap layar dan tidak selalu sama.
+  const criticalStocks = warehouseItems.filter(perluDiperhatikan);
+  const criticalFeed = feedStocks.filter(perluDiperhatikan);
   const totalCritical = criticalStocks.length + criticalFeed.length;
 
   const pendingApprovalCount = pendingChecklists.length + stockMovements.length + kasbons.length;
