@@ -23,90 +23,22 @@ import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload"
 import { gambarLabel, stripDariSku, namaBerkasLabel } from "@/lib/labelBarang";
 
 async function renderWarehouseLabel(canvas, item) {
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, W, H);
-
   const sku = item.sku || "";
-  const strip = (sku.split("-")[0] || "").toUpperCase() || CAT_CODE[item.category] || "LNN";
-  const stripH = 26;
-
-  // Strip kategori (hitam, teks putih)
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, W, stripH);
-  ctx.fillStyle = "#ffffff";
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
-  ctx.font = "bold 15px Arial";
-  ctx.fillText(strip, 10, stripH / 2);
-  ctx.font = "10px Arial";
-  ctx.textAlign = "right";
-  ctx.fillText("DUTA TORTOISE", W - 8, stripH / 2);
-
-  // Area QR
-  const padY = stripH + 10;
-  const qrSize = 108;
-  const qrX = 10;
-  const qrY = padY;
-
-  if (sku) {
-    const qr = document.createElement("canvas");
-    await QRCode.toCanvas(qr, sku, {
-      width: qrSize,
-      margin: 1,
-      color: { dark: "#000000", light: "#ffffff" },
-    });
-    ctx.drawImage(qr, qrX, qrY, qrSize, qrSize);
-  } else {
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(qrX, qrY, qrSize, qrSize);
-    ctx.fillStyle = "#000000";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 12px Arial";
-    ctx.fillText("BELUM", qrX + qrSize / 2, qrY + qrSize / 2 - 18);
-    ctx.fillText("ADA SKU", qrX + qrSize / 2, qrY + qrSize / 2);
-    ctx.font = "9px Arial";
-    ctx.fillText("(tanpa QR)", qrX + qrSize / 2, qrY + qrSize / 2 + 18);
-  }
-
-  // Kolom teks
-  const tx = qrX + qrSize + 12;
-  const tw = W - tx - 10;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  ctx.fillStyle = "#000000";
-
-  // Nama barang (bold, max 2 baris)
-  ctx.font = "bold 17px Arial";
-  const nameLines = wrapText(ctx, item.name || "—", tw, 2);
-  let y = padY;
-  for (const line of nameLines) {
-    ctx.fillText(line, tx, y);
-    y += 20;
-  }
-
-  // SKU
-  ctx.font = "13px monospace";
-  ctx.fillText(sku ? `SKU: ${sku}` : "SKU: -", tx, padY + 52);
-
-  // Fungsi singkat (dari notes, jika ada)
-  if (item.notes) {
-    ctx.font = "11px Arial";
-    ctx.fillText(truncateText(ctx, item.notes, tw), tx, padY + 72);
-  }
-
-  // Baris Exp kosong
-  ctx.font = "12px monospace";
-  ctx.fillText("Exp: ____________", tx, padY + 92);
+  await gambarLabel(canvas, {
+    strip: stripDariSku(sku, item.category),
+    qrText: sku,
+    judul: item.name || "—",
+    mono: sku ? `SKU: ${sku}` : "SKU: -",
+    kecil: item.notes || "",
+    // Sengaja dikosongkan untuk ditulis tangan: label barang menempel di rak
+    // dan dipakai lintas beberapa kali pembelian, jadi tidak punya satu
+    // tanggal kedaluwarsa. Yang punya tanggal adalah label BATCH.
+    bawah: "Exp: ____________",
+  });
 }
 
 function fileName(item) {
-  const base = (item.sku || item.name || "item").replace(/[^a-zA-Z0-9_-]+/g, "_");
-  return `label-${base}.png`;
+  return namaBerkasLabel(item.sku || item.name || "item");
 }
 
 export default function WarehouseLabelModal({ open, items = [], onClose }) {
