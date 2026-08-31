@@ -12,12 +12,15 @@
  *                   layar dan otomatisasi malam menjawab beda
  *   cek-unggah      UploadFile dikirimi Blob tanpa nama berkas → ditolak
  *                   server, dan dua pemakainya menelan errornya
+ *   cek-entitas     tabel yang dibaca tapi tak pernah ditulis (layar selalu
+ *                   kosong), ditulis tapi tak pernah dibaca (data hilang), atau
+ *                   menganggur menunggu ditulisi orang yang salah sangka
  *
  * Jalankan:  node scripts/cek-semua.mjs
  */
 import { execFileSync } from "child_process";
 
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {
