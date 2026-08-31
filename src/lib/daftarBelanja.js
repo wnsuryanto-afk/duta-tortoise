@@ -73,15 +73,27 @@ export function sudahDidaftar(item, penanda) {
  * keduanya, penerimaan mencocokkan lewat nama dan bisa membuat barang gudang
  * baru yang kembar.
  */
-export function barisDariBarang(item, { priority = "minggu_ini", notes = "" } = {}) {
+export function barisDariBarang(item, { priority = "minggu_ini", notes = "", jumlah: jumlahOpsi, hargaPerUnit } = {}) {
+  const jumlah = Math.max(1, Math.ceil(Number(jumlahOpsi ?? item?.minimum_stock) || 1));
+  // Harga perkiraan diambil dari harga beli barangnya kalau tidak disebut.
+  //
+  // Versi lama tidak pernah mengisi harga sama sekali, sementara kembaran
+  // backend-nya sudah menerimanya sejak awal — melenceng tanpa ketahuan karena
+  // cek-kembar belum membandingkan fungsi ini. Akibatnya baris yang ditambah
+  // otomatis dari beranda selalu bertotal Rp 0, dan "perkiraan total belanja"
+  // hanya menjumlahkan baris yang kebetulan diisi tangan: 16 dari 32 baris
+  // berharga nol pada 31-08-2026, jadi angkanya tidak bisa dipakai
+  // memutuskan apa pun.
+  const harga = Number(hargaPerUnit ?? item?.purchase_price) || 0;
   return {
     nama_barang: item?.name || "",
-    jumlah: Math.max(1, Number(item?.minimum_stock) || 1),
-    satuan: item?.unit || "",
+    jumlah,
+    satuan: item?.unit || "pcs",
     priority,
     status: STATUS_MENUNGGU,
     ...(item?.sku ? { item_sku: item.sku } : {}),
     ...(item?.id ? { warehouse_item_id: item.id } : {}),
+    ...(harga > 0 ? { harga_est_per_unit: harga, total_est: harga * jumlah } : {}),
     ...(notes ? { notes } : {}),
   };
 }

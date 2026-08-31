@@ -68,7 +68,9 @@ export function barisDariBarang(
   opsi: { priority?: string; notes?: string; jumlah?: number; hargaPerUnit?: number } = {},
 ) {
   const jumlah = Math.max(1, Math.ceil(Number(opsi.jumlah ?? item?.minimum_stock) || 1));
-  const harga = Number(opsi.hargaPerUnit) || 0;
+  // Kalau harga tidak disebut, pakai harga beli barangnya — sama dengan
+  // kembaran frontend di src/lib/daftarBelanja.js.
+  const harga = Number(opsi.hargaPerUnit ?? item?.purchase_price) || 0;
   return {
     nama_barang: item?.name || "",
     jumlah,
