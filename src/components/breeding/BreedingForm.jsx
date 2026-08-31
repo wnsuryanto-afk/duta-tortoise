@@ -29,8 +29,12 @@ export default function BreedingForm({ open, onClose, editData }) {
   const [form, setForm] = useState(editData || {
     male_name: "", female_name: "", male_id: "", female_id: "",
     egg_laying_date: "", egg_count: "",
-    estimated_hatch_date_start: "",
-    estimated_hatch_date_end: "",
+    // SATU nama, sama dengan skema. Formulir ini dulu menyimpan dua pasang
+    // nama untuk satu nilai — `estimated_hatch_start/_end` untuk
+    // tampilan, `estimated_hatch_start/_end` untuk penyimpanan. Yang tersimpan
+    // benar, tapi saat MENGEDIT clutch yang sudah ada, form dimuat dari data
+    // (nama skema) sementara kotak pratinjaunya membaca nama tampilan yang
+    // kosong — jadi rentang perkiraan menetas terlihat belum terisi padahal ada.
     estimated_hatch_start: "",
     estimated_hatch_end: "",
     estimated_hatch_date: "",
@@ -145,8 +149,6 @@ export default function BreedingForm({ open, onClose, editData }) {
     setForm((prev) => ({
       ...prev,
       egg_laying_date: value,
-      estimated_hatch_date_start: start,
-      estimated_hatch_date_end: end,
       estimated_hatch_start: start,
       estimated_hatch_end: end,
       estimated_hatch_date: end,
@@ -188,8 +190,8 @@ export default function BreedingForm({ open, onClose, editData }) {
       incubation_temp: form.incubation_temp ? Number(form.incubation_temp) : undefined,
       tray_number: form.tray_number ? Number(form.tray_number) : undefined,
       season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
-      estimated_hatch_start: form.estimated_hatch_start || form.estimated_hatch_date_start || undefined,
-      estimated_hatch_end: form.estimated_hatch_end || form.estimated_hatch_date_end || undefined,
+      estimated_hatch_start: form.estimated_hatch_start || undefined,
+      estimated_hatch_end: form.estimated_hatch_end || undefined,
     };
     if (editData?.id) {
       await base44.entities.Breeding.update(editData.id, data);
@@ -304,24 +306,24 @@ export default function BreedingForm({ open, onClose, editData }) {
           </div>
 
           {/* Perkiraan menetas range 80-105 hari - AUTO READ ONLY */}
-          {(form.estimated_hatch_date_start || form.estimated_hatch_date_end) && (
+          {(form.estimated_hatch_start || form.estimated_hatch_end) && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
               <p className="text-xs font-medium text-amber-800 mb-1">🥚 Perkiraan masa penetasan (80–105 hari):</p>
               <p className="text-sm font-bold text-amber-900">
-                {form.estimated_hatch_date_start && format(new Date(form.estimated_hatch_date_start), "d MMM yyyy", { locale: idLocale })}
+                {form.estimated_hatch_start && format(new Date(form.estimated_hatch_start), "d MMM yyyy", { locale: idLocale })}
                 {" s/d "}
-                {form.estimated_hatch_date_end && format(new Date(form.estimated_hatch_date_end), "d MMM yyyy", { locale: idLocale })}
+                {form.estimated_hatch_end && format(new Date(form.estimated_hatch_end), "d MMM yyyy", { locale: idLocale })}
               </p>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Estimasi Menetas Awal <span className="text-muted-foreground font-normal">(+80 hari)</span></Label>
-              <Input type="date" value={form.estimated_hatch_date_start} onChange={(e) => handleManualEstimateChange("estimated_hatch_date_start", e.target.value)} disabled />
+              <Input type="date" value={form.estimated_hatch_start} onChange={(e) => handleManualEstimateChange("estimated_hatch_start", e.target.value)} disabled />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Estimasi Menetas Akhir <span className="text-muted-foreground font-normal">(+105 hari)</span></Label>
-              <Input type="date" value={form.estimated_hatch_date_end} onChange={(e) => handleManualEstimateChange("estimated_hatch_date_end", e.target.value)} disabled />
+              <Input type="date" value={form.estimated_hatch_end} onChange={(e) => handleManualEstimateChange("estimated_hatch_end", e.target.value)} disabled />
             </div>
           </div>
 
