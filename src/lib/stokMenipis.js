@@ -80,6 +80,31 @@ export function perluDiperhatikan(item) {
 }
 
 /**
+ * Status satu barang dalam satu kata, untuk lencana di layar.
+ *
+ * Bedanya dengan `perluDiperhatikan`: fungsi ini TIDAK memakai gerbang
+ * `is_mandatory`. Lencana hanya melaporkan keadaan rak — raknya kosong ya
+ * kosong, wajib atau tidak. Gerbang `is_mandatory` dipakai untuk memutuskan
+ * apakah keadaan itu layak jadi PERINGATAN, dan itu pertanyaan yang berbeda.
+ *
+ * Sebelum fungsi ini ada, tujuh layar punya ambangnya sendiri: satu memakai
+ * `<= minimum`, satu `< minimum`, satu `< minimum * 1.5`, satu lagi
+ * `<= minimum * 3`. Barang yang sama bisa berlencana "Kritis" di satu halaman
+ * dan "Aman" di halaman sebelahnya.
+ *
+ * @returns {"tidak_dilacak"|"habis"|"menipis"|"aman"}
+ */
+export function statusStok(item) {
+  if (!dilacak(item)) return "tidak_dilacak";
+  if (angka(item?.current_stock) <= 0) return "habis";
+  if (stokMenipis(item)) return "menipis";
+  return "aman";
+}
+
+/** Urutan tampil: yang paling gawat lebih dulu. */
+export const URUTAN_STATUS = { habis: 0, menipis: 1, aman: 2, tidak_dilacak: 3 };
+
+/**
  * Gabungkan barang gudang dan pakan jadi satu daftar yang bisa diperiksa
  * dengan aturan yang sama, sambil menandai asalnya supaya layar masih bisa
  * menyebut "pakan" atau "gudang" saat menampilkan.
