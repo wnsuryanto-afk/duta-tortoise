@@ -77,8 +77,13 @@ function EnclosureChecklistCard({ enclosure, logs, freq, onCheck, onVerify, user
       <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="font-bold text-sm">{enclosure.name}</h3>
-          {enclosure.tortoise_count > 0 && (
-            <p className="text-xs text-muted-foreground">{enclosure.tortoise_count} kura-kura</p>
+          {/*
+            Enclosure menyimpan jumlah penghuninya di `current_count`. Tidak ada
+            field bernama `tortoise_count`, jadi baris ini tidak pernah tampil
+            sama sekali sejak dibuat.
+          */}
+          {enclosure.current_count > 0 && (
+            <p className="text-xs text-muted-foreground">{enclosure.current_count} kura-kura</p>
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">

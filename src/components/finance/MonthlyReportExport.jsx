@@ -336,7 +336,10 @@ export default function MonthlyReportExport({ role }) {
           String(i + 1),
           `${s.tortoise_code || s.tortoise_name || "—"} (${s.tortoise_species || "—"})`,
           `${s.buyer_name || "—"}`,
-          s.buyer_city || "—",
+          // Sale tidak punya `buyer_city` — kolom ini selalu "—" sejak dibuat.
+          // Kota pembeli tersimpan di BuyerProfile.city; alamatnya ada di
+          // Sale.buyer_address sebagai cadangan.
+          (buyerById.get(s.buyer_profile_id)?.city || s.buyer_address || "—"),
           fmt(s.price),
           fmt(s.hpp || 0),
           fmt((s.price || 0) - (s.hpp || 0)),
