@@ -461,8 +461,14 @@ export default function BreedingAndEggs() {
           ) : (
             <div className="space-y-6">
               {[...activeBreedings, ...breedings.filter(b => b.status === "selesai")].map((b) => {
-                const startDate = b.estimated_hatch_date_start ? parseISO(b.estimated_hatch_date_start) : null;
-                const endDate = b.estimated_hatch_date_end ? parseISO(b.estimated_hatch_date_end) : null;
+                // Skema Breeding menyimpannya sebagai `estimated_hatch_start` /
+                // `estimated_hatch_end` — TANPA "_date" di tengah. Dua nama yang
+                // dibaca sebelumnya tidak ada, jadi keduanya selalu null dan
+                // rentang perkiraan menetas ("hari ke-N dari M") tidak pernah
+                // muncul; `inHatchRange` pun selalu false, sehingga penanda
+                // "sedang dalam masa menetas" tidak pernah menyala.
+                const startDate = b.estimated_hatch_start ? parseISO(b.estimated_hatch_start) : null;
+                const endDate = b.estimated_hatch_end ? parseISO(b.estimated_hatch_end) : null;
                 const hatchDate = b.estimated_hatch_date ? new Date(b.estimated_hatch_date) : null;
                 const daysToStart = startDate ? differenceInDays(startDate, today) : (hatchDate ? differenceInDays(hatchDate, today) : null);
                 const daysToEnd = endDate ? differenceInDays(endDate, today) : null;
