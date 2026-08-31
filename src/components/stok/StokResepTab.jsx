@@ -95,64 +95,141 @@ function RecipeForm({ recipe, feedItems, warehouseItems, onClose, onSaved }) {
   );
 }
 
-function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved, userName }) {
+function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved, userName, userEmail }) {
   const [qty, setQty] = useState(recipe?.yield_kg || "");
   const [producing, setProducing] = useState(false);
+  const [gagal, setGagal] = useState("");
 
-  const checkStocks = () => {
-    const issues = [];
-    (recipe?.ingredients || []).forEach(ing => {
-      const allItems = [...feedItems, ...warehouseItems];
-      const item = allItems.find(i => i.id === ing.item_id);
-      if (!item) { issues.push(`${ing.item_name}: item tidak ditemukan`); return; }
-      const scaleFactor = Number(qty) / (recipe?.yield_kg || 1);
-      const needed = (Number(ing.quantity_kg) || 0) * scaleFactor;
-      if (item.current_stock < needed) {
-        issues.push(`${ing.item_name}: butuh ${needed.toFixed(2)} ${ing.unit}, stok hanya ${item.current_stock} ${ing.unit}`);
-      }
-    });
-    return issues;
-  };
-
-  const stockIssues = checkStocks();
+  const semuaBarang = [...feedItems, ...warehouseItems];
+  const rincian = rincianBahan(recipe, qty, semuaBarang);
+  const stockIssues = masalahBahan(rincian);
+  const tanpaHarga = bahanTanpaHarga(rincian);
+  const biaya = totalBiaya(rincian);
+  const tujuan = cariBarangHasil(recipe, warehouseItems, feedItems);
+  const satuanHasil = tujuan.item?.unit || "kg";
+  const hpp = hppHasil(biaya, qty, satuanHasil);
+  const hasilDalamSatuan = jumlahHasil(qty, satuanHasil);
 
   const handleProduce = async () => {
     if (stockIssues.length > 0 || !qty) return;
     setProducing(true);
-    const scaleFactor = Number(qty) / (recipe?.yield_kg || 1);
-    const today = new Date().toISOString().split("T")[0];
-    const batchNo = `BATCH-${Date.now().toString(36).toUpperCase()}`;
-    const allItems = [...feedItems, ...warehouseItems];
+    setGagal("");
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const batchNo = `BATCH-RACIK-${Date.now().toString(36).toUpperCase()}`;
 
-    for (const ing of (recipe?.ingredients || [])) {
-      const item = allItems.find(i => i.id === ing.item_id);
-      if (!item) continue;
-      const used = (Number(ing.quantity_kg) || 0) * scaleFactor;
-      if (feedItems.find(f => f.id === item.id)) {
-        await base44.entities.FeedStock.update(item.id, { current_stock: Math.max(0, item.current_stock - used) });
-      } else {
-        await base44.entities.WarehouseItem.update(item.id, { current_stock: Math.max(0, item.current_stock - used) });
+      // ── Bahan keluar ──
+      // Dikurangi memakai jumlah yang SUDAH dikonversi ke satuan barangnya,
+      // dan tiap pemakaian menulis jejaknya sendiri. Tanpa jejak ini,
+      // pemakaian terbesar di peternakan ini tidak terlihat oleh perkiraan
+      // sisa hari maupun laporan mana pun.
+      for (const r of rincian) {
+        if (!r.item || r.butuh <= 0) continue;
+        const sisa = Math.max(0, (Number(r.item.current_stock) || 0) - r.butuh);
+        const diPakan = feedItems.some((f) => f.id === r.item.id);
+        if (diPakan) {
+          await base44.entities.FeedStock.update(r.item.id, { current_stock: sisa });
+        } else {
+          await base44.entities.WarehouseItem.update(r.item.id, { current_stock: sisa });
+        }
+        await base44.entities.StockMovement.create({
+          item_id: r.item.id,
+          item_type: diPakan ? "feedstock" : "warehouse",
+          item_name: r.item.name,
+          item_sku: r.item.sku || "",
+          type: "keluar",
+          quantity: r.butuh,
+          unit: r.satuan,
+          unit_price: r.hargaSatuan,
+          total_value: r.biaya,
+          stock_after: sisa,
+          keperluan: "lainnya",
+          date: today,
+          status: "selesai",
+          by_email: userEmail || "",
+          by_name: userName || userEmail || "",
+          notes: `Bahan racikan ${recipe.name} — batch ${batchNo}.`,
+        });
       }
+
+      const kedaluwarsa = new Date();
+      kedaluwarsa.setDate(kedaluwarsa.getDate() + (Number(recipe?.shelf_life_days) || 30));
+      const tglExp = kedaluwarsa.toISOString().split("T")[0];
+
+      await base44.entities.PelletProduction.create({
+        recipe_id: recipe.id, recipe_name: recipe.name, production_date: today,
+        produced_quantity_kg: Number(qty), produced_by: userName,
+        batch_number: batchNo, expiry_date: tglExp,
+      });
+
+      // ── Hasil masuk ──
+      // Ke barang tujuan yang SUDAH ada (Duta Repro → VIT-REP00), bukan barang
+      // baru bertarif Rp 0 di tabel lain. Harga pokoknya = biaya bahan dibagi
+      // hasilnya, jadi harga per gram yang diisi di tiap bahan benar-benar
+      // sampai ke racikan jadinya.
+      let hasil = tujuan.item;
+      let jenis = tujuan.jenis;
+      if (!hasil) {
+        hasil = await base44.entities.FeedStock.create({
+          name: recipe.name, category: "suplemen", unit: "kg",
+          current_stock: 0, minimum_stock: 1, price_per_unit: 0,
+        });
+        jenis = "feedstock";
+      }
+      const stokBaru = (Number(hasil.current_stock) || 0) + hasilDalamSatuan;
+      if (jenis === "warehouse") {
+        await base44.entities.WarehouseItem.update(hasil.id, {
+          current_stock: stokBaru,
+          purchase_price: hpp,
+          last_restocked_date: today,
+          expired_date: tglExp,
+        });
+        await base44.entities.BatchBarang.create({
+          batch_code: batchNo,
+          item_id: hasil.id,
+          item_sku: hasil.sku || "",
+          nama_barang: `${recipe.name} — racikan ${today}`,
+          jumlah_awal: hasilDalamSatuan,
+          jumlah_sisa: hasilDalamSatuan,
+          satuan: satuanHasil,
+          harga_satuan: hpp,
+          tanggal_terima: today,
+          tanggal_expired: tglExp,
+          label_per_butir: false,
+          label_dicetak: false,
+          status: "aktif",
+        });
+      } else {
+        await base44.entities.FeedStock.update(hasil.id, {
+          current_stock: stokBaru,
+          price_per_unit: hpp,
+        });
+      }
+
+      await base44.entities.StockMovement.create({
+        item_id: hasil.id,
+        item_type: jenis,
+        item_name: hasil.name,
+        item_sku: hasil.sku || "",
+        type: "masuk",
+        quantity: hasilDalamSatuan,
+        unit: satuanHasil,
+        unit_price: hpp,
+        total_value: biaya,
+        stock_after: stokBaru,
+        date: today,
+        status: "selesai",
+        by_email: userEmail || "",
+        by_name: userName || userEmail || "",
+        notes: `Hasil racikan ${recipe.name} — batch ${batchNo}. Biaya bahan ${Math.round(biaya).toLocaleString("id-ID")} rupiah.`,
+      });
+
+      onSaved();
+      onClose();
+    } catch (e) {
+      setGagal(e?.message || "Gagal memproduksi.");
     }
-
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + (recipe?.shelf_life_days || 30));
-    await base44.entities.PelletProduction.create({
-      recipe_id: recipe.id, recipe_name: recipe.name, production_date: today,
-      produced_quantity_kg: Number(qty), produced_by: userName,
-      batch_number: batchNo, expiry_date: expiry.toISOString().split("T")[0],
-    });
-
-    const existing = feedItems.find(f => f.name === recipe.name);
-    if (existing) {
-      await base44.entities.FeedStock.update(existing.id, { current_stock: (existing.current_stock || 0) + Number(qty) });
-    } else {
-      await base44.entities.FeedStock.create({ name: recipe.name, category: "suplemen", unit: "kg", current_stock: Number(qty), minimum_stock: 1, price_per_unit: 0 });
-    }
-
     setProducing(false);
-    onSaved();
-    onClose();
   };
 
   return (
