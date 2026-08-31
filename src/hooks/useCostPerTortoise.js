@@ -166,7 +166,7 @@ export function useCostPerTortoise(period) {
         petty_cash: totalPC,
       },
     };
-  }, [finances, pettyCash, tortoises, settings, monthKey]);
+  }, [finances, pettyCash, tortoises, settings, pergerakan, monthKey]);
 }
 
 /**
