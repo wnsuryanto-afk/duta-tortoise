@@ -407,24 +407,23 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     return items;
   }, [sopTasks, today, rotasiUkur, enclosures, existingLogItemIds, recentLogs, user?.email]);
 
-  // Reminder timbang
-  // Aturan lengkapnya di lib/jadwalTimbang.js. Baby dibuang di sini karena
-  // sudah ditangani satu task gabungan ("Timbang, ukur & foto SEMUA baby").
-  const timbangToday = kuraPerluDitimbang(tortoises, { sekarang: now, tanpaBaby: true }).slice(0, 5);
-
-  const timbangItems = timbangToday.map(t => ({
-    id: `timbang_${t.id}`, label: `Timbang: ${t.name}`, waktu: "Saat ada waktu",
-    icon: "⚖️", keterangan: t.enclosure || "", points: 5,
-    badge: "Timbang", badgeColor: "bg-sky-100 text-sky-700",
-  }));
+  // Pengingat timbang yang berdiri sendiri di sini DIHAPUS.
+  //
+  // Layar ini sudah memunculkan tugas timbang dari task SOP "Timbang & ukur
+  // kura (ROTASI OTOMATIS - 2 kura/hari)", yang isinya datang dari fungsi
+  // getRotasiUkur — satu-satunya tempat yang benar-benar memutuskan kura mana
+  // ditimbang hari ini. Blok lama di sini menghitungnya SEKALI LAGI dengan
+  // aturan sendiri (ambang berbeda, sumber tanggal berbeda), sehingga satu
+  // layar bisa memunculkan dua daftar timbang yang tidak sama pada hari yang
+  // sama, dan poinnya dihitung dua kali.
 
   // Daftar baby untuk task "Timbang semua baby (2 minggu sekali)"
   const babyTortoises = useMemo(() => tortoises.filter(t =>
     (t.age_category === "baby" || t.status === "baby") && t.status !== "mati" && t.status !== "terjual"
   ), [tortoises]);
 
-  // Full task list: struktural + SOPTask + timbang
-  const allTasks = [...STRUCTURAL, ...sopTaskItems, ...timbangItems];
+  // Full task list: struktural + SOPTask (timbang sudah termasuk lewat task rotasi)
+  const allTasks = [...STRUCTURAL, ...sopTaskItems];
 
   // Kemajuan kebersihan kandang (dari log hari ini, format kanonik) — untuk baris pengantar
   const kebersihanProgress = useMemo(() => {
