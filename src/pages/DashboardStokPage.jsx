@@ -1,6 +1,7 @@
 import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { adalahPemakaian } from "@/lib/urgensiStok";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Package, Calendar, Wallet, Leaf } from "lucide-react";
@@ -40,9 +41,15 @@ export default function DashboardStokPage() {
     queryFn: () => base44.entities.WarehouseItem.list("-name", 300),
   });
 
-  const { data: feedingLogs = [] } = useQuery({
-    queryKey: ["feeding-logs"],
-    queryFn: () => base44.entities.FeedingLog.list("-date", 200),
+  // Panel ini dulu membaca FeedingLog — tabel yang TIDAK PERNAH ditulis oleh
+  // berkas mana pun, jadi "Pemakaian Pakan vs Ideal" selalu kosong dan orang
+  // menyimpulkan aplikasinya rusak. Pemakaian pakan yang sebenarnya tercatat
+  // di StockMovement: layar Pakan Keluar dan pemotongan stok otomatis
+  // menulisnya ke sana.
+  const { data: pergerakan = [] } = useQuery({
+    queryKey: ["stock-movements", "-date", 500],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: financeTx = [] } = useQuery({
@@ -70,12 +77,12 @@ export default function DashboardStokPage() {
     .sort((a, b) => a._daysLeft - b._daysLeft);
 
   // ─── C. Pemakaian Pakan vs Ideal bulan ini ───────────
-  const monthLogs = feedingLogs.filter(l => l.date && l.date.startsWith(currentMonth));
   const feedUsageMap = {};
-  monthLogs.forEach(log => {
-    (log.feed_items || []).forEach(item => {
-      feedUsageMap[item.feedstock_id] = (feedUsageMap[item.feedstock_id] || 0) + (item.quantity || 0);
-    });
+  pergerakan.forEach((m) => {
+    if (!adalahPemakaian(m)) return;
+    if (m.item_type && m.item_type !== "feedstock") return;
+    if (!String(m.date || "").startsWith(currentMonth)) return;
+    feedUsageMap[m.item_id] = (feedUsageMap[m.item_id] || 0) + Math.abs(Number(m.quantity) || 0);
   });
   const feedComparison = feedstocks
     .filter(f => f.daily_ideal > 0)
