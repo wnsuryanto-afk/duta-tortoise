@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,15 +10,29 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 
 /**
- * Dialog "Sudah Dibeli" — update stok WarehouseItem atau tandai ShoppingList sudah dibeli.
- * item.type: "warehouse" → update current_stock
- * item.type: "shopping" → mark status "sudah_dibeli"
+ * Dialog "Sudah Dibeli" — koreksi stok gudang, atau tandai permintaan alat dibeli.
+ *
+ * KOREKSI STOK, BUKAN PENERIMAAN BARANG. Layar ini menimpa angka stok
+ * langsung. Versi lama melakukannya tanpa jejak apa pun: tidak ada catatan
+ * siapa yang mengubah, dari berapa ke berapa, atau kenapa. Buku pergerakan
+ * stok jadi tidak bisa dipercaya — jumlah di gudang tidak lagi sama dengan
+ * jumlah masuk dikurangi jumlah keluar, dan tidak ada cara menelusuri
+ * selisihnya. Sekarang tiap koreksi menulis StockMovement-nya sendiri.
+ *
+ * item.type: "warehouse"     → koreksi current_stock + StockMovement
+ * item.type: "tool_request"  → tandai permintaan alat dibeli
+ *
+ * item.type "shopping" SENGAJA tidak lagi ditangani di sini. Menandai baris
+ * daftar belanja "sudah dibeli" tanpa menambah stok dan tanpa mencatat biaya
+ * membuat barangnya lenyap dari daftar sementara gudang dan laba rugi tidak
+ * tahu apa-apa. Jalannya satu: halaman Pembelian.
  */
 export default function BoughtItemDialog({ item, onClose, onSaved }) {
   const [newStock, setNewStock] = useState(
     item?.type === "warehouse" ? String(item.current_stock || 0) : ""
   );
   const [saving, setSaving] = useState(false);
+  const { user } = useCurrentUser();
 
   const handleSave = async () => {
     setSaving(true);
@@ -29,21 +44,44 @@ export default function BoughtItemDialog({ item, onClose, onSaved }) {
           setSaving(false);
           return;
         }
+        const lama = Number(item.current_stock) || 0;
+        const selisih = val - lama;
+
         const updateData = {
           current_stock: val,
           last_edited_at: new Date().toISOString(),
         };
-        if (val > (item.current_stock || 0)) {
+        if (val > lama) {
           updateData.last_restocked_date = format(new Date(), "yyyy-MM-dd");
         }
         await base44.entities.WarehouseItem.update(item.item_id, updateData);
-        toast.success(`Stok ${item.name} diperbarui ke ${val} ${item.unit || ""}`);
-      } else if (item.type === "shopping") {
-        await base44.entities.ShoppingList.update(item.shopping_list_id, {
-          status: "sudah_dibeli",
-          tanggal_dibeli: format(new Date(), "yyyy-MM-dd"),
-        });
-        toast.success(`${item.name} ditandai sudah dibeli`);
+
+        // Jejak koreksinya. Tanpa baris ini, stok berubah tanpa ada yang tahu
+        // siapa dan kenapa — dan perkiraan pemakaian ikut salah membacanya.
+        if (selisih !== 0) {
+          try {
+            await base44.entities.StockMovement.create({
+              item_id: item.item_id,
+              item_type: "warehouse",
+              item_name: item.name,
+              item_sku: item.sku || "",
+              type: selisih > 0 ? "masuk" : "keluar",
+              quantity: Math.abs(selisih),
+              unit: item.unit || "pcs",
+              unit_price: 0,
+              total_value: 0,
+              stock_after: val,
+              keperluan: "lainnya",
+              date: format(new Date(), "yyyy-MM-dd"),
+              status: "selesai",
+              by_email: user?.email || "",
+              by_name: user?.full_name || user?.email || "",
+              notes: `KOREKSI STOK dari kas kecil: ${lama} → ${val} ${item.unit || ""}. Bukan penerimaan barang; nilainya sengaja Rp 0 supaya tidak terhitung sebagai pembelian maupun pemakaian.`,
+            });
+          } catch { /* stok sudah dikoreksi; jejaknya gagal ditulis */ }
+        }
+
+        toast.success(`Stok ${item.name} dikoreksi ${lama} → ${val} ${item.unit || ""}`);
       } else if (item.type === "tool_request") {
         await base44.entities.ToolRequest.update(item.tool_request_id, {
           status: "dibeli",
