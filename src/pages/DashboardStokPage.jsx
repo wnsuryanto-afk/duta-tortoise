@@ -1,4 +1,4 @@
-import { dilacak } from "@/lib/stokMenipis";
+import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -55,8 +55,8 @@ export default function DashboardStokPage() {
   // ─── A. Stok Kritis ────────────────────────────────────
   // Bahan pakan yang tidak dilacak dikeluarkan: angkanya sengaja tidak
   // dipelihara, jadi "kritis" tidak berarti apa-apa untuknya.
-  const criticalFeed = feedstocks.filter(f => dilacak(f) && f.current_stock <= f.minimum_stock);
-  const criticalWarehouse = warehouseItems.filter(i => i.current_stock <= i.minimum_stock);
+  const criticalFeed = feedstocks.filter(perluDiperhatikan);
+  const criticalWarehouse = warehouseItems.filter(perluDiperhatikan);
   const allCritical = [
     ...criticalFeed.map(f => ({ ...f, _type: "pakan", _cat: f.category })),
     ...criticalWarehouse.map(i => ({ ...i, _type: "gudang", _cat: i.category })),
