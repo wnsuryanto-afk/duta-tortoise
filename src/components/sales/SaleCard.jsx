@@ -66,7 +66,10 @@ export default function SaleCard({ sale, onDetail, onPrint }) {
                 {sale.sale_date ? format(new Date(sale.sale_date), "d MMM yyyy", { locale: localeId }) : "-"}
                 {" · "}
                 <span className="font-medium text-foreground">{sale.buyer_name}</span>
-                {sale.buyer_city ? ` (${sale.buyer_city})` : ""}
+                {/* Sale tidak punya `buyer_city` — kurung ini tidak pernah
+                    tampil sejak dibuat. Kota pembeli hidup di BuyerProfile;
+                    yang tersedia di Sale hanyalah alamatnya. */}
+                {sale.buyer_address ? ` (${sale.buyer_address})` : ""}
               </p>
             </div>
 
