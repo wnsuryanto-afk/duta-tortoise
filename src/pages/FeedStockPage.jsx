@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, PackageOpen, Plus, Pencil, Trash2, CheckCircle2, Leaf, QrCode, Printer } from "lucide-react";
+import { statusStok, perluDiperhatikan } from "@/lib/stokMenipis";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatRp } from "@/lib/skuUtils";
 import StockItemForm from "@/components/stock/StockItemForm";
@@ -47,9 +48,12 @@ const SULCATA_IDEAL_FEEDS = [
   { name: "Vitamin Reptil", category: "suplemen", unit: "gram", current_stock: 50, minimum_stock: 20, price_per_unit: 500 },
 ];
 
+// Satu aturan lencana untuk seluruh aplikasi: lib/stokMenipis.js.
 function StockStatusBadge({ s }) {
-  if (s.current_stock === 0) return <Badge variant="destructive" className="text-xs">Habis</Badge>;
-  if (s.current_stock <= s.minimum_stock) return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Stok Rendah</Badge>;
+  const st = statusStok(s);
+  if (st === "tidak_dilacak") return <Badge className="text-xs bg-muted text-muted-foreground">Tidak dilacak</Badge>;
+  if (st === "habis") return <Badge variant="destructive" className="text-xs">Habis</Badge>;
+  if (st === "menipis") return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Stok Rendah</Badge>;
   return <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Aman</Badge>;
 }
 
@@ -122,7 +126,7 @@ export default function FeedStockPage() {
 
   const filtered = stocks.filter((s) => {
     const matchCat = catFilter === "semua" || s.category === catFilter;
-    const matchLow = !lowFilter || s.current_stock <= s.minimum_stock;
+    const matchLow = !lowFilter || perluDiperhatikan(s);
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || (s.sku || "").toLowerCase().includes(search.toLowerCase());
     const inc = isItemIncomplete(s, "feedstock");
     const matchLengkap = lengkapFilter === "semua" || (lengkapFilter === "belum" ? inc : !inc);
@@ -134,7 +138,7 @@ export default function FeedStockPage() {
     return scoreB - scoreA;
   });
 
-  const lowCount = stocks.filter((s) => s.current_stock <= s.minimum_stock).length;
+  const lowCount = stocks.filter(perluDiperhatikan).length;
   const totalValue = stocks.reduce((sum, s) => sum + ((s.price_per_unit || 0) * (s.current_stock || 0)), 0);
 
   const handleScanResult = (sku) => {
@@ -287,7 +291,7 @@ export default function FeedStockPage() {
             // berlaku untuknya: angka nol pada bahan yang memang tidak dicatat
             // bukan kabar buruk, hanya kolom yang tidak dipakai.
             const nonaktif = s.is_active === false;
-            const isLow = !nonaktif && s.current_stock <= s.minimum_stock;
+            const isLow = statusStok(s) === "habis" || statusStok(s) === "menipis";
             const incomplete = !nonaktif && isItemIncomplete(s, "feedstock");
             return (
               <Card key={s.id} className={`p-4 group hover:shadow-md transition-shadow cursor-pointer ${nonaktif ? "opacity-55" : ""} ${incomplete ? "border-l-4 border-l-yellow-400" : ""} ${isLow && s.is_mandatory ? "border-red-400 bg-red-50/30" : isLow ? "border-orange-300 bg-orange-50/30" : ""}`}
