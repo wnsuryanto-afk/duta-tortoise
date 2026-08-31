@@ -48,11 +48,13 @@ import { ScanLine, Loader2, CheckCircle2, AlertTriangle, PackagePlus, Truck } fr
 import { toast } from "sonner";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { KATEGORI_PEMBELIAN } from "@/lib/kategoriBarang";
 
 const rp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const hariIni = () => new Date().toISOString().split("T")[0];
 
-const KATEGORI = ["obat", "vitamin", "alat_kerja", "pakan", "lainnya"];
+// Daftar kategori dan aturan aset/biaya ada di src/lib/kategoriBarang.js.
+const KATEGORI = KATEGORI_PEMBELIAN;
 
 /**
  * Satuan gudang yang dihitung CURAH, bukan per kemasan.
