@@ -40,6 +40,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useTestMode } from "@/lib/useTestMode";
 import { KATEGORI_PEMBELIAN, KATEGORI_FINANCE, masukBiaya } from "@/lib/kategoriBarang";
 import { generateSKU, getPrefix } from "@/lib/skuUtils";
+import { kodeBatch } from "@/lib/pemakaianBarang";
 
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const today = () => format(new Date(), "yyyy-MM-dd");
@@ -256,6 +257,9 @@ export default function PembelianPage() {
        */
       const stokBerjalan = new Map();
       const skuTerpakai = warehouse.map((w) => w.sku).filter(Boolean);
+      // Kode batch harus unik lintas SEMUA batch, bukan cuma dalam pesanan ini
+      // — kode itu yang dipindai dari label di rak.
+      const kodeBatchTerpakai = semuaBatch.map((b) => b.batch_code).filter(Boolean);
 
       for (let idx = 0; idx < items.length; idx++) {
         const it = items[idx];
@@ -314,7 +318,8 @@ export default function PembelianPage() {
           expired_date: f.expired || wi.expired_date || null,
         });
 
-        const kode = `BATCH-${(wi.sku || wi.id).slice(-6).toUpperCase()}-${format(new Date(), "yyMMdd")}-${idx + 1}`;
+        const kode = kodeBatch(wi.sku || wi.id, format(new Date(), "yyMMdd"), kodeBatchTerpakai);
+        kodeBatchTerpakai.push(kode);
         await base44.entities.BatchBarang.create({
           batch_code: kode,
           item_id: wi.id,
