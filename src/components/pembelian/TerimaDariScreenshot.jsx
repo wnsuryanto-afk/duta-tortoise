@@ -1,25 +1,39 @@
 /**
- * TerimaDariScreenshot — masukkan belanja marketplace ke gudang dari
- * screenshot pesanan.
+ * TerimaDariScreenshot — catat pesanan marketplace dari screenshot.
  *
  * Belanja di peternakan ini lewat Shopee dan Tokopedia, dan bukti yang ada di
  * tangan adalah screenshot. Alur lama menuntut mengetik ulang tiap barang,
  * jumlah, dan harganya dari gambar yang sedang dilihat sendiri.
  *
- * ── Dua hal yang sengaja TIDAK ditebak oleh layar ini ──
+ * ── Yang layar ini TIDAK lakukan, dan alasannya ──
+ *
+ * Versi pertama layar ini langsung menambah stok gudang, menulis StockMovement,
+ * dan mencatat pengeluaran. Itu salah karena dua hal:
+ *
+ *   1. SCREENSHOT PESANAN BUKAN BUKTI BARANG DATANG. Yang terbaca di layar
+ *      Shopee adalah "Belum Bayar" atau "Dikemas" — uangnya mungkin belum
+ *      keluar, barangnya pasti belum ada di rak. Menambah stok di titik ini
+ *      membuat gudang mengaku punya barang yang belum datang.
+ *   2. APLIKASI INI SUDAH PUNYA SATU ALUR PENERIMAAN, di tab "Menunggu
+ *      Barang". Alur itu membuat BatchBarang, mencatat kedaluwarsa, memotong
+ *      sisa yang tidak datang kembali ke daftar belanja, dan memisahkan alat
+ *      kerja (aset) dari biaya. Menambah jalan kedua ke gudang berarti dua
+ *      definisi "barang masuk" yang pasti berbeda isinya.
+ *
+ * Jadi layar ini berhenti di PembelianBarang berstatus "dipesan". Stok dan
+ * biaya baru bergerak ketika orangnya menekan "Barang Datang".
+ *
+ * ── Dua hal yang sengaja TIDAK ditebak ──
  *
  * 1. BARANG GUDANG MANA yang dimaksud. AI mengusulkan beserta keyakinan dan
  *    alasannya; orangnya yang memastikan. Nama marketplace tidak pernah sama
  *    dengan nama gudang — dari 16 baris pesanan nyata, nol yang cocok persis.
- *    Menambah stok ke barang yang salah baru ketahuan saat barangnya dicari
- *    di rak dan tidak ada.
  *
  * 2. ANGKA DI STRUK itu harga satuan atau subtotal. Marketplace menampilkan
  *    keduanya dengan cara yang sama. Pada pesanan Zoetics: 3 x Rp 2.500 +
  *    5 x Rp 1.500 = Rp 15.000, sementara total pesanan tertulis Rp 13.000.
  *    Layar ini menampilkan KEDUA tafsiran beserta selisihnya terhadap total,
- *    dan menunggu orang memilih. Salah tafsir di sini berarti angka rupiah
- *    yang salah masuk ke catatan keuangan.
+ *    dan menunggu orang memilih.
  */
 
 import { useState } from "react";
@@ -30,12 +44,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScanLine, Loader2, CheckCircle2, AlertTriangle, PackagePlus } from "lucide-react";
+import { ScanLine, Loader2, CheckCircle2, AlertTriangle, PackagePlus, Truck } from "lucide-react";
 import { toast } from "sonner";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const rp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
+const hariIni = () => new Date().toISOString().split("T")[0];
+
+const KATEGORI = ["obat", "vitamin", "alat_kerja", "pakan", "lainnya"];
 
 const WARNA_YAKIN = {
   tinggi: "bg-green-100 text-green-700 border-green-200",
@@ -59,6 +76,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
   const [error, setError] = useState("");
   const [pesanan, setPesanan] = useState(null);
   const [baris, setBaris] = useState([]);
+  const [sudahDibayar, setSudahDibayar] = useState(true);
   const [menyimpan, setMenyimpan] = useState(false);
 
   const reset = () => {
@@ -89,6 +107,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
       semuaPesanan.forEach((p, iPesanan) => {
         const tafsir = p.hitung?.tafsiran_terdekat || "satuan";
         (p.barang || []).forEach((b, iBarang) => {
+          const cocok = b.sku_gudang ? warehouse.find((w) => w.sku === b.sku_gudang) : null;
           rows.push({
             kunci: `${iPesanan}-${iBarang}`,
             iPesanan,
@@ -104,6 +123,10 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
             namaGudang: b.nama_gudang || "",
             keyakinan: b.keyakinan || "tidak_ada",
             alasan: b.alasan || "",
+            // Kategori menentukan biaya vs aset saat barangnya datang nanti.
+            // Kalau padanan gudangnya sudah ketemu, ikut kategori barang itu.
+            kategori: KATEGORI.includes(cocok?.category) ? cocok.category : "lainnya",
+            satuan: cocok?.unit || "pcs",
             ikut: true,
           });
         });
@@ -126,11 +149,10 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
   const belumDipetakan = dipilih.filter((r) => !r.sku).length;
   const totalNilai = dipilih.reduce((s, r) => s + subtotal(r), 0);
 
-  // Ongkir dan biaya layanan ikut dicatat sebagai pengeluaran, tapi TIDAK
-  // masuk nilai stok. Uang yang keluar dari kantong lebih besar daripada nilai
-  // barangnya — pada pesanan Vigantol E, barangnya Rp 49.980 sementara total
-  // pesanan Rp 50.980. Versi pertama komponen ini membuang selisih itu, jadi
-  // laba rugi selalu lebih kecil dari kenyataan.
+  // Ongkir dan biaya layanan bukan nilai stok, tapi tetap uang yang keluar.
+  // Pada pesanan Vigantol E barangnya Rp 49.980 sementara total pesanan
+  // Rp 50.980. Selisih itu disimpan di kolom ongkir pesanan, dan alur
+  // penerimaan membagikannya ke harga per satuan saat barang datang.
   const pesananDipakai = new Set(dipilih.map((r) => r.iPesanan));
   const ongkirTotal = (pesanan?.pesanan || []).reduce(
     (s, p, i) => (pesananDipakai.has(i) ? s + (Number(p.ongkir) || 0) : s),
@@ -141,106 +163,76 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
     if (dipilih.length === 0) return;
     setMenyimpan(true);
     const gagal = [];
-    let berhasil = 0;
+    let pesananDibuat = 0;
+    let barangDicatat = 0;
 
-    for (const r of dipilih) {
+    // Satu screenshot = satu pesanan = satu PembelianBarang. Menggabungkan
+    // beberapa toko jadi satu pesanan membuat ongkir tidak bisa dibagi benar
+    // dan pembatalan satu toko ikut menghapus toko lain.
+    for (const i of [...pesananDipakai].sort((a, b) => a - b)) {
+      const p = (pesanan?.pesanan || [])[i] || {};
+      const rows = dipilih.filter((r) => r.iPesanan === i);
+      const barangTotal = rows.reduce((s, r) => s + subtotal(r), 0);
+      const ongkir = Number(p.ongkir) || 0;
+
       try {
-        let item = r.sku ? warehouse.find((w) => w.sku === r.sku) : null;
-
-        // Barang yang belum ada dibuat baru — dengan foto struknya, supaya
-        // barang tanpa foto tidak bertambah lagi.
-        if (!item) {
-          item = await base44.entities.WarehouseItem.create({
-            name: r.namaStruk,
-            category: "lainnya",
-            unit: "pcs",
-            current_stock: 0,
-            minimum_stock: 0,
-            purchase_price: hargaSatuan(r),
-            is_mandatory: false,
-            location: "gudang",
-            photo_url: r.buktiUrl || "",
-            notes: `Dibuat dari screenshot pesanan ${r.toko}.`,
-          });
-          warehouse.push(item);
-        }
-
-        const stokBaru = (Number(item.current_stock) || 0) + (Number(r.jumlah) || 0);
-        await base44.entities.WarehouseItem.update(item.id, {
-          current_stock: stokBaru,
-          purchase_price: hargaSatuan(r) || item.purchase_price || 0,
+        await base44.entities.PembelianBarang.create({
+          tanggal_pesan: p.tanggal || hariIni(),
+          status: "dipesan",
+          platform: [p.marketplace, p.toko].filter(Boolean).join(" — ") || "Online",
+          ongkir,
+          biaya_admin: 0,
+          total_barang: barangTotal,
+          total_bayar: barangTotal + ongkir,
+          bukti_pesanan_url: rows[0]?.buktiUrl || "",
+          dibayar_oleh_email: sudahDibayar ? (user?.email || "") : "",
+          dibayar_oleh_nama: sudahDibayar ? (user?.full_name || user?.email || "") : "",
+          is_talangan: sudahDibayar,
+          status_utang: "belum_dibayar",
+          catatan: sudahDibayar
+            ? `Dicatat dari screenshot pesanan ${p.toko || ""}. Sudah dibayar, menunggu barang datang.`
+            : `Dicatat dari screenshot pesanan ${p.toko || ""}. BELUM DIBAYAR saat dicatat — pastikan pembayarannya sebelum menandai barang datang.`,
+          items: rows.map((r) => ({
+            nama_barang: r.namaStruk,
+            jumlah_pesan: Number(r.jumlah) || 0,
+            jumlah_diterima: 0,
+            satuan: r.satuan || "pcs",
+            harga_satuan: hargaSatuan(r),
+            kategori: r.kategori || "lainnya",
+            label_per_butir: false,
+            item_sku: r.sku || "",
+            warehouse_item_id: (r.sku && warehouse.find((w) => w.sku === r.sku)?.id) || "",
+          })),
         });
-
-        // by_email WAJIB di skema StockMovement — tanpa itu penyimpanan
-        // ditolak 422 dan barangnya sudah terlanjur bertambah stok di baris
-        // sebelumnya. Ketahuan saat mencoba memasukkan pesanan Vigantol E.
-        await base44.entities.StockMovement.create({
-          item_id: item.id,
-          item_name: item.name,
-          item_sku: item.sku || null,
-          type: "masuk",
-          quantity: Number(r.jumlah) || 0,
-          unit: item.unit || "pcs",
-          unit_price: hargaSatuan(r),
-          total_value: subtotal(r),
-          date: new Date().toISOString().split("T")[0],
-          status: "selesai",
-          by_email: user?.email || "",
-          by_name: user?.full_name || user?.email || "",
-          notes: `Dari screenshot pesanan ${r.toko} — dibaca AI, dipastikan manual.`,
-        });
-
-        berhasil++;
+        pesananDibuat++;
+        barangDicatat += rows.length;
       } catch (e) {
-        gagal.push(`${r.namaStruk}: ${e?.message || "gagal"}`);
+        gagal.push(`${p.toko || `pesanan ${i + 1}`}: ${e?.message || "gagal"}`);
       }
     }
 
-    // Satu catatan pengeluaran untuk seluruh batch — bukan per baris, supaya
-    // laba rugi tidak dipenuhi puluhan baris kecil dari satu kali belanja.
-    if (berhasil > 0 && totalNilai > 0) {
-      try {
-        // Kategori harus salah satu dari enum FinanceTransaction. Versi
-        // pertama memakai "peralatan", yang tidak ada di daftar sah — seluruh
-        // catatan biayanya akan ditolak sementara stok sudah bertambah.
-        await base44.entities.FinanceTransaction.create({
-          type: "pengeluaran",
-          category: "lainnya",
-          qty: dipilih.length,
-          amount: totalNilai + ongkirTotal,
-          date: new Date().toISOString().split("T")[0],
-          description:
-            `Belanja online ${dipilih.length} barang dari ` +
-            `${new Set(dipilih.map((r) => r.toko)).size} toko — dimasukkan dari screenshot pesanan.` +
-            (ongkirTotal > 0 ? ` Barang ${rp(totalNilai)} + ongkir/biaya layanan ${rp(ongkirTotal)}.` : ""),
-          created_by_name: user?.full_name || user?.email || "",
-        });
-      } catch { /* stok sudah masuk; catatan biaya bisa ditambah manual */ }
-    }
-
-    qc.invalidateQueries({ queryKey: ["warehouse-items"] });
-    qc.invalidateQueries({ queryKey: ["stock-movements"] });
+    qc.invalidateQueries({ queryKey: ["pembelian-list"] });
     setMenyimpan(false);
 
     if (gagal.length === 0) {
-      toast.success(`${berhasil} barang masuk gudang.`);
+      toast.success(`${pesananDibuat} pesanan · ${barangDicatat} barang masuk daftar "Menunggu Barang".`);
       setOpen(false); reset(); onSelesai?.();
     } else {
-      toast.error(`${berhasil} berhasil, ${gagal.length} gagal: ${gagal[0]}`);
+      toast.error(`${pesananDibuat} tersimpan, ${gagal.length} gagal: ${gagal[0]}`);
     }
   };
 
   return (
     <>
       <Button type="button" variant="outline" className="gap-1.5" onClick={() => setOpen(true)}>
-        <ScanLine className="w-4 h-4" /> Masukkan dari screenshot
+        <ScanLine className="w-4 h-4" /> Catat pesanan dari screenshot
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
         <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ScanLine className="w-5 h-5 text-primary" /> Masukkan belanja dari screenshot
+              <ScanLine className="w-5 h-5 text-primary" /> Catat pesanan dari screenshot
             </DialogTitle>
           </DialogHeader>
 
@@ -259,8 +251,9 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
               </Button>
               <p className="text-[11px] text-muted-foreground">
                 AI membaca nama, jumlah, dan harga, lalu mengusulkan barang gudang yang cocok.
-                Usulannya <strong>selalu ditampilkan untuk Anda pastikan</strong> — tidak ada stok yang
-                bertambah sebelum Anda menekan simpan.
+                Usulannya <strong>selalu ditampilkan untuk Anda pastikan</strong>. Yang tersimpan
+                adalah <strong>pesanan</strong>, bukan stok — stok bertambah nanti di tab
+                “Menunggu Barang” saat barangnya benar-benar datang.
               </p>
             </div>
           ) : (
@@ -270,8 +263,9 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                   <PackagePlus className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-800">
                     <strong>{belumDipetakan} barang belum punya padanan di gudang.</strong> Kalau
-                    dibiarkan, barang gudang baru akan dibuatkan. Kalau sebenarnya sudah ada,
-                    pilih barangnya di kolom kanan supaya stoknya tidak terpecah dua.
+                    dibiarkan, barang gudang baru akan dibuatkan saat barangnya datang. Kalau
+                    sebenarnya sudah ada, pilih barangnya di kolom kanan supaya stoknya tidak
+                    terpecah dua.
                   </p>
                 </div>
               )}
@@ -324,7 +318,17 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Masuk ke barang gudang</p>
-                        <Select value={r.sku || "__baru__"} onValueChange={(v) => ubah(r.kunci, { sku: v === "__baru__" ? "" : v })}>
+                        <Select
+                          value={r.sku || "__baru__"}
+                          onValueChange={(v) => {
+                            const w = v === "__baru__" ? null : warehouse.find((x) => x.sku === v);
+                            ubah(r.kunci, {
+                              sku: v === "__baru__" ? "" : v,
+                              kategori: KATEGORI.includes(w?.category) ? w.category : r.kategori,
+                              satuan: w?.unit || r.satuan,
+                            });
+                          }}
+                        >
                           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent className="max-h-64">
                             <SelectItem value="__baru__">➕ Buat barang gudang baru</SelectItem>
@@ -365,11 +369,43 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-muted-foreground font-mono">
-                      {r.jumlah} × {rp(hargaSatuan(r))} = <strong>{rp(subtotal(r))}</strong>
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-[11px] text-muted-foreground font-mono flex-1">
+                        {r.jumlah} {r.satuan} × {rp(hargaSatuan(r))} = <strong>{rp(subtotal(r))}</strong>
+                      </p>
+                      {/* Kategori menentukan alat kerja dicatat sebagai aset, bukan biaya. */}
+                      <select
+                        className="h-7 text-[11px] px-2 rounded-lg border border-border bg-background"
+                        value={r.kategori}
+                        onChange={(e) => ubah(r.kunci, { kategori: e.target.value })}
+                      >
+                        {KATEGORI.map((k) => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <p className="text-xs font-medium">Status pesanan ini</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSudahDibayar(true)}
+                    className={`text-left px-3 py-2 rounded-lg border text-xs transition-colors ${sudahDibayar ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"}`}
+                  >
+                    <span className="font-semibold block">Sudah dibayar</span>
+                    <span className="text-muted-foreground">Dikemas / dikirim. Dicatat sebagai talangan.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSudahDibayar(false)}
+                    className={`text-left px-3 py-2 rounded-lg border text-xs transition-colors ${!sudahDibayar ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"}`}
+                  >
+                    <span className="font-semibold block">Belum dibayar</span>
+                    <span className="text-muted-foreground">Masih “Belum Bayar” di marketplace.</span>
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
@@ -385,15 +421,21 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                   <Button type="button" onClick={handleSimpan} disabled={menyimpan || dipilih.length === 0}>
                     {menyimpan
                       ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan…</>
-                      : <><CheckCircle2 className="w-4 h-4 mr-1" /> Masukkan ke gudang</>}
+                      : <><CheckCircle2 className="w-4 h-4 mr-1" /> Simpan sebagai pesanan</>}
                   </Button>
                 </div>
               </div>
 
               <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+                <Truck className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                Menyimpan <strong>tidak menambah stok dan tidak mencatat biaya</strong>. Pesanan masuk
+                ke tab “Menunggu Barang”. Saat barangnya datang, tekan “Barang Datang” di sana —
+                di situlah stok bertambah, kedaluwarsa dicatat, dan biayanya masuk laba rugi.
+              </p>
+              <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                Menyimpan akan menambah stok senilai barangnya saja, dan mencatat SATU pengeluaran
-                sebesar barang + ongkir — karena itulah uang yang benar-benar keluar.
+                Ongkir disimpan di pesanan dan dibagi ke harga per satuan saat barang datang, supaya
+                harga pokoknya sama dengan uang yang benar-benar keluar.
               </p>
             </div>
           )}
