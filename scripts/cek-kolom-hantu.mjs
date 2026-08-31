@@ -19,11 +19,16 @@
  *   UserProfile.tutorial_completed — penanda tur selesai yang kedua.
  *   CompanySettings.notes        — hasil deteksi duplikat stok.
  *
- * KETERBATASAN: pembacanya datar, tidak mengerti objek bersarang. Kolom di
- * dalam array (mis. items[].jumlah_diterima pada PembelianBarang, atau
- * changes_detail[].old_value pada ActivityLog) akan dilaporkan sebagai hantu
- * padahal sah. Periksa dulu apakah namanya ada di dalam `items` sebuah array
- * sebelum menyimpulkan.
+ * Pembaca skemanya ikut membaca satu tingkat objek di dalam array (mis.
+ * items[].jumlah_pesan pada PembelianBarang), karena kode memang menulis
+ * kolom-kolom itu sebagai kunci objek biasa. Sebelumnya semua nama itu
+ * dilaporkan sebagai hantu dan harus dimaafkan satu per satu — daftar
+ * pemaaf yang panjang membuat penjaga ini gampang dianggap berisik lalu
+ * diabaikan, dan hantu yang sungguhan ikut lolos.
+ *
+ * KETERBATASAN: pengenalannya masih per NAMA, bukan per jalur. Kolom yang
+ * hanya sah di dalam array tetap dianggap sah bila ditulis di tingkat atas
+ * entity yang sama.
  *
  * Jalankan:  node scripts/cek-kolom-hantu.mjs
  */
@@ -35,7 +40,6 @@ const BAWAAN = ["id", "created_date", "updated_date", "created_by", "created_by_
 // Nama kolom yang sah tapi bersarang di dalam array — jangan dilaporkan.
 const DIMAAFKAN = new Set([
   "ActivityLog.field", "ActivityLog.label", "ActivityLog.old_value", "ActivityLog.new_value",
-  "PembelianBarang.jumlah_diterima", "PembelianBarang.label_per_butir", "PembelianBarang.tanggal_expired",
   "User.full_name",
 ]);
 
@@ -45,7 +49,15 @@ for (const fn of fs.readdirSync("base44/entities")) {
   const raw = fs.readFileSync(path.join("base44/entities", fn), "utf8").replace(/^\s*\/\/.*$/gm, "");
   let j;
   try { j = JSON.parse(raw); } catch { continue; }
-  skema[fn.slice(0, -6)] = new Set([...Object.keys(j.properties || {}), ...BAWAAN]);
+  const props = j.properties || {};
+  const nama = [...Object.keys(props), ...BAWAAN];
+  // Satu tingkat ke dalam array: items[].nama_barang ditulis kode sebagai
+  // kunci objek biasa, jadi namanya harus dihitung sah.
+  for (const p of Object.values(props)) {
+    const dalam = p?.items?.properties;
+    if (dalam) nama.push(...Object.keys(dalam));
+  }
+  skema[fn.slice(0, -6)] = new Set(nama);
 }
 
 function berkas(dir, keluar = []) {
