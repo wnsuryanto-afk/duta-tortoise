@@ -66,15 +66,12 @@ export default function TahapYangKurang({ onSelesai }) {
     queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
     staleTime: 5 * 60 * 1000,
   });
-  const { data: transaksi = [] } = useQuery({
-    queryKey: ["warehouse-transactions"],
-    queryFn: () => base44.entities.WarehouseTransaction.list("-created_date", 300),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // StockMovement adalah buku pergerakan stok yang sebenarnya — delapan layar
-  // menulis ke sana, sementara WarehouseTransaction hanya ditulis satu layar
-  // gudang. Perkiraan pemakaian dulu membaca yang kedua saja.
+// WarehouseTransaction DIHAPUS dari layar ini 31-08-2026. Tabel itu dibaca tiga
+// layar tapi TIDAK ADA satu pun berkas yang menulisnya — buku stok kedua yang
+// permanen kosong. Menggabungkannya dengan StockMovement tidak merusak angka,
+// tapi membuat tiap layar menunggu satu panggilan jaringan untuk daftar yang
+// selalu kosong, dan membuat pembaca kode berikutnya mengira ada dua buku yang
+// sama-sama hidup.
   const { data: pergerakan = [] } = useQuery({
     queryKey: ["stock-movements", "-date", 500],
     queryFn: () => base44.entities.StockMovement.list("-date", 500),
@@ -110,7 +107,7 @@ export default function TahapYangKurang({ onSelesai }) {
   );
 
   const baris = useMemo(() => {
-    const dinilai = nilaiUrgensiStok(semuaBarang, gabungRiwayatPemakaian(pergerakan, transaksi), sopTasks);
+    const dinilai = nilaiUrgensiStok(semuaBarang, gabungRiwayatPemakaian(pergerakan), sopTasks);
     const hasil = [];
 
     dinilai.forEach((i) => {

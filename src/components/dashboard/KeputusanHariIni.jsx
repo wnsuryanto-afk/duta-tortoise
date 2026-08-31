@@ -82,15 +82,12 @@ export default function KeputusanHariIni() {
     queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
     staleTime: 5 * 60 * 1000,
   });
-  const { data: transaksi = [] } = useQuery({
-    queryKey: ["warehouse-transactions"],
-    queryFn: () => base44.entities.WarehouseTransaction.list("-created_date", 300),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // StockMovement adalah buku pergerakan stok yang sebenarnya — delapan layar
-  // menulis ke sana, sementara WarehouseTransaction hanya ditulis satu layar
-  // gudang. Perkiraan pemakaian dulu membaca yang kedua saja.
+// WarehouseTransaction DIHAPUS dari layar ini 31-08-2026. Tabel itu dibaca tiga
+// layar tapi TIDAK ADA satu pun berkas yang menulisnya — buku stok kedua yang
+// permanen kosong. Menggabungkannya dengan StockMovement tidak merusak angka,
+// tapi membuat tiap layar menunggu satu panggilan jaringan untuk daftar yang
+// selalu kosong, dan membuat pembaca kode berikutnya mengira ada dua buku yang
+// sama-sama hidup.
   const { data: pergerakan = [] } = useQuery({
     queryKey: ["stock-movements", "-date", 500],
     queryFn: () => base44.entities.StockMovement.list("-date", 500),
@@ -119,7 +116,7 @@ export default function KeputusanHariIni() {
   });
 
   // ── Stok ────────────────────────────────────────────────────────────
-  const dinilai = nilaiUrgensiStok(warehouse, gabungRiwayatPemakaian(pergerakan, transaksi), sopTasks);
+  const dinilai = nilaiUrgensiStok(warehouse, gabungRiwayatPemakaian(pergerakan), sopTasks);
   const gawat = dinilai.filter((i) => i.tingkat === "gawat");
   const waspada = dinilai.filter((i) => i.tingkat === "waspada");
   const aman = dinilai.length - gawat.length - waspada.length;

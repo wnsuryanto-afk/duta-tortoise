@@ -76,14 +76,12 @@ export default function StockPredictionPage() {
     queryFn: () => base44.entities.FeedStock.list("-name", 300),
   });
 
-  const { data: transactions = [], isLoading: tLoading } = useQuery({
-    queryKey: ["warehouse-transactions"],
-    queryFn: () => base44.entities.WarehouseTransaction.list("-created_date", 300),
-  });
-
-  // StockMovement adalah buku pergerakan stok yang sebenarnya — delapan layar
-  // menulis ke sana, sementara WarehouseTransaction hanya ditulis satu layar
-  // gudang. Perkiraan pemakaian dulu membaca yang kedua saja.
+// WarehouseTransaction DIHAPUS dari layar ini 31-08-2026. Tabel itu dibaca tiga
+// layar tapi TIDAK ADA satu pun berkas yang menulisnya — buku stok kedua yang
+// permanen kosong. Menggabungkannya dengan StockMovement tidak merusak angka,
+// tapi membuat tiap layar menunggu satu panggilan jaringan untuk daftar yang
+// selalu kosong, dan membuat pembaca kode berikutnya mengira ada dua buku yang
+// sama-sama hidup.
   const { data: pergerakan = [] } = useQuery({
     queryKey: ["stock-movements", "-date", 500],
     queryFn: () => base44.entities.StockMovement.list("-date", 500),
@@ -91,8 +89,8 @@ export default function StockPredictionPage() {
   });
 
   const riwayatPakai = useMemo(
-    () => gabungRiwayatPemakaian(pergerakan, transactions),
-    [pergerakan, transactions]
+    () => gabungRiwayatPemakaian(pergerakan),
+    [pergerakan]
   );
 
   // Ada berapa baris yang benar-benar berarti "barang keluar"? Kalau nol,
@@ -140,7 +138,7 @@ export default function StockPredictionPage() {
   const criticalWarehouse = warehouseWithDays.filter(i => i.tingkat === "gawat");
   const criticalFeed = feedWithDays.filter(i => i.tingkat === "gawat");
 
-  const isLoading = wLoading || fLoading || tLoading;
+  const isLoading = wLoading || fLoading;
 
   return (
     <div className="space-y-6">
