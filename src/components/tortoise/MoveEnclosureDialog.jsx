@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, Search, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { hitungIsiKandang } from "@/lib/kandang";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 const ENCLOSURE_GROUPS = [
   { label: "🏠 Kandang Barat", prefix: "W" },

@@ -17,6 +17,7 @@ import SickModal from "./SickModal";
 import RecoveryModal from "./RecoveryModal";
 import PilihInduk from "./PilihInduk";
 import { logActivity } from "@/lib/logActivity";
+import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 const SPECIES_LIST = [
   { value: "sulcata",     label: "Sulcata (African Spurred)" },

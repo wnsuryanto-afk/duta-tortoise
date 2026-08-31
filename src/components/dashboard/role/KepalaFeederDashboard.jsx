@@ -16,6 +16,7 @@ import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 import PageHeader from "@/components/common/PageHeader";
 import { TeamArt } from "@/components/common/Illustration";
 import { saldoTerkini } from "@/lib/kasKecil";
+import { periksaStok } from "@/lib/stokMenipis";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
