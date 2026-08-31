@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
+import TerimaDariScreenshot from "@/components/pembelian/TerimaDariScreenshot";
 // Halaman /stock-prediction digabungkan ke sini sebagai satu tahap. Isinya
 // menjawab pertanyaan yang sama dengan tahap "Yang Kurang" — kapan sebuah
 // barang habis — hanya lebih rinci per barang. Selama ia berdiri sendiri,
@@ -393,6 +394,21 @@ export default function PembelianPage() {
         <p className="text-sm text-muted-foreground mt-0.5">
           Satu alur: apa yang kurang, dipesan, diterima, lalu stok dan biayanya tercatat.
         </p>
+        <div className="mt-3">
+          {/*
+            Jalan pintas untuk belanja yang TIDAK lewat daftar belanja aplikasi —
+            barang yang sudah terlanjur dibeli di marketplace. Tanpa ini, satu-satunya
+            cara memasukkannya adalah mengetik ulang tiap barang dari screenshot yang
+            sedang dilihat sendiri.
+          */}
+          <TerimaDariScreenshot
+            warehouse={warehouse}
+            onSelesai={() => {
+              qc.invalidateQueries({ queryKey: ["pembelian-warehouse"] });
+              setTab("riwayat");
+            }}
+          />
+        </div>
       </div>
 
       {totalUtang > 0 && (
