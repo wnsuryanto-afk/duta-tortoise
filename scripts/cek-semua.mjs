@@ -1,8 +1,8 @@
 /**
- * cek-semua.mjs — jalankan ketiga penjaga sekaligus.
+ * cek-semua.mjs — jalankan semua penjaga sekaligus.
  *
- * Ketiganya lahir dari kesalahan nyata yang terjadi di aplikasi ini, dan
- * ketiganya memeriksa hal yang TIDAK ditangkap oleh `vite build`:
+ * Semuanya lahir dari kesalahan nyata yang terjadi di aplikasi ini, dan
+ * semuanya memeriksa hal yang TIDAK ditangkap oleh `vite build`:
  *
  *   cek-impor       fungsi pustaka dipakai tanpa di-import → komponen crash
  *                   saat dirender, build tetap hijau
@@ -10,12 +10,14 @@
  *                   diam-diam, tanpa error
  *   cek-kembar      pustaka frontend dan kembaran backend-nya melenceng →
  *                   layar dan otomatisasi malam menjawab beda
+ *   cek-unggah      UploadFile dikirimi Blob tanpa nama berkas → ditolak
+ *                   server, dan dua pemakainya menelan errornya
  *
  * Jalankan:  node scripts/cek-semua.mjs
  */
 import { execFileSync } from "child_process";
 
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {
