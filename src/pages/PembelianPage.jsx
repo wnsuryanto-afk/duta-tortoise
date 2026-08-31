@@ -39,6 +39,7 @@ import StockPredictionPage from "@/pages/StockPredictionPage";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useTestMode } from "@/lib/useTestMode";
 import { KATEGORI_PEMBELIAN, KATEGORI_FINANCE, masukBiaya } from "@/lib/kategoriBarang";
+import { generateSKU, getPrefix } from "@/lib/skuUtils";
 
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const today = () => format(new Date(), "yyyy-MM-dd");
@@ -239,6 +240,23 @@ export default function PembelianPage() {
       const nilaiTotal = items.reduce((t, it) => t + (it.harga_satuan || 0) * (it.jumlah_pesan || 0), 0);
       const tambahan = Number(p.ongkir || 0) + Number(p.biaya_admin || 0);
 
+      /**
+       * Stok berjalan per barang gudang, DALAM satu penerimaan.
+       *
+       * `warehouse` adalah cuplikan dari react-query dan tidak ikut berubah di
+       * tengah perulangan. Kalau satu pesanan punya DUA baris yang menunjuk
+       * barang gudang yang sama — mis. Kasa Pembalut 5 cm dan 10 cm yang
+       * keduanya dipetakan ke ALT-0110 — baris kedua membaca stok lama yang
+       * sama, lalu menimpa hasil baris pertama. Satu box hilang tanpa jejak.
+       * Terjadi nyata pada pesanan Nutree Pharma 31-08-2026: pesan 2 box,
+       * stok cuma naik 1.
+       *
+       * Peta ini menyimpan angka terbaru per barang supaya penambahannya
+       * bertumpuk, bukan saling menimpa.
+       */
+      const stokBerjalan = new Map();
+      const skuTerpakai = warehouse.map((w) => w.sku).filter(Boolean);
+
       for (let idx = 0; idx < items.length; idx++) {
         const it = items[idx];
         const f = terimaForm[idx] || {};
@@ -266,6 +284,11 @@ export default function PembelianPage() {
           );
         if (!wi) {
           const kat = it.kategori === "pakan" ? "lainnya" : it.kategori || "lainnya";
+          // SKU wajib dibuatkan. Barang tanpa SKU tidak bisa dicetak labelnya,
+          // tidak bisa dipindai, dan tidak pernah cocok saat pembelian
+          // berikutnya masuk — jadi ia berkembang biak jadi barang kembar.
+          const sku = it.item_sku || generateSKU(getPrefix(kat), skuTerpakai);
+          skuTerpakai.push(sku);
           wi = await base44.entities.WarehouseItem.create({
             name: it.nama_barang,
             category: kat,
@@ -273,13 +296,19 @@ export default function PembelianPage() {
             current_stock: 0,
             minimum_stock: 0,
             purchase_price: hargaSatuanFinal,
-            sku: it.item_sku || "",
+            sku,
             location: "gudang_utama",
           });
         }
 
+        const stokSebelum = stokBerjalan.has(wi.id)
+          ? stokBerjalan.get(wi.id)
+          : Number(wi.current_stock) || 0;
+        const stokSesudah = stokSebelum + diterima;
+        stokBerjalan.set(wi.id, stokSesudah);
+
         await base44.entities.WarehouseItem.update(wi.id, {
-          current_stock: (wi.current_stock || 0) + diterima,
+          current_stock: stokSesudah,
           purchase_price: hargaSatuanFinal,
           last_restocked_date: today(),
           expired_date: f.expired || wi.expired_date || null,
