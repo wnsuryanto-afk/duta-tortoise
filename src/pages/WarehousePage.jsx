@@ -32,9 +32,14 @@ const CATEGORIES = [
   { value: "lainnya", label: "📦 Lainnya", color: "bg-muted text-foreground" },
 ];
 
+// Lencana memakai statusStok dari lib/stokMenipis, bukan `<= minimum_stock`.
+// Ambang lama menyebut "Hampir Habis" untuk setiap barang bermininum 0 yang
+// stoknya juga 0 — termasuk barang yang memang sengaja tidak distok.
 function StockBadge({ item }) {
-  if (item.current_stock === 0) return <Badge variant="destructive" className="text-xs">Habis</Badge>;
-  if (item.current_stock <= item.minimum_stock) return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Hampir Habis</Badge>;
+  const s = statusStok(item);
+  if (s === "tidak_dilacak") return <Badge className="text-xs bg-muted text-muted-foreground">Tidak dilacak</Badge>;
+  if (s === "habis") return <Badge variant="destructive" className="text-xs">Habis</Badge>;
+  if (s === "menipis") return <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">Hampir Habis</Badge>;
   return <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Aman</Badge>;
 }
 
