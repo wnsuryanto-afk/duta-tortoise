@@ -220,6 +220,13 @@ export default function KeputusanHariIni() {
 
   if (gawat.length > 0) {
     const mengunci = gawat.filter((i) => i.menguncSOP).length;
+    // Judulnya harus jujur soal apa yang sebenarnya terjadi. Selama tidak ada
+    // catatan pergerakan stok — dan sampai 31 Agustus 2026 seluruh aplikasi
+    // baru punya dua, keduanya "masuk" dari Mei — perkiraan sisa hari tidak
+    // punya bahan untuk dihitung. Yang muncul di sini semuanya barang yang
+    // stoknya SUDAH nol, bukan yang diperkirakan habis tiga hari lagi.
+    // Menyebutnya "habis dalam 3 hari" membuat pemilik mengira ada waktu.
+    const sudahNol = gawat.filter((i) => i.sisaHari === -1).length;
     kartu.push(
       <KartuKeputusan
         key="stok"
@@ -228,7 +235,9 @@ export default function KeputusanHariIni() {
         judul={
           mengunci > 0
             ? `${mengunci} barang menghentikan SOP`
-            : `${gawat.length} barang habis dalam ${AMBANG_GAWAT_HARI} hari`
+            : sudahNol > 0 && sudahNol === gawat.length
+              ? `${gawat.length} barang wajib stoknya sudah nol`
+              : `${gawat.length} barang habis dalam ${AMBANG_GAWAT_HARI} hari`
         }
         rincian={
           mengunci > 0 && gawat.length > mengunci
