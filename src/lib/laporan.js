@@ -23,7 +23,13 @@
 
 /** Apakah catatan ini boleh dihitung dalam laporan? */
 export function masukLaporan(rec) {
-  return !!rec && !rec.excluded_from_reports && !rec.is_test_data;
+  // Perbandingan `!== true`, bukan `!nilai`. Keduanya sama untuk boolean, tapi
+  // berbeda begitu kolomnya berisi hal lain: `!"false"` bernilai false, jadi
+  // catatan bertanda string "false" akan DIKELUARKAN dari laporan padahal
+  // maksudnya sebaliknya. Bentuk ini sama persis dengan kembarannya di
+  // base44/shared/laporan.ts — dua sisi harus menjawab sama untuk baris yang
+  // sama, kalau tidak laporan di layar dan ringkasan WhatsApp berbeda isi.
+  return !!rec && rec.excluded_from_reports !== true && rec.is_test_data !== true;
 }
 
 /** Saring sekumpulan catatan ke yang boleh masuk laporan. */
