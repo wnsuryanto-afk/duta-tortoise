@@ -376,6 +376,9 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                 <p className="text-sm">
                   <span className="text-muted-foreground">{dipilih.length} barang · </span>
                   <span className="font-semibold font-mono">{rp(totalNilai)}</span>
+                  {ongkirTotal > 0 && (
+                    <span className="text-muted-foreground"> + ongkir {rp(ongkirTotal)} = <span className="font-mono">{rp(totalNilai + ongkirTotal)}</span></span>
+                  )}
                 </p>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" onClick={reset} disabled={menyimpan}>Ulangi</Button>
@@ -389,8 +392,8 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
 
               <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                Menyimpan akan menambah stok, mencatat pergerakan barang masuk, dan membuat satu
-                catatan pengeluaran senilai total di atas.
+                Menyimpan akan menambah stok senilai barangnya saja, dan mencatat SATU pengeluaran
+                sebesar barang + ongkir — karena itulah uang yang benar-benar keluar.
               </p>
             </div>
           )}
