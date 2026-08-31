@@ -4,7 +4,8 @@ import { X, ImagePlus, Camera, Loader2 } from "lucide-react";
 
 /**
  * Pemilih banyak gambar untuk AI Vision.
- * images: array of { base64, dataUrl, blob }
+ * images: array of { base64, dataUrl, blob, file }
+ * Pakai img.file untuk UploadFile — blob tanpa nama berkas ditolak Base44.
  * onChange(images)
  * max: batas jumlah gambar (default 5)
  * hint: teks bantuan kontekstual
@@ -28,8 +29,8 @@ export default function MultiImagePicker({ images = [], onChange, max = 5, hint 
     const processed = [];
     for (const f of toAdd) {
       try {
-        const { base64, dataUrl, blob } = await fileToCompressedBase64(f, 1500);
-        processed.push({ base64, dataUrl, blob });
+        const { base64, dataUrl, blob, file } = await fileToCompressedBase64(f, 1500);
+        processed.push({ base64, dataUrl, blob, file });
       } catch { /* lewati berkas tidak terbaca */ }
     }
     onChange([...images, ...processed]);
