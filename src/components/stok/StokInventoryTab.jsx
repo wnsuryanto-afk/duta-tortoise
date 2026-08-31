@@ -273,7 +273,7 @@ function ItemDetailDialog({ item, onClose, onEdit, onUploadPhoto, canEdit }) {
 }
 
 // ── Item Form ─────────────────────────────────────────────────────────
-const EMPTY = { type: "pakan", name: "", unit: "kg", current_stock: 0, minimum_stock: 1, price: 0, location: "", is_mandatory: false, notes: "", category: "sayuran" };
+const EMPTY = { type: "pakan", name: "", unit: "kg", current_stock: 0, minimum_stock: 1, price: 0, location: "", is_mandatory: false, notes: "", category: "sayuran", daily_ideal: "" };
 
 function ItemForm({ item, onClose }) {
   const qc = useQueryClient();
@@ -290,6 +290,7 @@ function ItemForm({ item, onClose }) {
     notes: item.notes || "",
     category: item._src === "feed" ? (item.category || "sayuran") : (item.category || "obat"),
     expired_date: item.expired_date || "",
+    daily_ideal: item.daily_ideal ?? "",
   } : EMPTY);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(item?.photo_url || null);
@@ -321,7 +322,11 @@ function ItemForm({ item, onClose }) {
       photo_url = res.file_url;
     }
     if (isFeed) {
-      const data = { name: form.name, category: form.category, unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), price_per_unit: Number(form.price), is_mandatory: form.is_mandatory, storage_location: form.location || "gudang", notes: form.notes, photo_url };
+      // daily_ideal hanya ada pada bahan pakan. Ia bukan hiasan: saat sebuah
+      // bahan belum punya riwayat pemakaian, angka inilah satu-satunya cara
+      // hitungSisaHari() bisa memperkirakan kapan stoknya habis. Tanpa itu
+      // bahan tersebut selalu dinilai "aman — belum ada data pemakaian".
+      const data = { name: form.name, category: form.category, unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), price_per_unit: Number(form.price), is_mandatory: form.is_mandatory, storage_location: form.location || "gudang", notes: form.notes, photo_url, daily_ideal: form.daily_ideal === "" ? null : Number(form.daily_ideal) };
       if (item?.id) await base44.entities.FeedStock.update(item.id, data);
       else await base44.entities.FeedStock.create(data);
     } else {
@@ -428,6 +433,14 @@ function ItemForm({ item, onClose }) {
           <Input type="number" min={form.is_mandatory ? 1 : 0} step="0.1" value={form.minimum_stock} onChange={e => set("minimum_stock", e.target.value)} className={`mt-0.5 ${showMinWarning ? "border-red-400" : ""}`} />
           {showMinWarning && <p className="text-xs text-red-600 mt-0.5">Item wajib memerlukan minimum stock untuk alert</p>}
         </div>
+        {form.type === "pakan" && (
+          <div>
+            <Label className="text-xs">Takaran ideal / hari</Label>
+            <Input type="number" min={0} step="0.1" value={form.daily_ideal}
+              onChange={e => set("daily_ideal", e.target.value)} className="mt-0.5" placeholder="mis. 1.5" />
+            <p className="text-[10px] text-muted-foreground mt-0.5">Dipakai memperkirakan kapan stok habis sebelum ada riwayat pemakaian.</p>
+          </div>
+        )}
         <div>
           <Label className="text-xs">Harga/{form.unit || "satuan"}</Label>
           <Input type="number" min={0} value={form.price} onChange={e => set("price", e.target.value)} className={`mt-0.5 ${showPriceWarning ? "border-yellow-400" : ""}`} />
