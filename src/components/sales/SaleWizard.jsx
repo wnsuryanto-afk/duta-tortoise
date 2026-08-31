@@ -912,7 +912,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
           })()}
           {step === 1 && <StepDataPembeli form={form} onChange={onChange} errors={errors} />}
           {step === 2 && <StepDetailPenjualan form={form} onChange={onChange} errors={errors} />}
-          {step === 3 && <StepReview form={form} tortoise={selectedTortoise} costData={costData} breedings={breedings} formData={form} />}
+          {step === 3 && <StepReview form={form} tortoise={selectedTortoise} costData={costData} breedings={breedings} pergerakanStok={pergerakanStok} formData={form} />}
         </div>
 
         {errors.tortoise_id && step === 0 && (
