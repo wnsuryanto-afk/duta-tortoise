@@ -102,6 +102,12 @@ export default function PembelianPage() {
     queryKey: ["pembelian-warehouse"],
     queryFn: () => base44.entities.WarehouseItem.list("-name", 300),
   });
+  // Dipakai hanya untuk memastikan kode batch baru tidak bentrok dengan yang
+  // sudah tertempel di rak.
+  const { data: semuaBatch = [] } = useQuery({
+    queryKey: ["batch-barang"],
+    queryFn: () => base44.entities.BatchBarang.list("-tanggal_terima", 500),
+  });
 
   const belumDibeli = useMemo(
     () => shopping.filter((s) => s.status === "belum_dibeli"),
