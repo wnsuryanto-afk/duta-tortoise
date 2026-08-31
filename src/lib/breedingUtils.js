@@ -20,12 +20,19 @@
  */
 export const STATUS_CLUTCH_AKTIF = ["bertelur", "inkubasi"];
 
-/** Apakah clutch ini masih berjalan? */
-export const clutchAktif = (breeding) => {
+/**
+ * Apakah clutch ini masih berjalan?
+ *
+ * Ditulis sebagai `export function`, bukan arrow, supaya bentuknya sama dengan
+ * kembarannya di base44/shared/kura.ts dan bisa dibandingkan otomatis oleh
+ * scripts/cek-kembar.mjs. Dua salinan aturan yang sama harus bisa diperiksa,
+ * bukan sekadar dipercaya.
+ */
+export function clutchAktif(breeding) {
   if (!breeding) return false;
   if (breeding.is_archived) return false;
   return STATUS_CLUTCH_AKTIF.includes(breeding.status);
-};
+}
 
 /**
  * Apakah clutch ini ada di inkubator tersebut?
