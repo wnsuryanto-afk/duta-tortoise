@@ -568,7 +568,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
       {/* Alert: item wajib habis */}
       {showMandatoryAlert && (
         <div
-          onClick={() => { setStockFilter("kritis"); setCatFilter("semua"); setSearch(""); }}
+          onClick={() => { setStockFilter("habis"); setCatFilter("semua"); setSearch(""); }}
           className="cursor-pointer flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-300 rounded-xl text-red-700 hover:bg-red-100 transition-colors"
         >
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
@@ -601,8 +601,9 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
           <SelectTrigger className="w-36 h-9 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="semua">Semua Status</SelectItem>
-            <SelectItem value="kritis">🔴 Kritis</SelectItem>
-            <SelectItem value="waspada">🟡 Waspada</SelectItem>
+            <SelectItem value="habis">🔴 Habis</SelectItem>
+            <SelectItem value="menipis">🟡 Menipis</SelectItem>
+            <SelectItem value="tidak_dilacak">Tidak dilacak</SelectItem>
             <SelectItem value="aman">🟢 Aman</SelectItem>
           </SelectContent>
         </Select>
@@ -667,7 +668,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
               </thead>
               <tbody className="divide-y divide-border">
                 {filtered.map(item => (
-                  <tr key={item._src + item.id} className={`hover:bg-muted/30 transition-colors ${stockStatus(item) === "kritis" ? "bg-red-50/50" : ""}`}>
+                  <tr key={item._src + item.id} className={`hover:bg-muted/30 transition-colors ${stockStatus(item) === "habis" ? "bg-red-50/50" : ""}`}>
                     {/* Select */}
                     <td className="px-2 py-2">
                       <input
