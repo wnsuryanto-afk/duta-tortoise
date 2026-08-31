@@ -109,9 +109,9 @@ export default function TahapYangKurang({ onSelesai }) {
 
     return hasil.map((i) => ({
       ...i,
-      terdaftar: sudahDidaftar.has(String(i.name || "").trim().toLowerCase()),
+      terdaftar: sudahDidaftar(i, penandaSudah),
     }));
-  }, [warehouse, transaksi, sopTasks, sudahDidaftar]);
+  }, [warehouse, transaksi, sopTasks, penandaSudah]);
 
   const bisaDipilih = baris.filter((i) => !i.terdaftar);
   const terdaftarCount = baris.length - bisaDipilih.length;

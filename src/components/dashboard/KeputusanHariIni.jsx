@@ -12,6 +12,7 @@ import { useViewAsGuard } from "@/lib/useViewAsGuard";
 import { canAccess } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
 import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { penandaMenunggu, sudahDidaftar, barisDariBarang } from "@/lib/daftarBelanja";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
 
@@ -123,11 +124,15 @@ export default function KeputusanHariIni() {
   const waspada = dinilai.filter((i) => i.tingkat === "waspada");
   const aman = dinilai.length - gawat.length - waspada.length;
 
-  // Barang yang sudah masuk daftar belanja tidak perlu ditawarkan lagi
-  const sudahDidaftar = new Set(
-    daftarBelanja.map((d) => (d.nama_barang || "").trim().toLowerCase())
-  );
-  const belumDidaftar = gawat.filter((i) => !sudahDidaftar.has((i.name || "").trim().toLowerCase()));
+  // Barang yang sudah masuk daftar belanja tidak perlu ditawarkan lagi.
+  //
+  // Pencocokan lewat nama saja TIDAK PERNAH cocok: label di daftar belanja
+  // memuat SKU dan tempat beli ("Chlorhexidine 0,05% [ALT-0114] - APOTEK"),
+  // sementara nama gudang "Chlorhexidine 0.05% (Hibitane/Savlon)". Karena itu
+  // tombol ini menawarkan menambahkan barang yang sudah terdaftar, dan
+  // menekannya membuat baris kembar. Lihat lib/daftarBelanja.
+  const penandaSudah = penandaMenunggu(daftarBelanja);
+  const belumDidaftar = gawat.filter((i) => !sudahDidaftar(i, penandaSudah));
 
   // ── Checklist ───────────────────────────────────────────────────────
   // Hanya yang berfoto yang boleh disetujui massal — itu batas yang disepakati.
@@ -187,14 +192,12 @@ export default function KeputusanHariIni() {
 
     for (const i of belumDidaftar) {
       try {
-        await base44.entities.ShoppingList.create({
-          nama_barang: i.name,
-          jumlah: Math.max(1, i.minimum_stock || 1),
-          satuan: i.unit || "",
-          priority: "segera",
-          status: "belum_dibeli",
-          notes: `Otomatis dari beranda — ${i.alasan}.`,
-        });
+        await base44.entities.ShoppingList.create(
+          barisDariBarang(i, {
+            priority: "segera",
+            notes: `Otomatis dari beranda — ${i.alasan}.`,
+          })
+        );
         berhasil++;
       } catch (e) {
         gagal.push(`${i.name}: ${e?.message || "gagal"}`);
