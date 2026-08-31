@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Notification.create({
         recipient_email: reqItem.requester_email,
         title: `Pengajuan Alat Disetujui: ${reqItem.tool_name}`,
-        message: `Pengajuan alat "${reqItem.tool_name}" disetujui oleh ${reqItem.approved_by || 'admin'} dan masuk daftar Harus Dibeli.`,
+        message: `Pengajuan alat "${reqItem.tool_name}" disetujui oleh ${reqItem.approved_by || 'admin'} dan masuk daftar belanja.`,
         type: 'success',
         priority: 'sedang',
         category: 'sistem',

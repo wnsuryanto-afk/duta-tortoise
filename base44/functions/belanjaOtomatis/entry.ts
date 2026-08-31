@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { dilacak } from "../../shared/stok.ts";
+import { penandaMenunggu, penandaBarang } from "../../shared/daftarBelanja.ts";
 
 /**
  * A7 — Daftar belanja terisi sendiri sebelum stok habis.
@@ -41,12 +42,14 @@ Deno.serve(async (req) => {
     // jadi bertindak atasnya berarti bertindak atas angka karangan.
     const pakanAktif = (pakan || []).filter((f: any) => f?.is_active !== false);
 
-    // Apa yang sudah ada di daftar dan belum dibeli — jangan ditambah lagi.
-    const sudahAda = new Set(
-      (belanja || [])
-        .filter((b: any) => b.status !== "sudah_dibeli")
-        .map((b: any) => String(b.item_sku || b.nama_barang || "").toLowerCase()),
-    );
+    // Apa yang sudah ada di daftar dan MASIH menunggu dibeli — jangan
+    // ditambah lagi. Aturan dan bentuk penandanya sama persis dengan
+    // src/lib/daftarBelanja.js yang dipakai beranda dan halaman Belanja.
+    //
+    // Saringan lama `status !== "sudah_dibeli"` ikut menghitung baris yang
+    // DIBATALKAN, sehingga barang yang pemilik batalkan tidak akan pernah
+    // ditawarkan lagi oleh fungsi ini — selamanya, tanpa pesan apa pun.
+    const sudahAda = penandaMenunggu(belanja || []);
 
     const dibuat: string[] = [];
     const mendesak: string[] = [];
@@ -61,9 +64,12 @@ Deno.serve(async (req) => {
       alasan: string;
       segera: boolean;
     }) => {
-      const kunciSku = String(params.sku || "").toLowerCase();
-      const kunciNama = String(params.nama || "").toLowerCase();
-      if ((kunciSku && sudahAda.has(kunciSku)) || sudahAda.has(kunciNama)) return;
+      const penanda = penandaBarang({
+        sku: params.sku,
+        id: params.warehouseItemId,
+        name: params.nama,
+      });
+      if (penanda.some((k) => sudahAda.has(k))) return;
 
       const jumlah = Math.max(1, Math.ceil(params.jumlah));
       await base44.asServiceRole.entities.ShoppingList.create({
@@ -78,7 +84,7 @@ Deno.serve(async (req) => {
         total_est: (params.hargaPerUnit || 0) * jumlah,
         notes: `Dibuat otomatis ${hariIni} — ${params.alasan}`,
       });
-      sudahAda.add(kunciSku || kunciNama);
+      penanda.forEach((k) => sudahAda.add(k));
       dibuat.push(`${params.nama} × ${jumlah} ${params.satuan} (${params.alasan})`);
       if (params.segera) mendesak.push(params.nama);
     };
