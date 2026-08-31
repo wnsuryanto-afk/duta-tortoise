@@ -60,13 +60,16 @@ export default function UnifiedStokPage() {
     // Bahan pakan yang tidak dilacak tidak ikut hitungan kritis maupun nilai
     // persediaan: angkanya nol karena memang tidak dicatat, bukan karena habis.
     ...feedstocks.filter(dilacak).map(f => ({ ...f, _src: "feed", _price: f.price_per_unit || 0 })),
-    ...warehouseItems.map(w => ({ ...w, _src: "warehouse", _price: w.purchase_price || 0 })),
+    ...warehouseItems.filter(dilacak).map(w => ({ ...w, _src: "warehouse", _price: w.purchase_price || 0 })),
   ];
 
   const totalNilai = allItems.reduce((s, i) => s + (i._price * (i.current_stock || 0)), 0);
 
-  const criticalCount = allItems.filter(i => i.current_stock < i.minimum_stock).length;
-  const mandatoryEmptyCount = allItems.filter(i => i.is_mandatory && i.current_stock <= 0).length;
+  // Aturan bersama lib/stokMenipis — bukan `< minimum_stock`, yang menganggap
+  // setiap barang bermininum 0 selalu aman dan setiap barang berstok 0
+  // bermininum 0 tidak pernah muncul.
+  const criticalCount = allItems.filter(perluDiperhatikan).length;
+  const mandatoryEmptyCount = allItems.filter(stokHabis).length;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayMovements = movements.filter(m => m.date === todayStr);
