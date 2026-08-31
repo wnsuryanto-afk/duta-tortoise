@@ -86,13 +86,31 @@ export default function TahapYangKurang({ onSelesai }) {
     queryFn: () => base44.entities.ShoppingList.list("-priority", 300),
   });
 
+  // Bahan pakan ikut dinilai. Tahap ini hanya membaca WarehouseItem, jadi
+  // pakan yang habis tidak pernah muncul sebagai "yang kurang" — padahal di
+  // peternakan kura kehabisan pakan justru yang paling gawat. Bahan yang
+  // sengaja tidak dilacak tetap tersaring di dalam nilaiUrgensiStok().
+  const { data: pakan = [] } = useQuery({
+    queryKey: ["feedstocks", "-name", 300],
+    queryFn: () => base44.entities.FeedStock.list("-name", 300),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Yang sudah menunggu di daftar belanja — supaya tidak ditawarkan dua kali.
   // Dicocokkan lewat SKU dan id gudang lebih dulu; nama saja tidak pernah cocok
   // karena label daftar belanja memuat SKU dan tempat beli. Lihat lib/daftarBelanja.
   const penandaSudah = useMemo(() => penandaMenunggu(shopping), [shopping]);
 
+  const semuaBarang = useMemo(
+    () => [
+      ...warehouse.map((w) => ({ ...w, _sumber: "gudang" })),
+      ...pakan.map((p) => ({ ...p, _sumber: "pakan", unit: p.unit, sku: p.sku })),
+    ],
+    [warehouse, pakan]
+  );
+
   const baris = useMemo(() => {
-    const dinilai = nilaiUrgensiStok(warehouse, gabungRiwayatPemakaian(pergerakan, transaksi), sopTasks);
+    const dinilai = nilaiUrgensiStok(semuaBarang, gabungRiwayatPemakaian(pergerakan, transaksi), sopTasks);
     const hasil = [];
 
     dinilai.forEach((i) => {
@@ -111,7 +129,7 @@ export default function TahapYangKurang({ onSelesai }) {
       ...i,
       terdaftar: sudahDidaftar(i, penandaSudah),
     }));
-  }, [warehouse, transaksi, sopTasks, penandaSudah]);
+  }, [semuaBarang, warehouse, pergerakan, transaksi, sopTasks, penandaSudah]);
 
   const bisaDipilih = baris.filter((i) => !i.terdaftar);
   const terdaftarCount = baris.length - bisaDipilih.length;
