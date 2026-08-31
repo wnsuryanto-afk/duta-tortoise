@@ -124,7 +124,7 @@ export default function DaftarBelanjaPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-base">🛒</span>
-                    <p className="font-semibold text-sm">{item.item_name}</p>
+                    <p className="font-semibold text-sm">{item.nama_barang || "(nama belum diisi)"}</p>
                     <Badge variant="outline" className="text-[11px] text-blue-600">
                       {item.quantity} {item.unit || ""}
                     </Badge>

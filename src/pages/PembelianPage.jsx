@@ -44,7 +44,12 @@ const KATEGORI_FINANCE = {
   lainnya: "operasional",
 };
 
-const nm = (i) => i.nama_barang || i.item_name || "(tanpa nama)";
+// ShoppingList hanya punya SATU kolom nama: `nama_barang` (ada di skema,
+// wajib). `item_name` adalah sisa impor generasi pertama yang tidak pernah
+// masuk skema, isinya sudah lama tidak sinkron, dan datanya sudah dihapus
+// dari seluruh baris. Membacanya sebagai cadangan berarti menampilkan nama
+// barang yang berbeda dari SKU yang tersimpan di baris yang sama.
+const nm = (i) => i.nama_barang || "(tanpa nama)";
 const jml = (i) => i.jumlah ?? i.qty_needed ?? 0;
 const sat = (i) => i.satuan || i.unit || "pcs";
 

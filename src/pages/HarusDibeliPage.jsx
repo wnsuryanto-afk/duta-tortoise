@@ -169,7 +169,7 @@ export default function HarusDibeliPage() {
       shopping_list_id: s.id,
       // Record ShoppingList lama memakai item_name/qty_needed/unit —
       // tanpa fallback ini barangnya tampil tanpa nama.
-      name: s.nama_barang || s.item_name || "(nama belum diisi)",
+      name: s.nama_barang || "(nama belum diisi)",
       jumlah: s.jumlah ?? s.qty_needed ?? 0,
       satuan: s.satuan || s.unit || "",
       priority: s.priority,

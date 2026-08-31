@@ -592,7 +592,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
       // bisa dipakai langsung dari WhatsApp tanpa membuka aplikasi. Sisanya
       // cukup disebut jumlahnya supaya pesan tidak menjadi terlalu panjang.
       const baris = (it) => {
-        const nm = it.nama_barang || it.item_name || "(tanpa nama)";
+        const nm = it.nama_barang || "(tanpa nama)";
         const jml = it.jumlah ?? it.qty_needed ?? 0;
         const sat = it.satuan || it.unit || "";
         return `${nm} — ${jml} ${sat}${it.total_est ? ` · ${rp(it.total_est)}` : ""}`;

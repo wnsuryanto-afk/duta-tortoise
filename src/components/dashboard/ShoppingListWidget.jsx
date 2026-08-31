@@ -22,7 +22,7 @@ function normalizeItem(i) {
   const platform = i.platform_beli || (i.platform ? String(i.platform).replace(/_/g, " ") : "");
   return {
     ...i,
-    nama_barang: i.nama_barang || i.item_name || "",
+    nama_barang: i.nama_barang || "",
     jumlah: i.jumlah ?? i.qty_needed ?? 0,
     satuan: i.satuan || i.unit || "",
     platform_beli: platform,
