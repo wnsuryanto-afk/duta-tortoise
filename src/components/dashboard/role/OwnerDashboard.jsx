@@ -15,6 +15,7 @@ import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
+import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import SopTerkunciCard from "@/components/dashboard/SopTerkunciCard";
 import KuraPerluDiperiksaCard from "@/components/dashboard/KuraPerluDiperiksaCard";
 import PoinBonusTim from "@/components/dashboard/PoinBonusTim";
@@ -727,6 +728,19 @@ export default function OwnerDashboard({ user }) {
           </Link>
         }
       />
+
+      {/*
+        ── UANG MASUK & KELUAR BULAN INI ──
+        Widget ini sudah lama ada dan dipakai dashboard Admin serta Investor,
+        tapi TIDAK pernah dipasang di dashboard Owner — pemilik peternakan
+        justru satu-satunya yang tidak melihat angka masuk-keluar bulan
+        berjalan dalam satu kotak. Yang ada di bawah cuma grafik enam bulan
+        dan potongan kategori; keduanya menjawab pertanyaan lain.
+
+        Dipasang di atas, sebelum ringkasan pagi: kalau bulan ini rugi, itu
+        yang pertama perlu dilihat sebelum memutuskan belanja apa pun.
+      */}
+      <LabaRugiWidget />
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi bagian="harian" />
