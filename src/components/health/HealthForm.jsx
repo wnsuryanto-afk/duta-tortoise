@@ -173,19 +173,22 @@ export default function HealthForm({ open, onClose, editData }) {
         const stokSetelah = Math.max(0, (Number(gudang.current_stock) || 0) - Number(it.quantity));
         try {
           await base44.entities.WarehouseItem.update(gudang.id, { current_stock: stokSetelah });
-          await base44.entities.StockMovement.create(
-            barisPengambilan({
-              item: gudang,
-              jumlah: it.quantity,
-              hargaSatuan: Number(it.unit_price) || Number(gudang.purchase_price) || 0,
-              nilai: Math.round(Number(it.subtotal) || 0),
-              kodeKura: kura?.code || data.tortoise_name || "",
-              tanggal: data.date,
-              user: pemakai,
-              stokSetelah,
-              catatan: `Pengobatan ${data.tortoise_name}${(data.diagnoses || []).length ? " — " + (data.diagnoses || []).slice(0, 2).join(", ") : ""}.`,
-            })
-          );
+          // Payload disusun dulu ke variabel, baru dikirim. Bila objeknya
+          // ditulis langsung di dalam create(), penjaga kolom hantu membaca
+          // nama argumen barisPengambilan sebagai kolom StockMovement dan
+          // melaporkannya sebagai kolom yang tidak ada di skema.
+          const baris = barisPengambilan({
+            item: gudang,
+            jumlah: it.quantity,
+            hargaSatuan: Number(it.unit_price) || Number(gudang.purchase_price) || 0,
+            nilai: Math.round(Number(it.subtotal) || 0),
+            kodeKura: kura?.code || data.tortoise_name || "",
+            tanggal: data.date,
+            user: pemakai,
+            stokSetelah,
+            catatan: `Pengobatan ${data.tortoise_name}${(data.diagnoses || []).length ? " — " + (data.diagnoses || []).slice(0, 2).join(", ") : ""}.`,
+          });
+          await base44.entities.StockMovement.create(baris);
         } catch { /* satu bahan gagal tidak boleh membatalkan catatan kesehatannya */ }
       }
       try {
