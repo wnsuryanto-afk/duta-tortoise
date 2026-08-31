@@ -438,7 +438,7 @@ export default function StokResepTab({ role }) {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><FlaskConical className="w-5 h-5 text-primary" /> Produksi Pelet</DialogTitle></DialogHeader>
           {produceRecipe && (
-            <ProductionDialog recipe={produceRecipe} feedItems={feedItems} warehouseItems={warehouseItems} onClose={() => setProduceRecipe(null)} onSaved={invalidate} userName={user?.full_name || user?.email} />
+            <ProductionDialog recipe={produceRecipe} feedItems={feedItems} warehouseItems={warehouseItems} onClose={() => setProduceRecipe(null)} onSaved={invalidate} userName={user?.full_name || user?.email} userEmail={user?.email} />
           )}
         </DialogContent>
       </Dialog>
