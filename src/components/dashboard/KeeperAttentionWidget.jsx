@@ -29,7 +29,6 @@ export default function KeeperAttentionWidget() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const today = new Date().toISOString().split("T")[0];
   const now = new Date();
 
   // 1. Kura sakit
