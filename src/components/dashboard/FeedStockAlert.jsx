@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { AlertTriangle, PackageOpen } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { dilacak } from "@/lib/stokMenipis";
+import { perluDiperhatikan } from "@/lib/stokMenipis";
 
 export default function FeedStockAlert() {
   const { data: stocks = [] } = useQuery({
@@ -16,9 +16,7 @@ export default function FeedStockAlert() {
   // kaktus datang dari kebun sendiri dan tidak pernah dicatat masuk-keluarnya.
   // Tanpa saringan ini, "Kaktus hampir habis" menyala setiap hari dan tidak
   // pernah bisa dipadamkan dengan bekerja.
-  const lowStocks = stocks.filter(
-    (s) => dilacak(s) && s.is_mandatory && s.current_stock <= s.minimum_stock
-  );
+  const lowStocks = stocks.filter(perluDiperhatikan);
 
   if (lowStocks.length === 0) return null;
 
