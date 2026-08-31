@@ -108,7 +108,7 @@ export default function ReturnDialog({ user, onClose, onSaved }) {
 
       {(condition === "rusak" || condition === "hilang") && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-[11px] text-amber-800">
-          ⚠️ Alat {condition} akan otomatis masuk daftar "Harus Dibeli" sebagai pengganti.
+          ⚠️ Alat {condition} akan otomatis masuk Daftar Belanja di halaman Belanja sebagai pengganti.
         </div>
       )}
 
