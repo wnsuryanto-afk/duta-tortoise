@@ -1,6 +1,14 @@
 /**
  * Ubah berkas gambar menjadi base64 JPEG yang sudah dikecilkan agar hemat & cepat
- * saat dikirim ke AI Vision. Mengembalikan { base64, dataUrl, blob }.
+ * saat dikirim ke AI Vision. Mengembalikan { base64, dataUrl, blob, file }.
+ *
+ * `file` WAJIB dipakai saat mengunggah ke Base44, bukan `blob`. Blob hasil
+ * canvas tidak punya nama berkas, dan UploadFile menyusunnya jadi objek kosong
+ * lalu menolak dengan "'file' field is an empty object". Dua layar AI lain
+ * (InvoiceVisionUpload dan ExpiryVisionScan) sudah lama mengirim blob dan
+ * kegagalannya ditelan blok catch, jadi lampiran fotonya tidak pernah
+ * tersimpan tanpa ada yang tahu.
+ *
  * @param {File} file
  * @param {number} maxDim  dimensi terpanjang maksimum (default 1500px)
  */
@@ -35,5 +43,8 @@ export async function fileToCompressedBase64(file, maxDim = 1500) {
   const base64 = outDataUrl.split(",")[1];
   const blob = await (await fetch(outDataUrl)).blob();
 
-  return { base64, dataUrl: outDataUrl, blob };
+  const namaAsal = (file?.name || "foto").replace(/\.[^.]+$/, "").slice(0, 60) || "foto";
+  const berkas = new File([blob], `${namaAsal}.jpg`, { type: "image/jpeg" });
+
+  return { base64, dataUrl: outDataUrl, blob, file: berkas };
 }
