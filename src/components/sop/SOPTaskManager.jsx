@@ -43,6 +43,7 @@ const DEFAULT_FORM = {
   boleh_carryover: false,
   jenis_carryover: "1hari",
   butuh_bahan_gudang: false,
+  required_skus: [],
   wajib_untuk_role: "semua",
   ai_check_points: "",
   assigned_to_email: "", assigned_to_name: "",
@@ -149,6 +150,24 @@ export default function SOPTaskManager() {
 
   const enclosures = [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort();
 
+  // Barang gudang untuk mengisi required_skus. Kolom itu SUDAH lama dibaca
+  // aturan urgensi ("barang ini menghentikan SOP, jadi selalu gawat") tapi
+  // tidak pernah ada satu pun tempat di aplikasi untuk mengisinya — jadi
+  // kosong di 51 dari 52 tugas, dan aturannya tidak pernah menyala sekali pun.
+  // Bukan karena lupa diisi; memang tidak bisa diisi.
+  const { data: warehouseItems = [] } = useQuery({
+    queryKey: ["sop-warehouse-items"],
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
+    staleTime: 10 * 60 * 1000,
+  });
+  const barangDipilih = form.required_skus || [];
+  const toggleSku = (sku) => setForm(p => ({
+    ...p,
+    required_skus: (p.required_skus || []).includes(sku)
+      ? (p.required_skus || []).filter(x => x !== sku)
+      : [...(p.required_skus || []), sku],
+  }));
+
   const { data: employees = [] } = useActiveUsers();
   const staffEmployees = employees.filter(u => ["keeper", "kepala_feeder", "admin", "manajer"].includes(u.role));
 
@@ -167,6 +186,7 @@ export default function SOPTaskManager() {
       boleh_carryover: t.boleh_carryover ?? false,
       jenis_carryover: t.jenis_carryover || "1hari",
       butuh_bahan_gudang: t.butuh_bahan_gudang ?? false,
+      required_skus: t.required_skus || [],
       wajib_untuk_role: t.wajib_untuk_role || "semua",
     });
     setEditData(t);
@@ -456,6 +476,33 @@ export default function SOPTaskManager() {
                     </Select>
                   </div>
                 </div>
+
+                {form.butuh_bahan_gudang && (
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">
+                      Bahan gudang yang dibutuhkan
+                      <span className="font-normal text-muted-foreground"> — kalau salah satunya habis, tugas ini terhenti</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 rounded-lg border border-border bg-muted/20">
+                      {warehouseItems
+                        .filter(w => w.sku && w.is_active !== false)
+                        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                        .map(w => (
+                          <ToggleChip
+                            key={w.id}
+                            label={w.name}
+                            selected={barangDipilih.includes(w.sku)}
+                            onClick={() => toggleSku(w.sku)}
+                          />
+                        ))}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {barangDipilih.length === 0
+                        ? "Belum ada yang dipilih. Selama kosong, aplikasi tidak bisa tahu tugas ini butuh apa."
+                        : `${barangDipilih.length} barang dipilih. Stoknya habis → barang itu naik jadi gawat di beranda dan daftar belanja.`}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
