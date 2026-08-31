@@ -359,7 +359,21 @@ function HarusDibeliRow({ item, onBought }) {
                   Prioritas: {item.priority}
                 </p>
               )}
-              {item.harga_est > 0 && <p>Estimasi: {fmtRp(item.harga_est)}</p>}
+              {/*
+                ShoppingList menyimpan `total_est` (estimasi seluruh jumlah) dan
+                `harga_est_per_unit`. Tidak ada field bernama `harga_est`, jadi
+                baris estimasi harga ini tidak pernah tampil sama sekali —
+                termasuk untuk baris yang dibuat otomatis oleh A7, yang memang
+                mengisi kedua field itu.
+              */}
+              {(item.total_est > 0 || item.harga_est_per_unit > 0) && (
+                <p>
+                  Estimasi: {fmtRp(item.total_est || (item.harga_est_per_unit || 0) * (item.jumlah || 1))}
+                  {item.harga_est_per_unit > 0 && item.jumlah > 1 && (
+                    <span className="text-muted-foreground"> ({fmtRp(item.harga_est_per_unit)}/{item.satuan || "unit"})</span>
+                  )}
+                </p>
+              )}
             </div>
           )}
         </div>
