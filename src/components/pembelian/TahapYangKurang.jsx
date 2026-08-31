@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import InfoHint from "@/components/ui/info-hint";
 import Illustration from "@/components/common/Illustration";
 import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { penandaMenunggu, sudahDidaftar, barisDariBarang } from "@/lib/daftarBelanja";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
 
@@ -85,14 +86,10 @@ export default function TahapYangKurang({ onSelesai }) {
     queryFn: () => base44.entities.ShoppingList.list("-priority", 300),
   });
 
-  // Nama yang sudah menunggu di daftar belanja — supaya tidak ditawarkan dua kali
-  const sudahDidaftar = useMemo(() => {
-    const s = new Set();
-    shopping
-      .filter((x) => x.status === "belum_dibeli")
-      .forEach((x) => s.add(String(x.nama_barang || "").trim().toLowerCase()));
-    return s;
-  }, [shopping]);
+  // Yang sudah menunggu di daftar belanja — supaya tidak ditawarkan dua kali.
+  // Dicocokkan lewat SKU dan id gudang lebih dulu; nama saja tidak pernah cocok
+  // karena label daftar belanja memuat SKU dan tempat beli. Lihat lib/daftarBelanja.
+  const penandaSudah = useMemo(() => penandaMenunggu(shopping), [shopping]);
 
   const baris = useMemo(() => {
     const dinilai = nilaiUrgensiStok(warehouse, gabungRiwayatPemakaian(pergerakan, transaksi), sopTasks);
@@ -148,22 +145,14 @@ export default function TahapYangKurang({ onSelesai }) {
     const hasil = await jalankanMassal(
       target,
       (i) =>
-        base44.entities.ShoppingList.create({
-          nama_barang: i.name,
-          jumlah: Math.max(1, i.minimum_stock || 1),
-          satuan: i.unit || "",
-          // Hanya yang gawat yang berhak menyandang "segera" — kalau semuanya
-          // segera, urutan prioritas di tahap berikutnya kehilangan artinya.
-          priority: i.nada === "gawat" ? "segera" : "minggu_ini",
-          status: "belum_dibeli",
-          // Baris ini memang lahir dari sebuah barang gudang, jadi id-nya
-          // disimpan. Penerimaan barang bisa mencocokkannya tanpa menebak
-          // dari nama — nama yang beda satu spasi membuatnya membuat barang
-          // gudang baru, bukan menambah stok yang lama.
-          warehouse_item_id: i.id || undefined,
-          item_sku: i.sku || undefined,
-          notes: `Dari tahap "Yang Kurang" — ${i.alasan}.`,
-        }),
+        base44.entities.ShoppingList.create(
+          barisDariBarang(i, {
+            // Hanya yang gawat yang berhak menyandang "segera" — kalau semuanya
+            // segera, urutan prioritas di tahap berikutnya kehilangan artinya.
+            priority: i.nada === "gawat" ? "segera" : "minggu_ini",
+            notes: `Dari tahap "Yang Kurang" — ${i.alasan}.`,
+          })
+        ),
       { serentak: 4, onKemajuan: (sudah, total) => setSibuk({ sudah, total }) }
     );
 
