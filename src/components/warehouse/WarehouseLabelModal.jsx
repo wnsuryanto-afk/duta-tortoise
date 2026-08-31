@@ -13,55 +13,14 @@
  * Hasil: unduh PNG satuan, atau ZIP untuk banyak barang (impor ke app Niimbot).
  */
 import { useEffect, useState } from "react";
-import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Printer, Info, AlertTriangle } from "lucide-react";
 import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload";
-
-const CAT_CODE = {
-  obat: "OBT",
-  vitamin: "VIT",
-  suplemen: "SPL",
-  alat_kerja: "ALT",
-  peralatan: "PRL",
-  lainnya: "LNN",
-};
-
-// 50×30mm @ ~8px/mm (≈203 DPI)
-const W = 400;
-const H = 240;
-
-function wrapText(ctx, text, maxWidth, maxLines) {
-  const words = String(text).split(/\s+/);
-  const lines = [];
-  let line = "";
-  for (const word of words) {
-    const test = line ? line + " " + word : word;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-      if (lines.length >= maxLines - 1) break;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  if (lines.length > maxLines) lines.length = maxLines;
-  if (lines.length === maxLines) {
-    let last = lines[maxLines - 1];
-    while (last.length > 0 && ctx.measureText(last + "…").width > maxWidth) last = last.slice(0, -1);
-    if (last !== lines[maxLines - 1]) lines[maxLines - 1] = last + "…";
-  }
-  return lines;
-}
-
-function truncateText(ctx, text, maxWidth) {
-  if (ctx.measureText(text).width <= maxWidth) return text;
-  let t = text;
-  while (t.length > 0 && ctx.measureText(t + "…").width > maxWidth) t = t.slice(0, -1);
-  return t + "…";
-}
+// Penggambar kanvasnya dipakai bersama label batch — lihat lib/labelBarang.js.
+// Dua salinan penggambar akan perlahan berbeda ukuran QR dan strip, dan label
+// yang tidak seragam adalah label yang diragukan orang di lapangan.
+import { gambarLabel, stripDariSku, namaBerkasLabel } from "@/lib/labelBarang";
 
 async function renderWarehouseLabel(canvas, item) {
   canvas.width = W;
