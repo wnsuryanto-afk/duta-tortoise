@@ -29,6 +29,7 @@ import {
   Wallet, Receipt, AlertTriangle, ChevronRight,
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
+import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useTestMode } from "@/lib/useTestMode";
 
@@ -548,6 +549,29 @@ export default function PembelianPage() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Tandai Dipesan</DialogTitle></DialogHeader>
           <div className="space-y-3">
+
+            {/*
+              Belanja di peternakan ini lewat marketplace, jadi bukti yang ADA
+              di tangan adalah screenshot pesanan — bukan URL. Pemindai ini
+              sudah dipakai di Barang Masuk dan Keuangan; sebelumnya dialog di
+              sini hanya menyediakan kolom teks "URL screenshot", yang berarti
+              screenshot harus diunggah ke tempat lain dulu, dan platform,
+              ongkir, serta biaya admin diketik ulang dari gambar yang sedang
+              dilihat sendiri.
+            */}
+            <InvoiceVisionUpload
+              buttonLabel="Scan screenshot pesanan"
+              hint="Tokopedia / Shopee / nota toko — platform, ongkir, dan total terisi sendiri"
+              onApplied={({ invoice, photoUrls }) =>
+                setForm((f) => ({
+                  ...f,
+                  platform: invoice?.toko || f.platform,
+                  ongkir: invoice?.ongkir ?? f.ongkir,
+                  bukti: photoUrls?.[0] || f.bukti,
+                }))
+              }
+            />
+
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-xs font-medium mb-1">Platform</p>
@@ -555,8 +579,8 @@ export default function PembelianPage() {
                   onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))} />
               </div>
               <div>
-                <p className="text-xs font-medium mb-1">Link bukti pesanan</p>
-                <Input value={form.bukti} placeholder="URL screenshot / nota"
+                <p className="text-xs font-medium mb-1">Bukti pesanan</p>
+                <Input value={form.bukti} placeholder="terisi otomatis dari scan"
                   onChange={(e) => setForm((f) => ({ ...f, bukti: e.target.value }))} />
               </div>
               <div>
