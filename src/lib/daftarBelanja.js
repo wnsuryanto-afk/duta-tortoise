@@ -36,18 +36,18 @@ export const STATUS_MENUNGGU = "belum_dibeli";
  */
 export function penandaBaris(baris) {
   return [
-    baris?.item_sku && `sku:${RAPI(baris.item_sku)}`,
-    baris?.warehouse_item_id && `id:${baris.warehouse_item_id}`,
-    baris?.nama_barang && `nama:${RAPI(baris.nama_barang)}`,
+    baris?.item_sku ? `sku:${RAPI(baris.item_sku)}` : "",
+    baris?.warehouse_item_id ? `id:${baris.warehouse_item_id}` : "",
+    baris?.nama_barang ? `nama:${RAPI(baris.nama_barang)}` : "",
   ].filter(Boolean);
 }
 
 /** Penanda yang sama, dibaca dari sisi barang gudang / pakan. */
 export function penandaBarang(item) {
   return [
-    item?.sku && `sku:${RAPI(item.sku)}`,
-    item?.id && `id:${item.id}`,
-    item?.name && `nama:${RAPI(item.name)}`,
+    item?.sku ? `sku:${RAPI(item.sku)}` : "",
+    item?.id ? `id:${item.id}` : "",
+    item?.name ? `nama:${RAPI(item.name)}` : "",
   ].filter(Boolean);
 }
 
