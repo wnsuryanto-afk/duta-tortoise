@@ -29,8 +29,6 @@ export default function KeeperAttentionWidget() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const now = new Date();
-
   // 1. Kura sakit
   const sickTortoises = tortoises.filter(sedangSakit);
 
