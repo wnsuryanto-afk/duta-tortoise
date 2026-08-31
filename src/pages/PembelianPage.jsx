@@ -397,15 +397,20 @@ export default function PembelianPage() {
         <div className="mt-3">
           {/*
             Jalan pintas untuk belanja yang TIDAK lewat daftar belanja aplikasi —
-            barang yang sudah terlanjur dibeli di marketplace. Tanpa ini, satu-satunya
+            barang yang sudah terlanjur dipesan di marketplace. Tanpa ini, satu-satunya
             cara memasukkannya adalah mengetik ulang tiap barang dari screenshot yang
             sedang dilihat sendiri.
+
+            Hasilnya masuk ke tab "Menunggu Barang", BUKAN langsung ke gudang.
+            Screenshot pesanan hanya membuktikan barangnya dipesan; stok dan biaya
+            baru bergerak lewat tombol "Barang Datang" seperti pembelian lain.
           */}
           <TerimaDariScreenshot
             warehouse={warehouse}
             onSelesai={() => {
+              qc.invalidateQueries({ queryKey: ["pembelian-list"] });
               qc.invalidateQueries({ queryKey: ["pembelian-warehouse"] });
-              setTab("riwayat");
+              setTab("menunggu");
             }}
           />
         </div>
