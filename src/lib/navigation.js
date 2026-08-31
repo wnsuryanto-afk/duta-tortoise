@@ -15,10 +15,10 @@ import {
   Home, Shell, ClipboardCheck, Package, Wallet, Users,
   Heart, BookOpen, Baby, CalendarRange, GitBranch, Skull, Clock, Thermometer,
   Leaf, Salad, Stethoscope, Calendar, Library, ListTodo, Zap,
-  LayoutGrid, ShoppingCart, Wrench, AlertTriangle, Truck, ChefHat,
+  LayoutGrid, ShoppingCart, Wrench, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart, BarChart2,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy, Star,
-  Activity, MessageSquare, UserCog, Egg, Send, QrCode, Receipt,
+  Activity, MessageSquare, UserCog, Egg, Send, QrCode,
 } from "lucide-react";
 
 export const NAV_SECTIONS = [

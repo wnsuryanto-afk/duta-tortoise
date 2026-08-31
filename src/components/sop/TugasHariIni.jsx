@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { format, parseISO, differenceInCalendarDays, subDays } from "date-fns";
+import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   CheckCircle2, Clock, Users, ChevronDown, ChevronUp,

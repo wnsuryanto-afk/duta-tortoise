@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { AlertTriangle } from "lucide-react";
-import { differenceInDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { sedangSakit } from "@/lib/populasiKura";
 
