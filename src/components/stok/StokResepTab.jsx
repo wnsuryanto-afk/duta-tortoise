@@ -15,6 +15,10 @@ import { Plus, Pencil, Trash2, FlaskConical, CheckCircle2, AlertTriangle, X } fr
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import {
+  rincianBahan, masalahBahan, bahanTanpaHarga, totalBiaya,
+  hppHasil, jumlahHasil, cariBarangHasil,
+} from "@/lib/produksiRacikan";
 
 function RecipeForm({ recipe, feedItems, warehouseItems, onClose, onSaved }) {
   const allItems = [
@@ -244,21 +248,57 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
       </div>
       {qty && (
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground">Kebutuhan bahan:</p>
-          {(recipe?.ingredients || []).map((ing, i) => {
-            const allItems = [...feedItems, ...warehouseItems];
-            const item = allItems.find(x => x.id === ing.item_id);
-            const scaleFactor = Number(qty) / (recipe?.yield_kg || 1);
-            const needed = (Number(ing.quantity_kg) || 0) * scaleFactor;
-            const sufficient = item && item.current_stock >= needed;
-            return (
-              <div key={i} className={`flex items-center justify-between text-xs p-2 rounded-lg ${sufficient ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-                <span>{ing.item_name}</span>
-                <span className="font-medium">{needed.toFixed(2)} {ing.unit} {sufficient ? <CheckCircle2 className="w-3 h-3 inline" /> : <AlertTriangle className="w-3 h-3 inline" />}</span>
-              </div>
-            );
-          })}
+          <p className="text-xs font-semibold text-muted-foreground">
+            Kebutuhan bahan <span className="font-normal">— dalam satuan gudangnya, bukan satuan resep</span>
+          </p>
+          {rincian.map((r, i) => (
+            <div key={i} className={`flex items-center justify-between gap-2 text-xs p-2 rounded-lg ${r.cukup ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+              <span className="min-w-0 flex-1">{r.ing.item_name}</span>
+              <span className="font-medium whitespace-nowrap">
+                {r.butuh >= 100 ? Math.round(r.butuh).toLocaleString("id-ID") : r.butuh.toFixed(2)} {r.satuan}
+                {r.adaHarga && <span className="opacity-70"> · Rp {r.biaya.toLocaleString("id-ID")}</span>}
+                {" "}
+                {r.cukup ? <CheckCircle2 className="w-3 h-3 inline" /> : <AlertTriangle className="w-3 h-3 inline" />}
+              </span>
+            </div>
+          ))}
+
+          <div className="rounded-lg border border-border p-2.5 space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total biaya bahan</span>
+              <span className="font-semibold font-mono">Rp {Math.round(biaya).toLocaleString("id-ID")}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Masuk ke</span>
+              <span className="font-medium text-right">
+                {tujuan.item ? tujuan.item.name : `${recipe?.name} (barang baru)`}
+              </span>
+            </div>
+            <div className="flex justify-between border-t border-border pt-1 mt-1">
+              <span className="text-muted-foreground">Harga pokok hasil</span>
+              <span className="font-semibold font-mono">
+                Rp {hpp >= 1 ? Math.round(hpp).toLocaleString("id-ID") : hpp.toFixed(2)} / {satuanHasil}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground pt-0.5">
+              {hasilDalamSatuan >= 100 ? Math.round(hasilDalamSatuan).toLocaleString("id-ID") : hasilDalamSatuan} {satuanHasil} hasil produksi.
+              Biaya bahannya menempel ke harga pokok racikan ini, jadi pemberiannya ke kura tidak lagi tercatat gratis.
+            </p>
+          </div>
+
+          {tanpaHarga.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-800">
+              <strong>{tanpaHarga.length} bahan belum punya harga beli</strong>, jadi harga pokok di atas
+              lebih murah dari kenyataan: {tanpaHarga.slice(0, 4).join(", ")}
+              {tanpaHarga.length > 4 ? `, +${tanpaHarga.length - 4} lagi` : ""}.
+              Harganya terisi sendiri saat pembelian bahan itu diterima.
+            </div>
+          )}
         </div>
+      )}
+
+      {gagal && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs text-red-700">{gagal}</div>
       )}
       {stockIssues.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3">
