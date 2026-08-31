@@ -52,8 +52,12 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
   const uploadImages = async () => {
     const urls = [];
     for (const img of images) {
-      if (!img.blob) continue;
-      try { const r = await base44.integrations.Core.UploadFile({ file: img.blob }); if (r?.file_url) urls.push(r.file_url); } catch { /* lampiran opsional */ }
+      // img.file, bukan img.blob — blob hasil canvas ditolak Base44 karena tidak
+      // punya nama berkas. Selama ini gagalnya ditelan catch di bawah, jadi
+      // lampiran foto invoice tidak pernah tersimpan tanpa ada yang tahu.
+      const berkas = img.file || img.blob;
+      if (!berkas) continue;
+      try { const r = await base44.integrations.Core.UploadFile({ file: berkas }); if (r?.file_url) urls.push(r.file_url); } catch { /* lampiran opsional */ }
     }
     return urls;
   };
