@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer } from "lucide-react";
+import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
 import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
@@ -754,6 +754,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
                         {item.is_mandatory && <span className="text-[10px] text-red-600 font-semibold">WAJIB</span>}
                         {item.sku && <p className="text-[10px] text-muted-foreground font-mono">{item.sku}</p>}
                       </button>
+                      <IncompleteBadges item={item} itemType={item._src === "feed" ? "feedstock" : "warehouse"} />
                     </td>
                     {/* Category */}
                     <td className="px-4 py-2.5">
@@ -866,6 +867,8 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
       {/* Cetak Label */}
       {labelItems && (
         <WarehouseLabelModal open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
+
+        <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />
       )}
     </div>
   );
