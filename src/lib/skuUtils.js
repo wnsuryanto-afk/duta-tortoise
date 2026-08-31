@@ -16,6 +16,10 @@ export const CATEGORY_PREFIX = {
   obat: "OBT",
   vitamin: "VIT",
   suplemen: "VIT",
+  // Barang habis pakai memakai awalan ALT yang sama. Label QR-nya sudah
+  // tercetak dan tertempel di rak sejak kategorinya masih alat_kerja —
+  // mengganti kode berarti label fisiknya berbohong.
+  habis_pakai: "ALT",
   alat_kerja: "ALT",
   peralatan: "ALT",
   pakan: "PKN",
