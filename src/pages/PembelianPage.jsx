@@ -194,6 +194,31 @@ export default function PembelianPage() {
     setBusy(false);
   };
 
+  /**
+   * Harga baru vs harga gudang sekarang.
+   *
+   * Penerimaan MENIMPA purchase_price barang gudang dengan harga dari pesanan.
+   * Kalau lompatannya besar, penyebabnya hampir tidak pernah harga yang benar-
+   * benar naik — hampir selalu satuannya berbeda: gudang menghitung per ampul,
+   * struk menyebut harga satu botol 10 ml; gudang per gram, struk per kemasan
+   * 1 kg. Lompatan itu tidak melempar error, ia hanya membuat harga pokok salah
+   * dan tidak ada yang menyadarinya sampai laba terlihat aneh berbulan-bulan
+   * kemudian. Jadi ditampilkan sebelum tombol ditekan, bukan sesudah.
+   */
+  const BATAS_LOMPATAN = 3;
+  const lompatanHarga = (it) => {
+    const wi =
+      (it.warehouse_item_id && warehouse.find((w) => w.id === it.warehouse_item_id)) ||
+      (it.item_sku && warehouse.find((w) => w.sku === it.item_sku)) ||
+      null;
+    const lama = Number(wi?.purchase_price) || 0;
+    const baru = Number(it.harga_satuan) || 0;
+    if (!lama || !baru) return null;
+    const rasio = baru / lama;
+    if (rasio < BATAS_LOMPATAN && rasio > 1 / BATAS_LOMPATAN) return null;
+    return { lama, baru, naik: rasio >= BATAS_LOMPATAN, kali: rasio >= 1 ? rasio : 1 / rasio, satuan: wi?.unit || it.satuan };
+  };
+
   // ── Tahap 2: penerimaan ──
   const bukaDialogTerima = (p) => {
     const init = {};
