@@ -31,6 +31,10 @@
       },
       "description": "Daftar bahan (minimal 1 bahan wajib)"
     },
+    "output_item_id": {
+      "type": "string",
+      "description": "Barang tujuan hasil produksi (WarehouseItem atau FeedStock). Duta Repro masuk ke VIT-REP00. Bila kosong, dicari lewat nama yang sama persis \u2014 pencocokan yang mudah meleset, jadi sebaiknya diisi."
+    },
     "preparation_steps": {
       "type": "string"
     },
