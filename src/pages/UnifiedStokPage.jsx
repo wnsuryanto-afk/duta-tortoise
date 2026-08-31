@@ -22,6 +22,9 @@ import StokResepTab from "@/components/stok/StokResepTab";
 // bukan di dalam tab, karena inilah satu-satunya hal yang dilakukan feeder di
 // depan rak — sementara tab-tab di bawah untuk pengelola.
 import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
+import BatchLabelModal from "@/components/warehouse/BatchLabelModal";
+import { Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function StatCard({ label, value, sub, color = "text-foreground", icon: Icon }) {
   return (
@@ -41,6 +44,19 @@ function StatCard({ label, value, sub, color = "text-foreground", icon: Icon }) 
 export default function UnifiedStokPage() {
   const { role } = useCurrentUser();
   const [tab, setTab] = useState("inventory");
+  const [labelBatchOpen, setLabelBatchOpen] = useState(false);
+
+  const { data: batchSemua = [] } = useQuery({
+    queryKey: ["batch-barang"],
+    queryFn: () => base44.entities.BatchBarang.list("-tanggal_terima", 500),
+  });
+
+  // Batch yang labelnya belum pernah dicetak DAN isinya masih ada. Batch habis
+  // tidak perlu label — tidak ada botol yang bisa ditempeli.
+  const batchBelumBerlabel = useMemo(
+    () => batchSemua.filter((b) => !b.label_dicetak && (Number(b.jumlah_sisa) || 0) > 0),
+    [batchSemua]
+  );
   const [inventoryFilter, setInventoryFilter] = useState(null); // for external filter trigger
 
   const { data: feedstocks = [] } = useQuery({
@@ -95,8 +111,31 @@ export default function UnifiedStokPage() {
           <h1 className="text-2xl font-heading font-bold">Stok & Gudang</h1>
           <p className="text-muted-foreground text-sm">Inventaris pakan, obat, alat & pergerakan stok terpusat</p>
         </div>
-        <AmbilBarangScan />
+        <div className="flex items-center gap-2 flex-wrap">
+          <AmbilBarangScan />
+          {/*
+            Label batch dicetak setelah barang datang, sekali, untuk batch yang
+            labelnya belum pernah dibuat. Tombolnya menyebut jumlahnya supaya
+            tidak perlu dibuka dulu untuk tahu ada kerjaan atau tidak.
+          */}
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5"
+            disabled={batchBelumBerlabel.length === 0}
+            onClick={() => setLabelBatchOpen(true)}
+          >
+            <Printer className="w-4 h-4" />
+            Label Batch{batchBelumBerlabel.length > 0 ? ` (${batchBelumBerlabel.length})` : ""}
+          </Button>
+        </div>
       </div>
+
+      <BatchLabelModal
+        open={labelBatchOpen}
+        batches={batchBelumBerlabel}
+        onClose={() => setLabelBatchOpen(false)}
+      />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
