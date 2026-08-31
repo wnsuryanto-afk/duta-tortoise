@@ -105,9 +105,24 @@
       "type": "string",
       "description": "Kondisi yang mengharuskan ke dokter hewan"
     },
+    "images": {
+      "type": "array",
+      "description": "Galeri foto referensi penyakit. Tiga layar sudah menulis dan membacanya \u2014 form protokol, galeri panduan, dan panel verifikasi foto yang memasukkan foto temuan tim ke panduan \u2014 tetapi kolomnya belum pernah ada di skema, jadi setiap foto yang disetujui hilang tanpa pesan apa pun, dan pemeriksa duplikat selalu membaca daftar kosong. image_url di bawah adalah bentuk lama satu gambar dan tetap dibaca sebagai cadangan.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "image_url": {
       "type": "string",
-      "description": "URL gambar referensi penyakit"
+      "description": "URL gambar referensi penyakit (bentuk lama, satu gambar). Dipakai sebagai cadangan bila `images` kosong."
     },
     "image_caption": {
       "type": "string",
