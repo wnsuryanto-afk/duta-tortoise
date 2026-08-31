@@ -101,3 +101,29 @@ export function cariDariPindaian(teks, warehouse = [], batches = []) {
   const item = warehouse.find((w) => RAPI(w.sku) === kode) || null;
   return { item, batch: null, kode };
 }
+
+/**
+ * Kode batch yang benar-benar unik.
+ *
+ * Versi pertama memakai `sku.slice(-6)` — dan enam huruf terakhir sebuah SKU
+ * justru MEMBUANG awalan yang membedakannya. "VIT-0102" dan "ALT-0102"
+ * keduanya menjadi "T-0102", jadi Vitamin B Kompleks dan Suntikan 3cc
+ * mendapat kode batch yang sama persis; begitu pula Oxytocin dengan Jarum 25G,
+ * dan Elektrolit dengan Alkohol. Enam dari dua puluh batch hasil penerimaan
+ * 31-08-2026 kembar seperti ini.
+ *
+ * Kalau labelnya sempat tercetak dan ditempel, memindainya akan memunculkan
+ * barang yang salah — dan stok yang salah itulah yang berkurang. Kebetulan
+ * belum satu pun label dicetak saat ini ketahuan.
+ *
+ * @param {string} sku SKU LENGKAP, bukan potongannya.
+ * @param {string} tanggalYymmdd mis. "260831"
+ * @param {string[]} kodeTerpakai kode batch yang sudah ada, untuk menghindari bentrok
+ */
+export function kodeBatch(sku, tanggalYymmdd, kodeTerpakai = []) {
+  const dasar = `BATCH-${RAPI(sku) || "TANPA-SKU"}-${tanggalYymmdd}`;
+  const dipakai = new Set(kodeTerpakai.map(RAPI));
+  let n = 1;
+  while (dipakai.has(`${dasar}-${n}`)) n += 1;
+  return `${dasar}-${n}`;
+}
