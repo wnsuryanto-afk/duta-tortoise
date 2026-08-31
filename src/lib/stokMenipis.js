@@ -69,6 +69,17 @@ export function sudahKadaluarsa(item, sekarang = new Date()) {
 }
 
 /**
+ * Perlu diperhatikan: dilacak, DAN habis atau menipis.
+ *
+ * Satu panggilan untuk pertanyaan "barang ini masuk daftar peringatan/beli?",
+ * supaya setiap layar tidak menyusun sendiri kombinasi dilacak + habis +
+ * menipis dan meleset di salah satunya.
+ */
+export function perluDiperhatikan(item) {
+  return dilacak(item) && (stokHabis(item) || stokMenipis(item));
+}
+
+/**
  * Gabungkan barang gudang dan pakan jadi satu daftar yang bisa diperiksa
  * dengan aturan yang sama, sambil menandai asalnya supaya layar masih bisa
  * menyebut "pakan" atau "gudang" saat menampilkan.
