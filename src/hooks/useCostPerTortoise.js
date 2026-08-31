@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { differenceInMonths } from "date-fns";
 import { masukLaporan } from "@/lib/laporan";
 import { diPeternakan } from "@/lib/populasiKura";
+import { biayaTerbebanKura } from "@/lib/pemakaianBarang";
 
 /**
  * Hook: hitung biaya per ekor per bulan dari data aktual
@@ -36,6 +37,14 @@ export function useCostPerTortoise(period) {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Pengambilan barang yang sudah dibebankan ke seekor kura. Nilainya
+  // dikeluarkan dari kolam biaya bersama di bawah — lihat alasannya di sana.
+  const { data: pergerakan = [] } = useQuery({
+    queryKey: ["stock-movements", "-date", 500],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+
   return useMemo(() => {
     const fallback = settings[0]?.hpp_fallback_per_ekor || 100000;
 
@@ -66,7 +75,18 @@ export function useCostPerTortoise(period) {
     // D18 — totalGaji juga tidak ditambahkan lagi. Slip gaji yang ditandai
     // dibayar membuat FinanceTransaction-nya sendiri, jadi gajinya sudah ada di
     // totalFinance; menjumlahkan keduanya membuat gaji terhitung dua kali.
-    const totalPengeluaran = totalFinance;
+    // ── Obat yang sudah dibebankan ke seekor kura DIKELUARKAN dari kolam ──
+    //
+    // Tarif per ekor = seluruh pengeluaran dibagi jumlah kura. Pembelian obat
+    // ada di dalam pengeluaran itu, jadi biayanya sudah tersebar rata ke semua
+    // kura. Sejak pengambilan obat bisa ditempelkan ke seekor kura (31-08-2026),
+    // obat yang sama akan terhitung DUA KALI untuk kura itu: sekali lewat tarif
+    // bersama, sekali lagi langsung.
+    //
+    // Menguranginya di sini membuat tiap rupiah dihitung tepat sekali: yang
+    // sudah punya alamat dibebankan ke alamatnya, sisanya dibagi rata.
+    const terbebanBulanIni = biayaTerbebanKura(pergerakan, monthKey);
+    const totalPengeluaran = Math.max(0, totalFinance - terbebanBulanIni);
 
     // Semua kura yang masih ada di peternakan — mereka semua makan dan dirawat.
     // Daftar status yang ditulis tangan melewatkan kura sakit dan karantina,
@@ -101,6 +121,10 @@ export function useCostPerTortoise(period) {
       if (!b || b > monthKey) continue;
       perBulan.set(b, (perBulan.get(b) || 0) + (t.amount || 0));
     }
+    // Alasan yang sama seperti di atas, diterapkan ke tiap bulan rata-rata.
+    for (const [b, v] of perBulan) {
+      perBulan.set(b, Math.max(0, v - biayaTerbebanKura(pergerakan, b)));
+    }
     const bulanBerisi = [...perBulan.entries()]
       .filter(([, v]) => v > 0)
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
@@ -123,6 +147,9 @@ export function useCostPerTortoise(period) {
       period: monthKey,
       activeCount,
       totalPengeluaran,
+      // Biaya yang sudah punya alamat (menempel ke seekor kura), sudah
+      // dikeluarkan dari totalPengeluaran di atas.
+      terbebanKeKura: Math.round(terbebanBulanIni),
       biayaPerEkor: isDataAktual ? biayaPerEkor : fallback,
       // Dipakai untuk HPP. Lihat keterangan di atas: satu bulan terlalu goyah
       // untuk angka yang tersimpan permanen di catatan penjualan.
