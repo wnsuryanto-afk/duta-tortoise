@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Pencil, Trash2, PackageOpen, QrCode, ArrowUpCircle, ArrowDownCircle, Printer } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { statusStok } from "@/lib/stokMenipis";
 import { format } from "date-fns";
 import { formatRp } from "@/lib/skuUtils";
 import StockItemForm from "@/components/stock/StockItemForm";
