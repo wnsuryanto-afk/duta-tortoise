@@ -6,7 +6,7 @@ import { AlertTriangle, Package, Leaf, Clock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import { hitungSisaHari, gabungRiwayatPemakaian, tingkatUrgensi, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
+import { hitungSisaHari, gabungRiwayatPemakaian, tingkatUrgensi, adalahPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import { dilacak } from "@/lib/stokMenipis";
 
 /**
@@ -95,6 +95,14 @@ export default function StockPredictionPage() {
     [pergerakan, transactions]
   );
 
+  // Ada berapa baris yang benar-benar berarti "barang keluar"? Kalau nol,
+  // halaman ini tidak bisa memprediksi apa pun — dan lebih baik mengatakannya
+  // daripada memasang angka yang terlihat seperti hasil hitungan.
+  const jumlahPemakaian = useMemo(
+    () => riwayatPakai.filter(adalahPemakaian).length,
+    [riwayatPakai]
+  );
+
   // Barang yang dinonaktifkan tidak ikut diprediksi. Tanpa saringan ini,
   // 3 barang bertanda [DUPLIKAT - ABAIKAN] dan 9 bahan pakan yang sengaja
   // tidak dilacak tetap muncul sebagai "kritis" — halaman ini menyebut 55 item
@@ -142,6 +150,25 @@ export default function StockPredictionPage() {
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Estimasi waktu habisnya stok berdasarkan pola konsumsi</p>
       </div>
+
+      {/*
+        Halaman ini menjanjikan prediksi, dan prediksi butuh catatan pemakaian.
+        Selama belum ada satu pun baris "barang keluar", tidak ada pola yang
+        bisa dibaca — tiap barang cuma bisa dinilai "masih ada" atau "habis".
+        Menyembunyikan kenyataan itu di balik angka hari membuat orang percaya
+        pada hitungan yang tidak pernah terjadi.
+      */}
+      {!isLoading && jumlahPemakaian === 0 && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+          <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-800">
+            <strong>Belum ada satu pun catatan barang keluar, jadi belum ada yang bisa diprediksi.</strong>{" "}
+            Yang tampil di bawah hanya membedakan barang yang masih ada dari yang habis.
+            Prediksi baru berjalan setelah pengambilan barang dari gudang mulai dicatat —
+            pembelian sudah tercatat rapi, pemakaiannya belum.
+          </p>
+        </div>
+      )}
 
       {/* Critical alert */}
       {(criticalWarehouse.length > 0 || criticalFeed.length > 0) && (
