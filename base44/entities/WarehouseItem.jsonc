@@ -11,6 +11,7 @@
         "obat",
         "vitamin",
         "suplemen",
+        "habis_pakai",
         "alat_kerja",
         "peralatan",
         "lainnya"
@@ -80,7 +81,12 @@
     },
     "condition": {
       "type": "string",
-      "enum": ["baik", "rusak_ringan", "rusak_berat", "hilang"],
+      "enum": [
+        "baik",
+        "rusak_ringan",
+        "rusak_berat",
+        "hilang"
+      ],
       "default": "baik",
       "description": "Kondisi fisik barang. Dipakai lencana di Gudang, penanda alat tidak tersedia di SOP Harian, dan sumber \"Barang rusak\" di Harus Dibeli."
     },
