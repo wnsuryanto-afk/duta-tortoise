@@ -51,7 +51,7 @@ const CHECKLIST_ITEMS = [
     icon: Wheat, 
     color: "text-yellow-600", 
     bg: "bg-yellow-100",
-    link: "/feed-stock",
+    link: "/stok-unified",
     action: "add",
     check: (data) => data.feedStocks && data.feedStocks.length > 0,
   },

@@ -940,7 +940,7 @@ export default function OwnerDashboard({ user }) {
       <div>
         <SectionTitle icon={Package}>Nilai & Modal Bisnis</SectionTitle>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <KpiCard icon={Package} label="Nilai Stok Total" href="/dashboard-stok"
+          <KpiCard icon={Package} label="Nilai Stok Total" href="/stok-unified"
             color="bg-amber-100 text-amber-700"
             value={fmt(totalStockValue)}
             sub={<span className="text-xs text-muted-foreground">Pakan {fmt(feedValue)} + Gudang {fmt(warehouseValue)}</span>}
@@ -950,7 +950,7 @@ export default function OwnerDashboard({ user }) {
             value={fmt(costPerTortoise)}
             sub={<span className="text-xs text-muted-foreground">dari {activeTortoises.length} kura aktif</span>}
           />
-          <KpiCard icon={Package} label="Nilai Stok Gudang" href="/warehouse"
+          <KpiCard icon={Package} label="Nilai Stok Gudang" href="/stok-unified"
             color="bg-violet-100 text-violet-700"
             value={fmt(warehouseValue)}
             sub={<span className="text-xs text-muted-foreground">obat, vitamin, alat</span>}

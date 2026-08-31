@@ -60,8 +60,8 @@ export default function IncompleteDataWidget() {
       breeding: "/breeding",
       sale: "/sales",
       userProfile: "/hr",
-      warehouseItem: "/warehouse",
-      feedStock: "/feed-stock",
+      warehouseItem: "/stok-unified",
+      feedStock: "/stok-unified",
     };
     return `${paths[item.type] || "/incomplete-data"}?edit=${item.id}`;
   };

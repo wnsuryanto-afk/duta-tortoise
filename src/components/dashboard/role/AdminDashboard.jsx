@@ -206,7 +206,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
               {stockMovements.length > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-amber-800">• {stockMovements.length} stok keluar &gt; Rp 500rb</span>
-                  <Link to="/warehouse" className="text-xs font-medium text-amber-700 underline">Review</Link>
+                  <Link to="/stok-unified" className="text-xs font-medium text-amber-700 underline">Review</Link>
                 </div>
               )}
               {kasbons.length > 0 && (
@@ -271,7 +271,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
           <MiniCard icon={Package} label="Stok Kritis"
             value={`${totalCritical} item`}
             urgent={totalCritical > 0}
-            href="/dashboard-stok"
+            href="/stok-unified"
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -284,7 +284,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold">Stok Kritis</p>
-            <Link to="/dashboard-stok" className="text-xs text-primary hover:underline">Lihat Semua</Link>
+            <Link to="/stok-unified" className="text-xs text-primary hover:underline">Lihat Semua</Link>
           </div>
           {criticalStocks.length === 0 && criticalFeed.length === 0 ? (
             <p className="text-sm text-green-600">✓ Stok semua aman</p>
@@ -296,7 +296,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
                     <p className="text-sm font-medium text-red-800">{item.name}</p>
                     <p className="text-xs text-red-600">Sisa: {item.current_stock} {item.unit} (min {item.minimum_stock})</p>
                   </div>
-                  <Link to="/warehouse" className="text-xs text-primary font-medium border border-primary/30 px-2 py-0.5 rounded">Beli</Link>
+                  <Link to="/stok-unified" className="text-xs text-primary font-medium border border-primary/30 px-2 py-0.5 rounded">Beli</Link>
                 </div>
               ))}
             </div>
@@ -306,7 +306,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold">Obat Kadaluarsa</p>
-            <Link to="/warehouse" className="text-xs text-primary hover:underline">Lihat Semua</Link>
+            <Link to="/stok-unified" className="text-xs text-primary hover:underline">Lihat Semua</Link>
           </div>
           {expiredItems.length === 0 && nearExpired.length === 0 ? (
             <p className="text-sm text-green-600">✓ Tidak ada yang kadaluarsa</p>

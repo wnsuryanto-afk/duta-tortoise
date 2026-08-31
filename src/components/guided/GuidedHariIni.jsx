@@ -1355,7 +1355,7 @@ export default function GuidedHariIni({ user }) {
         <div className="bg-card rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-sm font-semibold text-foreground mb-3">Aksi Cepat</p>
           <div className="grid grid-cols-3 gap-2">
-            <a href="/warehouse" className="flex flex-col items-center gap-1.5 p-3 bg-muted rounded-xl hover:bg-muted active:scale-95 transition-all">
+            <a href="/stok-unified" className="flex flex-col items-center gap-1.5 p-3 bg-muted rounded-xl hover:bg-muted active:scale-95 transition-all">
               <Package className="w-5 h-5 text-muted-foreground" />
               <span className="text-xs font-medium text-foreground text-center">Ambil Stok</span>
             </a>

@@ -32,7 +32,7 @@ export default function FeedStockAlert() {
               ⚠️ Stok Pakan Hampir Habis ({lowStocks.length} item)
             </p>
             <RouterLink
-              to="/feed-stock"
+              to="/stok-unified"
               className="text-xs text-orange-700 underline shrink-0 hover:text-orange-900"
             >
               Kelola Stok →

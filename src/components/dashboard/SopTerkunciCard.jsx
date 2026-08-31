@@ -32,7 +32,7 @@ export default function SopTerkunciCard() {
         <h2 className="font-semibold text-sm text-foreground">
           {terkunci.length} SOP terhenti karena bahan habis
         </h2>
-        <Link to="/warehouse" className="ml-auto text-xs text-primary hover:underline">
+        <Link to="/stok-unified" className="ml-auto text-xs text-primary hover:underline">
           Gudang →
         </Link>
       </div>

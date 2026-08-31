@@ -247,7 +247,7 @@ export default function IncompleteDataPage() {
               <DataTable 
                 items={warehouseItems} 
                 entityType="warehouseItem" 
-                editPath="/warehouse" 
+                editPath="/stok-unified" 
                 nameField="name" 
                 filterIncomplete={filterIncomplete}
                 getEditUrl={(item) => `/warehouse?edit=${item.id}`}
@@ -259,7 +259,7 @@ export default function IncompleteDataPage() {
               <DataTable 
                 items={feedStocks} 
                 entityType="feedStock" 
-                editPath="/feed-stock" 
+                editPath="/stok-unified" 
                 nameField="name" 
                 filterIncomplete={filterIncomplete}
                 getEditUrl={(item) => `/feed-stock?edit=${item.id}`}

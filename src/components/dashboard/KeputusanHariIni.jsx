@@ -271,7 +271,7 @@ export default function KeputusanHariIni() {
               </span>
             )}
             <Button asChild size="sm" variant="outline" className="h-8 text-xs">
-              <Link to="/harus-dibeli">Lihat rincian</Link>
+              <Link to="/pembelian">Lihat rincian</Link>
             </Button>
           </>
         }
@@ -355,7 +355,7 @@ export default function KeputusanHariIni() {
     if (pengajuanAlat.length > 0) bagian.push(`${pengajuanAlat.length} pengajuan alat disetujui`);
     tenang.push({
       teks: `${bagian.join(" · ")} — menunggu dibeli`,
-      href: "/harus-dibeli",
+      href: "/pembelian",
       label: "Lihat rinciannya",
     });
   }

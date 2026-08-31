@@ -36,7 +36,7 @@ export const TOUR_STEPS = [
     step: 5,
     title: "Gudang Gazebo",
     description: "Kelola stok pakan, obat, dan perlengkapan di sini. Pantau stok minimum dan terima notifikasi saat stok menipis.",
-    path: "/warehouse",
+    path: "/stok-unified",
     targetId: "tour-warehouse",
   },
   {
