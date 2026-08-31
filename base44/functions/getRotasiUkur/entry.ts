@@ -1,10 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { diPeternakan } from '../../shared/kura.ts';
 
 /**
  * getRotasiUkur — Pilih 2 kura aktif untuk rotasi timbang & ukur hari ini.
  *
  * Logika:
- *   - Hanya kura status="aktif" (bukan terjual/mati/diarsipkan).
+ *   - Semua kura yang masih ada di peternakan — termasuk yang sakit dan
+ *     karantina (keputusan pemilik, 31 Agustus 2026). Justru kura sakit yang
+ *     paling perlu ditimbang rutin: berat adalah tanda paling awal apakah
+ *     pengobatan berhasil.
+ *   - Kembaran frontend: src/lib/jadwalTimbang.js — dua-duanya harus menjawab
+ *     sama, kalau tidak daftar tugas dan widget keeper menunjuk kura berbeda.
  *   - Tanggal ukur terakhir = tanggal MeasurementHistory terbaru SEBELUM hari ini
  *     (pengukuran hari ini TIDAK dihitung → stabil sepanjang hari).
  *   - Kura yang diukur < 60 hari lalu DIKECUALIKAN.
@@ -24,11 +30,16 @@ Deno.serve(async (req) => {
 
     const svc = base44.asServiceRole;
 
-    // 1. Semua kura aktif
+    // 1. Semua kura yang masih ada di peternakan.
+    //
+    // Saringan lama `status === 'aktif'` membuang kura sakit, karantina, dan
+    // breeding dari rotasi timbang — padahal mereka tetap dirawat di sini dan
+    // beratnya justru yang paling perlu dipantau. Memakai diPeternakan()
+    // membalik logikanya: yang dikeluarkan hanya yang jelas sudah keluar
+    // (mati, terjual, diarsipkan), sehingga status baru di skema tidak lagi
+    // diam-diam menghilangkan kura dari rotasi.
     const tortoises = await svc.entities.Tortoise.list('-created_date', 2000);
-    const active = tortoises.filter(t =>
-      t.status === 'aktif' && !t.is_archived
-    );
+    const active = tortoises.filter(diPeternakan);
 
     // 2. MeasurementHistory — cari tanggal ukur terakhir per kura (sebelum hari ini)
     const measurements = await svc.entities.MeasurementHistory.list('-date', 5000);
