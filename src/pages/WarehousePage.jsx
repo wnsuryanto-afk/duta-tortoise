@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Pencil, Trash2, PackageOpen, QrCode, ArrowUpCircle, ArrowDownCircle, Printer } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { statusStok } from "@/lib/stokMenipis";
+import { statusStok, perluDiperhatikan } from "@/lib/stokMenipis";
 import { format } from "date-fns";
 import { formatRp } from "@/lib/skuUtils";
 import StockItemForm from "@/components/stock/StockItemForm";
@@ -118,7 +118,7 @@ export default function WarehousePage() {
 
   const filtered = items.filter((i) => {
     const matchCat = catFilter === "semua" || i.category === catFilter;
-    const matchLow = !lowFilter || i.current_stock <= i.minimum_stock;
+    const matchLow = !lowFilter || perluDiperhatikan(i);
     const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || (i.sku || "").toLowerCase().includes(search.toLowerCase());
     const inc = isItemIncomplete(i, "warehouse");
     const matchLengkap = lengkapFilter === "semua" || (lengkapFilter === "belum" ? inc : !inc);
@@ -134,7 +134,7 @@ export default function WarehousePage() {
     return scoreB - scoreA;
   });
 
-  const lowItems = items.filter((i) => i.current_stock <= i.minimum_stock);
+  const lowItems = items.filter(perluDiperhatikan);
 
   const handleScanResult = (sku) => {
     const found = items.find((i) => (i.sku || "").toUpperCase() === sku.toUpperCase());
@@ -260,7 +260,7 @@ export default function WarehousePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {filtered.map((item) => {
-                const isLow = item.current_stock <= item.minimum_stock;
+                const isLow = ["habis", "menipis"].includes(statusStok(item));
                 const cat = CATEGORIES.find((c) => c.value === item.category) || CATEGORIES[5];
                 const incomplete = isItemIncomplete(item, "warehouse");
                 return (
