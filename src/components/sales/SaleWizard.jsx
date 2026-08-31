@@ -372,7 +372,7 @@ function StepDetailPenjualan({ form, onChange, errors }) {
 }
 
 // ── STEP 4: Review HPP & Laba ──
-function StepReview({ form, tortoise, costData, breedings = [] }) {
+function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok = [] }) {
   const [showTooltip, setShowTooltip] = useState(false);
   // Tarif yang sama persis dengan yang dipakai handleSave. Sebelumnya layar ini
   // memakai biayaPerEkor (bulan berjalan) sementara yang tersimpan memakai
@@ -381,6 +381,10 @@ function StepReview({ form, tortoise, costData, breedings = [] }) {
   const biayaPerBulan = costData?.biayaPerEkorRata || costData?.biayaPerEkor || 100000;
   const isDataAktual = costData?.isDataAktual;
 
+  // Sama persis dengan rincianHpp() yang dipakai handleSave — termasuk biaya
+  // obatnya. Layar review dan angka yang tersimpan harus satu.
+  const rincianObat = biayaBarangKura(pergerakanStok, tortoise);
+
   const hppRinci = hitungHppKura({
     kura: tortoise,
     breedings,
@@ -388,6 +392,7 @@ function StepReview({ form, tortoise, costData, breedings = [] }) {
     hargaBeliInput: form.purchase_price_input,
     ongkir: form.shipping_cost,
     tanggalJual: form.sale_date,
+    biayaObat: rincianObat.total,
   });
 
   const isHasilSendiri = hppRinci.dariFarm;
@@ -461,6 +466,28 @@ function StepReview({ form, tortoise, costData, breedings = [] }) {
             </p>
             <p className="text-[10px] mt-1 italic">Angka ini dibekukan di catatan penjualan saat disimpan, dan tidak ikut berubah bila tarif bulan berikutnya berbeda.</p>
           </div>
+        )}
+
+        {/*
+          Baris obat hanya muncul bila memang ada pengambilannya. Menampilkan
+          "Rp 0" pada setiap kura membuat orang menganggapnya wajar, padahal
+          nol di sini berarti pengambilan obatnya belum pernah dicatat.
+        */}
+        {rincianObat.total > 0 && (
+          <Row
+            label="Obat & Barang Gudang"
+            value={`Rp ${fmt(hppRinci.obat)}`}
+            sub={
+              <>
+                {rincianObat.baris.length} kali pengambilan:{" "}
+                {rincianObat.baris
+                  .slice(0, 4)
+                  .map((m) => `${m.item_name} ×${m.quantity}`)
+                  .join(", ")}
+                {rincianObat.baris.length > 4 ? `, +${rincianObat.baris.length - 4} lagi` : ""}
+              </>
+            }
+          />
         )}
 
         <Row label="Ongkos Kirim" value={`Rp ${fmt(shippingCost)}`} />
