@@ -14,6 +14,7 @@ import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget"
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 import PageHeader from "@/components/common/PageHeader";
+import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import { TeamArt } from "@/components/common/Illustration";
 import { saldoTerkini } from "@/lib/kasKecil";
 import { periksaStok } from "@/lib/stokMenipis";
@@ -208,6 +209,15 @@ export default function KepalaFeederDashboard({ user }) {
           { key: "poin", icon: Star, label: "Poin saya hari ini", value: myTodayPoin },
         ]}
       />
+
+      {/*
+        ── AMBIL BARANG (SCAN) ──
+        Ditaruh di layar ini, bukan cuma di halaman Stok, karena pengambilan
+        obat terjadi di depan rak — bukan saat orang sedang membuka menu
+        gudang. Selama aplikasi ini berdiri, TIDAK ADA satu pun catatan barang
+        keluar; jaraknya ke tombol adalah salah satu sebabnya.
+      */}
+      <AmbilBarangScan trigger="card" />
 
       {/* ── MOTIVASI HARIAN ── */}
       <MotivasiHarianCard />
