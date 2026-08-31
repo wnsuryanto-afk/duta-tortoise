@@ -428,8 +428,10 @@ function StepReview({ form, tortoise, costData, breedings = [] }) {
 
         {/* Purchase price row */}
         {isHasilSendiri ? (
-          <Row label="Harga Beli / Kulakan" value="Rp 0"
-            sub="🐣 Hasil penetasan sendiri — harga beli Rp 0" />
+          <Row label="Biaya Induk" value={`Rp ${fmt(purchasePrice)}`}
+            sub={hppRinci.indukTakKetemu
+              ? "⚠️ Hasil tetasan sendiri, tapi clutch asalnya tidak ketemu — biaya induk tidak bisa dihitung dan HPP ini terlalu murah"
+              : `🐣 Hasil tetasan sendiri — perawatan induk selama ${induk?.hari || 0} hari pengeraman, dibagi ${induk?.menetas || 0} telur yang menetas`} />
         ) : purchasePriceEmpty ? (
           <Row label="Harga Beli / Kulakan" value="Rp 0"
             sub="ℹ️ Harga beli tidak diisi — HPP hanya dari biaya perawatan + ongkir" />
@@ -445,18 +447,18 @@ function StepReview({ form, tortoise, costData, breedings = [] }) {
             </span>
           }
           value={`Rp ${fmt(estimasiPerawatan)}`}
-          sub={<>{farmMonths} bulan × Rp {fmt(biayaPerBulan)}/bln · {entryLabel}: {entryDisplay || "tidak diketahui"} · <span className={isDataAktual ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>{isDataAktual ? "Data aktual" : "Estimasi default"}</span></>}
+          sub={<>{farmMonths.toFixed(1)} bulan × Rp {fmt(biayaPerBulan)}/bln · {entryLabel}: {entryDisplay || "tidak diketahui"} · <span className={isDataAktual ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>{isDataAktual ? "Data aktual" : "Estimasi default"}</span></>}
         />
 
         {showTooltip && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-800 space-y-0.5">
-            <p className="font-semibold">Estimasi Rp 150.000/bulan mencakup:</p>
-            <p>• Pakan (sayur, pelet, hay): ~Rp 75.000</p>
-            <p>• Vitamin & suplemen: ~Rp 25.000</p>
-            <p>• Obat preventif: ~Rp 15.000</p>
-            <p>• Listrik/air pro-rata: ~Rp 25.000</p>
-            <p>• Substrat/pasir: ~Rp 10.000</p>
-            <p className="text-[10px] mt-1 italic">Catatan: ini estimasi rata-rata, bukan kumulatif aktual.</p>
+            <p className="font-semibold">Rp {fmt(biayaPerBulan)}/ekor/bulan</p>
+            <p>
+              {isDataAktual
+                ? "Dihitung dari seluruh pengeluaran yang tercatat, dibagi jumlah kura yang ada di peternakan. Rata-rata beberapa bulan, bukan bulan berjalan — bulan berjalan bisa terlihat sangat murah hanya karena pencatatannya belum lengkap."
+                : "Belum ada pengeluaran tercatat pada periode ini, jadi dipakai angka cadangan dari Pengaturan (hpp_fallback_per_ekor)."}
+            </p>
+            <p className="text-[10px] mt-1 italic">Angka ini dibekukan di catatan penjualan saat disimpan, dan tidak ikut berubah bila tarif bulan berikutnya berbeda.</p>
           </div>
         )}
 
@@ -464,7 +466,7 @@ function StepReview({ form, tortoise, costData, breedings = [] }) {
         <div className="border-t mt-2 pt-2">
           <Row label="TOTAL HPP" value={`Rp ${fmt(totalHpp)}`} bold />
         </div>
-        {farmMonths === 0 && !isHasilSendiri && (
+        {farmMonths <= 0 && !isHasilSendiri && (
           <p className="text-[11px] text-amber-600 mt-1">⚠️ Tanggal masuk farm tidak diketahui, estimasi perawatan = Rp 0</p>
         )}
       </div>
