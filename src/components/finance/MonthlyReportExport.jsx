@@ -167,7 +167,7 @@ export default function MonthlyReportExport({ role }) {
       const [
         transactions, tortoises, sales, healthRecords,
         breedings, attendances, kasbons, salarySlips,
-        companySettings,
+        companySettings, buyerProfiles,
       ] = await Promise.all([
         base44.entities.FinanceTransaction.list("-date", 1000),
         base44.entities.Tortoise.list("-created_date", 200),
@@ -178,9 +178,14 @@ export default function MonthlyReportExport({ role }) {
         base44.entities.Kasbon.list("-created_date", 50),
         base44.entities.SalarySlip.filter({ period }),
         base44.entities.CompanySettings.filter({ setting_key: "main" }),
+        base44.entities.BuyerProfile.list("-last_purchase_date", 300),
       ]);
 
       const settings = companySettings[0] || {};
+      // Kota pembeli hidup di BuyerProfile, bukan di Sale.
+      const buyerById = new Map(
+        (buyerProfiles || []).filter((b) => b?.id).map((b) => [b.id, b]),
+      );
 
       // Filter by period
       const periodTx = transactions.filter(t => t.date >= start && t.date <= end && masukLaporan(t));
