@@ -19,6 +19,7 @@ import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget"
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 import PageHeader from "@/components/common/PageHeader";
+import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import { TortoiseArt } from "@/components/common/Illustration";
 
 function getMinutesUntil(timeStr) {
@@ -279,6 +280,14 @@ export default function KeeperDashboard() {
           { key: "hari", icon: CheckCircle2, label: "Hari disetujui", value: approvedDays },
         ]}
       />
+
+      {/*
+        ── AMBIL BARANG (SCAN) ──
+        Pengambilan obat terjadi di depan rak, bukan saat orang sedang membuka
+        menu gudang. Selama aplikasi ini berdiri, tidak ada satu pun catatan
+        barang keluar — jaraknya ke tombol adalah salah satu sebabnya.
+      */}
+      <AmbilBarangScan trigger="card" />
 
       {/* ── 1. CHECK-IN ── */}
       <Card className={`p-5 border-2 ${hasCheckedOut ? "border-green-200 bg-green-50" : hasCheckedIn ? "border-primary/30 bg-primary/5" : "border-dashed border-muted-foreground/30"}`}>
