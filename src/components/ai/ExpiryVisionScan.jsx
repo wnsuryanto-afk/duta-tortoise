@@ -36,8 +36,10 @@ export default function ExpiryVisionScan({ onApplied, disabled }) {
   const uploadImages = async () => {
     const urls = [];
     for (const img of images) {
-      if (!img.blob) continue;
-      try { const r = await base44.integrations.Core.UploadFile({ file: img.blob }); if (r?.file_url) urls.push(r.file_url); } catch { /* opsional */ }
+      // img.file, bukan img.blob — lihat catatan sama di InvoiceVisionUpload.
+      const berkas = img.file || img.blob;
+      if (!berkas) continue;
+      try { const r = await base44.integrations.Core.UploadFile({ file: berkas }); if (r?.file_url) urls.push(r.file_url); } catch { /* opsional */ }
     }
     return urls;
   };
