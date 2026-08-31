@@ -18,6 +18,10 @@ import StokInventoryTab from "@/components/stok/StokInventoryTab";
 import StokPergerakanTab from "@/components/stok/StokPergerakanTab";
 import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
 import StokResepTab from "@/components/stok/StokResepTab";
+// Sisi "barang keluar" yang selama ini kosong. Ditaruh di kepala halaman,
+// bukan di dalam tab, karena inilah satu-satunya hal yang dilakukan feeder di
+// depan rak — sementara tab-tab di bawah untuk pengelola.
+import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 
 function StatCard({ label, value, sub, color = "text-foreground", icon: Icon }) {
   return (
@@ -86,9 +90,12 @@ export default function UnifiedStokPage() {
   return (
     <div className="space-y-5 p-4 sm:p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Stok & Gudang</h1>
-        <p className="text-muted-foreground text-sm">Inventaris pakan, obat, alat & pergerakan stok terpusat</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-heading font-bold">Stok & Gudang</h1>
+          <p className="text-muted-foreground text-sm">Inventaris pakan, obat, alat & pergerakan stok terpusat</p>
+        </div>
+        <AmbilBarangScan />
       </div>
 
       {/* Summary cards */}
