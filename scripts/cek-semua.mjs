@@ -15,6 +15,9 @@
  *   cek-entitas     tabel yang dibaca tapi tak pernah ditulis (layar selalu
  *                   kosong), ditulis tapi tak pernah dibaca (data hilang), atau
  *                   menganggur menunggu ditulisi orang yang salah sangka
+ *   eslint          variabel yang dipakai tapi tidak ada (no-undef). Halaman
+ *                   Pembelian pernah mati karena satu sisa nama variabel di
+ *                   daftar dependensi useMemo — build tetap hijau.
  *
  * Jalankan:  node scripts/cek-semua.mjs
  */
@@ -32,6 +35,18 @@ for (const p of PENJAGA) {
     process.stderr.write(e.stderr || "");
     gagal++;
   }
+}
+
+// ESLint ikut dijalankan di sini, bukan berdiri sendiri — penjaga yang harus
+// diingat orang untuk dijalankan terpisah adalah penjaga yang tidak dijalankan.
+process.stdout.write(`\n── eslint ${"─".repeat(40)}\n`);
+try {
+  execFileSync("npx", ["eslint", ".", "--quiet"], { encoding: "utf8", stdio: "pipe" });
+  process.stdout.write("Tidak ada variabel tak dikenal atau impor menganggur.\n");
+} catch (e) {
+  process.stdout.write(e.stdout || "");
+  process.stderr.write(e.stderr || "");
+  gagal++;
 }
 
 console.log(gagal === 0 ? "\nSemua penjaga lolos." : `\n${gagal} penjaga gagal.`);
