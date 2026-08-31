@@ -4,6 +4,7 @@
  * Semua perkiraan ditandai ± (rentang, bukan tanggal pasti).
  */
 import { addDays, differenceInDays, parseISO } from "date-fns";
+import { STATUS_ADA_HASIL } from "@/lib/hasilInkubasi";
 
 const EGG_LAY_MIN_DAYS = 30;
 const EGG_LAY_MAX_DAYS = 45;
@@ -53,7 +54,8 @@ export function getBreedingMilestones(b) {
  * Batch sudah menetas/selesai/gagal tidak dianggap segera.
  */
 export function isBatchSegera(b, now = new Date()) {
-  if (["menetas", "selesai", "gagal"].includes(b.status)) return false;
+  // Daftarnya dari lib/hasilInkubasi.js — jangan ditulis ulang di sini.
+  if (STATUS_ADA_HASIL.includes(b.status)) return false;
   const m = getBreedingMilestones(b);
 
   const within14 = (start, end) => {

@@ -10,6 +10,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import { getBreedingMilestones, isBatchSegera, getNextMilestone } from "@/lib/breedingCalendarUtils";
 import BreedingBatchDetail from "@/components/breeding/BreedingBatchDetail";
 import { clutchAktif } from "@/lib/breedingUtils";
+import { STATUS_ADA_HASIL } from "@/lib/hasilInkubasi";
 
 const STATUS_CONFIG = {
   bertelur: { label: "Bertelur", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -170,7 +171,7 @@ export default function BreedingCalendarPage() {
 
   const { activeBatches, historyBatches, segeraBatches } = useMemo(() => {
     const active = breedings.filter(clutchAktif);
-    const history = breedings.filter(b => !b.is_archived && ["menetas", "selesai", "gagal"].includes(b.status));
+    const history = breedings.filter(b => !b.is_archived && STATUS_ADA_HASIL.includes(b.status));
     const segera = breedings.filter(b => isBatchSegera(b, now));
     return { activeBatches: active, historyBatches: history, segeraBatches: segera };
   }, [breedings]);
