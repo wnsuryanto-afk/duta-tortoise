@@ -66,12 +66,12 @@ export default function TahapYangKurang({ onSelesai }) {
     queryFn: () => base44.entities.SOPTask.filter({ is_active: true }),
     staleTime: 5 * 60 * 1000,
   });
-// WarehouseTransaction DIHAPUS dari layar ini 31-08-2026. Tabel itu dibaca tiga
-// layar tapi TIDAK ADA satu pun berkas yang menulisnya — buku stok kedua yang
-// permanen kosong. Menggabungkannya dengan StockMovement tidak merusak angka,
-// tapi membuat tiap layar menunggu satu panggilan jaringan untuk daftar yang
-// selalu kosong, dan membuat pembaca kode berikutnya mengira ada dua buku yang
-// sama-sama hidup.
+  // WarehouseTransaction DIHAPUS dari layar ini 31-08-2026. Tabel itu dibaca
+  // tiga layar tapi TIDAK ADA satu pun berkas yang menulisnya — buku stok kedua
+  // yang permanen kosong. Menggabungkannya dengan StockMovement tidak merusak
+  // angka, tapi membuat tiap layar menunggu satu panggilan jaringan untuk daftar
+  // yang selalu kosong, dan membuat pembaca kode berikutnya mengira ada dua buku
+  // yang sama-sama hidup.
   const { data: pergerakan = [] } = useQuery({
     queryKey: ["stock-movements", "-date", 500],
     queryFn: () => base44.entities.StockMovement.list("-date", 500),
