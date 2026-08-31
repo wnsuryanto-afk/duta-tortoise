@@ -367,7 +367,13 @@ export default function PembelianPage() {
           category: KATEGORI_FINANCE[katUtama] || "operasional",
           amount: Math.round(totalBiaya),
           date: today(),
-          description: `Pembelian ${items.length} barang${p.platform ? ` via ${p.platform}` : ""} — dibayar ${p.dibayar_oleh_nama}`,
+          // Nama pembayar bisa kosong — mis. pesanan yang dicatat dari
+          // screenshot saat statusnya masih "Belum Bayar". Tanpa penjaga ini,
+          // keterangan biayanya tertulis "dibayar null" dan ikut tercetak di
+          // laporan keuangan.
+          description:
+            `Pembelian ${items.length} barang${p.platform ? ` via ${p.platform}` : ""}` +
+            (p.dibayar_oleh_nama ? ` — dibayar ${p.dibayar_oleh_nama}` : " — pembayar belum dicatat"),
           reference_id: p.id,
           invoice_photo_url: p.bukti_pesanan_url || "",
           created_by_name: user?.full_name || user?.email,
