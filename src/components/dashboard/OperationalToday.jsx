@@ -22,14 +22,18 @@ export default function OperationalToday() {
   });
   const todayTreatments = treatments.filter(t => t.next_due === today);
 
-  // Maintenance hari ini
-  const { data: schedules = [] } = useQuery({
-    queryKey: ["maintenance-schedules-op"],
-    queryFn: () => base44.entities.MaintenanceSchedule.filter({ is_active: true }),
-  });
-  const todayMaintenance = schedules.filter(s => s.next_due === today);
-  const pakanCount = todayMaintenance.filter(s => s.task_type === 'pakan').length;
-  const bersihCount = todayMaintenance.filter(s => s.task_type.includes('kebersihan')).length;
+  // Kartu "Perawatan Kandang" DIHAPUS 31-08-2026.
+  //
+  // Ia membaca MaintenanceSchedule — tabel yang barisnya memang ada tapi
+  // SELURUHNYA is_active: false, dan tidak ada satu pun berkas di aplikasi ini
+  // yang bisa membuat atau mengaktifkannya kembali. Jadi kartunya selamanya
+  // menampilkan 0 dan menautkan ke halaman yang tidak menampilkan jadwal apa
+  // pun. Angka nol yang tidak pernah berubah mengajari orang mengabaikan
+  // seluruh baris kartu ini — termasuk kartu di sebelahnya yang isinya nyata.
+  //
+  // Pekerjaan berulang di peternakan ini ditangani tugas SOP, dan hasilnya
+  // dicatat ke MaintenanceLog oleh Tugas Hari Ini. Itu yang hidup; ini roda
+  // ketiga yang tidak menyentuh tanah.
 
   // Karantina aktif
   const { data: tortoises = [] } = useQuery({
@@ -94,23 +98,6 @@ export default function OperationalToday() {
       aktif). Kalau nanti diputuskan MaintenanceSchedule memang tidak dipakai,
       halaman dan tabelnya bisa dihapus sekalian.
     */
-    ...(todayMaintenance.length === 0 ? [] : [{
-      title: "Perawatan Kandang",
-      icon: Home,
-      color: "text-chart-3",
-      bgColor: "bg-chart-3/10",
-      onClick: () => navigate("/maintenance-schedule"),
-      content: (
-        <div>
-          <p className="text-2xl font-bold text-chart-3">{todayMaintenance.length}</p>
-          <p className="text-xs text-muted-foreground">kandang dijadwalkan</p>
-          <div className="flex gap-2 mt-2 text-xs">
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded">Pakan: {pakanCount}</span>
-            <span className="bg-secondary text-secondary-foreground px-2 py-1 rounded">Bersih: {bersihCount}</span>
-          </div>
-        </div>
-      ),
-    }]),
     {
       title: "Karantina",
       icon: Tent,
