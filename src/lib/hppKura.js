@@ -184,6 +184,15 @@ export function hitungHppKura({
   hargaBeliInput = null,
   ongkir = 0,
   tanggalJual = null,
+  // Biaya obat & barang gudang yang pernah dibebankan ke kura ini. Dihitung
+  // pemanggil lewat biayaBarangKura() di lib/pemakaianBarang.js, dari catatan
+  // pengambilan barang yang menyebut kode kura ini.
+  //
+  // Sebelum ini ada, HPP seekor kura hanya berisi modal + perawatan bulanan.
+  // Kura yang diobati berbulan-bulan dan kura yang tidak pernah sakit punya
+  // harga pokok yang sama persis, jadi marginnya menipu ke arah yang sama
+  // setiap kali: kura bermasalah terlihat paling menguntungkan.
+  biayaObat = 0,
 } = {}) {
   const dariFarm = lahirDiFarm(kura);
 
@@ -203,12 +212,14 @@ export function hitungHppKura({
   const bulan = bulanDiFarm(kura, tanggalJual);
   const perawatan = Math.round(bulan * angka(tarifPerBulan));
   const biayaKirim = angka(ongkir);
+  const obat = angka(biayaObat);
 
   return {
     modal,
     perawatan,
+    obat,
     ongkir: biayaKirim,
-    total: modal + perawatan + biayaKirim,
+    total: modal + perawatan + obat + biayaKirim,
     bulan,
     dariFarm,
     clutch,
