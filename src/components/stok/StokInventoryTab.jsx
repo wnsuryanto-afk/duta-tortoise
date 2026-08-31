@@ -13,20 +13,22 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
 import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { statusStok, URUTAN_STATUS, stokHabis } from "@/lib/stokMenipis";
 
 function formatRp(v) { return "Rp " + Number(v || 0).toLocaleString("id-ID"); }
 
+// stockStatus lokal dihapus. Ambangnya sendiri (`< minimum * 1.5` untuk
+// "waspada") membuat barang yang sama berlencana Waspada di sini dan Aman di
+// halaman Gudang. Sekarang satu aturan: lib/stokMenipis.js.
 function stockStatus(item) {
-  if (item.current_stock <= 0) return "kritis";
-  if (item.current_stock < item.minimum_stock) return "kritis";
-  if (item.current_stock < item.minimum_stock * 1.5) return "waspada";
-  return "aman";
+  return statusStok(item);
 }
 
 function StockStatusBadge({ item }) {
   const s = stockStatus(item);
-  if (s === "kritis") return <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">🔴 Kritis</Badge>;
-  if (s === "waspada") return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-[10px]">🟡 Waspada</Badge>;
+  if (s === "tidak_dilacak") return <Badge className="bg-muted text-muted-foreground text-[10px]">Tidak dilacak</Badge>;
+  if (s === "habis") return <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">🔴 Habis</Badge>;
+  if (s === "menipis") return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-[10px]">🟡 Menipis</Badge>;
   return <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px]">🟢 Aman</Badge>;
 }
 
@@ -540,13 +542,12 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
         return matchSearch && matchCat && matchStock;
       })
       .sort((a, b) => {
-        const order = { kritis: 0, waspada: 1, aman: 2 };
-        return order[stockStatus(a)] - order[stockStatus(b)];
+        return URUTAN_STATUS[stockStatus(a)] - URUTAN_STATUS[stockStatus(b)];
       });
   }, [allItems, search, catFilter, stockFilter]);
 
-  const criticalMandatory = allItems.filter(i => i.is_mandatory && stockStatus(i) === "kritis").length;
-  const mandatoryEmpty    = allItems.filter(i => i.is_mandatory && i.current_stock <= 0).length;
+  const criticalMandatory = allItems.filter(i => i.is_mandatory && ["habis", "menipis"].includes(stockStatus(i))).length;
+  const mandatoryEmpty    = allItems.filter(stokHabis).length;
 
   const handleDelete = async (item) => {
     if (!confirm(`Hapus "${item.name}"?`)) return;
