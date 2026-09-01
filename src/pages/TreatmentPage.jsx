@@ -143,7 +143,17 @@ export default function TreatmentPage() {
     },
     staleTime: 5 * 60 * 1000,
   });
-  const sedangMundur = (j) => j?.nonaktif_bila_racikan_ada === true && stokRacikan > 0;
+  // Aturan mundur TIDAK ditulis ulang di sini. Sampai 01-09-2026 halaman ini
+  // punya salinannya sendiri (nonaktif_bila_racikan_ada && stok > 0), dan
+  // salinan itu tidak tahu bahwa racikan hanya diberikan kepada betina —
+  // sehingga lencana "Mundur" terpasang pada jadwal yang sebenarnya masih
+  // berjalan untuk 28 kura jantan. Satu definisi, di lib/jadwalPerawatan.
+  const mundurnya = (j) => {
+    const hasil = sesuaikanMundurRacikan(j, stokRacikan > 0);
+    if (hasil === j) return "tidak";
+    if (hasil === null) return "penuh";
+    return "sebagian";
+  };
 
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
@@ -473,8 +483,10 @@ export default function TreatmentPage() {
                           )}
                           {schedule.apply_to_all && <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Semua</span>}
                           {pct === 100 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">✓ Semua Selesai</span>}
-                          {sedangMundur(schedule) && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold">⏸ Mundur — racikan tersedia</span>
+                          {mundurnya(schedule) !== "tidak" && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold">
+                              {mundurnya(schedule) === "penuh" ? "⏸ Mundur — racikan tersedia" : "⏸ Mundur untuk betina — jantan tetap jalan"}
+                            </span>
                           )}
                           {schedule.frequency === "musiman" && !musimAktif && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold">⏸ Menunggu musim bertelur</span>
@@ -483,10 +495,11 @@ export default function TreatmentPage() {
                         {/* Sebuah jadwal yang tidak muncul di layar kiper harus MENGATAKAN kenapa.
                             Mekanisme tersembunyi persis yang membuat dua jadwal pencegah egg binding
                             diam selama berbulan-bulan tanpa ada yang menyadarinya. */}
-                        {sedangMundur(schedule) && (
+                        {mundurnya(schedule) !== "tidak" && (
                           <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                            Tidak muncul di layar kiper sekarang: kandungannya sudah ada di dalam racikan Duta Repro yang tersedia.
-                            Begitu racikan habis, jadwal ini muncul lagi sendiri.
+                            {mundurnya(schedule) === "penuh"
+                              ? "Tidak muncul di layar kiper sekarang: kandungannya sudah ada di dalam racikan Duta Repro yang tersedia. Begitu racikan habis, jadwal ini muncul lagi sendiri."
+                              : "Untuk BETINA jadwal ini mundur — kandungannya sudah ada di racikan Duta Repro. Untuk JANTAN tetap berjalan, karena racikan itu tidak pernah diberikan kepada jantan. Begitu racikan habis, jadwal ini kembali penuh untuk semua."}
                           </p>
                         )}
                         {schedule.frequency === "musiman" && !musimAktif && (
