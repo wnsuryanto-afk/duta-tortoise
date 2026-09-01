@@ -66,7 +66,12 @@
       "type": "string"
     },
     "tanggal_expired": {
-      "description": "Tanggal kedaluwarsa batch. Dasar urutan pengambilan.",
+      "description": "Tanggal kedaluwarsa yang TERCETAK di kemasan. Dasar urutan pengambilan, kecuali botolnya sudah dibuka - lihat tanggal_buka.",
+      "format": "date",
+      "type": "string"
+    },
+    "tanggal_buka": {
+      "description": "Tanggal botol multi-dosis pertama kali dibuka atau tutupnya ditusuk. Untuk botol seperti ini tanggal cetak di kemasan berlaku selama botolnya masih tersegel; sesudah dibuka, isinya punya batas pakainya sendiri (WarehouseItem.hari_pakai_setelah_dibuka). Yang lebih dulu jatuh tempo, itu yang berlaku - lihat lib/kedaluwarsaBatch.js. Kosong berarti belum pernah dibuka, atau bukan botol multi-dosis.",
       "format": "date",
       "type": "string"
     },

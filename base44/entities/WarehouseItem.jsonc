@@ -72,6 +72,10 @@
       "type": "string",
       "format": "date"
     },
+    "hari_pakai_setelah_dibuka": {
+      "type": "number",
+      "description": "Berapa hari isi botol masih boleh dipakai setelah tutupnya dibuka/ditusuk pertama kali. Hanya diisi untuk botol multi-dosis (mis. vial injeksi 100 dosis). Kosong berarti aturan ini tidak berlaku dan hanya tanggal cetak yang dipakai. ANGKANYA DARI DOKTER HEWAN, bukan dari aplikasi - jangan diisi dengan tebakan."
+    },
     "batch_number": {
       "type": "string"
     },
