@@ -544,7 +544,14 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     const [shoppingList, pembelian, kasbonPending, pendingApproval, incompleteTortoises] =
       await Promise.all([
         base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }).catch(() => []),
-        base44.asServiceRole.entities.PembelianBarang.filter({ status: "dipesan" }).catch(() => []),
+        // Dulu hanya pesanan berstatus "dipesan" yang dibaca. Akibatnya baris
+        // "Talangan belum dilunasi" hanya menghitung utang pada pesanan yang
+        // barangnya BELUM datang — padahal talangan justru menumpuk pada
+        // pesanan yang sudah diterima. Pada 31-08-2026 utang farm ke Iwan
+        // Rp 1.209.894 dari 16 pesanan yang sudah datang, dan tidak satu pun
+        // muncul di ringkasan. Dibaca semuanya; penyaringan status dilakukan
+        // di tempat pemakaian masing-masing.
+        base44.asServiceRole.entities.PembelianBarang.list("-tanggal_pesan", 200).catch(() => []),
         base44.asServiceRole.entities.Kasbon.filter({ status: "pending" }).catch(() => []),
         base44.asServiceRole.entities.DailyChecklist.filter({ status: "submitted" }).catch(() => []),
         Promise.resolve(tortoises),
@@ -626,10 +633,15 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         belanjaOwner.push(`     …${ekor.join(" + ")} — buka menu Harus Dibeli`);
       }
     }
-    if (pembelian.length > 0) {
-      belanjaOwner.push(`  • ${pembelian.length} pesanan masih ditunggu barangnya`);
+    const menunggu = pembelian.filter((p) => p.status === "dipesan");
+    if (menunggu.length > 0) {
+      belanjaOwner.push(`  • ${menunggu.length} pesanan masih ditunggu barangnya`);
     }
-    const utang = pembelian.filter((p) => p.is_talangan && p.status_utang === "belum_dibayar");
+    // Talangan dihitung dari SEMUA pesanan yang belum dilunasi dan tidak
+    // dibatalkan — bukan cuma yang barangnya belum datang.
+    const utang = pembelian.filter(
+      (p) => p.is_talangan && p.status_utang === "belum_dibayar" && p.status !== "dibatalkan",
+    );
     if (utang.length > 0) {
       const totalUtang = utang.reduce((t, p) => t + (p.total_bayar || 0), 0);
       belanjaOwner.push(`  • Talangan belum dilunasi: ${rp(totalUtang)}`);
