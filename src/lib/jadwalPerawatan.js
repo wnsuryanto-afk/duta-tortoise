@@ -53,17 +53,13 @@ export function berlakuHariIni(jadwal, keadaan = {}) {
 
   const hari = keadaan.hari instanceof Date ? keadaan.hari : new Date();
 
-  // ── Jadwal yang mundur saat racikan tersedia ──
+  // ATURAN MUNDUR RACIKAN TIDAK LAGI DI SINI.
   //
-  // Kalsium, asam folat, dan vitamin E sudah terkandung di dalam racikan Duta
-  // Repro. Menjalankan keduanya berarti dosis dobel: kalsium 20 g dan folat 2x
-  // sehari. Tetapi jadwal lamanya TIDAK dimatikan, hanya mundur - kalau racikan
-  // habis dan belum diracik ulang, jadwal ini hidup kembali dengan sendirinya.
-  // Mematikannya permanen akan membuat betina kehilangan kalsium tepat pada
-  // jeda antar-batch, yaitu keadaan yang justru memicu egg binding.
-  if (jadwal.nonaktif_bila_racikan_ada === true && keadaan.racikanTersedia === true) {
-    return false;
-  }
+  // Aturannya sekarang ada di sesuaikanMundurRacikan() di bawah, karena ia
+  // perlu MENGUBAH jadwal (mempersempit ke jantan), bukan sekadar menjawab
+  // ya/tidak. jadwalBerlaku() memanggilnya lebih dulu, jadi pemakai pustaka
+  // ini tidak perlu tahu bedanya. Kalau Anda memanggil berlakuHariIni()
+  // langsung, jalankan sesuaikanMundurRacikan() lebih dulu.
 
   const f = jadwal.frequency;
 
@@ -120,7 +116,43 @@ export function berlakuHariIni(jadwal, keadaan = {}) {
   return false;
 }
 
+
+/**
+ * Sesuaikan satu jadwal terhadap keberadaan racikan Duta Repro.
+ *
+ * KENAPA ADA: racikan Duta Repro HANYA diberikan kepada betina - 15 g/ekor,
+ * dan tugas SOP-nya memang tertulis "SEMUA kura BETINA". Tetapi jadwal kalsium
+ * dan vitamin E yang mundur karenanya berlaku untuk SEMUA kura. Aturan lama
+ * mematikan jadwal itu seluruhnya begitu racikan ada stoknya, sehingga 28 kura
+ * JANTAN berhenti menerima 10 g kalsium per hari - tanpa satu pun layar yang
+ * memberi tahu, karena dari luar jadwalnya terlihat "sudah tergantikan".
+ *
+ * Kura jantan tidak pernah menerima racikan itu. Tidak ada yang menggantikan
+ * apa pun untuk mereka.
+ *
+ * @returns jadwal yang berlaku (kadang dipersempit ke jantan), atau null bila
+ *   isinya memang sudah seluruhnya digantikan racikan.
+ */
+export function sesuaikanMundurRacikan(jadwal, racikanTersedia) {
+  if (!jadwal) return null;
+  if (jadwal.nonaktif_bila_racikan_ada !== true) return jadwal;
+  if (racikanTersedia !== true) return jadwal;
+
+  const untuk = jadwal.gender_filter || "semua";
+
+  // Khusus betina: isinya benar-benar sudah ada di racikan. Mundur seluruhnya.
+  if (untuk === "betina") return null;
+
+  // Khusus jantan: racikan tidak menyentuh mereka sama sekali. Tetap jalan.
+  if (untuk === "jantan") return jadwal;
+
+  // Untuk semua kura: yang tergantikan hanya bagian betinanya. Sisakan jantan.
+  return { ...jadwal, gender_filter: "jantan" };
+}
+
 /** Saring satu daftar jadwal untuk hari tertentu. */
 export function jadwalBerlaku(daftar = [], keadaan = {}) {
-  return (daftar || []).filter((j) => berlakuHariIni(j, keadaan));
+  return (daftar || [])
+    .map((j) => sesuaikanMundurRacikan(j, keadaan.racikanTersedia === true))
+    .filter((j) => j && berlakuHariIni(j, keadaan));
 }
