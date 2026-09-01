@@ -1,6 +1,6 @@
 {
   "name": "sendDailyApprovalReminder",
-  "entry": "entry.ts",
+  "entry": "base44/functions/sendDailyApprovalReminder/entry.ts",
   "automations": [
     {
       "name": "WA Pengingat Harian Approval 17:30",
