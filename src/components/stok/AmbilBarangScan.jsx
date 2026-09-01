@@ -42,6 +42,7 @@ import {
   nilaiPengambilan,
   cariDariPindaian,
 } from "@/lib/pemakaianBarang";
+import { statusKedaluwarsaBatch, alasanKedaluwarsaBatch } from "@/lib/kedaluwarsaBatch";
 
 const rp = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 const hariIni = () => new Date().toISOString().split("T")[0];
@@ -55,6 +56,7 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
   const [scanUntuk, setScanUntuk] = useState("barang"); // "barang" | "kura"
   const [item, setItem] = useState(null);
   const [batch, setBatch] = useState(null);
+  const [menandaiBuka, setMenandaiBuka] = useState(false);
   const [jumlah, setJumlah] = useState(1);
   const [keperluan, setKeperluan] = useState("pengobatan_kura");
   const [kodeKura, setKodeKura] = useState("");
@@ -230,9 +232,67 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
                   {batch && (
                     <p className="text-[11px] text-muted-foreground font-mono">
                       Batch {batch.batch_code} · sisa {batch.jumlah_sisa} {batch.satuan || item.unit}
-                      {batch.tanggal_expired ? ` · kedaluwarsa ${batch.tanggal_expired}` : ""}
                     </p>
                   )}
+                </div>
+
+                {/*
+                  Peringatan kedaluwarsa ditampilkan DI SINI, pada satu-satunya
+                  saat orangnya memegang botolnya. Tanggal yang cuma tersimpan
+                  di basis data tidak pernah menghentikan siapa pun.
+
+                  Untuk botol multi-dosis yang berlaku adalah mana yang lebih
+                  dulu tiba: tanggal cetak, atau tanggal dibuka + masa pakainya.
+                  Aturannya satu, di lib/kedaluwarsaBatch.js.
+                */}
+                {batch && (
+                  <div className="space-y-2">
+                    {(() => {
+                      const st = statusKedaluwarsaBatch(batch, item);
+                      const warna =
+                        st.keadaan === "lewat"
+                          ? "bg-red-50 border-red-300 text-red-800"
+                          : st.keadaan === "segera"
+                            ? "bg-amber-50 border-amber-200 text-amber-800"
+                            : "bg-muted/40 border-border text-muted-foreground";
+                      return (
+                        <div className={`rounded-lg border p-2.5 text-xs ${warna}`}>
+                          {st.keadaan === "lewat" && (
+                            <p className="font-semibold mb-0.5">JANGAN DIPAKAI — periksa dulu ke dokter hewan.</p>
+                          )}
+                          {alasanKedaluwarsaBatch(batch, item)}
+                        </div>
+                      );
+                    })()}
+
+                    {!batch.tanggal_buka && Number(item.hari_pakai_setelah_dibuka) > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={menandaiBuka}
+                        onClick={async () => {
+                          setMenandaiBuka(true);
+                          const tgl = hariIni();
+                          try {
+                            await base44.entities.BatchBarang.update(batch.id, { tanggal_buka: tgl });
+                            setBatch((b) => ({ ...b, tanggal_buka: tgl }));
+                            qc.invalidateQueries({ queryKey: ["batch-barang"] });
+                            toast.success(`Botol ditandai dibuka ${tgl}`);
+                          } catch (e) {
+                            toast.error("Gagal menandai: " + (e?.message || ""));
+                          }
+                          setMenandaiBuka(false);
+                        }}
+                      >
+                        {menandaiBuka && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                        Botol ini baru dibuka hari ini
+                      </Button>
+                    )}
+                  </div>
+                )}
+                <div className="hidden">
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
