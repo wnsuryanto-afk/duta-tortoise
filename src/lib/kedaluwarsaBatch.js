@@ -19,7 +19,14 @@
  * buruk — menyatakan aman obat yang sudah tidak.
  */
 
-/** Berapa hari sebelum jatuh tempo sebuah botol mulai diperingatkan. */
+/**
+ * Berapa hari sebelum jatuh tempo sebuah botol mulai diperingatkan.
+ *
+ * Lebih pendek daripada HARI_PERINGATAN_KADALUARSA (30 hari) di
+ * lib/stokMenipis.js, dan itu disengaja: angka 30 hari itu untuk memutuskan
+ * KAPAN MEMBELI pengganti, sedangkan angka ini untuk memperingatkan orang yang
+ * sedang memegang botolnya. Dua pertanyaan berbeda, dua ambang berbeda.
+ */
 export const HARI_PERINGATAN_BATCH = 14;
 
 function keTanggal(nilai) {
