@@ -25,7 +25,7 @@ import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 import { kandangWajib, tugasUbinKandang, poinUbinKandang } from "@/lib/kandang";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
-import { jadwalBerlaku } from "@/lib/jadwalPerawatan";
+import { jadwalBerlaku, sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
 import { masukLaporan } from "@/lib/laporan";
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -407,11 +407,13 @@ export default function GuidedHariIni({ user }) {
   });
 
   // Berapa jadwal yang HARUSNYA muncul hari ini tetapi mundur karena racikan.
+  // Yang dihitung: jadwal yang benar-benar HILANG hari ini. Jadwal untuk semua
+  // kura tidak hilang — ia menyempit ke jantan saja, karena racikan Duta Repro
+  // hanya diberikan kepada betina. Menghitungnya sebagai "mundur" membuat
+  // kiper mengira kalsium jantan sudah tergantikan; tidak ada yang
+  // menggantikannya.
   const suplemenMundur = (treatmentSchedules || []).filter(
-    (ts) =>
-      ts.is_active === true &&
-      ts.nonaktif_bila_racikan_ada === true &&
-      racikanRepro > 0
+    (ts) => ts.is_active === true && sesuaikanMundurRacikan(ts, racikanRepro > 0) === null
   ).length;
 
   const flashPoin = (label, poin) => {

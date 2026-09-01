@@ -19,6 +19,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, 
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { diPeternakan } from "@/lib/populasiKura";
+import { sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
 
 const FREQ_LABELS = {
   harian:       "Harian",
