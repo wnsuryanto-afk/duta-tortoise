@@ -654,7 +654,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
       // beberapa barang belum punya harga sama sekali — pembacanya menyiapkan
       // uang yang kurang, dan tidak ada yang memberi tahu.
       belanjaOwner.push(
-        `  • ${shoppingList.length} barang belum dibeli${urgent.length ? ` (${urgent.length} segera)` : ""} — est ${rp(totalEst)}` +
+        `  • ${shoppingList.length} barang belum dibeli${jumlahHabis > 0 ? ` (${jumlahHabis} stoknya sudah habis)` : ""} — est ${rp(totalEst)}` +
         (tanpaHarga > 0 ? ` (+${tanpaHarga} barang belum ada harga)` : "")
       );
 
@@ -680,7 +680,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
       };
 
       for (const it of urgent.slice(0, BATAS_SEBUT)) {
-        belanjaOwner.push(`     ‼️ ${baris(it)}`);
+        belanjaOwner.push(`     ${habis(it) ? "‼️" : "·"} ${baris(it)}`);
       }
 
       const sisaSegera = Math.max(0, urgent.length - BATAS_SEBUT);
