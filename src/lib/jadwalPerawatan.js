@@ -133,6 +133,9 @@ export function berlakuHariIni(jadwal, keadaan = {}) {
  * @returns jadwal yang berlaku (kadang dipersempit ke jantan), atau null bila
  *   isinya memang sudah seluruhnya digantikan racikan.
  */
+// Keputusan Iwan 01-09-2026: pilihan A — aturan mundur dibuat sadar jenis
+// kelamin, bukan dipecah jadi dua jadwal terpisah. Satu jadwal tetap satu
+// baris di layar kiper.
 export function sesuaikanMundurRacikan(jadwal, racikanTersedia) {
   if (!jadwal) return null;
   if (jadwal.nonaktif_bila_racikan_ada !== true) return jadwal;
