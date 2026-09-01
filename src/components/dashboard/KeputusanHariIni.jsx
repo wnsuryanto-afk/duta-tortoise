@@ -190,8 +190,13 @@ export default function KeputusanHariIni() {
     for (const i of belumDidaftar) {
       try {
         await base44.entities.ShoppingList.create(
+          // Prioritas TIDAK diketik di sini. Versi lama menulis "segera" untuk
+          // setiap baris, jadi 26 dari 32 baris di daftar belanja bertanda
+          // segera dan kolomnya berhenti bisa dipakai menyaring. Sekarang
+          // barisDariBarang yang menyimpulkannya dari keadaan barangnya —
+          // ambangnya sama dengan yang dipakai kartu ini menilai "gawat".
           barisDariBarang(i, {
-            priority: "segera",
+            urgensi: { sisaHari: i.sisaHari, menguncSOP: i.menguncSOP },
             notes: `Otomatis dari beranda — ${i.alasan}.`,
           })
         );
