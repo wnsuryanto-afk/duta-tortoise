@@ -792,7 +792,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
 
   // Penanda versi: cara paling cepat memastikan fungsi backend yang berjalan
   // sudah versi terbaru atau masih versi lama yang ter-deploy sebelumnya.
-  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v3_`);
+  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v5-daftar-penuh_`);
 
   return lines.join("\n");
 }
