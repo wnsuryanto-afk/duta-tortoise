@@ -29,6 +29,18 @@ import {
  * sebelum jam WIB yang disetel akan selalu tertahan dan pesannya tidak pernah
  * pergi. Bila itu terjadi, log akan menyebutkan alasannya secara terang:
  * `skipped: "belum_waktunya"` beserta jam WIB sekarang dan jam yang disetel.
+ *
+ * TERJADI SUNGGUHAN: pengingat ini berhenti terkirim sejak 27-08-2026. Kiriman
+ * terakhirnya bertanda "00:30 WIB" — yaitu 17:30 UTC. Penjadwalnya memanggil
+ * sekali sehari pada 17:30 UTC, dan sejak penjaga jam ditambahkan, panggilan
+ * jam 00:30 WIB itu SELALU tertahan karena 00:30 belum lewat 17:30. Fungsinya
+ * benar; jadwalnyalah yang salah.
+ *
+ * Dua cara memperbaiki, keduanya di penjadwal Base44, bukan di berkas ini:
+ *   1. Paling sederhana — ubah jadwalnya jadi 10:30 UTC (= 17:30 WIB), supaya
+ *      panggilan sekali sehari itu mendarat tepat pada jamnya.
+ *   2. Atau panggil tiap jam, seperti penjadwal ringkasan harian. Lebih tahan
+ *      banting kalau jam kirimnya diubah lewat halaman Pengaturan WhatsApp.
  */
 
 const JAM_BAWAAN = "17:30";
