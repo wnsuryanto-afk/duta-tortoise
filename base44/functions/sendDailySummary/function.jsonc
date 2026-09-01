@@ -1,0 +1,23 @@
+{
+  "name": "sendDailySummary",
+  "entry": "base44/functions/sendDailySummary/entry.ts",
+  "automations": [
+    {
+      "name": "Daily Summary WhatsApp Check",
+      "description": "Cek dan kirim ringkasan harian/mingguan ke grup WhatsApp bila waktunya tiba (anti-dobel).",
+      "function_args": null,
+      "is_active": true,
+      "type": "scheduled",
+      "schedule_mode": "recurring",
+      "schedule_type": "simple",
+      "repeat_unit": "minutes",
+      "repeat_interval": 10,
+      "start_time": null,
+      "repeat_on_days": null,
+      "repeat_on_day_of_month": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  ]
+}
