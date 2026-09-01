@@ -631,9 +631,23 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     if (shoppingList.length > 0) {
       const totalEst = shoppingList.reduce((t, i) => t + (i.total_est || 0), 0);
       const tanpaHarga = shoppingList.filter((i) => !(i.total_est > 0)).length;
+      const stokById = new Map();
+      for (const w of [...warehouseItems, ...feedStocks]) {
+        if (w?.id) stokById.set(String(w.id), Number(w.current_stock) || 0);
+      }
+      const habis = (it) => {
+        if (!it.warehouse_item_id) return false;
+        const sisa = stokById.get(String(it.warehouse_item_id));
+        return sisa !== undefined && sisa <= 0;
+      };
+      const jumlahHabis = shoppingList.filter(habis).length;
       const urgent = shoppingList
         .filter((i) => i.priority === "segera")
-        .sort((a, b) => (b.total_est || 0) - (a.total_est || 0));
+        .sort(
+          (a, b) =>
+            (habis(b) ? 1 : 0) - (habis(a) ? 1 : 0) ||
+            (b.total_est || 0) - (a.total_est || 0),
+        );
 
       // Perkiraan totalnya HARUS menyebut berapa barang yang belum berharga.
       // Tanpa itu, "est Rp 1.157.640" terbaca sebagai angka lengkap padahal
