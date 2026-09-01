@@ -631,6 +631,16 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     if (shoppingList.length > 0) {
       const totalEst = shoppingList.reduce((t, i) => t + (i.total_est || 0), 0);
       const tanpaHarga = shoppingList.filter((i) => !(i.total_est > 0)).length;
+      /*
+        Penanda "segera" sudah tidak bisa dipakai mengurutkan: 26 dari 32 baris
+        bertanda segera, karena tiap baris yang ditambah lewat tombol di beranda
+        lahir dengan tanda itu. Kalau semua mendesak, tidak ada yang mendesak.
+
+        Yang benar-benar membedakan adalah keadaan stoknya sekarang: barang
+        berstok nol menghentikan pekerjaan hari ini, yang masih ada sisanya
+        tidak. Itu dibaca dari gudang, bukan dari tanda yang diketik orang.
+        Harga cuma jadi pengurut kedua, dan tanda seru hanya untuk yang nol.
+      */
       const stokById = new Map();
       for (const w of [...warehouseItems, ...feedStocks]) {
         if (w?.id) stokById.set(String(w.id), Number(w.current_stock) || 0);
