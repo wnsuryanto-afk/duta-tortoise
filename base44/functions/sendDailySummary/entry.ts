@@ -792,6 +792,14 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
 
   // Penanda versi: cara paling cepat memastikan fungsi backend yang berjalan
   // sudah versi terbaru atau masih versi lama yang ter-deploy sebelumnya.
+  //
+  // NAIKKAN PENANDA INI SETIAP KALI BENTUK PESAN BERUBAH. Pada 01-09-2026
+  // penanda tertahan di "v3" selama dua belas hari sementara isinya berganti
+  // lima kali. Akibatnya tiga screenshot dengan isi dari tiga build berbeda
+  // sama-sama tertulis v3, dan setengah hari habis menebak-nebak build mana
+  // yang sedang berjalan — padahal instans runtime yang masih panas memang
+  // bisa menyajikan bundel lama beberapa menit setelah deploy. Penanda yang
+  // ikut berubah menjawab pertanyaan itu dalam satu lirikan.
   lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v5-daftar-penuh_`);
 
   return lines.join("\n");
