@@ -464,6 +464,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   });
 
   const buyLines: string[] = [];
+  // Lima cukup: ini pengingat, daftar lengkapnya ada di aplikasi.
   const BATAS_MENIPIS = 5;
   for (const item of lowStockItems.slice(0, BATAS_MENIPIS)) {
     if (item.stock <= 0) {
