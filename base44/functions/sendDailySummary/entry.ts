@@ -682,6 +682,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         return namaPendek(it.nama_barang) + " — " + jml + " " + sat + " · " + harga;
       };
 
+      // Urutan kelompok = urutan orang belanja, bukan urutan abjad.
       const KELOMPOK = [
         ["segera", "SEGERA"],
         ["minggu_ini", "Minggu ini"],
