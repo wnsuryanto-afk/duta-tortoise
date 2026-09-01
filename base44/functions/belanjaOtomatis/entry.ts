@@ -1,7 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { dilacak } from "../../shared/stok.ts";
-import { penandaMenunggu, penandaBarang } from "../../shared/daftarBelanja.ts";
+import { penandaMenunggu, penandaBarang, prioritasDariBarang } from "../../shared/daftarBelanja.ts";
 
 /**
  * A7 — Daftar belanja terisi sendiri sebelum stok habis.
@@ -180,7 +180,16 @@ Deno.serve(async (req) => {
         hargaPerUnit: Number(i.purchase_price || 0),
         warehouseItemId: i.id,
         alasan: stok <= 0 ? "stok habis" : `stok ${stok} di bawah minimum ${min}`,
-        segera: stok <= 0,
+        // Untuk barang gudang, "segera" memakai aturan yang sama dengan tombol
+        // di beranda — stok nol saja belum cukup. 43 dari 125 barang gudang
+        // berstok nol karena memang sengaja tidak distok (obat resep dokter,
+        // suku cadang, alat pinjaman); menyebut semuanya segera adalah cara
+        // lama membuat kolom prioritas berhenti berarti apa-apa.
+        //
+        // Pakan di atas SENGAJA memakai aturannya sendiri: pakan habis
+        // menghentikan pekerjaan hari itu juga, tidak peduli ditandai wajib
+        // atau tidak.
+        segera: prioritasDariBarang(i) === "segera",
       });
     }
 
