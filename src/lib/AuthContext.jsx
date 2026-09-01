@@ -102,8 +102,25 @@ export const AuthProvider = ({ children }) => {
       // ── Pemicu ringkasan WhatsApp saat app dibuka (semua role) ──
       // Fire-and-forget: diam-diam, tidak memblokir tampilan, gagal tanpa notifikasi.
       // Body kosong = scheduled check (kirim bila jadwal WIB sudah tiba & belum terkirim hari ini).
+      //
+      // Pengingat approval harian ikut dipicu di sini sejak 31-08-2026.
+      //
+      // Kenapa: penjadwal Base44 memanggilnya sekali sehari pada 17:30 UTC,
+      // yang jatuh 00:30 WIB. Penjaga jam di dalam fungsinya menahan panggilan
+      // itu (00:30 belum lewat 17:30 WIB), jadi sejak penjaga itu ada,
+      // pengingatnya TIDAK PERNAH terkirim lagi — berhenti diam-diam pada
+      // 27-08-2026. Fungsinya benar; jadwalnya yang tidak pernah mendarat pada
+      // jam yang tepat.
+      //
+      // Dipicu dari sini, ia dipanggil berkali-kali sepanjang hari — tiap kali
+      // siapa pun membuka aplikasi — dan penjaga jam di dalamnya yang memutuskan
+      // kapan benar-benar mengirim. Itu persis pola yang membuat ringkasan
+      // harian selalu terkirim tepat waktu tanpa bergantung pada zona waktu
+      // penjadwal. Anti-dobelnya tetap dijaga di sisi fungsi lewat
+      // daily_reminder_last_sent, jadi dibuka seratus kali pun tetap sekali kirim.
       try {
         base44.functions.invoke("sendDailySummary", {}).catch(() => {});
+        base44.functions.invoke("sendDailyApprovalReminder", {}).catch(() => {});
       } catch {}
     } catch (error) {
       console.error('User auth check failed:', error);
