@@ -56,18 +56,29 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
   // mengisi tanggal, lalu kembali lagi ke sini untuk mencetak, adalah cara
   // pasti membuat kolom itu tetap kosong selamanya.
   const [tanggal, setTanggal] = useState({});
+  // Tanggal botol DIBUKA, terpisah dari tanggal cetak. Untuk botol multi-dosis
+  // yang menentukan adalah mana di antara keduanya yang lebih dulu tiba —
+  // lihat lib/kedaluwarsaBatch.js.
+  const [buka, setBuka] = useState({});
   const [menyimpanTgl, setMenyimpanTgl] = useState(false);
 
   const expOf = (b) => (tanggal[b.id] !== undefined ? tanggal[b.id] : b.tanggal_expired || "");
-  const adaPerubahanTgl = batches.some((b) => expOf(b) !== (b.tanggal_expired || ""));
+  const bukaOf = (b) => (buka[b.id] !== undefined ? buka[b.id] : b.tanggal_buka || "");
+  const adaPerubahanTgl = batches.some(
+    (b) => expOf(b) !== (b.tanggal_expired || "") || bukaOf(b) !== (b.tanggal_buka || ""),
+  );
 
   const simpanTanggal = async () => {
     setMenyimpanTgl(true);
     for (const b of batches) {
-      const baru = expOf(b);
-      if (baru === (b.tanggal_expired || "")) continue;
+      const baruExp = expOf(b);
+      const baruBuka = bukaOf(b);
+      const ubah = {};
+      if (baruExp !== (b.tanggal_expired || "")) ubah.tanggal_expired = baruExp || null;
+      if (baruBuka !== (b.tanggal_buka || "")) ubah.tanggal_buka = baruBuka || null;
+      if (Object.keys(ubah).length === 0) continue;
       try {
-        await base44.entities.BatchBarang.update(b.id, { tanggal_expired: baru || null });
+        await base44.entities.BatchBarang.update(b.id, ubah);
       } catch { /* satu gagal tidak boleh membatalkan sisanya */ }
     }
     qc.invalidateQueries({ queryKey: ["batch-barang"] });
@@ -168,12 +179,24 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
                 <p className="text-sm font-medium truncate">{b.nama_barang}</p>
                 <p className="text-[10px] text-muted-foreground font-mono truncate">{b.batch_code}</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Input
-                    type="date"
-                    className="h-8 text-xs w-40"
-                    value={expOf(b)}
-                    onChange={(e) => setTanggal((t) => ({ ...t, [b.id]: e.target.value }))}
-                  />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Kedaluwarsa (kemasan)</p>
+                    <Input
+                      type="date"
+                      className="h-8 text-xs w-40"
+                      value={expOf(b)}
+                      onChange={(e) => setTanggal((t) => ({ ...t, [b.id]: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Tgl botol dibuka</p>
+                    <Input
+                      type="date"
+                      className="h-8 text-xs w-40"
+                      value={bukaOf(b)}
+                      onChange={(e) => setBuka((t) => ({ ...t, [b.id]: e.target.value }))}
+                    />
+                  </div>
                   <ExpiryVisionScan
                     onApplied={(d) => {
                       if (d?.expired_date) setTanggal((t) => ({ ...t, [b.id]: d.expired_date }));
