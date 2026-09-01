@@ -292,8 +292,6 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
                     )}
                   </div>
                 )}
-                <div className="hidden">
-                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
