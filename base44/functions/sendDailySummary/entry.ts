@@ -651,13 +651,6 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         return sisa !== undefined && sisa <= 0;
       };
       const jumlahHabis = shoppingList.filter(habis).length;
-      const urgent = shoppingList
-        .filter((i) => i.priority === "segera")
-        .sort(
-          (a, b) =>
-            (habis(b) ? 1 : 0) - (habis(a) ? 1 : 0) ||
-            (b.total_est || 0) - (a.total_est || 0),
-        );
 
       // Perkiraan totalnya HARUS menyebut berapa barang yang belum berharga.
       // Tanpa itu, "est Rp 1.157.640" terbaca sebagai angka lengkap padahal
@@ -668,17 +661,6 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         (tanpaHarga > 0 ? ` (+${tanpaHarga} barang belum ada harga)` : "")
       );
 
-      /*
-        Sebelumnya SEMUA barang segera disebut satu per satu. Itu masuk akal
-        waktu yang segera cuma segelintir; sekarang 26 dari 32 barang bertanda
-        segera — karena tiap baris yang ditambah otomatis dari beranda lahir
-        dengan prioritas itu. Hasilnya pesan sepanjang dua layar penuh, dan
-        pesan yang harus di-scroll dua layar tidak dibaca sampai habis.
-
-        Yang disebut sekarang: enam termahal saja. Sisanya cukup dihitung.
-        Daftar lengkapnya memang ada di aplikasi — pesan ini tugasnya membuat
-        orang tahu ada apa dan seberapa besar, bukan menggantikan aplikasinya.
-      */
       /*
         Daftar lengkap, bukan cuplikan.
 
