@@ -121,6 +121,9 @@ export function totalPerkiraan(daftarBelanja = []) {
   sini dan di sana berbeda, beranda akan menyebut sebuah barang gawat sementara
   daftar belanjanya menulis "bulan ini".
 */
+// Nilai yang sama ada di AMBANG_GAWAT_HARI / AMBANG_WASPADA_HARI
+// (lib/urgensiStok.js). Tidak diimpor karena kembaran backend berkas ini
+// berjalan di Deno dan tidak bisa membaca src/ — lihat scripts/cek-kembar.mjs.
 const AMBANG_SEGERA_HARI = 3;
 const AMBANG_MINGGU_INI_HARI = 14;
 
