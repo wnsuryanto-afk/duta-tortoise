@@ -290,6 +290,7 @@ function ItemForm({ item, onClose }) {
     notes: item.notes || "",
     category: item._src === "feed" ? (item.category || "sayuran") : (item.category || "obat"),
     expired_date: item.expired_date || "",
+    hari_pakai_setelah_dibuka: item.hari_pakai_setelah_dibuka ?? "",
     daily_ideal: item.daily_ideal ?? "",
     needs_replacement: item.needs_replacement || false,
   } : EMPTY);
@@ -337,7 +338,7 @@ function ItemForm({ item, onClose }) {
       // hari tidak menangkap itu. Sebelumnya hanya bisa diisi lewat form di
       // halaman /warehouse yang sudah digabung ke sini — tanpa penggantinya,
       // cabang "rusak" di halaman Belanja tidak akan pernah menyala lagi.
-      const data = { name: form.name, category: catMap[form.type] || form.type || "lainnya", unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), purchase_price: Number(form.price), is_mandatory: form.is_mandatory, location: form.location, notes: form.notes, photo_url, expired_date: form.expired_date || null, needs_replacement: !!form.needs_replacement };
+      const data = { name: form.name, category: catMap[form.type] || form.type || "lainnya", unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), purchase_price: Number(form.price), is_mandatory: form.is_mandatory, location: form.location, notes: form.notes, photo_url, expired_date: form.expired_date || null, needs_replacement: !!form.needs_replacement, hari_pakai_setelah_dibuka: form.hari_pakai_setelah_dibuka === "" ? null : Number(form.hari_pakai_setelah_dibuka) };
       if (item?.id) await base44.entities.WarehouseItem.update(item.id, data);
       else await base44.entities.WarehouseItem.create(data);
     }
@@ -469,6 +470,33 @@ function ItemForm({ item, onClose }) {
         <div>
           <Label className="text-xs">Tanggal Kadaluarsa</Label>
           <Input type="date" value={form.expired_date} onChange={e => set("expired_date", e.target.value)} className="mt-0.5" />
+        </div>
+      )}
+
+      {/*
+        Botol multi-dosis: tanggal cetak berlaku selama botolnya tersegel.
+        Sesudah ditusuk, isinya punya batas sendiri — dan pada botol seperti
+        INJEKVIT B PLEX (100 dosis) botolnya bisa terbuka berbulan-bulan
+        sebelum habis. Kosongkan bila tidak berlaku; JANGAN mengisi dengan
+        tebakan, angkanya urusan dokter hewan.
+      */}
+      {isExpirable && !isFeed && (
+        <div>
+          <Label className="text-xs">Masa pakai setelah botol dibuka (hari)</Label>
+          <Input
+            type="number"
+            min={1}
+            step="1"
+            placeholder="kosongkan bila tidak berlaku"
+            value={form.hari_pakai_setelah_dibuka}
+            onChange={e => set("hari_pakai_setelah_dibuka", e.target.value)}
+            className="mt-0.5"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Khusus botol multi-dosis. Bila diisi, aplikasi memakai tanggal yang lebih dulu tiba
+            antara tanggal cetak dan (tanggal botol dibuka + angka ini). Angkanya dari dokter
+            hewan — kosongkan kalau belum tahu.
+          </p>
         </div>
       )}
 
