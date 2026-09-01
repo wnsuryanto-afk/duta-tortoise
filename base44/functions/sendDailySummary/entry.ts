@@ -573,44 +573,57 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     const belanjaOwner = [];
     if (shoppingList.length > 0) {
       const totalEst = shoppingList.reduce((t, i) => t + (i.total_est || 0), 0);
+      const tanpaHarga = shoppingList.filter((i) => !(i.total_est > 0)).length;
       const urgent = shoppingList
         .filter((i) => i.priority === "segera")
         .sort((a, b) => (b.total_est || 0) - (a.total_est || 0));
+
+      // Perkiraan totalnya HARUS menyebut berapa barang yang belum berharga.
+      // Tanpa itu, "est Rp 1.157.640" terbaca sebagai angka lengkap padahal
+      // beberapa barang belum punya harga sama sekali — pembacanya menyiapkan
+      // uang yang kurang, dan tidak ada yang memberi tahu.
       belanjaOwner.push(
-        `  • ${shoppingList.length} barang belum dibeli${urgent.length ? ` (${urgent.length} SEGERA)` : ""} — est ${rp(totalEst)}`
+        `  • ${shoppingList.length} barang belum dibeli${urgent.length ? ` (${urgent.length} segera)` : ""} — est ${rp(totalEst)}` +
+        (tanpaHarga > 0 ? ` (+${tanpaHarga} barang belum ada harga)` : "")
       );
 
-      // Sebut namanya. Tanpa ini penerima tidak tahu apa yang harus dibeli
-      // dan harus membuka aplikasi hanya untuk melihat daftarnya.
-      const urut = [...shoppingList].sort((a, b) => {
-        const rank = { segera: 0, minggu_ini: 1, bulan_ini: 2, opsional: 3 };
-        const ra = rank[a.priority] ?? 9, rb = rank[b.priority] ?? 9;
-        if (ra !== rb) return ra - rb;
-        return (b.total_est || 0) - (a.total_est || 0);
-      });
-      // SEMUA barang SEGERA disebut satu per satu — tujuannya agar daftar ini
-      // bisa dipakai langsung dari WhatsApp tanpa membuka aplikasi. Sisanya
-      // cukup disebut jumlahnya supaya pesan tidak menjadi terlalu panjang.
+      /*
+        Sebelumnya SEMUA barang segera disebut satu per satu. Itu masuk akal
+        waktu yang segera cuma segelintir; sekarang 26 dari 32 barang bertanda
+        segera — karena tiap baris yang ditambah otomatis dari beranda lahir
+        dengan prioritas itu. Hasilnya pesan sepanjang dua layar penuh, dan
+        pesan yang harus di-scroll dua layar tidak dibaca sampai habis.
+
+        Yang disebut sekarang: enam termahal saja. Sisanya cukup dihitung.
+        Daftar lengkapnya memang ada di aplikasi — pesan ini tugasnya membuat
+        orang tahu ada apa dan seberapa besar, bukan menggantikan aplikasinya.
+      */
+      const BATAS_SEBUT = 6;
+
+      // Label daftar belanja memuat catatan internal: "[VIT-REP01] - ONLINE -
+      // bahan racikan, WAJIB". Itu berguna di gudang, bukan di WhatsApp.
+      const namaPendek = (nm) => {
+        let t = String(nm || "(tanpa nama)").split(" [")[0].trim();
+        if (t.length > 46) t = t.slice(0, 45).trimEnd() + "…";
+        return t;
+      };
       const baris = (it) => {
-        const nm = it.nama_barang || "(tanpa nama)";
         const jml = it.jumlah ?? it.qty_needed ?? 0;
         const sat = it.satuan || it.unit || "";
-        return `${nm} — ${jml} ${sat}${it.total_est ? ` · ${rp(it.total_est)}` : ""}`;
+        return `${namaPendek(it.nama_barang)} — ${jml} ${sat}${it.total_est ? ` · ${rp(it.total_est)}` : ""}`;
       };
 
-      for (const it of urgent) {
+      for (const it of urgent.slice(0, BATAS_SEBUT)) {
         belanjaOwner.push(`     ‼️ ${baris(it)}`);
       }
 
-      const sisa = urut.filter((i) => i.priority !== "segera");
-      const tampilSisa = sisa.slice(0, 5);
-      for (const it of tampilSisa) {
-        belanjaOwner.push(`     ▫️ ${baris(it)}`);
-      }
-      if (sisa.length > tampilSisa.length) {
-        belanjaOwner.push(
-          `     …${sisa.length - tampilSisa.length} barang lain tidak mendesak, lihat menu Harus Dibeli`
-        );
+      const sisaSegera = Math.max(0, urgent.length - BATAS_SEBUT);
+      const sisaLain = shoppingList.length - urgent.length;
+      const ekor = [];
+      if (sisaSegera > 0) ekor.push(`${sisaSegera} segera lainnya`);
+      if (sisaLain > 0) ekor.push(`${sisaLain} tidak mendesak`);
+      if (ekor.length > 0) {
+        belanjaOwner.push(`     …${ekor.join(" + ")} — buka menu Harus Dibeli`);
       }
     }
     if (pembelian.length > 0) {
