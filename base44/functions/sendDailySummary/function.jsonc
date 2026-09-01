@@ -1,6 +1,6 @@
 {
   "name": "sendDailySummary",
-  "entry": "base44/functions/sendDailySummary/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Daily Summary WhatsApp Check",
