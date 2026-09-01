@@ -194,9 +194,10 @@ export default function KeputusanHariIni() {
           // setiap baris, jadi 26 dari 32 baris di daftar belanja bertanda
           // segera dan kolomnya berhenti bisa dipakai menyaring. Sekarang
           // barisDariBarang yang menyimpulkannya dari keadaan barangnya —
-          // ambangnya sama dengan yang dipakai kartu ini menilai "gawat".
+          // ambangnya sama dengan yang dipakai kartu ini menilai "gawat",
+          // dan sisaHari/menguncSOP sudah menempel di tiap baris hasil
+          // nilaiUrgensiStok.
           barisDariBarang(i, {
-            urgensi: { sisaHari: i.sisaHari, menguncSOP: i.menguncSOP },
             notes: `Otomatis dari beranda — ${i.alasan}.`,
           })
         );

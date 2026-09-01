@@ -106,10 +106,11 @@ const AMBANG_MINGGU_INI_HARI = 14;
  *
  * @param item barang gudang / pakan
  * @param urgensi hasil nilaiUrgensiStok untuk barang itu bila ada:
- *   { sisaHari, menguncSOP }. Boleh kosong — tanpa data pemakaian, keputusan
- *   jatuh ke stok dan minimumnya saja, bukan menebak.
+ *   { sisaHari, menguncSOP }. Bawaannya barang itu sendiri, karena
+ *   nilaiUrgensiStok menempelkan kedua kolom itu ke salinan barangnya.
+ *   Tanpa data pemakaian, keputusan jatuh ke stok dan minimumnya saja.
  */
-export function prioritasDariBarang(item: any, urgensi: any = {}) {
+export function prioritasDariBarang(item: any, urgensi: any = item || {}) {
   const menguncSOP = !!urgensi.menguncSOP;
   const sisaHari = Number(urgensi.sisaHari);
   const wajib = !!(item && item.is_mandatory);
