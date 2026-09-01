@@ -13,6 +13,24 @@ import { perluDiperhatikan } from "../../shared/stok.ts";
 const BATAS_AMBIL = 2000;
 
 /**
+ * Nama barang di gudang menempel kode, platform, dan catatan internal:
+ * "Vitamin E bubuk 50% [VIT-REP01] - ONLINE - bahan racikan, WAJIB".
+ * Yang perlu dibaca orang di WhatsApp cuma bagian depannya. Sisanya bikin
+ * satu baris jadi tiga baris di layar HP, dan pesan yang terlalu panjang
+ * tidak dibaca sampai habis.
+ */
+function namaPendek(nama: unknown): string {
+  let t = String(nama || "(tanpa nama)").split(" [")[0].split(" - ")[0].trim();
+  if (t.length > 46) t = t.slice(0, 45).trimEnd() + "\u2026";
+  return t;
+}
+
+/** Kunci pembanding antar-entitas: nama pendek, huruf kecil, spasi rapat. */
+function kunciNama(nama: unknown): string {
+  return namaPendek(nama).toLowerCase().replace(/\s+/g, " ");
+}
+
+/**
  * sendDailySummary — kirim ringkasan harian / mingguan / pagi ke grup WhatsApp.
  *
  * Dipanggil oleh scheduled automation dan/atau saat user membuka app
@@ -261,7 +279,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     users, attendances, checklists, sopTasks,
     warehouseItems, feedStocks, incidentalTasks, toolRequests,
     sickRecords, photoFindings, pakanRecords, treatmentSchedules,
-    stockMovements, tortoises,
+    stockMovements, tortoises, daftarBelanja,
   ] = await Promise.all([
     base44.asServiceRole.entities.User.list(),
     base44.asServiceRole.entities.Attendance.filter({ date: wibToday }),
@@ -277,6 +295,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     base44.asServiceRole.entities.TreatmentSchedule.filter({ is_active: true }),
     base44.asServiceRole.entities.StockMovement.filter({ date: wibToday }),
     base44.asServiceRole.entities.Tortoise.list("-name", BATAS_AMBIL),
+    base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }).catch(() => []),
   ]);
 
   // ── KEHADIRAN ──
@@ -404,15 +423,39 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   }
 
   // ── PERLU DIBELI ──
+  /*
+    Dua bagian pesan ini dulu membicarakan hal yang sama dengan kalimat
+    berbeda: bagian ini membaca stok di bawah minimum, bagian "Pembelian"
+    di bawah membaca daftar belanja. Barang yang sudah dimasukkan ke daftar
+    belanja tetap disebut di sini juga — satu barang dua kali, pesannya
+    panjang, isinya tidak bertambah.
+
+    Sekarang bagian ini hanya menyebut barang menipis yang BELUM masuk
+    daftar belanja, karena itulah yang benar-benar belum ditangani siapa pun.
+    Sisanya cukup dihitung.
+  */
   const catPriority: Record<string, number> = { obat: 0, vitamin: 1, suplemen: 2 };
-  const lowStockItems = [
-    ...warehouseItems
-      .filter(perluDiperhatikan)
-      .map(i => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
-    ...feedStocks
-      .filter(perluDiperhatikan)
-      .map(i => ({ name: i.name, stock: i.current_stock || 0, min: i.minimum_stock || 0, unit: i.unit || "", category: i.category || "lainnya" })),
+  const sudahDidaftar = new Set<string>();
+  for (const s of daftarBelanja || []) {
+    if (s.warehouse_item_id) sudahDidaftar.add(String(s.warehouse_item_id));
+    if (s.nama_barang) sudahDidaftar.add(kunciNama(s.nama_barang));
+  }
+  const petakan = (i) => ({
+    id: i.id,
+    name: i.name,
+    stock: i.current_stock || 0,
+    min: i.minimum_stock || 0,
+    unit: i.unit || "",
+    category: i.category || "lainnya",
+  });
+  const semuaMenipis = [
+    ...warehouseItems.filter(perluDiperhatikan).map(petakan),
+    ...feedStocks.filter(perluDiperhatikan).map(petakan),
   ];
+  const lowStockItems = semuaMenipis.filter(
+    (i) => !sudahDidaftar.has(String(i.id)) && !sudahDidaftar.has(kunciNama(i.name)),
+  );
+  const sudahDiurus = semuaMenipis.length - lowStockItems.length;
   lowStockItems.sort((a, b) => {
     const pa = catPriority[a.category] ?? 9;
     const pb = catPriority[b.category] ?? 9;
@@ -421,15 +464,19 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   });
 
   const buyLines: string[] = [];
-  for (const item of lowStockItems.slice(0, 10)) {
+  const BATAS_MENIPIS = 5;
+  for (const item of lowStockItems.slice(0, BATAS_MENIPIS)) {
     if (item.stock <= 0) {
-      buyLines.push(`• ${item.name} — HABIS`);
+      buyLines.push(`• ${namaPendek(item.name)} — HABIS`);
     } else {
-      buyLines.push(`• ${item.name} — sisa ${item.stock} ${item.unit} (min ${item.min})`);
+      buyLines.push(`• ${namaPendek(item.name)} — sisa ${item.stock} ${item.unit} (min ${item.min})`);
     }
   }
-  if (lowStockItems.length > 10) {
-    buyLines.push(`…dan ${lowStockItems.length - 10} barang lain`);
+  if (lowStockItems.length > BATAS_MENIPIS) {
+    buyLines.push(`…dan ${lowStockItems.length - BATAS_MENIPIS} barang menipis lain belum didaftar`);
+  }
+  if (sudahDiurus > 0) {
+    buyLines.push(`• ${sudahDiurus} barang menipis lain sudah masuk daftar belanja`);
   }
 
   const waitingTasks = incidentalTasks.filter(t => t.material_status === "waiting_materials" && t.status === "pending");
@@ -541,9 +588,11 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   // peran pemiliknya, supaya tidak ada yang menunggu satu sama lain.
   // Bisa dimatikan owner lewat Pengaturan WhatsApp (summary_show_pr).
   if (settings?.summary_show_pr !== false) try {
-    const [shoppingList, pembelian, kasbonPending, pendingApproval, incompleteTortoises] =
+    // ShoppingList sudah diambil di atas — satu pengambilan, satu daftar,
+    // supaya bagian "Perlu Dibeli" dan bagian ini tidak bisa berbeda isi.
+    const shoppingList = daftarBelanja || [];
+    const [pembelian, kasbonPending, pendingApproval, incompleteTortoises] =
       await Promise.all([
-        base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }).catch(() => []),
         // Dulu hanya pesanan berstatus "dipesan" yang dibaca. Akibatnya baris
         // "Talangan belum dilunasi" hanya menghitung utang pada pesanan yang
         // barangnya BELUM datang — padahal talangan justru menumpuk pada
@@ -609,11 +658,6 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
 
       // Label daftar belanja memuat catatan internal: "[VIT-REP01] - ONLINE -
       // bahan racikan, WAJIB". Itu berguna di gudang, bukan di WhatsApp.
-      const namaPendek = (nm) => {
-        let t = String(nm || "(tanpa nama)").split(" [")[0].trim();
-        if (t.length > 46) t = t.slice(0, 45).trimEnd() + "…";
-        return t;
-      };
       const baris = (it) => {
         const jml = it.jumlah ?? it.qty_needed ?? 0;
         const sat = it.satuan || it.unit || "";
