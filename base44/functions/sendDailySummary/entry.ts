@@ -679,27 +679,62 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         Daftar lengkapnya memang ada di aplikasi — pesan ini tugasnya membuat
         orang tahu ada apa dan seberapa besar, bukan menggantikan aplikasinya.
       */
-      const BATAS_SEBUT = 4;
+      /*
+        Daftar lengkap, bukan cuplikan.
 
-      // Label daftar belanja memuat catatan internal: "[VIT-REP01] - ONLINE -
-      // bahan racikan, WAJIB". Itu berguna di gudang, bukan di WhatsApp.
+        Versi sebelumnya hanya menyebut 4 barang termahal lalu menulis
+        "…13 segera lainnya — buka menu Harus Dibeli". Itu memaksa membuka
+        aplikasi justru pada saat orangnya sedang di jalan atau di apotek —
+        keadaan di mana pesan ini paling berguna. Sekarang semuanya disebut,
+        dikelompokkan per prioritas, satu baris per barang.
+
+        Bentuk barisnya sengaja polos: nomor, nama pendek, jumlah, satuan,
+        perkiraan harga. Tanpa tanda seru, tanpa indentasi bertingkat —
+        kelompoknya sudah menyatakan mana yang mendesak. Barang tanpa harga
+        ditulis apa adanya, bukan dikosongkan, supaya tidak terbaca gratis.
+      */
       const baris = (it) => {
         const jml = it.jumlah ?? it.qty_needed ?? 0;
         const sat = it.satuan || it.unit || "";
-        return `${namaPendek(it.nama_barang)} — ${jml} ${sat}${it.total_est ? ` · ${rp(it.total_est)}` : ""}`;
+        const harga = it.total_est > 0 ? rp(it.total_est) : "harga belum ada";
+        return namaPendek(it.nama_barang) + " — " + jml + " " + sat + " · " + harga;
       };
 
-      for (const it of urgent.slice(0, BATAS_SEBUT)) {
-        belanjaOwner.push(`     ${habis(it) ? "‼️" : "·"} ${baris(it)}`);
+      const KELOMPOK = [
+        ["segera", "SEGERA"],
+        ["minggu_ini", "Minggu ini"],
+        ["bulan_ini", "Bulan ini"],
+        ["opsional", "Opsional"],
+      ];
+      const urutkan = (grup) =>
+        grup.sort(
+          (a, b) =>
+            (habis(b) ? 1 : 0) - (habis(a) ? 1 : 0) ||
+            (b.total_est || 0) - (a.total_est || 0),
+        );
+
+      let nomor = 0;
+      const tampil = new Set();
+      for (const [kunci, judul] of KELOMPOK) {
+        const grup = urutkan(shoppingList.filter((i) => (i.priority || "minggu_ini") === kunci));
+        if (grup.length === 0) continue;
+        belanjaOwner.push("  _" + judul + " (" + grup.length + ")_");
+        for (const it of grup) {
+          nomor++;
+          tampil.add(it.id);
+          belanjaOwner.push("  " + nomor + ". " + baris(it));
+        }
       }
 
-      const sisaSegera = Math.max(0, urgent.length - BATAS_SEBUT);
-      const sisaLain = shoppingList.length - urgent.length;
-      const ekor = [];
-      if (sisaSegera > 0) ekor.push(`${sisaSegera} segera lainnya`);
-      if (sisaLain > 0) ekor.push(`${sisaLain} tidak mendesak`);
-      if (ekor.length > 0) {
-        belanjaOwner.push(`     …${ekor.join(" + ")} — buka menu Harus Dibeli`);
+      // Baris dengan prioritas di luar keempat pilihan itu tidak boleh hilang
+      // diam-diam. Lebih baik muncul tanpa kelompok daripada tidak dibeli.
+      const sisa = urutkan(shoppingList.filter((i) => !tampil.has(i.id)));
+      if (sisa.length > 0) {
+        belanjaOwner.push("  _Tanpa prioritas (" + sisa.length + ")_");
+        for (const it of sisa) {
+          nomor++;
+          belanjaOwner.push("  " + nomor + ". " + baris(it));
+        }
       }
     }
     const menunggu = pembelian.filter((p) => p.status === "dipesan");
