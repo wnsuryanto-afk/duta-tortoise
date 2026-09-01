@@ -25,6 +25,7 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ExpiryVisionScan from "@/components/ai/ExpiryVisionScan";
 import { Input } from "@/components/ui/input";
 import { Download, Printer, Info, Loader2 } from "lucide-react";
 import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload";
@@ -144,13 +145,44 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
 
         {tanpaExp > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-            <strong>{tanpaExp} batch belum punya tanggal kedaluwarsa.</strong> Isi di kolom tanggal
-            tiap baris di bawah — baca dari kemasannya, sekarang, selagi botolnya di tangan.
-            Urutan pengambilan stok memakai tanggal ini; batch tanpa tanggal tidak pernah
-            diprioritaskan, jadi ia yang tertinggal di rak sampai kedaluwarsa betulan.
+            <strong>{tanpaExp} batch belum punya tanggal kedaluwarsa.</strong> Isi sekarang, selagi
+            botolnya di tangan — ketik, atau foto sisi kemasan yang bertuliskan EXP dan biarkan
+            AI membacanya. Urutan pengambilan stok memakai tanggal ini; batch tanpa tanggal tidak
+            pernah diprioritaskan, jadi ia yang tertinggal di rak sampai kedaluwarsa betulan.
             Kalau memang tidak tercetak di kemasan (mis. bahan racikan curah), biarkan kosong.
           </div>
         )}
+
+        {/*
+          Pengisian tanggal TIDAK lagi disembunyikan di balik pembuatan label.
+          Sebelumnya kolom tanggal hanya muncul setelah label dibuat, sehingga
+          untuk mengisi 23 batch orang harus merender 23 gambar label lebih
+          dulu — pekerjaan yang tidak ada hubungannya. Batch tanpa tanggal
+          ditaruh di atas karena itu yang sedang dikejar.
+        */}
+        <div className="space-y-2">
+          {[...batches]
+            .sort((a, b) => (a.tanggal_expired ? 1 : 0) - (b.tanggal_expired ? 1 : 0))
+            .map((b) => (
+              <div key={b.id} className="border rounded-lg p-2.5 space-y-1.5">
+                <p className="text-sm font-medium truncate">{b.nama_barang}</p>
+                <p className="text-[10px] text-muted-foreground font-mono truncate">{b.batch_code}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input
+                    type="date"
+                    className="h-8 text-xs w-40"
+                    value={expOf(b)}
+                    onChange={(e) => setTanggal((t) => ({ ...t, [b.id]: e.target.value }))}
+                  />
+                  <ExpiryVisionScan
+                    onApplied={(d) => {
+                      if (d?.expired_date) setTanggal((t) => ({ ...t, [b.id]: d.expired_date }));
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+        </div>
 
         {adaPerubahanTgl && (
           <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-primary/40 bg-primary/5">
@@ -186,15 +218,11 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
                   <div className="flex-1 min-w-0 space-y-1">
                     <p className="text-sm font-medium truncate">{batch.nama_barang}</p>
                     <p className="text-xs text-muted-foreground font-mono truncate">{batch.batch_code}</p>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-muted-foreground flex-shrink-0">Exp</span>
-                      <Input
-                        type="date"
-                        className="h-7 text-xs"
-                        value={expOf(batch)}
-                        onChange={(e) => setTanggal((t) => ({ ...t, [batch.id]: e.target.value }))}
-                      />
-                    </div>
+                    {/* Satu kolom tanggal saja, di daftar atas. Dua kolom untuk
+                        satu nilai membuat orang ragu mana yang tersimpan. */}
+                    <p className="text-[10px] text-muted-foreground">
+                      Exp: {expOf(batch) || "belum diisi"}
+                    </p>
                     {batch.label_dicetak && (
                       <Badge variant="secondary" className="text-[10px]">sudah pernah dicetak</Badge>
                     )}
