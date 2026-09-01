@@ -654,7 +654,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         Daftar lengkapnya memang ada di aplikasi — pesan ini tugasnya membuat
         orang tahu ada apa dan seberapa besar, bukan menggantikan aplikasinya.
       */
-      const BATAS_SEBUT = 6;
+      const BATAS_SEBUT = 4;
 
       // Label daftar belanja memuat catatan internal: "[VIT-REP01] - ONLINE -
       // bahan racikan, WAJIB". Itu berguna di gudang, bukan di WhatsApp.
