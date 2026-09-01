@@ -436,9 +436,9 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   */
   const catPriority: Record<string, number> = { obat: 0, vitamin: 1, suplemen: 2 };
   const sudahDidaftar = new Set<string>();
-  for (const s of daftarBelanja || []) {
-    if (s.warehouse_item_id) sudahDidaftar.add(String(s.warehouse_item_id));
-    if (s.nama_barang) sudahDidaftar.add(kunciNama(s.nama_barang));
+  for (const b of daftarBelanja || []) {
+    if (b.warehouse_item_id) sudahDidaftar.add(String(b.warehouse_item_id));
+    if (b.nama_barang) sudahDidaftar.add(kunciNama(b.nama_barang));
   }
   const petakan = (i) => ({
     id: i.id,
