@@ -90,7 +90,7 @@ export function barisDariBarang(item, opsi = {}) {
     nama_barang: item?.name || "",
     jumlah,
     satuan: item?.unit || "pcs",
-    priority: opsi.priority || "minggu_ini",
+    priority: opsi.priority || prioritasDariBarang(item, opsi.urgensi),
     status: STATUS_MENUNGGU,
     ...(item?.sku ? { item_sku: item.sku } : {}),
     ...(item?.id ? { warehouse_item_id: item.id } : {}),
@@ -105,4 +105,43 @@ export function totalPerkiraan(daftarBelanja = []) {
   return (daftarBelanja || [])
     .filter((b) => b && b.status === STATUS_MENUNGGU)
     .reduce((s, b) => s + (Number(b.total_est) || 0), 0);
+}
+
+/*
+  Prioritas baris belanja TIDAK boleh diketik tangan.
+
+  Tombol "masukkan ke daftar belanja" di beranda dulu menulis "segera" untuk
+  setiap baris tanpa kecuali, dan impor awal juga menaruh "segera" di mana-mana.
+  Hasilnya 26 dari 32 baris bertanda segera pada 01-09-2026 — kalau semua
+  mendesak, tidak ada yang mendesak, dan kolomnya berhenti bisa dipakai
+  menyaring apa pun.
+
+  Aturannya sekarang dibaca dari keadaan barangnya sendiri, dengan ambang yang
+  SENGAJA sama dengan tingkatUrgensi() di lib/urgensiStok.js. Kalau ambang di
+  sini dan di sana berbeda, beranda akan menyebut sebuah barang gawat sementara
+  daftar belanjanya menulis "bulan ini".
+*/
+const AMBANG_SEGERA_HARI = 3;
+const AMBANG_MINGGU_INI_HARI = 14;
+
+/**
+ * Prioritas belanja sebuah barang: "segera" | "minggu_ini" | "bulan_ini".
+ *
+ * @param item barang gudang / pakan
+ * @param urgensi hasil nilaiUrgensiStok untuk barang itu bila ada:
+ *   { sisaHari, menguncSOP }. Boleh kosong — tanpa data pemakaian, keputusan
+ *   jatuh ke stok dan minimumnya saja, bukan menebak.
+ */
+export function prioritasDariBarang(item, urgensi = {}) {
+  const menguncSOP = !!urgensi.menguncSOP;
+  const sisaHari = Number(urgensi.sisaHari);
+  const wajib = !!(item && item.is_mandatory);
+  const stok = Number(item && item.current_stock) || 0;
+  const minimum = Number(item && item.minimum_stock) || 0;
+  if (menguncSOP) return "segera";
+  if (stok <= 0) return wajib ? "segera" : "minggu_ini";
+  if (Number.isFinite(sisaHari) && sisaHari >= 0 && sisaHari <= AMBANG_SEGERA_HARI) return "segera";
+  if (Number.isFinite(sisaHari) && sisaHari >= 0 && sisaHari <= AMBANG_MINGGU_INI_HARI) return "minggu_ini";
+  if (minimum > 0 && stok <= minimum) return "minggu_ini";
+  return "bulan_ini";
 }

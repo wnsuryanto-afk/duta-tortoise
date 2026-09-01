@@ -21,7 +21,7 @@ const PASANGAN = [
   ["src/lib/laporan.js",       "base44/shared/laporan.ts",       ["masukLaporan"]],
   ["src/lib/populasiKura.js",  "base44/shared/kura.ts",          ["diPeternakan"]],
   ["src/lib/breedingUtils.js", "base44/shared/kura.ts",          ["clutchAktif"]],
-  ["src/lib/daftarBelanja.js", "base44/shared/daftarBelanja.ts", ["penandaBaris", "penandaBarang", "penandaMenunggu", "sudahDidaftar", "barisDariBarang"]],
+  ["src/lib/daftarBelanja.js", "base44/shared/daftarBelanja.ts", ["penandaBaris", "penandaBarang", "penandaMenunggu", "sudahDidaftar", "barisDariBarang", "prioritasDariBarang"]],
 ];
 
 // Perbandingan sengaja "buta" terhadap hal yang memang boleh beda antara

@@ -65,7 +65,7 @@ export function sudahDidaftar(item: any, penanda: Set<string>): boolean {
  */
 export function barisDariBarang(
   item: any,
-  opsi: { priority?: string; notes?: string; jumlah?: number; hargaPerUnit?: number } = {},
+  opsi: { priority?: string; notes?: string; jumlah?: number; hargaPerUnit?: number; urgensi?: any } = {},
 ) {
   const jumlah = Math.max(1, Math.ceil(Number(opsi.jumlah ?? item?.minimum_stock) || 1));
   // Kalau harga tidak disebut, pakai harga beli barangnya — sama dengan
@@ -75,11 +75,50 @@ export function barisDariBarang(
     nama_barang: item?.name || "",
     jumlah,
     satuan: item?.unit || "pcs",
-    priority: opsi.priority || "minggu_ini",
+    priority: opsi.priority || prioritasDariBarang(item, opsi.urgensi),
     status: STATUS_MENUNGGU,
     ...(item?.sku ? { item_sku: item.sku } : {}),
     ...(item?.id ? { warehouse_item_id: item.id } : {}),
     ...(harga > 0 ? { harga_est_per_unit: harga, total_est: harga * jumlah } : {}),
     ...(opsi.notes ? { notes: opsi.notes } : {}),
   };
+}
+
+/*
+  Prioritas baris belanja TIDAK boleh diketik tangan.
+
+  Tombol "masukkan ke daftar belanja" di beranda dulu menulis "segera" untuk
+  setiap baris tanpa kecuali, dan impor awal juga menaruh "segera" di mana-mana.
+  Hasilnya 26 dari 32 baris bertanda segera pada 01-09-2026 — kalau semua
+  mendesak, tidak ada yang mendesak, dan kolomnya berhenti bisa dipakai
+  menyaring apa pun.
+
+  Aturannya sekarang dibaca dari keadaan barangnya sendiri, dengan ambang yang
+  SENGAJA sama dengan tingkatUrgensi() di lib/urgensiStok.js. Kalau ambang di
+  sini dan di sana berbeda, beranda akan menyebut sebuah barang gawat sementara
+  daftar belanjanya menulis "bulan ini".
+*/
+const AMBANG_SEGERA_HARI = 3;
+const AMBANG_MINGGU_INI_HARI = 14;
+
+/**
+ * Prioritas belanja sebuah barang: "segera" | "minggu_ini" | "bulan_ini".
+ *
+ * @param item barang gudang / pakan
+ * @param urgensi hasil nilaiUrgensiStok untuk barang itu bila ada:
+ *   { sisaHari, menguncSOP }. Boleh kosong — tanpa data pemakaian, keputusan
+ *   jatuh ke stok dan minimumnya saja, bukan menebak.
+ */
+export function prioritasDariBarang(item: any, urgensi: any = {}) {
+  const menguncSOP = !!urgensi.menguncSOP;
+  const sisaHari = Number(urgensi.sisaHari);
+  const wajib = !!(item && item.is_mandatory);
+  const stok = Number(item && item.current_stock) || 0;
+  const minimum = Number(item && item.minimum_stock) || 0;
+  if (menguncSOP) return "segera";
+  if (stok <= 0) return wajib ? "segera" : "minggu_ini";
+  if (Number.isFinite(sisaHari) && sisaHari >= 0 && sisaHari <= AMBANG_SEGERA_HARI) return "segera";
+  if (Number.isFinite(sisaHari) && sisaHari >= 0 && sisaHari <= AMBANG_MINGGU_INI_HARI) return "minggu_ini";
+  if (minimum > 0 && stok <= minimum) return "minggu_ini";
+  return "bulan_ini";
 }
