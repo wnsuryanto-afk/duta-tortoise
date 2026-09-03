@@ -165,6 +165,56 @@ export function hitungKasbon({ kasbons = [], email, periode }) {
 }
 
 /**
+ * Berapa pekan PENUH (Senin s/d Minggu, tujuh hari, semuanya hadir) yang
+ * dijalani seorang karyawan dalam satu periode.
+ *
+ * Aturannya keputusan Iwan 03-09-2026: satu pekan penuh dibayar tambahan satu
+ * hari kerja. Definisi tujuh harinya dipilih sadar konsekuensinya — memakai
+ * jatah libur menghanguskan bonus pekan itu.
+ *
+ * PEKAN YANG TERPOTONG UJUNG BULAN TIDAK DIHITUNG. Agustus 2026 dimulai hari
+ * Sabtu dan berakhir hari Senin, jadi 1–2 Agustus dan 31 Agustus tidak pernah
+ * bisa menjadi pekan penuh di dalam periodenya sendiri. Menghitungnya separuh
+ * berarti membayar bonus untuk pekan yang belum tentu penuh; menghitungnya
+ * lintas bulan berarti satu pekan bisa dibayar di dua slip. Keduanya lebih
+ * buruk daripada mengabaikannya — tetapi ini memang merugikan karyawan pada
+ * bulan yang ujungnya terpotong, dan itu perlu diketahui, bukan disembunyikan.
+ *
+ * @param {Array} absensi catatan Attendance milik SATU orang dalam periode
+ * @param {string} awal   tanggal awal periode, "YYYY-MM-DD"
+ * @param {string} akhir  batas akhir EKSKLUSIF, "YYYY-MM-DD"
+ * @returns {{ jumlah: number, pekan: string[] }} pekan = daftar "YYYY-MM-DD s/d YYYY-MM-DD"
+ */
+export function pekanPenuhHadir(absensi = [], awal, akhir) {
+  const hadir = new Set(
+    (absensi || []).filter((a) => a && a.status === "hadir").map((a) => a.date)
+  );
+
+  const teks = (d) => d.toISOString().split("T")[0];
+  const kelompok = new Map();
+
+  const d = new Date(awal + "T00:00:00Z");
+  const batas = new Date(akhir + "T00:00:00Z");
+  while (d < batas) {
+    // Senin = awal pekan. getUTCDay(): 0 Minggu ... 6 Sabtu.
+    const geser = (d.getUTCDay() + 6) % 7;
+    const senin = new Date(d.getTime());
+    senin.setUTCDate(senin.getUTCDate() - geser);
+    const kunci = teks(senin);
+    if (!kelompok.has(kunci)) kelompok.set(kunci, []);
+    kelompok.get(kunci).push(teks(d));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+
+  const pekan = [];
+  for (const [kunci, hari] of kelompok) {
+    if (hari.length !== 7) continue;
+    if (hari.every((x) => hadir.has(x))) pekan.push(`${kunci} s/d ${hari[6]}`);
+  }
+  return { jumlah: pekan.length, pekan };
+}
+
+/**
  * Batas nominal kasbon yang boleh diajukan seorang karyawan hari ini.
  *
  * Aturannya (keputusan Iwan 01-09-2026): kasbon tidak boleh melebihi GAJI YANG
@@ -292,6 +342,12 @@ export function hitungGajiKaryawan(karyawan, sumber) {
 
   // ── Komponen gaji ──
   const gajiPokok = harian ? hariHadir * (config.base_salary || 0) : config.base_salary || 0;
+
+  // Bonus pekan penuh: satu hari kerja tambahan per pekan Senin-Minggu yang
+  // seluruh tujuh harinya hadir. Hanya untuk peran harian - peran bulanan
+  // dibayar flat, jadi "satu hari tambahan" tidak punya arti di sana.
+  const pekanPenuh = harian ? pekanPenuhHadir(absensi, awal, akhir) : { jumlah: 0, pekan: [] };
+  const bonusPekanPenuh = harian ? pekanPenuh.jumlah * (config.base_salary || 0) : 0;
   const potonganAbsen = harian ? 0 : hariAbsen * (config.absent_deduction || 0);
 
   const jamLembur = overtimeLogs
@@ -306,7 +362,7 @@ export function hitungGajiKaryawan(karyawan, sumber) {
 
   const kasbon = hitungKasbon({ kasbons, email, periode });
 
-  const kotor = gajiPokok + bonusPoin + upahLembur + upahSayur;
+  const kotor = gajiPokok + bonusPekanPenuh + bonusPoin + upahLembur + upahSayur;
   const potongan = potonganAbsen + kasbon.potongan;
   const bersih = kotor - potongan;
 
@@ -327,6 +383,9 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     hariHadir,
     hariAbsen,
     hariLibur,
+    pekanPenuh: pekanPenuh.jumlah,
+    daftarPekanPenuh: pekanPenuh.pekan,
+    bonusPekanPenuh,
     hariTanpaCatatan,
     gajiPokok,
     potonganAbsen,
