@@ -34,6 +34,23 @@ import { nilaiPerPoin } from "@/lib/nilaiPoin";
 import { masukLaporan } from "@/lib/laporan";
 
 
+/*
+  ATURAN GAJI YANG BERLAKU (keputusan Iwan, 01-09-2026):
+
+  1. Periode BULANAN, mulai tanggal 1. Tarif Rp 70.000 per hari MASUK.
+     Tidak ada plafon: masuk 31 hari dibayar 31 hari. "Jatah 2 hari libur"
+     karena itu bukan aturan gaji — hari libur memang tidak dibayar, hari
+     pertama maupun hari kelima. Yang berubah cuma satu: hari libur sekarang
+     PUNYA CATATAN, supaya hari tanpa catatan berarti absensi belum diisi.
+  2. Poin dibayar Rp 75 per poin (CompanySettings "main", sudah menyala).
+  3. Lembur Rp 10.000 per jam, dari catatan lembur manual.
+  4. Kasbon dibatasi gaji yang sudah dijalani — lihat batasKasbon() di bawah.
+
+  Slip MINGGUAN adalah sistem lama dan masih hidup berdampingan
+  (period_type "weekly", otomatisasi A5 siapkanSlipMingguan). Selama keduanya
+  aktif, satu periode bisa dibayar dua kali.
+*/
+
 /** Peran yang dibayar harian; sisanya dibayar bulanan flat. */
 export const PERAN_HARIAN = ["keeper", "kepala_feeder"];
 
