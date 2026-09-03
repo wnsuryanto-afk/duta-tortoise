@@ -463,6 +463,43 @@ export default function GuidedHariIni({ user }) {
     setLoading(false);
   };
 
+  /*
+    Menandai hari ini sebagai LIBUR.
+
+    Sampai 01-09-2026 tidak ada satu pun cara mencatat hari tidak masuk: kolom
+    status ada di basis data, tetapi seluruh 52 catatan Agustus berstatus
+    "hadir" karena hanya check-in yang pernah menulisnya. Hari yang tidak masuk
+    jadi tidak punya catatan sama sekali — dan hari tanpa catatan tidak bisa
+    dibedakan dari absensi yang lupa diisi.
+
+    Bedanya nyata: enam hari Angsolo pada Agustus hilang senilai Rp 420.000
+    tanpa ada yang pernah memutuskan itu libur.
+
+    Ini TIDAK mengubah gaji. Gaji tetap dihitung dari hari masuk (keputusan
+    Iwan 01-09-2026). Yang berubah: hari yang benar-benar libur jadi punya
+    catatan, sehingga hari yang TIDAK punya catatan sama sekali menjadi tanda
+    bahwa ada absensi yang belum diisi — dan itu bisa dikejar sebelum gaji
+    dihitung, bukan sesudah.
+  */
+  const tandaiLibur = async () => {
+    if (hasCheckedIn || attendance) return;
+    setLoading(true);
+    try {
+      await base44.entities.Attendance.create({
+        employee_id: user.id,
+        employee_name: user.full_name || user.email,
+        employee_email: user.email,
+        date: today,
+        status: "libur",
+      });
+      qc.invalidateQueries({ queryKey: ["attendance-today"] });
+      showMsg("ok", "Hari ini ditandai libur. Tidak dihitung sebagai hari kerja.");
+    } catch (e) {
+      showMsg("warn", "Gagal menandai libur: " + (e?.message || ""));
+    }
+    setLoading(false);
+  };
+
   const startCheckOut = () => { setSelfieMode("checkout"); setShowSelfie(true); };
 
   const handleCheckOut = async (selfieUrl) => {
@@ -1024,7 +1061,22 @@ export default function GuidedHariIni({ user }) {
                   {loading ? "Tunggu sebentar..." : "📸 CHECK IN — Selfie & Mulai Kerja"}
                 </button>
                 {farmConfigured && <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1"><MapPin className="w-3 h-3" /> GPS diperlukan</p>}
+
+                <button
+                  onClick={tandaiLibur}
+                  disabled={loading}
+                  className="w-full mt-2 border border-border text-muted-foreground font-medium py-2.5 rounded-2xl text-sm active:scale-95 transition-transform disabled:opacity-60"
+                >
+                  Hari ini saya libur
+                </button>
+                <p className="text-[11px] text-center text-muted-foreground mt-1">
+                  Hari libur tidak dihitung hari kerja. Tekan ini supaya tidak tercatat sebagai absensi yang lupa diisi.
+                </p>
               </div>
+            )}
+
+            {!hasCheckedIn && attendance?.status === "libur" && (
+              <p className="text-sm text-muted-foreground">Hari ini ditandai libur.</p>
             )}
 
             {hasCheckedIn && !hasCheckedOut && (
