@@ -148,6 +148,47 @@ export function hitungKasbon({ kasbons = [], email, periode }) {
 }
 
 /**
+ * Batas nominal kasbon yang boleh diajukan seorang karyawan hari ini.
+ *
+ * Aturannya (keputusan Iwan 01-09-2026): kasbon tidak boleh melebihi GAJI YANG
+ * SUDAH DIJALANI — hari masuk sejak tanggal 1 sampai hari pengajuan, dikali
+ * tarif hariannya — dikurangi kasbon lain yang belum lunas.
+ *
+ * Kenapa dibatasi di hari yang sudah dikerjakan, bukan perkiraan sebulan
+ * penuh: kalau orangnya berhenti di tengah bulan, selisihnya ditanggung farm
+ * dan praktis tidak akan kembali. Batas ini membuat farm tidak pernah
+ * menalangi uang untuk pekerjaan yang belum terjadi.
+ *
+ * Sampai hari ini formulir kasbon tidak punya batas apa pun — hanya memeriksa
+ * nominal lebih besar dari nol.
+ *
+ * @returns {{ batas, gajiBerjalan, hariHadir, kasbonBerjalan, tarifHarian }}
+ *   batas bisa 0 (belum ada hari masuk, atau kasbon berjalan sudah menutupi
+ *   seluruh gaji yang dijalani).
+ */
+export function batasKasbon({ attendances = [], kasbons = [], email, config = {}, awal, sampai }) {
+  const tarifHarian = Number(config.base_salary) || 0;
+
+  const hariHadir = attendances.filter(
+    (a) => a.employee_email === email && a.status === "hadir" && a.date >= awal && a.date <= sampai
+  ).length;
+
+  const gajiBerjalan = hariHadir * tarifHarian;
+
+  const kasbonBerjalan = kasbons
+    .filter((k) => k.employee_email === email && k.status === "approved")
+    .reduce((t, k) => t + Math.max(0, (k.amount || 0) - (k.total_paid || 0)), 0);
+
+  return {
+    tarifHarian,
+    hariHadir,
+    gajiBerjalan,
+    kasbonBerjalan,
+    batas: Math.max(0, gajiBerjalan - kasbonBerjalan),
+  };
+}
+
+/**
  * Hitung gaji satu karyawan untuk satu periode bulanan.
  *
  * @param {object} karyawan  { email, role }
