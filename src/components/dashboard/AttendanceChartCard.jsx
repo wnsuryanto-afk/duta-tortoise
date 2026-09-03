@@ -24,6 +24,10 @@ export default function AttendanceChartCard() {
   const hadir = todayAttendances.filter(a => a.status === "hadir");
   const izin = todayAttendances.filter(a => a.status === "izin");
   const sakit = todayAttendances.filter(a => a.status === "sakit");
+  // Status "libur" ditambahkan 01-09-2026. Tanpa baris ini, hari libur yang
+  // ditandai kiper tidak terhitung di mana pun dan lencananya jatuh ke warna
+  // "sakit" - hari libur biasa terbaca sebagai orang sakit.
+  const libur = todayAttendances.filter(a => a.status === "libur");
 
   // Jumlah karyawan sudah diambil di atas tapi tidak pernah dipakai, sehingga
   // kartu ini menampilkan "Hadir 3" tanpa memberi tahu 3 dari berapa. Yang
@@ -46,6 +50,7 @@ export default function AttendanceChartCard() {
       Hadir: dayAttend.filter(a => a.status === "hadir").length,
       Izin:  dayAttend.filter(a => a.status === "izin").length,
       Sakit: dayAttend.filter(a => a.status === "sakit").length,
+      Libur: dayAttend.filter(a => a.status === "libur").length,
     };
   });
 
@@ -118,6 +123,7 @@ export default function AttendanceChartCard() {
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                   a.status === "hadir" ? "bg-green-100 text-green-700" :
                   a.status === "izin"  ? "bg-blue-100 text-blue-700"  :
+                  a.status === "libur" ? "bg-slate-100 text-slate-600" :
                                          "bg-red-100 text-red-700"
                 }`}>{a.status}</span>
               </div>
