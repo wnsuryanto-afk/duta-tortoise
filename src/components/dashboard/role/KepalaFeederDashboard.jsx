@@ -331,7 +331,8 @@ export default function KepalaFeederDashboard({ user }) {
         {checklistSendiri && (
           <p className="text-xs text-muted-foreground mb-2 p-2 rounded-lg bg-muted/40 border border-border">
             Checklist Anda sendiri hari ini ({checklistSendiri.total_points_claimed || 0} poin diklaim)
-            menunggu persetujuan pemilik, bukan Anda.
+            menunggu persetujuan pemilik, bukan Anda. Pemilik melihatnya di beranda dan di
+            halaman Approval Poin.
           </p>
         )}
         {pendingChecklists.length === 0 ? (
