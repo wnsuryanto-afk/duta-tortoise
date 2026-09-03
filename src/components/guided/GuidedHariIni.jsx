@@ -1141,6 +1141,31 @@ export default function GuidedHariIni({ user }) {
               <p className="text-sm text-muted-foreground">Hari ini ditandai libur.</p>
             )}
 
+            {/* Trip ambil sayur — hanya muncul pada hari kerja, setelah check in.
+                Upahnya Rp 30.000 per trip dan langsung masuk hitungan gaji. */}
+            {hasCheckedIn && (
+              <div className="mt-3 pt-3 border-t border-border">
+                {tripSayurHariIni ? (
+                  <p className="text-sm text-green-700 font-medium">
+                    ✓ Trip sayur pasar tercatat hari ini — Rp 30.000
+                  </p>
+                ) : (
+                  <>
+                    <button
+                      onClick={catatTripSayur}
+                      disabled={loading}
+                      className="w-full border border-green-700 text-green-800 font-semibold py-2.5 rounded-2xl text-sm active:scale-95 transition-transform disabled:opacity-60"
+                    >
+                      🥬 Hari ini saya ambil sayur di pasar
+                    </button>
+                    <p className="text-[11px] text-center text-muted-foreground mt-1">
+                      Tambahan Rp 30.000. Tekan sekali saja, pada hari Anda benar-benar ke pasar.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
             {hasCheckedIn && !hasCheckedOut && (
               <div>
                 <p className="text-sm text-green-700 font-medium mb-1">✓ Masuk jam {attendance.check_in}</p>
