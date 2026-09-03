@@ -63,7 +63,7 @@ export default function AttendanceChartCard() {
       </div>
 
       {/* Ringkasan hari ini */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-2 mb-4">
         <div className="p-2 rounded-xl bg-green-50 text-center">
           <p className="text-lg font-bold text-green-600">{hadir.length}</p>
           <p className="text-[11px] text-green-700">Hadir</p>
@@ -75,6 +75,10 @@ export default function AttendanceChartCard() {
         <div className="p-2 rounded-xl bg-red-50 text-center">
           <p className="text-lg font-bold text-red-600">{sakit.length}</p>
           <p className="text-[11px] text-red-700">Sakit</p>
+        </div>
+        <div className="p-2 rounded-xl bg-slate-100 text-center">
+          <p className="text-lg font-bold text-slate-600">{libur.length}</p>
+          <p className="text-[11px] text-slate-600">Libur</p>
         </div>
       </div>
 
