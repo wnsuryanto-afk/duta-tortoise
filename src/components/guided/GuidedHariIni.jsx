@@ -1518,6 +1518,8 @@ export default function GuidedHariIni({ user }) {
           <div className="mb-2">
             <AmbilBarangScan trigger="card" />
           </div>
+          {/* Dialog itu juga yang menampilkan peringatan kedaluwarsa botol pada
+              saat botolnya di tangan — satu-satunya saat peringatan itu berguna. */}
 
           <div className="grid grid-cols-2 gap-2">
             <button
