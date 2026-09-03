@@ -130,6 +130,10 @@ export default function RekapPoinGajiPage() {
         kasbonIdsToDeduct: h.idKasbonDipotong,
         kasbonRemaining: h.sisaKasbon,
         hadirDays: h.hariHadir,
+        hariLibur: h.hariLibur,
+        hariTanpaCatatan: h.hariTanpaCatatan,
+        pekanPenuh: h.pekanPenuh,
+        bonusPekanPenuh: h.bonusPekanPenuh,
         pointValue: h.nilaiPoin,
         existingSlip: slips.find(
           (sl) => sl.employee_email === emp.email && sl.period === selectedMonth,
@@ -360,6 +364,34 @@ export default function RekapPoinGajiPage() {
             </div>
           ) : rekapData.map((row) => (
             <div key={row.emp.id} className="p-4 hover:bg-muted/20 transition-colors">
+              {/*
+                HARI TANPA CATATAN ABSENSI — ditampilkan SEBELUM slip diterbitkan.
+
+                Gaji pokok dihitung dari hari masuk, jadi setiap hari yang
+                absensinya tidak terisi diam-diam memotong Rp 70.000 tanpa ada
+                yang pernah memutuskannya. Pada Agustus 2026 ada enam hari
+                seperti itu pada Angsolo (Rp 420.000) dan empat pada
+                Sholehuddin — dan tidak ada satu layar pun yang menyebutkannya.
+
+                Aplikasi TIDAK menebak isinya. Ia hanya menolak diam: tanggalnya
+                disebutkan supaya bisa dikejar sekarang, bukan ditemukan nanti
+                di slip gaji yang sudah dibayar.
+              */}
+              {row.hariTanpaCatatan?.length > 0 && (
+                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-2.5">
+                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                    {row.hariTanpaCatatan.length} hari tanpa catatan absensi — berpotensi
+                    kurang bayar {fmt(row.hariTanpaCatatan.length * (row.config?.base_salary || 0))}
+                  </p>
+                  <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-0.5 break-words">
+                    {row.hariTanpaCatatan.join(", ")}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Bukan berarti tidak masuk — berarti belum diisi. Tandai libur atau isi
+                    absensinya dulu sebelum slip diterbitkan.
+                  </p>
+                </div>
+              )}
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 {/* Info karyawan */}
                 <div className="flex items-center gap-3 min-w-0">
@@ -368,7 +400,19 @@ export default function RekapPoinGajiPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">{row.emp.full_name || row.emp.email}</p>
-                    <Badge variant="outline" className="text-[11px] mt-0.5">{formatRole(row.emp.role)}</Badge>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <Badge variant="outline" className="text-[11px]">{formatRole(row.emp.role)}</Badge>
+                      {row.pekanPenuh > 0 && (
+                        <Badge className="text-[10px] bg-green-100 text-green-700">
+                          {row.pekanPenuh} pekan penuh
+                        </Badge>
+                      )}
+                      {row.hariLibur > 0 && (
+                        <Badge className="text-[10px] bg-slate-100 text-slate-600">
+                          {row.hariLibur} hari libur
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
 
