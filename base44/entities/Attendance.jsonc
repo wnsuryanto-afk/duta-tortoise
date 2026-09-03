@@ -75,8 +75,10 @@
       "enum": [
         "hadir",
         "izin",
-        "sakit"
+        "sakit",
+        "libur"
       ],
+      "description": "libur = jatah libur yang diambil sendiri oleh karyawan. Dibedakan dari HARI TANPA CATATAN: yang pertama berarti orangnya memang tidak masuk, yang kedua berarti absensinya belum diisi. Sampai 01-09-2026 keduanya terlihat sama, dan 6 hari Angsolo pada Agustus hilang senilai Rp 420.000 tanpa ada yang pernah memutuskan itu libur.",
       "default": "hadir"
     },
     "notes": {
