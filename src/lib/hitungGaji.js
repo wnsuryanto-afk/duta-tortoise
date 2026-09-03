@@ -45,6 +45,15 @@ import { masukLaporan } from "@/lib/laporan";
   2. Poin dibayar Rp 75 per poin (CompanySettings "main", sudah menyala).
   3. Lembur Rp 10.000 per jam, dari catatan lembur manual.
   4. Kasbon dibatasi gaji yang sudah dijalani — lihat batasKasbon() di bawah.
+  5. Trip ambil sayur di pasar Rp 30.000 sekali jalan. Sumbernya catatan Pakan
+     Harian bersumber "sayur_pasar" atau "campur" — lihat hooks/useVegTrips.js.
+     PERINGATAN: sampai 03-09-2026 seluruh aplikasi cuma punya SATU catatan
+     pakan (27 Juli, sumber rumput), jadi aturan ini hidup tetapi belum pernah
+     membayar sepeser pun. Bukan kode yang salah — formulirnya tidak diisi.
+  6. Pekan Senin–Minggu yang tujuh harinya hadir penuh dibayar tambahan satu
+     hari kerja — lihat pekanPenuhHadir() di bawah. Definisi tujuh hari dipilih
+     Iwan 03-09-2026 setelah diberi tahu konsekuensinya: memakai jatah libur
+     menghanguskan bonus pekan itu.
 
   Slip MINGGUAN adalah sistem lama dan masih hidup berdampingan
   (period_type "weekly", otomatisasi A5 siapkanSlipMingguan). Selama keduanya
