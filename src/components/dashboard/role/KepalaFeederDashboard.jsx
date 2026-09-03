@@ -55,7 +55,17 @@ export default function KepalaFeederDashboard({ user }) {
 
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["kf-warehouse"],
-    queryFn: () => base44.entities.WarehouseItem.list("-name", 100),
+    // BATAS PENGAMBILAN SENGAJA BESAR.
+    //
+    // Sampai 03-09-2026 baris ini mengambil 100 dari 129 barang gudang yang aktif.
+    // Urutannya menurun menurut nama, jadi yang terpotong justru obat berhuruf
+    // awal A-M: Enrofloxacin, Calcium Gluconate, Metronidazole, Jarum, Kasa,
+    // Fenbendazole. Sembilan di antara yang hilang bertanda WAJIB ADA.
+    //
+    // Hitungan "stok kritis" di layar ini karena itu selalu lebih kecil
+    // daripada kenyataannya, tanpa satu pun tanda bahwa daftarnya terpotong.
+    // Angka yang diam-diam kurang lebih berbahaya daripada angka yang hilang.
+    queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
     staleTime: 5 * 60 * 1000,
   });
 
