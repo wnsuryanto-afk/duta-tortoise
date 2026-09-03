@@ -204,8 +204,33 @@ export function hitungGajiKaryawan(karyawan, sumber) {
   // sekali tidak punya catatan juga tidak dihitung absen — ketiadaan catatan
   // berarti belum diisi, bukan berarti orangnya tidak masuk.
   const hariAbsen = absensi.filter(
-    (a) => a.status !== "hadir" && a.status !== "izin" && a.status !== "sakit"
+    (a) => a.status !== "hadir" && a.status !== "izin" && a.status !== "sakit" && a.status !== "libur"
   ).length;
+  const hariLibur = absensi.filter((a) => a.status === "libur").length;
+
+  /*
+    Hari dalam periode yang TIDAK punya catatan absensi sama sekali.
+
+    Ini bukan hari libur dan bukan mangkir — ini lubang data. Gaji dihitung
+    dari hari masuk, jadi setiap hari tanpa catatan diam-diam mengurangi gaji
+    Rp 70.000 tanpa ada yang pernah memutuskannya. Pada Agustus 2026 ada enam
+    hari seperti itu pada Angsolo (Rp 420.000) dan empat pada Sholehuddin.
+
+    Angkanya dikembalikan supaya layar gaji bisa MENANYAKANNYA sebelum slip
+    terbit, bukan supaya aplikasi menebak sendiri isinya.
+  */
+  const tanggalTercatat = new Set(absensi.map((a) => a.date));
+  const hariTanpaCatatan = [];
+  {
+    const d = new Date(awal);
+    const batas = new Date(akhir);
+    const hariIni = new Date();
+    while (d < batas && d <= hariIni) {
+      const teks = d.toISOString().split("T")[0];
+      if (!tanggalTercatat.has(teks)) hariTanpaCatatan.push(teks);
+      d.setDate(d.getDate() + 1);
+    }
+  }
 
   // ── Komponen gaji ──
   const gajiPokok = harian ? hariHadir * (config.base_salary || 0) : config.base_salary || 0;
@@ -243,6 +268,8 @@ export function hitungGajiKaryawan(karyawan, sumber) {
 
     hariHadir,
     hariAbsen,
+    hariLibur,
+    hariTanpaCatatan,
     gajiPokok,
     potonganAbsen,
 

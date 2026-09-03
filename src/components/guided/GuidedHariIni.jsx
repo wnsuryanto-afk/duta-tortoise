@@ -1050,7 +1050,9 @@ export default function GuidedHariIni({ user }) {
               )}
             </div>
 
-            {!hasCheckedIn && (
+            {/* Hari yang sudah ditandai libur tidak lagi menawarkan check-in;
+                tanpa syarat ini kedua blok tampil bersamaan. */}
+            {!hasCheckedIn && attendance?.status !== "libur" && (
               <div>
                 <p className="text-sm text-muted-foreground mb-3">Belum mulai kerja hari ini</p>
                 <button
