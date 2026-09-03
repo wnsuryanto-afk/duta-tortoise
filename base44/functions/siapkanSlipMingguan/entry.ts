@@ -43,6 +43,22 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const otomatis = await getOtomatis(base44);
 
+    /*
+      SISTEM MINGGUAN SUDAH DIPENSIUNKAN (keputusan Iwan, 01-09-2026).
+
+      Penggajian sekarang BULANAN: periode mulai tanggal 1, Rp 70.000 per hari
+      masuk, poin Rp 75, lembur Rp 10.000/jam — lihat src/lib/hitungGaji.js.
+      Satu-satunya layar yang menerbitkan slip adalah Rekap Poin & Gaji, dan ia
+      selalu menulis period_type "monthly".
+
+      JANGAN menyalakan kembali siapkan_slip_enabled tanpa memensiunkan jalur
+      bulanannya lebih dulu. Dua sistem yang menyala bersamaan berarti satu
+      periode bisa diterbitkan slipnya dua kali — dan yang menerbitkan yang
+      kedua adalah fungsi ini, tengah malam, tanpa ada orang yang melihatnya.
+
+      Saklarnya sendiri sudah false sejak 30-08-2026, jadi fungsi ini berhenti
+      di baris berikut sebelum menyentuh data apa pun.
+    */
     if (otomatis.siapkan_slip_enabled !== true) {
       return Response.json({ skipped: "disabled" });
     }
