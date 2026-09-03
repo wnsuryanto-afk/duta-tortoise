@@ -36,7 +36,12 @@ export default function InvestorDashboard({ user }) {
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["investor-tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 100),
+    // Peternakan ini mencatat 178 kura pada 03-09-2026, dan batas lama 100
+    // memotong 78 di antaranya. Urutannya menurun menurut tanggal dibuat, jadi
+    // yang terpotong justru kura PALING LAMA - indukan dewasa. Jumlah kura
+    // aktif, terjual, dan mati di layar ini karena itu semuanya lebih kecil
+    // daripada kenyataannya, dan investor tidak punya cara mengetahuinya.
+    queryFn: () => base44.entities.Tortoise.list("-created_date", 2000),
     staleTime: 10 * 60 * 1000,
   });
 

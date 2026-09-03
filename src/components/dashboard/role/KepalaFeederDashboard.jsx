@@ -139,8 +139,32 @@ export default function KepalaFeederDashboard({ user }) {
   const myTodayCL = dailyChecklists.find(c => c.employee_email === user?.email);
   const myTodayPoin = myTodayCL?.total_points_claimed || 0;
 
-  // Pending checklists
-  const pendingChecklists = dailyChecklists.filter(c => c.status === "submitted");
+  /*
+    CHECKLIST SENDIRI TIDAK BOLEH DISETUJUI SENDIRI.
+
+    Sampai 03-09-2026 daftar ini memuat SEMUA checklist berstatus "submitted",
+    termasuk milik kepala feeder yang sedang membukanya. Tombol "Setujui Semua"
+    menyetujui seluruhnya sekaligus dengan approved_points = total_points_claimed
+    — persis angka yang diklaim, tanpa dikurangi apa pun.
+
+    Bahwa pemeriksaan itu berarti, terbukti dari data Agustus 2026 sendiri:
+      2 Agu  klaim 427 poin -> disetujui 203
+      4 Agu  klaim 369 poin -> disetujui 145
+    Dua hari itu saja selisihnya 448 poin = Rp 33.600 pada tarif Rp 75/poin.
+    Kalau checklist itu disetujui sendiri lewat "Setujui Semua", potongan itu
+    tidak akan pernah terjadi.
+
+    Checklist kepala feeder sekarang naik ke pemilik, sama seperti checklist
+    siapa pun naik ke atasannya. Ini bukan soal curiga kepada orangnya —
+    memberi seseorang tombol yang menaikkan gajinya sendiri adalah beban yang
+    tidak perlu ditanggung siapa pun.
+  */
+  const pendingChecklists = dailyChecklists.filter(
+    c => c.status === "submitted" && c.employee_email !== user?.email,
+  );
+  const checklistSendiri = dailyChecklists.find(
+    c => c.status === "submitted" && c.employee_email === user?.email,
+  );
 
   // Approve mutation
   const approveMut = useMutation({
@@ -304,6 +328,12 @@ export default function KepalaFeederDashboard({ user }) {
             </button>
           )}
         </div>
+        {checklistSendiri && (
+          <p className="text-xs text-muted-foreground mb-2 p-2 rounded-lg bg-muted/40 border border-border">
+            Checklist Anda sendiri hari ini ({checklistSendiri.total_points_claimed || 0} poin diklaim)
+            menunggu persetujuan pemilik, bukan Anda.
+          </p>
+        )}
         {pendingChecklists.length === 0 ? (
           <p className="text-sm text-green-600 font-medium">✓ Semua checklist sudah diproses</p>
         ) : (
