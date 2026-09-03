@@ -56,6 +56,16 @@
       "default": 0,
       "description": "Bonus KPI"
     },
+    "pekan_penuh": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah pekan Senin-Minggu yang tujuh harinya hadir penuh pada periode ini. Tiap pekan penuh dibayar tambahan satu hari kerja (keputusan Iwan 03-09-2026)."
+    },
+    "bonus_pekan_penuh": {
+      "type": "number",
+      "default": 0,
+      "description": "Nominal bonus pekan penuh (Rp). WAJIB dicatat terpisah: tanpa kolom ini, net_total memuat angka yang tidak muncul di komponen mana pun, dan rincian slip berhenti bisa dijumlahkan sendiri."
+    },
     "overtime_pay": {
       "type": "number",
       "default": 0,

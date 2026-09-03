@@ -186,6 +186,11 @@ export default function RekapPoinGajiPage() {
     base_salary: row.effectiveBase,
     attend_days: row.hadirDays,
     kpi_bonus: row.kpiBonus,
+    // Bonus pekan penuh dicatat TERPISAH, bukan dilebur ke base_salary.
+    // Kalau dilebur, slip lama tidak bisa lagi menjawab "kenapa gaji
+    // pokoknya lebih besar daripada hari hadir x tarif".
+    pekan_penuh: row.pekanPenuh,
+    bonus_pekan_penuh: row.bonusPekanPenuh,
     overtime_pay: row.overtimePay,
     vegetable_pay: row.vegPay,
     vegetable_trips: row.vegTrips,
