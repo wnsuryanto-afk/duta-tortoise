@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   MapPin, Heart, CheckCircle2, AlertTriangle,
-  Smile, Star, Bell, X, Package, ClipboardList, Clock, Camera
+  Smile, Star, Bell, X, ClipboardList, Clock, Camera
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
