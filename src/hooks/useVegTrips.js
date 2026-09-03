@@ -10,6 +10,13 @@ import { base44 } from "@/api/base44Client";
  *
  * Returns: { [email]: { trips: number, dates: string[] } }
  */
+// Dua jalan masuk menulis baris yang dibaca di sini, dan keduanya sah:
+//   1. Formulir Pakan Harian lengkap (dengan jumlah keranjang dan foto).
+//   2. Tombol sekali tekan "Hari ini saya ambil sayur di pasar" di layar harian
+//      kiper (components/guided/GuidedHariIni.jsx) — basket_count 0, tanpa foto.
+// Yang menentukan upah Rp 30.000 hanyalah ADANYA trip pada tanggal itu, bukan
+// isi keranjangnya, jadi keduanya menghasilkan upah yang sama. Perbedaannya
+// cuma pada data volume pakan.
 export function useVegTrips(period, enabled = true) {
   return useQuery({
     queryKey: ["veg-trips", period],
