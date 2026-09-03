@@ -26,6 +26,7 @@ import { catatPerawatanHarian } from "@/lib/perawatanHarian";
 import { kandangWajib, tugasUbinKandang, poinUbinKandang } from "@/lib/kandang";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { jadwalBerlaku, sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
+import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import { masukLaporan } from "@/lib/laporan";
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -1495,11 +1496,30 @@ export default function GuidedHariIni({ user }) {
         {/* ══ WIDGET 5: AKSI CEPAT ═══════════════════════════════ */}
         <div className="bg-card rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-sm font-semibold text-foreground mb-3">Aksi Cepat</p>
-          <div className="grid grid-cols-3 gap-2">
-            <a href="/stok-unified" className="flex flex-col items-center gap-1.5 p-3 bg-muted rounded-xl hover:bg-muted active:scale-95 transition-all">
-              <Package className="w-5 h-5 text-muted-foreground" />
-              <span className="text-xs font-medium text-foreground text-center">Ambil Stok</span>
-            </a>
+          {/*
+            AMBIL BARANG DENGAN PINDAI — dipasang di layar ini 03-09-2026.
+
+            Sebelumnya di sini hanya ada tautan ke /stok-unified: halaman dengan
+            129 barang, tab, dan penyaring. Itu persis jalan yang oleh
+            AmbilBarangScan sendiri disebut "terlalu mahal untuk dipakai" —
+            memilih dari daftar panjang, mengetik harga, memilih jenis
+            transaksi, di depan rak sambil memegang botol dengan satu tangan.
+
+            Dialog pindainya sudah ada sejak 31 Agustus dan sudah terpasang di
+            KeeperDashboard dan dashboard kepala feeder. Tetapi kiper TIDAK
+            memakai layar-layar itu: peran keeper dan kepala_feeder diarahkan
+            ke Guided Mode (lihat AppLayout), dan di layar inilah mereka
+            bekerja setiap hari. Jadi tombolnya ada di tiga tempat yang jarang
+            dibuka, dan tidak ada di satu tempat yang selalu dibuka.
+
+            Itu juga yang membuat "latih Angsolo & Sholehuddin memindai" tidak
+            pernah selesai: yang kurang bukan latihannya, melainkan tombolnya.
+          */}
+          <div className="mb-2">
+            <AmbilBarangScan trigger="card" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setShowCatatan(v => !v)}
               className="flex flex-col items-center gap-1.5 p-3 bg-muted rounded-xl hover:bg-muted active:scale-95 transition-all"
