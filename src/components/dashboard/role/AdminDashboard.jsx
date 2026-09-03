@@ -16,6 +16,7 @@ import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
 import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
 import PageHeader from "@/components/common/PageHeader";
+import { statusKedaluwarsaBatch } from "@/lib/kedaluwarsaBatch";
 import { TeamArt } from "@/components/common/Illustration";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -78,6 +79,12 @@ export default function AdminDashboard({ user, role = "admin" }) {
     // daripada kenyataannya, tanpa satu pun tanda bahwa daftarnya terpotong.
     // Angka yang diam-diam kurang lebih berbahaya daripada angka yang hilang.
     queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: batches = [] } = useQuery({
+    queryKey: ["batch-barang", "aktif", 500],
+    queryFn: () => base44.entities.BatchBarang.filter({ status: "aktif" }, "-tanggal_terima", 500),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -151,16 +158,35 @@ export default function AdminDashboard({ user, role = "admin" }) {
   const sickThisMonth = healthRecords.filter(h => h.date?.startsWith(thisMonthKey) && h.type === "sakit");
   const followUpToday = healthRecords.filter(h => h.follow_up_date === today);
 
-  const expiredItems = warehouseItems.filter(i => {
-    if (!i.expired_date) return false;
-    return new Date(i.expired_date) <= now;
-  });
+  /*
+    KEDALUWARSA DIBACA DARI BATCH, BUKAN DARI BARANG.
 
-  const nearExpired = warehouseItems.filter(i => {
-    if (!i.expired_date) return false;
-    const diff = Math.ceil((new Date(i.expired_date) - now) / 86400000);
-    return diff > 0 && diff <= 30;
-  });
+    Versi lama menyaring warehouseItems berdasarkan i.expired_date. Pada
+    03-09-2026 kolom itu null pada SELURUH 129 barang gudang — tidak satu pun
+    terisi. Akibatnya kartu ini setiap hari mencetak "✓ Tidak ada yang
+    kadaluarsa" dengan tanda centang hijau, tanpa pernah sekali pun membaca
+    data yang sebenarnya. Peringatan yang mustahil bunyi masih bisa dimaafkan;
+    tanda centang hijau yang mustahil salah adalah kebohongan.
+
+    Tanggal yang sebenarnya ada di BatchBarang, per botol — satu jenis obat
+    dibeli berkali-kali dengan tanggal berbeda. Aturannya di
+    lib/kedaluwarsaBatch.js, sama dengan yang dipakai kartu beranda dan layar
+    ambil barang.
+  */
+  const barangById = new Map(warehouseItems.map((i) => [String(i.id), i]));
+  const batchAktif = batches
+    .filter((b) => Number(b.jumlah_sisa) > 0)
+    .map((b) => ({ batch: b, item: barangById.get(String(b.item_id)) || null }))
+    .map((x) => ({ ...x, st: statusKedaluwarsaBatch(x.batch, x.item) }));
+
+  const expiredItems = batchAktif.filter((x) => x.st.keadaan === "lewat");
+  const nearExpired = batchAktif
+    .filter((x) => x.st.keadaan === "segera")
+    .sort((a, b) => a.st.sisaHari - b.st.sisaHari);
+
+  // Berapa batch yang tanggalnya belum diisi sama sekali. Ini yang membedakan
+  // "aman" dari "belum diperiksa", dan bedanya besar.
+  const batchTanpaTanggal = batchAktif.filter((x) => x.st.keadaan === "tidak_tahu").length;
 
   const treatmentTortoises = tortoises.filter(t => t.status === "sakit" || t.is_currently_sick);
 
@@ -319,21 +345,39 @@ export default function AdminDashboard({ user, role = "admin" }) {
             <Link to="/stok-unified" className="text-xs text-primary hover:underline">Lihat Semua</Link>
           </div>
           {expiredItems.length === 0 && nearExpired.length === 0 ? (
-            <p className="text-sm text-green-600">✓ Tidak ada yang kadaluarsa</p>
+            /* Tanda centang hijau hanya boleh muncul kalau memang ADA yang
+               diperiksa. Kalau seluruh batch tanpa tanggal, yang benar bukan
+               "aman" melainkan "belum diketahui". */
+            batchAktif.length > 0 && batchTanpaTanggal < batchAktif.length ? (
+              <p className="text-sm text-green-600">✓ Tidak ada yang kadaluarsa</p>
+            ) : (
+              <p className="text-sm text-amber-700">
+                Belum bisa dinilai — {batchTanpaTanggal} batch belum punya tanggal kedaluwarsa.
+              </p>
+            )
           ) : (
             <div className="space-y-2">
-              {[...expiredItems, ...nearExpired].slice(0, 5).map(item => {
-                const diff = Math.ceil((new Date(item.expired_date) - now) / 86400000);
-                return (
-                  <div key={item.id} className="flex items-center justify-between p-2 bg-orange-50 rounded-lg">
-                    <p className="text-sm font-medium">{item.name}</p>
-                    <div className="text-right">
-                      <p className="text-xs text-orange-600">{item.expired_date}</p>
-                      <p className="text-xs font-medium text-orange-700">{diff <= 0 ? "Kadaluarsa!" : `${diff} hari lagi`}</p>
-                    </div>
+              {[...expiredItems, ...nearExpired].slice(0, 5).map(({ batch, item, st }) => (
+                <div key={batch.id} className="flex items-center justify-between gap-2 p-2 bg-orange-50 rounded-lg">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{item?.name || batch.nama_barang}</p>
+                    {st.sebab === "buka" && (
+                      <p className="text-[11px] text-orange-700">dihitung dari tanggal botol dibuka</p>
+                    )}
                   </div>
-                );
-              })}
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs text-orange-600">{format(st.tanggal, "d MMM yyyy", { locale: idLocale })}</p>
+                    <p className="text-xs font-medium text-orange-700">
+                      {st.sisaHari < 0 ? "Kadaluarsa!" : `${st.sisaHari} hari lagi`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {batchTanpaTanggal > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  {batchTanpaTanggal} batch lain belum punya tanggal — belum bisa dinilai.
+                </p>
+              )}
             </div>
           )}
         </div>
