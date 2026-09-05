@@ -144,27 +144,6 @@ export default function GuidedHariIni({ user }) {
     refetchInterval: 5 * 60 * 1000, // 5 menit, bukan 30 detik
   });
 
-  /*
-    Trip ambil sayur di pasar hari ini.
-
-    Dibaca dari PakanHarian dengan sumber "sayur_pasar" — sumber yang sama
-    yang dipakai hooks/useVegTrips.js untuk menghitung upah Rp 30.000 per trip
-    di slip gaji. Satu definisi: kalau baris ini tidak ada, upahnya juga tidak
-    ada, dan sebaliknya.
-  */
-  const { data: tripSayurHariIni } = useQuery({
-    queryKey: ["trip-sayur-today", user?.email, today],
-    queryFn: async () => {
-      const res = await base44.entities.PakanHarian.filter({
-        recorded_by_email: user.email,
-        log_date: today,
-        feed_source: "sayur_pasar",
-      });
-      return res[0] || null;
-    },
-    enabled: !!user?.email,
-    staleTime: 2 * 60 * 1000,
-  });
 
   const { data: settings } = useQuery({
     queryKey: ["company-settings"],
@@ -483,81 +462,6 @@ export default function GuidedHariIni({ user }) {
     });
     qc.invalidateQueries({ queryKey: ["attendance-today"] });
     flashPoin("Check in", 5);
-    setLoading(false);
-  };
-
-  /*
-    Menandai hari ini sebagai LIBUR.
-
-    Sampai 01-09-2026 tidak ada satu pun cara mencatat hari tidak masuk: kolom
-    status ada di basis data, tetapi seluruh 52 catatan Agustus berstatus
-    "hadir" karena hanya check-in yang pernah menulisnya. Hari yang tidak masuk
-    jadi tidak punya catatan sama sekali — dan hari tanpa catatan tidak bisa
-    dibedakan dari absensi yang lupa diisi.
-
-    Bedanya nyata: enam hari Angsolo pada Agustus hilang senilai Rp 420.000
-    tanpa ada yang pernah memutuskan itu libur.
-
-    Ini TIDAK mengubah gaji. Gaji tetap dihitung dari hari masuk (keputusan
-    Iwan 01-09-2026). Yang berubah: hari yang benar-benar libur jadi punya
-    catatan, sehingga hari yang TIDAK punya catatan sama sekali menjadi tanda
-    bahwa ada absensi yang belum diisi — dan itu bisa dikejar sebelum gaji
-    dihitung, bukan sesudah.
-  */
-  const tandaiLibur = async () => {
-    if (hasCheckedIn || attendance) return;
-    setLoading(true);
-    try {
-      await base44.entities.Attendance.create({
-        employee_id: user.id,
-        employee_name: user.full_name || user.email,
-        employee_email: user.email,
-        date: today,
-        status: "libur",
-      });
-      qc.invalidateQueries({ queryKey: ["attendance-today"] });
-      showMsg("ok", "Hari ini ditandai libur. Tidak dihitung sebagai hari kerja.");
-    } catch (e) {
-      showMsg("warn", "Gagal menandai libur: " + (e?.message || ""));
-    }
-    setLoading(false);
-  };
-
-  /*
-    Catat trip ambil sayur di pasar — SEKALI TEKAN.
-
-    Aturannya sudah lama ada: Rp 30.000 per trip, di SalaryConfig
-    (vegetable_rate_per_trip) dan sudah dihitung lib/hitungGaji.js. Yang tidak
-    ada adalah jalan masuknya. Sumber datanya formulir Pakan Harian, dan
-    sampai 03-09-2026 seluruh aplikasi hanya punya SATU catatan pakan —
-    tertanggal 27 Juli. Jadi selama ini aturannya membayar nol, bukan karena
-    tidak ada yang ke pasar, melainkan karena tidak ada yang mengisi formulir
-    berkolom banyak sambil membawa keranjang.
-
-    Tombol ini menukar formulir itu dengan satu ketukan. Yang dikorbankan:
-    jumlah keranjang tidak ikut tercatat (basket_count 0) dan tidak ada foto.
-    Untuk upah trip itu tidak berpengaruh — yang dibayar adalah perjalanannya,
-    bukan isinya. Untuk mengukur volume pakan, formulir lengkapnya tetap ada.
-  */
-  const catatTripSayur = async () => {
-    if (tripSayurHariIni) return;
-    setLoading(true);
-    try {
-      await base44.entities.PakanHarian.create({
-        log_date: today,
-        session: "pagi",
-        basket_count: 0,
-        feed_source: "sayur_pasar",
-        recorded_by_name: user.full_name || user.email,
-        recorded_by_email: user.email,
-        notes: "Dicatat sekali tekan dari layar harian. Jumlah keranjang tidak diisi — buka Pakan Harian bila perlu mencatat volumenya.",
-      });
-      qc.invalidateQueries({ queryKey: ["trip-sayur-today"] });
-      qc.invalidateQueries({ queryKey: ["veg-trips"] });
-      showMsg("ok", "Trip sayur tercatat. Upah Rp 30.000 masuk hitungan gaji bulan ini.");
-    } catch (e) {
-      showMsg("warn", "Gagal mencatat trip sayur: " + (e?.message || ""));
-    }
     setLoading(false);
   };
 
