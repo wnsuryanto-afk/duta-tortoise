@@ -34,7 +34,15 @@ export default function GuidedPoinSaya({ user }) {
   const { data: logs = [] } = useQuery({
     queryKey: ["maintenance-my-month", user?.email, currentPeriod, lastPeriod],
     queryFn: async () => {
-      const all = await base44.entities.MaintenanceLog.filter({ done_by_email: user.email });
+      // MaintenanceLog sudah lewat 2.000 baris. Menarik SELURUH log milik
+      // seorang keeper lalu menyaring di browser berarti cepat atau lambat
+      // kena batas ambil dan poin terhitung kurang tanpa tanda apa pun.
+      // Karena period_key berformat "yyyy-MM-dd", urutan abjad = urutan
+      // waktu, jadi bulan lalu ke atas cukup dengan $gte.
+      const all = await base44.entities.MaintenanceLog.filter({
+        done_by_email: user.email,
+        period_key: { $gte: lastPeriod },
+      });
       return all.filter(
         (l) => l.is_done && (l.period_key?.startsWith(currentPeriod) || l.period_key?.startsWith(lastPeriod))
       );
