@@ -27,6 +27,7 @@ import { kandangWajib, tugasUbinKandang, poinUbinKandang } from "@/lib/kandang";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { jadwalBerlaku, sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
 import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
+import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
 import { masukLaporan } from "@/lib/laporan";
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -1028,48 +1029,18 @@ export default function GuidedHariIni({ user }) {
                   {loading ? "Tunggu sebentar..." : "📸 CHECK IN — Selfie & Mulai Kerja"}
                 </button>
                 {farmConfigured && <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1"><MapPin className="w-3 h-3" /> GPS diperlukan</p>}
-
-                <button
-                  onClick={tandaiLibur}
-                  disabled={loading}
-                  className="w-full mt-2 border border-border text-muted-foreground font-medium py-2.5 rounded-2xl text-sm active:scale-95 transition-transform disabled:opacity-60"
-                >
-                  Hari ini saya libur
-                </button>
-                <p className="text-[11px] text-center text-muted-foreground mt-1">
-                  Hari libur tidak dihitung hari kerja. Tekan ini supaya tidak tercatat sebagai absensi yang lupa diisi.
-                </p>
               </div>
             )}
 
-            {!hasCheckedIn && attendance?.status === "libur" && (
-              <p className="text-sm text-muted-foreground">Hari ini ditandai libur.</p>
-            )}
-
-            {/* Trip ambil sayur — hanya muncul pada hari kerja, setelah check in.
-                Upahnya Rp 30.000 per trip dan langsung masuk hitungan gaji. */}
-            {hasCheckedIn && (
-              <div className="mt-3 pt-3 border-t border-border">
-                {tripSayurHariIni ? (
-                  <p className="text-sm text-green-700 font-medium">
-                    ✓ Trip sayur pasar tercatat hari ini — Rp 30.000
-                  </p>
-                ) : (
-                  <>
-                    <button
-                      onClick={catatTripSayur}
-                      disabled={loading}
-                      className="w-full border border-green-700 text-green-800 font-semibold py-2.5 rounded-2xl text-sm active:scale-95 transition-transform disabled:opacity-60"
-                    >
-                      🥬 Hari ini saya ambil sayur di pasar
-                    </button>
-                    <p className="text-[11px] text-center text-muted-foreground mt-1">
-                      Tambahan Rp 30.000. Tekan sekali saja, pada hari Anda benar-benar ke pasar.
-                    </p>
-                  </>
-                )}
-              </div>
-            )}
+            {/* Tandai libur & trip sayur TIDAK ditulis di sini — keduanya harus
+                sama persis dengan yang muncul di KeeperDashboard. Lihat
+                components/attendance/AksiHarianKiper.jsx. */}
+            <AksiHarianKiper
+              user={user}
+              attendance={attendance}
+              hasCheckedIn={hasCheckedIn}
+              onPesan={showMsg}
+            />
 
             {hasCheckedIn && !hasCheckedOut && (
               <div>
