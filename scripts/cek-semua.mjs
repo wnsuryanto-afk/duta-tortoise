@@ -23,7 +23,7 @@
  */
 import { execFileSync } from "child_process";
 
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-render.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {
