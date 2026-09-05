@@ -7,6 +7,11 @@ import React from "react";
 import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
 import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import ExpiredItemAlert from "@/components/dashboard/ExpiredItemAlert";
+import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
+import AdminDashboard from "@/components/dashboard/role/AdminDashboard";
+import KepalaFeederDashboard from "@/components/dashboard/role/KepalaFeederDashboard";
+import InvestorDashboard from "@/components/dashboard/role/InvestorDashboard";
+import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 
 const U = { id: "1", email: "a@b.c", full_name: "Sholeh" };
 
@@ -23,4 +28,13 @@ export default [
   ["AmbilBarangScan kartu", <AmbilBarangScan trigger="card" />],
   ["AmbilBarangScan tombol", <AmbilBarangScan trigger="button" />],
   ["ExpiredItemAlert tanpa data", <ExpiredItemAlert />],
+
+  // Layar yang diubah pada audit 03-09-2026. Semuanya dirender tanpa data —
+  // keadaan saat aplikasi baru dibuka dan kueri belum kembali. Di situlah
+  // kesalahan "membaca properti dari undefined" biasanya muncul.
+  ["AttendanceChartCard tanpa data", <AttendanceChartCard />],
+  ["AdminDashboard tanpa data", <AdminDashboard />],
+  ["KepalaFeederDashboard tanpa data", <KepalaFeederDashboard />],
+  ["InvestorDashboard tanpa data", <InvestorDashboard />],
+  ["KeeperDashboard tanpa data", <KeeperDashboard />],
 ];
