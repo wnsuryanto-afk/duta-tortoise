@@ -281,21 +281,21 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     sickRecords, photoFindings, pakanRecords, treatmentSchedules,
     stockMovements, tortoises, daftarBelanja,
   ] = await Promise.all([
-    base44.asServiceRole.entities.User.list(),
-    base44.asServiceRole.entities.Attendance.filter({ date: wibToday }),
-    base44.asServiceRole.entities.DailyChecklist.filter({ date: wibToday }),
-    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
-    base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
-    base44.asServiceRole.entities.FeedStock.list("-name", 100),
-    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
-    base44.asServiceRole.entities.ToolRequest.filter({ status: "menunggu" }),
-    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit", date: wibToday }),
-    base44.asServiceRole.entities.PhotoFinding.filter({ date: wibToday }),
-    base44.asServiceRole.entities.PakanHarian.filter({ log_date: wibToday }),
-    base44.asServiceRole.entities.TreatmentSchedule.filter({ is_active: true }),
-    base44.asServiceRole.entities.StockMovement.filter({ date: wibToday }),
+    base44.asServiceRole.entities.User.list(null, BATAS_AMBIL),
+    base44.asServiceRole.entities.Attendance.filter({ date: wibToday }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.DailyChecklist.filter({ date: wibToday }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.WarehouseItem.list("-name", BATAS_AMBIL),
+    base44.asServiceRole.entities.FeedStock.list("-name", BATAS_AMBIL),
+    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.ToolRequest.filter({ status: "menunggu" }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit", date: wibToday }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.PhotoFinding.filter({ date: wibToday }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.PakanHarian.filter({ log_date: wibToday }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.TreatmentSchedule.filter({ is_active: true }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.StockMovement.filter({ date: wibToday }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.Tortoise.list("-name", BATAS_AMBIL),
-    base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }).catch(() => []),
+    base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }, null, BATAS_AMBIL).catch(() => []),
   ]);
 
   // ── KEHADIRAN ──
@@ -602,8 +602,8 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
         // muncul di ringkasan. Dibaca semuanya; penyaringan status dilakukan
         // di tempat pemakaian masing-masing.
         base44.asServiceRole.entities.PembelianBarang.list("-tanggal_pesan", 200).catch(() => []),
-        base44.asServiceRole.entities.Kasbon.filter({ status: "pending" }).catch(() => []),
-        base44.asServiceRole.entities.DailyChecklist.filter({ status: "submitted" }).catch(() => []),
+        base44.asServiceRole.entities.Kasbon.filter({ status: "pending" }, null, BATAS_AMBIL).catch(() => []),
+        base44.asServiceRole.entities.DailyChecklist.filter({ status: "submitted" }, null, BATAS_AMBIL).catch(() => []),
         Promise.resolve(tortoises),
       ]);
 
@@ -778,7 +778,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
 
   // ── PERINGATAN TERTUNDA ──
   try {
-    const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
+    const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" }, null, BATAS_AMBIL);
     if (pendingAlerts.length > 0) {
       const alertLines = pendingAlerts.slice(0, 5).map(a => {
         const icon = a.notification_type === "sick_report" ? "🤒" : a.notification_type === "low_stock" ? "📦" : "🔴";
@@ -800,7 +800,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   // yang sedang berjalan — padahal instans runtime yang masih panas memang
   // bisa menyajikan bundel lama beberapa menit setelah deploy. Penanda yang
   // ikut berubah menjawab pertanyaan itu dalam satu lirikan.
-  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v5-daftar-penuh_`);
+  lines.push(`_Ringkasan otomatis Duta Tortoise · ${timeLabel} WIB · v6-batas-penuh_`);
 
   return lines.join("\n");
 }
@@ -824,14 +824,14 @@ async function buildMorningSummary(base44, settings, wibToday: string, wibNow: D
     sopTasks, checklistsYesterday, sickRecords, diagnosisProtocols,
     warehouseItems, feedStocks, tortoises, incidentalTasks,
   ] = await Promise.all([
-    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }),
-    base44.asServiceRole.entities.DailyChecklist.filter({ date: wibYesterdayStr }),
-    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }),
-    base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true }),
-    base44.asServiceRole.entities.WarehouseItem.list("-name", 100),
-    base44.asServiceRole.entities.FeedStock.list("-name", 100),
+    base44.asServiceRole.entities.SOPTask.filter({ is_active: true }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.DailyChecklist.filter({ date: wibYesterdayStr }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.WarehouseItem.list("-name", BATAS_AMBIL),
+    base44.asServiceRole.entities.FeedStock.list("-name", BATAS_AMBIL),
     base44.asServiceRole.entities.Tortoise.list("-name", BATAS_AMBIL),
-    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }),
+    base44.asServiceRole.entities.IncidentalTask.filter({ is_active: true }, null, BATAS_AMBIL),
   ]);
 
   // ── 1. CARRY-OVER (tugas kemarin belum selesai) ──
@@ -935,10 +935,10 @@ async function buildWeeklySummary(base44, settings, wibToday: string, wibNow: Da
   const twoWeeksAgoStr = wibDateToStr(twoWeeksAgo);
 
   const [users, allAttendances, allChecklists, sickRecords, incidentalTasks, pakanRecords, photoFindings] = await Promise.all([
-    base44.asServiceRole.entities.User.list(),
+    base44.asServiceRole.entities.User.list(null, BATAS_AMBIL),
     base44.asServiceRole.entities.Attendance.list("-date", 500),
     base44.asServiceRole.entities.DailyChecklist.list("-date", 500),
-    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }),
+    base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.IncidentalTask.list("-due_date", 500),
     base44.asServiceRole.entities.PakanHarian.list("-log_date", 500),
     base44.asServiceRole.entities.PhotoFinding.list("-date", 500),
@@ -1101,7 +1101,7 @@ export default async function(req: Request): Promise<Response> {
             } catch {}
             // Mark pending_ai alerts as processed
             try {
-              const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" });
+              const pendingAlerts = await base44.asServiceRole.entities.WhatsAppLog.filter({ status: "pending_ai" }, null, BATAS_AMBIL);
               for (const alert of pendingAlerts) {
                 await base44.asServiceRole.entities.WhatsAppLog.update(alert.id, {
                   status: "terkirim",
