@@ -56,7 +56,12 @@ export default function MonthlySalaryPage() {
   const { data: checklists = [] } = useQuery({
     queryKey: ["checklists-salary", period],
     queryFn: async () => {
-      const all = await base44.entities.DailyChecklist.filter({ status: "approved" });
+      // Bulan disaring di server, bukan di browser — kalau tidak, batas ambil
+      // SDK memotong data dan gaji terhitung kurang tanpa peringatan.
+      const all = await base44.entities.DailyChecklist.filter({
+        status: "approved",
+        date: { $gte: `${period}-01`, $lte: `${period}-31` },
+      });
       return all.filter((c) => c.date?.startsWith(period));
     },
     enabled: isAdmin,
