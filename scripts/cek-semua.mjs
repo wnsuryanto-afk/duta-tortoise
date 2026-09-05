@@ -23,6 +23,10 @@
  */
 import { execFileSync } from "child_process";
 
+// cek-render ditambahkan 03-09-2026. Lima penjaga sebelumnya memeriksa apakah
+// kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
+// komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
+// melempar TypeError saat data user belum termuat.
 const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-render.mjs"];
 let gagal = 0;
 
