@@ -2,15 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.ts";
 import { terjadwalPada, tanggalDariWib } from "../../shared/jadwalSOP.ts";
 import { perluDiperhatikan } from "../../shared/stok.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
-/**
- * Batas pengambilan data untuk ringkasan harian.
- *
- * Sebelumnya 200, sementara peternakan ini sudah mencatat 178 kura. Begitu
- * jumlahnya lewat 200, ringkasan harian akan diam-diam menghitung sebagian
- * saja — tanpa galat, tanpa tanda apa pun di pesan yang terkirim.
+/*
+ * BATAS_AMBIL dulu didefinisikan di file ini sendiri, lalu ternyata
+ * masalahnya ada di 46 fungsi lain juga. Sekarang satu definisi saja,
+ * di ../../shared/batas.ts — alasan lengkapnya ada di sana.
  */
-const BATAS_AMBIL = 2000;
 
 /**
  * Nama barang di gudang menempel kode, platform, dan catatan internal:
