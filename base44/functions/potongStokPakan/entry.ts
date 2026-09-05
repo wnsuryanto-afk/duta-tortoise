@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, wibTanggal, tanggalMundur, sopIdDariTaskId } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * A6 — Stok berkurang sendiri saat task pakan/suplemen dicentang.
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
     const tanggalDiproses = [wibTanggal(), tanggalMundur(1), tanggalMundur(2)];
 
     const [sopTasks, feedStocks, warehouseItems] = await Promise.all([
-      base44.asServiceRole.entities.SOPTask.list(),
+      base44.asServiceRole.entities.SOPTask.list(null, BATAS_AMBIL),
       base44.asServiceRole.entities.FeedStock.list("name", 200),
       base44.asServiceRole.entities.WarehouseItem.list("name", 500),
     ]);
@@ -57,7 +58,7 @@ Deno.serve(async (req) => {
       const checklists = await base44.asServiceRole.entities.DailyChecklist.filter({
         date: tanggal,
         status: "approved",
-      });
+      }, null, BATAS_AMBIL);
 
       for (const cl of checklists || []) {
         if (cl.stok_dipotong === true) continue;

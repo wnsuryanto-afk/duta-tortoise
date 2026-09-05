@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
     const existing = await base44.asServiceRole.entities.DailyChecklist.filter({
       date: taskDate,
       employee_name: log.done_by,
-    });
+    }, null, BATAS_AMBIL);
 
     // ── Normalisasi kunci deduplikasi: trim(judul) + kandang ──
     // null/undefined/"" dan placeholder kandang ("Tugas Harian", "Suplemen",
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     if (log.done_by_email) {
       const monthKey = taskDate.substring(0, 7);
-      const allThisMonth = await base44.asServiceRole.entities.DailyChecklist.filter({});
+      const allThisMonth = await base44.asServiceRole.entities.DailyChecklist.filter({}, null, BATAS_AMBIL);
       const monthlyTotal = allThisMonth
         .filter(cl => cl.employee_email === log.done_by_email && (cl.date || "").startsWith(monthKey))
         .reduce((sum, cl) => sum + (cl.approved_points || cl.total_points_claimed || 0), 0);
@@ -118,7 +119,7 @@ Deno.serve(async (req) => {
           const existingMilestone = await base44.asServiceRole.entities.Notification.filter({
             recipient_email: log.done_by_email,
             category: "lainnya",
-          });
+          }, null, BATAS_AMBIL);
           const alreadyHas = existingMilestone.some(n =>
             n.title?.includes(`${milestone} Poin`) &&
             (n.created_at || n.created_date || "").startsWith(monthKey) &&

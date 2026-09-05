@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { segarkanIsiKandang } from "../../shared/isiKandang.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
       tortoise?.enclosure ? [tortoise.enclosure] : null);
 
     // 5. Kirim notifikasi ke owner
-    const owners = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
+    const owners = await base44.asServiceRole.entities.User.filter({ role: 'admin' }, null, BATAS_AMBIL);
     for (const owner of owners) {
       await base44.asServiceRole.entities.Notification.create({
         recipient_email: owner.email,

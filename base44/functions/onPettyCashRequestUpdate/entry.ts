@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil via entity automation saat PettyCashRequest diupdate.
 // Notifikasi pemohon saat status berubah ke "dicairkan".
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
       recipient_email: request.requester_email,
       related_entity_id: request.id,
       category: 'keuangan',
-    });
+    }, null, BATAS_AMBIL);
     if (existing.some(n => n.title.includes('Dicairkan') && !n.is_dismissed)) {
       return Response.json({ skipped: 'duplicate' });
     }

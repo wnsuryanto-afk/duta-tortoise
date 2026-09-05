@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -13,7 +14,7 @@ Deno.serve(async (req) => {
 
     // ── On create: notify owner ──
     if (event?.type === 'create' && request.status === 'pending') {
-      const allUsers = await base44.asServiceRole.entities.User.list();
+      const allUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
       const owners = allUsers.filter(u => u.role === 'owner');
       for (const owner of owners) {
         // Anti-duplikat
@@ -21,7 +22,7 @@ Deno.serve(async (req) => {
           recipient_email: owner.email,
           related_entity_id: request.id,
           category: 'keuangan',
-        });
+        }, null, BATAS_AMBIL);
         if (existing.some(n => n.title.includes('Request Top-up'))) continue;
 
         await base44.asServiceRole.entities.Notification.create({
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
           recipient_email: request.requester_email,
           related_entity_id: request.id,
           category: 'keuangan',
-        });
+        }, null, BATAS_AMBIL);
         const keyword = newStatus === 'approved' ? 'Disetujui' : 'Ditolak';
         if (existing.some(n => n.title.includes(keyword) && !n.is_dismissed)) {
           return Response.json({ skipped: 'duplicate' });

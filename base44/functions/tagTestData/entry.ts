@@ -9,13 +9,14 @@
  * Lebih sering dipakai sebagai utilitas cek status test mode.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const settings = await base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" });
+  const settings = await base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" }, null, BATAS_AMBIL);
   const isTestMode = !!settings[0]?.test_mode_active;
 
   return Response.json({ is_test_data: isTestMode, test_mode_active: isTestMode });

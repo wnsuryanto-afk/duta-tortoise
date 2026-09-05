@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { hanyaLaporan } from "../../shared/laporan.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Hitung ulang total_purchases dan total_spent semua BuyerProfile dari data Sale.
 // Aman dijalankan berkali-kali (idempoten). Bisa untuk satu buyer (buyer_profile_id atau hp)
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
       const p = await db.entities.BuyerProfile.get(buyer_profile_id);
       profiles = p ? [p] : [];
     } else if (targetHp) {
-      profiles = await db.entities.BuyerProfile.filter({ hp_whatsapp: targetHp });
+      profiles = await db.entities.BuyerProfile.filter({ hp_whatsapp: targetHp }, null, BATAS_AMBIL);
     } else {
       profiles = await db.entities.BuyerProfile.list('-created_date', 2000);
     }

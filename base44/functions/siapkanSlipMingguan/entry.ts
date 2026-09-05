@@ -2,6 +2,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibNow, wibTanggal, notifSekali, userPerRole } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 const PERAN_HARIAN = ["keeper", "kepala_feeder"];
 
@@ -92,9 +93,9 @@ Deno.serve(async (req) => {
         base44.asServiceRole.entities.DailyChecklist.list("-date", 500),
         base44.asServiceRole.entities.RempesanLog.list("-date", 300),
         base44.asServiceRole.entities.Kasbon.list("-created_date", 200),
-        base44.asServiceRole.entities.SalaryConfig.list(),
-        base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" }),
-        base44.asServiceRole.entities.SalarySlip.filter({ period: awalStr }),
+        base44.asServiceRole.entities.SalaryConfig.list(null, BATAS_AMBIL),
+        base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" }, null, BATAS_AMBIL),
+        base44.asServiceRole.entities.SalarySlip.filter({ period: awalStr }, null, BATAS_AMBIL),
       ]);
 
     if ((slipAda || []).length > 0) {

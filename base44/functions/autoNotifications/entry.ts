@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { clutchAktif } from "../../shared/kura.ts";
 import { perluDiperhatikan, dilacak } from "../../shared/stok.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Batas pengambilan ditulis tegas. Pemberitahuan otomatis yang membaca daftar
 // tanpa batas mengandalkan bawaan SDK: begitu datanya lewat batas itu,
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
         recipient_email: recipientEmail,
         related_entity_id: relatedEntityId,
         category,
-      });
+      }, null, BATAS_AMBIL);
       return existing.some(n => {
         const createdAt = n.created_at || n.created_date || "";
         return createdAt.startsWith(today) && !n.is_dismissed;
@@ -87,7 +88,7 @@ Deno.serve(async (req) => {
     );
     for (const record of followUpDue) {
       const recipientEmail = record.created_by_id
-        ? (await base44.asServiceRole.entities.User.filter({ id: record.created_by_id }))[0]?.email
+        ? (await base44.asServiceRole.entities.User.filter({ id: record.created_by_id }, null, BATAS_AMBIL))[0]?.email
         : null;
       if (!recipientEmail) continue;
       if (await isDuplicate(recipientEmail, record.id, "kesehatan")) continue;
@@ -194,7 +195,7 @@ Deno.serve(async (req) => {
       poinByEmployee[cl.employee_email] += (cl.approved_points || cl.total_points_claimed || 0);
     }
     // Tingkatan target, urut naik. Yang belum diisi dilewati.
-    const csList = await base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" });
+    const csList = await base44.asServiceRole.entities.CompanySettings.filter({ setting_key: "main" }, null, BATAS_AMBIL);
     const cs = csList[0] || {};
     // D16 — Tingkat Dasar juga menuntut poin TIM. Aturan yang sama ada di
     // src/lib/bonus.js untuk sisi layar; keduanya harus diubah bersamaan.
@@ -231,7 +232,7 @@ Deno.serve(async (req) => {
       const existing14 = await base44.asServiceRole.entities.Notification.filter({
         recipient_email: email,
         related_entity_id: kunciTingkat,
-      });
+      }, null, BATAS_AMBIL);
       const alreadyNotif14 = existing14.some(n => !n.is_dismissed);
       if (alreadyNotif14) continue;
       const sisa = Math.max(0, berikut.target - (totalPoin as number));

@@ -4,6 +4,7 @@
  * Payload: { tortoise_id, old_name, new_name }
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
     const updates = [];
 
     // HealthRecord
-    const healthRecords = await db.entities.HealthRecord.filter({ tortoise_id });
+    const healthRecords = await db.entities.HealthRecord.filter({ tortoise_id }, null, BATAS_AMBIL);
     for (const r of healthRecords) {
       if (r.tortoise_name !== new_name) {
         updates.push(db.entities.HealthRecord.update(r.id, { tortoise_name: new_name }));
@@ -28,7 +29,7 @@ Deno.serve(async (req) => {
     }
 
     // Sale
-    const sales = await db.entities.Sale.filter({ tortoise_id });
+    const sales = await db.entities.Sale.filter({ tortoise_id }, null, BATAS_AMBIL);
     for (const s of sales) {
       if (s.tortoise_name !== new_name) {
         updates.push(db.entities.Sale.update(s.id, { tortoise_name: new_name }));
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
     }
 
     // MeasurementHistory
-    const measurements = await db.entities.MeasurementHistory.filter({ tortoise_id });
+    const measurements = await db.entities.MeasurementHistory.filter({ tortoise_id }, null, BATAS_AMBIL);
     for (const m of measurements) {
       if (m.tortoise_name !== new_name) {
         updates.push(db.entities.MeasurementHistory.update(m.id, { tortoise_name: new_name }));
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     // EnclosureHistory
-    const enclosureHistory = await db.entities.EnclosureHistory.filter({ tortoise_id });
+    const enclosureHistory = await db.entities.EnclosureHistory.filter({ tortoise_id }, null, BATAS_AMBIL);
     for (const e of enclosureHistory) {
       if (e.tortoise_name !== new_name) {
         updates.push(db.entities.EnclosureHistory.update(e.id, { tortoise_name: new_name }));
@@ -52,7 +53,7 @@ Deno.serve(async (req) => {
     }
 
     // DeathRecord
-    const deathRecords = await db.entities.DeathRecord.filter({ tortoise_id });
+    const deathRecords = await db.entities.DeathRecord.filter({ tortoise_id }, null, BATAS_AMBIL);
     for (const d of deathRecords) {
       if (d.tortoise_name !== new_name) {
         updates.push(db.entities.DeathRecord.update(d.id, { tortoise_name: new_name }));
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
     }
 
     // TreatmentLog
-    const treatmentLogs = await db.entities.TreatmentLog.filter({ tortoise_id });
+    const treatmentLogs = await db.entities.TreatmentLog.filter({ tortoise_id }, null, BATAS_AMBIL);
     for (const t of treatmentLogs) {
       if (t.tortoise_name !== new_name) {
         updates.push(db.entities.TreatmentLog.update(t.id, { tortoise_name: new_name }));

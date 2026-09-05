@@ -4,6 +4,7 @@ import {
   getSettings,
   getPhoneNumbersForRoles,
 } from "../../shared/whatsapp.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * Pengingat harian — kirim jumlah checklist menunggu approval ke Owner.
@@ -99,7 +100,7 @@ export default async function(req: Request): Promise<Response> {
     // 5. Count pending DailyChecklist submissions
     const pending = await base44.asServiceRole.entities.DailyChecklist.filter({
       status: 'submitted',
-    });
+    }, null, BATAS_AMBIL);
     const count = pending.length;
 
     // 6. No pending — mark as sent, don't message

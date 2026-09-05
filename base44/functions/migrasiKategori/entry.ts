@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -11,7 +12,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, itemId, feedCategory, newCategory, targetSku } = body;
 
-    const whItem = await base44.asServiceRole.entities.WarehouseItem.filter({ id: itemId });
+    const whItem = await base44.asServiceRole.entities.WarehouseItem.filter({ id: itemId }, null, BATAS_AMBIL);
     const item = whItem[0];
     if (!item) return Response.json({ error: "Item tidak ditemukan" }, { status: 404 });
 
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
       const newFeed = await base44.asServiceRole.entities.FeedStock.create(feedData);
 
       // Remap ItemUsage yang merujuk ke WarehouseItem ini
-      const usages = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: itemId });
+      const usages = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: itemId }, null, BATAS_AMBIL);
       let usageMoved = 0;
       for (const u of usages) {
         await base44.asServiceRole.entities.ItemUsage.update(u.id, {

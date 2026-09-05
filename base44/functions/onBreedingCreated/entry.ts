@@ -3,6 +3,7 @@
  * Dipanggil via entity automation pada event create/update Breeding
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -24,7 +25,7 @@ Deno.serve(async (req) => {
 
       if (tortoiseId) {
         try {
-          const list = await base44.asServiceRole.entities.Tortoise.filter({ id: tortoiseId });
+          const list = await base44.asServiceRole.entities.Tortoise.filter({ id: tortoiseId }, null, BATAS_AMBIL);
           tortoise = list?.[0] || null;
         } catch (e) {
           console.warn("Lookup by id gagal:", e.message);
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
       // Fallback by name jika tidak ada by ID
       if (!tortoise && tortoiseName) {
         try {
-          const byName = await base44.asServiceRole.entities.Tortoise.filter({ name: tortoiseName });
+          const byName = await base44.asServiceRole.entities.Tortoise.filter({ name: tortoiseName }, null, BATAS_AMBIL);
           if (byName && byName.length === 1) {
             tortoise = byName[0];
           } else if (byName && byName.length > 1) {

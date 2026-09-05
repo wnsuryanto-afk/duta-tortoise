@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * A9 — Tandai SOP yang bahannya habis, supaya tidak dibayar poin untuk
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
     const hariIni = wibTanggal();
 
     const [sopTasks, gudang, pakan] = await Promise.all([
-      base44.asServiceRole.entities.SOPTask.list(),
+      base44.asServiceRole.entities.SOPTask.list(null, BATAS_AMBIL),
       base44.asServiceRole.entities.WarehouseItem.list("name", 500),
       base44.asServiceRole.entities.FeedStock.list("name", 200),
     ]);

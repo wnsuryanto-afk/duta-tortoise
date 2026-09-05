@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * Endpoint untuk menyelesaikan duplikat satuan beda.
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
     let itemUsagePindah = 0;
 
     async function pindahUsage(fromId, fromName, toId, toName) {
-      const usages = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: fromId });
+      const usages = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: fromId }, null, BATAS_AMBIL);
       for (const u of usages) {
         await base44.asServiceRole.entities.ItemUsage.update(u.id, { item_id: toId, item_name: toName });
         itemUsagePindah++;

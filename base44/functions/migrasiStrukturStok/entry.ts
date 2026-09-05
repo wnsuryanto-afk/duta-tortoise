@@ -9,6 +9,7 @@
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
 
     // ── A. Preview item dengan field code ──────────────────────────────────
     if (action === "preview_code_sku") {
-      const allItems = await base44.asServiceRole.entities.WarehouseItem.list();
+      const allItems = await base44.asServiceRole.entities.WarehouseItem.list(null, BATAS_AMBIL);
       const withCode = allItems.filter(i => i.code && i.code.trim() !== "");
       const needMigrate = withCode.filter(i => !i.sku || i.sku.trim() === "");
       const bothExist = withCode.filter(i => i.sku && i.sku.trim() !== "");
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
 
     // ── A. Jalankan migrasi code→sku ───────────────────────────────────────
     if (action === "migrasi_code_ke_sku") {
-      const allItems = await base44.asServiceRole.entities.WarehouseItem.list();
+      const allItems = await base44.asServiceRole.entities.WarehouseItem.list(null, BATAS_AMBIL);
       const withCode = allItems.filter(i => i.code && i.code.trim() !== "");
       let copied = 0, savedToNotes = 0, skipped = 0;
 
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
 
     // ── B. Preview WarehouseItem dengan category=pakan ─────────────────────
     if (action === "preview_pakan") {
-      const pakanItems = await base44.asServiceRole.entities.WarehouseItem.filter({ category: "pakan" });
+      const pakanItems = await base44.asServiceRole.entities.WarehouseItem.filter({ category: "pakan" }, null, BATAS_AMBIL);
       return Response.json({
         count: pakanItems.length,
         items: pakanItems.map(i => ({ id: i.id, name: i.name, sku: i.sku, current_stock: i.current_stock, unit: i.unit })),
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
 
     // ── C. Migrasi ItemUsage → StockMovement / ItemBorrow ─────────────────
     if (action === "migrasi_itemusage") {
-      const allUsage = await base44.asServiceRole.entities.ItemUsage.list();
+      const allUsage = await base44.asServiceRole.entities.ItemUsage.list(null, BATAS_AMBIL);
       let movedToMovement = 0;
       let movedToBorrow = 0;
       let alreadyMigrated = 0;
@@ -170,11 +171,11 @@ Deno.serve(async (req) => {
     // ── Status ringkasan semua migrasi ─────────────────────────────────────
     if (action === "status_migrasi") {
       const [allItems, pakanItems, allUsage, allMovement, allBorrow] = await Promise.all([
-        base44.asServiceRole.entities.WarehouseItem.list(),
-        base44.asServiceRole.entities.WarehouseItem.filter({ category: "pakan" }),
-        base44.asServiceRole.entities.ItemUsage.list(),
-        base44.asServiceRole.entities.StockMovement.list(),
-        base44.asServiceRole.entities.ItemBorrow.list(),
+        base44.asServiceRole.entities.WarehouseItem.list(null, BATAS_AMBIL),
+        base44.asServiceRole.entities.WarehouseItem.filter({ category: "pakan" }, null, BATAS_AMBIL),
+        base44.asServiceRole.entities.ItemUsage.list(null, BATAS_AMBIL),
+        base44.asServiceRole.entities.StockMovement.list(null, BATAS_AMBIL),
+        base44.asServiceRole.entities.ItemBorrow.list(null, BATAS_AMBIL),
       ]);
 
       const withCode = allItems.filter(i => i.code && i.code.trim() !== "");

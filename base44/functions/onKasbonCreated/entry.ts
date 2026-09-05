@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil via entity automation saat Kasbon dibuat atau status berubah
 Deno.serve(async (req) => {
@@ -24,7 +25,7 @@ Deno.serve(async (req) => {
             recipient_email: kasbon.employee_email,
             related_entity_id: kasbon.id,
             category: "keuangan",
-          });
+          }, null, BATAS_AMBIL);
           return existing.some(n => n.title.includes(newStatus === "approved" ? "Disetujui" : "Ditolak") && !n.is_dismissed);
         };
         if (await isDuplicate()) return Response.json({ skipped: "duplicate" });
@@ -53,7 +54,7 @@ Deno.serve(async (req) => {
 
     // Notif ke admin saat kasbon baru dibuat (pending approval)
     if (event?.type === "create" && kasbon.status === "pending") {
-      const adminUsers = await base44.asServiceRole.entities.User.list();
+      const adminUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
       const admins = adminUsers.filter(u => ["admin", "owner"].includes(u.role));
       for (const admin of admins) {
         await base44.asServiceRole.entities.Notification.create({

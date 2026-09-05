@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
         targets = [task.assigned_to_email];
       } else {
         // "Siapa saja" → notifikasi semua keeper/kepala_feeder
-        const users = await base44.asServiceRole.entities.User.list();
+        const users = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
         targets = users
           .filter((u) => ['keeper', 'kepala_feeder'].includes(u.role))
           .map((u) => u.email);

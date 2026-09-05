@@ -6,6 +6,7 @@ import {
 } from "../../shared/whatsapp.ts";
 import { notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil via entity automation saat SalarySlip dibuat atau status berubah
 Deno.serve(async (req) => {
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
         recipient_email: slip.employee_email,
         related_entity_id: slip.id,
         category: "keuangan",
-      });
+      }, null, BATAS_AMBIL);
       if (existing.some(n => !n.is_dismissed)) return Response.json({ skipped: "duplicate" });
 
       await base44.asServiceRole.entities.Notification.create({
@@ -171,7 +172,7 @@ Deno.serve(async (req) => {
           if (nominal > 0) {
             const sudahAda = await base44.asServiceRole.entities.FinanceTransaction.filter({
               reference_id: slip.id,
-            });
+            }, null, BATAS_AMBIL);
             // Periode ini mungkin SUDAH punya catatan gaji yang dibuat manual
             // atau lewat pencatatan susulan. Kalau ada, biayanya tidak dicatat
             // ulang - tetapi juga tidak didiamkan: pemilik diberi tahu supaya ia
@@ -241,7 +242,7 @@ Deno.serve(async (req) => {
           recipient_email: slip.employee_email,
           related_entity_id: slip.id,
           category: "keuangan",
-        });
+        }, null, BATAS_AMBIL);
         if (existing.some(n => (n.title || "").includes("ditransfer") && !n.is_dismissed)) {
           return Response.json({ skipped: "duplicate_paid" });
         }

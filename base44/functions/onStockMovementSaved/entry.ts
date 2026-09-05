@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { perluDiperhatikan } from "../../shared/stok.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil via entity automation saat StockMovement dibuat
 Deno.serve(async (req) => {
@@ -18,11 +19,11 @@ Deno.serve(async (req) => {
         recipient_email: email,
         related_entity_id: entityId,
         category,
-      });
+      }, null, BATAS_AMBIL);
       return existing.some(n => n.created_at?.startsWith(today) && !n.is_dismissed);
     };
 
-    const allUsers = await base44.asServiceRole.entities.User.list();
+    const allUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
 
     // ── 3C. STOK KELUAR MENUNGGU APPROVAL ──
     if (movement.status === "menunggu_approval") {
@@ -52,10 +53,10 @@ Deno.serve(async (req) => {
     if (movement.type === "keluar" && movement.item_id && movement.item_type) {
       let item = null;
       if (movement.item_type === "warehouse") {
-        const res = await base44.asServiceRole.entities.WarehouseItem.filter({ id: movement.item_id });
+        const res = await base44.asServiceRole.entities.WarehouseItem.filter({ id: movement.item_id }, null, BATAS_AMBIL);
         item = res[0];
       } else if (movement.item_type === "feedstock") {
-        const res = await base44.asServiceRole.entities.FeedStock.filter({ id: movement.item_id });
+        const res = await base44.asServiceRole.entities.FeedStock.filter({ id: movement.item_id }, null, BATAS_AMBIL);
         item = res[0];
       }
 

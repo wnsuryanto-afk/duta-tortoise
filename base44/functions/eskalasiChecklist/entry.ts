@@ -14,6 +14,7 @@ import {
   getEmployeePhone,
   getPhoneNumbersForRoles,
 } from "../../shared/whatsapp.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * A4 — Pengingat bertingkat bila checklist belum masuk.
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: "tidak_ada_petugas" });
     }
 
-    const checklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: hariIni });
+    const checklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: hariIni }, null, BATAS_AMBIL);
     const sudahIsi = new Set(
       (checklists || [])
         .filter((cl: any) => Array.isArray(cl.completed_tasks) && cl.completed_tasks.length > 0)

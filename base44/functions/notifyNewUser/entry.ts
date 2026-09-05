@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -8,7 +9,7 @@ Deno.serve(async (req) => {
     const { newUserEmail, newUserName } = body;
 
     // Ambil semua user dengan role owner atau manajer
-    const allUsers = await base44.asServiceRole.entities.User.list();
+    const allUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
     const recipients = allUsers.filter(u =>
       u.role === 'owner' || u.role === 'manajer' || u.role === 'admin'
     );

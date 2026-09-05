@@ -4,6 +4,7 @@ import {
   sendWhatsAppNotification,
   getEmployeePhone,
 } from "../../shared/whatsapp.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * Entity automation: fires when an IncidentalTask is created.
@@ -29,7 +30,7 @@ export default async function(req: Request): Promise<Response> {
       waitUntil(
         (async () => {
           try {
-            const users = await base44.asServiceRole.entities.User.list();
+            const users = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
             const reviewers = users.filter(
               (u) => u.role === 'owner' || u.role === 'manajer'
             );

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * generateDailyCareTasks — cron harian untuk membuat tugas "Perawatan [kode] — [penyakit]"
@@ -31,7 +32,7 @@ export default async function(req: Request): Promise<Response> {
     // sakit sama sekali.
     const idSakit = new Set(sickTortoises.map((t) => t.id));
     const namaSakit = sickTortoises.map((t) => t.code || t.name).filter(Boolean);
-    const semuaPending = await base44.asServiceRole.entities.IncidentalTask.filter({ status: "pending" });
+    const semuaPending = await base44.asServiceRole.entities.IncidentalTask.filter({ status: "pending" }, null, BATAS_AMBIL);
     let cancelled = 0;
     for (const t of semuaPending || []) {
       if (t.created_by_email !== "system") continue;
@@ -54,7 +55,7 @@ export default async function(req: Request): Promise<Response> {
     }
 
     // 2. Ambil protokol diagnosis aktif
-    const protocols = await base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true });
+    const protocols = await base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true }, null, BATAS_AMBIL);
 
     // 3. Cek duplikat terhadap SELURUH tugas yang masih pending, bukan hanya
     //    yang bertanggal hari ini.

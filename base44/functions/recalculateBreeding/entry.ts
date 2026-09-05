@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -10,8 +11,8 @@ Deno.serve(async (req) => {
     }
 
     // Recalculate current_eggs di semua inkubator
-    const incubators = await base44.asServiceRole.entities.Incubator.list();
-    const breedingRecords = await base44.asServiceRole.entities.Breeding.list();
+    const incubators = await base44.asServiceRole.entities.Incubator.list(null, BATAS_AMBIL);
+    const breedingRecords = await base44.asServiceRole.entities.Breeding.list(null, BATAS_AMBIL);
     
     // Filter breeding yang sedang inkubasi
     const activeIncubations = breedingRecords.filter(b => 

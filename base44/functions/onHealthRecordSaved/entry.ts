@@ -6,6 +6,7 @@ import {
   getSettings,
   getPhoneNumbersForRoles,
 } from "../../shared/whatsapp.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil otomatis via entity automation saat HealthRecord baru dibuat
 Deno.serve(async (req) => {
@@ -31,13 +32,13 @@ Deno.serve(async (req) => {
         recipient_email: email,
         related_entity_id: record.id,
         category: "kesehatan",
-      });
+      }, null, BATAS_AMBIL);
       return existing.some(n => !n.is_dismissed);
     };
 
     // Ambil nama petugas pelapor
     const reporter = record.created_by_id
-      ? (await base44.asServiceRole.entities.User.filter({ id: record.created_by_id }))[0]
+      ? (await base44.asServiceRole.entities.User.filter({ id: record.created_by_id }, null, BATAS_AMBIL))[0]
       : null;
     const reporterName = reporter?.full_name || record.created_by_id || "Petugas";
 
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
       ? record.diagnosis_notes.split(",")[0].trim()
       : record.description?.split(".")[0] || "tidak diketahui";
 
-    const allUsers = await base44.asServiceRole.entities.User.list();
+    const allUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
     const targets = allUsers.filter(u => ["owner", "manajer"].includes(u.role));
 
     for (const target of targets) {
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
         let kandangKura = '';
         try {
           if (record.tortoise_id) {
-            const t = await base44.asServiceRole.entities.Tortoise.filter({ id: record.tortoise_id });
+            const t = await base44.asServiceRole.entities.Tortoise.filter({ id: record.tortoise_id }, null, BATAS_AMBIL);
             kandangKura = t?.[0]?.enclosure || '';
           }
         } catch { /* kandang kosong lebih baik daripada notifikasi gagal */ }

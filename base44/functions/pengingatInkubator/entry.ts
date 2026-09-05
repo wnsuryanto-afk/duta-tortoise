@@ -8,6 +8,7 @@ import {
   notifSekali,
   emailPerRole,
 } from "../../shared/otomatis.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * A10 — Pengingat catat suhu & kelembapan yang menyala sendiri saat ada telur.
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     // Sudah ada bacaan hari ini?
-    const bacaan = await base44.asServiceRole.entities.IncubatorReading.filter({ date: hariIni });
+    const bacaan = await base44.asServiceRole.entities.IncubatorReading.filter({ date: hariIni }, null, BATAS_AMBIL);
     if ((bacaan || []).length > 0) {
       await setOtomatis(base44, otomatis, { inkubator_terakhir: hariIni });
       return Response.json({ success: true, sudah_ada_bacaan: true });

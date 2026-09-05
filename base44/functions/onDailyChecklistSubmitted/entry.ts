@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Entity automation: DailyChecklist update → status berubah ke "submitted"
 // Notif 8: kirim ke semua kepala_feeder
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
     const now = new Date().toISOString();
     const today = now.split("T")[0];
 
-    const allUsers = await base44.asServiceRole.entities.User.list();
+    const allUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
     const kepalaFeeders = allUsers.filter(u => u.role === "kepala_feeder");
 
     for (const kf of kepalaFeeders) {
@@ -24,7 +25,7 @@ Deno.serve(async (req) => {
         recipient_email: kf.email,
         related_entity_id: checklist.id,
         category: "absensi",
-      });
+      }, null, BATAS_AMBIL);
       if (existing.some(n => !n.is_dismissed)) continue;
 
       await base44.asServiceRole.entities.Notification.create({

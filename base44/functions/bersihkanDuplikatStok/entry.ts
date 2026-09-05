@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
 
     // ─── HELPER: pindahkan ItemUsage dari lama ke master ─────────────────────
     async function pindahItemUsage(oldId, oldName, masterId, masterName, itemType) {
-      const usages = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: oldId });
+      const usages = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: oldId }, null, BATAS_AMBIL);
       for (const usage of usages) {
         await base44.asServiceRole.entities.ItemUsage.update(usage.id, {
           item_id: masterId,

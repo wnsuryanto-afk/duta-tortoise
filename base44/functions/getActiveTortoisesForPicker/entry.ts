@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * Mengembalikan daftar kura aktif (id, name, code, enclosure) untuk picker
@@ -12,7 +13,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const tortoises = await base44.asServiceRole.entities.Tortoise.filter({ status: 'aktif' });
+    const tortoises = await base44.asServiceRole.entities.Tortoise.filter({ status: 'aktif' }, null, BATAS_AMBIL);
 
     const picker = tortoises
       .map((t) => ({

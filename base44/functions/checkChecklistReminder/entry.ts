@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { wibNow, wibTanggal, WIB_OFFSET_MS } from '../../shared/otomatis.ts';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil dari frontend (Dashboard) saat user buka app
 // Notif 7: Keeper belum submit checklist setelah jam 15:00
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
         recipient_email: email,
         related_entity_id: entityId,
         category,
-      });
+      }, null, BATAS_AMBIL);
       return existing.some(n => {
         // `created_at` disimpan dalam UTC, sementara `today` adalah tanggal
         // WIB. Membandingkan awalannya langsung membuat penjaga ini meleset
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
       const myChecklists = await base44.asServiceRole.entities.DailyChecklist.filter({
         employee_email: user.email,
         date: today,
-      });
+      }, null, BATAS_AMBIL);
       const hasSubmitted = myChecklists.some(cl =>
         cl.status === "submitted" || cl.status === "approved"
       );
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
     // (Cek checklist hari ini yang submitted & belum dinotif)
     // ══════════════════════════════════════════════════
     if (user.role === "kepala_feeder") {
-      const todayChecklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: today });
+      const todayChecklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: today }, null, BATAS_AMBIL);
       const submitted = todayChecklists.filter(cl => cl.status === "submitted");
 
       for (const cl of submitted) {

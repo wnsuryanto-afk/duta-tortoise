@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { segarkanIsiKandang } from "../../shared/isiKandang.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -12,7 +13,7 @@ Deno.serve(async (req) => {
     const db = base44.asServiceRole;
 
     // ── A. Catat FinanceTransaction (cegah duplikat) ────────────────────
-    const existingTx = await db.entities.FinanceTransaction.filter({ reference_id: sale.id });
+    const existingTx = await db.entities.FinanceTransaction.filter({ reference_id: sale.id }, null, BATAS_AMBIL);
     if (!existingTx || existingTx.length === 0) {
       await db.entities.FinanceTransaction.create({
         type: "pemasukan",
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
       const saleDate = sale.sale_date || new Date().toISOString().split("T")[0];
 
       // Ambil semua sale milik pembeli ini (by hp_whatsapp)
-      const allBuyerSales = await db.entities.Sale.filter({ hp_whatsapp: hp });
+      const allBuyerSales = await db.entities.Sale.filter({ hp_whatsapp: hp }, null, BATAS_AMBIL);
       const totalPurchases = allBuyerSales.length;
       const totalSpent = allBuyerSales.reduce((sum, s) => sum + (s.price || 0), 0);
       const sortedDates = allBuyerSales.map(s => s.sale_date).filter(Boolean).sort();
@@ -71,7 +72,7 @@ Deno.serve(async (req) => {
       if (totalSpent > 10000000) tier = "vip";
       else if (totalSpent > 2000000) tier = "reguler";
 
-      const existingBuyers = await db.entities.BuyerProfile.filter({ hp_whatsapp: hp });
+      const existingBuyers = await db.entities.BuyerProfile.filter({ hp_whatsapp: hp }, null, BATAS_AMBIL);
 
       if (existingBuyers && existingBuyers.length > 0) {
         await db.entities.BuyerProfile.update(existingBuyers[0].id, {

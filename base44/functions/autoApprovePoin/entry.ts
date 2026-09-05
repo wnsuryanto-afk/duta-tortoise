@@ -7,6 +7,7 @@ import {
   itemIdDariTaskId,
   petaFotoHarian,
 } from "../../shared/otomatis.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * A1 — Setujui poin checklist secara otomatis, KECUALI yang mencurigakan.
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
 
     const semua = await base44.asServiceRole.entities.DailyChecklist.filter({
       status: "submitted",
-    });
+    }, null, BATAS_AMBIL);
     const kandidat = (semua || []).filter(
       (cl: any) => cl.date === hariIni || cl.date === kemarin,
     );
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
     }
 
     // Peta SOPTask untuk tahu task mana yang wajib foto.
-    const sopTasks = await base44.asServiceRole.entities.SOPTask.list();
+    const sopTasks = await base44.asServiceRole.entities.SOPTask.list(null, BATAS_AMBIL);
     const wajibFoto: Record<string, boolean> = {};
     const judulSOP: Record<string, string> = {};
     for (const t of sopTasks || []) {
@@ -153,7 +154,7 @@ Deno.serve(async (req) => {
 
     // Satu notifikasi ringkas ke owner untuk yang ditahan — bukan satu per checklist.
     if (ditahan.length > 0) {
-      const users = await base44.asServiceRole.entities.User.list();
+      const users = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
       const owners = (users || []).filter((u: any) => u.role === "owner");
       const kunci = `auto_approve_tahan_${hariIni}`;
       const isi = ditahan
@@ -164,7 +165,7 @@ Deno.serve(async (req) => {
         const sudah = await base44.asServiceRole.entities.Notification.filter({
           recipient_email: o.email,
           related_entity_id: kunci,
-        });
+        }, null, BATAS_AMBIL);
         if ((sudah || []).some((n: any) => !n.is_dismissed)) continue;
         await base44.asServiceRole.entities.Notification.create({
           recipient_email: o.email,

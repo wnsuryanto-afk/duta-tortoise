@@ -6,6 +6,7 @@ import {
   getSettings,
   getPhoneNumbersForRoles,
 } from "../../shared/whatsapp.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil via entity automation saat WarehouseItem diupdate.
 // Deteksi saat item obat/vitamin/suplemen MELINTASI batas minimum (dari atas ke bawah)
@@ -43,14 +44,14 @@ Deno.serve(async (req) => {
       related_entity_type: 'WarehouseItem',
       category: 'stok',
       is_dismissed: false,
-    });
+    }, null, BATAS_AMBIL);
     // Skip jika masih ada notifikasi belum dismissed (artinya stok belum recover)
     if (existing.length > 0) {
       return Response.json({ skipped: 'active_notification_exists' });
     }
 
     // Ambil semua user owner/manajer/admin
-    const users = await base44.asServiceRole.entities.User.list();
+    const users = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
     const recipients = users.filter(u => ['owner', 'manajer', 'admin'].includes(u.role));
 
     const isHabis = newStock <= 0;

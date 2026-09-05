@@ -9,6 +9,7 @@ import {
 } from "../../shared/otomatis.ts";
 import { getSettings, trackAICall } from "../../shared/whatsapp.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * C4 — Deteksi dini penyakit dari foto yang sudah ada.
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
     // sementara di checklist hanya 1 dari 10 task yang terisi. Membaca dari
     // checklist berarti membuang hampir seluruh bahan pemeriksaan.
     for (const tanggal of [hariIni, kemarin]) {
-      const logs = await base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: tanggal });
+      const logs = await base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: tanggal }, null, BATAS_AMBIL);
       for (const l of logs || []) {
         if (!l.photo_url) continue;
         if (!masukLaporan(l)) continue;

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
 
     // Helper: cari semua WarehouseItem kategori pakan
     const getItemsPakan = async () => {
-      const all = await base44.asServiceRole.entities.WarehouseItem.list();
+      const all = await base44.asServiceRole.entities.WarehouseItem.list(null, BATAS_AMBIL);
       return all.filter(i => i.category === 'pakan');
     };
 
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
 
       // Remap semua ItemUsage yang merujuk item lama
       let usagePindah = 0;
-      const allUsage = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: item.id });
+      const allUsage = await base44.asServiceRole.entities.ItemUsage.filter({ item_id: item.id }, null, BATAS_AMBIL);
       for (const u of allUsage) {
         await base44.asServiceRole.entities.ItemUsage.update(u.id, {
           item_id: newFeed.id,
@@ -80,7 +81,7 @@ Deno.serve(async (req) => {
     }
 
     if (mode === 'migrasi_satu') {
-      const item = await base44.asServiceRole.entities.WarehouseItem.filter({ id: itemId });
+      const item = await base44.asServiceRole.entities.WarehouseItem.filter({ id: itemId }, null, BATAS_AMBIL);
       if (!item || item.length === 0) {
         return Response.json({ error: 'Item tidak ditemukan' }, { status: 404 });
       }

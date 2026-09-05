@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 // Dipanggil via entity automation saat Tortoise diupdate.
 // Alur 2 (sembuh): is_currently_sick true→false atau status dari "sakit" ke non-sakit
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
     const pendingTasks = await base44.asServiceRole.entities.IncidentalTask.filter({
       status: 'pending',
       is_active: true,
-    });
+    }, null, BATAS_AMBIL);
 
     // Filter task yang title/notes-nya memuat kode/nama kura (case-insensitive)
     const lowerIds = identifiers.map((id) => id.toLowerCase());

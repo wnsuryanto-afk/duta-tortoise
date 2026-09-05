@@ -7,6 +7,7 @@ import {
   keMenit,
   jamDari,
 } from "../../shared/otomatis.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * A3 — Absensi terisi sendiri dari jam centang task pertama dan terakhir.
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
     const hasil: string[] = [];
 
     for (const tanggal of tanggalDiproses) {
-      const checklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: tanggal });
+      const checklists = await base44.asServiceRole.entities.DailyChecklist.filter({ date: tanggal }, null, BATAS_AMBIL);
 
       for (const cl of checklists || []) {
         if (!masukLaporan(cl)) continue;
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
         const adaSebelumnya = await base44.asServiceRole.entities.Attendance.filter({
           employee_email: cl.employee_email,
           date: tanggal,
-        });
+        }, null, BATAS_AMBIL);
         const baris = (adaSebelumnya || [])[0];
 
         if (!baris) {

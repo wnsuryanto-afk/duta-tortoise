@@ -3,6 +3,7 @@ import { getOtomatis, setOtomatis, wibTanggal, wibNow, notifSekali, emailPerRole
 import { sendWhatsAppNotification, getSettings, getEmployeePhone } from "../../shared/whatsapp.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { STATUS_KELUAR } from "../../shared/kura.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 
 /**
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.WarehouseItem.list("name", 500),
       base44.asServiceRole.entities.FeedStock.list("name", 200),
       base44.asServiceRole.entities.BuyerProfile.list("-created_date", 200),
-      base44.asServiceRole.entities.User.list(),
+      base44.asServiceRole.entities.User.list(null, BATAS_AMBIL),
     ]);
 
     const temuan: string[] = [];
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
     const karyawan = (users || []).filter(
       (u: any) => u.role && !["kicked", "investor"].includes(u.role),
     );
-    const profil = await base44.asServiceRole.entities.UserProfile.list();
+    const profil = await base44.asServiceRole.entities.UserProfile.list(null, BATAS_AMBIL);
     const profilPerEmail = new Map((profil || []).map((p: any) => [p.email || p.user_email, p]));
     const tanpaRekening = karyawan.filter((u: any) => {
       const p: any = profilPerEmail.get(u.email);

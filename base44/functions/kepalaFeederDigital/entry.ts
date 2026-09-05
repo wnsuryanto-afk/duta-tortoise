@@ -12,6 +12,7 @@ import { sendWhatsAppNotification, getSettings, trackAICall } from "../../shared
 import { terjadwalPada } from "../../shared/jadwalSOP.ts";
 import { clutchAktif, STATUS_KELUAR } from "../../shared/kura.ts";
 import { dilacak } from "../../shared/stok.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 
 /**
@@ -51,8 +52,8 @@ Deno.serve(async (req) => {
 
     const [sopTasks, checklistKemarin, kesehatan, pakan, gudang, tortoises, breedings, petugas] =
       await Promise.all([
-        base44.asServiceRole.entities.SOPTask.list(),
-        base44.asServiceRole.entities.DailyChecklist.filter({ date: kemarin }),
+        base44.asServiceRole.entities.SOPTask.list(null, BATAS_AMBIL),
+        base44.asServiceRole.entities.DailyChecklist.filter({ date: kemarin }, null, BATAS_AMBIL),
         base44.asServiceRole.entities.HealthRecord.list("-date", 60),
         base44.asServiceRole.entities.FeedStock.list("name", 200),
         base44.asServiceRole.entities.WarehouseItem.list("name", 500),

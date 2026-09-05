@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * getDailyEmployees — Mengembalikan daftar karyawan harian (keeper, kepala_feeder)
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
     }
 
     // Service role: baca daftar User penuh (bypass RLS)
-    const allUsers = await base44.asServiceRole.entities.User.list();
+    const allUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);
 
     // Filter: hanya karyawan harian (keeper, kepala_feeder); kecualikan kicked
     const EMPLOYEE_ROLES = ['keeper', 'kepala_feeder'];

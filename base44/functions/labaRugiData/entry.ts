@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { masukLaporan } from "../../shared/laporan.ts";
 import { diPeternakan } from "../../shared/kura.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * labaRugiData — ringkasan laba-rugi satu periode.
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
       diPeternakan
     ).length;
 
-    const settings = await db.entities.CompanySettings.filter({ setting_key: 'main' });
+    const settings = await db.entities.CompanySettings.filter({ setting_key: 'main' }, null, BATAS_AMBIL);
     const fallbackPerEkor = settings[0]?.hpp_fallback_per_ekor || 100000;
 
     const hasData = grandTotalPengeluaran > 0;

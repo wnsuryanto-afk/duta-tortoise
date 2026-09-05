@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis } from "../../shared/otomatis.ts";
 import { clutchAktif } from "../../shared/kura.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
  * Menyalakan dan mematikan SOP task yang hanya berlaku saat keadaannya ada.
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: "disabled" });
     }
 
-    const sopTasks = await base44.asServiceRole.entities.SOPTask.list();
+    const sopTasks = await base44.asServiceRole.entities.SOPTask.list(null, BATAS_AMBIL);
     const hasil: string[] = [];
 
     for (const aturan of ATURAN) {
