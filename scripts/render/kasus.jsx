@@ -16,6 +16,20 @@ import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 
+/*
+  PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
+
+  Penjaga yang tidak pernah bisa merah sama saja dengan tidak ada penjaga — dan
+  aplikasi ini sudah punya dua contohnya: kartu kedaluwarsa yang mustahil
+  menyala, dan tanda centang hijau yang mustahil salah.
+
+  Jadi penjaga ini dicoba dirusak dengan sengaja: gerbang `if (!user?.email)`
+  di AksiHarianKiper dicabut sementara, dan hasilnya 3 dari 18 kasus langsung
+  merah dengan pesan "Cannot read properties of undefined (reading 'email')" —
+  termasuk GuidedHariIni, layar yang dibuka kiper setiap pagi. Setelah gerbang
+  dikembalikan, kedelapan belas kasus hijau lagi.
+*/
+
 const U = { id: "1", email: "a@b.c", full_name: "Sholeh" };
 
 export default [
