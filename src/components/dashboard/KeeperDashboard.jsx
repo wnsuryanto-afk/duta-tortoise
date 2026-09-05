@@ -20,6 +20,7 @@ import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
 import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 import PageHeader from "@/components/common/PageHeader";
 import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
+import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
 import { TortoiseArt } from "@/components/common/Illustration";
 
 function getMinutesUntil(timeStr) {
@@ -338,6 +339,22 @@ export default function KeeperDashboard() {
             )}
           </div>
         </div>
+
+        {/*
+          Tandai libur & trip sayur — komponen yang SAMA dengan layar Guided.
+
+          Sebelum 03-09-2026 keduanya hanya ada di GuidedHariIni, sehingga kiper
+          yang menekan "mode normal" kehilangan keduanya tanpa pemberitahuan:
+          hari liburnya kembali menjadi hari tanpa catatan, dan trip sayurnya
+          tidak terbayar. Dua layar yang menjalankan pekerjaan harian yang sama
+          harus menawarkan tindakan yang sama.
+        */}
+        <AksiHarianKiper
+          user={user}
+          attendance={todayAttendance}
+          hasCheckedIn={hasCheckedIn}
+          onPesan={(jenis, teks) => (jenis === "warn" ? toast.error(teks) : toast.success(teks))}
+        />
 
         {/* Lembur info */}
         {hasCheckedOut && overtime > 0 && (
