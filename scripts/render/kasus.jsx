@@ -12,6 +12,9 @@ import AdminDashboard from "@/components/dashboard/role/AdminDashboard";
 import KepalaFeederDashboard from "@/components/dashboard/role/KepalaFeederDashboard";
 import InvestorDashboard from "@/components/dashboard/role/InvestorDashboard";
 import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
+import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
+import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
+import GuidedHariIni from "@/components/guided/GuidedHariIni";
 
 const U = { id: "1", email: "a@b.c", full_name: "Sholeh" };
 
@@ -37,4 +40,8 @@ export default [
   ["KepalaFeederDashboard tanpa data", <KepalaFeederDashboard />],
   ["InvestorDashboard tanpa data", <InvestorDashboard />],
   ["KeeperDashboard tanpa data", <KeeperDashboard />],
+  ["OwnerDashboard tanpa data", <OwnerDashboard />],
+  ["RekapPoinGajiPage tanpa data", <RekapPoinGajiPage />],
+  ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
+  ["GuidedHariIni dengan user", <GuidedHariIni user={{ id: "1", email: "a@b.c", full_name: "Sholeh", role: "keeper" }} />],
 ];
