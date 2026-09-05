@@ -27340,6 +27340,7 @@ function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesan }) {
     enabled: !!user?.email,
     staleTime: 2 * 60 * 1e3
   });
+  if (!user?.email || !user?.id) return null;
   const kabari = (jenis, teks) => {
     if (typeof onPesan === "function") onPesan(jenis, teks);
   };

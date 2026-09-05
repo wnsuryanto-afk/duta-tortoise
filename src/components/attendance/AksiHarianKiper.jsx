@@ -54,6 +54,21 @@ export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesa
     staleTime: 2 * 60 * 1000,
   });
 
+  /*
+    Tanpa user, tidak ada yang bisa ditandai atas nama siapa pun.
+
+    Ditemukan oleh uji render 03-09-2026: saat data user belum termuat, tombol
+    "Hari ini saya libur" tetap tampil dan bisa ditekan — dan tandaiLibur()
+    langsung menyentuh user.id, yang melempar TypeError dan mematikan seluruh
+    layar kiper. Kuerinya sendiri sudah dijaga (enabled: !!user?.email), tetapi
+    tombolnya tidak.
+
+    Layar kiper adalah layar yang dibuka pertama setiap pagi, sering pada
+    sinyal buruk — persis keadaan di mana data user paling mungkin belum
+    termuat.
+  */
+  if (!user?.email || !user?.id) return null;
+
   const kabari = (jenis, teks) => {
     if (typeof onPesan === "function") onPesan(jenis, teks);
   };
