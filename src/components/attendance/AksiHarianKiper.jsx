@@ -30,6 +30,9 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 
+// Dipakai oleh: guided/GuidedHariIni.jsx dan dashboard/KeeperDashboard.jsx.
+// Kalau kelak ada layar kiper ketiga, ia memakai komponen ini juga — jangan
+// menyalin tombolnya.
 const hariIniStr = () => new Date().toISOString().split("T")[0];
 
 export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesan }) {
