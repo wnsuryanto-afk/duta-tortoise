@@ -43,7 +43,13 @@ export default function PayrollReport() {
   const { data: checklists = [], isLoading: loadingCL } = useQuery({
     queryKey: ["checklists-period", selectedPeriod],
     queryFn: async () => {
-      const all = await base44.entities.DailyChecklist.filter({ status: "approved" });
+      // Dulu: ambil SEMUA checklist approved lalu saring bulan di browser.
+      // Karena SDK memotong di batas ambil, laporan gaji bisa kehilangan
+      // hari kerja tanpa tanda apa pun. Sekarang bulannya disaring di server.
+      const all = await base44.entities.DailyChecklist.filter({
+        status: "approved",
+        date: { $gte: `${selectedPeriod}-01`, $lte: `${selectedPeriod}-31` },
+      });
       return all.filter((c) => c.date?.startsWith(selectedPeriod));
     },
     enabled: isAdmin,
