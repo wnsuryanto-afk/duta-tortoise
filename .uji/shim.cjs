@@ -5,8 +5,10 @@ globalThis.window = {
   localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
   matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
 };
+const elemenPalsu = () => ({ style: {}, setAttribute() {}, appendChild() {}, classList: { add() {}, remove() {} }, firstChild: null, insertBefore() {} });
 globalThis.document = { title: "uji", cookie: "", addEventListener() {}, removeEventListener() {},
-  createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }),
+  head: elemenPalsu(), getElementsByTagName: () => [elemenPalsu()], querySelector: () => null, createTextNode: () => ({}),
+  createElement: () => elemenPalsu(),
   documentElement: { style: {}, classList: { add() {}, remove() {} } },
   body: { appendChild() {}, style: {} } };
 globalThis.localStorage = globalThis.window.localStorage;
