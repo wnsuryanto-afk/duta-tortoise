@@ -258,8 +258,14 @@ export default function UserDetailPage({ userId, onBack }) {
     enabled: !!userId && canView,
   });
   const { data: checklists = [] } = useQuery({
-    queryKey: ["checklist-user", userId],
-    queryFn: () => base44.entities.DailyChecklist.list("-date", 50),
+    queryKey: ["checklist-user", userId, currentPeriod],
+    // Dulu: 50 checklist terbaru MILIK SEMUA ORANG, lalu disaring ke satu
+    // karyawan dan ke bulan berjalan. Dengan dua karyawan, 50 baris hanya
+    // menutup sekitar 25 hari bersama — tingkat penyelesaian di kartu ini
+    // salah begitu bulan lewat pertengahan. Sekarang dibatasi per bulan.
+    queryFn: () => base44.entities.DailyChecklist.filter({
+      date: { $gte: `${currentPeriod}-01`, $lte: `${currentPeriod}-31` },
+    }, "-date"),
     enabled: !!userId && canView,
   });
   const { data: bonusRewards = [] } = useQuery({
