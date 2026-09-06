@@ -8,6 +8,23 @@ import { cn } from "@/lib/utils";
  * beberapa angka penting (`chips`) sehingga pengguna tahu keadaan sebelum
  * menggulir. Ilustrasi ditaruh di kanan dan disembunyikan di layar sempit —
  * di ponsel, ruang itu lebih berguna untuk angka.
+ *
+ * ── KENAPA SUSUNANNYA MENUMPUK DI PONSEL ───────────────────────────
+ *
+ * Dulu kepala halaman ini SELALU dua kolom bersebelahan: teks di kiri,
+ * tombol di kanan. Kolom tombol memakai flex-shrink-0 — artinya menolak
+ * mengecil — sementara kolom teks memakai flex-1 min-w-0, artinya bersedia
+ * mengecil sampai nyaris nol.
+ *
+ * Di ponsel, halaman dengan tiga tombol lebar (Breeding: "Pindai Label",
+ * "Unduh Label Aktif", "Tambah Data") membuat kolom tombol memakan hampir
+ * seluruh lebar layar. Sisanya untuk judul: "Breeding & Telur" terpotong
+ * jadi "B.", anak judulnya turun satu kata per baris, dan keempat angka
+ * ringkasan berdiri bertumpuk ke bawah.
+ *
+ * Sekarang di bawah md kepala halaman menumpuk: teks dulu, tombol di
+ * bawahnya dengan lebar penuh. Bersebelahan hanya mulai md ke atas, di
+ * mana memang ada ruangnya.
  */
 export function HeaderChip({ icon: Icon, label, value, tone = "default", onClick, title }) {
   const tones = {
@@ -55,8 +72,8 @@ export default function PageHeader({
     >
       <LeafPattern className="text-primary opacity-[0.045]" />
 
-      <div className="relative flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
+      <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div className="min-w-0 md:flex-1">
           <div className="flex items-center gap-2.5">
             {Icon && (
               <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/12 text-primary flex-shrink-0">
@@ -64,7 +81,9 @@ export default function PageHeader({
               </span>
             )}
             <div className="min-w-0">
-              <h1 className="font-heading text-lg sm:text-xl font-bold text-foreground leading-tight truncate">
+              {/* Tanpa truncate: judul halaman yang terpotong jadi satu huruf
+                  lebih buruk daripada judul yang turun dua baris. */}
+              <h1 className="font-heading text-lg sm:text-xl font-bold text-foreground leading-tight break-words">
                 {title}
               </h1>
               {subtitle && (
@@ -93,8 +112,10 @@ export default function PageHeader({
           {children && <div className="mt-4">{children}</div>}
         </div>
 
-        <div className="flex flex-col items-end gap-3 flex-shrink-0">
-          {actions && <div className="flex items-center gap-2 flex-wrap justify-end">{actions}</div>}
+        <div className="flex flex-col md:items-end gap-3 md:flex-shrink-0">
+          {actions && (
+            <div className="flex items-center gap-2 flex-wrap justify-start md:justify-end">{actions}</div>
+          )}
           {art && (
             <div className="hidden md:block opacity-90 animate-float">{art}</div>
           )}
