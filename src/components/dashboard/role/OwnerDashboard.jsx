@@ -157,7 +157,11 @@ export default function OwnerDashboard({ user }) {
   // ── Fase 1: data kritis — dimuat segera ──────────
   const { data: finances = [] } = useQuery({
     queryKey: ["owner-finances"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 100), // turun dari 500
+    // ytdIncome di bawah menjumlahkan pemasukan SETAHUN dari daftar ini.
+    // Dengan batas 100 dan transaksi 200+ baris, angka pemasukan tahun
+    // berjalan di dasbor pemilik dihitung dari separuh datanya — selalu
+    // lebih kecil dari yang sebenarnya, tanpa tanda apa pun.
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,
   });
@@ -296,7 +300,8 @@ export default function OwnerDashboard({ user }) {
 
   const { data: measurements = [] } = useQuery({
     queryKey: ["owner-measurements"],
-    queryFn: () => base44.entities.MeasurementHistory.list("-date", 50), // turun dari 200
+    // Batas 50 "turun dari 200" sementara riwayat pengukuran sudah 300+ baris.
+    queryFn: () => base44.entities.MeasurementHistory.list("-date"),
     enabled: phase3Ready,
     staleTime: 10 * 60 * 1000,
     refetchInterval: false,
