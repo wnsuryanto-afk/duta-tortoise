@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList, Syringe, Tent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
+import { jadwalBerlaku } from "@/lib/jadwalPerawatan";
+import { useKeadaanJadwal } from "@/lib/useKeadaanJadwal";
 
 export default function OperationalToday() {
   const navigate = useNavigate();
@@ -20,7 +22,15 @@ export default function OperationalToday() {
     queryKey: ["treatments-op"],
     queryFn: () => base44.entities.TreatmentSchedule.list(),
   });
-  const todayTreatments = treatments.filter(t => t.next_due === today);
+
+  // Dulu: treatments.filter(t => t.next_due === today).
+  // Kolom next_due TIDAK ADA di TreatmentSchedule — itu milik
+  // MaintenanceSchedule. Jadi kartu ini menampilkan 0 sejak hari pertama,
+  // persis penyakit yang dijelaskan panjang lebar di komentar bawah sebagai
+  // alasan kartu tetangganya dihapus.
+  // Sekarang memakai aturan jadwal yang sama dengan layar kiper.
+  const keadaan = useKeadaanJadwal();
+  const todayTreatments = jadwalBerlaku(treatments, keadaan);
 
   // Kartu "Perawatan Kandang" DIHAPUS 31-08-2026.
   //
