@@ -16,6 +16,7 @@
  */
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { format, subDays } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import { ListChecks } from "lucide-react";
 import { kandangWajib } from "@/lib/kandang";
@@ -39,9 +40,24 @@ export default function KepatuhanSopCard() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Kartu ini hanya butuh 14 hari terakhir, tapi dulu mengambil 900 baris
+  // TERBARU dari seluruh log dan berharap 900 itu menutupi 14 hari.
+  // MaintenanceLog sudah lewat 2.000 baris: kalau sehari menghasilkan lebih
+  // dari 64 log, jendela 900 tidak sampai 14 hari dan batang paling kiri
+  // diam-diam kosong — terbaca sebagai "kepatuhan turun", padahal datanya
+  // yang tidak terambil. Sekarang jendelanya ditentukan tanggal, di server:
+  // lebih benar sekaligus lebih ringan.
+  const awalJendela = useMemo(
+    () => format(subDays(new Date(), 15), "yyyy-MM-dd"),
+    [],
+  );
   const { data: logs = [] } = useQuery({
-    queryKey: ["kepatuhan-logs"],
-    queryFn: () => base44.entities.MaintenanceLog.list("-period_key", 900),
+    queryKey: ["kepatuhan-logs", awalJendela],
+    queryFn: () =>
+      base44.entities.MaintenanceLog.filter(
+        { period_key: { $gte: awalJendela } },
+        "-period_key",
+      ),
     staleTime: 5 * 60 * 1000,
   });
 
