@@ -1,4 +1,4 @@
 {
   "name": "terimaPesanWhatsApp",
-  "entry": "base44/functions/terimaPesanWhatsApp/entry.ts"
+  "entry": "entry.ts"
 }

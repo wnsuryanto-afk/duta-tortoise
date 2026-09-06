@@ -1,4 +1,4 @@
 {
   "name": "migrasiKategoriPakan",
-  "entry": "base44/functions/migrasiKategoriPakan/entry.ts"
+  "entry": "entry.ts"
 }

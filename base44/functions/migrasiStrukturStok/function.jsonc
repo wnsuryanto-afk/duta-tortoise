@@ -1,4 +1,4 @@
 {
   "name": "migrasiStrukturStok",
-  "entry": "base44/functions/migrasiStrukturStok/entry.ts"
+  "entry": "entry.ts"
 }

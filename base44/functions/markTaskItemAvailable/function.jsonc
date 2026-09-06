@@ -1,4 +1,4 @@
 {
   "name": "markTaskItemAvailable",
-  "entry": "base44/functions/markTaskItemAvailable/entry.ts"
+  "entry": "entry.ts"
 }

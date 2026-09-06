@@ -1,6 +1,6 @@
 {
   "name": "autoNotifications",
-  "entry": "base44/functions/autoNotifications/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Auto Notifikasi Harian",

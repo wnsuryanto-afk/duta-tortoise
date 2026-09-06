@@ -1,6 +1,6 @@
 {
   "name": "onPettyCashRequestUpdate",
-  "entry": "base44/functions/onPettyCashRequestUpdate/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Notif Pencairan Request Kas Kecil",

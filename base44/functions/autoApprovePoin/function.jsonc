@@ -1,4 +1,4 @@
 {
   "name": "autoApprovePoin",
-  "entry": "base44/functions/autoApprovePoin/entry.ts"
+  "entry": "entry.ts"
 }

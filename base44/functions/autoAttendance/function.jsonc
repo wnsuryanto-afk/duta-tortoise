@@ -1,4 +1,4 @@
 {
   "name": "autoAttendance",
-  "entry": "base44/functions/autoAttendance/entry.ts"
+  "entry": "entry.ts"
 }

@@ -1,4 +1,4 @@
 {
   "name": "kelolaTaskKondisional",
-  "entry": "base44/functions/kelolaTaskKondisional/entry.ts"
+  "entry": "entry.ts"
 }

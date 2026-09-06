@@ -1,4 +1,4 @@
 {
   "name": "arsipNotifikasi",
-  "entry": "base44/functions/arsipNotifikasi/entry.ts"
+  "entry": "entry.ts"
 }

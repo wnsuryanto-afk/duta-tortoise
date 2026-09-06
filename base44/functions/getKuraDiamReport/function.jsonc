@@ -1,4 +1,4 @@
 {
   "name": "getKuraDiamReport",
-  "entry": "base44/functions/getKuraDiamReport/entry.ts"
+  "entry": "entry.ts"
 }

@@ -1,4 +1,4 @@
 {
   "name": "reportBrokenItem",
-  "entry": "base44/functions/reportBrokenItem/entry.ts"
+  "entry": "entry.ts"
 }

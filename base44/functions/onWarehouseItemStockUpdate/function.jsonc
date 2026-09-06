@@ -1,6 +1,6 @@
 {
   "name": "onWarehouseItemStockUpdate",
-  "entry": "base44/functions/onWarehouseItemStockUpdate/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Alert Stok Obat Menipis",

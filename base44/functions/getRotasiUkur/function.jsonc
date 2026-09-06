@@ -1,4 +1,4 @@
 {
   "name": "getRotasiUkur",
-  "entry": "base44/functions/getRotasiUkur/entry.ts"
+  "entry": "entry.ts"
 }

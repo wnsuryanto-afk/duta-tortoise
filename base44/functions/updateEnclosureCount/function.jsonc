@@ -1,6 +1,6 @@
 {
   "name": "updateEnclosureCount",
-  "entry": "base44/functions/updateEnclosureCount/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Update Enclosure Count on Tortoise Update",

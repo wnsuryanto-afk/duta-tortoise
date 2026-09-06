@@ -1,4 +1,4 @@
 {
   "name": "pengingatInkubator",
-  "entry": "base44/functions/pengingatInkubator/entry.ts"
+  "entry": "entry.ts"
 }

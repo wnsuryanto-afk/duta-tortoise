@@ -1,4 +1,4 @@
 {
   "name": "deteksiPenyakitFoto",
-  "entry": "base44/functions/deteksiPenyakitFoto/entry.ts"
+  "entry": "entry.ts"
 }

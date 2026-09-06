@@ -1,6 +1,6 @@
 {
   "name": "onStockMovementSaved",
-  "entry": "base44/functions/onStockMovementSaved/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Notif Stok Keluar & Approval",

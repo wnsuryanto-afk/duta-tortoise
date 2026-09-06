@@ -1,6 +1,6 @@
 {
   "name": "onTortoiseStatusChange",
-  "entry": "base44/functions/onTortoiseStatusChange/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Batalkan Tugas Perawatan Saat Kura Sembuh/Mati",

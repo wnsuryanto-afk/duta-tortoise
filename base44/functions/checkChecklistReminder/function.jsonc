@@ -1,4 +1,4 @@
 {
   "name": "checkChecklistReminder",
-  "entry": "base44/functions/checkChecklistReminder/entry.ts"
+  "entry": "entry.ts"
 }

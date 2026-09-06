@@ -1,4 +1,4 @@
 {
   "name": "getDailyEmployees",
-  "entry": "base44/functions/getDailyEmployees/entry.ts"
+  "entry": "entry.ts"
 }

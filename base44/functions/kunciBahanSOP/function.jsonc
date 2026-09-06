@@ -1,4 +1,4 @@
 {
   "name": "kunciBahanSOP",
-  "entry": "base44/functions/kunciBahanSOP/entry.ts"
+  "entry": "entry.ts"
 }

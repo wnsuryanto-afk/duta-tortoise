@@ -1,4 +1,4 @@
 {
   "name": "recalculateBreeding",
-  "entry": "base44/functions/recalculateBreeding/entry.ts"
+  "entry": "entry.ts"
 }

@@ -1,6 +1,6 @@
 {
   "name": "onBreedingCreated",
-  "entry": "base44/functions/onBreedingCreated/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Auto Proven saat Breeding Dibuat",

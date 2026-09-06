@@ -1,4 +1,4 @@
 {
   "name": "recordTortoiseDeath",
-  "entry": "base44/functions/recordTortoiseDeath/entry.ts"
+  "entry": "entry.ts"
 }

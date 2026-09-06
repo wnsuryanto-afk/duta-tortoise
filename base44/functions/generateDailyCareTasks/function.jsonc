@@ -1,6 +1,6 @@
 {
   "name": "generateDailyCareTasks",
-  "entry": "base44/functions/generateDailyCareTasks/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Auto Daily Care Tasks",

@@ -1,6 +1,6 @@
 {
   "name": "onKasbonCreated",
-  "entry": "base44/functions/onKasbonCreated/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Notif Kasbon Disetujui/Ditolak",

@@ -1,4 +1,4 @@
 {
   "name": "labaRugiData",
-  "entry": "base44/functions/labaRugiData/entry.ts"
+  "entry": "entry.ts"
 }

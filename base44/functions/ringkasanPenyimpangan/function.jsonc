@@ -1,4 +1,4 @@
 {
   "name": "ringkasanPenyimpangan",
-  "entry": "base44/functions/ringkasanPenyimpangan/entry.ts"
+  "entry": "entry.ts"
 }

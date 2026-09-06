@@ -1,6 +1,6 @@
 {
   "name": "onMaintenanceDone",
-  "entry": "base44/functions/onMaintenanceDone/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Maintenance Done → DailyChecklist Poin",

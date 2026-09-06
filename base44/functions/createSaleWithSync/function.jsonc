@@ -1,4 +1,4 @@
 {
   "name": "createSaleWithSync",
-  "entry": "base44/functions/createSaleWithSync/entry.ts"
+  "entry": "entry.ts"
 }

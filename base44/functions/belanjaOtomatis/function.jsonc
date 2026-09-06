@@ -1,4 +1,4 @@
 {
   "name": "belanjaOtomatis",
-  "entry": "base44/functions/belanjaOtomatis/entry.ts"
+  "entry": "entry.ts"
 }

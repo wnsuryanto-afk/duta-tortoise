@@ -1,6 +1,6 @@
 {
   "name": "onDailyChecklistSubmitted",
-  "entry": "base44/functions/onDailyChecklistSubmitted/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Notif Checklist Submitted → Kepala Feeder",

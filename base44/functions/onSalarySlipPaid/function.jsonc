@@ -1,6 +1,6 @@
 {
   "name": "onSalarySlipPaid",
-  "entry": "base44/functions/onSalarySlipPaid/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Notif Slip Gaji Dibuat",

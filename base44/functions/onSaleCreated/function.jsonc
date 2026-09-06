@@ -1,6 +1,6 @@
 {
   "name": "onSaleCreated",
-  "entry": "base44/functions/onSaleCreated/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Auto: Penjualan → Laporan Keuangan",

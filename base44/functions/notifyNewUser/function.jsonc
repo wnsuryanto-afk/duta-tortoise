@@ -1,4 +1,4 @@
 {
   "name": "notifyNewUser",
-  "entry": "base44/functions/notifyNewUser/entry.ts"
+  "entry": "entry.ts"
 }

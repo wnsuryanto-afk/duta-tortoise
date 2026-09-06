@@ -1,4 +1,4 @@
 {
   "name": "getActiveTortoisesForPicker",
-  "entry": "base44/functions/getActiveTortoisesForPicker/entry.ts"
+  "entry": "entry.ts"
 }

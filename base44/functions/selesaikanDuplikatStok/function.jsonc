@@ -1,4 +1,4 @@
 {
   "name": "selesaikanDuplikatStok",
-  "entry": "base44/functions/selesaikanDuplikatStok/entry.ts"
+  "entry": "entry.ts"
 }

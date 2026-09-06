@@ -1,4 +1,4 @@
 {
   "name": "potongStokPakan",
-  "entry": "base44/functions/potongStokPakan/entry.ts"
+  "entry": "entry.ts"
 }

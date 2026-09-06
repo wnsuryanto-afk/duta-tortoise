@@ -1,6 +1,6 @@
 {
   "name": "onPettyCashTopUpRequest",
-  "entry": "base44/functions/onPettyCashTopUpRequest/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Top-up Request Notifications",

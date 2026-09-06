@@ -1,6 +1,6 @@
 {
   "name": "onToolRequestCreated",
-  "entry": "base44/functions/onToolRequestCreated/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "WA Notif: Tool Request Baru",

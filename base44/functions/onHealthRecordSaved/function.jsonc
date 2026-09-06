@@ -1,6 +1,6 @@
 {
   "name": "onHealthRecordSaved",
-  "entry": "base44/functions/onHealthRecordSaved/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Auto Finance dari Health Record",

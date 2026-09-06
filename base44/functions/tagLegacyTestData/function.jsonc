@@ -1,4 +1,4 @@
 {
   "name": "tagLegacyTestData",
-  "entry": "base44/functions/tagLegacyTestData/entry.ts"
+  "entry": "entry.ts"
 }

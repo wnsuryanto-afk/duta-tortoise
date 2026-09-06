@@ -1,6 +1,6 @@
 {
   "name": "onIncidentalTaskCreated",
-  "entry": "base44/functions/onIncidentalTaskCreated/entry.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "WA Notif: Tugas Insidentil Baru",
