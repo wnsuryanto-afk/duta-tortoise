@@ -1,0 +1,17 @@
+{
+  "name": "onPettyCashRequestUpdate",
+  "entry": "base44/functions/onPettyCashRequestUpdate/entry.ts",
+  "automations": [
+    {
+      "name": "Notif Pencairan Request Kas Kecil",
+      "description": "Saat status PettyCashRequest berubah ke dicairkan, kirim notif ke pemohon",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "PettyCashRequest",
+      "event_types": [
+        "update"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "onSalarySlipPaid",
+  "entry": "base44/functions/onSalarySlipPaid/entry.ts",
+  "automations": [
+    {
+      "name": "Notif Slip Gaji Dibuat",
+      "description": "Saat SalarySlip baru dibuat, kirim notif ke karyawan",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "SalarySlip",
+      "event_types": [
+        "create"
+      ]
+    },
+    {
+      "name": "SalarySlip Paid → FinanceTransaction",
+      "description": null,
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "SalarySlip",
+      "event_types": [
+        "create",
+        "update"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "onToolRequestUpdate",
+  "entry": "main.ts",
+  "automations": [
+    {
+      "name": "Notif Pengajuan Alat",
+      "description": "Saat pengajuan alat disetujui/ditolak/dibeli, notif pengaju + buat ShoppingList",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "ToolRequest",
+      "event_types": [
+        "update"
+      ]
+    }
+  ]
+}

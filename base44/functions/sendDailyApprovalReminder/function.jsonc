@@ -1,17 +1,6 @@
 {
-  // Automation DIMATIKAN 01-09-2026 atas permintaan Iwan (is_active: false).
-  //
-  // Jadwal ini memanggil pada 17:30 UTC = 00:30 WIB, sementara penjaga jam di
-  // dalam fungsinya menolak jam segitu — jadi sejak 27-08-2026 ia menyala tiap
-  // hari tanpa pernah mengirim apa pun. Pengingatnya sekarang dipicu saat
-  // aplikasi dibuka (lihat src/lib/AuthContext.jsx).
-  //
-  // Berkas ini ditarik dari server dengan 'base44 functions pull' dan dikirim
-  // balik dengan 'base44 functions deploy'. Kolom "entry" SENGAJA relatif
-  // terhadap folder ini ("entry.ts"); pull menuliskannya sebagai jalur penuh
-  // dari akar app, dan bentuk itu membuat deploy gagal menemukan berkasnya.
   "name": "sendDailyApprovalReminder",
-  "entry": "entry.ts",
+  "entry": "base44/functions/sendDailyApprovalReminder/entry.ts",
   "automations": [
     {
       "name": "WA Pengingat Harian Approval 17:30",

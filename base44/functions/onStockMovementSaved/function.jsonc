@@ -1,0 +1,17 @@
+{
+  "name": "onStockMovementSaved",
+  "entry": "base44/functions/onStockMovementSaved/entry.ts",
+  "automations": [
+    {
+      "name": "Notif Stok Keluar & Approval",
+      "description": "Saat StockMovement baru dibuat, kirim notif jika stok menipis atau perlu approval",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "StockMovement",
+      "event_types": [
+        "create"
+      ]
+    }
+  ]
+}

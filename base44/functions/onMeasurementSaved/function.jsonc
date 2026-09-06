@@ -1,0 +1,18 @@
+{
+  "name": "onMeasurementSaved",
+  "entry": "main.ts",
+  "automations": [
+    {
+      "name": "Auto-update Tortoise setelah Timbang",
+      "description": "Setiap MeasurementHistory baru disimpan, otomatis update last_weighed_date, weight_grams, shell_length_cm di entity Tortoise",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "MeasurementHistory",
+      "event_types": [
+        "create",
+        "update"
+      ]
+    }
+  ]
+}

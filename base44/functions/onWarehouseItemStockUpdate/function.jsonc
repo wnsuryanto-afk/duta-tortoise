@@ -1,0 +1,17 @@
+{
+  "name": "onWarehouseItemStockUpdate",
+  "entry": "base44/functions/onWarehouseItemStockUpdate/entry.ts",
+  "automations": [
+    {
+      "name": "Alert Stok Obat Menipis",
+      "description": "Saat stok obat/vitamin/suplemen melintasi batas minimum, notif owner/manajer/admin",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "WarehouseItem",
+      "event_types": [
+        "update"
+      ]
+    }
+  ]
+}

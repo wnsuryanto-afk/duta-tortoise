@@ -1,0 +1,28 @@
+{
+  "name": "onKasbonCreated",
+  "entry": "base44/functions/onKasbonCreated/entry.ts",
+  "automations": [
+    {
+      "name": "Notif Kasbon Disetujui/Ditolak",
+      "description": "Saat status Kasbon berubah ke approved atau rejected, kirim notif ke karyawan",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Kasbon",
+      "event_types": [
+        "update"
+      ]
+    },
+    {
+      "name": "Notifikasi Kasbon Baru ke Owner",
+      "description": null,
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Kasbon",
+      "event_types": [
+        "create"
+      ]
+    }
+  ]
+}

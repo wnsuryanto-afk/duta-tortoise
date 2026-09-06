@@ -1,0 +1,17 @@
+{
+  "name": "onSaleCreated",
+  "entry": "base44/functions/onSaleCreated/entry.ts",
+  "automations": [
+    {
+      "name": "Auto: Penjualan → Laporan Keuangan",
+      "description": "Setiap penjualan baru otomatis masuk sebagai pemasukan di laporan keuangan",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Sale",
+      "event_types": [
+        "create"
+      ]
+    }
+  ]
+}

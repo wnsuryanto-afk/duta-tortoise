@@ -1,0 +1,17 @@
+{
+  "name": "onToolRequestCreated",
+  "entry": "base44/functions/onToolRequestCreated/entry.ts",
+  "automations": [
+    {
+      "name": "WA Notif: Tool Request Baru",
+      "description": "Saat ToolRequest baru dibuat, kirim WhatsApp ke Owner + Manajer",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "ToolRequest",
+      "event_types": [
+        "create"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "onIncidentalTaskCreated",
+  "entry": "base44/functions/onIncidentalTaskCreated/entry.ts",
+  "automations": [
+    {
+      "name": "WA Notif: Tugas Insidentil Baru",
+      "description": "Saat IncidentalTask baru dibuat dan ditugaskan ke seseorang, kirim WhatsApp ke karyawan ybs",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "IncidentalTask",
+      "event_types": [
+        "create"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "onToolLoanReturned",
+  "entry": "main.ts",
+  "automations": [
+    {
+      "name": "Auto ShoppingList Alat Rusak",
+      "description": "Saat alat dikembalikan rusak/hilang, buat ShoppingList otomatis",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "ToolLoan",
+      "event_types": [
+        "update"
+      ]
+    }
+  ]
+}

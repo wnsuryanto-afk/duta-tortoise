@@ -1,0 +1,4 @@
+{
+  "name": "syncTortoiseName",
+  "entry": "base44/functions/syncTortoiseName/entry.ts"
+}

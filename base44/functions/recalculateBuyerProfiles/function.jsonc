@@ -1,0 +1,4 @@
+{
+  "name": "recalculateBuyerProfiles",
+  "entry": "base44/functions/recalculateBuyerProfiles/entry.ts"
+}

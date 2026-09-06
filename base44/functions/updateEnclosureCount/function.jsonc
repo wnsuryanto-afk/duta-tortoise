@@ -1,0 +1,39 @@
+{
+  "name": "updateEnclosureCount",
+  "entry": "base44/functions/updateEnclosureCount/entry.ts",
+  "automations": [
+    {
+      "name": "Update Enclosure Count on Tortoise Update",
+      "description": null,
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Tortoise",
+      "event_types": [
+        "update"
+      ]
+    },
+    {
+      "name": "Update Enclosure Count on Tortoise Delete",
+      "description": null,
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Tortoise",
+      "event_types": [
+        "delete"
+      ]
+    },
+    {
+      "name": "Update Enclosure Count on Tortoise Create",
+      "description": null,
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Tortoise",
+      "event_types": [
+        "create"
+      ]
+    }
+  ]
+}

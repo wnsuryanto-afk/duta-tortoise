@@ -1,0 +1,4 @@
+{
+  "name": "sendWhatsApp",
+  "entry": "base44/functions/sendWhatsApp/entry.ts"
+}

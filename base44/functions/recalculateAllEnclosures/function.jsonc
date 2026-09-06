@@ -1,0 +1,4 @@
+{
+  "name": "recalculateAllEnclosures",
+  "entry": "base44/functions/recalculateAllEnclosures/entry.ts"
+}

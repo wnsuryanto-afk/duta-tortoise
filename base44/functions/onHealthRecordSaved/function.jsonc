@@ -1,0 +1,18 @@
+{
+  "name": "onHealthRecordSaved",
+  "entry": "base44/functions/onHealthRecordSaved/entry.ts",
+  "automations": [
+    {
+      "name": "Auto Finance dari Health Record",
+      "description": "Saat HealthRecord dibuat/diupdate dengan biaya_obat > 0, otomatis buat FinanceTransaction pengeluaran obat_perawatan",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "HealthRecord",
+      "event_types": [
+        "create",
+        "update"
+      ]
+    }
+  ]
+}

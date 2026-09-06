@@ -1,0 +1,18 @@
+{
+  "name": "onDailyChecklistSubmitted",
+  "entry": "base44/functions/onDailyChecklistSubmitted/entry.ts",
+  "automations": [
+    {
+      "name": "Notif Checklist Submitted → Kepala Feeder",
+      "description": "Saat DailyChecklist status berubah ke submitted, kirim notif ke semua kepala_feeder",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "DailyChecklist",
+      "event_types": [
+        "create",
+        "update"
+      ]
+    }
+  ]
+}

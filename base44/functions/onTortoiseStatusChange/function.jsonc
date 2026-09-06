@@ -1,0 +1,17 @@
+{
+  "name": "onTortoiseStatusChange",
+  "entry": "base44/functions/onTortoiseStatusChange/entry.ts",
+  "automations": [
+    {
+      "name": "Batalkan Tugas Perawatan Saat Kura Sembuh/Mati",
+      "description": "Saat kura sembuh (is_currently_sick false) atau mati (status=mati), batalkan IncidentalTask pending terkait",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Tortoise",
+      "event_types": [
+        "update"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "autoNotifications",
+  "entry": "base44/functions/autoNotifications/entry.ts",
+  "automations": [
+    {
+      "name": "Auto Notifikasi Harian",
+      "description": "Cek obat kadaluarsa, follow-up treatment, kura belum ditimbang, telur mau menetas",
+      "function_args": null,
+      "is_active": true,
+      "type": "scheduled",
+      "schedule_mode": "recurring",
+      "schedule_type": "simple",
+      "repeat_unit": "days",
+      "repeat_interval": 1,
+      "start_time": "07:00",
+      "repeat_on_days": null,
+      "repeat_on_day_of_month": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  ]
+}

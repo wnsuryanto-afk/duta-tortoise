@@ -1,0 +1,17 @@
+{
+  "name": "onBreedingCreated",
+  "entry": "base44/functions/onBreedingCreated/entry.ts",
+  "automations": [
+    {
+      "name": "Auto Proven saat Breeding Dibuat",
+      "description": "Otomatis set is_proven=true pada induk jantan & betina saat breeding baru dibuat",
+      "function_args": null,
+      "is_active": true,
+      "type": "entity",
+      "entity_name": "Breeding",
+      "event_types": [
+        "create"
+      ]
+    }
+  ]
+}
