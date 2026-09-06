@@ -171,13 +171,18 @@ export default function MonthlyReportExport({ role }) {
         breedings, attendances, kasbons, salarySlips,
         companySettings, buyerProfiles,
       ] = await Promise.all([
-        base44.entities.FinanceTransaction.list("-date", 1000),
-        base44.entities.Tortoise.list("-created_date", 200),
-        base44.entities.Sale.list("-sale_date", 200),
-        base44.entities.HealthRecord.list("-date", 200),
-        base44.entities.Breeding.list("-created_date", 100),
-        base44.entities.Attendance.list("-date", 200),
-        base44.entities.Kasbon.list("-created_date", 50),
+        // Laporan bulanan menjumlahkan uang. Angka batas di sini bukan
+        // "secukupnya" melainkan diam-diam memotong: kura sudah 178 (batas
+        // 200), absensi sudah 150+ (batas 200) — keduanya lewat dalam
+        // hitungan pekan, dan laporannya akan tetap terlihat wajar.
+        // Semua dilepas ke pembungkus batas ambil (2.000).
+        base44.entities.FinanceTransaction.list("-date"),
+        base44.entities.Tortoise.list("-created_date"),
+        base44.entities.Sale.list("-sale_date"),
+        base44.entities.HealthRecord.list("-date"),
+        base44.entities.Breeding.list("-created_date"),
+        base44.entities.Attendance.list("-date"),
+        base44.entities.Kasbon.list("-created_date"),
         base44.entities.SalarySlip.filter({ period }),
         base44.entities.CompanySettings.filter({ setting_key: "main" }),
         base44.entities.BuyerProfile.list("-last_purchase_date", 300),
