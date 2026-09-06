@@ -3,6 +3,27 @@
  *
  * Dipakai di modul Breeding: kartu, rincian, laporan, dan pemilih kura.
  * Tidak menulis/mengubah data; hanya membaca HealthRecord yang sudah ada.
+ *
+ * ── KESALAHAN YANG DIPERBAIKI DI SINI ────────────────────────────────
+ *
+ * Berkas ini dulu menganggap sebuah kasus sakit baru tertutup kalau ada
+ * catatan TERPISAH berjenis "sembuh" bertanggal lebih baru.
+ *
+ * Di kebun ini catatan seperti itu TIDAK PERNAH ADA satu pun. Alur
+ * "tandai sembuh" menutup kasus dengan menyetel is_resolved + resolved_date
+ * pada catatan sakitnya sendiri — aturan yang sudah ditulis sebagai satu
+ * definisi di src/lib/kesehatanKura.js.
+ *
+ * Akibatnya: SEMUA 11 kura yang pernah sakit tampil "Sedang dalam
+ * perawatan" selamanya di kartu pembiakan, termasuk A47 yang kasusnya
+ * ditutup 29 Agustus 2026 sementara telurnya dicatat 6 September 2026.
+ * Lencana merah pada induk yang sehat bukan sekadar jelek dipandang —
+ * itu mencemari laporan daya tetas "induk sehat vs induk baru pulih".
+ *
+ * Sekarang berkas ini memakai aturan penutupan yang sama dengan
+ * kesehatanKura.js, ditambah dimensi waktu yang memang dibutuhkan modul
+ * pembiakan: pertanyaannya bukan "apakah sakit sekarang" melainkan
+ * "apakah sakit PADA saat telur dicatat".
  */
 import { differenceInCalendarDays, parseISO } from "date-fns";
 
@@ -37,27 +58,39 @@ export function parentHealthSummary(tortoiseId, healthRecords, refDate) {
 
   const sakits = recs
     .filter((h) => h.type === "sakit")
-    .map((h) => ({ date: parseISO(h.date), diagnosis: diagnosisText(h) }))
+    .map((h) => ({ rec: h, date: parseISO(h.date), diagnosis: diagnosisText(h) }))
     .sort((a, b) => b.date - a.date);
-  const semibuhs = recs
+  if (sakits.length === 0) return null;
+
+  // Catatan "sembuh" terpisah tetap dihormati kalau ada — tandaiSembuh()
+  // membuatnya sebagai riwayat — tapi bukan lagi satu-satunya cara menutup.
+  const sembuhTerakhir = recs
     .filter((h) => h.type === "sembuh")
     .map((h) => parseISO(h.date))
-    .sort((a, b) => b - a);
+    .sort((a, b) => b - a)[0];
 
-  const lastSakit = sakits[0];
-  const lastSembuh = semibuhs[0];
+  const masihTerbukaPada = (s) => {
+    // Ditutup lewat penanda pada catatannya sendiri (jalur yang sebenarnya dipakai).
+    if (s.rec.is_resolved === true) {
+      // Tanpa resolved_date kita tidak tahu kapan ditutup. Menganggapnya masih
+      // sakit persis mengulang bug yang berkas ini perbaiki, jadi dianggap tutup.
+      if (!s.rec.resolved_date) return false;
+      return parseISO(s.rec.resolved_date) > ref;
+    }
+    // Belum ditandai selesai: masih bisa ditutup catatan "sembuh" yang lebih baru.
+    if (sembuhTerakhir && sembuhTerakhir >= s.date) return false;
+    return true;
+  };
 
-  // Sedang sakit pada tanggal referensi: ada catatan sakit, dan belum ada sembuh setelahnya.
-  const isSickAtRef = lastSakit && (!lastSembuh || lastSakit.date > lastSembuh);
-  if (isSickAtRef) {
-    return { kind: "sick", diagnosis: lastSakit.diagnosis };
+  const terbuka = sakits.find(masihTerbukaPada);
+  if (terbuka) {
+    return { kind: "sick", diagnosis: terbuka.diagnosis };
   }
 
-  if (lastSakit) {
-    const days = differenceInCalendarDays(ref, lastSakit.date);
-    if (days >= 0 && days <= 90) {
-      return { kind: "recent_sick", days, diagnosis: lastSakit.diagnosis };
-    }
+  const lastSakit = sakits[0];
+  const days = differenceInCalendarDays(ref, lastSakit.date);
+  if (days >= 0 && days <= 90) {
+    return { kind: "recent_sick", days, diagnosis: lastSakit.diagnosis };
   }
   return null;
 }
