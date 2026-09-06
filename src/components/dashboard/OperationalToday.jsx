@@ -85,10 +85,18 @@ export default function OperationalToday() {
       content: (
         <div>
           <p className="text-2xl font-bold text-accent">{todayTreatments.length}</p>
-          <p className="text-xs text-muted-foreground">kura-kura perlu treatment</p>
+          {/* Yang dihitung adalah JADWAL, bukan ekor kura — satu jadwal bisa
+              menyentuh banyak kura sekaligus. Tulisannya dulu "kura-kura
+              perlu treatment", yang membuat angkanya terbaca sebagai jumlah
+              ekor. */}
+          <p className="text-xs text-muted-foreground">jadwal perawatan hari ini</p>
           {todayTreatments.slice(0, 3).map((t, i) => (
             <p key={i} className="text-xs text-muted-foreground mt-1 truncate">
-              {t.tortoise_name} - {t.type}
+              {/* Dulu: {t.tortoise_name} - {t.type}. Kedua kolom itu TIDAK ADA
+                  di TreatmentSchedule; yang ada title dan tortoise_names
+                  (jamak). Barisnya selalu tampil sebagai " - " kosong. */}
+              {t.title || "(tanpa judul)"}
+              {t.dose ? ` · ${t.dose}` : ""}
             </p>
           ))}
         </div>
