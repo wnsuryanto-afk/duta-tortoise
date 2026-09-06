@@ -495,7 +495,10 @@ export default function MonthlyReportExport({ role }) {
       }
 
       // Stok kritis
-      const warehouseItems = await base44.entities.WarehouseItem.list("-name", 100);
+      // Batas 100 sementara barang aktif ada 129: 29 barang terakhir (urut
+      // abjad dari belakang) tidak pernah bisa muncul di bagian "stok kritis"
+      // laporan bulanan — kesalahan yang sama dengan pesan WhatsApp pagi.
+      const warehouseItems = await base44.entities.WarehouseItem.list("-name");
       // Aturan yang sama dengan layar peringatan (lib/stokMenipis), bukan
       // `<= minimum_stock` yang meloloskan setiap barang bermininum 0.
       const criticalItems = warehouseItems.filter(perluDiperhatikan);
