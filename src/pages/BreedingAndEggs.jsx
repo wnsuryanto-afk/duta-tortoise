@@ -356,15 +356,13 @@ export default function BreedingAndEggs() {
                             onDelete={() => handleDelete(b)}
                             onHatch={() => setHatchBreeding(b)}
                           />
-                          {b.egg_laying_date && clutchAktif(b) && (
-                            <button
-                              title="Cetak Label Kotak Telur"
-                              onClick={() => { setLabelBreedings([b]); setShowLabelDialog(true); }}
-                              className="p-1.5 rounded-lg hover:bg-green-100 text-green-700 transition-colors"
-                            >
-                              🏷️
-                            </button>
-                          )}
+                          {/* Tombol 🏷️ di sini dihapus: perintahnya PERSIS SAMA dengan
+                              tombol "Cetak Label" di panel hijau beberapa baris di
+                              bawah — keduanya memanggil setLabelBreedings([b]).
+                              Dua tombol untuk satu perintah memaksa orang menebak
+                              apakah keduanya berbeda. Yang dipertahankan adalah
+                              yang bertulisan, karena arti emoji ini hanya ada di
+                              atribut title, dan title tidak muncul di ponsel. */}
                         </div>
                       </div>
                     </div>
