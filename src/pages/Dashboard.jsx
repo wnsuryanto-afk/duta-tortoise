@@ -39,7 +39,10 @@ import { clutchAktif } from "@/lib/breedingUtils";
 function FallbackDashboard() {
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises"],
-    queryFn: () => base44.entities.Tortoise.list("-created_date", 50), // turun dari 300
+    // Dulu dibatasi 50 "turun dari 300" demi kecepatan muat. Kuranya ada 178,
+    // jadi kartu jumlah kura hidup di dasbor ini menghitung 50 dan menyebut
+    // itu totalnya. Batas dilepas: pembungkus di base44Client memberi 2.000.
+    queryFn: () => base44.entities.Tortoise.list("-created_date"),
     staleTime: 10 * 60 * 1000,
   });
   const { data: healthRecords = [] } = useQuery({
@@ -49,7 +52,8 @@ function FallbackDashboard() {
   });
   const { data: breedings = [] } = useQuery({
     queryKey: ["breedings"],
-    queryFn: () => base44.entities.Breeding.list("-created_date", 30), // turun dari 200
+    // Batas 30 sementara datanya sudah 29 baris — pekan depan sudah memotong.
+    queryFn: () => base44.entities.Breeding.list("-created_date"),
     staleTime: 10 * 60 * 1000,
   });
 
