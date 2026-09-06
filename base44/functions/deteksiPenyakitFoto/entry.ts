@@ -93,7 +93,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const ukuran = await base44.asServiceRole.entities.MeasurementHistory.list("-date", 40);
+    // Dulu: 40 pengukuran terbaru, lalu disaring ke 7 hari terakhir di sini.
+    // Riwayat pengukuran sudah 300+ baris — 40 terbaru belum tentu mencakup
+    // 7 hari, jadi foto yang seharusnya diperiksa bisa terlewat begitu saja.
+    // Sekarang jendelanya ditentukan di server, bukan diharapkan kebetulan.
+    const ukuran = await base44.asServiceRole.entities.MeasurementHistory.filter(
+      { date: { $gte: tanggalMundur(7) } },
+      "-date",
+      BATAS_AMBIL,
+    );
     for (const m of ukuran || []) {
       if (!m.photo_url) continue;
       if (String(m.date || "") < tanggalMundur(7)) continue;
