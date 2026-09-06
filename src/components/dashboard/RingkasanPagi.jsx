@@ -85,17 +85,19 @@ export default function RingkasanPagi({ bagian = "semua" }) {
   });
   const { data: sales = [] } = useQuery({
     queryKey: ["owner-sales"],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 50),
+    queryFn: () => base44.entities.Sale.list("-sale_date"),
     staleTime: 5 * 60 * 1000,
   });
   const { data: finances = [] } = useQuery({
     queryKey: ["owner-finances"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 100),
+    // Batas 100 sementara transaksi sudah 200+ baris — ringkasan uang pagi
+    // dihitung dari separuh datanya. Batas dilepas ke pembungkus (2.000).
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
     staleTime: 5 * 60 * 1000,
   });
   const { data: breedings = [] } = useQuery({
     queryKey: ["owner-breedings"],
-    queryFn: () => base44.entities.Breeding.list("-created_date", 50),
+    queryFn: () => base44.entities.Breeding.list("-created_date"),
     staleTime: 5 * 60 * 1000,
   });
   const { data: kuraDiamResp } = useQuery({
