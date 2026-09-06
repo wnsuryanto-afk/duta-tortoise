@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, AlertCircle, CheckCheck } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 
@@ -169,9 +169,23 @@ export default function MaintenanceSchedulePage() {
     queryFn: () => base44.entities.Enclosure.filter({ is_active: true }, "name", 50),
   });
 
+  // Halaman ini memeriksa centang harian, mingguan, dan bulanan. Dulu ia
+  // mengambil 500 log TERBARU dari seluruh riwayat dan berharap segitu
+  // menutupi bulan berjalan. MaintenanceLog sudah lewat 2.000 baris, jadi
+  // 500 terbaru bisa jadi hanya beberapa hari — centang mingguan/bulanan
+  // yang sudah dikerjakan tampil kosong, lalu dikerjakan ulang.
+  // Jendela 60 hari cukup untuk centang bulanan dan jauh lebih ringan.
+  const awalLog = useMemo(
+    () => format(subDays(new Date(), 60), "yyyy-MM-dd"),
+    [],
+  );
   const { data: rawLogs = [] } = useQuery({
-    queryKey: ["enclosure-clean-logs"],
-    queryFn: () => base44.entities.MaintenanceLog.list("-created_date", 500),
+    queryKey: ["enclosure-clean-logs", awalLog],
+    queryFn: () =>
+      base44.entities.MaintenanceLog.filter(
+        { created_date: { $gte: awalLog } },
+        "-created_date",
+      ),
   });
 
   // Flatten: deduplicate by check_key (keep latest)
