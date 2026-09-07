@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useViewAsGuard } from "@/lib/useViewAsGuard";
 import { canAccess } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
+import { poinDiklaim } from "@/lib/poinChecklist";
 import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
@@ -123,11 +124,25 @@ export default function KeputusanHariIni() {
   const waspada = dinilai.filter((i) => i.tingkat === "waspada");
   const aman = dinilai.length - gawat.length - waspada.length;
 
-  // Barang yang sudah masuk daftar belanja tidak perlu ditawarkan lagi
-  const sudahDidaftar = new Set(
+  // Barang yang sudah masuk daftar belanja tidak perlu ditawarkan lagi.
+  //
+  // Dicocokkan lewat penunjuk barang gudang dan SKU lebih dulu, nama paling
+  // belakang. Nama di daftar belanja sering ditulis panjang ("Oxytocin 10
+  // IU/ml [OBT-0104] - APOTEK/POULTRY") sementara nama barang gudang pendek,
+  // jadi pencocokan nama saja membiarkan barang yang sama masuk dua kali.
+  const idTerdaftar = new Set(daftarBelanja.map((d) => d.warehouse_item_id).filter(Boolean));
+  const skuTerdaftar = new Set(
+    daftarBelanja.map((d) => String(d.item_sku || "").trim()).filter(Boolean)
+  );
+  const namaTerdaftar = new Set(
     daftarBelanja.map((d) => (d.nama_barang || "").trim().toLowerCase())
   );
-  const belumDidaftar = gawat.filter((i) => !sudahDidaftar.has((i.name || "").trim().toLowerCase()));
+  const belumDidaftar = gawat.filter(
+    (i) =>
+      !idTerdaftar.has(i.id) &&
+      !(i.sku && skuTerdaftar.has(String(i.sku).trim())) &&
+      !namaTerdaftar.has((i.name || "").trim().toLowerCase()),
+  );
 
   // ── Checklist ───────────────────────────────────────────────────────
   // Hanya yang berfoto yang boleh disetujui massal — itu batas yang disepakati.
@@ -142,7 +157,7 @@ export default function KeputusanHariIni() {
     const gagal = [];
 
     for (const c of berfoto) {
-      const poin = c.total_points_claimed || 0;
+      const poin = poinDiklaim(c);
       try {
         await base44.entities.DailyChecklist.update(c.id, {
           status: "approved",
@@ -187,10 +202,17 @@ export default function KeputusanHariIni() {
 
     for (const i of belumDidaftar) {
       try {
+        // `warehouse_item_id` dan `item_sku` WAJIB ikut. Tanpa keduanya baris
+        // ini tidak akan pernah bisa ditutup sendiri saat barangnya datang —
+        // penerimaan barang mencocokkan lewat penunjuk itu, bukan lewat nama.
         await base44.entities.ShoppingList.create({
           nama_barang: i.name,
+          warehouse_item_id: i.id,
+          item_sku: i.sku || undefined,
           jumlah: Math.max(1, i.minimum_stock || 1),
           satuan: i.unit || "",
+          harga_est_per_unit: Number(i.purchase_price || 0),
+          total_est: Number(i.purchase_price || 0) * Math.max(1, i.minimum_stock || 1),
           priority: "segera",
           status: "belum_dibeli",
           notes: `Otomatis dari beranda — ${i.alasan}.`,

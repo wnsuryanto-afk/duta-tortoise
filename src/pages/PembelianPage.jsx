@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { cocokkanBarisBelanja } from "@/lib/daftarBelanja";
 import { useTestMode } from "@/lib/useTestMode";
 
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
@@ -243,7 +244,6 @@ export default function PembelianPage() {
           current_stock: (wi.current_stock || 0) + diterima,
           purchase_price: hargaSatuanFinal,
           last_restocked_date: today(),
-          expired_date: f.expired || wi.expired_date || null,
         });
 
         const kode = `BATCH-${(wi.sku || wi.id).slice(-6).toUpperCase()}-${format(new Date(), "yyMMdd")}-${idx + 1}`;
@@ -264,6 +264,18 @@ export default function PembelianPage() {
           status: "aktif",
         });
 
+        // Tanggal kedaluwarsa barang gudang = yang PALING AWAL di antara batch
+        // yang masih ada isinya.
+        //
+        // Sebelumnya barisnya `f.expired || wi.expired_date || null`, dan itu
+        // salah di dua arah sekaligus. Bila penerima tidak mengisi tanggal,
+        // barang yang baru datang mewarisi tanggal batch LAMA — stok segar
+        // tetap tertandai kedaluwarsa. Bila ia mengisi tanggal yang lebih
+        // jauh, tanggal batch lama yang masih tersisa TERTIMPA, dan
+        // peringatannya hilang justru untuk stok yang benar-benar mau habis
+        // masa pakainya.
+        await perbaruiKedaluwarsaBarang(wi.id, f.expired || null);
+
         // Alat kerja dianggap aset, tidak masuk biaya operasional
         if (it.kategori !== "alat_kerja") {
           totalBiaya += hargaSatuanFinal * diterima;
@@ -271,10 +283,24 @@ export default function PembelianPage() {
 
         // Sisa yang tidak datang kembali ke daftar belanja
         const kurang = (it.jumlah_pesan || 0) - diterima;
-        if (it.shopping_list_id) {
+        if (kurang > 0) adaKurang = true;
+
+        // Baris daftar belanja yang ditutup penerimaan ini.
+        //
+        // Sebelumnya syaratnya `it.shopping_list_id` — hanya pesanan yang
+        // memang LAHIR dari daftar belanja yang menutup barisnya. Padahal
+        // sebagian besar pesanan dicatat langsung, tanpa lewat daftar: dari 20
+        // pembelian yang ada, hanya 6 yang membawa shopping_list_id. Akibatnya
+        // barangnya datang, stoknya bertambah, dan baris "belum dibeli" tetap
+        // berdiri seolah belum pernah dibeli.
+        //
+        // Itu yang membuat daftar belanja hari ini masih meminta Oxytocin
+        // (stok 22), Vitamin B Kompleks (stok 505), dan Kasa Steril (stok 2)
+        // — ketiganya sudah datang pada 31 Agustus 2026.
+        const barisBelanja = cocokkanBarisBelanja(belumDibeli, it, wi);
+        for (const baris of barisBelanja) {
           if (kurang > 0) {
-            adaKurang = true;
-            await base44.entities.ShoppingList.update(it.shopping_list_id, {
+            await base44.entities.ShoppingList.update(baris.id, {
               status: "belum_dibeli",
               jumlah: kurang,
               qty_kurang: kurang,
@@ -282,10 +308,11 @@ export default function PembelianPage() {
               notes: `Sisa ${kurang} ${it.satuan} dari pesanan ${p.tanggal_pesan} yang belum datang`,
             });
           } else {
-            await base44.entities.ShoppingList.update(it.shopping_list_id, {
+            await base44.entities.ShoppingList.update(baris.id, {
               status: "sudah_dibeli",
               qty_aktual: diterima,
               tanggal_diterima: today(),
+              pembelian_id: p.id,
             });
           }
         }
@@ -325,6 +352,26 @@ export default function PembelianPage() {
       toast.error("Gagal memproses penerimaan: " + (e?.message || ""));
     }
     setBusy(false);
+  };
+
+  /**
+   * Setel ulang `WarehouseItem.expired_date` dari batch-batch yang masih ada.
+   * Yang dipakai adalah tanggal paling awal — itulah yang pertama menua.
+   */
+  const perbaruiKedaluwarsaBarang = async (itemId, tanggalBaru) => {
+    try {
+      const batch = await base44.entities.BatchBarang.filter({ item_id: itemId });
+      const tanggal = (batch || [])
+        .filter((b) => b.status === "aktif" && Number(b.jumlah_sisa || 0) > 0)
+        .map((b) => b.tanggal_expired)
+        .filter(Boolean);
+      if (tanggalBaru) tanggal.push(tanggalBaru);
+      const paling_awal = tanggal.length > 0 ? tanggal.slice().sort()[0] : null;
+      await base44.entities.WarehouseItem.update(itemId, { expired_date: paling_awal });
+    } catch {
+      // Gagal menyetel tanggal kedaluwarsa tidak boleh membatalkan penerimaan
+      // barang yang sudah tercatat.
+    }
   };
 
   const batalkanPesanan = async (p) => {
