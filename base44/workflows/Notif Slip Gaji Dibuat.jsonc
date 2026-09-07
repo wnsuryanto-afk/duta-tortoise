@@ -1,0 +1,37 @@
+{
+  "name": "Notif Slip Gaji Dibuat",
+  "description": "Saat SalarySlip baru dibuat, kirim notif ke karyawan",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "SalarySlip"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notif_slip_gaji_dibuat",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "onSalarySlipPaid",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "onSalarySlipPaid"
+  }
+}

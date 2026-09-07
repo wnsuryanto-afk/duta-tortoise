@@ -1,0 +1,37 @@
+{
+  "name": "Notif Pencairan Request Kas Kecil",
+  "description": "Saat status PettyCashRequest berubah ke dicairkan, kirim notif ke pemohon",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "PettyCashRequest"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notif_pencairan_request_kas_kecil",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "onPettyCashRequestUpdate",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "onPettyCashRequestUpdate"
+  }
+}

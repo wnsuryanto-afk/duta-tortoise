@@ -1,0 +1,37 @@
+{
+  "name": "Notif Pengajuan Alat",
+  "description": "Saat pengajuan alat disetujui/ditolak/dibeli, notif pengaju + buat ShoppingList",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "ToolRequest"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notif_pengajuan_alat",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "onToolRequestUpdate",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "onToolRequestUpdate"
+  }
+}
