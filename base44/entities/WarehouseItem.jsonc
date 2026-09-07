@@ -67,6 +67,20 @@
       ],
       "default": "gudang_utama"
     },
+    "botol_terbuka": {
+      "type": "number",
+      "default": 0,
+      "description": "Berapa botol/vial multi-dosis yang sudah ditusuk dan sedang dipakai. Yang menua pada obat suntik multi-dosis adalah BOTOLNYA, bukan dosisnya: sekali tutup karetnya ditembus jarum, isinya hanya aman beberapa minggu meski dosis tersisa masih banyak. Stok dihitung dalam dosis (mis. Vitamin B Kompleks 505 ampul dari 5 botol 100 ml), jadi tanpa kolom ini aplikasi mengira masih ada 505 dosis padahal yang menentukan adalah berapa botol sudah dibuka dan kapan."
+    },
+    "tanggal_botol_dibuka": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal botol multi-dosis yang sedang dipakai ditusuk pertama kali. Dasar peringatan 'botol terbuka sudah lewat masa pakai', terpisah dari expired_date yang berlaku untuk botol yang masih tersegel."
+    },
+    "hari_pakai_setelah_dibuka": {
+      "type": "number",
+      "description": "Berapa hari botol multi-dosis ini masih aman dipakai setelah ditusuk. Kosongkan bila barang ini bukan multi-dosis. Umumnya 28 hari untuk vial injeksi dengan pengawet."
+    },
     "expired_date": {
       "type": "string",
       "format": "date"

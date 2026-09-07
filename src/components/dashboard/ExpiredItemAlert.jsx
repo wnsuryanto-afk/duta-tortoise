@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { periksaKedaluwarsa } from "@/lib/kedaluwarsa";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Package } from "lucide-react";
-import { differenceInDays, format } from "date-fns";
+import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 export default function ExpiredItemAlert() {
@@ -12,12 +13,15 @@ export default function ExpiredItemAlert() {
     queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
   });
 
+  // Dua umur diperiksa sekaligus: tanggal pada kemasan, DAN masa pakai botol
+  // multi-dosis yang sudah ditusuk. Yang kedua sering habis lebih dulu, dan
+  // dulu tidak pernah dilihat sama sekali.
   const today = new Date();
-  const expiring = items.filter(item => {
-    if (!item.expired_date) return false;
-    const diff = differenceInDays(new Date(item.expired_date), today);
-    return diff <= 30;
-  }).sort((a, b) => new Date(a.expired_date) - new Date(b.expired_date));
+  const expiring = items
+    .map((item) => ({ item, k: periksaKedaluwarsa(item, today) }))
+    .filter(({ k }) => k.tingkat === "lewat" || k.tingkat === "segera_pakai")
+    .sort((a, b) => a.k.sisa - b.k.sisa)
+    .map(({ item, k }) => ({ ...item, _sisa: k.sisa, _sebab: k.sebab }));
 
   if (expiring.length === 0) return null;
 
@@ -31,8 +35,17 @@ export default function ExpiredItemAlert() {
       </CardHeader>
       <CardContent className="space-y-2">
         {expiring.map(item => {
-          const diff = differenceInDays(new Date(item.expired_date), today);
+          const diff = item._sisa;
           const isExpired = diff < 0;
+          // Barang bisa masuk daftar ini karena BOTOLNYA yang sudah terbuka,
+          // tanpa punya tanggal kemasan sama sekali. Merender expired_date
+          // tanpa memeriksanya menghasilkan "Invalid Date" di layar pemilik.
+          const sebabTeks =
+            item._sebab === "botol_terbuka"
+              ? `Botol terbuka sejak ${item.tanggal_botol_dibuka || "?"}`
+              : item.expired_date
+                ? format(new Date(item.expired_date), "d MMM yyyy", { locale: id })
+                : "";
           return (
             <div key={item.id} className="flex items-center justify-between gap-2 py-1 border-b border-red-100 last:border-0">
               <div className="flex items-center gap-2 min-w-0">
@@ -46,9 +59,9 @@ export default function ExpiredItemAlert() {
                 <Badge className={isExpired ? "bg-red-600 text-white" : "bg-amber-100 text-amber-700"}>
                   {isExpired ? `Kadaluarsa ${Math.abs(diff)}h lalu` : `${diff} hari lagi`}
                 </Badge>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {format(new Date(item.expired_date), "d MMM yyyy", { locale: id })}
-                </p>
+                {sebabTeks && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{sebabTeks}</p>
+                )}
               </div>
             </div>
           );

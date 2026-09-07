@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { periksaKedaluwarsa } from "@/lib/kedaluwarsa";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Package, TrendingDown, Calendar, Wallet, Leaf } from "lucide-react";
@@ -60,10 +61,12 @@ export default function DashboardStokPage() {
   ].sort((a, b) => (a.current_stock / (a.minimum_stock || 1)) - (b.current_stock / (b.minimum_stock || 1)));
 
   // ─── B. Akan Kadaluarsa ───────────────────────────────
+  // Botol multi-dosis yang sudah dibuka ikut dihitung: masa pakainya sering
+  // habis jauh sebelum tanggal pada kemasan.
   const expiringSoon = warehouseItems
-    .filter(i => i.expired_date)
-    .map(i => ({ ...i, _daysLeft: Math.ceil((new Date(i.expired_date) - today) / 86400000) }))
-    .filter(i => i._daysLeft <= 30 && i._daysLeft >= 0)
+    .map((i) => ({ i, k: periksaKedaluwarsa(i, today) }))
+    .filter(({ k }) => k.tingkat === "segera_pakai" || k.tingkat === "lewat")
+    .map(({ i, k }) => ({ ...i, _daysLeft: k.sisa, _sebab: k.sebab }))
     .sort((a, b) => a._daysLeft - b._daysLeft);
 
   // ─── C. Pemakaian Pakan vs Ideal bulan ini ───────────
@@ -184,10 +187,18 @@ export default function DashboardStokPage() {
                 <div key={item.id} className={`flex items-center gap-3 p-2.5 rounded-xl border ${urgency}`}>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">Exp: {format(parseISO(item.expired_date), "d MMM yyyy", { locale: id })}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item._sebab === "botol_terbuka"
+                        ? `Botol terbuka sejak ${item.tanggal_botol_dibuka || "?"}`
+                        : item.expired_date
+                          ? `Exp: ${format(parseISO(item.expired_date), "d MMM yyyy", { locale: id })}`
+                          : "Tanggal kemasan belum diisi"}
+                    </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className={`text-sm font-bold ${textColor}`}>{item._daysLeft} hari lagi</p>
+                    <p className={`text-sm font-bold ${textColor}`}>
+                      {item._daysLeft < 0 ? `Lewat ${Math.abs(item._daysLeft)} hari` : `${item._daysLeft} hari lagi`}
+                    </p>
                     <p className="text-xs text-muted-foreground">Stok: {item.current_stock} {item.unit}</p>
                   </div>
                 </div>
