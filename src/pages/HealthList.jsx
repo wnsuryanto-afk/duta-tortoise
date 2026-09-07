@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
+import { kembalikanPemakaianObat } from "@/lib/pemakaianObat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -126,11 +128,30 @@ export default function HealthList() {
 
   const handleEdit = (r) => { setEditData(r); setShowForm(true); };
   const handleDelete = async (r) => {
-    if (confirm(`Hapus catatan untuk ${r.tortoise_name}?`)) {
-      await base44.entities.HealthRecord.delete(r.id);
-      qc.invalidateQueries({ queryKey: ["health-records"] });
-      qc.invalidateQueries({ queryKey: ["health-records-all"] });
+    const jumlahObat = (r.treatment_items || []).length;
+    const pesan = jumlahObat > 0
+      ? `Hapus catatan untuk ${r.tortoise_name}?\n\n${jumlahObat} obat yang tercatat akan DIKEMBALIKAN ke stok gudang.`
+      : `Hapus catatan untuk ${r.tortoise_name}?`;
+    if (!confirm(pesan)) return;
+
+    // Obat dikembalikan SEBELUM catatannya dihapus: sesudah dihapus, daftar
+    // obatnya ikut hilang dan tidak ada lagi yang tahu berapa yang harus
+    // dikembalikan.
+    if (jumlahObat > 0) {
+      const { gagal } = await kembalikanPemakaianObat({
+        record: r,
+        user: await base44.auth.me().catch(() => null),
+      });
+      if (gagal.length > 0) {
+        toast.error(`Stok ${gagal.length} obat gagal dikembalikan — ${gagal[0]}. Catatan tidak dihapus.`);
+        return;
+      }
     }
+
+    await base44.entities.HealthRecord.delete(r.id);
+    qc.invalidateQueries({ queryKey: ["health-records"] });
+    qc.invalidateQueries({ queryKey: ["health-records-all"] });
+    qc.invalidateQueries({ queryKey: ["warehouse-items"] });
   };
 
   return (
