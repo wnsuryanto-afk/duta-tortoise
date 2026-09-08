@@ -35,8 +35,14 @@ export default function KeeperIncubatorWidget() {
       <div className="space-y-3">
         {incubators.map(inc => {
           const last = latestByIncubator[inc.id];
-          const temp = last?.temperature ?? inc.current_temperature ?? null;
-          const hum = last?.humidity ?? inc.current_humidity ?? null;
+          // Cadangan inc.current_temperature / inc.current_humidity dihapus:
+          // kedua kolom itu tidak ada di tabel Incubator, jadi cadangannya
+          // selalu undefined. Tidak berbahaya — hasilnya tetap null dan kartu
+          // benar menampilkan "belum ada data" — tapi kode yang tidak mungkin
+          // berjalan membuat pembaca berikutnya mengira ada sumber kedua.
+          // Satu-satunya sumber suhu adalah pencatatan IncubatorReading.
+          const temp = last?.temperature ?? null;
+          const hum = last?.humidity ?? null;
 
           // Target range sulcata: 29-31°C, 60-80%
           const tempOk = temp !== null ? (temp >= 28 && temp <= 33) : null;
