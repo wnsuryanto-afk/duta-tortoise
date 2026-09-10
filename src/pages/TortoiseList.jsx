@@ -193,16 +193,23 @@ export default function TortoiseList() {
     if (shellLengthFilter !== "semua") {
       const sl = t.shell_length_cm;
       if (!sl || sl === 0) return false;
+      // Rentang panjang karapas dulu tidak rapat dan saling tindih:
+      //   xl2 = 40..45, xl3 = 46..50  -> celah di antara 45 dan 46.
+      //   xl3 = 46..50, xl4 = 50..55  -> 50 cm masuk DUA rentang sekaligus.
+      // Akibat nyata di data hari ini: B83 (45,5 cm) tidak muncul di rentang
+      // mana pun, dan delapan kura berukuran tepat 50 cm terhitung dua kali.
+      // Sekarang batas bawah selalu ikut, batas atas tidak (>= a && < b),
+      // jadi setiap ukuran jatuh ke tepat satu rentang tanpa celah.
       if (shellLengthFilter === "xs") matchShellLength = sl < 8;
       else if (shellLengthFilter === "s") matchShellLength = sl >= 8 && sl < 15;
       else if (shellLengthFilter === "m") matchShellLength = sl >= 15 && sl < 25;
       else if (shellLengthFilter === "l") matchShellLength = sl >= 25 && sl < 35;
       else if (shellLengthFilter === "xl1") matchShellLength = sl >= 35 && sl < 40;
-      else if (shellLengthFilter === "xl2") matchShellLength = sl >= 40 && sl <= 45;
-      else if (shellLengthFilter === "xl3") matchShellLength = sl >= 46 && sl <= 50;
-      else if (shellLengthFilter === "xl4") matchShellLength = sl >= 50 && sl <= 55;
-      else if (shellLengthFilter === "xl5") matchShellLength = sl >= 55 && sl <= 60;
-      else if (shellLengthFilter === "xl6") matchShellLength = sl > 60;
+      else if (shellLengthFilter === "xl2") matchShellLength = sl >= 40 && sl < 45;
+      else if (shellLengthFilter === "xl3") matchShellLength = sl >= 45 && sl < 50;
+      else if (shellLengthFilter === "xl4") matchShellLength = sl >= 50 && sl < 55;
+      else if (shellLengthFilter === "xl5") matchShellLength = sl >= 55 && sl < 60;
+      else if (shellLengthFilter === "xl6") matchShellLength = sl >= 60;
     }
 
     return matchSearch && matchStatus && matchGender && matchMorph && matchShell && matchEnclosure && matchProven && matchSpecies && matchQuarantine && matchIncomplete && matchWeight && matchShellLength;
@@ -537,10 +544,10 @@ export default function TortoiseList() {
                 <SelectItem value="l">25 – 35 cm</SelectItem>
                 <SelectItem value="xl1">35 – 40 cm</SelectItem>
                 <SelectItem value="xl2">40 – 45 cm</SelectItem>
-                <SelectItem value="xl3">46 – 50 cm</SelectItem>
+                <SelectItem value="xl3">45 – 50 cm</SelectItem>
                 <SelectItem value="xl4">50 – 55 cm</SelectItem>
                 <SelectItem value="xl5">55 – 60 cm</SelectItem>
-                <SelectItem value="xl6">&gt; 60 cm</SelectItem>
+                <SelectItem value="xl6">≥ 60 cm</SelectItem>
               </SelectContent>
             </Select>
 
