@@ -220,13 +220,10 @@ export default function TortoiseList() {
     });
     const statusOrder = { aktif: 0, baby: 1, sakit: 2, mati: 3, terjual: 4 };
     Object.values(map).forEach((arr) => { arr.sort((a, b) => (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0)); });
-    const order = ["W1","W2","W3","W4","W5","N1","N2","E1","E2","E3","E4","E5","L2","Baby 1","Baby 2","Baby 3"];
-    return Object.entries(map).sort(([a], [b]) => {
-      const ai = order.indexOf(a); const bi = order.indexOf(b);
-      if (ai >= 0 && bi >= 0) return ai - bi;
-      if (ai >= 0) return -1; if (bi >= 0) return 1;
-      return a.localeCompare(b);
-    });
+    // Urutan kandang datang dari lib/kandang.js, bukan daftar tetap di sini.
+    // Daftar lama ketinggalan N3, L1, dan Bonsai 1-4 — keenamnya terlempar ke
+    // dasar halaman, jadi N3 tidak pernah muncul di antara N2 dan E1.
+    return Object.entries(map).sort(([a], [b]) => bandingkanKandang(a, b));
   }, [filtered]);
 
   const toggleGroup = (key) => setCollapsedGroups(p => ({ ...p, [key]: !p[key] }));
