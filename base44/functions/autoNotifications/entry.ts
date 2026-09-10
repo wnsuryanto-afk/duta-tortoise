@@ -116,10 +116,50 @@ Deno.serve(async (req) => {
       ["aktif", "breeding"].includes(t.status) &&
       (!t.last_weighed_date || t.last_weighed_date < last30)
     );
+    /*
+     * ── KENAPA INI TIDAK LAGI HARIAN ───────────────────────────────
+     *
+     * "Belum ditimbang >30 hari" adalah keadaan MENETAP, bukan kejadian.
+     * Selama masih ada kura yang belum ditimbang, peringatannya benar
+     * setiap hari — dan justru itu masalahnya.
+     *
+     * Kunci anti-duplikatnya dulu "not_weighed_bulk_" + today. Menambahkan
+     * tanggal ke kunci membuat SETIAP HARI dianggap peringatan baru, jadi
+     * anti-duplikatnya tidak pernah bisa bekerja lebih dari sehari. Padahal
+     * isDuplicate() sendiri sudah membatasi pemeriksaan ke hari ini, jadi
+     * tanggal di kunci itu sekaligus mubazir dan merusak.
+     *
+     * Akibat nyatanya terlihat di data: pesan yang sama persis — judul sama,
+     * isi sama, angka sama (110) — dibuat untuk 4 orang setiap pagi jam 07:00
+     * selama berhari-hari. Lonceng pemilik menumpuk sampai 81 belum dibaca,
+     * dan dua penerima tidak pernah membuka satu pun.
+     *
+     * Peringatan yang isinya tidak pernah berubah mengajari orang berhenti
+     * membaca lonceng — termasuk peringatan di sebelahnya yang nyata.
+     *
+     * Aturan sekarang: paling sering SEMINGGU SEKALI per penerima.
+     */
+    const KUNCI_TIMBANG = "not_weighed_bulk";
+    const JEDA_HARI = 7;
     if (notWeighed.length > 0) {
+      const batasJeda = new Date(now.getTime() - JEDA_HARI * 24 * 60 * 60 * 1000).toISOString();
       const adminEmails = await getEmails(["admin", "owner"]);
       for (const email of adminEmails) {
-        if (await isDuplicate(email, "not_weighed_bulk_" + today, "kesehatan")) continue;
+        let baruSaja = false;
+        try {
+          const sebelumnya = await base44.asServiceRole.entities.Notification.filter(
+            { recipient_email: email, related_entity_id: KUNCI_TIMBANG },
+            "-created_date",
+            BATAS_AMBIL,
+          );
+          baruSaja = (sebelumnya || []).some((n: any) => {
+            const ca = n.created_at || n.created_date || "";
+            return ca > batasJeda && !n.is_dismissed;
+          });
+        } catch {
+          // Bila pengecekan gagal, lebih baik peringatan tetap dikirim.
+        }
+        if (baruSaja) continue;
         await createNotif({
           recipient_email: email,
           title: `${notWeighed.length} Kura Belum Ditimbang >30 Hari`,
@@ -130,7 +170,7 @@ Deno.serve(async (req) => {
           recipient_role: "admin",
           action_label: "Lihat Daftar Kura",
           action_url: "/tortoise",
-          related_entity_id: "not_weighed_bulk_" + today,
+          related_entity_id: KUNCI_TIMBANG,
           related_entity_type: "bulk",
         });
       }
