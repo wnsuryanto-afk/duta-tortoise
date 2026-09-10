@@ -242,6 +242,58 @@ export function kandangWajib(enclosures = []) {
 }
 
 /**
+ * SATU DEFINISI: urutan tampil kandang di layar.
+ *
+ * Sebelum ini, halaman Daftar Kura menyimpan urutannya sendiri sebagai daftar
+ * tetap yang ditulis tangan:
+ *
+ *   ["W1".."W5", "N1", "N2", "E1".."E5", "L2", "Baby 1".."Baby 3"]
+ *
+ * Daftar itu KETINGGALAN enam kandang yang benar-benar ada: N3, L1, dan
+ * Bonsai 1-4. Kandang yang tidak tercantum jatuh ke urutan paling belakang,
+ * jadi N3 tidak muncul di antara N2 dan E1 seperti yang diharapkan siapa pun
+ * yang membaca layar - ia terlempar ke dasar halaman, di bawah Baby 3.
+ * Kuranya ada dan penyaringnya benar; hanya letaknya yang tidak masuk akal,
+ * dan itu cukup untuk membuat orang menyimpulkan datanya hilang.
+ *
+ * Daftar tetap yang ditulis tangan akan basi lagi setiap kali kandang baru
+ * dibuat. Karena itu urutannya sekarang DITURUNKAN dari namanya sendiri:
+ * kelompok arah dulu, lalu angka secara numerik (W2 sebelum W10, bukan
+ * sesudahnya seperti pada pengurutan abjad). Kandang baru langsung mendarat
+ * di tempat yang benar tanpa ada yang perlu ingat memperbarui apa pun.
+ */
+export const URUTAN_KELOMPOK = ["W", "N", "E", "L", "Baby", "Bonsai"];
+
+const POLA_KANDANG = /^(Baby|Bonsai|[WNEL])\s*(\d+)$/i;
+
+/**
+ * Kunci pengurutan satu nama kandang.
+ * @returns {[number, number, string]} [urutan kelompok, angka, nama]
+ */
+export function kunciUrutKandang(nama) {
+  const teks = String(nama || "").trim();
+  if (!teks || teks === "Tidak Ada Kandang") {
+    return [URUTAN_KELOMPOK.length + 1, 0, teks];
+  }
+  const m = teks.match(POLA_KANDANG);
+  if (!m) return [URUTAN_KELOMPOK.length, 0, teks.toLowerCase()];
+
+  const awalan = m[1].length === 1 ? m[1].toUpperCase()
+    : m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
+  const i = URUTAN_KELOMPOK.indexOf(awalan);
+  return [i === -1 ? URUTAN_KELOMPOK.length : i, Number(m[2]), teks.toLowerCase()];
+}
+
+/** Pembanding untuk Array.prototype.sort atas nama-nama kandang. */
+export function bandingkanKandang(a, b) {
+  const ka = kunciUrutKandang(a);
+  const kb = kunciUrutKandang(b);
+  if (ka[0] !== kb[0]) return ka[0] - kb[0];
+  if (ka[1] !== kb[1]) return ka[1] - kb[1];
+  return ka[2].localeCompare(kb[2]);
+}
+
+/**
  * D12 - Tugas yang dikerjakan lewat SATU ubin kandang.
  *
  * Sebelumnya ubin kandang hanya membayar kebersihan (8 poin), sementara
