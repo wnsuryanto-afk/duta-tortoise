@@ -19,6 +19,7 @@ import TortoiseList from "@/pages/TortoiseList";
 import OperationalToday from "@/components/dashboard/OperationalToday";
 import VetContactPage from "@/pages/VetContactPage";
 import UserManagement from "@/pages/UserManagement";
+import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -81,4 +82,18 @@ export default [
   // dengan benar saat datanya masih kosong.
   ["VetContactPage tanpa data", <VetContactPage />],
   ["UserManagement tanpa data", <UserManagement />],
+
+  // Kartu morph dulu memaksa setiap morph di luar daftar warnanya menjadi
+  // "Normal". Kasus di bawah memuat morph yang TIDAK punya warna khusus
+  // (hypo, piebald) — dulu keduanya lenyap ke Normal, sekarang harus tampil
+  // sebagai barisnya sendiri tanpa membuat layar gagal render.
+  ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
+  ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
+    { morph: "normal", gender: "betina" },
+    { morph: "het_albino", gender: "jantan" },
+    { morph: "hypo", gender: "jantan" },
+    { morph: "piebald", gender: "betina" },
+    { morph: "", gender: "betina" },
+    { gender: "jantan" },
+  ]} />],
 ];
