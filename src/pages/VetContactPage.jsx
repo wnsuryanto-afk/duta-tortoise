@@ -209,8 +209,14 @@ export default function VetContactPage() {
         v.name?.toLowerCase().includes(search.toLowerCase()) ||
         v.clinic_name?.toLowerCase().includes(search.toLowerCase());
       const matchArea = areaFilter === "semua" || v.area === areaFilter;
-      const matchSpec = specFilter === "semua" ||
-        (specFilter === "reptil" ? /reptil|eksotik/i.test(v.specialization || "") : v.specialization === specFilter);
+      // Kolom specialization adalah teks bebas ("Umum & Pet Shop", "Reptil &
+      // Eksotik - Special interest kura-kura"), bukan enum. Dulu hanya pilihan
+      // "reptil" yang mencocokkan sebagian kata; "Umum" dan "Bedah" memakai
+      // sama-dengan persis. Akibatnya "Umum & Pet Shop" tidak pernah ikut
+      // terpilih di "Umum", dan "Bedah" tidak pernah cocok dengan satu pun
+      // dokter — pilihan yang hasilnya selalu nol.
+      // Sekarang ketiganya sama-sama mencocokkan sebagian kata.
+      const matchSpec = specFilter === "semua" || cocokSpesialisasi(v.specialization, specFilter);
       const matchEmergency = !emergencyOnly || v.emergency_available;
       return matchSearch && matchArea && matchSpec && matchEmergency;
     });
@@ -262,9 +268,15 @@ export default function VetContactPage() {
           <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Spesialisasi" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="semua">Semua Spesialisasi</SelectItem>
-            <SelectItem value="Umum">Umum</SelectItem>
-            <SelectItem value="reptil">Eksotis/Reptil</SelectItem>
-            <SelectItem value="Bedah">Bedah</SelectItem>
+            {/* Hanya spesialisasi yang benar-benar ada pada daftar dokter yang
+                ditampilkan. Pilihan yang hasilnya pasti nol tidak membantu
+                siapa pun — ia hanya mengajari orang bahwa penyaring ini tidak
+                bisa dipercaya. Kalau nanti ada dokter bedah dicatat,
+                pilihannya muncul sendiri. */}
+            {SPESIALISASI.filter(s => vets.some(v => cocokSpesialisasi(v.specialization, s.nilai)))
+              .map(s => (
+                <SelectItem key={s.nilai} value={s.nilai}>{s.label}</SelectItem>
+              ))}
           </SelectContent>
         </Select>
         <Select value={sortBy} onValueChange={setSortBy}>
