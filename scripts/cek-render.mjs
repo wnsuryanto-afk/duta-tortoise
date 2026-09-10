@@ -27,6 +27,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const AKAR = process.cwd();
+
+// Catatan 10-09-2026: penjaga ini membuktikan komponen MAU tampil, bukan
+// bahwa angkanya benar. Untuk TortoiseMorphSummary angkanya diperiksa
+// terpisah dengan data uji (hypo & piebald dulu dihitung sebagai Normal;
+// setelah perbaikan: Normal 4, Het Albino 1, Hypo 1, Piebald 1).
+
 const dir = mkdtempSync(join(tmpdir(), "cek-render-"));
 
 // Panggung minimal: SDK Base44 dan Radix menyentuh window/document saat dimuat.
