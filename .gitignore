@@ -35,3 +35,8 @@ dist-ssr
 .env
 .vite
 base44/.app.jsonc
+
+# Coretan analisis sekali pakai — jangan ikut tercatat lagi.
+/s2.cjs
+/scan.cjs
+/.ujitmp/
