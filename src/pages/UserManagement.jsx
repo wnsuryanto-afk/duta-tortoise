@@ -181,12 +181,14 @@ export default function UserManagement() {
             <SelectTrigger className="w-40"><SelectValue placeholder="Filter Role" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="semua">Semua Role</SelectItem>
-              <SelectItem value="owner">👑 Owner</SelectItem>
-              <SelectItem value="manajer">👔 Manajer</SelectItem>
-              <SelectItem value="admin">🛡️ Admin</SelectItem>
-              <SelectItem value="kepala_feeder">🌿 Kepala Feeder</SelectItem>
-              <SelectItem value="keeper">🐢 Keeper</SelectItem>
-              <SelectItem value="investor">👁 Investor</SelectItem>
+              {/* Daftar tetap yang lama tidak memuat "kicked" — padahal tiga
+                  akun berstatus itu, dan justru akun seperti itulah yang
+                  perlu dicari saat merapikan akses. Sekarang pilihan
+                  dilengkapi dari role yang benar-benar ada di data, jadi
+                  tidak ada akun yang tersembunyi dari penyaring. */}
+              {ROLE_TAMPIL.map(r => (
+                <SelectItem key={r} value={r}>{ROLE_LABEL[r] || r}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
