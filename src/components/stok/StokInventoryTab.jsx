@@ -48,6 +48,13 @@ function SourceBadge({ src }) {
 const CAT_ICONS = { pakan: "🥬", sayuran: "🥬", buah: "🍎", rumput: "🌿", hay: "🌾", pelet: "🟤", obat: "💊", vitamin: "🌿", suplemen: "💉", habis_pakai: "🩹", alat_kerja: "🔧", peralatan: "🔧", alat: "🔧", lainnya: "📦" };
 function catIcon(item) { return CAT_ICONS[item._cat] || CAT_ICONS[item.category] || "📦"; }
 
+// Nama kategori yang dibaca manusia. Kunci di sini harus sama dengan nilai
+// _cat yang disusun di allItems.
+const LABEL_KATEGORI = {
+  pakan: "Pakan", obat: "Obat", vitamin: "Vitamin", suplemen: "Suplemen",
+  habis_pakai: "Habis Pakai", alat: "Alat", lainnya: "Lainnya",
+};
+
 // ── Expired Date Badge ─────────────────────────────────────────────────
 function ExpiredBadge({ date, item, onSetExpired }) {
   if (!["obat", "vitamin", "suplemen"].includes(item._cat)) return null;
