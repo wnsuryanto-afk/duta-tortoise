@@ -174,6 +174,23 @@ function VetForm({ vet, onClose, onSaved }) {
   );
 }
 
+/**
+ * Spesialisasi dokter hewan disimpan sebagai teks bebas, jadi pencocokannya
+ * memakai kata kunci, bukan sama-dengan persis. Satu tempat saja supaya
+ * daftar pilihan dan penyaringnya tidak bisa lagi berbeda aturan.
+ */
+const SPESIALISASI = [
+  { nilai: "umum", label: "Umum", kata: /umum/i },
+  { nilai: "reptil", label: "Eksotis/Reptil", kata: /reptil|eksotik|eksotis|kura/i },
+  { nilai: "bedah", label: "Bedah", kata: /bedah|operasi|x-?ray|rontgen/i },
+];
+
+function cocokSpesialisasi(teks, nilai) {
+  const s = SPESIALISASI.find(x => x.nilai === nilai);
+  if (!s) return false;
+  return s.kata.test(String(teks || ""));
+}
+
 export default function VetContactPage() {
   const [showForm, setShowForm] = useState(false);
   const [editVet, setEditVet] = useState(null);
