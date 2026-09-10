@@ -129,10 +129,13 @@ Deno.serve(async (req) => {
      * isDuplicate() sendiri sudah membatasi pemeriksaan ke hari ini, jadi
      * tanggal di kunci itu sekaligus mubazir dan merusak.
      *
-     * Akibat nyatanya terlihat di data: pesan yang sama persis — judul sama,
-     * isi sama, angka sama (110) — dibuat untuk 4 orang setiap pagi jam 07:00
-     * selama berhari-hari. Lonceng pemilik menumpuk sampai 81 belum dibaca,
-     * dan dua penerima tidak pernah membuka satu pun.
+     * Akibat nyatanya terhitung di data pada 10-09-2026: pesan yang sama
+     * persis — judul sama, isi sama, angka sama (110) — dibuat untuk 3-4
+     * penerima setiap pagi jam 07:00 sejak 25 Juni. Totalnya 262 salinan.
+     *
+     * Pemiliknya sendiri rajin membacanya (hanya 1 yang belum dibaca), tapi
+     * tiga penerima lain TIDAK PERNAH menutup satu pun — masing-masing
+     * menumpuk sekitar 65 pemberitahuan yang isinya identik.
      *
      * Peringatan yang isinya tidak pernah berubah mengajari orang berhenti
      * membaca lonceng — termasuk peringatan di sebelahnya yang nyata.
