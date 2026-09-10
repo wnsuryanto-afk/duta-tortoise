@@ -15,6 +15,8 @@ import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
+import TortoiseList from "@/pages/TortoiseList";
+import OperationalToday from "@/components/dashboard/OperationalToday";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -58,4 +60,17 @@ export default [
   ["RekapPoinGajiPage tanpa data", <RekapPoinGajiPage />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
   ["GuidedHariIni dengan user", <GuidedHariIni user={{ id: "1", email: "a@b.c", full_name: "Sholeh", role: "keeper" }} />],
+
+  // Ditambahkan 10-09-2026. Keduanya diubah cukup dalam hari ini dan
+  // TIDAK terjaga sebelumnya — padahal Daftar Kura adalah halaman yang
+  // paling sering dibuka setelah layar kiper:
+  //   • TortoiseList: seluruh isi dropdown kandang ditulis ulang supaya
+  //     kelompoknya diturunkan dari data (Bonsai 1-4 dulu tidak pernah
+  //     bisa dipilih sama sekali).
+  //   • OperationalToday: penyaring jadwal diganti dari kolom next_due
+  //     yang tidak ada menjadi jadwalBerlaku().
+  // Membangun (vite build) hanya membuktikan sintaksnya sah, bukan bahwa
+  // layarnya benar-benar mau tampil.
+  ["TortoiseList tanpa data", <TortoiseList />],
+  ["OperationalToday tanpa data", <OperationalToday />],
 ];
