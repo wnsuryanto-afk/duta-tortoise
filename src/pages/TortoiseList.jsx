@@ -421,43 +421,71 @@ export default function TortoiseList() {
               <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Pilih Kandang..." /></SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectItem value="semua">Semua Kandang</SelectItem>
-                {[
-                  { label: "Barat", prefix: "W" },
-                  { label: "Utara", prefix: "N" },
-                  { label: "Timur", prefix: "E" },
-                  { label: "Lainnya", prefix: "L" },
-                  { label: "Kandang Baby", prefix: "Baby" },
-                ].map(group => {
-                  const groupEncs = enclosures.filter(e => e.name.startsWith(group.prefix)).sort((a,b) => a.name.localeCompare(b.name));
-                  if (groupEncs.length === 0) {
-                    // Fallback: cek dari data tortoise yang ada enclosure-nya tapi belum jadi Enclosure entity
-                    const virtualEncs = [...new Set(tortoises.filter(t => t.enclosure?.startsWith(group.prefix)).map(t => t.enclosure))].sort();
-                    if (virtualEncs.length === 0) return null;
+                {(() => {
+                  /*
+                   * Daftar kandang di penyaring ini DITURUNKAN dari data, bukan
+                   * ditulis tangan. Versi lama punya dua cacat sekaligus:
+                   *
+                   *  1. Kelompoknya hanya W/N/E/L/Baby. "Bonsai 1-4" tidak
+                   *     termasuk kelompok mana pun.
+                   *  2. Keranjang "sisanya" menyaring dengan
+                   *     ![\"W\",\"N\",\"E\",\"L\",\"B\"].some(p => name.startsWith(p)) —
+                   *     dan "Bonsai" diawali huruf B, jadi ikut terbuang juga.
+                   *
+                   * Akibatnya keempat kandang Bonsai TIDAK PERNAH bisa dipilih,
+                   * padahal 20+ kura aktif tinggal di sana.
+                   *
+                   * Sekarang: nama diambil dari Enclosure DAN dari data kura
+                   * (kandang yang dipakai tapi belum terdaftar tetap muncul),
+                   * kelompoknya ditentukan kunciUrutKandang, dan apa pun yang
+                   * tidak masuk kelompok jatuh ke "Lainnya" — bukan menghilang.
+                   */
+                  const KELOMPOK = [
+                    { label: "Barat", prefix: "W" },
+                    { label: "Utara", prefix: "N" },
+                    { label: "Timur", prefix: "E" },
+                    { label: "Lain", prefix: "L" },
+                    { label: "Kandang Baby", prefix: "Baby" },
+                    { label: "Bonsai", prefix: "Bonsai" },
+                  ];
+                  const semuaNama = [...new Set([
+                    ...enclosures.map(e => e?.name),
+                    ...tortoises.map(t => t?.enclosure),
+                  ].filter(Boolean))];
+                  const hidup = (t) => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan";
+                  const hitung = (nama) => tortoises.filter(t => t.enclosure === nama && hidup(t)).length;
+                  const terpakai = new Set();
+                  const blok = KELOMPOK.map(g => {
+                    const idx = URUTAN_KELOMPOK.indexOf(g.prefix);
+                    const anggota = semuaNama
+                      .filter(n => kunciUrutKandang(n)[0] === idx)
+                      .sort(bandingkanKandang);
+                    anggota.forEach(n => terpakai.add(n));
+                    if (anggota.length === 0) return null;
                     return (
-                      <div key={group.label}>
-                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{group.label}</div>
-                        {virtualEncs.map(name => (
-                          <SelectItem key={`virtual-${name}`} value={name}>
-                            {name} ({tortoises.filter(t => t.enclosure === name && t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length})
-                          </SelectItem>
+                      <div key={g.label}>
+                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{g.label}</div>
+                        {anggota.map(nama => (
+                          <SelectItem key={nama} value={nama}>{nama} ({hitung(nama)})</SelectItem>
                         ))}
                       </div>
                     );
-                  }
+                  });
+                  const sisa = semuaNama.filter(n => !terpakai.has(n)).sort(bandingkanKandang);
                   return (
-                    <div key={group.label}>
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">{group.label}</div>
-                      {groupEncs.map(enc => (
-                        <SelectItem key={enc.id} value={enc.name}>
-                          {enc.name} ({tortoises.filter(t => t.enclosure === enc.name && t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length})
-                        </SelectItem>
-                      ))}
-                      </div>
-                      );
-                      })}
-                      {enclosures.filter(e => !["W","N","E","L","B"].some(p => e.name.startsWith(p)) && !e.name.startsWith("Baby")).map(enc => (
-                      <SelectItem key={enc.id} value={enc.name}>{enc.name} ({tortoises.filter(t => t.enclosure === enc.name && t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan").length})</SelectItem>
-                      ))}
+                    <>
+                      {blok}
+                      {sisa.length > 0 && (
+                        <div key="sisa">
+                          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50">Lainnya</div>
+                          {sisa.map(nama => (
+                            <SelectItem key={nama} value={nama}>{nama} ({hitung(nama)})</SelectItem>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </SelectContent>
             </Select>
             <div className="flex rounded-lg border overflow-hidden h-9">
