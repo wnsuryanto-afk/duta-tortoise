@@ -621,6 +621,16 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
     }),
   ], [feedstocks, warehouseItems]);
 
+  // Kategori yang benar-benar terpakai, diurutkan sesuai kebiasaan membaca
+  // (pakan dulu, lainnya terakhir), sisanya menyusul secara abjad.
+  const kategoriTersedia = useMemo(() => {
+    const ada = new Set(allItems.map(i => i._cat).filter(Boolean));
+    const utama = ["pakan", "obat", "vitamin", "suplemen", "habis_pakai", "alat"];
+    const urut = utama.filter(k => ada.has(k));
+    const sisa = [...ada].filter(k => !utama.includes(k) && k !== "lainnya").sort();
+    return [...urut, ...sisa, ...(ada.has("lainnya") ? ["lainnya"] : [])];
+  }, [allItems]);
+
   const filtered = useMemo(() => {
     return allItems
       .filter(i => {
@@ -688,12 +698,21 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
           <SelectTrigger className="w-36 h-9 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="semua">Semua Kategori</SelectItem>
-            <SelectItem value="pakan">🥬 Pakan</SelectItem>
-            <SelectItem value="obat">💊 Obat</SelectItem>
-            <SelectItem value="vitamin">🌿 Vitamin</SelectItem>
-            <SelectItem value="suplemen">💉 Suplemen</SelectItem>
-            <SelectItem value="alat">🔧 Alat</SelectItem>
-            <SelectItem value="lainnya">📦 Lainnya</SelectItem>
+            {/*
+              Pilihan kategori DITURUNKAN dari barang yang benar-benar ada,
+              bukan daftar tetap. Daftar tetap yang lama tidak punya pilihan
+              untuk `habis_pakai` — 13 barang medis habis pakai (spuit, jarum,
+              kasa, alkohol, plester) hanya bisa dilihat lewat "Semua
+              Kategori", tidak pernah bisa disaring sendiri. Justru kategori
+              itulah yang dibuat khusus di lib/kategoriBarang.js supaya belanja
+              habis pakai berhenti tercatat sebagai aset.
+
+              `alat_kerja` dan `peralatan` sengaja tidak muncul terpisah:
+              keduanya sudah dilipat menjadi `alat` saat allItems disusun.
+            */}
+            {kategoriTersedia.map(k => (
+              <SelectItem key={k} value={k}>{CAT_ICONS[k] || "📦"} {LABEL_KATEGORI[k] || k}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={stockFilter} onValueChange={setStockFilter}>
