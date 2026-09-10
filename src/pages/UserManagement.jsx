@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,20 @@ function InviteUserDialog({ open, onClose, canInviteAsOwner }) {
 // ════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ════════════════════════════════════════════════════════════════════════
+/** Nama role yang dibaca manusia. "kicked" ikut, karena akun berstatus itu
+ *  memang ada dan justru perlu bisa dicari. */
+const ROLE_LABEL = {
+  owner: "\u{1F451} Owner",
+  manajer: "\u{1F454} Manajer",
+  admin: "\u{1F6E1}\uFE0F Admin",
+  kepala_feeder: "\u{1F33F} Kepala Feeder",
+  keeper: "\u{1F422} Keeper",
+  investor: "\u{1F441} Investor",
+  viewer: "\u{1F441} Viewer",
+  kicked: "\u{1F6AB} Dikeluarkan",
+};
+const ROLE_URUT = ["owner", "manajer", "admin", "kepala_feeder", "keeper", "investor", "viewer", "kicked"];
+
 export default function UserManagement() {
   const { user: currentUser, role } = useCurrentUser();
   const [showInvite, setShowInvite] = useState(false);
@@ -108,6 +122,15 @@ export default function UserManagement() {
     queryKey: ["users"],
     queryFn: () => base44.entities.User.list("-created_date", 100),
   });
+
+  // Role yang muncul di penyaring: urutan baku dulu, lalu role tak terduga
+  // yang ternyata ada di data (supaya tidak ada akun yang tak bisa dicari).
+  const ROLE_TAMPIL = useMemo(() => {
+    const ada = new Set(users.map(u => u?.role).filter(Boolean));
+    const baku = ROLE_URUT.filter(r => ada.has(r));
+    const lain = [...ada].filter(r => !ROLE_URUT.includes(r)).sort();
+    return [...baku, ...lain];
+  }, [users]);
 
   // Block keeper entirely
   if (!canManageUsers(role)) return <AccessDenied message="Halaman ini hanya untuk Owner, Manajer, dan Admin." />;
