@@ -17,6 +17,8 @@ import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import TortoiseList from "@/pages/TortoiseList";
 import OperationalToday from "@/components/dashboard/OperationalToday";
+import VetContactPage from "@/pages/VetContactPage";
+import UserManagement from "@/pages/UserManagement";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -73,4 +75,10 @@ export default [
   // layarnya benar-benar mau tampil.
   ["TortoiseList tanpa data", <TortoiseList />],
   ["OperationalToday tanpa data", <OperationalToday />],
+
+  // Audit penyaring 10-09-2026: daftar pilihan yang dulu ditulis tangan
+  // sekarang diturunkan dari data, jadi keduanya harus tetap merender
+  // dengan benar saat datanya masih kosong.
+  ["VetContactPage tanpa data", <VetContactPage />],
+  ["UserManagement tanpa data", <UserManagement />],
 ];
