@@ -1,0 +1,106 @@
+{
+  "name": "SupplierLead",
+  "type": "object",
+  "properties": {
+    "nama": {
+      "type": "string",
+      "description": "Nama orang atau toko seperti tertulis di postingan"
+    },
+    "hp_whatsapp": {
+      "type": "string",
+      "description": "Nomor WhatsApp, disimpan sudah dinormalkan ke 62xxxxxxxxx. Nama kolom sengaja SAMA dengan Supplier supaya pemindahan tidak perlu mengganti nama kolom."
+    },
+    "kota": {
+      "type": "string"
+    },
+    "kategori": {
+      "type": "string",
+      "enum": [
+        "sayur_pakan",
+        "obat_vitamin",
+        "alat_kandang",
+        "kura_telur",
+        "lainnya"
+      ],
+      "default": "sayur_pakan",
+      "description": "Sayur & pakan segar adalah kebutuhan utama; kategori lain disediakan supaya daftar ini tidak perlu dibongkar saat kebutuhannya meluas."
+    },
+    "yang_dijual": {
+      "type": "string",
+      "description": "Barang yang ditawarkan, apa adanya dari postingan"
+    },
+    "harga_disebut": {
+      "type": "string",
+      "description": "Harga seperti tertulis di postingan (teks, bukan angka: sering berbentuk \"15rb/ikat\" atau \"nego\")"
+    },
+    "sumber": {
+      "type": "string",
+      "description": "Grup atau halaman Facebook asal lead"
+    },
+    "tanggal_postingan": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal postingan bila terbaca di tangkapan layar"
+    },
+    "screenshot_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tangkapan layar asli. Disimpan supaya klaim harga bisa dicek ulang ke sumbernya."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "baru",
+        "dihubungi",
+        "cocok",
+        "jadi_supplier",
+        "tidak_cocok"
+      ],
+      "default": "baru"
+    },
+    "tanggal_dihubungi": {
+      "type": "string",
+      "format": "date"
+    },
+    "alasan_tidak_cocok": {
+      "type": "string"
+    },
+    "supplier_id": {
+      "type": "string",
+      "description": "Terisi setelah lead dijadikan Supplier \u2014 penanda bahwa keduanya orang yang sama."
+    },
+    "catatan": {
+      "type": "string"
+    },
+    "penawaran": {
+      "type": "array",
+      "description": "Harga per barang untuk dibandingkan antar lead. Dibiarkan kosong bila belum ditanyakan.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nama_barang": {
+            "type": "string"
+          },
+          "harga": {
+            "type": "number"
+          },
+          "satuan": {
+            "type": "string",
+            "description": "kg, ikat, karung, ekor"
+          },
+          "catatan": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dicatat_oleh": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nama"
+  ]
+}
