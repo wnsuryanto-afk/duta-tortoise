@@ -11,6 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Pencil, Trash2, ExternalLink, Phone, Star, Package, Search } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { isManagerLevel } from "@/lib/permissions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { normalizePhone } from "@/lib/normalizePhone";
+import TombolWhatsApp from "@/components/common/TombolWhatsApp";
+import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 
 function StarRating({ rating }) {
   return (
@@ -23,11 +27,11 @@ function StarRating({ rating }) {
 }
 
 function SupplierForm({ supplier, onClose, onSaved }) {
-  const [form, setForm] = useState(supplier || { name: "", contact_person: "", phone: "", whatsapp: "", city: "", specialty: "", rating: 5, is_preferred: false, notes: "" });
+  const [form, setForm] = useState(supplier || { name: "", contact_person: "", hp_whatsapp: "", address: "", city: "", specialty: "", rating: 5, is_preferred: false, notes: "" });
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!form.name || !form.phone) return;
+    if (!form.name || !normalizePhone(form.hp_whatsapp).isValid) return;
     setSaving(true);
     if (supplier?.id) {
       await base44.entities.Supplier.update(supplier.id, form);
@@ -51,10 +55,10 @@ function SupplierForm({ supplier, onClose, onSaved }) {
       {f("name", "Nama Supplier *")}
       <div className="grid grid-cols-2 gap-3">
         {f("contact_person", "Nama Kontak")}
-        {f("phone", "Telepon *", "tel")}
+        {f("hp_whatsapp", "Nomor WhatsApp *", "tel")}
       </div>
       <div className="grid grid-cols-2 gap-3">
-        {f("whatsapp", "WhatsApp", "tel")}
+        {f("address", "Alamat")}
         {f("city", "Kota")}
       </div>
       {f("specialty", "Spesialisasi", "text", "Pakan & Vitamin, Alat Kerja...")}
