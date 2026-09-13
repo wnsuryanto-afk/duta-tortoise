@@ -88,9 +88,22 @@ Deno.serve(async (req) => {
       "  • harga_disebut diisi TEKS apa adanya ('15rb/ikat', 'nego', 'mulai 8.000'), bukan angka.",
       "  • kategori diisi salah satu dari: " + KATEGORI_SAH.join(", ") + ".",
       "    Pilih 'lainnya' bila tidak jelas — menebak kategori membuat lead hilang dari penyaring.",
-      "  • Yang tidak terbaca dikosongkan. Mengaku tidak tahu lebih berguna daripada menebak:",
-      "    nomor yang salah ketik membuat orang menghubungi orang lain, dan itu baru ketahuan",
-      "    setelah pesannya terkirim.",
+      "",
+      "  • KOSONG BERARTI KOSONG. Bila sesuatu tidak terbaca, isi dengan STRING KOSONG \"\".",
+      "    JANGAN menulis kata 'tidak terbaca', 'tidak disebutkan', 'tidak ada', '-', atau 'N/A'.",
+      "    Kalimat semacam itu tersimpan sebagai isi kolom dan terbaca seolah-olah data,",
+      "    lalu muncul di layar sebagai nama pemasok bernama 'Tidak terbaca'.",
+      "",
+      "  • kota = KOTA/DAERAH ASAL PENJUAL, satu nama tempat saja.",
+      "    Daftar kota tujuan kirim ('siap kirim Kediri, Nganjuk, Madiun, …') BUKAN kota penjual —",
+      "    itu area jangkauan, taruh di catatan. Nama patokan seperti 'GOR Begadung' boleh",
+      "    dipakai hanya bila memang tidak ada nama kota.",
+      "",
+      "  • SATU POSTINGAN = SATU LEAD. Nama grup Facebook di bagian atas tangkapan layar",
+      "    BUKAN penjual. Jangan membuat lead terpisah untuk nama grup; itu milik kolom sumber.",
+      "",
+      "  • Mengaku tidak tahu lebih berguna daripada menebak: nomor yang salah ketik membuat",
+      "    orang menghubungi orang lain, dan itu baru ketahuan setelah pesannya terkirim.",
     ].join("\n");
 
     const hasil = await svc.integrations.Core.InvokeLLM({
@@ -108,12 +121,22 @@ Deno.serve(async (req) => {
       // Tanpa daftar lama, lead tetap boleh dibaca — hanya tanda kembarnya hilang.
     }
 
+    // Kalimat pengganti yang kadang tetap ditulis AI meski sudah dilarang di
+    // prompt. Dibersihkan di sini juga, karena satu lapis larangan saja
+    // ternyata tidak cukup: percobaan pertama menghasilkan pemasok bernama
+    // "Tidak terbaca" dan harga "tidak disebutkan" yang tersimpan apa adanya.
+    const KOSONG = /^(tidak\s+(terbaca|disebutkan|ada|diketahui)|n\/?a|-+|\?+|null|none)$/i;
+    const bersih = (v: any) => {
+      const t = String(v || "").trim();
+      return KOSONG.test(t) ? "" : t;
+    };
+
     const leads = (hasil?.leads || []).map((l: any) => {
       const mentah = String(l.hp_mentah || "").trim();
       const rapi = normalizePhone(mentah);
       const kategori = KATEGORI_SAH.includes(String(l.kategori)) ? l.kategori : "sayur_pakan";
       return {
-        nama: String(l.nama || "").trim(),
+        nama: bersih(l.nama),
         hp_whatsapp: rapi,
         hp_mentah: mentah,
         // Dibedakan supaya layar bisa berkata "nomornya terbaca tapi tidak sah"
@@ -121,22 +144,47 @@ Deno.serve(async (req) => {
         nomor_terbaca: mentah.length > 0,
         nomor_sah: rapi.length > 0,
         sudah_ada: rapi.length > 0 && nomorAda.has(rapi),
-        kota: String(l.kota || "").trim(),
+        kota: bersih(l.kota),
         kategori,
-        yang_dijual: String(l.yang_dijual || "").trim(),
-        harga_disebut: String(l.harga_disebut || "").trim(),
-        sumber: String(l.sumber || "").trim(),
+        yang_dijual: bersih(l.yang_dijual),
+        harga_disebut: bersih(l.harga_disebut),
+        sumber: bersih(l.sumber),
         tanggal_postingan: /^\d{4}-\d{2}-\d{2}$/.test(String(l.tanggal_postingan || ""))
           ? l.tanggal_postingan
           : "",
-        catatan: String(l.catatan || "").trim(),
+        catatan: bersih(l.catatan),
       };
     }).filter((l: any) => l.nama || l.nomor_terbaca);
 
+    // Kembar DI DALAM satu pembacaan.
+    //
+    // Pemeriksaan `sudah_ada` di atas hanya membandingkan dengan lead yang
+    // SUDAH tersimpan. Percobaan pertama menghasilkan dua lead dengan nomor
+    // yang sama persis dari satu postingan — satu atas nama penjualnya, satu
+    // lagi atas nama grup Facebook-nya. Keduanya lolos karena sama-sama baru.
+    //
+    // Yang dipertahankan adalah yang PALING LENGKAP, bukan yang pertama:
+    // entri atas nama grup biasanya lebih miskin isinya.
+    const terpakai = new Map<string, any>();
+    const tunggal: any[] = [];
+    const bobot = (l: any) =>
+      [l.nama, l.kota, l.yang_dijual, l.harga_disebut, l.catatan].filter(Boolean).length;
+    for (const l of leads) {
+      if (!l.nomor_sah) { tunggal.push(l); continue; }
+      const lama = terpakai.get(l.hp_whatsapp);
+      if (!lama) {
+        terpakai.set(l.hp_whatsapp, l);
+        tunggal.push(l);
+      } else if (bobot(l) > bobot(lama)) {
+        Object.assign(lama, l);
+      }
+    }
+
     return Response.json({
-      leads,
+      leads: tunggal,
       jumlah_gambar: fileUrls.length,
-      tanpa_nomor: leads.filter((l: any) => !l.nomor_sah).length,
+      tanpa_nomor: tunggal.filter((l: any) => !l.nomor_sah).length,
+      kembar_dibuang: leads.length - tunggal.length,
     });
   } catch (e) {
     return Response.json(
