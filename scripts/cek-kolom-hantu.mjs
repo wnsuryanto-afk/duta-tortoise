@@ -115,26 +115,38 @@ function objekDari(s, i) {
 }
 
 /**
- * Cari deklarasi objek sebuah variabel di berkas yang sama.
+ * Cari deklarasi objek sebuah variabel, DI ATAS titik pemanggilan.
  * Menangani dua bentuk yang benar-benar dipakai di aplikasi ini:
  *   const x = { … }
  *   const [x, setX] = useState(supplier || { … })   ← state formulir
+ *
+ * Yang diambil adalah deklarasi TERDEKAT sebelum pemanggilan, bukan yang
+ * pertama di berkas. Itu penting: satu berkas sering memuat beberapa
+ * komponen yang masing-masing punya `form` sendiri. HRPage punya dua —
+ * satu menulis WarningLetter, satu menulis TrainingLog. Mengambil yang
+ * pertama membuat skrip ini melaporkan enam kolom WarningLetter sebagai
+ * hantu milik TrainingLog: enam temuan yang semuanya palsu.
+ *
+ * Penjaga yang berisik lebih buruk daripada tidak ada penjaga — orang
+ * belajar mengabaikannya, lalu hantu yang sungguhan ikut terlewat.
  */
-function objekVariabel(s, nama) {
+function objekVariabel(s, nama, sebelum) {
   const pola = [
-    new RegExp(`const\\s+${nama}\\s*=\\s*\\{`),
-    new RegExp(`const\\s+\\[\\s*${nama}\\s*,[^\\]]*\\]\\s*=\\s*useState\\([^{]{0,60}\\{`),
-    new RegExp(`let\\s+${nama}\\s*=\\s*\\{`),
+    new RegExp(`const\\s+${nama}\\s*=\\s*\\{`, "g"),
+    new RegExp(`const\\s+\\[\\s*${nama}\\s*,[^\\]]*\\]\\s*=\\s*useState\\([^{]{0,60}\\{`, "g"),
+    new RegExp(`let\\s+${nama}\\s*=\\s*\\{`, "g"),
   ];
+  let terbaik = -1;
   for (const re of pola) {
-    const m = re.exec(s);
-    if (!m) continue;
-    const buka = s.indexOf("{", m.index + m[0].length - 1);
-    if (buka === -1) continue;
-    const blok = objekDari(s, buka);
-    if (blok) return blok;
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(s))) {
+      if (m.index < sebelum && m.index > terbaik) terbaik = m.index;
+    }
   }
-  return null;
+  if (terbaik === -1) return null;
+  const buka = s.indexOf("{", terbaik);
+  return buka === -1 ? null : objekDari(s, buka);
 }
 
 const hantu = new Map();
@@ -153,7 +165,7 @@ for (const p of berkas(".")) {
         ? /^[^,]*,\s*([A-Za-z_$][\w$]*)\s*\)/.exec(ekor)
         : /^\s*([A-Za-z_$][\w$]*)\s*\)/.exec(ekor);
       if (argv) {
-        blok = objekVariabel(s, argv[1]);
+        blok = objekVariabel(s, argv[1], m.index);
         if (!blok) {
           const kunci = `${ent} ← ${argv[1]}`;
           if (!takTerperiksa.has(kunci)) takTerperiksa.set(kunci, new Set());
