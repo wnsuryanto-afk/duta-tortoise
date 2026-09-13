@@ -54,7 +54,7 @@ echo "=== 2/3 KIRIM ENTITAS ==="
 # tabel yang belum ada.
 n=1
 while [ "$n" -le "$COBA_MAKS" ]; do
-  keluaran=$(base44 entities push 2>&1)
+  keluaran=$(base44 entities push --yes 2>&1)
   if printf '%s' "$keluaran" | grep -qi "Another deployment is in progress"; then
     echo "entitas  tunggu ($n)"; sleep "$JEDA"; n=$((n + 1)); continue
   fi
