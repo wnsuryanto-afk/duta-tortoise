@@ -143,6 +143,7 @@ export default function SupplierPage() {
   });
 
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState("supplier");
   const [showForm, setShowForm] = useState(false);
   const [editSupplier, setEditSupplier] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
@@ -184,7 +185,7 @@ export default function SupplierPage() {
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
             <Package className="w-6 h-6 text-primary" /> Supplier
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Kelola supplier dan daftar harga item</p>
+            <p className="text-muted-foreground text-sm mt-1">Supplier aktif, daftar harga, dan calon supplier dari Facebook</p>
         </div>
         {canEdit && (
           <Button onClick={() => { setEditSupplier(null); setShowForm(true); }} className="gap-2">
@@ -193,6 +194,13 @@ export default function SupplierPage() {
         )}
       </div>
 
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-sm">
+          <TabsTrigger value="supplier">Supplier</TabsTrigger>
+          <TabsTrigger value="leads">Leads</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="supplier" className="mt-4 space-y-6">
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input placeholder="Cari supplier, spesialisasi, kota..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
@@ -326,6 +334,16 @@ export default function SupplierPage() {
           )}
         </DialogContent>
       </Dialog>
+        </TabsContent>
+
+        <TabsContent value="leads" className="mt-4">
+          {/* Lead disimpan di tabel sendiri (SupplierLead). Alasannya ada di
+              base44/entities/SupplierLead.jsonc: daftar supplier harus berisi
+              pihak yang benar-benar dipakai, bukan calon yang belum dihubungi. */}
+          <LeadsSupplierTab onJadiSupplier={() => { invalidate(); setTab("supplier"); }} />
+        </TabsContent>
+      </Tabs>
+
     </div>
   );
 }
