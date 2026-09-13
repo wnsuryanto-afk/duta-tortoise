@@ -372,12 +372,19 @@ export default function TortoiseForm({ open, onClose, editData }) {
     // Hapus field internal sebelum simpan
     const { _pendingHealthData, _pendingRecovery, ...cleanForm } = form;
 
+    // Foto utama ditandai DI DALAM photos lewat is_primary, bukan disalin ke
+    // kolom photo_url.
+    //
+    // photo_url tidak ada di skema Tortoise — jadi selama ini pilihan foto
+    // utama dibuang diam-diam setiap kali disimpan, lalu dibaca kembali di
+    // baris 79 sebagai "migrasi data lama" yang selamanya kosong. Kura yang
+    // fotonya sudah dipilih tetap menampilkan foto pertama apa adanya.
+    const utama = thumbnailUrl || photos[0]?.url || "";
     const data = {
       ...cleanForm,
       weight_grams: newWeight,
       shell_length_cm: newLength,
-      photos: photos,
-      photo_url: thumbnailUrl || (photos[0]?.url || ""),
+      photos: photos.map((f) => ({ ...f, is_primary: !!utama && f.url === utama })),
     };
 
     let tortoiseId = editData?.id;
