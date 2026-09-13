@@ -63,6 +63,10 @@
       "type": "boolean",
       "default": false
     },
+    "notes": {
+      "type": "string",
+      "description": "Catatan internal pada surat peringatan. Formulir HR sudah mengisinya sejak lama, tapi kolomnya belum pernah ada di skema sehingga isinya dibuang diam-diam."
+    },
     "pdf_url": {
       "type": "string"
     },

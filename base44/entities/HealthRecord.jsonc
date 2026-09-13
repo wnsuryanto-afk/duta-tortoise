@@ -167,6 +167,10 @@
     "finance_tx_id": {
       "type": "string"
     },
+    "last_edited_by": {
+      "type": "string",
+      "description": "Email orang yang terakhir mengubah catatan ini. Formulir kesehatan sudah mengirimnya, tapi kolomnya belum ada di skema sehingga jejak siapa yang mengubah catatan medis tidak pernah tersimpan."
+    },
     "vet_name": {
       "type": "string"
     },
