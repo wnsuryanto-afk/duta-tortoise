@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import { normalizePhone } from "@/lib/normalizePhone";
+import { TEMPLATE_PESAN, pesanDari } from "@/lib/templatePesanSupplier";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 /**
@@ -52,11 +53,6 @@ const STATUS = [
 const labelKategori = (v) => KATEGORI.find((k) => k.nilai === v)?.label || v || "—";
 const gayaStatus = (v) => STATUS.find((s) => s.nilai === v) || STATUS[0];
 
-const PESAN_PEMBUKA = (lead) =>
-  `Halo${lead.nama ? " " + lead.nama : ""}, saya dari peternakan kura Duta Tortoise. ` +
-  `Saya lihat postingan Anda${lead.yang_dijual ? ` soal ${lead.yang_dijual}` : ""}. ` +
-  `Apakah masih tersedia? Kami mencari pemasok rutin.`;
-
 const kosong = () => ({
   nama: "", hp_whatsapp: "", kota: "", kategori: "sayur_pakan",
   yang_dijual: "", harga_disebut: "", sumber: "", catatan: "", status: "baru",
@@ -76,6 +72,9 @@ export default function LeadsSupplierTab({ onJadiSupplier }) {
   const [galat, setGalat] = useState("");
   const [hasil, setHasil] = useState(null);
 
+  // Template pesan yang dipilih, per lead. Lead yang belum dipilih memakai
+  // template pertama — pilihan yang paling sering dipakai.
+  const [templatePer, setTemplatePer] = useState({});
   const [bukaForm, setBukaForm] = useState(false);
   const [form, setForm] = useState(kosong());
   const [menyimpan, setMenyimpan] = useState(false);
@@ -334,7 +333,27 @@ export default function LeadsSupplierTab({ onJadiSupplier }) {
                 )}
 
                 <div className="flex items-center gap-2 flex-wrap pt-1">
-                  <TombolWhatsApp nomor={l.hp_whatsapp} pesan={PESAN_PEMBUKA(l)} label="Chat" />
+                  <Select
+                    value={templatePer[l.id] || TEMPLATE_PESAN[0].id}
+                    onValueChange={(v) => setTemplatePer((p) => ({ ...p, [l.id]: v }))}
+                  >
+                    <SelectTrigger className="h-8 w-40 text-[11px]" title="Pilih isi pesan">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEMPLATE_PESAN.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          <span className="block text-xs">{t.label}</span>
+                          <span className="block text-[10px] text-muted-foreground">{t.ringkas}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <TombolWhatsApp
+                    nomor={l.hp_whatsapp}
+                    pesan={pesanDari(templatePer[l.id], l)}
+                    label="Chat"
+                  />
                   <Select value={l.status || "baru"} onValueChange={(v) => ubahStatus(l, v)}>
                     <SelectTrigger className="h-8 w-36 text-[11px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
