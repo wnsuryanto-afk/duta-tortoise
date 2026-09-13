@@ -20,6 +20,9 @@ import OperationalToday from "@/components/dashboard/OperationalToday";
 import VetContactPage from "@/pages/VetContactPage";
 import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
+import TombolWhatsApp from "@/components/common/TombolWhatsApp";
+import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
+import SupplierPage from "@/pages/SupplierPage";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -87,6 +90,19 @@ export default [
   // "Normal". Kasus di bawah memuat morph yang TIDAK punya warna khusus
   // (hypo, piebald) — dulu keduanya lenyap ke Normal, sekarang harus tampil
   // sebagai barisnya sendiri tanpa membuat layar gagal render.
+  // Modul Leads Supplier (13-09-2026). Tombol WhatsApp diuji pada bentuk
+  // nomor yang benar-benar muncul di postingan Facebook — termasuk "812…"
+  // tanpa nol di depan, bentuk yang membuat lima salinan inline lama
+  // menghasilkan tautan wa.me ke nomor yang bukan siapa-siapa.
+  ["TombolWhatsApp nomor kosong", <TombolWhatsApp nomor="" />],
+  ["TombolWhatsApp nomor undefined", <TombolWhatsApp nomor={undefined} />],
+  ["TombolWhatsApp 08 biasa", <TombolWhatsApp nomor="0812-3456-7890" pesan="halo" />],
+  ["TombolWhatsApp tanpa nol depan", <TombolWhatsApp nomor="812 3456 7890" />],
+  ["TombolWhatsApp +62", <TombolWhatsApp nomor="+62 812 3456 7890" />],
+  ["TombolWhatsApp nomor ngawur", <TombolWhatsApp nomor="tanya wa aja" />],
+  ["LeadsSupplierTab tanpa data", <LeadsSupplierTab />],
+  ["SupplierPage tanpa data", <SupplierPage />],
+
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
     { morph: "normal", gender: "betina" },
