@@ -132,7 +132,13 @@ export default function TortoiseForm({ open, onClose, editData }) {
   const [showWarningConfirm, setShowWarningConfirm] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState(null);
   const [photos, setPhotos] = useState(initPhotos(editData));
-  const [thumbnailUrl, setThumbnailUrl] = useState(editData?.photo_url || (initPhotos(editData)[0]?.url || ""));
+  // Foto utama dibaca dari penanda is_primary di dalam photos. Dulu dibaca
+  // dari editData.photo_url — kolom yang tidak pernah ada isinya, jadi
+  // pilihan foto utama selalu kembali ke foto pertama saat formulir dibuka.
+  const [thumbnailUrl, setThumbnailUrl] = useState(() => {
+    const daftar = initPhotos(editData);
+    return daftar.find((f) => f?.is_primary)?.url || daftar[0]?.url || "";
+  });
   const [enclosureOptions, setEnclosureOptions] = useState([]);
   const [showDeathModal, setShowDeathModal]   = useState(false);
   const [showSickModal, setShowSickModal]     = useState(false);
