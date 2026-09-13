@@ -54,7 +54,7 @@ function WarningLetterTab() {
                     : <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">Aktif</Badge>}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{fmt(l.date)} · {l.issued_by && `Oleh: ${l.issued_by}`}</p>
-                <p className="text-sm font-medium mt-1">{l.reason}</p>
+                <p className="text-sm font-medium mt-1">{l.reasons?.[0] || l.reason || "—"}</p>
                 {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
               </div>
               <div className="flex gap-1">
@@ -80,9 +80,18 @@ function WarningLetterTab() {
 
 function WarnLetterForm({ data, onClose, onSaved }) {
   const isEdit = !!data;
-  const [form, setForm] = useState(data || { employee_name: "", employee_email: "", date: new Date().toISOString().split("T")[0], level: "SP1", reason: "", description: "", issued_by: "", acknowledged: false, notes: "" });
+  const [form, setForm] = useState(data ? { ...data, reason: data.reason || data.reasons?.[0] || "" } : { employee_name: "", employee_email: "", date: new Date().toISOString().split("T")[0], level: "SP1", reason: "", description: "", issued_by: "", acknowledged: false, notes: "" });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
-  const mutation = useMutation({ mutationFn: () => isEdit ? base44.entities.WarningLetter.update(data.id, form) : base44.entities.WarningLetter.create(form), onSuccess: onSaved });
+  // Kolom "Alasan" disimpan ke `reasons` (array) — nama yang ADA di skema dan
+  // yang dibaca Dasbor Pemilik serta Detail Karyawan. Sebelumnya disimpan
+  // sebagai `reason` tunggal: kolom yang tidak ada di skema, jadi alasan surat
+  // peringatan — kolom WAJIB di formulir ini — dibuang diam-diam setiap kali
+  // disimpan, dan ketiga layar yang menampilkannya selalu kosong.
+  const keSkema = (f) => {
+    const { reason, ...sisa } = f;
+    return { ...sisa, reasons: reason ? [reason] : (f.reasons || []) };
+  };
+  const mutation = useMutation({ mutationFn: () => isEdit ? base44.entities.WarningLetter.update(data.id, keSkema(form)) : base44.entities.WarningLetter.create(keSkema(form)), onSuccess: onSaved });
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
