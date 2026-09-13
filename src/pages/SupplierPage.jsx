@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, ExternalLink, Phone, Star, Package, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Star, Package, Search } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { isManagerLevel } from "@/lib/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,7 +72,7 @@ function SupplierForm({ supplier, onClose, onSaved }) {
       </div>
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button className="flex-1" onClick={handleSave} disabled={saving || !form.name || !form.phone}>
+        <Button className="flex-1" onClick={handleSave} disabled={saving || !form.name || !normalizePhone(form.hp_whatsapp).isValid}>
           {saving ? "Menyimpan..." : "Simpan"}
         </Button>
       </div>
@@ -222,11 +222,19 @@ export default function SupplierPage() {
                   <div className="flex items-center gap-3 mt-1.5">
                     <StarRating rating={s.rating} />
                     {s.city && <span className="text-xs text-muted-foreground">📍 {s.city}</span>}
-                    {s.phone && (
-                      <a href={`tel:${s.phone}`} onClick={e => e.stopPropagation()} className="text-xs text-primary flex items-center gap-1 hover:underline">
-                        <Phone className="w-3 h-3" />{s.phone}
-                      </a>
-                    )}
+                    {/* Dulu membaca s.phone — kolom yang TIDAK ADA di skema
+                        Supplier, jadi nomornya tidak pernah tampil sekali pun.
+                        Yang sah adalah hp_whatsapp. */}
+                    <span onClick={e => e.stopPropagation()}>
+                      <TombolWhatsApp
+                        nomor={s.hp_whatsapp}
+                        pesan={`Halo ${s.name}, saya dari peternakan kura Duta Tortoise.`}
+                        label={normalizePhone(s.hp_whatsapp).display || "WhatsApp"}
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                      />
+                    </span>
                   </div>
                 </div>
                 {canEdit && (
