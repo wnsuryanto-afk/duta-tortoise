@@ -30,6 +30,26 @@
  * hanya sah di dalam array tetap dianggap sah bila ditulis di tingkat atas
  * entity yang sama.
  *
+ * ── TITIK BUTA YANG DITUTUP 13-09-2026 ─────────────────────────────
+ *
+ * Versi sebelumnya HANYA memeriksa objek yang ditulis langsung di dalam
+ * tanda kurung create()/update(). Pemanggilan yang mengirim VARIABEL —
+ * `Supplier.create(form)`, `Kasbon.create(kasbonData)` — dilewati tanpa
+ * suara, dan itu 102 dari 488 pemanggilan (21%).
+ *
+ * Justru di situlah hantu paling sering bersembunyi, karena variabel itu
+ * biasanya state formulir: satu objek besar yang kolomnya ditulis sekali di
+ * useState lalu dikirim bulat-bulat. SupplierPage menyimpan `phone` dan
+ * `whatsapp`; skema Supplier hanya punya `hp_whatsapp`. Nomor yang diketik
+ * dibuang diam-diam, dan kartu supplier membaca `s.phone` yang juga tidak
+ * ada — jadi nomornya tidak pernah tampil sekali pun.
+ *
+ * Sekarang, bila argumennya variabel, skrip mencari deklarasi objeknya di
+ * berkas yang sama (`const x = {…}` atau `useState({…})`) dan memeriksa
+ * kunci-kuncinya. Variabel yang deklarasinya tidak ketemu tetap dilewati —
+ * dilaporkan di akhir sebagai "tidak terperiksa", supaya keterbatasannya
+ * terlihat dan bukan disangka sudah aman.
+ *
  * Jalankan:  node scripts/cek-kolom-hantu.mjs
  */
 import fs from "fs";
@@ -84,14 +104,65 @@ function blokArgumen(s, i) {
   return null;
 }
 
+/** Ambil isi objek literal yang seimbang mulai dari '{' di indeks i. */
+function objekDari(s, i) {
+  let dalam = 0;
+  for (let j = i; j < Math.min(i + 4000, s.length); j++) {
+    if (s[j] === "{") dalam++;
+    else if (s[j] === "}") { dalam--; if (dalam === 0) return s.slice(i, j + 1); }
+  }
+  return null;
+}
+
+/**
+ * Cari deklarasi objek sebuah variabel di berkas yang sama.
+ * Menangani dua bentuk yang benar-benar dipakai di aplikasi ini:
+ *   const x = { … }
+ *   const [x, setX] = useState(supplier || { … })   ← state formulir
+ */
+function objekVariabel(s, nama) {
+  const pola = [
+    new RegExp(`const\\s+${nama}\\s*=\\s*\\{`),
+    new RegExp(`const\\s+\\[\\s*${nama}\\s*,[^\\]]*\\]\\s*=\\s*useState\\([^{]{0,60}\\{`),
+    new RegExp(`let\\s+${nama}\\s*=\\s*\\{`),
+  ];
+  for (const re of pola) {
+    const m = re.exec(s);
+    if (!m) continue;
+    const buka = s.indexOf("{", m.index + m[0].length - 1);
+    if (buka === -1) continue;
+    const blok = objekDari(s, buka);
+    if (blok) return blok;
+  }
+  return null;
+}
+
 const hantu = new Map();
+const takTerperiksa = new Map();
 for (const p of berkas(".")) {
   const s = fs.readFileSync(p, "utf8");
   for (const m of s.matchAll(/entities\.(\w+)\.(create|update|bulkCreate)\s*\(/g)) {
     const ent = m[1];
     if (!skema[ent]) continue;
-    const blok = blokArgumen(s, m.index + m[0].length);
+    let blok = blokArgumen(s, m.index + m[0].length);
+
+    // Argumennya variabel, bukan objek tertulis: telusuri deklarasinya.
+    if (!blok) {
+      const ekor = s.slice(m.index + m[0].length, m.index + m[0].length + 160);
+      const argv = m[2] === "update"
+        ? /^[^,]*,\s*([A-Za-z_$][\w$]*)\s*\)/.exec(ekor)
+        : /^\s*([A-Za-z_$][\w$]*)\s*\)/.exec(ekor);
+      if (argv) {
+        blok = objekVariabel(s, argv[1]);
+        if (!blok) {
+          const kunci = `${ent} ← ${argv[1]}`;
+          if (!takTerperiksa.has(kunci)) takTerperiksa.set(kunci, new Set());
+          takTerperiksa.get(kunci).add(p);
+        }
+      }
+    }
     if (!blok) continue;
+
     for (const km of blok.matchAll(/(?:^|[{,])\s*(\w+)\s*:/g)) {
       const k = km[1];
       const kunci = `${ent}.${k}`;
@@ -100,6 +171,17 @@ for (const p of berkas(".")) {
       hantu.get(kunci).add(p);
     }
   }
+}
+
+if (takTerperiksa.size > 0) {
+  console.log(
+    `Catatan: ${takTerperiksa.size} pemanggilan mengirim variabel yang deklarasinya\n` +
+    `tidak ditemukan di berkas yang sama — kolomnya TIDAK diperiksa:`,
+  );
+  for (const [k, v] of [...takTerperiksa].sort()) {
+    console.log(`  ${k}  (${[...v][0]}${v.size > 1 ? ` +${v.size - 1}` : ""})`);
+  }
+  console.log("");
 }
 
 if (hantu.size === 0) {
