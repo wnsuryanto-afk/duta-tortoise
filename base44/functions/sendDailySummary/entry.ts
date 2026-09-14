@@ -46,6 +46,77 @@ function kunciNama(nama: unknown): string {
  * Anti-dobel: catat *_last_sent di settings menggunakan tanggal WIB.
  */
 const FONNTE_API_URL = "https://api.fonnte.com/send";
+
+/*
+ * Batas percobaan harian.
+ *
+ * Sebelumnya *_last_sent hanya ditulis saat kirim BERHASIL. Kedengarannya
+ * benar — jangan tandai selesai kalau belum selesai. Tapi automation ini
+ * berjalan tiap 10 menit, jadi begitu Fonnte menolak (device WhatsApp-nya
+ * putus, 3 September 2026), setiap 10 menit selama 11 hari ia membangun
+ * ulang seluruh ringkasan — termasuk memanggil AI untuk bagian SOROTAN —
+ * lalu gagal lagi, dan tidak ada satu pun yang memberi tahu siapa-siapa.
+ * 500+ baris "gagal" di WhatsAppLog, 53 panggilan AI dalam satu hari.
+ *
+ * Jadi kegagalan sekarang dihitung. Tiga kali (≈30 menit) sudah cukup untuk
+ * melewati gangguan jaringan sesaat; lebih dari itu penyebabnya struktural
+ * dan mengulanginya tidak menolong siapa pun. Setelah itu berhenti untuk
+ * hari itu dan owner diberi tahu lewat lonceng — bukan lewat WhatsApp,
+ * karena WhatsApp persis yang sedang rusak.
+ */
+const MAKS_PERCOBAAN = 3;
+
+/** Baca penghitung gagal untuk hari WIB ini. Tanggal berbeda = mulai dari nol. */
+function bacaPercobaan(settings, wibToday: string) {
+  const p = (settings && settings.percobaan_gagal) || {};
+  if (p.tanggal !== wibToday) {
+    return { tanggal: wibToday, pagi: 0, sore: 0, mingguan: 0, alasan: "", dialarmkan: false };
+  }
+  return {
+    tanggal: wibToday,
+    pagi: Number(p.pagi) || 0,
+    sore: Number(p.sore) || 0,
+    mingguan: Number(p.mingguan) || 0,
+    alasan: String(p.alasan || ""),
+    dialarmkan: p.dialarmkan === true,
+  };
+}
+
+/** Alasan gagal pertama yang bisa dibaca manusia, dari kumpulan hasil kirim. */
+function alasanGagal(hasil): string {
+  const r = (hasil && Array.isArray(hasil.results) ? hasil.results : []).find((x) => x && !x.success);
+  return String((r && r.reason) || "tidak diketahui").slice(0, 200);
+}
+
+/** Simpan penghitung. Gagal menyimpan tidak boleh menggagalkan sisa fungsi. */
+async function simpanPercobaan(base44, settings, percobaan) {
+  try {
+    await base44.asServiceRole.entities.WhatsAppSettings.update(settings.id, { percobaan_gagal: percobaan });
+  } catch {}
+}
+
+/**
+ * Beri tahu owner lewat lonceng in-app bahwa ringkasan tidak terkirim.
+ * Sekali sehari saja — penghitung `dialarmkan` yang menjaganya.
+ */
+async function alarmKeOwner(base44, settings, percobaan, wibToday: string) {
+  if (percobaan.dialarmkan) return;
+  const email = settings.pic_approval || settings.updated_by;
+  if (!email) return;
+  try {
+    await base44.asServiceRole.entities.Notification.create({
+      recipient_email: email,
+      title: "Ringkasan WhatsApp tidak terkirim",
+      message: `Percobaan kirim gagal ${MAKS_PERCOBAAN}x hari ini (${wibToday}). Alasan dari Fonnte: "${percobaan.alasan}". Bila tertulis "disconnected device", buka fonnte.com dan scan ulang QR untuk nomor pengirim.`,
+      type: "warning",
+      priority: "high",
+      related_entity_id: `wa_gagal_${wibToday}`,
+      is_read: false,
+      is_dismissed: false,
+    });
+    percobaan.dialarmkan = true;
+  } catch {}
+}
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
