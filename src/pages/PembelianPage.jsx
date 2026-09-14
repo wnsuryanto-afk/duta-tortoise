@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
+import { pasangkanItem } from "@/lib/cocokNamaBarang";
 import TerimaDariScreenshot from "@/components/pembelian/TerimaDariScreenshot";
 // Halaman /stock-prediction digabungkan ke sini sebagai satu tahap. Isinya
 // menjawab pertanyaan yang sama dengan tahap "Yang Kurang" — kapan sebuah
@@ -83,6 +84,8 @@ export default function PembelianPage() {
 
   const [form, setForm] = useState({ platform: "", ongkir: 0, biaya_admin: 0, bukti: "" });
   const [hargaItem, setHargaItem] = useState({});
+  // id barang yang harganya diisi dari hasil scan, untuk diberi tanda di layar.
+  const [dariScan, setDariScan] = useState({});
   const [terimaForm, setTerimaForm] = useState({});
   // Penerimaan dibuka dalam mode ringkas. Kolom jumlah sudah terisi sejumlah
   // yang dipesan sejak awal, jadi pada kasus yang paling sering — semuanya
@@ -138,6 +141,7 @@ export default function PembelianPage() {
         init[s.id] = { harga: s.total_est || 0, kategori: "obat", per_butir: false };
       });
     setHargaItem(init);
+    setDariScan({});
     setForm({ platform: "", ongkir: 0, biaya_admin: 0, bukti: "" });
     setPesanOpen(true);
   };
@@ -665,14 +669,46 @@ export default function PembelianPage() {
             <InvoiceVisionUpload
               buttonLabel="Scan screenshot pesanan"
               hint="Tokopedia / Shopee / nota toko — platform, ongkir, dan total terisi sendiri"
-              onApplied={({ invoice, photoUrls }) =>
+              onApplied={({ invoice, photoUrls }) => {
                 setForm((f) => ({
                   ...f,
                   platform: invoice?.toko || f.platform,
                   ongkir: invoice?.ongkir ?? f.ongkir,
                   bukti: photoUrls?.[0] || f.bukti,
-                }))
-              }
+                }));
+                /*
+                 * Harga tiap barang ikut terisi dari hasil scan — tapi hanya
+                 * yang namanya benar-benar cocok. Barang yang tidak cocok
+                 * dibiarkan seperti semula, tidak dinolkan dan tidak ditebak.
+                 * Yang terisi otomatis diberi tanda "dari scan" supaya jelas
+                 * mana angka yang perlu diperiksa, karena promo marketplace
+                 * membuat angka AI tidak pernah bisa dipercaya 100%.
+                 */
+                const dipilih = belumDibeli.filter((s) => selected.has(s.id));
+                const { pasangan, takCocok } = pasangkanItem(invoice?.items, dipilih, nm);
+                if (pasangan.length > 0) {
+                  setHargaItem((h) => {
+                    const n = { ...h };
+                    for (const p of pasangan) {
+                      const sub = Number(p.item?.subtotal) || 0;
+                      if (sub > 0) n[p.kandidat.id] = { ...n[p.kandidat.id], harga: sub };
+                    }
+                    return n;
+                  });
+                  setDariScan(Object.fromEntries(
+                    pasangan.filter((p) => (Number(p.item?.subtotal) || 0) > 0)
+                            .map((p) => [p.kandidat.id, p.item?.nama || ""])
+                  ));
+                }
+                const terisi = pasangan.filter((p) => (Number(p.item?.subtotal) || 0) > 0).length;
+                if (terisi === 0) {
+                  toast.info("Tidak ada nama barang yang cocok dengan invoice — harga tetap diisi manual.");
+                } else if (takCocok.length > 0) {
+                  toast.success(`${terisi} harga terisi dari invoice. ${takCocok.length} item di invoice tidak cocok dengan daftar — periksa manual.`);
+                } else {
+                  toast.success(`${terisi} harga terisi dari invoice. Periksa sebelum simpan.`);
+                }
+              }}
             />
 
             <div className="grid grid-cols-2 gap-2">
@@ -705,9 +741,18 @@ export default function PembelianPage() {
                   <div className="flex gap-2 items-end">
                     <div className="flex-1">
                       <p className="text-[11px] text-muted-foreground mb-0.5">Harga aktual total</p>
-                      <Input type="number" className="h-8 text-xs"
+                      <Input type="number"
+                        className={`h-8 text-xs ${dariScan[s.id] ? "border-blue-400 bg-blue-50/60" : ""}`}
                         value={hargaItem[s.id]?.harga ?? 0}
-                        onChange={(e) => setHargaItem((h) => ({ ...h, [s.id]: { ...h[s.id], harga: e.target.value } }))} />
+                        onChange={(e) => {
+                          setHargaItem((h) => ({ ...h, [s.id]: { ...h[s.id], harga: e.target.value } }));
+                          setDariScan((d) => { const n = { ...d }; delete n[s.id]; return n; });
+                        }} />
+                      {dariScan[s.id] && (
+                        <p className="text-[10px] text-blue-700 mt-0.5 break-words">
+                          Dari scan: &ldquo;{dariScan[s.id]}&rdquo; — periksa, promo sering tidak terbaca AI.
+                        </p>
+                      )}
                     </div>
                     <select className="h-8 text-xs px-2 rounded-lg border border-border bg-background"
                       value={hargaItem[s.id]?.kategori || "obat"}
