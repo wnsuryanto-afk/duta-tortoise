@@ -242,12 +242,37 @@ export function pekanPenuhHadir(absensi = [], awal, akhir) {
  *   batas bisa 0 (belum ada hari masuk, atau kasbon berjalan sudah menutupi
  *   seluruh gaji yang dijalani).
  */
+/**
+ * Berapa HARI seseorang hadir — dihitung dari tanggal yang berbeda, bukan dari
+ * jumlah baris absensi.
+ *
+ * Bedanya baru terlihat kalau ada baris kembar, dan baris kembar memang bisa
+ * terjadi: dua dari empat jalur check-in membuat catatan tanpa memeriksa lagi
+ * ke basis data tepat sebelum menulis. Sementara GPS diambil — beberapa detik —
+ * tombolnya masih hidup, dan ketukan kedua membuat baris kedua.
+ *
+ * Itu sudah terjadi sekali: Angsolo punya dua catatan hadir pada 28 Juli 2026,
+ * check-in 07:11 dan 07:41. Menghitung baris membuat Juli-nya 1 hari lebih
+ * panjang, dan gaji pokok harian dikalikan jumlah hari itu — Rp 70.000 untuk
+ * hari yang tidak pernah ada.
+ *
+ * Menghitung tanggal unik membuat baris kembar tidak berbahaya lagi, tanpa
+ * perlu menghapus catatan yang terlanjur ada.
+ */
+export function hariHadirUnik(absensi = []) {
+  return new Set(
+    (absensi || [])
+      .filter((a) => a && a.status === "hadir" && a.date)
+      .map((a) => a.date)
+  ).size;
+}
+
 export function batasKasbon({ attendances = [], kasbons = [], email, config = {}, awal, sampai }) {
   const tarifHarian = Number(config.base_salary) || 0;
 
-  const hariHadir = attendances.filter(
-    (a) => a.employee_email === email && a.status === "hadir" && a.date >= awal && a.date <= sampai
-  ).length;
+  const hariHadir = hariHadirUnik(
+    attendances.filter((a) => a.employee_email === email && a.date >= awal && a.date <= sampai)
+  );
 
   const gajiBerjalan = hariHadir * tarifHarian;
 
@@ -316,7 +341,7 @@ export function hitungGajiKaryawan(karyawan, sumber) {
   const absensi = attendances.filter(
     (a) => a.employee_email === email && a.date >= awal && a.date < akhir
   );
-  const hariHadir = absensi.filter((a) => a.status === "hadir").length;
+  const hariHadir = hariHadirUnik(absensi);
   // Izin dan sakit bukan mangkir, jadi tidak ikut dipotong. Hari yang sama
   // sekali tidak punya catatan juga tidak dihitung absen — ketiadaan catatan
   // berarti belum diisi, bukan berarti orangnya tidak masuk.
