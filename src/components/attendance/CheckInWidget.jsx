@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { buatAbsenSekali } from "@/lib/checkInSekali";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -86,7 +87,10 @@ export default function CheckInWidget() {
     }
 
     const checkInTime = nowStr();
-    const newRecord = await base44.entities.Attendance.create({
+    // Lewat penjaga bersama: memeriksa ke basis data tepat sebelum menulis,
+    // bukan ke keadaan layar yang dimuat beberapa detik lalu. Lihat
+    // buatAbsenSekali().
+    const { dibuat, record: newRecord } = await buatAbsenSekali({
       employee_id: user.id,
       employee_name: user.full_name || user.email,
       employee_email: user.email,
@@ -100,6 +104,10 @@ export default function CheckInWidget() {
       shift_end: salaryConfig?.shift_end || "16:00",
       ...testModeTag,
     });
+
+    if (!dibuat) {
+      setLocationWarning("Kamu sudah check in hari ini — catatannya tidak dibuat dua kali.");
+    }
 
     await logActivity({
       action: "checkin",

@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { buatAbsenSekali } from "@/lib/checkInSekali";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
@@ -131,7 +132,9 @@ export default function KeeperDashboard() {
       setGpsError(err.message);
     }
 
-    await base44.entities.Attendance.create({
+    // Lewat penjaga bersama — layar ini dulu tidak memeriksa apa pun sebelum
+    // menulis, jadi ketukan kedua selama GPS diambil membuat baris kedua.
+    const { dibuat } = await buatAbsenSekali({
       employee_id: user.id,
       employee_name: user.full_name || user.email,
       employee_email: user.email,
@@ -144,6 +147,7 @@ export default function KeeperDashboard() {
       shift_start: salaryConfig?.shift_start || "08:00",
       shift_end: salaryConfig?.shift_end || "16:00",
     });
+    if (!dibuat) setLocationWarning("Kamu sudah check in hari ini — catatannya tidak dibuat dua kali.");
     queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
     setCheckLoading(false);
   };
