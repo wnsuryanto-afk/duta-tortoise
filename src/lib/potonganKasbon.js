@@ -44,9 +44,18 @@ export function selisihPencatatan(kasbon) {
   return (Number(kasbon.total_paid) || 0) - jumlahDariRiwayat(kasbon);
 }
 
-/** Sisa utang. Memakai angka terbesar di antara ringkasan dan riwayat —
- *  saat keduanya berselisih, yang aman bagi karyawan adalah menganggap
- *  potongannya SUDAH terjadi, bukan menagihnya dua kali. */
+/**
+ * Sisa utang.
+ *
+ * Memakai `total_paid`, bukan jumlah riwayat. Saat keduanya berselisih —
+ * seperti pada kasbon yang potongannya pernah dicatat lewat halaman Payroll
+ * tanpa baris riwayat — yang aman bagi karyawan adalah menganggap potongan
+ * itu SUDAH terjadi. Menagih ulang uang yang mungkin sudah dipotong jauh
+ * lebih merugikan daripada menunda penagihan sampai selisihnya jelas.
+ *
+ * Selisihnya sendiri tidak ditutupi: selisihPencatatan() tetap melaporkannya
+ * sampai ada orang yang memutuskan angka mana yang benar.
+ */
 export function sisaKasbon(kasbon) {
   const terbayar = Math.max(Number(kasbon?.total_paid) || 0, jumlahDariRiwayat(kasbon));
   return Math.max(0, (Number(kasbon?.amount) || 0) - terbayar);
@@ -87,10 +96,17 @@ export function patchPotongan(kasbon, { jumlah, metode = "manual", salarySlipId 
     },
   ];
 
-  // total_paid diturunkan dari riwayat, bukan ditambah sendiri. Selisih data
-  // lama ikut terbawa lewat max() di sisaKasbon() agar tidak ada yang ditagih
-  // dua kali, tapi angka barunya tidak pernah lagi lepas dari riwayatnya.
-  const terbayarBaru = Math.max(Number(kasbon.total_paid) || 0, jumlahDariRiwayat({ deduction_log: riwayatBaru }));
+  /*
+   * total_paid DITAMBAH, bukan disamakan dengan jumlah riwayat.
+   *
+   * Versi pertama fungsi ini menurunkan total_paid langsung dari riwayat
+   * memakai max(). Terlihat lebih bersih, tapi salah: pada kasbon yang
+   * riwayatnya tertinggal Rp 100.000 di belakang ringkasannya, potongan baru
+   * Rp 100.000 hanya membuat riwayat menyusul — total_paid tidak bergerak
+   * sama sekali, dan potongan itu hilang tanpa jejak. Selisih data lama tidak
+   * boleh menelan pencatatan baru.
+   */
+  const terbayarBaru = (Number(kasbon.total_paid) || 0) + dipotong;
 
   return {
     deduction_log: riwayatBaru,
