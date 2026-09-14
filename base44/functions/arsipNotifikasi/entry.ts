@@ -45,8 +45,14 @@ Deno.serve(async (req) => {
      * "sudah jalan hari ini" HANYA ditulis bila tunggakannya benar-benar
      * habis. Kalau masih ada sisa, panggilan jam berikutnya melanjutkan.
      */
-    const MAKS_PER_JALAN = 250;
-    const UKURAN_KELOMPOK = 50;
+    /*
+     * Takaran sengaja kecil. Percobaan 14 Sep 2026 dengan 250 per jalan tetap
+     * kena "Rate limit exceeded" — dan lemparannya datang dari list(), bukan
+     * dari penulisan, artinya kuota akun memang sudah tipis saat itu. Lebih
+     * baik tunggakan 375 selesai dalam 4 jam daripada gagal terus tiap jam.
+     */
+    const MAKS_PER_JALAN = 100;
+    const UKURAN_KELOMPOK = 25;
 
     const semua = await base44.asServiceRole.entities.Notification.list("-created_date", 1000);
     const aktif = (semua || []).filter((n: any) => !n.is_dismissed);
