@@ -99,6 +99,38 @@ export default function LedgerHistory({ ledger, role }) {
     });
   }, [sortedLedger, search, filterMonth, filterType, filterCat]);
 
+  /*
+   * Hitung ulang saldo berjalan.
+   *
+   * Fungsinya sudah lama ada dan dipanggil otomatis setiap kali entri
+   * ditambah, diubah, atau dihapus — tapi tidak pernah bisa dipanggil sendiri.
+   * Padahal rantai `balance_after` bisa melenceng tanpa ada entri yang
+   * disentuh: satu entri bertanggal 25 Agustus 2025 (salah satu digit, dicatat
+   * 2026) menyortir sebelum saldo awal, sehingga buku kas dimulai dari minus
+   * Rp 18.000 dan setiap baris sesudahnya ikut 18.000 terlalu rendah. Saldo
+   * akhirnya tetap benar — urutan tidak mengubah jumlah — tapi seluruh riwayat
+   * di layar salah, dan tidak ada cara membetulkannya selain mengarang satu
+   * entri baru untuk memicu hitung ulang.
+   */
+  const [hitungBusy, setHitungBusy] = useState(false);
+  const handleHitungUlang = async () => {
+    setHitungBusy(true);
+    try {
+      const res = await base44.functions.invoke("recalculatePettyCashBalance", {});
+      const d = res?.data || res || {};
+      qc.invalidateQueries({ queryKey: ["petty-cash-ledger"] });
+      toast.success(
+        d.updated > 0
+          ? `${d.updated} baris diperbaiki — saldo akhir Rp ${Number(d.finalBalance || 0).toLocaleString("id-ID")}`
+          : "Saldo sudah benar, tidak ada yang perlu diperbaiki."
+      );
+    } catch (e) {
+      toast.error("Gagal menghitung ulang: " + (e?.message || ""));
+    } finally {
+      setHitungBusy(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deletingEntry) return;
     setDeleteBusy(true);
@@ -127,6 +159,16 @@ export default function LedgerHistory({ ledger, role }) {
   return (
     <div className="space-y-3">
       <CategoryRecap ledger={ledger} />
+
+      <div className="flex justify-end">
+        <Button
+          type="button" variant="outline" size="sm" className="gap-1.5 h-8"
+          disabled={hitungBusy} onClick={handleHitungUlang}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${hitungBusy ? "animate-spin" : ""}`} />
+          {hitungBusy ? "Menghitung…" : "Hitung ulang saldo"}
+        </Button>
+      </div>
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
