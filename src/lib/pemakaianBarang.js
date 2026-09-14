@@ -176,3 +176,62 @@ export function kodeBatch(sku, tanggalYymmdd, kodeTerpakai = []) {
   while (dipakai.has(`${dasar}-${n}`)) n += 1;
   return `${dasar}-${n}`;
 }
+
+/**
+ * Rencana pengurangan batch saat barang keluar dari gudang.
+ *
+ * Ada DUA jalur yang mengeluarkan barang, dan sampai sekarang keduanya tidak
+ * melakukan hal yang sama:
+ *
+ *   AmbilBarangScan  → WarehouseItem.current_stock ✓  StockMovement ✓  BatchBarang.jumlah_sisa ✓
+ *   HealthForm       → WarehouseItem.current_stock ✓  StockMovement ✓  BatchBarang.jumlah_sisa ✗
+ *
+ * Jadi mengobati seekor kura lewat formulir kesehatan menurunkan stok gudang
+ * tanpa menurunkan sisa batch mana pun. Total gudang dan jumlah sisa seluruh
+ * batch perlahan berpisah, dan yang membaca angka batch — peringatan
+ * kedaluwarsa, dasbor admin, cetak label — akan menunjukkan barang yang
+ * sebenarnya sudah habis dipakai.
+ *
+ * Belum ada kerusakan pada data sekarang: seluruh 23 batch masih utuh karena
+ * belum satu pun pengobatan dicatat lewat jalur itu. Pemotongan pertama lewat
+ * formulir kesehatan-lah yang akan memulai selisihnya.
+ *
+ * Urutannya FEFO — yang paling cepat kedaluwarsa dipakai lebih dulu; batch
+ * tanpa tanggal kedaluwarsa dipakai terakhir, karena ia tidak mendesak.
+ * Batch yang sudah dibuka didahulukan di antara tanggal yang sama, supaya
+ * kemasan terbuka habis sebelum membuka yang baru.
+ *
+ * Fungsi ini MURNI — ia hanya menghitung. Yang memanggil yang menyimpan.
+ *
+ * @returns {{rencana: Array<{id: string, jumlah_sisa: number, diambil: number}>, kurang: number}}
+ *   `kurang` > 0 berarti batch yang tercatat tidak cukup untuk menutup jumlah
+ *   yang diambil — bukan alasan menggagalkan pencatatan (barangnya nyata-nyata
+ *   sudah dipakai), tapi perlu diberitahukan.
+ */
+export function rencanaPotongBatch(batches = [], itemId, jumlah) {
+  let sisaDiambil = Number(jumlah) || 0;
+  if (sisaDiambil <= 0) return { rencana: [], kurang: 0 };
+
+  const kandidat = (batches || [])
+    .filter((b) => b && b.item_id === itemId && b.status !== "habis" && (Number(b.jumlah_sisa) || 0) > 0)
+    .sort((a, b) => {
+      const ta = a.tanggal_expired || "9999-12-31";
+      const tb = b.tanggal_expired || "9999-12-31";
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      const ba = a.tanggal_buka ? 0 : 1;
+      const bb = b.tanggal_buka ? 0 : 1;
+      if (ba !== bb) return ba - bb;
+      return String(a.tanggal_terima || "").localeCompare(String(b.tanggal_terima || ""));
+    });
+
+  const rencana = [];
+  for (const b of kandidat) {
+    if (sisaDiambil <= 0) break;
+    const tersedia = Number(b.jumlah_sisa) || 0;
+    const diambil = Math.min(tersedia, sisaDiambil);
+    rencana.push({ id: b.id, jumlah_sisa: tersedia - diambil, diambil });
+    sisaDiambil -= diambil;
+  }
+
+  return { rencana, kurang: sisaDiambil };
+}
