@@ -139,7 +139,8 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
       installments_paid: (kasbon.installments_paid || 0) + 1,
     });
     qc.invalidateQueries({ queryKey: ["kasbons"] });
-    toast.success(`Potongan tercatat — sisa ${fmt(sisaKasbon({ ...kasbon, ...patch }))}`);
+    const sisa = sisaKasbon({ ...kasbon, ...patch });
+    toast.success(`Potongan tercatat — sisa Rp ${sisa.toLocaleString("id-ID")}`);
   };
 
   const statusConfig = {
