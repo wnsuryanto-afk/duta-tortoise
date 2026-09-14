@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { hapusTransaksiPenjualan } from "@/lib/transaksiPenjualan";
+import { hapusTransaksiPenjualan, samakanPengecualianPenjualan } from "@/lib/transaksiPenjualan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -198,7 +198,27 @@ export default function SalesList() {
             <SaleCard sale={s} onDetail={null} onPrint={() => setPrintSale(s)} />
             {/* Admin actions overlay */}
             <div className="absolute top-3 right-3 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
-              {isOwner && <ExcludeToggle record={s} entityName="Sale" queryKey={["sales"]} />}
+              {isOwner && (
+                <ExcludeToggle
+                  record={s}
+                  entityName="Sale"
+                  queryKey={["sales"]}
+                  /* Catatan keuangannya ikut, kalau tidak laporan penjualan dan
+                     laporan keuangan melaporkan angka berbeda untuk kejadian
+                     yang sama. Lihat samakanPengecualianPenjualan(). */
+                  onToggled={async (nilaiBaru) => {
+                    const n = await samakanPengecualianPenjualan(s.id, nilaiBaru);
+                    queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
+                    if (n > 0) {
+                      toast.success(
+                        nilaiBaru
+                          ? `Penjualan dan ${n} catatan keuangannya dikeluarkan dari laporan`
+                          : `Penjualan dan ${n} catatan keuangannya masuk laporan lagi`
+                      );
+                    }
+                  }}
+                />
+              )}
               {perms.canEdit && (
                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Bukti Bayar" onClick={() => setProofSale(s)}>
                   <CreditCard className="w-3.5 h-3.5" />

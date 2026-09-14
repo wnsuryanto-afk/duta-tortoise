@@ -98,3 +98,39 @@ export async function hapusTransaksiPenjualan(saleId) {
   }
   return { terhapus, gagal };
 }
+
+/**
+ * Samakan penanda "keluar dari laporan" antara penjualan dan catatan
+ * keuangannya.
+ *
+ * Tombol ExcludeToggle hanya mengubah SATU baris — baris yang tombolnya
+ * ditekan. Jadi mengeluarkan sebuah penjualan dari laporan meninggalkan
+ * pemasukannya tetap terhitung di buku keuangan. Laporan penjualan dan laporan
+ * keuangan lalu melaporkan angka yang berbeda untuk kejadian yang sama, dan
+ * tidak ada yang salah di layar mana pun — masing-masing benar menurut
+ * datanya sendiri.
+ *
+ * Itu sudah terjadi: penjualan B116 ke Saka utama dikeluarkan dari laporan,
+ * tetapi pemasukan Rp 9.522.500 miliknya tidak. Selisih sebesar itu antara
+ * dua laporan tidak akan pernah ketahuan dengan sendirinya.
+ *
+ * Pembatalan penjualan tidak memakai jalur ini — ia MENGHAPUS transaksinya
+ * lewat hapusTransaksiPenjualan(). Yang ini untuk pengecualian manual, yang
+ * sifatnya bisa dibatalkan lagi.
+ *
+ * @returns {Promise<number>} jumlah transaksi yang ikut disesuaikan
+ */
+export async function samakanPengecualianPenjualan(saleId, dikecualikan) {
+  const daftar = await transaksiMilikPenjualan(saleId);
+  let berubah = 0;
+  for (const tx of daftar) {
+    if (tx.excluded_from_reports === dikecualikan) continue;
+    try {
+      await base44.entities.FinanceTransaction.update(tx.id, {
+        excluded_from_reports: dikecualikan,
+      });
+      berubah += 1;
+    } catch { /* satu gagal tidak boleh menghentikan sisanya */ }
+  }
+  return berubah;
+}
