@@ -494,6 +494,13 @@ export default function PengaturanWhatsAppPage() {
   }
 
   const savedToken = !!(settings?.fonnte_token);
+
+  // Periksa sekali saat halaman dibuka — pertanyaan "kenapa tidak terkirim"
+  // harus sudah terjawab sebelum orangnya sempat menekan apa pun.
+  useEffect(() => {
+    if (savedToken && device === null && !cekDevice) periksaDevice();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedToken]);
   const tokenUnsaved = tokenDirty && !!token.trim();
 
   const availableRecipients = [];
@@ -525,6 +532,74 @@ export default function PengaturanWhatsAppPage() {
           </p>
         </div>
       </div>
+
+      {/* Status device — sebelum kartu token, karena inilah yang paling sering jadi penyebab */}
+      {savedToken && (
+        <Card className={device && device.ok === true && !device.terhubung ? "border-red-300" : ""}>
+          <CardContent className="p-3">
+            <div className="flex items-start gap-2.5">
+              {device === null || cekDevice ? (
+                <Loader2 className="w-4 h-4 mt-0.5 animate-spin text-muted-foreground flex-shrink-0" />
+              ) : device.ok && device.terhubung ? (
+                <Smartphone className="w-4 h-4 mt-0.5 text-green-600 flex-shrink-0" />
+              ) : (
+                <WifiOff className="w-4 h-4 mt-0.5 text-red-600 flex-shrink-0" />
+              )}
+
+              <div className="min-w-0 flex-1 space-y-1">
+                {device === null || cekDevice ? (
+                  <p className="text-sm text-muted-foreground">Memeriksa status HP pengirim…</p>
+                ) : !device.ok ? (
+                  <>
+                    <p className="text-sm font-medium text-red-700">Status HP pengirim tidak bisa dibaca</p>
+                    <p className="text-xs text-muted-foreground break-words">{device.alasan}</p>
+                  </>
+                ) : device.terhubung ? (
+                  <>
+                    <p className="text-sm font-medium text-green-700">
+                      HP pengirim terhubung{device.nama ? ` — ${device.nama}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {device.device && `Nomor ${device.device} · `}
+                      {device.kuota !== null && `sisa ${device.kuota} pesan · `}
+                      {device.paket && `paket ${device.paket}`}
+                      {device.expired && ` · berlaku sampai ${device.expired}`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-red-700">
+                      HP pengirim TERPUTUS — tidak ada notifikasi yang bisa terkirim
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {device.device && `Nomor ${device.device}. `}
+                      Token dan kuota tidak jadi soal selama HP-nya belum tersambung. Buka Fonnte,
+                      pilih device ini, lalu scan ulang QR dari WhatsApp di HP tersebut.
+                    </p>
+                    <a
+                      href="https://md.fonnte.com/new/whatsapp.php"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-red-700 underline"
+                    >
+                      Buka Fonnte untuk scan ulang <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </>
+                )}
+              </div>
+
+              <Button
+                type="button" variant="ghost" size="sm"
+                className="h-7 px-2 flex-shrink-0"
+                disabled={cekDevice}
+                onClick={periksaDevice}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${cekDevice ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Token Section */}
       <Card>
