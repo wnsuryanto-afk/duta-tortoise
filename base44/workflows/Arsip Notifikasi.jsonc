@@ -1,0 +1,41 @@
+{
+  "name": "Arsip Notifikasi",
+  "description": "A15 - arsipkan notifikasi yang lebih tua dari arsip_notif_umur_hari. Tiap jam; keluar sendiri bila sudah jalan hari ini.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "35 * * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "arsip_notifikasi",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "arsipNotifikasi",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}
