@@ -109,7 +109,10 @@ async function alarmKeOwner(base44, settings, percobaan, wibToday: string) {
       title: "Ringkasan WhatsApp tidak terkirim",
       message: `Percobaan kirim gagal ${MAKS_PERCOBAAN}x hari ini (${wibToday}). Alasan dari Fonnte: "${percobaan.alasan}". Bila tertulis "disconnected device", buka fonnte.com dan scan ulang QR untuk nomor pengirim.`,
       type: "warning",
-      priority: "high",
+      priority: "tinggi",   // enum Notification: tinggi | sedang | rendah — bukan "high"
+      category: "sistem",
+      action_url: "/pengaturan-whatsapp",
+      action_label: "Buka pengaturan WhatsApp",
       related_entity_id: `wa_gagal_${wibToday}`,
       is_read: false,
       is_dismissed: false,
