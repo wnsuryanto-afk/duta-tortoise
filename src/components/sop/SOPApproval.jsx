@@ -234,12 +234,18 @@ export default function SOPApproval() {
     return dups;
   };
 
-  const getWillApprove = (c) => {
-    const manual = manualPoin[c.id];
-    if (manual !== undefined && manual !== "" && !isNaN(Number(manual))) return Number(manual);
+  /** Poin hasil hitungan dari task yang dicentang — tanpa penimpaan manual. */
+  const poinTerhitung = (c) => {
     const tasks = c.completed_tasks || [];
     const cm = getCheckedMap(c);
     return tasks.reduce((s, t, i) => s + (cm[i] ? (t.points || 0) : 0), 0);
+  };
+
+  /** Angka manual bila diisi, selain itu hasil hitungan. */
+  const getWillApprove = (c) => {
+    const manual = manualPoin[c.id];
+    if (manual !== undefined && manual !== "" && !isNaN(Number(manual))) return Number(manual);
+    return poinTerhitung(c);
   };
 
   const toggleTask = (cId, idx) => {
@@ -265,12 +271,25 @@ export default function SOPApproval() {
         approved_at: new Date().toISOString(),
         approved_points: willApprove,
       });
+      /*
+       * Kalau angkanya ditimpa manual, KEDUA angka dicatat.
+       *
+       * Poin menjadi uang: total_poin slip gaji diambil dari approved_points,
+       * dikali nilai poin. Menyetujui angka yang berbeda dari hasil centangan
+       * itu wewenang owner dan memang disengaja — tapi tanpa jejak, tiga bulan
+       * kemudian tidak ada yang bisa menjawab kenapa upah hari itu tidak cocok
+       * dengan pekerjaan yang tercatat.
+       */
+      const terhitung = poinTerhitung(c);
+      const ditimpa = willApprove !== terhitung;
       await logActivity({
         action: "approve",
         entity_type: "DailyChecklist",
         entity_id: c.id,
         entity_name: `${empName(c)} — ${c.date}`,
-        changes_summary: `Menyetujui poin checklist ${empName(c)} (${c.date}): ${willApprove} poin`,
+        changes_summary: ditimpa
+          ? `Menyetujui poin checklist ${empName(c)} (${c.date}): ${willApprove} poin — DITIMPA MANUAL, hasil centangan ${terhitung} poin (selisih ${willApprove - terhitung > 0 ? "+" : ""}${willApprove - terhitung})`
+          : `Menyetujui poin checklist ${empName(c)} (${c.date}): ${willApprove} poin`,
       });
       toast.success(`Checklist ${empName(c)} disetujui — ${willApprove} poin`);
       setExpanded((p) => ({ ...p, [c.id]: false }));
