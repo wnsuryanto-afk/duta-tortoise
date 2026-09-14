@@ -31,6 +31,7 @@ import {
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
 import { pasangkanItem } from "@/lib/cocokNamaBarang";
+import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
 import TerimaDariScreenshot from "@/components/pembelian/TerimaDariScreenshot";
 // Halaman /stock-prediction digabungkan ke sini sebagai satu tahap. Isinya
 // menjawab pertanyaan yang sama dengan tahap "Yang Kurang" — kapan sebuah
@@ -442,6 +443,40 @@ export default function PembelianPage() {
     setBusy(false);
   };
 
+  /*
+   * Memperbaiki tanggal pesan yang sudah terlanjur tersimpan.
+   *
+   * Tanggal masuk dari bacaan AI Vision dan sampai sekarang tidak ada jalan
+   * untuk mengoreksinya setelah tersimpan. Satu pesanan Rp 146.999 tercatat
+   * bertanggal 18 Mei 2024 padahal dibuat 6 September 2026 — ia hilang dari
+   * laporan biaya bulan berjalan dan umur utang talangannya terbaca dua
+   * tahun. Bukan error, jadi tidak ada yang menyadarinya.
+   */
+  const perbaikiTanggal = async (p) => {
+    const usul = (p.created_date || "").slice(0, 10) || today();
+    const baru = prompt(
+      `Tanggal pesan tercatat: ${p.tanggal_pesan}\n` +
+      `Pesanan ini dicatat di aplikasi pada ${usul}.\n\n` +
+      "Isi tanggal pesan yang benar (YYYY-MM-DD):",
+      usul
+    );
+    if (!baru) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(baru.trim())) {
+      toast.error("Format harus YYYY-MM-DD, contoh 2026-09-06");
+      return;
+    }
+    try {
+      await base44.entities.PembelianBarang.update(p.id, { tanggal_pesan: baru.trim() });
+      qc.invalidateQueries({ queryKey: ["pembelian-list"] });
+      toast.success("Tanggal pesan diperbaiki");
+    } catch (e) {
+      toast.error("Gagal memperbaiki tanggal: " + (e?.message || ""));
+    }
+  };
+
+  /** Peringatan tanggal, dibandingkan dengan saat pesanan itu dicatat. */
+  const peringatanTanggal = (p) => tanggalMencurigakan(p.tanggal_pesan, (p.created_date || "").slice(0, 10));
+
   const lunasi = async (p) => {
     await base44.entities.PembelianBarang.update(p.id, {
       status_utang: "lunas",
@@ -599,6 +634,18 @@ export default function PembelianPage() {
                   <p className="text-xs text-muted-foreground">
                     {(p.items || []).map((i) => `${i.nama_barang} ×${i.jumlah_pesan}`).join(" · ")}
                   </p>
+                  {peringatanTanggal(p) && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] text-red-800 flex items-start gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p>Tanggal pesan <span className="font-mono">{p.tanggal_pesan}</span> — {peringatanTanggal(p)}</p>
+                        <button type="button" onClick={() => perbaikiTanggal(p)}
+                          className="underline font-medium mt-0.5">
+                          Perbaiki tanggal
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex gap-1.5 flex-wrap">
                     <Button size="sm" onClick={() => bukaDialogTerima(p)} className="gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Barang Datang
@@ -626,6 +673,12 @@ export default function PembelianPage() {
                     <p className="text-xs text-muted-foreground">
                       {p.tanggal_terima || p.tanggal_pesan} · {(p.items || []).length} barang · {p.dibayar_oleh_nama}
                     </p>
+                    {peringatanTanggal(p) && (
+                      <button type="button" onClick={() => perbaikiTanggal(p)}
+                        className="text-[10px] text-red-700 underline mt-0.5 text-left">
+                        Tanggal pesan {p.tanggal_pesan} kemungkinan salah baca — perbaiki
+                      </button>
+                    )}
                     <div className="flex gap-1.5 mt-1 flex-wrap">
                       <Badge variant="secondary" className="text-[10px]">{p.status}</Badge>
                       {p.is_talangan && (
