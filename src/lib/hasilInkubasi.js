@@ -194,3 +194,43 @@ export function selaraskanEggRecords(eggRecords, eggCount) {
   }
   return hasil.map((b, i) => ({ ...b, egg_number: i + 1 }));
 }
+
+/**
+ * Hitung ulang angka ringkas sebuah clutch dari baris per telurnya.
+ *
+ * Yang paling sering salah adalah `fertile_count`. Telur berstatus "gagal"
+ * adalah telur yang SUDAH terbukti fertil saat candling lalu mati di dalam
+ * cangkang — ia tetap telur fertil. EggGrid menyimpannya sebagai
+ * `menetas + fertile`, tanpa `gagal`, padahal berkas yang sama sudah menulis
+ * aturan yang benar untuk lencana di layar:
+ *
+ *     // fertile TOTAL = fertile_only + menetas + gagal
+ *
+ * Jadi layar menampilkan "Fertile: 22" sementara yang tersimpan 20. Untuk
+ * clutch C14 x A29 (16 Maret 2026) selisih itu nyata: 20 menetas + 2 gagal =
+ * 22 telur fertil dari 23, hanya 1 yang infertil. Tersimpan 20.
+ *
+ * Bukan sekadar angka yang meleset. Fertilitas mengukur PEJANTAN; daya tetas
+ * mengukur INKUBATOR. Menyamakan `fertile_count` dengan `hatched_count`
+ * membuat telur yang mati karena suhu inkubator terbaca sebagai kegagalan
+ * pejantan — dan Ranking Indukan, halaman yang dipakai memutuskan indukan mana
+ * yang dipertahankan, menjumlahkan persis angka itu.
+ *
+ * @param {Array} records baris egg_records
+ * @returns {{hatched_count, failed_count, fertile_count, infertile_count, belum_dicek}}
+ */
+export function ringkasDariBarisTelur(records = []) {
+  const baris = Array.isArray(records) ? records : [];
+  const n = (s) => baris.filter((e) => e?.status === s).length;
+  const menetas = n("menetas");
+  const gagal = n("gagal");
+  const fertilSaja = n("fertile");
+  return {
+    hatched_count: menetas,
+    failed_count: gagal,
+    // menetas dan gagal adalah anak dari fertil, bukan saudaranya.
+    fertile_count: menetas + gagal + fertilSaja,
+    infertile_count: n("infertil"),
+    belum_dicek: n("belum_dicek"),
+  };
+}
