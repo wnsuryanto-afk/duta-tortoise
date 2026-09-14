@@ -53,6 +53,35 @@ import { KATEGORI_PEMBELIAN } from "@/lib/kategoriBarang";
 const rp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const hariIni = () => new Date().toISOString().split("T")[0];
 
+/*
+ * Tanggal pesanan dulu masuk langsung dari bacaan AI ke database, tanpa satu
+ * pun kolom yang bisa mengoreksinya. Akibatnya terlihat di data: satu pesanan
+ * Shopee Rp 146.999 yang dicatat 6 September 2026 tersimpan bertanggal
+ * 18 Mei 2024 — AI salah membaca format tanggal di struk, dan tidak ada yang
+ * bisa memperbaikinya karena kolomnya memang tidak ada.
+ *
+ * Tanggal yang salah tidak melempar error. Ia hanya membuat belanja itu
+ * hilang dari laporan biaya bulan berjalan dan membuat umur utang talangan
+ * terbaca dua tahun. Jadi sekarang tanggalnya bisa diedit, dan yang tidak
+ * masuk akal diberi tanda sebelum disimpan.
+ */
+const BATAS_MUNDUR_HARI = 120;
+function tanggalMencurigakan(t) {
+  if (!t) return null;
+  const d = new Date(`${t}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "Format tanggal tidak terbaca.";
+  const kini = new Date(`${hariIni()}T00:00:00`);
+  const selisihHari = Math.round((kini - d) / 86400000);
+  if (selisihHari < -1) return "Tanggal ini di masa depan — hampir pasti salah baca.";
+  if (selisihHari > BATAS_MUNDUR_HARI) {
+    const thn = Math.floor(selisihHari / 365);
+    return thn >= 1
+      ? `Tanggal ini ${thn} tahun lebih ke belakang — biasanya AI salah membaca format tanggal struk.`
+      : `Tanggal ini ${selisihHari} hari ke belakang — periksa, mungkin salah baca.`;
+  }
+  return null;
+}
+
 // Daftar kategori dan aturan aset/biaya ada di src/lib/kategoriBarang.js.
 const KATEGORI = KATEGORI_PEMBELIAN;
 
@@ -180,6 +209,13 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
   // Pada pesanan Vigantol E barangnya Rp 49.980 sementara total pesanan
   // Rp 50.980. Selisih itu disimpan di kolom ongkir pesanan, dan alur
   // penerimaan membagikannya ke harga per satuan saat barang datang.
+  /** Ubah satu pesanan hasil bacaan (tanggal dsb) tanpa menyentuh yang lain. */
+  const ubahPesanan = (i, patch) =>
+    setPesanan((q) => ({
+      ...q,
+      pesanan: (q.pesanan || []).map((p, x) => (x === i ? { ...p, ...patch } : p)),
+    }));
+
   const pesananDipakai = new Set(dipilih.map((r) => r.iPesanan));
   const ongkirTotal = (pesanan?.pesanan || []).reduce(
     (s, p, i) => (pesananDipakai.has(i) ? s + (Number(p.ongkir) || 0) : s),
@@ -311,6 +347,26 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                         {p.ongkir ? ` · ongkir ${rp(p.ongkir)}` : ""}
                       </p>
                     </div>
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] text-muted-foreground">Tanggal pesan</span>
+                      <Input
+                        type="date"
+                        className="h-7 text-xs w-auto"
+                        value={p.tanggal || hariIni()}
+                        onChange={(e) => ubahPesanan(i, { tanggal: e.target.value })}
+                      />
+                      {!p.tanggal && (
+                        <span className="text-[10px] text-muted-foreground">
+                          tidak terbaca — dipakai tanggal hari ini
+                        </span>
+                      )}
+                    </div>
+                    {tanggalMencurigakan(p.tanggal) && (
+                      <p className="text-[11px] text-red-700 mt-1 flex items-start gap-1">
+                        <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                        <span>{tanggalMencurigakan(p.tanggal)}</span>
+                      </p>
+                    )}
                     {meleset && (
                       <p className="text-[11px] text-amber-700 mt-1">
                         Hitungan barang tidak pas dengan total pesanan (selisih {rp(h.selisih_terkecil)}).
