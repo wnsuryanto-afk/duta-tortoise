@@ -444,34 +444,73 @@ export default function PembelianPage() {
   };
 
   /*
-   * Memperbaiki tanggal pesan yang sudah terlanjur tersimpan.
+   * ── Perbaiki data pesanan yang sudah tersimpan ──
    *
-   * Tanggal masuk dari bacaan AI Vision dan sampai sekarang tidak ada jalan
-   * untuk mengoreksinya setelah tersimpan. Satu pesanan Rp 146.999 tercatat
-   * bertanggal 18 Mei 2024 padahal dibuat 6 September 2026 — ia hilang dari
-   * laporan biaya bulan berjalan dan umur utang talangannya terbaca dua
-   * tahun. Bukan error, jadi tidak ada yang menyadarinya.
+   * Angka dari AI Vision tidak pernah bisa dipercaya seratus persen, dan
+   * marketplace adalah tempat paling buruk untuk mempercayainya: promo,
+   * kupon, dan subsidi ongkir membuat angka yang terlihat di layar bukan
+   * angka yang dibayar. Satu pesanan Mustika Djamue tersimpan Rp 146.999
+   * padahal strukmya Rp 130.700 — ongkirnya terbaca 21.999 padahal 5.700 —
+   * dan tanggalnya terbaca 18 Mei 2024 padahal dicatat 6 September 2026.
+   *
+   * Tidak satu pun dari itu melempar error. Sebelumnya juga tidak satu pun
+   * bisa diperbaiki: begitu tersimpan, angkanya beku. Jadi dialog ini ada.
    */
-  const perbaikiTanggal = async (p) => {
-    const usul = (p.created_date || "").slice(0, 10) || today();
-    const baru = prompt(
-      `Tanggal pesan tercatat: ${p.tanggal_pesan}\n` +
-      `Pesanan ini dicatat di aplikasi pada ${usul}.\n\n` +
-      "Isi tanggal pesan yang benar (YYYY-MM-DD):",
-      usul
-    );
-    if (!baru) return;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(baru.trim())) {
-      toast.error("Format harus YYYY-MM-DD, contoh 2026-09-06");
-      return;
-    }
+  const [perbaikiTarget, setPerbaikiTarget] = useState(null);
+  const [perbaikiForm, setPerbaikiForm] = useState(null);
+
+  const bukaPerbaiki = (p) => {
+    setPerbaikiTarget(p);
+    setPerbaikiForm({
+      tanggal_pesan: (p.tanggal_pesan || "").slice(0, 10),
+      platform: p.platform || "",
+      ongkir: Number(p.ongkir) || 0,
+      biaya_admin: Number(p.biaya_admin) || 0,
+      items: (p.items || []).map((it) => ({
+        ...it,
+        harga_satuan: Number(it.harga_satuan) || 0,
+        jumlah_pesan: Number(it.jumlah_pesan) || 0,
+      })),
+      total_struk: Number(p.total_bayar) || 0,
+    });
+  };
+
+  const perbaikiBarang = perbaikiForm
+    ? perbaikiForm.items.reduce((t, it) => t + (Number(it.harga_satuan) || 0) * (Number(it.jumlah_pesan) || 0), 0)
+    : 0;
+  const perbaikiHitung = perbaikiForm
+    ? perbaikiBarang + Number(perbaikiForm.ongkir || 0) + Number(perbaikiForm.biaya_admin || 0)
+    : 0;
+  // Selisih antara hitungan dan total yang benar-benar tertulis di struk.
+  // Inilah tempat promo yang tidak terbaca muncul sebagai angka.
+  const perbaikiSelisih = perbaikiForm ? Number(perbaikiForm.total_struk || 0) - perbaikiHitung : 0;
+
+  const simpanPerbaikan = async () => {
+    if (!perbaikiTarget || !perbaikiForm) return;
+    setBusy(true);
     try {
-      await base44.entities.PembelianBarang.update(p.id, { tanggal_pesan: baru.trim() });
+      await base44.entities.PembelianBarang.update(perbaikiTarget.id, {
+        tanggal_pesan: perbaikiForm.tanggal_pesan || perbaikiTarget.tanggal_pesan,
+        platform: perbaikiForm.platform,
+        ongkir: Number(perbaikiForm.ongkir || 0),
+        biaya_admin: Number(perbaikiForm.biaya_admin || 0),
+        total_barang: perbaikiBarang,
+        // Yang disimpan sebagai total_bayar adalah angka di struk, bukan
+        // hitungan — struk yang benar, bukan aritmetika kita.
+        total_bayar: Number(perbaikiForm.total_struk || 0) || perbaikiHitung,
+        items: perbaikiForm.items.map((it) => ({
+          ...it,
+          harga_satuan: Number(it.harga_satuan) || 0,
+          jumlah_pesan: Number(it.jumlah_pesan) || 0,
+        })),
+      });
       qc.invalidateQueries({ queryKey: ["pembelian-list"] });
-      toast.success("Tanggal pesan diperbaiki");
+      setPerbaikiTarget(null); setPerbaikiForm(null);
+      toast.success("Data pesanan diperbaiki");
     } catch (e) {
-      toast.error("Gagal memperbaiki tanggal: " + (e?.message || ""));
+      toast.error("Gagal menyimpan perbaikan: " + (e?.message || ""));
     }
+    setBusy(false);
   };
 
   /** Peringatan tanggal, dibandingkan dengan saat pesanan itu dicatat. */
@@ -639,7 +678,7 @@ export default function PembelianPage() {
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                       <div className="min-w-0">
                         <p>Tanggal pesan <span className="font-mono">{p.tanggal_pesan}</span> — {peringatanTanggal(p)}</p>
-                        <button type="button" onClick={() => perbaikiTanggal(p)}
+                        <button type="button" onClick={() => bukaPerbaiki(p)}
                           className="underline font-medium mt-0.5">
                           Perbaiki tanggal
                         </button>
@@ -674,7 +713,7 @@ export default function PembelianPage() {
                       {p.tanggal_terima || p.tanggal_pesan} · {(p.items || []).length} barang · {p.dibayar_oleh_nama}
                     </p>
                     {peringatanTanggal(p) && (
-                      <button type="button" onClick={() => perbaikiTanggal(p)}
+                      <button type="button" onClick={() => bukaPerbaiki(p)}
                         className="text-[10px] text-red-700 underline mt-0.5 text-left">
                         Tanggal pesan {p.tanggal_pesan} kemungkinan salah baca — perbaiki
                       </button>
