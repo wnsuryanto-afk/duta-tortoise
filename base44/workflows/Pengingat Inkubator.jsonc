@@ -1,0 +1,41 @@
+{
+  "name": "Pengingat Inkubator",
+  "description": "A10 - cek clutch mendekati jendela menetas & bacaan inkubator. Tiap jam; fungsinya keluar sendiri bila sudah jalan hari ini atau belum jam yang disetel.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "5 * * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "pengingat_inkubator",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "pengingatInkubator",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}
