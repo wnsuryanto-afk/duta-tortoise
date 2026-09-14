@@ -185,6 +185,27 @@
       "type": "string",
       "description": "ID grup tujuan notifikasi alat rusak. Kosong = pakai Grup PAGI."
     },
+    "percobaan_gagal": {
+      "description": "Penghitung percobaan kirim ringkasan yang GAGAL pada tanggal WIB tertentu. Dipakai untuk berhenti setelah 3 kali, supaya kegagalan Fonnte tidak membuat automation mengulang tiap 10 menit seharian (dan membakar panggilan AI tiap kali). Reset sendiri saat tanggal berganti.",
+      "type": "object",
+      "properties": {
+        "tanggal": {
+          "description": "Tanggal WIB (YYYY-MM-DD) yang dihitung. Bila berbeda dari hari ini, semua penghitung dianggap 0.",
+          "type": "string"
+        },
+        "pagi": { "type": "number" },
+        "sore": { "type": "number" },
+        "mingguan": { "type": "number" },
+        "alasan": {
+          "description": "Alasan gagal terakhir apa adanya dari Fonnte, untuk ditampilkan di notifikasi owner.",
+          "type": "string"
+        },
+        "dialarmkan": {
+          "description": "Sudah dibuatkan notifikasi lonceng untuk kegagalan hari ini (anti-dobel).",
+          "type": "boolean"
+        }
+      }
+    },
     "phone_admin": {
       "description": "Nomor WhatsApp Admin",
       "type": "string"
