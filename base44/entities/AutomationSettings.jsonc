@@ -101,6 +101,11 @@
       "default": 90,
       "description": "A11 \u2014 Berapa hari berat boleh tidak naik sebelum ditandai stagnan"
     },
+    "anomali_jam": {
+      "type": "string",
+      "default": "08:00",
+      "description": "A11 \u2014 Jam WIB paling awal notifikasi anomali boleh dikirim"
+    },
     "anomali_terakhir": {
       "type": "string",
       "description": "A11 \u2014 Tanggal WIB terakhir pemeriksaan dijalankan"
@@ -128,6 +133,11 @@
       "type": "number",
       "default": 1,
       "description": "A12 \u2014 Hari kirim (0=Minggu, 1=Senin, ... 6=Sabtu)"
+    },
+    "higiene_jam": {
+      "type": "string",
+      "default": "08:00",
+      "description": "A12 \u2014 Jam WIB paling awal laporan boleh dikirim"
     },
     "higiene_terakhir": {
       "type": "string",
