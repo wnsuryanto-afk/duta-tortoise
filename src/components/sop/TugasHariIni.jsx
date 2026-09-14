@@ -772,7 +772,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     await base44.entities.MaintenanceLog.update(log.id, {
       approval_status: "approved",
       approved_by: user.full_name || user.email,
-      approved_at: format(new Date(), "yyyy-MM-dd HH:mm"),
+      // ISO, sama dengan empat penulis persetujuan lainnya. Format lama
+      // "yyyy-MM-dd HH:mm" mengurut berbeda dari ISO dan tanpa zona waktu.
+      approved_at: new Date().toISOString(),
       poin_earned: poin,
     });
     refetchAllLogs();

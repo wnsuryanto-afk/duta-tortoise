@@ -257,6 +257,12 @@ export default function SOPApproval() {
       await base44.entities.DailyChecklist.update(c.id, {
         status: "approved",
         approved_by: user?.full_name || user?.email,
+        // Layar inilah yang benar-benar dipakai menyetujui, dan ia satu-satunya
+        // dari lima penulis persetujuan yang tidak pernah mencatat waktunya —
+        // 28 checklist disetujui tanpa satu pun stempel waktu. Formatnya ISO,
+        // sama dengan KepalaFeederDashboard dan autoApprovePoin; TugasHariIni
+        // dulu memakai "yyyy-MM-dd HH:mm" yang mengurut berbeda.
+        approved_at: new Date().toISOString(),
         approved_points: willApprove,
       });
       await logActivity({
@@ -287,6 +293,7 @@ export default function SOPApproval() {
       await base44.entities.DailyChecklist.update(c.id, {
         status: "rejected",
         approved_by: user?.full_name || user?.email,
+        approved_at: new Date().toISOString(),
         approved_points: 0,
         rejection_reason: reason,
       });
