@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { hatchRateClutch } from "@/lib/hasilInkubasi";
+import { hatchRateClutch, ringkasDariBarisTelur } from "@/lib/hasilInkubasi";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
 const EGG_STATUS = [
@@ -585,8 +585,9 @@ export default function EggGrid({ breeding, onRefresh }) {
     menetas:     records.filter(e => e.status === "menetas").length,
     gagal:       records.filter(e => e.status === "gagal").length,
   };
-  // fertile TOTAL = fertile_only + menetas + gagal (menetas & gagal are sub-categories)
-  const fertileTotal = summary.fertile_only + summary.menetas + summary.gagal;
+  // Aturan yang sama dengan yang disimpan ke basis data — satu definisi,
+  // supaya angka di layar dan angka tersimpan tidak bisa berbeda lagi.
+  const fertileTotal = ringkasDariBarisTelur(records).fertile_count;
   // berkembang = fertile yang masih dalam proses (belum menetas, belum gagal)
   const berkembang = summary.fertile_only;
   // Validation
@@ -604,13 +605,16 @@ export default function EggGrid({ breeding, onRefresh }) {
         ? { ...e, status: newStatus, check_date: checkDate || today, notes: notes ?? e.notes, hatch_date: newStatus === "menetas" ? (e.hatch_date || today) : e.hatch_date }
         : e
     );
-    const hatchedCount = updated.filter(e => e.status === "menetas").length;
-    const failedCount  = updated.filter(e => e.status === "gagal").length;
-
+    // Keempat angka ringkas disegarkan sekaligus. Sebelumnya hanya menetas dan
+    // gagal yang ikut diperbarui, jadi fertile_count/infertile_count tertinggal
+    // pada nilai lama sampai ada yang menekan "Selesaikan Inkubasi".
+    const ringkas = ringkasDariBarisTelur(updated);
     await base44.entities.Breeding.update(breeding.id, {
       egg_records: updated,
-      hatched_count: hatchedCount,
-      failed_count: failedCount,
+      hatched_count: ringkas.hatched_count,
+      failed_count: ringkas.failed_count,
+      fertile_count: ringkas.fertile_count,
+      infertile_count: ringkas.infertile_count,
     });
     qc.invalidateQueries({ queryKey: ["breedings"] });
     setSaving(false);
@@ -642,10 +646,12 @@ export default function EggGrid({ breeding, onRefresh }) {
   };
 
   const handleSelesaikanInkubasi = async () => {
-    const menetasCount = records.filter(e => e.status === "menetas").length;
-    const fertileCount = records.filter(e => e.status === "fertile").length;
-    const infertilCount = records.filter(e => e.status === "infertil").length;
-    const gagalCount = records.filter(e => e.status === "gagal").length;
+    // Satu definisi untuk semua angka ringkas — termasuk fertile_count, yang
+    // dulu ditulis `menetas + fertile` dan karena itu membuang telur "gagal",
+    // padahal telur gagal justru telur yang TERBUKTI fertil lalu mati di
+    // cangkang. Lihat ringkasDariBarisTelur().
+    const ringkas = ringkasDariBarisTelur(records);
+    const menetasCount = ringkas.hatched_count;
     // Penyebutnya lewat satu fungsi bersama. Dialog penetasan dulu membaginya
     // dengan `egg_count`, EggGrid dengan jumlah baris — untuk clutch yang kedua
     // angkanya berselisih, hasilnya bergantung tombol mana yang ditekan.
@@ -654,10 +660,10 @@ export default function EggGrid({ breeding, onRefresh }) {
     await base44.entities.Breeding.update(breeding.id, {
       status: "selesai",
       completed_date: new Date().toISOString().split("T")[0],
-      hatched_count: menetasCount,
-      failed_count: gagalCount,
-      fertile_count: menetasCount + fertileCount,
-      infertile_count: infertilCount,
+      hatched_count: ringkas.hatched_count,
+      failed_count: ringkas.failed_count,
+      fertile_count: ringkas.fertile_count,
+      infertile_count: ringkas.infertile_count,
       hatch_rate: hatchRate,
     });
     qc.invalidateQueries({ queryKey: ["breedings"] });
@@ -683,10 +689,13 @@ export default function EggGrid({ breeding, onRefresh }) {
     setSaving(true);
     const today = new Date().toISOString().split("T")[0];
     const updated = records.map(e => ({ ...e, status, check_date: today }));
-    const hatchedCount = updated.filter(e => e.status === "menetas").length;
-    const failedCount  = updated.filter(e => e.status === "gagal").length;
+    const ringkas = ringkasDariBarisTelur(updated);
     await base44.entities.Breeding.update(breeding.id, {
-      egg_records: updated, hatched_count: hatchedCount, failed_count: failedCount,
+      egg_records: updated,
+      hatched_count: ringkas.hatched_count,
+      failed_count: ringkas.failed_count,
+      fertile_count: ringkas.fertile_count,
+      infertile_count: ringkas.infertile_count,
     });
     qc.invalidateQueries({ queryKey: ["breedings"] });
     setSaving(false);
