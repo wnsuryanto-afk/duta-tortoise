@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sisaKasbon, selisihPencatatan } from "@/lib/potonganKasbon";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -525,8 +526,9 @@ export default function UserDetailPage({ userId, onBack }) {
           <TabsContent value="kasbon" className="space-y-2">
             {userKasbons.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Belum ada riwayat kasbon</p> :
               userKasbons.map(k => {
-                const sisa = (k.amount || 0) - (k.total_paid || 0);
-                const pct = k.amount ? Math.round(((k.total_paid || 0) / k.amount) * 100) : 0;
+                const sisa = sisaKasbon(k);
+                const pct = k.amount ? Math.round((((k.amount || 0) - sisa) / k.amount) * 100) : 0;
+                const selisih = selisihPencatatan(k);
                 return (
                   <div key={k.id} className="px-3 py-2.5 rounded-lg bg-muted/40 text-sm space-y-1">
                     <div className="flex justify-between">
@@ -544,6 +546,14 @@ export default function UserDetailPage({ userId, onBack }) {
                           <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
+                    )}
+                    {selisih !== 0 && (
+                      <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                        Pencatatan belum cocok: angka terbayar {fmt(k.total_paid)} tapi jumlah seluruh
+                        riwayat potongan {fmt(k.total_paid - selisih)} — selisih {fmt(Math.abs(selisih))}
+                        {selisih > 0 ? " tanpa baris riwayat." : " lebih banyak di riwayat."}{" "}
+                        Sisa utang dihitung dari angka yang lebih besar supaya tidak ada yang ditagih dua kali.
+                      </p>
                     )}
                   </div>
                 );
