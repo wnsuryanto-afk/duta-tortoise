@@ -108,6 +108,14 @@ export default function PengaturanWhatsAppPage() {
     staleTime: 30000,
   });
 
+  // Periksa status HP pengirim sekali saat halaman dibuka — pertanyaan
+  // "kenapa notifikasi tidak terkirim" harus sudah terjawab sebelum orangnya
+  // sempat menekan apa pun. Harus di sini, di atas semua early return,
+  // supaya urutan hook tidak berubah antar render.
+  useEffect(() => {
+    if (settings?.fonnte_token && device === null && !cekDevice) periksaDevice();
+  }, [settings?.fonnte_token]);
+
   const { data: users } = useActiveUsers({ enabled: !!user && user.role === "owner" });
 
   // Sync from a data object (not closure) — avoids stale-data race condition
@@ -494,13 +502,6 @@ export default function PengaturanWhatsAppPage() {
   }
 
   const savedToken = !!(settings?.fonnte_token);
-
-  // Periksa sekali saat halaman dibuka — pertanyaan "kenapa tidak terkirim"
-  // harus sudah terjawab sebelum orangnya sempat menekan apa pun.
-  useEffect(() => {
-    if (savedToken && device === null && !cekDevice) periksaDevice();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedToken]);
   const tokenUnsaved = tokenDirty && !!token.trim();
 
   const availableRecipients = [];
