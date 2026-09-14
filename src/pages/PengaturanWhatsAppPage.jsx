@@ -18,6 +18,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
   AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy, Sunrise,
+  Smartphone, WifiOff, ExternalLink,
 } from "lucide-react";
 
 const NOTIF_CONFIG = [
@@ -33,6 +34,30 @@ export default function PengaturanWhatsAppPage() {
   const { user, isLoading: userLoading } = useCurrentUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  /*
+   * Status device Fonnte.
+   *
+   * Ringkasan harian mati 11 hari (3–14 September 2026) tanpa ada yang tahu,
+   * karena satu-satunya tempat yang bisa menjawab "kenapa tidak terkirim"
+   * ada di situs Fonnte, bukan di sini. Token yang benar dan device yang
+   * terhubung adalah dua hal berbeda, dan halaman ini dulu hanya memeriksa
+   * yang pertama.
+   */
+  const [device, setDevice] = useState(null);
+  const [cekDevice, setCekDevice] = useState(false);
+
+  const periksaDevice = async () => {
+    setCekDevice(true);
+    try {
+      const res = await base44.functions.invoke("sendWhatsApp", { action: "device_status" });
+      setDevice(res?.data || res);
+    } catch (e) {
+      setDevice({ ok: false, alasan: e?.message || "Gagal menghubungi Fonnte" });
+    } finally {
+      setCekDevice(false);
+    }
+  };
 
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
