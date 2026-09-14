@@ -49,38 +49,10 @@ import { toast } from "sonner";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { KATEGORI_PEMBELIAN } from "@/lib/kategoriBarang";
+import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
 
 const rp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const hariIni = () => new Date().toISOString().split("T")[0];
-
-/*
- * Tanggal pesanan dulu masuk langsung dari bacaan AI ke database, tanpa satu
- * pun kolom yang bisa mengoreksinya. Akibatnya terlihat di data: satu pesanan
- * Shopee Rp 146.999 yang dicatat 6 September 2026 tersimpan bertanggal
- * 18 Mei 2024 — AI salah membaca format tanggal di struk, dan tidak ada yang
- * bisa memperbaikinya karena kolomnya memang tidak ada.
- *
- * Tanggal yang salah tidak melempar error. Ia hanya membuat belanja itu
- * hilang dari laporan biaya bulan berjalan dan membuat umur utang talangan
- * terbaca dua tahun. Jadi sekarang tanggalnya bisa diedit, dan yang tidak
- * masuk akal diberi tanda sebelum disimpan.
- */
-const BATAS_MUNDUR_HARI = 120;
-function tanggalMencurigakan(t) {
-  if (!t) return null;
-  const d = new Date(`${t}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return "Format tanggal tidak terbaca.";
-  const kini = new Date(`${hariIni()}T00:00:00`);
-  const selisihHari = Math.round((kini - d) / 86400000);
-  if (selisihHari < -1) return "Tanggal ini di masa depan — hampir pasti salah baca.";
-  if (selisihHari > BATAS_MUNDUR_HARI) {
-    const thn = Math.floor(selisihHari / 365);
-    return thn >= 1
-      ? `Tanggal ini ${thn} tahun lebih ke belakang — biasanya AI salah membaca format tanggal struk.`
-      : `Tanggal ini ${selisihHari} hari ke belakang — periksa, mungkin salah baca.`;
-  }
-  return null;
-}
 
 // Daftar kategori dan aturan aset/biaya ada di src/lib/kategoriBarang.js.
 const KATEGORI = KATEGORI_PEMBELIAN;
