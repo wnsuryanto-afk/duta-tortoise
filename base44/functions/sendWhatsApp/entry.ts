@@ -196,6 +196,50 @@ export default async function(req: Request): Promise<Response> {
       }
     }
 
+    /*
+     * ── Status device ──
+     *
+     * Ringkasan harian berhenti terkirim 3 September 2026 dan baru ketahuan
+     * 11 hari kemudian. Penyebabnya satu kalimat dari Fonnte: device
+     * WhatsApp-nya "disconnect". Informasi itu SELALU tersedia lewat
+     * api.fonnte.com/device — hanya saja tidak ada satu pun layar di aplikasi
+     * ini yang pernah menanyakannya, jadi satu-satunya cara tahu adalah
+     * membuka fonnte.com dan memeriksanya sendiri.
+     *
+     * Sekarang bisa ditanyakan dari halaman pengaturan. Tidak dicatat ke
+     * WhatsAppLog: ini pemeriksaan, bukan pengiriman, dan mencampurnya
+     * membuat riwayat kirim sulit dibaca.
+     */
+    if (action === 'device_status') {
+      const settings = await getSettings(base44);
+      if (!settings || !settings.fonnte_token) {
+        return Response.json({ ok: false, alasan: 'Token Fonnte belum diisi di pengaturan.' });
+      }
+      try {
+        const res = await fetch('https://api.fonnte.com/device', {
+          method: 'POST',
+          headers: { Authorization: settings.fonnte_token },
+        });
+        const d = await res.json();
+        if (d && d.status === false) {
+          return Response.json({ ok: false, alasan: d.reason || 'Token ditolak Fonnte.' });
+        }
+        const terhubung = String(d?.device_status || '').toLowerCase() === 'connect';
+        return Response.json({
+          ok: true,
+          terhubung,
+          device_status: d?.device_status || 'tidak diketahui',
+          device: d?.device || '',
+          nama: d?.name || '',
+          paket: d?.package || '',
+          kuota: d?.quota ?? null,
+          expired: d?.expired || '',
+        });
+      } catch (e) {
+        return Response.json({ ok: false, alasan: (e && e.message) ? e.message : String(e) });
+      }
+    }
+
     // ── Generic send ──
     if (action === 'send' || !action) {
       const { targets, message, notificationType, relatedEntityId } = body;
