@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
-import { barisPengambilan } from "@/lib/pemakaianBarang";
+import { barisPengambilan, rencanaPotongBatch } from "@/lib/pemakaianBarang";
 import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
@@ -41,6 +41,16 @@ export default function HealthForm({ open, onClose, editData }) {
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["warehouse-items", "-name", 500],
     queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
+  });
+
+  /*
+   * Batch dibutuhkan supaya pemotongan stok lewat formulir ini juga menurunkan
+   * sisa batch — jalur pindai (AmbilBarangScan) sudah melakukannya, formulir
+   * ini dulu tidak. Lihat rencanaPotongBatch() untuk akibat selisihnya.
+   */
+  const { data: batchAktif = [] } = useQuery({
+    queryKey: ["batch-barang", "aktif", 500],
+    queryFn: () => base44.entities.BatchBarang.filter({ status: "aktif" }, "-tanggal_terima", 500),
   });
 
   const { data: feedStocks = [] } = useQuery({
@@ -189,6 +199,25 @@ export default function HealthForm({ open, onClose, editData }) {
             catatan: `Pengobatan ${data.tortoise_name}${(data.diagnoses || []).length ? " — " + (data.diagnoses || []).slice(0, 2).join(", ") : ""}.`,
           });
           await base44.entities.StockMovement.create(baris);
+
+          // Sisa batch ikut turun, FEFO. Tanpa ini total gudang dan jumlah
+          // sisa batch berpisah diam-diam, dan layar kedaluwarsa menampilkan
+          // barang yang sebenarnya sudah dipakai.
+          const { rencana, kurang } = rencanaPotongBatch(batchAktif, gudang.id, Number(it.quantity));
+          for (const r of rencana) {
+            await base44.entities.BatchBarang.update(r.id, {
+              jumlah_sisa: r.jumlah_sisa,
+              ...(r.jumlah_sisa === 0 ? { status: "habis" } : {}),
+            });
+          }
+          if (kurang > 0) {
+            // Barangnya nyata-nyata sudah dipakai, jadi catatan kesehatan tetap
+            // disimpan — yang kurang adalah batch yang tercatat, bukan barangnya.
+            toast.warning(
+              `${gudang.name}: ${kurang} ${gudang.unit || ""} tidak tertutup batch mana pun. ` +
+              "Stok gudang sudah dikurangi, tapi ada barang terpakai yang tidak punya catatan batch."
+            );
+          }
         } catch { /* satu bahan gagal tidak boleh membatalkan catatan kesehatannya */ }
       }
       try {
@@ -196,6 +225,7 @@ export default function HealthForm({ open, onClose, editData }) {
       } catch { /* penandaan gagal; pemotongan berikutnya dicegah manual */ }
       queryClient.invalidateQueries({ queryKey: ["warehouse-items"] });
       queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
+      queryClient.invalidateQueries({ queryKey: ["batch-barang"] });
     }
 
     // FinanceTransaction untuk biaya_obat SENGAJA TIDAK dibuat lagi di sini.
