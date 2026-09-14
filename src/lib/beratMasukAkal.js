@@ -45,16 +45,23 @@ export function beratMencurigakan(beratGram, panjangCm) {
 
   const rasio = perkiraan / berat;
 
-  // Longgar: hanya ditandai bila selisihnya sekelas satuan, bukan sekadar
-  // kura yang kurus atau gemuk. Rentang 8x-25x dan 250x-4000x dipilih supaya
-  // variasi bentuk badan (yang paling jauh pun di bawah 4x) tidak pernah kena.
-  if (rasio >= 250 && rasio <= 4000) {
+  /*
+   * Ambang ditentukan dari rasio yang sebenarnya, bukan dikira-kira.
+   * Salah satuan kilogram memberi rasio sekitar 1000x (B31: 918x, A32: 968x);
+   * salah satuan ons sekitar 100x (A35: 109x, 8 BESAR: 96x). Kura yang paling
+   * kurus maupun paling gemuk di peternakan ini tetap di bawah 2x, jadi
+   * jaraknya sangat lebar dan tidak ada risiko menandai kura yang wajar.
+   *
+   * Percobaan pertama saya memakai 8x-25x untuk ons dan meleset — seluruh
+   * kasus ons lolos tanpa ditandai.
+   */
+  if (rasio >= 300 && rasio <= 5000) {
     return {
       pesan: `Berat ${berat} g terlalu ringan untuk tempurung ${panjangCm} cm. Apakah yang dimaksud ${berat} kilogram?`,
       saran: Math.round(berat * 1000),
     };
   }
-  if (rasio >= 8 && rasio <= 25) {
+  if (rasio >= 40 && rasio < 300) {
     return {
       pesan: `Berat ${berat} g terlalu ringan untuk tempurung ${panjangCm} cm. Apakah ini ons (1 ons = 100 g)?`,
       saran: Math.round(berat * 100),
