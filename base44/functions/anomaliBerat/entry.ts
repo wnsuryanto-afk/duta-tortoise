@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { STATUS_KELUAR } from "../../shared/kura.ts";
 
@@ -31,6 +31,10 @@ Deno.serve(async (req) => {
     const hariIni = wibTanggal();
     if ((otomatis.anomali_terakhir || "").slice(0, 10) === hariIni) {
       return Response.json({ skipped: "sudah_jalan_hari_ini" });
+    }
+    // Jadwal per jam: tanpa pagar jam, jalan pertama tiap hari jatuh 00:15 WIB.
+    if (!sudahWaktunya(otomatis.anomali_jam, "08:00")) {
+      return Response.json({ skipped: "belum_jamnya" });
     }
 
     const ambangTurun = Number(otomatis.anomali_turun_persen ?? 5);
