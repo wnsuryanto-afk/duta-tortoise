@@ -747,6 +747,120 @@ export default function PembelianPage() {
       )}
 
       {/* ── Dialog tandai dipesan ── */}
+      {/* ── Dialog perbaiki data pesanan ── */}
+      <Dialog open={!!perbaikiTarget} onOpenChange={(o) => { if (!o) { setPerbaikiTarget(null); setPerbaikiForm(null); } }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Perbaiki Data Pesanan</DialogTitle></DialogHeader>
+          {perbaikiForm && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Angka di bawah berasal dari pembacaan AI atas screenshot. Promo, kupon, dan subsidi
+                ongkir sering tidak terbaca — cocokkan dengan struk aslinya.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs font-medium mb-1">Tanggal pesan</p>
+                  <Input type="date" value={perbaikiForm.tanggal_pesan}
+                    onChange={(e) => setPerbaikiForm((f) => ({ ...f, tanggal_pesan: e.target.value }))} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium mb-1">Platform / toko</p>
+                  <Input value={perbaikiForm.platform}
+                    onChange={(e) => setPerbaikiForm((f) => ({ ...f, platform: e.target.value }))} />
+                </div>
+              </div>
+              {tanggalMencurigakan(perbaikiForm.tanggal_pesan, (perbaikiTarget?.created_date || "").slice(0, 10)) && (
+                <p className="text-[11px] text-red-700 flex items-start gap-1">
+                  <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                  <span>{tanggalMencurigakan(perbaikiForm.tanggal_pesan, (perbaikiTarget?.created_date || "").slice(0, 10))}</span>
+                </p>
+              )}
+
+              <div className="space-y-2 border-t border-border pt-2">
+                <p className="text-xs font-medium">Barang</p>
+                {perbaikiForm.items.map((it, idx) => (
+                  <div key={idx} className="rounded-lg border border-border p-2 space-y-1.5">
+                    <p className="text-xs font-medium break-words">{it.nama_barang}</p>
+                    <div className="grid grid-cols-12 gap-1 items-center">
+                      <div className="col-span-4">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Jumlah ({it.satuan})</p>
+                        <Input type="number" className="h-8 text-xs" value={it.jumlah_pesan}
+                          onChange={(e) => setPerbaikiForm((f) => ({
+                            ...f, items: f.items.map((x, i) => i === idx ? { ...x, jumlah_pesan: e.target.value } : x),
+                          }))} />
+                      </div>
+                      <div className="col-span-4">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Harga satuan</p>
+                        <Input type="number" className="h-8 text-xs" value={it.harga_satuan}
+                          onChange={(e) => setPerbaikiForm((f) => ({
+                            ...f, items: f.items.map((x, i) => i === idx ? { ...x, harga_satuan: e.target.value } : x),
+                          }))} />
+                      </div>
+                      <div className="col-span-4">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Jumlah baris</p>
+                        <p className="h-8 flex items-center text-xs font-mono">
+                          {rp((Number(it.harga_satuan) || 0) * (Number(it.jumlah_pesan) || 0))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 border-t border-border pt-2">
+                <div>
+                  <p className="text-xs font-medium mb-1">Ongkir (Rp)</p>
+                  <Input type="number" value={perbaikiForm.ongkir}
+                    onChange={(e) => setPerbaikiForm((f) => ({ ...f, ongkir: e.target.value }))} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium mb-1">Biaya admin (Rp)</p>
+                  <Input type="number" value={perbaikiForm.biaya_admin}
+                    onChange={(e) => setPerbaikiForm((f) => ({ ...f, biaya_admin: e.target.value }))} />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium mb-1">Total yang tertulis di struk (Rp)</p>
+                <Input type="number" value={perbaikiForm.total_struk}
+                  onChange={(e) => setPerbaikiForm((f) => ({ ...f, total_struk: e.target.value }))} />
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Inilah yang disimpan sebagai total dibayar — struk yang benar, bukan hitungan kita.
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-muted/40 p-2 text-sm space-y-0.5">
+                <div className="flex justify-between text-xs"><span>Barang</span><span className="font-mono">{rp(perbaikiBarang)}</span></div>
+                <div className="flex justify-between text-xs text-muted-foreground"><span>Ongkir + admin</span><span className="font-mono">{rp(Number(perbaikiForm.ongkir || 0) + Number(perbaikiForm.biaya_admin || 0))}</span></div>
+                <div className="flex justify-between text-xs border-t border-border pt-0.5"><span>Hitungan</span><span className="font-mono">{rp(perbaikiHitung)}</span></div>
+                <div className="flex justify-between font-bold"><span>Total di struk</span><span className="font-mono">{rp(Number(perbaikiForm.total_struk || 0))}</span></div>
+              </div>
+
+              {Math.abs(perbaikiSelisih) > 1000 && (
+                <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Hitungan dan struk selisih <span className="font-mono">{rp(Math.abs(perbaikiSelisih))}</span>
+                    {perbaikiSelisih < 0
+                      ? " — struk lebih murah. Biasanya ada promo atau kupon; turunkan harga satuan atau ongkir sampai cocok."
+                      : " — struk lebih mahal. Biasanya ada biaya yang belum dimasukkan, atau ada barang yang tidak terbaca AI."}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" className="flex-1"
+                  onClick={() => { setPerbaikiTarget(null); setPerbaikiForm(null); }}>Batal</Button>
+                <Button className="flex-1" disabled={busy} onClick={simpanPerbaikan}>
+                  {busy ? "Menyimpan…" : "Simpan Perbaikan"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={pesanOpen} onOpenChange={setPesanOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Tandai Dipesan</DialogTitle></DialogHeader>
