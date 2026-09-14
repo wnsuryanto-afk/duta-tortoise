@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import { patchPotongan, sisaKasbon } from "@/lib/potonganKasbon";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
@@ -111,19 +113,33 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
     qc.invalidateQueries({ queryKey: ["kasbons"] });
   };
 
+  /*
+   * Potongan manual dari halaman ini dulu hanya menaikkan `total_paid` dan
+   * tidak menulis apa pun ke `deduction_log`. Akibatnya sudah ada di data:
+   * kasbon Ahmad Ali 11 Agustus tercatat terbayar Rp 300.000 sementara seluruh
+   * riwayatnya hanya Rp 200.000 — Rp 100.000 utang karyawan yang tidak bisa
+   * dipastikan sudah dipotong atau belum, karena tidak ada barisnya.
+   *
+   * Sekarang lewat pintu yang sama dengan pembuatan slip gaji.
+   */
   const handlePotong = async (kasbon) => {
-    const perCicilan = kasbon.installment_amount || kasbon.weekly_deduction || 100000;
-    const sisa = (kasbon.amount || 0) - (kasbon.total_paid || 0);
-    const potongan = Math.min(perCicilan, sisa);
-    const newPaid = (kasbon.total_paid || 0) + potongan;
-    const newInstallmentsPaid = (kasbon.installments_paid || 0) + 1;
-    const lunas = newPaid >= kasbon.amount;
+    const patch = patchPotongan(kasbon, {
+      jumlah: kasbon.installment_amount || kasbon.weekly_deduction || 100000,
+      metode: "manual",
+      tanggal: new Date().toISOString().split("T")[0],
+      olehNama: user?.full_name || user?.email || "",
+      catatan: "Potongan manual dari halaman Payroll",
+    });
+    if (!patch) {
+      toast.info("Tidak ada yang perlu dipotong — kasbon ini sudah lunas.");
+      return;
+    }
     await base44.entities.Kasbon.update(kasbon.id, {
-      total_paid: newPaid,
-      installments_paid: newInstallmentsPaid,
-      status: lunas ? "lunas" : "approved",
+      ...patch,
+      installments_paid: (kasbon.installments_paid || 0) + 1,
     });
     qc.invalidateQueries({ queryKey: ["kasbons"] });
+    toast.success(`Potongan tercatat — sisa ${fmt(sisaKasbon({ ...kasbon, ...patch }))}`);
   };
 
   const statusConfig = {
