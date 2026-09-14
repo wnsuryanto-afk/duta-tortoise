@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,6 +167,11 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
       <div>
         <Label className="text-xs">Tanggal *</Label>
         <Input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} className="mt-1" />
+        {tanggalMencurigakan(entryDate) && (
+          <p className="text-[11px] text-red-700 mt-1">
+            {tanggalMencurigakan(entryDate)}
+          </p>
+        )}
       </div>
 
       {isPemakaian && (

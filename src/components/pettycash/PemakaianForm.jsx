@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -306,6 +307,11 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       <div>
         <Label className="text-xs">Tanggal *</Label>
         <Input type="date" value={entryDate} onChange={e => { setEntryDate(e.target.value); setScanDateWarning(false); setScanDateInfo(false); }} className={`mt-1 ${scanDateWarning ? "border-yellow-400 bg-yellow-50" : ""}`} />
+        {tanggalMencurigakan(entryDate) && (
+          <p className="text-[11px] text-red-700 mt-1">
+            {tanggalMencurigakan(entryDate)}
+          </p>
+        )}
         {scanDateInfo && (
           <p className="text-xs text-blue-600 mt-1">ℹ️ Tanggal tidak terbaca, dipakai hari ini.</p>
         )}
