@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibTanggal, wibNow, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibTanggal, wibNow, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getSettings, getEmployeePhone } from "../../shared/whatsapp.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { STATUS_KELUAR } from "../../shared/kura.ts";
@@ -33,6 +33,10 @@ Deno.serve(async (req) => {
     const hariSetel = Number(otomatis.higiene_hari ?? 1);
     if (wibNow().getUTCDay() !== hariSetel) {
       return Response.json({ skipped: "bukan_harinya", hari_ini: wibNow().getUTCDay(), hari_setel: hariSetel });
+    }
+    // Jadwal per jam: tanpa pagar jam, jalan pertama tiap Senin jatuh 00:25 WIB.
+    if (!sudahWaktunya(otomatis.higiene_jam, "08:00")) {
+      return Response.json({ skipped: "belum_jamnya" });
     }
 
     const [tortoises, gudang, pakan, pembeli, users] = await Promise.all([
