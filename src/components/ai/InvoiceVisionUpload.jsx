@@ -161,6 +161,8 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
   const addItem = () => setData((d) => ({ ...d, items: [...d.items, { nama: "", qty: 1, satuan: "", harga_satuan: "", subtotal: "" }] }));
   const delItem = (i) => setData((d) => ({ ...d, items: d.items.filter((_, x) => x !== i) }));
 
+  const selisih = hitungSelisih(data);
+
   const handleApply = () => {
     onApplied?.({ invoice: data, photoUrls: fileUrls });
     setOpen(false); reset();
@@ -230,6 +232,26 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
                     ))}
                   </div>
                 </div>
+                {selisih && (
+                  <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="font-medium">
+                        Angka belum cocok — selisih {rp(Math.abs(selisih.selisih))}{" "}
+                        {selisih.selisih < 0 ? "lebih murah dari jumlah item" : "lebih mahal dari jumlah item"}.
+                      </p>
+                      <p>
+                        Jumlah item {rp(selisih.jumlahItem)} + ongkir − diskon = {rp(selisih.diharapkan)}, tapi total tertulis {rp(selisih.total)}.
+                      </p>
+                      <p className="text-amber-700">
+                        {selisih.selisih < 0
+                          ? "Biasanya ada promo atau kupon yang belum masuk kolom Diskon. Isi kolom Diskon, atau perbaiki harga satuan yang kena potongan."
+                          : "Biasanya ada biaya (ongkir/admin) yang belum masuk, atau ada item yang tidak terbaca AI."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2 pt-1">
                   <Button type="button" variant="outline" className="flex-1" onClick={() => { setOpen(false); reset(); }}>Batal</Button>
                   <Button type="button" className="flex-1" onClick={handleApply}><CheckCircle2 className="w-4 h-4 mr-1" /> Gunakan Data Ini</Button>
