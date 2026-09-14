@@ -26,7 +26,7 @@ import {
 import { toast } from "sonner";
 import {
   ShoppingCart, Package, Truck, CheckCircle2, XCircle, Loader2,
-  Wallet, Receipt, AlertTriangle, ChevronRight,
+  Wallet, Receipt, AlertTriangle, ChevronRight, Pencil,
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
@@ -689,6 +689,9 @@ export default function PembelianPage() {
                     <Button size="sm" onClick={() => bukaDialogTerima(p)} className="gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Barang Datang
                     </Button>
+                    <Button size="sm" variant="outline" onClick={() => bukaPerbaiki(p)} className="gap-1.5">
+                      <Pencil className="w-3.5 h-3.5" /> Perbaiki Data
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => batalkanPesanan(p)}
                       className="gap-1.5 text-destructive border-destructive/40">
                       <XCircle className="w-3.5 h-3.5" /> Dibatalkan Penjual
@@ -712,12 +715,12 @@ export default function PembelianPage() {
                     <p className="text-xs text-muted-foreground">
                       {p.tanggal_terima || p.tanggal_pesan} · {(p.items || []).length} barang · {p.dibayar_oleh_nama}
                     </p>
-                    {peringatanTanggal(p) && (
-                      <button type="button" onClick={() => bukaPerbaiki(p)}
-                        className="text-[10px] text-red-700 underline mt-0.5 text-left">
-                        Tanggal pesan {p.tanggal_pesan} kemungkinan salah baca — perbaiki
-                      </button>
-                    )}
+                    <button type="button" onClick={() => bukaPerbaiki(p)}
+                      className={`text-[10px] underline mt-0.5 text-left block ${peringatanTanggal(p) ? "text-red-700" : "text-muted-foreground"}`}>
+                      {peringatanTanggal(p)
+                        ? `Tanggal pesan ${p.tanggal_pesan} kemungkinan salah baca — perbaiki`
+                        : "Perbaiki data pesanan"}
+                    </button>
                     <div className="flex gap-1.5 mt-1 flex-wrap">
                       <Badge variant="secondary" className="text-[10px]">{p.status}</Badge>
                       {p.is_talangan && (
