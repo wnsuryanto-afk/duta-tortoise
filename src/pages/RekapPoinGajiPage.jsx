@@ -1,4 +1,5 @@
 import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
+import { patchPotongan } from "@/lib/potonganKasbon";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
@@ -226,28 +227,24 @@ export default function RekapPoinGajiPage() {
       slipId = created.id;
       toast.success(`Slip gaji ${row.emp.full_name || row.emp.email} dibuat`);
     }
-    // Update kasbon: total_paid + deduction_log (anti-dobel via salary_slip_id)
+    // Potong kasbon lewat satu pintu — anti-dobel per slip ada di dalamnya.
     for (const kasbonId of row.kasbonIdsToDeduct || []) {
       const k = kasbons.find(kk => kk.id === kasbonId);
       if (!k) continue;
-      const sisaK = (k.amount || 0) - (k.total_paid || 0);
-      if (sisaK <= 0) continue;
-      const deduction = Math.min(k.weekly_deduction || 100000, sisaK);
-      const newPaid = (k.total_paid || 0) + deduction;
-      const newStatus = newPaid >= k.amount ? "lunas" : "approved";
-      const newLog = [...(k.deduction_log || []), {
-        amount: deduction,
-        date: format(new Date(), "yyyy-MM-dd"),
-        method: "salary_slip",
-        salary_period: selectedMonth,
-        salary_slip_id: slipId,
-        recorded_by: user?.full_name || user?.email,
-      }];
-      await base44.entities.Kasbon.update(k.id, {
-        total_paid: newPaid,
-        status: newStatus,
-        deduction_log: newLog,
+      // Satu pintu. Komentar di atas dulu berbunyi "anti-dobel via
+      // salary_slip_id" padahal pemeriksaannya tidak pernah ada — membuat ulang
+      // slip bulan yang sama memotong kasbonnya lagi. Sekarang benar-benar
+      // diperiksa, di dalam patchPotongan().
+      const patch = patchPotongan(k, {
+        jumlah: k.weekly_deduction || 100000,
+        metode: "salary_slip",
+        salarySlipId: slipId,
+        periode: selectedMonth,
+        tanggal: format(new Date(), "yyyy-MM-dd"),
+        olehNama: user?.full_name || user?.email,
       });
+      if (!patch) continue;
+      await base44.entities.Kasbon.update(k.id, patch);
     }
     if ((row.kasbonIdsToDeduct || []).length > 0) {
       qc.invalidateQueries({ queryKey: ["kasbons"] });
@@ -274,24 +271,16 @@ export default function RekapPoinGajiPage() {
       for (const kasbonId of row.kasbonIdsToDeduct || []) {
         const k = kasbons.find(kk => kk.id === kasbonId);
         if (!k) continue;
-        const sisaK = (k.amount || 0) - (k.total_paid || 0);
-        if (sisaK <= 0) continue;
-        const deduction = Math.min(k.weekly_deduction || 100000, sisaK);
-        const newPaid = (k.total_paid || 0) + deduction;
-        const newStatus = newPaid >= k.amount ? "lunas" : "approved";
-        const newLog = [...(k.deduction_log || []), {
-          amount: deduction,
-          date: format(new Date(), "yyyy-MM-dd"),
-          method: "salary_slip",
-          salary_period: selectedMonth,
-          salary_slip_id: slipId,
-          recorded_by: user?.full_name || user?.email,
-        }];
-        await base44.entities.Kasbon.update(k.id, {
-          total_paid: newPaid,
-          status: newStatus,
-          deduction_log: newLog,
+        const patch = patchPotongan(k, {
+          jumlah: k.weekly_deduction || 100000,
+          metode: "salary_slip",
+          salarySlipId: slipId,
+          periode: selectedMonth,
+          tanggal: format(new Date(), "yyyy-MM-dd"),
+          olehNama: user?.full_name || user?.email,
         });
+        if (!patch) continue;
+        await base44.entities.Kasbon.update(k.id, patch);
       }
     }
     qc.invalidateQueries({ queryKey: ["salary-slips"] });
