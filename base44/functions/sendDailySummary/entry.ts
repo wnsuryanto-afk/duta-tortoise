@@ -1124,6 +1124,8 @@ export default async function(req: Request): Promise<Response> {
     // wibMinutes DAN wibToday keduanya dari wibNow. Tidak ada pencampuran zona waktu.
     const wibMinutes = wibNow.getUTCHours() * 60 + wibNow.getUTCMinutes();
     const wibSentAt = wibDateTimeStr(wibNow); // untuk disimpan ke *_last_sent
+    const percobaan = bacaPercobaan(settings, wibToday);
+    let percobaanBerubah = false;
 
     function parseWibMinutes(t: string): number {
       const [h, m] = (t || "00:00").split(":").map(Number);
@@ -1138,7 +1140,8 @@ export default async function(req: Request): Promise<Response> {
     if (
       settings.morning_summary_enabled === true &&
       settings.morning_group_id && settings.morning_group_id.trim() &&
-      lastSentDate(settings.morning_summary_last_sent) !== wibToday
+      lastSentDate(settings.morning_summary_last_sent) !== wibToday &&
+      percobaan.pagi < MAKS_PERCOBAAN
     ) {
       const scheduledMin = parseWibMinutes(settings.morning_summary_time || "07:00");
       const diff = wibMinutes - scheduledMin; // menit setelah jadwal (negatif = belum saatnya)
@@ -1151,12 +1154,17 @@ export default async function(req: Request): Promise<Response> {
               morning_summary_last_sent: wibSentAt,
             });
           } catch {}
+        } else {
+          percobaan.pagi += 1;
+          percobaan.alasan = alasanGagal(result);
+          percobaanBerubah = true;
+          if (percobaan.pagi >= MAKS_PERCOBAAN) await alarmKeOwner(base44, settings, percobaan, wibToday);
         }
       }
     }
 
     // 2. Ringkasan SORE
-    if (settings.daily_summary_enabled && lastSentDate(settings.daily_summary_last_sent) !== wibToday) {
+    if (settings.daily_summary_enabled && lastSentDate(settings.daily_summary_last_sent) !== wibToday && percobaan.sore < MAKS_PERCOBAAN) {
       const scheduledMin = parseWibMinutes(settings.daily_summary_time || "16:30");
       const diff = wibMinutes - scheduledMin;
       if (diff >= 0) {
@@ -1181,6 +1189,11 @@ export default async function(req: Request): Promise<Response> {
                 });
               }
             } catch {}
+          } else {
+            percobaan.sore += 1;
+            percobaan.alasan = alasanGagal(result);
+            percobaanBerubah = true;
+            if (percobaan.sore >= MAKS_PERCOBAAN) await alarmKeOwner(base44, settings, percobaan, wibToday);
           }
         }
       }
@@ -1188,7 +1201,7 @@ export default async function(req: Request): Promise<Response> {
 
     // 3. Ringkasan MINGGUAN (Sabtu WIB)
     const isSaturdayWib = wibNow.getUTCDay() === 6;
-    if (settings.weekly_summary_enabled && isSaturdayWib && lastSentDate(settings.weekly_summary_last_sent) !== wibToday) {
+    if (settings.weekly_summary_enabled && isSaturdayWib && lastSentDate(settings.weekly_summary_last_sent) !== wibToday && percobaan.mingguan < MAKS_PERCOBAAN) {
       const scheduledMin = parseWibMinutes(settings.daily_summary_time || "16:30");
       const diff = wibMinutes - scheduledMin;
       if (diff >= 0) {
@@ -1200,9 +1213,16 @@ export default async function(req: Request): Promise<Response> {
               weekly_summary_last_sent: wibSentAt,
             });
           } catch {}
+        } else {
+          percobaan.mingguan += 1;
+          percobaan.alasan = alasanGagal(result);
+          percobaanBerubah = true;
+          if (percobaan.mingguan >= MAKS_PERCOBAAN) await alarmKeOwner(base44, settings, percobaan, wibToday);
         }
       }
     }
+
+    if (percobaanBerubah) await simpanPercobaan(base44, settings, percobaan);
 
     return Response.json({ success: true, message: "Scheduled check completed" });
   } catch (error) {
