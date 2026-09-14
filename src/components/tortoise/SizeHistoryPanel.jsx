@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { beratMencurigakan, panjangMencurigakan } from "@/lib/beratMasukAkal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,16 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    /*
+     * Satu kolom, tiga satuan: gram untuk bayi, kilogram dan kadang ons untuk
+     * dewasa. 53 catatan Mei-September 2026 tersimpan dengan satuan tertukar
+     * tanpa satu pun error. Panjang tempurung jadi pembandingnya — lihat
+     * beratMasukAkal.js. Bertanya, bukan memperbaiki sendiri.
+     */
+    const curiga = beratMencurigakan(form.weight_grams, form.shell_length_cm);
+    if (curiga && !window.confirm(`${curiga.pesan}\n\nTekan OK untuk tetap menyimpan ${form.weight_grams} g apa adanya, atau Batal untuk memperbaiki.`)) return;
+    const curigaPanjang = panjangMencurigakan(form.shell_length_cm);
+    if (curigaPanjang && !window.confirm(`${curigaPanjang}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) return;
     setSaving(true);
     await base44.entities.MeasurementHistory.create({
       tortoise_id: tortoiseId,

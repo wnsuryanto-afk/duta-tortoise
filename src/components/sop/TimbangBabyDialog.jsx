@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { beratMencurigakan, panjangMencurigakan } from "@/lib/beratMasukAkal";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,14 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
           photo_url = res.file_url;
         }
       }
+      // Penjaga satuan — di layar bayi pun bisa tertukar, dan tempurung bayi
+      // yang terketik 40 cm (seharusnya 4,0) pernah tersimpan. Lihat
+      // beratMasukAkal.js.
+      const curiga = beratMencurigakan(w, l);
+      const curigaPanjang = panjangMencurigakan(l);
+      if (curiga && !window.confirm(`${curiga.pesan}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) { setSavingBaby(false); return; }
+      if (curigaPanjang && !window.confirm(`${curigaPanjang}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) { setSavingBaby(false); return; }
+
       // 1. Simpan MeasurementHistory → trigger onMeasurementSaved update Tortoise + dorong foto ke galeri
       await base44.entities.MeasurementHistory.create({
         tortoise_id: selected.id,
