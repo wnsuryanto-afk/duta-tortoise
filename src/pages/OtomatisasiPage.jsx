@@ -158,6 +158,7 @@ const GRUP = [
         jadwal: "1× per hari",
         jejak: "anomali_terakhir",
         params: [
+          { field: "anomali_jam", label: "Jam paling awal", tipe: "text", bantu: "HH:mm WIB" },
           { field: "anomali_turun_persen", label: "Ambang turun (%)", tipe: "number" },
           { field: "anomali_stagnan_hari", label: "Stagnan (hari)", tipe: "number", bantu: "Hanya untuk yang masih seharusnya tumbuh" },
         ],
@@ -268,6 +269,7 @@ const GRUP = [
         jejak: "higiene_terakhir",
         params: [
           { field: "higiene_hari", label: "Hari kirim (0=Minggu)", tipe: "number" },
+          { field: "higiene_jam", label: "Jam paling awal", tipe: "text", bantu: "HH:mm WIB" },
         ],
       },
       {
