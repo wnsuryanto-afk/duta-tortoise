@@ -708,6 +708,19 @@ export default function PengaturanWhatsAppPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            {/*
+              Patokan nomor karyawan adalah profil masing-masing (keputusan
+              pemilik 15-09-2026). Daftar di sini hanya penimpa untuk kasus
+              khusus. Sampai 15-09-2026 daftar ini kosong sementara pengirim
+              WhatsApp HANYA membacanya, jadi tidak satu pun notifikasi
+              per-karyawan pernah terkirim — tanpa pesan galat apa pun.
+            */}
+            <div className="rounded-lg border border-green-200 bg-green-50 p-2.5 text-[11px] leading-relaxed text-green-900">
+              Nomor di bawah <strong>tidak perlu diisi</strong>. Kalau dibiarkan kosong,
+              sistem memakai nomor dari <strong>profil karyawan</strong> masing-masing —
+              satu tempat, dirawat orangnya sendiri. Isi di sini hanya bila seseorang
+              perlu nomor berbeda khusus untuk notifikasi.
+            </div>
             {users
               .filter((u) => !["owner", "investor"].includes(u.role))
               .map((u) => (
