@@ -94,6 +94,37 @@ async function nomorDariProfil(base44, email) {
 }
 
 /**
+ * Arah sebaliknya: dari nomor pengirim ke email karyawan.
+ *
+ * Dipakai jalur WhatsApp masuk. Sumbernya harus sama persis dengan
+ * getEmployeePhone — kalau tidak, seseorang bisa dikirimi pesan tapi
+ * balasannya tidak dikenali, atau sebaliknya.
+ *
+ * @returns {Promise<string>} email, atau "" bila nomor tidak dikenal
+ */
+export async function emailDariNomor(base44, nomorMentah) {
+  const nomor = normalizePhone(nomorMentah);
+  if (!nomor) return "";
+
+  const settings = await getSettings(base44);
+  const daftar = settings && Array.isArray(settings.employee_phones) ? settings.employee_phones : [];
+  const cocok = daftar.find((e) => e && normalizePhone(e.phone) === nomor);
+  if (cocok && cocok.email) return cocok.email;
+
+  try {
+    const profil = await base44.asServiceRole.entities.UserProfile.list(null, 500);
+    if (!Array.isArray(profil)) return "";
+    const urut = [...profil].sort((a, b) =>
+      String(b.updated_date || b.created_date || "").localeCompare(String(a.updated_date || a.created_date || "")),
+    );
+    const p = urut.find((x) => x && x.user_email && normalizePhone(x.hp_whatsapp) === nomor);
+    return p ? p.user_email : "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Get a single employee's phone by email.
  *
  * Dua tempat menyimpan nomor karyawan, dan yang dipakai pengirim WhatsApp
