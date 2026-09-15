@@ -203,6 +203,19 @@ Deno.serve(async (req) => {
       }
       const relevan = (Array.isArray(baris) ? baris : []).filter(a.berlaku);
       if (relevan.length === 0) continue;
+      /*
+       * Rasio dari satu-dua baris bukan bukti apa pun.
+       *
+       * FeedStock punya 10 bahan, sembilan di antaranya sengaja dinonaktifkan
+       * (rumput dan kaktus dipanen dari kebun sendiri, sisanya insidentil),
+       * jadi `berlaku` menyisakan SATU baris. 0 dari 1 terbaca 0% dan alarm
+       * belanja pakan dilaporkan mati setiap minggu — padahal yang benar
+       * adalah "tidak ada yang dilacak untuk dibelikan otomatis", keadaan
+       * yang sah dan tidak perlu diperbaiki.
+       *
+       * Vonis "mati" hanya dijatuhkan bila ada cukup baris untuk menilainya.
+       */
+      if (relevan.length < 3) continue;
       const adaIsi = relevan.filter((r: any) => terisi(r?.[a.kolom])).length;
       // Ambang 10%: satu-dua baris terisi tidak membuat alarm hidup, tapi alarm
       // yang sebagian besar datanya ada memang sedang bekerja — kekurangannya
