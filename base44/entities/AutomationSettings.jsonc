@@ -86,6 +86,20 @@
       "type": "string",
       "description": "A15 \u2014 Tanggal WIB terakhir arsip dijalankan"
     },
+    "cek_stok_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "A16 \u2014 Pemeriksaan stok harian atas seluruh gudang & pakan (menggantikan alert berbasis kejadian yang buta terhadap barang yang diam)"
+    },
+    "cek_stok_jam": {
+      "type": "string",
+      "default": "07:00",
+      "description": "A16 \u2014 Jam WIB paling awal peringatan stok boleh dikirim"
+    },
+    "cek_stok_terakhir": {
+      "type": "string",
+      "description": "A16 \u2014 Tanggal WIB terakhir pemeriksaan stok dijalankan"
+    },
     "anomali_berat_enabled": {
       "type": "boolean",
       "default": false,
