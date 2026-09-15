@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.WarehouseItem.list("name", BATAS_AMBIL),
       base44.asServiceRole.entities.FeedStock.list("name", BATAS_AMBIL),
       // Tanggal kedaluwarsa sebenarnya hidup di batch, bukan di barangnya.
-      base44.asServiceRole.entities.BatchBarang.list("expired_date", BATAS_AMBIL),
+      base44.asServiceRole.entities.BatchBarang.list("tanggal_expired", BATAS_AMBIL),
     ]);
 
     const perlu = stokPerluDiperhatikan(gudang || [], pakan || []);

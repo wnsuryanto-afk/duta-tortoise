@@ -96,7 +96,13 @@ const ALARM = [
   {
     nama: "Peringatan kepadatan kandang",
     tabel: "Enclosure",
-    kolom: "capacity",
+    // BUKAN "capacity" — skema Enclosure menamainya `max_capacity`, dan
+    // seluruh aplikasi (EnclosurePage, TortoiseList, HatchDialog, kandang.js)
+    // memakai nama itu. Versi pertama pemeriksa ini salah kolom, jadi rasio
+    // terisinya selalu 0% dan alarm kepadatan kandang SELALU dilaporkan mati
+    // padahal hidup. Pendeteksi alarm mati yang salah kolom menghasilkan
+    // laporan palsu — persis cacat yang ia dibangun untuk menangkap.
+    kolom: "max_capacity",
     berlaku: (r: any) => r?.is_active !== false,
     akibat: "kandang penuh tidak pernah diperingatkan",
   },

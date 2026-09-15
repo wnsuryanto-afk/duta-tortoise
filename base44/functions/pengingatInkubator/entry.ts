@@ -55,7 +55,15 @@ Deno.serve(async (req) => {
     }
 
     // Sudah ada bacaan hari ini?
-    const bacaan = await base44.asServiceRole.entities.IncubatorReading.filter({ date: hariIni }, null, BATAS_AMBIL);
+    // IncubatorReading TIDAK punya kolom `date`; yang ada `date_time`, berisi
+    // "2026-06-01T17:10". Saringan ke `date` mengembalikan nol baris tanpa
+    // error, jadi fungsi ini selalu menyimpulkan "belum ada bacaan" dan
+    // pengingatnya tetap dikirim walau kiper sudah mencatat pagi itu.
+    // Pengingat yang tidak pernah berhenti sama saja dengan pengingat yang
+    // diabaikan. `$gte` bekerja karena formatnya urut secara leksikal.
+    const bacaan = await base44.asServiceRole.entities.IncubatorReading.filter(
+      { date_time: { $gte: hariIni } }, "-date_time", BATAS_AMBIL,
+    );
     if ((bacaan || []).length > 0) {
       await setOtomatis(base44, otomatis, { inkubator_terakhir: hariIni });
       return Response.json({ success: true, sudah_ada_bacaan: true });
