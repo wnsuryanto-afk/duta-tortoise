@@ -1,3 +1,4 @@
+import InputBerat from "@/components/common/InputBerat";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -726,16 +727,6 @@ export default function TortoiseForm({ open, onClose, editData }) {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Berat (gram) <span className="text-red-500">*</span></Label>
-              <Input
-                type="number"
-                value={form.weight_grams}
-                onChange={(e) => set("weight_grams", e.target.value)}
-                className={errors.weight_grams ? "border-red-500 ring-1 ring-red-400" : ""}
-              />
-              {errors.weight_grams && <p className="text-xs text-red-600">{errors.weight_grams}</p>}
-            </div>
             <div className="space-y-1.5">
               <Label>Panjang Cangkang (cm) <span className="text-red-500">*</span></Label>
               <Input
