@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingCart, Plus, Package } from "lucide-react";
+import { ShoppingCart, Plus, Package, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 
 
@@ -35,12 +35,12 @@ function normalizeItem(i) {
   };
 }
 
-const PRIORITY_SECTIONS = [
-  { key: "segera",     label: "🔴 Segera",    className: "border-red-200 bg-red-50" },
-  { key: "minggu_ini", label: "🟡 Minggu Ini", className: "border-yellow-200 bg-yellow-50" },
-  { key: "bulan_ini",  label: "🔵 Bulan Ini",  className: "border-blue-200 bg-blue-50" },
-  { key: "opsional",   label: "⚪ Opsional",   className: "border-slate-200 bg-slate-50" },
-];
+const PRIORITY_BADGE = {
+  segera:     { label: "Segera",     className: "bg-red-100 text-red-700 border-red-200" },
+  minggu_ini: { label: "Minggu Ini", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+  bulan_ini:  { label: "Bulan Ini",  className: "bg-blue-100 text-blue-700 border-blue-200" },
+  opsional:   { label: "Opsional",   className: "bg-slate-100 text-slate-700 border-slate-200" },
+};
 
 const STATUS_BADGE = {
   belum_dibeli:  { label: "Belum Dibeli",  className: "bg-red-100 text-red-700 border-red-200" },
@@ -160,6 +160,9 @@ function ShoppingItem({ item, onUpdate }) {
             {item.nama_barang || "(nama belum diisi)"}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {item.priority && PRIORITY_BADGE[item.priority] && (
+              <Badge className={`text-[10px] px-1.5 py-0 border ${PRIORITY_BADGE[item.priority].className}`}>{PRIORITY_BADGE[item.priority].label}</Badge>
+            )}
             <Badge className={`text-[10px] px-1.5 py-0 border ${badge.className}`}>{badge.label}</Badge>
             <span className="text-xs text-muted-foreground">{item.jumlah} {item.satuan}</span>
             {item.total_est > 0 && (
@@ -208,6 +211,9 @@ function ShoppingItem({ item, onUpdate }) {
 export default function ShoppingListWidget() {
   const queryClient = useQueryClient();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("semua");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 5;
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["shopping-list"],
@@ -226,6 +232,16 @@ export default function ShoppingListWidget() {
     .reduce((s, i) => s + (i.total_est || 0), 0);
   const sudahDibeli = items.filter(i => i.status === "sudah_dibeli").length;
   const progress = items.length > 0 ? Math.round((sudahDibeli / items.length) * 100) : 0;
+
+  // Filter & pagination
+  const filteredItems = items.filter(i => {
+    if (filterStatus === "belum_dibeli") return i.status !== "sudah_dibeli";
+    if (filterStatus === "sudah_dibeli") return i.status === "sudah_dibeli";
+    return true;
+  });
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div className="card-base p-4 space-y-4">
@@ -268,7 +284,25 @@ export default function ShoppingListWidget() {
         </div>
       )}
 
-      {/* Sections */}
+      {/* Filter */}
+      {items.length > 0 && (
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
+            <SelectTrigger className="w-44 h-8 text-xs">
+              <Filter className="w-3 h-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="semua">Seluruh Barang</SelectItem>
+              <SelectItem value="belum_dibeli">Belum Dibeli</SelectItem>
+              <SelectItem value="sudah_dibeli">Sudah Dibeli</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground">{filteredItems.length} item</span>
+        </div>
+      )}
+
+      {/* List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
           <Package className="w-4 h-4 mr-2 animate-pulse" /> Memuat daftar belanja...
@@ -279,25 +313,27 @@ export default function ShoppingListWidget() {
           <p>Daftar belanja kosong</p>
           <p className="text-xs mt-1">Klik "+ Tambah Item" untuk mulai</p>
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground text-sm">
+          <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
+          <p>{filterStatus === "belum_dibeli" ? "Tidak ada barang belum dibeli" : "Belum ada barang yang dibeli"}</p>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {PRIORITY_SECTIONS.map(section => {
-            const sectionItems = items.filter(i => i.priority === section.key);
-            if (sectionItems.length === 0) return null;
-            return (
-              <div key={section.key}>
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border mb-2 ${section.className}`}>
-                  <p className="text-xs font-bold">{section.label}</p>
-                  <span className="text-xs text-muted-foreground">({sectionItems.length} item)</span>
-                </div>
-                <div className="space-y-1.5">
-                  {sectionItems.map(item => (
-                    <ShoppingItem key={item.id} item={item} onUpdate={invalidate} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <div className="space-y-1.5">
+          {pageItems.map(item => (
+            <ShoppingItem key={item.id} item={item} onUpdate={invalidate} />
+          ))}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Button size="icon" variant="outline" className="h-7 w-7" disabled={currentPage === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground tabular">{currentPage} / {totalPages}</span>
+              <Button size="icon" variant="outline" className="h-7 w-7" disabled={currentPage === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
