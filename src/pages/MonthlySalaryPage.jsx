@@ -1,3 +1,4 @@
+import { profilUntuk } from "@/lib/profilUser";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
@@ -105,7 +106,10 @@ export default function MonthlySalaryPage() {
     users.forEach((u) => {
       if (!PERAN_BERGAJI.includes(u.role)) return;
       if (!u.email) return;
-      const profile = userProfiles.find((p) => p.user_email === u.email);
+      // Bukan .find() biasa: ada 19 baris nisan "[DUPLIKAT-HAPUS]" dan dua
+      // orang punya profil ganda yang lebih baru tapi kosong. Memilih yang
+      // salah berarti slip gaji tanpa nomor rekening. Lihat profilUser.js.
+      const profile = profilUntuk(userProfiles, { email: u.email, userId: u.id });
       empMap[u.email] = {
         email: u.email,
         name: u.full_name || profile?.full_name || u.email,
