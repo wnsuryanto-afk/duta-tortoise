@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     // 2. Sumber aktivitas per-kura (parallel fetch)
     const [healthRecords, measurements, treatmentLogs, breedings] = await Promise.all([
       svc.entities.HealthRecord.list('-date', 2000),
-      svc.entities.MeasurementHistory.list('-date', 2000),
+      svc.entities.MeasurementHistory.list('-date', 2000).then(hanyaLaporan),
       svc.entities.TreatmentLog.list('-done_date', 2000),
       svc.entities.Breeding.list('-created_date', 500),
     ]);
