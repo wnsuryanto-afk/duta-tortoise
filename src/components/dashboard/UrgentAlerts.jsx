@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, AlertCircle, Egg, Package, Home, FileWarning } from "lucide-react";
 import { formatDateIndonesian } from "@/lib/formatIndonesian";
-import { perluDiperhatikan } from "@/lib/stokMenipis";
+import { golonganStok } from "@/lib/stokMenipis";
 
 export default function UrgentAlerts() {
   // Telur dalam masa penetasan
@@ -44,8 +44,19 @@ export default function UrgentAlerts() {
   // sengaja tidak distok (obat resep dokter, misalnya) lolos lewat 0 <= 0, dan
   // barang yang sudah dinonaktifkan tetap ikut. Peringatan yang selalu menyala
   // untuk semua barang sama saja dengan tidak ada peringatan.
-  const lowStock = warehouseItems.filter(perluDiperhatikan);
-  const lowFeed = lowStock.filter(item => item.category === 'pakan' || item.category === 'sayuran');
+  /*
+   * Tiga golongan, bukan satu angka.
+   *
+   * Dari 23 barang yang "perlu diperhatikan", delapan bertanda wajib-ada tapi
+   * batas minimumnya belum pernah diisi — sebagian memang tidak bisa distok
+   * sendiri (obat resep lewat drh). Menghitungnya sebagai "di bawah minimum"
+   * salah dua kali: angkanya tidak benar, dan sebagian besarnya tidak bisa
+   * dikerjakan siapa pun. Definisi golongannya dipakai bersama dengan
+   * pemeriksaan stok harian di server, supaya beranda dan notifikasi pagi
+   * tidak pernah menyebut angka yang berbeda untuk keadaan yang sama.
+   */
+  const { habis, menipis, wajibTanpaMinimum } = golonganStok(warehouseItems);
+  const perluDibeli = [...habis, ...menipis];
 
   // Kandang overcrowding
   const { data: enclosures = [] } = useQuery({
@@ -63,7 +74,7 @@ export default function UrgentAlerts() {
     return !t.birth_date || !t.weight_grams || !t.shell_length_cm || !t.gender;
   });
 
-  const hasAlerts = hatchingSoon.length > 0 || expiredMeds.length > 0 || lowStock.length > 0 || overcrowded.length > 0 || incomplete.length > 0;
+  const hasAlerts = hatchingSoon.length > 0 || expiredMeds.length > 0 || perluDibeli.length > 0 || overcrowded.length > 0 || incomplete.length > 0;
 
   if (!hasAlerts) {
     return (
@@ -118,18 +129,25 @@ export default function UrgentAlerts() {
             </div>
           )}
 
-          {lowStock.length > 0 && (
+          {perluDibeli.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Package className="w-4 h-4 text-amber-600" />
-                <span className="font-semibold text-amber-800 text-sm">Stok Menipis</span>
+                <span className="font-semibold text-amber-800 text-sm">Perlu Dibeli</span>
               </div>
-              <p className="text-xs text-amber-700">{lowStock.length} item di bawah minimum</p>
-              {lowFeed.slice(0, 2).map((item, i) => (
+              <p className="text-xs text-amber-700">
+                {habis.length} habis{menipis.length > 0 ? `, ${menipis.length} menipis` : ""}
+              </p>
+              {perluDibeli.slice(0, 2).map((item, i) => (
                 <p key={i} className="text-xs text-amber-600 mt-1">
-                  {item.name}: {item.current_stock} {item.unit}
+                  {item.name}: {item.current_stock ?? 0} {item.unit || ""}
                 </p>
               ))}
+              {wajibTanpaMinimum.length > 0 && (
+                <p className="text-xs text-amber-600/80 mt-1 italic">
+                  +{wajibTanpaMinimum.length} wajib-ada tanpa batas minimum
+                </p>
+              )}
             </div>
           )}
 
