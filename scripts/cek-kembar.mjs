@@ -27,12 +27,53 @@ const PASANGAN = [
 // Perbandingan sengaja "buta" terhadap hal yang memang boleh beda antara
 // JavaScript dan TypeScript: nama parameter, anotasi tipe, komentar, spasi.
 // Yang dibandingkan hanya bentuk logikanya.
+/**
+ * Lewati anotasi tipe kembalian TypeScript, termasuk yang berkurung kurawal.
+ *
+ * Versi pertama memakai `(?::[^{]+)?` — berhenti di kurawal PERTAMA sesudah
+ * tanda dua titik. Untuk `): boolean {` itu benar; untuk
+ * `): { habis: any[]; menipis: any[] } {` kurawal pertama adalah milik TIPE,
+ * jadi yang terbaca sebagai "badan fungsi" dimulai di tengah anotasi. Dua
+ * salinan yang isinya identik lalu dilaporkan MELENCENG.
+ *
+ * Itu bukan sekadar berisik: penjaga yang melaporkan salah sasaran membuat
+ * orang belajar mengabaikannya, dan pergeseran yang sungguhan ikut lolos.
+ *
+ * @returns indeks '{' pembuka BADAN fungsi, atau -1.
+ */
+function awalBadan(src, i) {
+  while (i < src.length && /\s/.test(src[i])) i++;
+  if (src[i] === ":") {
+    i++;
+    // Tipe boleh memuat kurawal seimbang (objek) — lewati seluruhnya.
+    while (i < src.length) {
+      while (i < src.length && /[\s\w|&,.<>[\]()]/.test(src[i])) i++;
+      if (src[i] !== "{") break;
+      let dalam = 0;
+      for (; i < src.length; i++) {
+        if (src[i] === "{") dalam++;
+        else if (src[i] === "}") { dalam--; if (dalam === 0) { i++; break; } }
+      }
+    }
+    while (i < src.length && /\s/.test(src[i])) i++;
+  }
+  return src[i] === "{" ? i : -1;
+}
+
 function badan(src, nama) {
-  const re = new RegExp(`export function ${nama}\\s*\\(([^)]*)\\)\\s*(?::[^{]+)?\\{([\\s\\S]*?)\\n\\}`);
-  const m = src.match(re);
+  const kepala = new RegExp(`export function ${nama}\\s*\\(([^)]*)\\)`);
+  const m = src.match(kepala);
   if (!m) return null;
+  const buka = awalBadan(src, m.index + m[0].length);
+  if (buka === -1) return null;
+  let dalam = 0, tutup = -1;
+  for (let j = buka; j < src.length; j++) {
+    if (src[j] === "{") dalam++;
+    else if (src[j] === "}") { dalam--; if (dalam === 0) { tutup = j; break; } }
+  }
+  if (tutup === -1) return null;
   const params = m[1].split(",").map((p) => p.trim().split(/[:=\s]/)[0]).filter(Boolean);
-  let t = m[2];
+  let t = src.slice(buka + 1, tutup);
   t = t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
   for (const p of params) t = t.replace(new RegExp(`\\b${p}\\b`, "g"), "_");
   t = t.replace(/:\s*(boolean|number|string|any|unknown|Set<string>|string\[\]|any\[\])/g, "");
