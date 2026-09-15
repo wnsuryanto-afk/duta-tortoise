@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Clipboard, FlaskConical, CheckSquare } from "lucide-react";
+import { beratMencurigakan } from "@/lib/beratMasukAkal";
+import { bacaanGram } from "@/lib/satuanBerat";
 
 const SEVERITY_COLOR = {
   ringan: "bg-green-100 text-green-700",
@@ -55,8 +57,34 @@ export default function DosisKalkulator({ selectedDiagnoses, tortoiseId, tortois
   // Cari berat kura dari entity Tortoise
   const tortoise = tortoises?.find(t => t.id === tortoiseId);
   const beratGram = tortoise?.weight_grams;
-  const beratKg = beratGram ? beratGram / 1000 : (beratManual ? parseFloat(beratManual) : null);
-  const needsManualBerat = !beratGram;
+
+  /*
+   * PENJAGA DOSIS (15-09-2026).
+   *
+   * Dosis dihitung dari kolom berat di profil kura. Kalau kolom itu berisi
+   * KILOGRAM — "24" untuk kura 24 kg — seluruh dosis di halaman ini mengecil
+   * seribu kali lipat, dan tidak ada satu pun angka di layar yang terlihat
+   * janggal: 0,24 ml sama meyakinkannya dengan 240 ml bagi orang yang belum
+   * pernah menghitungnya sendiri.
+   *
+   * Itu bukan kemungkinan teoretis. Pada 15-09-2026 tujuh kura dewasa — B14,
+   * B15, B25, B30, B31, B111, B124 — memang tersimpan begitu, semuanya
+   * ditimbang akhir Agustus/awal September. Salah satunya sakit, dosisnya
+   * akan keluar 1/1000.
+   *
+   * Karena ini menyentuh obat, halaman ini MENOLAK menghitung saat beratnya
+   * tidak masuk akal terhadap panjang tempurung — bukan sekadar memberi
+   * peringatan yang bisa dilewati.
+   */
+  const beratJanggal = beratGram
+    ? beratMencurigakan(beratGram, tortoise?.shell_length_cm)
+    : null;
+  const beratGramDipakai = beratJanggal ? null : beratGram;
+
+  const beratKg = beratGramDipakai
+    ? beratGramDipakai / 1000
+    : (beratManual ? parseFloat(beratManual) : null);
+  const needsManualBerat = !beratGramDipakai;
 
   // Cocokkan diagnosis dengan protokol
   const matchedProtocols = selectedDiagnoses.map(diag => {
@@ -83,6 +111,23 @@ export default function DosisKalkulator({ selectedDiagnoses, tortoiseId, tortois
         <p className="text-sm font-bold text-blue-800">Protokol Pengobatan Otomatis</p>
       </div>
 
+      {beratJanggal && (
+        <div className="flex gap-2 rounded-lg border-2 border-red-300 bg-red-50 px-3 py-2.5">
+          <AlertTriangle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+          <div className="text-xs text-red-800">
+            <p className="font-bold">Berat di profil kura tidak dipakai — angkanya tidak masuk akal.</p>
+            <p className="mt-0.5">
+              Tersimpan {bacaanGram(beratGram)} untuk tempurung {tortoise?.shell_length_cm} cm.
+              {beratJanggal.saran ? ` Kemungkinan yang dimaksud ${bacaanGram(beratJanggal.saran)}.` : ""}
+            </p>
+            <p className="mt-1 font-semibold">
+              Timbang ulang dan perbaiki di profil kura, atau isi beratnya manual di bawah.
+              Dosis tidak dihitung dari angka yang meragukan.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Input berat manual jika tidak ada di data */}
       {needsManualBerat && (
         <div className="flex items-center gap-3 bg-card rounded-lg border border-blue-200 p-3">
@@ -96,13 +141,16 @@ export default function DosisKalkulator({ selectedDiagnoses, tortoiseId, tortois
             placeholder="misal: 0.250"
             className="w-32 h-8 text-sm"
           />
-          <p className="text-xs text-blue-600">Berat belum tersimpan di data kura</p>
+          <p className="text-xs text-blue-600">
+            {beratJanggal ? "Berat di profil ditolak penjaga" : "Berat belum tersimpan di data kura"}
+          </p>
         </div>
       )}
       {beratKg && (
         <p className="text-xs text-blue-700 font-medium">
           Berat: <span className="font-bold">{beratKg.toFixed(3)} kg</span>
-          {beratGram && <span className="text-blue-500 ml-1">({beratGram}g dari data)</span>}
+          {beratGramDipakai && <span className="text-blue-500 ml-1">({bacaanGram(beratGramDipakai)} dari data kura)</span>}
+          {!beratGramDipakai && <span className="text-blue-500 ml-1">(diisi manual)</span>}
         </p>
       )}
 
