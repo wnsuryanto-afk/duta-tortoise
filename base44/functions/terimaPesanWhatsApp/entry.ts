@@ -1,6 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, wibTanggal, emailPerRole } from "../../shared/otomatis.ts";
-import { sendWhatsAppNotification, getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.ts";
+import { sendWhatsAppNotification, getSettings, normalizePhone, trackAICall, emailDariNomor } from "../../shared/whatsapp.ts";
 
 /**
  * C10 — Laporan masuk lewat balasan WhatsApp.
@@ -55,13 +55,34 @@ Deno.serve(async (req) => {
     }
 
     const settings = await getSettings(base44);
-    const daftar = Array.isArray(settings?.employee_phones) ? settings.employee_phones : [];
-    const cocok = daftar.find((e: any) => normalizePhone(e.phone) === pengirim);
 
-    if (!cocok) {
+    /*
+     * Nomor → karyawan. Dulu hanya membaca WhatsAppSettings.employee_phones,
+     * daftar terpisah yang harus diketik ulang owner dan per 15-09-2026 masih
+     * kosong — jadi SETIAP nomor ditolak sebagai "tidak dikenal". Sekarang
+     * lewat emailDariNomor(), yang jatuh kembali ke UserProfile.hp_whatsapp,
+     * tempat nomor itu memang dirawat orangnya sendiri.
+     */
+    const emailPengirim = await emailDariNomor(base44, pengirim);
+    if (!emailPengirim) {
       // Nomor tak dikenal — jangan diproses, dan jangan dibalas (hindari spam).
       return Response.json({ skipped: "nomor_tidak_dikenal", pengirim });
     }
+
+    const daftar = Array.isArray(settings?.employee_phones) ? settings.employee_phones : [];
+    const dariPengaturan = daftar.find((e: any) => e && e.email === emailPengirim);
+    let namaPengirim = dariPengaturan?.name || "";
+    if (!namaPengirim) {
+      try {
+        const profil = await base44.asServiceRole.entities.UserProfile.filter({ user_email: emailPengirim });
+        const dipakai = (Array.isArray(profil) ? profil : [])
+          .filter((p: any) => p && p.full_name && p.full_name !== "[DUPLIKAT-HAPUS]")
+          .sort((a: any, b: any) =>
+            String(b.updated_date || "").localeCompare(String(a.updated_date || "")))[0];
+        namaPengirim = dipakai?.full_name || "";
+      } catch { /* nama boleh kosong; emailnya sudah cukup untuk meneruskan */ }
+    }
+    const cocok = { email: emailPengirim, name: namaPengirim };
 
     // ── Kenali maksud pesan ──
     let maksud = "lainnya";
