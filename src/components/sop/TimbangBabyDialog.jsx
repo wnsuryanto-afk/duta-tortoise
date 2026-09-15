@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { beratMencurigakan, panjangMencurigakan } from "@/lib/beratMasukAkal";
+import { panjangMencurigakan } from "@/lib/beratMasukAkal";
+import InputBerat from "@/components/common/InputBerat";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -89,12 +90,10 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
           photo_url = res.file_url;
         }
       }
-      // Penjaga satuan — di layar bayi pun bisa tertukar, dan tempurung bayi
-      // yang terketik 40 cm (seharusnya 4,0) pernah tersimpan. Lihat
-      // beratMasukAkal.js.
-      const curiga = beratMencurigakan(w, l);
+      // Peringatan berat kini tampil langsung di InputBerat. Yang tersisa di
+      // sini hanya panjang tempurung — bayi yang terketik 40 cm (seharusnya
+      // 4,0) pernah tersimpan. Lihat beratMasukAkal.js.
       const curigaPanjang = panjangMencurigakan(l);
-      if (curiga && !window.confirm(`${curiga.pesan}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) { setSavingBaby(false); return; }
       if (curigaPanjang && !window.confirm(`${curigaPanjang}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) { setSavingBaby(false); return; }
 
       // 1. Simpan MeasurementHistory → trigger onMeasurementSaved update Tortoise + dorong foto ke galeri
@@ -165,16 +164,17 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
                 Ganti baby
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Berat (gram) *</Label>
-                <Input type="number" min="1" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="0" className="mt-1 h-9 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Panjang (cm) *</Label>
-                <Input type="number" min="0.1" step="0.01" value={length} onChange={(e) => setLength(e.target.value)} placeholder="0" className="mt-1 h-9 text-sm" />
-              </div>
+            <div>
+              <Label className="text-xs">Panjang tempurung (cm) *</Label>
+              <Input type="number" min="0.1" step="0.01" value={length} onChange={(e) => setLength(e.target.value)} placeholder="0" className="mt-1 h-9 text-sm" />
             </div>
+            <InputBerat
+              gram={weight}
+              onChange={setWeight}
+              panjangCm={length}
+              label="Berat"
+              required
+            />
             <div>
               <Label className="text-xs">Foto</Label>
               <label className="mt-1 flex items-center justify-center h-20 rounded-lg border-2 border-dashed border-pink-300 cursor-pointer hover:bg-pink-50 overflow-hidden">
