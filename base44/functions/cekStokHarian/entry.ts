@@ -44,8 +44,25 @@ Deno.serve(async (req) => {
     ]);
 
     const perlu = stokPerluDiperhatikan(gudang || [], pakan || []);
-    const habis = perlu.filter(stokHabis);
+
+    /*
+     * Tiga golongan, bukan satu daftar panjang.
+     *
+     * Jalan pertama menghasilkan 23 baris "HABIS" sekaligus, dan di dalamnya
+     * bercampur dua hal yang sangat berbeda: sembilan barang yang minimumnya
+     * sudah ditentukan lalu kosong (bisa langsung dibeli), dan empat belas
+     * barang bertanda wajib-ada yang minimumnya masih 0 — sebagian memang
+     * tidak mungkin distok, seperti "Antibiotik via Dokter Hewan (Resep)".
+     *
+     * Menyebut keduanya dengan kata yang sama membuat daftar terlalu panjang
+     * untuk dikerjakan, dan daftar yang terlalu panjang tidak dikerjakan sama
+     * sekali. Itu persis cacat yang hari ini ditemukan pada laporan higiene
+     * gudang: 23 temuan tiap pekan yang semuanya sudah beres.
+     */
+    const punyaMinimum = (i: any) => (Number(i?.minimum_stock) || 0) > 0;
+    const habis = perlu.filter((i: any) => stokHabis(i) && punyaMinimum(i));
     const menipis = perlu.filter((i: any) => !stokHabis(i));
+    const wajibTanpaMinimum = perlu.filter((i: any) => stokHabis(i) && !punyaMinimum(i));
 
     const baris = (i: any) =>
       `${i.name}${i._sumber === "pakan" ? " (pakan)" : ""}: ${Number(i.current_stock) || 0} dari minimum ${Number(i.minimum_stock) || 0} ${i.unit || ""}`.trim();
@@ -53,13 +70,22 @@ Deno.serve(async (req) => {
     let dikirim = 0;
     if (perlu.length > 0) {
       const bagian: string[] = [];
-      if (habis.length > 0) bagian.push(`HABIS (${habis.length}):\n` + habis.slice(0, 12).map(baris).join("\n"));
+      if (habis.length > 0) bagian.push(`HABIS — perlu dibeli (${habis.length}):\n` + habis.slice(0, 12).map(baris).join("\n"));
       if (menipis.length > 0) bagian.push(`MENIPIS (${menipis.length}):\n` + menipis.slice(0, 12).map(baris).join("\n"));
+      if (wajibTanpaMinimum.length > 0) {
+        bagian.push(
+          `Selain itu ${wajibTanpaMinimum.length} barang bertanda wajib-ada berstok nol tapi batas minimumnya belum diisi ` +
+          `(sebagian memang tidak distok, mis. obat resep dokter). Isi minimumnya bila memang perlu selalu ada.`,
+        );
+      }
 
       for (const email of await emailPerRole(base44, ["owner", "manajer", "admin"])) {
         const dibuat = await notifSekali(base44, {
           recipient_email: email,
           title: `${habis.length} barang habis, ${menipis.length} menipis`,
+          // Judul sengaja hanya menghitung yang bisa langsung dikerjakan.
+          // Barang wajib-ada tanpa minimum disebut di badan pesan, bukan di
+          // angka yang dilihat orang sekilas.
           message: bagian.join("\n\n").slice(0, 900),
           type: habis.length > 0 ? "alert" : "warning",
           priority: habis.length > 0 ? "tinggi" : "sedang",
@@ -80,6 +106,7 @@ Deno.serve(async (req) => {
       diperiksa: (gudang?.length || 0) + (pakan?.length || 0),
       habis: habis.length,
       menipis: menipis.length,
+      wajib_tanpa_minimum: wajibTanpaMinimum.length,
       notifikasi_dibuat: dikirim,
       detail_habis: habis.slice(0, 20).map(baris),
       detail_menipis: menipis.slice(0, 20).map(baris),
