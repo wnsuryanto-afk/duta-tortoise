@@ -7,6 +7,8 @@
  *   cek-impor       fungsi pustaka dipakai tanpa di-import → komponen crash
  *                   saat dirender, build tetap hijau
  *   cek-kolom-hantu kolom ditulis tapi tidak ada di skema → datanya dibuang
+ *   cek-kolom-baca  kolom dibaca tapi tidak ada di skema → filter nol baris,
+ *                   alarm mati, dan laporan yang terlihat bersih
  *                   diam-diam, tanpa error
  *   cek-kembar      pustaka frontend dan kembaran backend-nya melenceng →
  *                   layar dan otomatisasi malam menjawab beda
@@ -29,7 +31,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {
