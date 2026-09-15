@@ -1,3 +1,4 @@
+import { profilUntuk } from "@/lib/profilUser";
 import { useState } from "react";
 import { sisaKasbon, selisihPencatatan } from "@/lib/potonganKasbon";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -285,7 +286,7 @@ export default function UserDetailPage({ userId, onBack }) {
 
   // ── Derived data ──
   const targetUser = users.find(u => u.id === userId);
-  const profile = profiles.find(p => p.user_id === userId);
+  const profile = profilUntuk(profiles, { userId });
 
   const userEmail = targetUser?.email || "";
   const userAttendances = attendances.filter(a => a.employee_email === userEmail || a.employee_id === userId);
