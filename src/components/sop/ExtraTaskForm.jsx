@@ -1,3 +1,4 @@
+import { catatLogSekali } from "@/lib/logSekali";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -53,7 +54,7 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
     }
     setSaving(true);
     try {
-      await base44.entities.MaintenanceLog.create({
+      await catatLogSekali({
         check_key: `${user.email}__extra__${Date.now()}__${today}`,
         enclosure_id: "extra",
         enclosure_name: "Tugas Tambahan",

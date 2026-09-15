@@ -1,3 +1,4 @@
+import { catatLogSekali } from "@/lib/logSekali";
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -219,7 +220,7 @@ export default function MaintenanceSchedulePage() {
         is_done: true, done_at: nowStr, done_by: user?.full_name || user?.email || "",
       });
     } else {
-      await base44.entities.MaintenanceLog.create({
+      await catatLogSekali({
         check_key: key,
         enclosure_id: enclosure.id,
         enclosure_name: enclosure.name,

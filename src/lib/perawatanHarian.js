@@ -20,6 +20,7 @@
  * rekam kesehatan wajib berhasil, dua sisanya boleh gagal tanpa membatalkan
  * pencatatan yang sudah tersimpan.
  */
+import { catatLogSekali } from "@/lib/logSekali";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { claimIncidentalTask } from "@/lib/claimIncidentalTask";
@@ -141,7 +142,7 @@ export async function catatPerawatanHarian(kura, user, opsi = {}) {
 
   // ── 2. Penanda layar keeper — supaya centangnya bertahan setelah muat ulang ──
   try {
-    await base44.entities.MaintenanceLog.create({
+    await catatLogSekali({
       check_key: `${user?.email}__harian__perawatan_${tortoiseId}__${tanggal}`,
       enclosure_id: "perawatan",
       enclosure_name: "Perawatan",

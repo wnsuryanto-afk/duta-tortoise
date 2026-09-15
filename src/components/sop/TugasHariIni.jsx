@@ -8,6 +8,7 @@
  * saat user menekan centang, sistem query DB untuk cek apakah task itu
  * sudah dikerjakan orang lain pada tanggal yang sama. Jika ya → tolak simpan.
  */
+import { catatLogSekali } from "@/lib/logSekali";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -555,7 +556,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 
       // Simpan
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
-      await base44.entities.MaintenanceLog.create({
+      await catatLogSekali({
         check_key: `${user.email}__tugas__${task.id}__${today}`,
         enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
         freq: "harian", item_id: task.id, item_label: task.label,
@@ -633,7 +634,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         // Ganti foto bukti (tugas sudah dicentang sebelumnya) — perbarui tautan, jangan buat log dobel
         await base44.entities.MaintenanceLog.update(existing.id, { photo_url: file_url });
       } else {
-        await base44.entities.MaintenanceLog.create({
+        await catatLogSekali({
           check_key: `${user.email}__tugas__${task.id}__${today}`,
           enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
           freq: "harian", item_id: task.id, item_label: task.label,
@@ -738,7 +739,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       }
       // 2. Buat MaintenanceLog (centang)
       if (!existingLogItemIds.has(task.id)) {
-        await base44.entities.MaintenanceLog.create({
+        await catatLogSekali({
           check_key: `${user.email}__tugas__${task.id}__${today}`,
           enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
           freq: "harian", item_id: task.id, item_label: task.label,
@@ -775,7 +776,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         return;
       }
       if (!existingLogItemIds.has(task.id)) {
-        await base44.entities.MaintenanceLog.create({
+        await catatLogSekali({
           check_key: `${user.email}__tugas__${task.id}__${today}`,
           enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
           freq: "harian", item_id: task.id, item_label: task.label,

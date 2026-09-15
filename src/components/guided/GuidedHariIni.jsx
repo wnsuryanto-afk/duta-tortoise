@@ -1,3 +1,4 @@
+import { catatLogSekali } from "@/lib/logSekali";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -650,7 +651,7 @@ export default function GuidedHariIni({ user }) {
         poin_earned: poinKebersihan,
       };
       if (photoUrl) logData.photo_url = photoUrl;
-      await base44.entities.MaintenanceLog.create(logData);
+      await catatLogSekali(logData);
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
       setLastCheckAtMs(Date.now()); // mulai jeda 60 dtk untuk kandang berikutnya
       refetchML();
@@ -1527,7 +1528,7 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
     if (saved.has(item.id) || skipped.has(item.id) || processingId) return;
     setProcessingId(item.id);
     try {
-      await base44.entities.MaintenanceLog.create({
+      await catatLogSekali({
         check_key: `${user.email}__harian__suplemen_${item.id}__${today}`,
         enclosure_id: "suplemen",
         enclosure_name: "Suplemen",
@@ -1556,7 +1557,7 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
     setDone(p => { const n = new Set(p); n.add(item.id); return n; });
     setProcessingId(item.id);
     try {
-      await base44.entities.MaintenanceLog.create({
+      await catatLogSekali({
         check_key: `${user.email}__harian__suplemen_${item.id}__${today}`,
         enclosure_id: "suplemen",
         enclosure_name: "Suplemen",
