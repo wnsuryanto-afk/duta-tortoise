@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { panjangMencurigakan } from "@/lib/beratMasukAkal";
 import InputBerat from "@/components/common/InputBerat";
+import { masukLaporan } from "@/lib/laporan";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,9 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
 
   useEffect(() => {
     if (open && todayMeasurements.length > 0) {
-      setDoneIds(new Set(todayMeasurements.map(m => m.tortoise_id).filter(Boolean)));
+      // Catatan yang dikecualikan (kembar, salah ketik) tidak boleh membuat
+      // baby terhitung "sudah ditimbang" — justru itu yang perlu diulang.
+      setDoneIds(new Set(todayMeasurements.filter(masukLaporan).map(m => m.tortoise_id).filter(Boolean)));
     }
   }, [open, todayMeasurements]);
 
