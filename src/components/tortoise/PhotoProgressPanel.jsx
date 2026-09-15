@@ -1,3 +1,4 @@
+import InputBerat from "@/components/common/InputBerat";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
