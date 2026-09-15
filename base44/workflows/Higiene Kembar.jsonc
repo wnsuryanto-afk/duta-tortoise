@@ -1,0 +1,41 @@
+{
+  "name": "Higiene Kembar",
+  "description": "Sapuan mingguan baris kembar dan catatan uji yang tidak ikut ditandai, di seluruh tabel besar. Hanya melapor, tidak mengubah data. Senin 08:10 WIB (01:10 UTC).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "10 1 * * 1",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "higiene_kembar",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "higieneKembar",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}
