@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { beratMencurigakan, panjangMencurigakan } from "@/lib/beratMasukAkal";
+import { panjangMencurigakan } from "@/lib/beratMasukAkal";
+import InputBerat from "@/components/common/InputBerat";
+import { bacaanGram } from "@/lib/satuanBerat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -31,13 +33,10 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
   const handleSave = async (e) => {
     e.preventDefault();
     /*
-     * Satu kolom, tiga satuan: gram untuk bayi, kilogram dan kadang ons untuk
-     * dewasa. 53 catatan Mei-September 2026 tersimpan dengan satuan tertukar
-     * tanpa satu pun error. Panjang tempurung jadi pembandingnya — lihat
-     * beratMasukAkal.js. Bertanya, bukan memperbaiki sendiri.
+     * Peringatan kewajaran berat sekarang tampil di dalam InputBerat, lengkap
+     * dengan tombol perbaikan sekali tekan — bukan window.confirm yang di layar
+     * ponsel cenderung ditekan OK tanpa dibaca.
      */
-    const curiga = beratMencurigakan(form.weight_grams, form.shell_length_cm);
-    if (curiga && !window.confirm(`${curiga.pesan}\n\nTekan OK untuk tetap menyimpan ${form.weight_grams} g apa adanya, atau Batal untuk memperbaiki.`)) return;
     const curigaPanjang = panjangMencurigakan(form.shell_length_cm);
     if (curigaPanjang && !window.confirm(`${curigaPanjang}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) return;
     setSaving(true);
@@ -67,7 +66,7 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
             {latest.weight_grams && (
               <div className="flex items-center gap-1.5">
                 <Weight className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="font-bold">{latest.weight_grams}g</span>
+                <span className="font-bold">{bacaanGram(latest.weight_grams)}</span>
               </div>
             )}
             {latest.shell_length_cm && (
@@ -90,20 +89,18 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
         </Button>
       ) : (
         <form onSubmit={handleSave} className="space-y-2 border rounded-xl p-3 bg-muted/30">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Berat (gram)</Label>
-              <Input type="number" min={0} step="0.1" value={form.weight_grams}
-                onChange={(e) => setForm(p => ({ ...p, weight_grams: e.target.value }))}
-                placeholder="0" className="mt-1 h-8 text-xs" />
-            </div>
-            <div>
-              <Label className="text-xs">Panjang (cm)</Label>
-              <Input type="number" min={0} step="0.01" value={form.shell_length_cm}
-                onChange={(e) => setForm(p => ({ ...p, shell_length_cm: e.target.value }))}
-                placeholder="0" className="mt-1 h-8 text-xs" />
-            </div>
+          <div>
+            <Label className="text-xs">Panjang tempurung (cm)</Label>
+            <Input type="number" min={0} step="0.01" value={form.shell_length_cm}
+              onChange={(e) => setForm(p => ({ ...p, shell_length_cm: e.target.value }))}
+              placeholder="0" className="mt-1 h-8 text-xs" />
           </div>
+          <InputBerat
+            gram={form.weight_grams}
+            onChange={(g) => setForm(p => ({ ...p, weight_grams: g }))}
+            panjangCm={form.shell_length_cm}
+            label="Berat"
+          />
           <div>
             <Label className="text-xs">Tanggal</Label>
             <Input type="date" value={form.date}
