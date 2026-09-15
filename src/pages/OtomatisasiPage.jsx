@@ -282,11 +282,21 @@ const GRUP = [
           { field: "arsip_notif_umur_hari", label: "Umur arsip (hari)", tipe: "number" },
         ],
       },
+      {
+        kode: "A16", fn: "cekStokHarian", saklar: "cek_stok_enabled",
+        nama: "Pemeriksaan stok harian",
+        isi: "Memeriksa SELURUH barang gudang & pakan tiap hari, bukan hanya yang kebetulan diubah. Menggantikan alert lama yang buta terhadap barang yang lama tidak disentuh — justru barang itu yang paling lama kosong.",
+        jadwal: "1× per hari",
+        jejak: "cek_stok_terakhir",
+        params: [
+          { field: "cek_stok_jam", label: "Jam paling awal", tipe: "text", bantu: "HH:mm WIB" },
+        ],
+      },
     ],
   },
 ];
 
-const URUTAN_SARAN = ["A15", "A3", "A12", "A14", "A4", "A1"];
+const URUTAN_SARAN = ["A16", "A15", "A3", "A12", "A14", "A4", "A1"];
 
 export default function OtomatisasiPage() {
   const { role } = useCurrentUser();
