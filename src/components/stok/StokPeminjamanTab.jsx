@@ -66,7 +66,10 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.item_id || !form.borrower_name) return;
+    // ToolLoan mewajibkan purpose dan borrower_email. Dulu tabel ini menulis ke
+    // ItemBorrow yang tidak mewajibkan keduanya; tanpa penjagaan ini penyimpanan
+    // akan ditolak server tanpa penjelasan di layar.
+    if (!form.item_id || !form.borrower_name.trim() || !form.purpose.trim()) return;
     setSaving(true);
     try {
       await base44.entities.ToolLoan.create({
@@ -74,8 +77,8 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
         warehouse_item_id: form.item_id,
         warehouse_item_sku: selectedItem?.sku || null,
         item_type: form.item_type,
-        borrower_email: form.borrower_email,
-        borrower_name: form.borrower_name,
+        borrower_email: form.borrower_email || user?.email || "",
+        borrower_name: form.borrower_name.trim(),
         loan_date: format(new Date(), "yyyy-MM-dd"),
         expected_return_date: form.expected_return_date || undefined,
         purpose: form.purpose,
@@ -110,8 +113,8 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
         <Input value={form.borrower_name} onChange={e => set("borrower_name", e.target.value)} required className="mt-0.5" />
       </div>
       <div>
-        <Label className="text-xs">Tujuan Peminjaman</Label>
-        <Input value={form.purpose} onChange={e => set("purpose", e.target.value)} className="mt-0.5" placeholder="Untuk apa?" />
+        <Label className="text-xs">Tujuan Peminjaman *</Label>
+        <Input value={form.purpose} onChange={e => set("purpose", e.target.value)} required className="mt-0.5" placeholder="Untuk apa?" />
       </div>
       <div>
         <Label className="text-xs">Rencana Tanggal Kembali</Label>
@@ -127,7 +130,7 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
       </p>
       <div className="flex gap-2 pt-1">
         <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button type="submit" className="flex-1" disabled={saving || !form.item_id || !form.borrower_name}>{saving ? "Menyimpan..." : "Simpan"}</Button>
+        <Button type="submit" className="flex-1" disabled={saving || !form.item_id || !form.borrower_name.trim() || !form.purpose.trim()}>{saving ? "Menyimpan..." : "Simpan"}</Button>
       </div>
     </form>
   );
