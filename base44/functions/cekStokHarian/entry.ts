@@ -1,7 +1,10 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
-import { stokPerluDiperhatikan, stokHabis } from "../../shared/stok.ts";
+import {
+  stokPerluDiperhatikan, stokHabis, dilacak,
+  akanKadaluarsa, sudahKadaluarsa, HARI_PERINGATAN_KADALUARSA,
+} from "../../shared/stok.ts";
 
 /**
  * Pemeriksaan stok harian.
@@ -38,9 +41,11 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: "belum_jamnya" });
     }
 
-    const [gudang, pakan] = await Promise.all([
+    const [gudang, pakan, batch] = await Promise.all([
       base44.asServiceRole.entities.WarehouseItem.list("name", BATAS_AMBIL),
       base44.asServiceRole.entities.FeedStock.list("name", BATAS_AMBIL),
+      // Tanggal kedaluwarsa sebenarnya hidup di batch, bukan di barangnya.
+      base44.asServiceRole.entities.BatchBarang.list("expired_date", BATAS_AMBIL),
     ]);
 
     const perlu = stokPerluDiperhatikan(gudang || [], pakan || []);
@@ -64,12 +69,53 @@ Deno.serve(async (req) => {
     const menipis = perlu.filter((i: any) => !stokHabis(i));
     const wajibTanpaMinimum = perlu.filter((i: any) => stokHabis(i) && !punyaMinimum(i));
 
+    /*
+     * Kedaluwarsa ditambahkan 15-09-2026.
+     *
+     * Aturannya sudah ada (akanKadaluarsa/sudahKadaluarsa), lencananya sudah
+     * ada di halaman stok, bahkan ada pemindai foto tanggal kedaluwarsa. Yang
+     * tidak ada: satu pun otomatisasi yang memeriksanya. Kedaluwarsa hanya
+     * terlihat oleh orang yang kebetulan membuka halaman yang tepat.
+     *
+     * Catatan jujur: per 15-09-2026 TIDAK SATU PUN barang atau batch punya
+     * expired_date terisi — 23 batch, termasuk Meloxicam, Oxytocin, Vitamin B
+     * kompleks, dan Dextrose 5%, semuanya kosong. Jadi bagian ini belum akan
+     * berbunyi. Ia dipasang sekarang supaya berbunyi pada hari pertama ada
+     * yang mengisi tanggalnya, bukan menunggu diingat lagi nanti.
+     */
+    const batchAktif = (batch || []).filter(
+      (b: any) => b && b.status !== "habis" && (Number(b.jumlah_sisa) || 0) > 0,
+    );
+    const kandidatKadaluarsa = [
+      ...(gudang || []).filter(dilacak),
+      ...batchAktif,
+    ];
+    const lewatTanggal = kandidatKadaluarsa.filter((i: any) => sudahKadaluarsa(i));
+    const segeraKadaluarsa = kandidatKadaluarsa.filter((i: any) => akanKadaluarsa(i));
+
+    const barisKadaluarsa = (i: any) =>
+      `${i.nama_barang || i.name}: ${String(i.expired_date).slice(0, 10)}`;
+
     const baris = (i: any) =>
       `${i.name}${i._sumber === "pakan" ? " (pakan)" : ""}: ${Number(i.current_stock) || 0} dari minimum ${Number(i.minimum_stock) || 0} ${i.unit || ""}`.trim();
 
     let dikirim = 0;
-    if (perlu.length > 0) {
+    if (perlu.length > 0 || lewatTanggal.length > 0 || segeraKadaluarsa.length > 0) {
       const bagian: string[] = [];
+      // Kedaluwarsa disebut lebih dulu: obat lewat tanggal yang terlanjur
+      // dipakai lebih berbahaya daripada obat yang habis dan tidak dipakai.
+      if (lewatTanggal.length > 0) {
+        bagian.push(
+          `SUDAH LEWAT TANGGAL — jangan dipakai (${lewatTanggal.length}):\n` +
+          lewatTanggal.slice(0, 10).map(barisKadaluarsa).join("\n"),
+        );
+      }
+      if (segeraKadaluarsa.length > 0) {
+        bagian.push(
+          `KEDALUWARSA ≤ ${HARI_PERINGATAN_KADALUARSA} HARI (${segeraKadaluarsa.length}):\n` +
+          segeraKadaluarsa.slice(0, 10).map(barisKadaluarsa).join("\n"),
+        );
+      }
       if (habis.length > 0) bagian.push(`HABIS — perlu dibeli (${habis.length}):\n` + habis.slice(0, 12).map(baris).join("\n"));
       if (menipis.length > 0) bagian.push(`MENIPIS (${menipis.length}):\n` + menipis.slice(0, 12).map(baris).join("\n"));
       if (wajibTanpaMinimum.length > 0) {
@@ -82,13 +128,15 @@ Deno.serve(async (req) => {
       for (const email of await emailPerRole(base44, ["owner", "manajer", "admin"])) {
         const dibuat = await notifSekali(base44, {
           recipient_email: email,
-          title: `${habis.length} barang habis, ${menipis.length} menipis`,
+          title: lewatTanggal.length > 0
+            ? `${lewatTanggal.length} barang lewat tanggal, ${habis.length} habis`
+            : `${habis.length} barang habis, ${menipis.length} menipis`,
           // Judul sengaja hanya menghitung yang bisa langsung dikerjakan.
           // Barang wajib-ada tanpa minimum disebut di badan pesan, bukan di
           // angka yang dilihat orang sekilas.
           message: bagian.join("\n\n").slice(0, 900),
-          type: habis.length > 0 ? "alert" : "warning",
-          priority: habis.length > 0 ? "tinggi" : "sedang",
+          type: habis.length > 0 || lewatTanggal.length > 0 ? "alert" : "warning",
+          priority: habis.length > 0 || lewatTanggal.length > 0 ? "tinggi" : "sedang",
           category: "stok",
           action_label: "Buka Stok & Gudang",
           action_url: "/stok-unified",
@@ -107,6 +155,10 @@ Deno.serve(async (req) => {
       habis: habis.length,
       menipis: menipis.length,
       wajib_tanpa_minimum: wajibTanpaMinimum.length,
+      lewat_tanggal: lewatTanggal.length,
+      segera_kadaluarsa: segeraKadaluarsa.length,
+      batch_punya_tanggal: (batch || []).filter((b: any) => b?.expired_date).length,
+      batch_total: (batch || []).length,
       notifikasi_dibuat: dikirim,
       detail_habis: habis.slice(0, 20).map(baris),
       detail_menipis: menipis.slice(0, 20).map(baris),
