@@ -63,11 +63,24 @@ const KOLOM_TEKS = ["description", "notes", "keterangan", "catatan", "title"];
  * lalu diam selamanya karena satu kolom tidak pernah diisi siapa pun.
  *
  *   Notifikasi WhatsApp per-karyawan  employee_phones kosong  → 15 fungsi diam
- *   Alarm belanja pakan               daily_requirement kosong di 10/10
- *   Peringatan kedaluwarsa            expired_date kosong di 156/156
+ *   Alarm belanja pakan               daily_ideal kosong di 10/10
+ *   Peringatan kedaluwarsa            tanggal_expired kosong di 156/156
  *
  * Tidak satu pun melempar error. Tidak ada yang merah. Semuanya tampak beres,
  * dan itulah sebabnya bertahan berbulan-bulan.
+ *
+ * ── KOREKSI 15-09-2026 ─────────────────────────────────────────────
+ *
+ * Laporan pertama pemeriksa ini menyebut TIGA alarm mati. Dua di antaranya
+ * palsu: nama kolom yang saya tulis di tabel di bawah salah — "capacity"
+ * (seharusnya max_capacity) dan "daily_requirement" (seharusnya daily_ideal).
+ * Kolom yang tidak ada selalu terbaca 0% terisi, jadi alarm yang sehat
+ * dilaporkan mati. Pendeteksi alarm mati yang salah kolom adalah cacat
+ * yang sama persis dengan yang ia buru, hanya dibalik arahnya.
+ *
+ * Nama kolom di tabel ini adalah DATA, bukan kode, jadi tidak ada pemeriksa
+ * statis yang menyentuhnya. Sekarang ada: scripts/cek-kolom-baca.mjs
+ * memeriksa setiap pasangan { tabel, kolom } di berkas ini terhadap skema.
  *
  * Pemeriksaan di bawah membalik pertanyaannya: bukan "apakah datanya benar?"
  * melainkan "apakah alarm ini PUNYA data untuk bekerja?". Sebuah alarm yang
@@ -89,7 +102,9 @@ const ALARM = [
   {
     nama: "Alarm belanja pakan otomatis",
     tabel: "FeedStock",
-    kolom: "daily_requirement",
+    // BUKAN "daily_requirement" — skema FeedStock menamainya `daily_ideal`,
+    // dan itulah yang ditulis StokInventoryTab serta dibaca enam tempat lain.
+    kolom: "daily_ideal",
     berlaku: (r: any) => r?.is_active !== false,
     akibat: "sisa-berapa-hari tidak bisa dihitung, daftar belanja pakan tidak pernah terisi",
   },
