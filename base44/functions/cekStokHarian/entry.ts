@@ -4,6 +4,7 @@ import { BATAS_AMBIL } from "../../shared/batas.ts";
 import {
   stokPerluDiperhatikan, stokHabis, dilacak,
   akanKadaluarsa, sudahKadaluarsa, HARI_PERINGATAN_KADALUARSA,
+  sisaHariBatch, kedaluwarsaEfektifBatch,
 } from "../../shared/stok.ts";
 
 /**
@@ -86,15 +87,34 @@ Deno.serve(async (req) => {
     const batchAktif = (batch || []).filter(
       (b: any) => b && b.status !== "habis" && (Number(b.jumlah_sisa) || 0) > 0,
     );
-    const kandidatKadaluarsa = [
-      ...(gudang || []).filter(dilacak),
-      ...batchAktif,
-    ];
-    const lewatTanggal = kandidatKadaluarsa.filter((i: any) => sudahKadaluarsa(i));
-    const segeraKadaluarsa = kandidatKadaluarsa.filter((i: any) => akanKadaluarsa(i));
+    const petaBarang = new Map<string, any>();
+    for (const g of gudang || []) if (g?.id) petaBarang.set(g.id, g);
 
-    const barisKadaluarsa = (i: any) =>
-      `${i.nama_barang || i.name}: ${String(i.expired_date).slice(0, 10)}`;
+    // Batch memakai aturannya sendiri (tanggal cetak vs tanggal buka); barang
+    // gudang memakai kolom expired_date-nya. Dua kolom, dua nama, satu maksud.
+    const batchLewat: any[] = [];
+    const batchSegera: any[] = [];
+    for (const b of batchAktif) {
+      const sisa = sisaHariBatch(b, petaBarang.get(b.item_id));
+      if (sisa === null) continue;
+      if (sisa < 0) batchLewat.push({ b, sisa });
+      else if (sisa <= HARI_PERINGATAN_KADALUARSA) batchSegera.push({ b, sisa });
+    }
+
+    const barangDilacak = (gudang || []).filter(dilacak);
+    const lewatTanggal = [
+      ...barangDilacak.filter((i: any) => sudahKadaluarsa(i)).map((i: any) => ({ nama: i.name, teks: String(i.expired_date).slice(0, 10) })),
+      ...batchLewat.map(({ b, sisa }) => ({
+        nama: b.nama_barang,
+        teks: `${String(kedaluwarsaEfektifBatch(b, petaBarang.get(b.item_id)).tanggal?.toISOString() || "").slice(0, 10)} (lewat ${Math.abs(sisa)} hari)`,
+      })),
+    ];
+    const segeraKadaluarsa = [
+      ...barangDilacak.filter((i: any) => akanKadaluarsa(i)).map((i: any) => ({ nama: i.name, teks: String(i.expired_date).slice(0, 10) })),
+      ...batchSegera.map(({ b, sisa }) => ({ nama: b.nama_barang, teks: `tinggal ${sisa} hari` })),
+    ];
+
+    const barisKadaluarsa = (i: any) => `${i.nama}: ${i.teks}`;
 
     const baris = (i: any) =>
       `${i.name}${i._sumber === "pakan" ? " (pakan)" : ""}: ${Number(i.current_stock) || 0} dari minimum ${Number(i.minimum_stock) || 0} ${i.unit || ""}`.trim();
@@ -157,7 +177,7 @@ Deno.serve(async (req) => {
       wajib_tanpa_minimum: wajibTanpaMinimum.length,
       lewat_tanggal: lewatTanggal.length,
       segera_kadaluarsa: segeraKadaluarsa.length,
-      batch_punya_tanggal: (batch || []).filter((b: any) => b?.expired_date).length,
+      batch_punya_tanggal: (batch || []).filter((b: any) => b?.tanggal_expired).length,
       batch_total: (batch || []).length,
       notifikasi_dibuat: dikirim,
       detail_habis: habis.slice(0, 20).map(baris),
