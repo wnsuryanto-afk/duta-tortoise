@@ -1,13 +1,13 @@
 {
   "name": "WA Pengingat Harian Approval 17:30",
-  "description": "Setiap hari jam 17:30, kirim pengingat ke Owner tentang jumlah checklist menunggu approval",
+  "description": "Setiap hari jam 17:30 WIB, kirim pengingat ke Owner tentang jumlah checklist menunggu approval. Jadwal 10:30 UTC = 17:30 WIB (diperbaiki 15-09-2026; sebelumnya 17:30 UTC = 00:30 WIB, sehingga pagar jam di dalam fungsinya selalu menolak dan tidak pernah terkirim).",
   "trigger": {
     "condition": null,
     "config": {
       "trigger_type": "scheduled",
       "events": [],
       "schedule_mode": "recurring",
-      "cron_expression": "30 17 * * *",
+      "cron_expression": "30 10 * * *",
       "one_time_date": null,
       "timezone": "UTC",
       "interval_value": null,
