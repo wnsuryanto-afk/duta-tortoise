@@ -28,6 +28,11 @@ import path from "path";
 const USANG = new Set([
   "PettyCash", "PettyCashTransaction", "Purchase", "VegetablePickup",
   "FeedingLog", "WarehouseTransaction", "MaintenanceSchedule",
+  // 15-09-2026: dua daftar peminjaman disatukan ke ToolLoan. ItemBorrow kosong
+  // saat ditinggalkan, jadi tidak ada data yang hilang. ToolLoan yang bertahan
+  // karena dialah yang punya otomatisasi ShoppingList, widget dashboard, dan
+  // foto kondisi pengembalian.
+  "ItemBorrow",
 ]);
 
 /** Ditulis backend/otomatisasi saja, atau dibaca lewat cara yang tidak terbaca skrip ini. */
