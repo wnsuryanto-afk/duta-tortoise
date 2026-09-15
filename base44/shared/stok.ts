@@ -88,6 +88,33 @@ export function stokPerluDiperhatikan(barangGudang: any[] = [], pakan: any[] = [
   ];
 }
 
+/**
+ * Tiga golongan, bukan satu daftar panjang.
+ *
+ * "Perlu diperhatikan" mencampur dua keadaan yang jawabannya sangat berbeda:
+ * barang yang batas minimumnya sudah ditentukan lalu kosong — itu bisa
+ * langsung dibeli — dan barang bertanda wajib-ada yang minimumnya masih 0,
+ * yang sebagian memang tidak bisa distok sendiri (obat resep yang harus
+ * lewat drh). Menggabung keduanya menghasilkan angka besar yang sebagian
+ * besarnya tidak bisa dikerjakan siapa pun, dan peringatan yang tidak bisa
+ * dipadamkan dengan bekerja akan berhenti dibaca.
+ *
+ * Pemisahan ini dulu hidup di dalam cekStokHarian saja. Begitu beranda ikut
+ * membaca stok (15-09-2026, setelah saringan `is_active` yang salah
+ * diperbaiki), angka 23 yang sama muncul di sana dengan label "di bawah
+ * minimum" — padahal delapan di antaranya tidak punya minimum sama sekali.
+ * Satu definisi, dipakai dua-duanya.
+ */
+export function golonganStok(daftar: any[] = []): { habis: any[]; menipis: any[]; wajibTanpaMinimum: any[] } {
+  const perlu = (daftar || []).filter(perluDiperhatikan);
+  const punyaMinimum = (i: any) => angka(i?.minimum_stock) > 0;
+  return {
+    habis: perlu.filter((i: any) => stokHabis(i) && punyaMinimum(i)),
+    menipis: perlu.filter((i: any) => !stokHabis(i)),
+    wajibTanpaMinimum: perlu.filter((i: any) => stokHabis(i) && !punyaMinimum(i)),
+  };
+}
+
 /** Berapa hari sebelum kedaluwarsa sebuah barang mulai diperingatkan. */
 export const HARI_PERINGATAN_KADALUARSA = 30;
 
