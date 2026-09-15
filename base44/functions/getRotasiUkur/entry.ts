@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
     const measurements = await svc.entities.MeasurementHistory.list('-date', 5000);
     const lastMeas = {};
     for (const m of measurements) {
+      if (!masukLaporan(m)) continue; // kembar & salah ketik tidak menandai sudah-ditimbang
       if (!m.tortoise_id || !m.date) continue;
       if (m.date >= targetDate) continue; // hari ini tidak dihitung
       if (!lastMeas[m.tortoise_id]) {
