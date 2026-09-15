@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -54,7 +55,7 @@ export default function DashboardStokPage() {
 
   const { data: financeTx = [] } = useQuery({
     queryKey: ["finance-transactions"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 1000),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 1000).then(hanyaLaporan),
   });
 
   if (!canAccess(role, "warehouse")) return <AccessDenied />;

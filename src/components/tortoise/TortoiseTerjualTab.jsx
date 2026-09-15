@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -16,7 +17,7 @@ const morphLabel = { normal:"Normal", het_albino:"Het Albino", albino:"Albino", 
 export default function TortoiseTerjualTab({ tortoises, isOwner }) {
   const { data: sales = [] } = useQuery({
     queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 300),
+    queryFn: () => base44.entities.Sale.list("-sale_date", 300).then(hanyaLaporan),
   });
 
   const terjual = useMemo(() => {

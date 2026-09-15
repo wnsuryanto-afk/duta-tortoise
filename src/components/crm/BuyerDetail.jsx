@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -21,7 +22,7 @@ export default function BuyerDetail({ buyer, onClose, canEdit }) {
 
   const { data: allSales = [] } = useQuery({
     queryKey: ["sales-buyer", buyer.id],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 200),
+    queryFn: () => base44.entities.Sale.list("-sale_date", 200).then(hanyaLaporan),
   });
 
   // Filter sales by buyer_profile_id

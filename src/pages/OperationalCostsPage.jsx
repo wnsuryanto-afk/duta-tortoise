@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -113,7 +114,7 @@ export default function OperationalCostsPage() {
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["finance-transactions-ops"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500).then(hanyaLaporan),
   });
 
   const { data: salarySlips = [] } = useQuery({

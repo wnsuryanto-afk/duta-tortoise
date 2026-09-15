@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -43,7 +44,7 @@ export default function CRMPage() {
 
   const { data: allSales = [] } = useQuery({
     queryKey: ["sales-all-crm"],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 1000),
+    queryFn: () => base44.entities.Sale.list("-sale_date", 1000).then(hanyaLaporan),
   });
 
   // Index sales by buyer_profile_id for quick lookup

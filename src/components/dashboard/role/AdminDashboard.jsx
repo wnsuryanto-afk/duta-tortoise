@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
@@ -120,7 +121,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
 
   const { data: finances = [] } = useQuery({
     queryKey: ["admin-fin", thisMonthKey],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 300),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 300).then(hanyaLaporan),
     staleTime: 5 * 60 * 1000,
   });
 

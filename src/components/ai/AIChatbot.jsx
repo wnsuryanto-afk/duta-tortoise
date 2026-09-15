@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ async function fetchContext(message) {
   }
   if (lower.includes("omzet") || lower.includes("penjualan") || lower.includes("sale")) {
     const now = new Date();
-    const sales = await base44.entities.Sale.list("-sale_date", 100);
+    const sales = hanyaLaporan(await base44.entities.Sale.list("-sale_date", 100));
     const thisMonth = sales.filter(s => {
       if (!s.sale_date) return false;
       const d = new Date(s.sale_date);
