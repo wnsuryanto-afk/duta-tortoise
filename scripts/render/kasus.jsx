@@ -23,6 +23,7 @@ import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import SupplierPage from "@/pages/SupplierPage";
+import InputBerat from "@/components/common/InputBerat";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -102,6 +103,17 @@ export default [
   ["TombolWhatsApp nomor ngawur", <TombolWhatsApp nomor="tanya wa aja" />],
   ["LeadsSupplierTab tanpa data", <LeadsSupplierTab />],
   ["SupplierPage tanpa data", <SupplierPage />],
+
+  // InputBerat (15-09-2026). Kotak berat tunggal yang menggantikan tujuh
+  // salinan "Berat (gram)". Kasus di bawah memuat keadaan yang membuat 48
+  // catatan kehilangan tiga angka nol: dewasa 22,8 kg diketik apa adanya.
+  ["InputBerat kosong", <InputBerat gram="" onChange={() => {}} />],
+  ["InputBerat bayi wajar", <InputBerat gram={62} panjangCm={6} onChange={() => {}} />],
+  ["InputBerat dewasa wajar", <InputBerat gram={22800} panjangCm={53.5} onChange={() => {}} />],
+  ["InputBerat salah kilogram", <InputBerat gram={23} panjangCm={53.5} onChange={() => {}} />],
+  ["InputBerat salah ons", <InputBerat gram={186} panjangCm={52} onChange={() => {}} />],
+  ["InputBerat tanpa panjang", <InputBerat gram={24} onChange={() => {}} />],
+  ["InputBerat tanpa onChange", <InputBerat gram={100} panjangCm={undefined} />],
 
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
