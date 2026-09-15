@@ -32,6 +32,7 @@ import UkurFormDialog from "./UkurFormDialog";
 import TimbangBabyDialog from "./TimbangBabyDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 import { masukLaporan } from "@/lib/laporan";
+import { simpanUkuranSekali, pesanSudahDitimbang } from "@/lib/ukurSekali";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
