@@ -2,7 +2,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import {
-  stokPerluDiperhatikan, stokHabis, dilacak,
+  stokPerluDiperhatikan, golonganStok, dilacak,
   akanKadaluarsa, sudahKadaluarsa, HARI_PERINGATAN_KADALUARSA,
   sisaHariBatch, kedaluwarsaEfektifBatch,
 } from "../../shared/stok.ts";
