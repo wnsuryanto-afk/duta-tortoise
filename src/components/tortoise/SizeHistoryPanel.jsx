@@ -2,6 +2,7 @@ import { useState } from "react";
 import { panjangMencurigakan } from "@/lib/beratMasukAkal";
 import InputBerat from "@/components/common/InputBerat";
 import { bacaanGram } from "@/lib/satuanBerat";
+import { masukLaporan } from "@/lib/laporan";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,14 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
     setSaving(false);
   };
 
-  const latest = history[0];
+  /*
+   * Riwayat tetap menampilkan SEMUA baris, termasuk yang dikecualikan — di
+   * halaman detail kura, menyembunyikan baris justru membuat orang bertanya-
+   * tanya ke mana perginya. Yang tidak boleh adalah baris kecualian menjadi
+   * "Pengukuran Terakhir": itu angka yang dipakai orang untuk mengambil
+   * keputusan.
+   */
+  const latest = history.find(masukLaporan);
 
   return (
     <div className="space-y-3">
@@ -129,13 +137,18 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Riwayat</p>
           {history.map((h) => (
-            <div key={h.id} className="flex items-center justify-between text-xs border rounded-lg px-3 py-2 bg-card">
+            <div key={h.id} className={`flex items-center justify-between text-xs border rounded-lg px-3 py-2 ${masukLaporan(h) ? "bg-card" : "bg-muted/40 border-dashed"}`}>
               <div>
-                <span className="font-medium">
-                  {h.weight_grams ? `${h.weight_grams}g` : ""}
+                <span className={`font-medium ${masukLaporan(h) ? "" : "line-through text-muted-foreground"}`}>
+                  {h.weight_grams ? bacaanGram(h.weight_grams) : ""}
                   {h.weight_grams && h.shell_length_cm ? " · " : ""}
                   {h.shell_length_cm ? `${h.shell_length_cm}cm` : ""}
                 </span>
+                {!masukLaporan(h) && (
+                  <span className="ml-2 text-[10px] text-muted-foreground">
+                    dikecualikan{h.notes ? ` — ${h.notes}` : ""}
+                  </span>
+                )}
                 {h.measured_by && <span className="text-muted-foreground ml-2">oleh {h.measured_by}</span>}
               </div>
               <span className="text-muted-foreground">{format(new Date(h.date), "d MMM yy", { locale: id })}</span>
