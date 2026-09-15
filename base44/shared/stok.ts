@@ -38,13 +38,29 @@ export function dilacak(item: any): boolean {
 }
 
 /**
- * Stok habis untuk barang yang ditandai wajib ada.
+ * Stok habis.
  *
- * Gate `is_mandatory` sengaja dipertahankan: tanpa itu setiap barang yang
- * memang sengaja dibiarkan nol ikut berteriak.
+ * Dua jalan, dan yang kedua ditambahkan 15-09-2026:
+ *
+ *   1. Barang ditandai wajib ada (`is_mandatory`) dan stoknya nol.
+ *   2. Barang punya `minimum_stock > 0` dan stoknya nol.
+ *
+ * Gate `is_mandatory` ada supaya barang yang memang sengaja dibiarkan nol —
+ * obat resep dokter, misalnya — tidak ikut berteriak. Tapi barang itu
+ * minimumnya 0. Begitu seseorang mengetik minimum, ia sedang menyatakan bahwa
+ * ia mau diberi tahu; menuntut centang kedua untuk hal yang sama membuat
+ * pernyataan pertama tidak ada artinya.
+ *
+ * Akibat nyata sebelum diperbaiki: tujuh barang berstok NOL dengan minimum
+ * yang sudah diisi tidak pernah masuk peringatan mana pun — termasuk Kasa
+ * Basah, Chlorhexidine, dan Baskom Rendam Kura-kura. Keduanya lolos dari
+ * `stokHabis` (tidak wajib) dan dari `stokMenipis` (yang mensyaratkan stok
+ * masih di atas nol).
  */
 export function stokHabis(item: any): boolean {
-  return !!item?.is_mandatory && angka(item.current_stock) <= 0;
+  const sekarang = angka(item?.current_stock);
+  if (sekarang > 0) return false;
+  return !!item?.is_mandatory || angka(item?.minimum_stock) > 0;
 }
 
 /**

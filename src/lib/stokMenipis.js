@@ -32,7 +32,12 @@ function angka(nilai) {
  * menyala sama saja dengan tidak ada peringatan.
  */
 export function stokHabis(item) {
-  return !!item?.is_mandatory && angka(item.current_stock) <= 0;
+  // Dua jalan (lihat base44/shared/stok.ts untuk alasan lengkapnya):
+  // wajib-ada dan nol, ATAU punya minimum dan nol. Mengetik minimum sudah
+  // merupakan pernyataan "beri tahu saya" — tidak perlu centang kedua.
+  const sekarang = angka(item?.current_stock);
+  if (sekarang > 0) return false;
+  return !!item?.is_mandatory || angka(item?.minimum_stock) > 0;
 }
 
 /**
