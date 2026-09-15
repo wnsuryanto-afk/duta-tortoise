@@ -67,25 +67,56 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Item gudang duplikat — penanda eksplisit maupun nama gabungan.
-    const dupPenanda = (gudang || []).filter((i: any) =>
-      String(i.name || "").toUpperCase().includes("DUPLIKAT"),
+    /*
+     * 2. Item gudang duplikat.
+     *
+     * Diperbaiki 15-09-2026. Versi lama menghitung 23 duplikat tiap pekan, dan
+     * ke-23-nya sudah beres:
+     *
+     *   3 item bernama "[DUPLIKAT - ABAIKAN]" dengan SKU ZZZ-DUP dan
+     *     is_active: false — itu bentuk pensiunnya, bukan masalahnya.
+     *   20 item bernama gabungan seperti "NaCl 0.9% / NaCl 0.9% Flakon Kecil
+     *     100ml" — itu justru CARA dua duplikat digabung. Menghitungnya sebagai
+     *     duplikat membuat laporan ini makin berisik setiap kali ada yang
+     *     merapikan gudang.
+     *
+     * Laporan yang salah tidak dikerjakan orang. Itu sebabnya angka 23 muncul
+     * berbulan-bulan tanpa pernah turun. Sekarang yang dihitung hanya duplikat
+     * yang benar-benar tersisa: dua item AKTIF dengan nama sama setelah
+     * dinormalkan, atau SKU yang bertabrakan.
+     */
+    const aktifGudang = (gudang || []).filter(
+      (i: any) => i && i.is_active !== false && !String(i.sku || "").startsWith("ZZZ-DUP"),
     );
-    const dupGabungan = (gudang || []).filter((i: any) => String(i.name || "").includes(" / "));
-    // Nama yang sama persis setelah dinormalkan.
-    const hitungNama = new Map<string, number>();
-    for (const i of gudang || []) {
-      const kunci = String(i.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-      if (!kunci) continue;
-      hitungNama.set(kunci, (hitungNama.get(kunci) || 0) + 1);
+
+    const namaKe = new Map<string, string[]>();
+    for (const i of aktifGudang) {
+      // Nama gabungan "A / B" dipecah: tiap sisi dibandingkan sendiri, supaya
+      // item ketiga yang benar-benar kembar dengan salah satu sisi tetap
+      // tertangkap, tanpa menuduh gabungannya sendiri.
+      for (const sisi of String(i.name || "").split(" / ")) {
+        const kunci = sisi.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (!kunci) continue;
+        if (!namaKe.has(kunci)) namaKe.set(kunci, []);
+        namaKe.get(kunci)!.push(String(i.name || i.id));
+      }
     }
-    const dupPersis = [...hitungNama.values()].filter((n) => n > 1).length;
-    const totalDup = dupPenanda.length + dupGabungan.length + dupPersis;
-    if (totalDup > 0) {
+    const dupNama = [...namaKe.entries()].filter(([, v]) => v.length > 1);
+
+    const skuKe = new Map<string, number>();
+    for (const i of aktifGudang) {
+      const s2 = String(i.sku || "").trim().toUpperCase();
+      if (!s2) continue;
+      skuKe.set(s2, (skuKe.get(s2) || 0) + 1);
+    }
+    const dupSku = [...skuKe.entries()].filter(([, n]) => n > 1);
+
+    if (dupNama.length > 0 || dupSku.length > 0) {
+      const contoh = dupNama.slice(0, 4).map(([, v]) => v.join(" = ")).join("; ");
       temuan.push(
-        `${totalDup} kemungkinan duplikat di gudang` +
-        (dupPenanda.length > 0 ? ` (${dupPenanda.length} bertanda DUPLIKAT)` : "") +
-        (dupGabungan.length > 0 ? ` (${dupGabungan.length} nama gabungan pakai " / ")` : ""),
+        `${dupNama.length + dupSku.length} duplikat gudang yang masih aktif` +
+        (dupSku.length > 0 ? ` (${dupSku.length} SKU bertabrakan: ${dupSku.slice(0, 3).map(([x]) => x).join(", ")})` : "") +
+        (contoh ? ` — contoh: ${contoh}` : ""),
       );
     }
 
