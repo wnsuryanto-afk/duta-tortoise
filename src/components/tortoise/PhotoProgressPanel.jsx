@@ -243,12 +243,16 @@ function PhotoEditForm({ photo, onSave }) {
         <Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="h-8 text-xs" />
       </div>
       <div>
-        <Label className="text-[10px]">Berat (gram)</Label>
-        <Input type="number" value={form.weight_grams} onChange={e => setForm(p => ({ ...p, weight_grams: e.target.value }))} placeholder="gram" className="h-8 text-xs" />
-      </div>
-      <div>
         <Label className="text-[10px]">Cangkang (cm)</Label>
         <Input type="number" value={form.shell_length_cm} onChange={e => setForm(p => ({ ...p, shell_length_cm: e.target.value }))} placeholder="cm" className="h-8 text-xs" />
+      </div>
+      <div className="col-span-2">
+        <InputBerat
+          gram={form.weight_grams}
+          onChange={(g) => setForm(p => ({ ...p, weight_grams: g }))}
+          panjangCm={form.shell_length_cm}
+          label="Berat"
+        />
       </div>
       <div className="col-span-2">
         <Label className="text-[10px]">Catatan</Label>
