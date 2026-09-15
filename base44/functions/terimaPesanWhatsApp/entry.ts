@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, wibTanggal, emailPerRole } from "../../shared/otomatis.ts";
+import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { sendWhatsAppNotification, getSettings, normalizePhone, trackAICall, emailDariNomor } from "../../shared/whatsapp.ts";
 
 /**
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
     let namaPengirim = dariPengaturan?.name || "";
     if (!namaPengirim) {
       try {
-        const profil = await base44.asServiceRole.entities.UserProfile.filter({ user_email: emailPengirim });
+        const profil = await base44.asServiceRole.entities.UserProfile.filter({ user_email: emailPengirim }, null, BATAS_AMBIL);
         const dipakai = (Array.isArray(profil) ? profil : [])
           .filter((p: any) => p && p.full_name && p.full_name !== "[DUPLIKAT-HAPUS]")
           .sort((a: any, b: any) =>
