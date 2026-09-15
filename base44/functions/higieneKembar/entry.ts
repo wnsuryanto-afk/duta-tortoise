@@ -55,6 +55,64 @@ const POLA_UJI = /\[?\s*DATA UJI\s*\]?|percobaan fitur|hanya (uji ?coba|percobaa
 
 const KOLOM_TEKS = ["description", "notes", "keterangan", "catatan", "title"];
 
+/**
+ * ALARM YANG TIDAK BISA BERBUNYI.
+ *
+ * Tiga kali dalam satu hari (15-09-2026) ditemukan hal yang sama: peringatan
+ * yang dibangun lengkap — aturan, lencana, halaman, bahkan pemindai foto —
+ * lalu diam selamanya karena satu kolom tidak pernah diisi siapa pun.
+ *
+ *   Notifikasi WhatsApp per-karyawan  employee_phones kosong  → 15 fungsi diam
+ *   Alarm belanja pakan               daily_requirement kosong di 10/10
+ *   Peringatan kedaluwarsa            expired_date kosong di 156/156
+ *
+ * Tidak satu pun melempar error. Tidak ada yang merah. Semuanya tampak beres,
+ * dan itulah sebabnya bertahan berbulan-bulan.
+ *
+ * Pemeriksaan di bawah membalik pertanyaannya: bukan "apakah datanya benar?"
+ * melainkan "apakah alarm ini PUNYA data untuk bekerja?". Sebuah alarm yang
+ * kolom pemicunya kosong di hampir semua baris tidak sedang tenang — ia mati.
+ */
+const ALARM = [
+  {
+    nama: "Peringatan kedaluwarsa obat & bahan",
+    tabel: "BatchBarang",
+    kolom: "expired_date",
+    // Batch yang sudah habis tidak perlu tanggal lagi.
+    berlaku: (r: any) => r?.status !== "habis" && (Number(r?.jumlah_sisa) || 0) > 0,
+    akibat: "obat lewat tanggal tidak akan pernah ditandai",
+  },
+  {
+    nama: "Alarm belanja pakan otomatis",
+    tabel: "FeedStock",
+    kolom: "daily_requirement",
+    berlaku: (r: any) => r?.is_active !== false,
+    akibat: "sisa-berapa-hari tidak bisa dihitung, daftar belanja pakan tidak pernah terisi",
+  },
+  {
+    nama: "Peringatan kepadatan kandang",
+    tabel: "Enclosure",
+    kolom: "capacity",
+    berlaku: (r: any) => r?.is_active !== false,
+    akibat: "kandang penuh tidak pernah diperingatkan",
+  },
+  {
+    nama: "Pemeriksaan kewajaran berat",
+    tabel: "MeasurementHistory",
+    kolom: "shell_length_cm",
+    berlaku: () => true,
+    akibat: "berat tanpa panjang tempurung tidak bisa diperiksa kewajarannya",
+  },
+];
+
+/** Kolom dianggap terisi bila bukan null/undefined/""/0-yang-berarti-belum-diisi. */
+function terisi(nilai: any): boolean {
+  if (nilai === null || nilai === undefined) return false;
+  if (typeof nilai === "string") return nilai.trim() !== "" && nilai.trim() !== "-";
+  if (typeof nilai === "number") return Number.isFinite(nilai) && nilai > 0;
+  return true;
+}
+
 function kunciDari(r: any, kolom: string[]): string | null {
   const bagian: string[] = [];
   for (const k of kolom) {
@@ -108,6 +166,33 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Alarm yang tidak bisa berbunyi ──
+    const alarmMati: any[] = [];
+    for (const a of ALARM) {
+      let baris: any[] = [];
+      try {
+        baris = await base44.asServiceRole.entities[a.tabel].list(null, BATAS_AMBIL);
+      } catch (e) {
+        gagal.push({ tabel: `${a.tabel} (alarm)`, alasan: String((e as Error)?.message || e).slice(0, 150) });
+        continue;
+      }
+      const relevan = (Array.isArray(baris) ? baris : []).filter(a.berlaku);
+      if (relevan.length === 0) continue;
+      const adaIsi = relevan.filter((r: any) => terisi(r?.[a.kolom])).length;
+      // Ambang 10%: satu-dua baris terisi tidak membuat alarm hidup, tapi alarm
+      // yang sebagian besar datanya ada memang sedang bekerja — kekurangannya
+      // urusan kelengkapan data, bukan alarm mati.
+      if (adaIsi / relevan.length > 0.1) continue;
+      alarmMati.push({
+        nama: a.nama,
+        tabel: a.tabel,
+        kolom: a.kolom,
+        terisi: adaIsi,
+        dari: relevan.length,
+        akibat: a.akibat,
+      });
+    }
+
     for (const nama of PUNYA_PENANDA) {
       let baris: any[] = [];
       try {
@@ -135,8 +220,16 @@ Deno.serve(async (req) => {
      */
     const hariIni = wibTanggal();
     let dikirim = 0;
-    if (kembar.length > 0 || ujiTakBertanda.length > 0 || gagal.length > 0) {
+    if (kembar.length > 0 || ujiTakBertanda.length > 0 || gagal.length > 0 || alarmMati.length > 0) {
       const bagian: string[] = [];
+      if (alarmMati.length > 0) {
+        bagian.push(
+          `ALARM YANG TIDAK BISA BERBUNYI (${alarmMati.length}):\n` +
+          alarmMati.map((a) =>
+            `${a.nama} — ${a.kolom} terisi ${a.terisi}/${a.dari} di ${a.tabel}; ${a.akibat}`,
+          ).join("\n"),
+        );
+      }
       /*
        * Tabel yang gagal dibaca disebut PALING ATAS, bukan disembunyikan di
        * JSON. Tabel yang gagal dan tabel yang bersih menghasilkan laporan yang
@@ -168,7 +261,9 @@ Deno.serve(async (req) => {
           recipient_email: email,
           title: gagal.length > 0
             ? `Higiene data: ${gagal.length} tabel gagal diperiksa, ${kembar.length} kelompok kembar`
-            : `Higiene data: ${kembar.length} kelompok kembar, ${ujiTakBertanda.length} catatan uji`,
+            : alarmMati.length > 0
+              ? `${alarmMati.length} alarm tidak bisa berbunyi, ${kembar.length} kelompok kembar`
+              : `Higiene data: ${kembar.length} kelompok kembar, ${ujiTakBertanda.length} catatan uji`,
           message: bagian.join("\n\n").slice(0, 900),
           type: gagal.length > 0 ? "alert" : "warning",
           priority: gagal.length > 0 ? "tinggi" : "sedang",
@@ -186,6 +281,8 @@ Deno.serve(async (req) => {
       success: true,
       notifikasi_dibuat: dikirim,
       baris_diperiksa: diperiksa,
+      alarm_mati: alarmMati.length,
+      detail_alarm: alarmMati,
       kelompok_kembar: kembar.length,
       baris_berlebih: kembar.reduce((s, k) => s + (k.jumlah - 1), 0),
       uji_tak_bertanda: ujiTakBertanda.length,
