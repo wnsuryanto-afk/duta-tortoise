@@ -94,9 +94,15 @@ Deno.serve(async (req) => {
       // Nama gabungan "A / B" dipecah: tiap sisi dibandingkan sendiri, supaya
       // item ketiga yang benar-benar kembar dengan salah satu sisi tetap
       // tertangkap, tanpa menuduh gabungannya sendiri.
+      // Satu item hanya boleh menyumbang satu kali per kunci. Tanpa ini,
+      // "Kasa Basah / Kasa Lembab Steril / Kasa basah" menuduh dirinya sendiri
+      // kembar, karena dua sisinya sama setelah dinormalkan.
+      const kunciItem = new Set<string>();
       for (const sisi of String(i.name || "").split(" / ")) {
         const kunci = sisi.toLowerCase().replace(/[^a-z0-9]/g, "");
-        if (!kunci) continue;
+        if (kunci) kunciItem.add(kunci);
+      }
+      for (const kunci of kunciItem) {
         if (!namaKe.has(kunci)) namaKe.set(kunci, []);
         namaKe.get(kunci)!.push(String(i.name || i.id));
       }
