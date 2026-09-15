@@ -69,13 +69,59 @@ export async function getPhoneNumbersForRoles(base44, roles) {
 }
 
 /**
+ * Nomor WhatsApp seorang karyawan dari profilnya sendiri.
+ *
+ * UserProfile bisa punya lebih dari satu baris per orang — 15-09-2026 ada 29
+ * baris untuk 10 orang, 19 di antaranya bernama "[DUPLIKAT-HAPUS]" tapi masih
+ * membawa email dan nomor asli. Jadi tidak cukup mengambil baris pertama:
+ * dipilih baris yang nomornya benar-benar sah, yang terbaru lebih dulu.
+ */
+async function nomorDariProfil(base44, email) {
+  try {
+    const profil = await base44.asServiceRole.entities.UserProfile.filter({ user_email: email });
+    if (!Array.isArray(profil) || profil.length === 0) return "";
+    const urut = [...profil].sort((a, b) =>
+      String(b.updated_date || b.created_date || "").localeCompare(String(a.updated_date || a.created_date || "")),
+    );
+    for (const p of urut) {
+      const nomor = normalizePhone(p.hp_whatsapp);
+      if (nomor) return nomor;
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Get a single employee's phone by email.
+ *
+ * Dua tempat menyimpan nomor karyawan, dan yang dipakai pengirim WhatsApp
+ * selama ini hanya salah satunya:
+ *
+ *   UserProfile.hp_whatsapp          — diisi karyawan sendiri saat melengkapi
+ *                                      profil. Terisi untuk semua orang.
+ *   WhatsAppSettings.employee_phones — daftar terpisah di halaman Pengaturan
+ *                                      WhatsApp, harus diketik ulang oleh owner.
+ *
+ * Per 15-09-2026 daftar kedua KOSONG (`employee_phones: []`), padahal hanya
+ * itu yang dibaca di sini. Akibatnya setiap notifikasi WhatsApp per-karyawan —
+ * tugas insidentil, pengajuan alat, slip gaji — mendapat nomor kosong dan
+ * tidak pernah terkirim, tanpa satu pun pesan galat. Yang berhasil selama ini
+ * hanya pesan ke grup, karena grup memakai jalur nomor yang berbeda.
+ *
+ * Sekarang daftar di Pengaturan menjadi PENIMPA, bukan satu-satunya sumber:
+ * kalau ada entri di sana ia menang, kalau tidak nomor diambil dari profil
+ * orang itu sendiri — tempat nomornya memang dirawat.
  */
 export async function getEmployeePhone(base44, email) {
+  if (!email) return "";
   const settings = await getSettings(base44);
-  if (!settings || !Array.isArray(settings.employee_phones)) return "";
-  const entry = settings.employee_phones.find((e) => e.email === email);
-  return entry ? normalizePhone(entry.phone) : "";
+  const daftar = settings && Array.isArray(settings.employee_phones) ? settings.employee_phones : [];
+  const entry = daftar.find((e) => e && e.email === email);
+  const dariPengaturan = entry ? normalizePhone(entry.phone) : "";
+  if (dariPengaturan) return dariPengaturan;
+  return await nomorDariProfil(base44, email);
 }
 
 /**
