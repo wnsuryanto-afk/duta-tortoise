@@ -61,6 +61,24 @@ Deno.serve(async (req) => {
 
     const turun: string[] = [];
     const stagnan: string[] = [];
+    const satuanJanggal: string[] = [];
+
+    /*
+     * Penjaga satuan, versi server (15-09-2026).
+     *
+     * 48 catatan Juli-September 2026 tersimpan dalam kilogram di kolom gram.
+     * Di layar sekarang sudah ada InputBerat dengan pilihan satuan; ini jaring
+     * kedua, untuk catatan yang lolos lewat jalan lain (impor, perbaikan
+     * manual, layar yang belum tersentuh).
+     *
+     * Sengaja TIDAK memakai rumus berat-dari-panjang seperti di layar. Kalau
+     * aturannya disalin, dua salinan itu akan berbeda diam-diam suatu hari.
+     * Di sini dipakai bukti yang berdiri sendiri: lompatan antar-penimbangan.
+     * Kura tidak bisa berubah 50 kali lipat dari satu timbangan ke timbangan
+     * berikutnya; salah satuan persis seperti itu (100x untuk ons, 1000x untuk
+     * kilogram).
+     */
+    const LOMPATAN_MUSTAHIL = 50;
 
     for (const t of tortoises || []) {
       if (!diPeternakan(t)) continue;
@@ -73,6 +91,16 @@ Deno.serve(async (req) => {
       const beratSebelum = Number(sebelumnya.weight_grams || 0);
 
       if (beratSebelum > 0 && beratAkhir > 0) {
+        const lipat = beratAkhir > beratSebelum
+          ? beratAkhir / beratSebelum
+          : beratSebelum / beratAkhir;
+        if (lipat >= LOMPATAN_MUSTAHIL) {
+          satuanJanggal.push(
+            `${t.name || t.code || t.id}: ${beratSebelum}g (${sebelumnya.date}) → ` +
+            `${beratAkhir}g (${terakhir.date}), beda ${Math.round(lipat)}x — periksa satuannya`,
+          );
+          continue;
+        }
         const selisihPersen = ((beratSebelum - beratAkhir) / beratSebelum) * 100;
         if (selisihPersen >= ambangTurun) {
           turun.push(
@@ -108,19 +136,20 @@ Deno.serve(async (req) => {
     }
 
     let dikirim = 0;
-    if (turun.length > 0 || stagnan.length > 0) {
+    if (turun.length > 0 || stagnan.length > 0 || satuanJanggal.length > 0) {
       const penerima = await emailPerRole(base44, ["owner", "manajer"]);
       const bagian: string[] = [];
+      if (satuanJanggal.length > 0) bagian.push(`SATUAN BERAT JANGGAL (${satuanJanggal.length}):\n` + satuanJanggal.slice(0, 10).join("\n"));
       if (turun.length > 0) bagian.push(`TURUN BERAT (${turun.length}):\n` + turun.slice(0, 10).join("\n"));
       if (stagnan.length > 0) bagian.push(`BERHENTI TUMBUH (${stagnan.length}):\n` + stagnan.slice(0, 10).join("\n"));
 
       for (const email of penerima) {
         const dibuat = await notifSekali(base44, {
           recipient_email: email,
-          title: `${turun.length + stagnan.length} kura perlu diperiksa (berat)`,
+          title: `${turun.length + stagnan.length + satuanJanggal.length} kura perlu diperiksa (berat)`,
           message: bagian.join("\n\n").slice(0, 900),
-          type: turun.length > 0 ? "alert" : "warning",
-          priority: turun.length > 0 ? "tinggi" : "sedang",
+          type: turun.length > 0 || satuanJanggal.length > 0 ? "alert" : "warning",
+          priority: turun.length > 0 || satuanJanggal.length > 0 ? "tinggi" : "sedang",
           category: "kesehatan",
           action_label: "Lihat Daftar Kura",
           action_url: "/tortoise",
@@ -137,7 +166,9 @@ Deno.serve(async (req) => {
       success: true,
       turun: turun.length,
       stagnan: stagnan.length,
+      satuan_janggal: satuanJanggal.length,
       notifikasi_dibuat: dikirim,
+      detail_satuan: satuanJanggal.slice(0, 20),
       detail_turun: turun.slice(0, 20),
       detail_stagnan: stagnan.slice(0, 20),
     });
