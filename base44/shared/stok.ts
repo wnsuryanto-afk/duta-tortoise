@@ -87,3 +87,30 @@ export function stokPerluDiperhatikan(barangGudang: any[] = [], pakan: any[] = [
     ...(pakan || []).filter(perluDiperhatikan).map((i) => ({ ...i, _sumber: "pakan" })),
   ];
 }
+
+/** Berapa hari sebelum kedaluwarsa sebuah barang mulai diperingatkan. */
+export const HARI_PERINGATAN_KADALUARSA = 30;
+
+/**
+ * Akan kedaluwarsa dalam `hari` ke depan. Yang sudah lewat tidak dihitung di
+ * sini — itu keadaan lain dan ditangani sudahKadaluarsa().
+ *
+ * Ditambahkan ke sisi backend 15-09-2026. Sebelumnya aturan ini hanya ada di
+ * frontend, dan tidak satu pun otomatisasi memeriksanya — jadi kedaluwarsa
+ * hanya terlihat oleh orang yang kebetulan membuka halaman stok.
+ */
+export function akanKadaluarsa(item: any, hari = HARI_PERINGATAN_KADALUARSA, sekarang = new Date()): boolean {
+  if (!item?.expired_date) return false;
+  const tanggal = new Date(item.expired_date);
+  if (Number.isNaN(tanggal.getTime())) return false;
+  const selisih = Math.ceil((tanggal.getTime() - sekarang.getTime()) / 86400000);
+  return selisih >= 0 && selisih <= hari;
+}
+
+/** Sudah lewat tanggal kedaluwarsanya. */
+export function sudahKadaluarsa(item: any, sekarang = new Date()): boolean {
+  if (!item?.expired_date) return false;
+  const tanggal = new Date(item.expired_date);
+  if (Number.isNaN(tanggal.getTime())) return false;
+  return tanggal.getTime() < sekarang.getTime();
+}
