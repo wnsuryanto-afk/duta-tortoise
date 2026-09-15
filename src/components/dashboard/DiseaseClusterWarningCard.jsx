@@ -7,6 +7,7 @@
  * entity, tidak mengubah data tersimpan). Riwayat lengkap tetap ada di halaman
  * /riwayat-kluster.
  */
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -38,7 +39,7 @@ export default function DiseaseClusterWarningCard({ canDismiss = false, maxShow 
 
   const { data: healthRecords = [] } = useQuery({
     queryKey: ["cluster-health-records"],
-    queryFn: () => base44.entities.HealthRecord.list("-date", 1000),
+    queryFn: () => base44.entities.HealthRecord.list("-date", 1000).then(hanyaLaporan),
     staleTime: 10 * 60 * 1000,
   });
   const { data: tortoises = [] } = useQuery({

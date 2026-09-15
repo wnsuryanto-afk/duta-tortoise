@@ -3,6 +3,7 @@
  * awal data. Dihitung ulang dari HealthRecord (murni membaca), jadi tidak
  * bergantung pada penandaan "sudah ditinjau" di dashboard.
  */
+import { hanyaLaporan } from "@/lib/laporan";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 export default function RiwayatKlusterPage() {
   const { data: healthRecords = [], isLoading } = useQuery({
     queryKey: ["cluster-health-records"],
-    queryFn: () => base44.entities.HealthRecord.list("-date", 1000),
+    queryFn: () => base44.entities.HealthRecord.list("-date", 1000).then(hanyaLaporan),
     staleTime: 10 * 60 * 1000,
   });
   const { data: tortoises = [] } = useQuery({
