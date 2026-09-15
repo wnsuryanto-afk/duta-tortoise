@@ -22,7 +22,12 @@ export default function UrgentAlerts() {
   // Obat kadaluarsa
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["warehouse-alerts"],
-    queryFn: () => base44.entities.WarehouseItem.filter({ is_active: true }),
+    // WarehouseItem TIDAK punya kolom `is_active` — itu kolom milik Enclosure.
+    // Saringan ini mengembalikan NOL barang, selamanya, tanpa error: peringatan
+    // obat kadaluarsa di kartu ini belum pernah menyala sekali pun, dan daftar
+    // stok menipis selalu kosong sehingga kartu selalu berkata "semua baik".
+    // Penyaringan barang nonaktif dikerjakan perluDiperhatikan() di sisi klien.
+    queryFn: () => base44.entities.WarehouseItem.list("name", 500),
   });
   const expiredMeds = warehouseItems.filter(item => {
     if (!item.expired_date || item.category !== 'obat') return false;

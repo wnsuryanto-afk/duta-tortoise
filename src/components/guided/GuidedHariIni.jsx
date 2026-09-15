@@ -1493,7 +1493,10 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
   // Stok gudang untuk cek ketersediaan suplemen/obat/vitamin
   const { data: warehouseItems = [] } = useQuery({
     queryKey: ["warehouse-items-suplemen-check"],
-    queryFn: () => base44.entities.WarehouseItem.filter({ is_active: true }, "name", 200),
+    // Sama seperti di UrgentAlerts: WarehouseItem tidak punya `is_active`,
+    // jadi saringan ini mengembalikan nol baris dan stockMap selalu kosong —
+    // setiap suplemen/obat di alur harian terbaca "stok tidak diketahui".
+    queryFn: () => base44.entities.WarehouseItem.list("name", 300),
     staleTime: 60 * 1000,
   });
   const stockMap = useMemo(() => {
