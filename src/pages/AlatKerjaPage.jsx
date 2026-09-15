@@ -18,6 +18,7 @@ import LoanForm from "@/components/tools/LoanForm";
 import ReturnDialog from "@/components/tools/ReturnDialog";
 import RequestForm from "@/components/tools/RequestForm";
 import RequestCard from "@/components/tools/RequestCard";
+import { segarkanPeminjaman } from "@/lib/peminjaman";
 
 export default function AlatKerjaPage() {
   const { user, role } = useCurrentUser();
@@ -47,10 +48,8 @@ export default function AlatKerjaPage() {
   });
 
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ["tool-loans-active"] });
-    qc.invalidateQueries({ queryKey: ["tool-loans-returned"] });
+    segarkanPeminjaman(qc);
     qc.invalidateQueries({ queryKey: ["tool-requests-all"] });
-    qc.invalidateQueries({ queryKey: ["my-active-loans"] });
   };
 
   if (!isMgr && !isKeeper) return <AccessDenied />;
