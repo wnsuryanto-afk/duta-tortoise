@@ -80,6 +80,22 @@ Deno.serve(async (req) => {
      */
     const LOMPATAN_MUSTAHIL = 50;
 
+    /*
+     * Lompatan panjang tempurung (15-09-2026).
+     *
+     * Pemeriksaan berat-terhadap-panjang di layar punya satu titik buta yang
+     * baru ketahuan: kalau BERAT DAN PANJANG sama-sama tergeser koma, rasionya
+     * tetap masuk akal dan peringatan tidak muncul. Contohnya nyata:
+     *
+     *     A43  25 Jul  20 g / 5,2 cm    (benarnya 20.700 g / 52 cm)
+     *     A45  25 Jul  36 g / 5,9 cm    (benarnya 36.000 g / 59 cm)
+     *
+     * Dua-duanya lolos karena kura 5 cm seberat 20 g memang wajar. Yang tidak
+     * wajar adalah tempurung yang menyusut sepuluh kali lipat dari penimbangan
+     * sebelumnya — dan itu hanya terlihat dari riwayat kura itu sendiri.
+     */
+    const SUSUT_TEMPURUNG_MUSTAHIL = 3;
+
     for (const t of tortoises || []) {
       if (!diPeternakan(t)) continue;
       const riwayat = perKura.get(t.id) || [];
@@ -101,6 +117,21 @@ Deno.serve(async (req) => {
           );
           continue;
         }
+        const panjangAkhir = Number(terakhir.shell_length_cm || 0);
+        const panjangSebelum = Number(sebelumnya.shell_length_cm || 0);
+        if (panjangAkhir > 0 && panjangSebelum > 0) {
+          const lipatPanjang = panjangAkhir > panjangSebelum
+            ? panjangAkhir / panjangSebelum
+            : panjangSebelum / panjangAkhir;
+          if (lipatPanjang >= SUSUT_TEMPURUNG_MUSTAHIL) {
+            satuanJanggal.push(
+              `${t.name || t.code || t.id}: tempurung ${panjangSebelum} cm (${sebelumnya.date}) → ` +
+              `${panjangAkhir} cm (${terakhir.date}), beda ${lipatPanjang.toFixed(1)}x — periksa komanya`,
+            );
+            continue;
+          }
+        }
+
         const selisihPersen = ((beratSebelum - beratAkhir) / beratSebelum) * 100;
         if (selisihPersen >= ambangTurun) {
           turun.push(
