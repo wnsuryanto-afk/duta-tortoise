@@ -114,3 +114,54 @@ export function sudahKadaluarsa(item: any, sekarang = new Date()): boolean {
   if (Number.isNaN(tanggal.getTime())) return false;
   return tanggal.getTime() < sekarang.getTime();
 }
+
+/**
+ * Kedaluwarsa efektif sebuah BATCH — sisi backend.
+ *
+ * Kembarannya di frontend: src/lib/kedaluwarsaBatch.js. Kalau salah satu
+ * diubah, ubah keduanya.
+ *
+ * DUA HAL YANG SALAH SAYA LAKUKAN 15-09-2026, dicatat supaya tidak terulang:
+ *
+ *   1. Kolomnya di BatchBarang bernama `tanggal_expired`, BUKAN `expired_date`
+ *      (itu nama di WarehouseItem). Pemeriksaan pertama yang saya pasang
+ *      membaca kolom yang tidak ada, jadi ia akan diam selamanya — persis
+ *      jenis cacat yang seharian itu saya cari.
+ *   2. Tanggal cetak saja tidak cukup. Botol multi-dosis yang sudah dibuka
+ *      punya batas pakainya sendiri, dan untuk INJEKVIT B PLEX (100 dosis)
+ *      atau Wonder Oxytocin (10 dosis) botolnya bisa terbuka berbulan-bulan.
+ *
+ * Angka `hari_pakai_setelah_dibuka` bukan milik aplikasi: selama belum diisi
+ * dokter hewan, hanya tanggal cetak yang berlaku. Menebak berarti menyatakan
+ * aman obat yang sudah tidak.
+ */
+export function kedaluwarsaEfektifBatch(batch: any, item: any): { tanggal: Date | null; sebab: string | null } {
+  const keTanggal = (v: any) => {
+    if (!v) return null;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const cetak = keTanggal(batch?.tanggal_expired);
+  const dibuka = keTanggal(batch?.tanggal_buka);
+  const hari = Number(item?.hari_pakai_setelah_dibuka);
+  let setelahBuka: Date | null = null;
+  if (dibuka && Number.isFinite(hari) && hari > 0) {
+    setelahBuka = new Date(dibuka.getTime());
+    setelahBuka.setDate(setelahBuka.getDate() + hari);
+  }
+  if (cetak && setelahBuka) {
+    return setelahBuka < cetak ? { tanggal: setelahBuka, sebab: "buka" } : { tanggal: cetak, sebab: "cetak" };
+  }
+  if (setelahBuka) return { tanggal: setelahBuka, sebab: "buka" };
+  if (cetak) return { tanggal: cetak, sebab: "cetak" };
+  return { tanggal: null, sebab: null };
+}
+
+/** Sisa hari sampai batch ini jatuh tempo. null bila tanggalnya belum diketahui. */
+export function sisaHariBatch(batch: any, item: any, sekarang = new Date()): number | null {
+  const { tanggal } = kedaluwarsaEfektifBatch(batch, item);
+  if (!tanggal) return null;
+  const a = new Date(sekarang.getFullYear(), sekarang.getMonth(), sekarang.getDate());
+  const b = new Date(tanggal.getFullYear(), tanggal.getMonth(), tanggal.getDate());
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
