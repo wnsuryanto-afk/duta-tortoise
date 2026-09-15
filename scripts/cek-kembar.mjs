@@ -45,15 +45,28 @@ function awalBadan(src, i) {
   while (i < src.length && /\s/.test(src[i])) i++;
   if (src[i] === ":") {
     i++;
-    // Tipe boleh memuat kurawal seimbang (objek) — lewati seluruhnya.
-    while (i < src.length) {
-      while (i < src.length && /[\s\w|&,.<>[\]()]/.test(src[i])) i++;
+    /*
+     * Tipe boleh memuat kurawal seimbang. Masalahnya kurawal itu tidak bisa
+     * dibedakan dari kurawal badan hanya dengan melihat ke depan satu huruf:
+     * `): boolean {` dan `): { a: any[] } {` sama-sama "dua titik lalu
+     * kurawal". Bedanya baru terlihat SESUDAHNYA — kalau masih ada kurawal
+     * pembuka lagi, yang barusan itu milik tipe. Jadi: coba telan satu
+     * kelompok kurawal, lalu mundur lagi bila ternyata tidak ada kurawal
+     * berikutnya.
+     */
+    for (;;) {
+      while (i < src.length && /[\s\w|&,.<>[\]()'"]/.test(src[i])) i++;
       if (src[i] !== "{") break;
-      let dalam = 0;
-      for (; i < src.length; i++) {
-        if (src[i] === "{") dalam++;
-        else if (src[i] === "}") { dalam--; if (dalam === 0) { i++; break; } }
+      const sebelum = i;
+      let dalam = 0, j = i;
+      for (; j < src.length; j++) {
+        if (src[j] === "{") dalam++;
+        else if (src[j] === "}") { dalam--; if (dalam === 0) { j++; break; } }
       }
+      let k = j;
+      while (k < src.length && /[\s\w|&,.<>[\]()'"]/.test(src[k])) k++;
+      if (src[k] !== "{") { i = sebelum; break; }  // yang barusan itu BADAN.
+      i = j;
     }
     while (i < src.length && /\s/.test(src[i])) i++;
   }
