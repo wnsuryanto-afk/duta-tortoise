@@ -24,6 +24,7 @@ import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import SupplierPage from "@/pages/SupplierPage";
 import InputBerat from "@/components/common/InputBerat";
+import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -114,6 +115,18 @@ export default [
   ["InputBerat salah ons", <InputBerat gram={186} panjangCm={52} onChange={() => {}} />],
   ["InputBerat tanpa panjang", <InputBerat gram={24} onChange={() => {}} />],
   ["InputBerat tanpa onChange", <InputBerat gram={100} panjangCm={undefined} />],
+
+  // Tab Peminjaman dipindah dari ItemBorrow ke ToolLoan (15-09-2026). Nama
+  // kolomnya ikut berubah (borrow_date→loan_date, item_name→tool_name), jadi
+  // barisnya diuji dengan bentuk ToolLoan yang sebenarnya, termasuk tanggal
+  // kosong dan tanggal ngawur yang dulu membuat new Date() melempar.
+  ["StokPeminjamanTab tanpa data", <StokPeminjamanTab />],
+  ["StokPeminjamanTab bentuk ToolLoan", <StokPeminjamanTab borrows={[
+    { id: "1", tool_name: "Sekop", borrower_name: "Angsolo", loan_date: "2026-09-10", status: "dipinjam", purpose: "bersihkan kandang" },
+    { id: "2", tool_name: "Selang", borrower_name: "Sholeh", loan_date: "2026-09-01", return_date: "2026-09-05", status: "dikembalikan", return_condition: "rusak" },
+    { id: "3", tool_name: "Tanpa tanggal", borrower_name: "", status: "dipinjam" },
+    { id: "4", tool_name: "Tanggal ngawur", loan_date: "bukan-tanggal", expected_return_date: "", status: "dipinjam" },
+  ]} warehouseItems={[{ id: "w1", name: "Sekop", sku: "ALT-01" }]} feedstocks={[{ id: "f1", name: "Pelet", sku: "PKN-01" }]} />],
 
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
