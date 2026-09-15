@@ -12,6 +12,8 @@
  *                   layar dan otomatisasi malam menjawab beda
  *   cek-unggah      UploadFile dikirimi Blob tanpa nama berkas → ditolak
  *                   server, dan dua pemakainya menelan errornya
+ *   cek-laporan     angka uang yang ditampilkan tanpa menyaring penjualan
+ *                   yang dikecualikan atau data Mode Uji
  *   cek-entitas     tabel yang dibaca tapi tak pernah ditulis (layar selalu
  *                   kosong), ditulis tapi tak pernah dibaca (data hilang), atau
  *                   menganggur menunggu ditulisi orang yang salah sangka
@@ -27,7 +29,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-render.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {
