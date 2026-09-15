@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
+import { wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 
 /**
  * higieneKembar — penyapu baris kembar dan penanda uji yang tidak ikut ditandai.
@@ -126,8 +127,50 @@ Deno.serve(async (req) => {
       }
     }
 
+    /*
+     * Hasilnya harus mendatangi orang, bukan menunggu dibuka. Sapuan mingguan
+     * yang hanya mengembalikan JSON ke penjadwal sama saja dengan tidak ada:
+     * itu persis kesalahan yang membuat halaman kelengkapan data menganggur
+     * berbulan-bulan sampai higieneData dibuat.
+     */
+    const hariIni = wibTanggal();
+    let dikirim = 0;
+    if (kembar.length > 0 || ujiTakBertanda.length > 0) {
+      const bagian: string[] = [];
+      if (kembar.length > 0) {
+        const perTabel = new Map<string, number>();
+        for (const k of kembar) perTabel.set(k.tabel, (perTabel.get(k.tabel) || 0) + (k.jumlah - 1));
+        bagian.push(
+          `BARIS KEMBAR (${kembar.reduce((s, k) => s + (k.jumlah - 1), 0)} baris berlebih):\n` +
+          [...perTabel.entries()].map(([t, n]) => `${t}: ${n}`).join("\n"),
+        );
+      }
+      if (ujiTakBertanda.length > 0) {
+        bagian.push(
+          `DITULIS "DATA UJI" TAPI TIDAK DITANDAI (${ujiTakBertanda.length}):\n` +
+          ujiTakBertanda.slice(0, 5).map((u) => `${u.tabel}: ${u.kutipan.slice(0, 70)}`).join("\n"),
+        );
+      }
+      for (const email of await emailPerRole(base44, ["owner", "admin"])) {
+        const dibuat = await notifSekali(base44, {
+          recipient_email: email,
+          title: `Higiene data: ${kembar.length} kelompok kembar, ${ujiTakBertanda.length} catatan uji`,
+          message: bagian.join("\n\n").slice(0, 900),
+          type: "warning",
+          priority: "sedang",
+          category: "sistem",
+          action_label: "Lihat kelengkapan data",
+          action_url: "/kelengkapan-data",
+          related_entity_id: `higiene_kembar_${hariIni}`,
+          related_entity_type: "sistem",
+        });
+        if (dibuat) dikirim++;
+      }
+    }
+
     return Response.json({
       success: true,
+      notifikasi_dibuat: dikirim,
       baris_diperiksa: diperiksa,
       kelompok_kembar: kembar.length,
       baris_berlebih: kembar.reduce((s, k) => s + (k.jumlah - 1), 0),
