@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { diPeternakan } from "../../shared/kura.ts";
+import { hanyaLaporan } from "../../shared/laporan.ts";
 
 /**
  * getKuraDiamReport — Deteksi kura diam (lama tidak tersentuh pencatatan).
