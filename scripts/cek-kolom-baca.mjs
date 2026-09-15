@@ -23,6 +23,8 @@
  *   1. Kunci literal di dalam  Entity.filter({ … })
  *   2. Kolom pengurut di dalam Entity.list("-kolom")  dan
  *                              Entity.filter({…}, "-kolom")
+ *   3. Pasangan { tabel: "Entity", kolom: "nama" } — nama kolom yang
+ *      disimpan sebagai data, dipakai pendeteksi alarm mati.
  *
  * Kolom pengurut ikut diperiksa karena gagalnya juga sunyi: pengurutan
  * ke kolom yang tidak ada tidak melempar error, hanya mengembalikan
@@ -141,6 +143,27 @@ for (const p of berkas(".")) {
         catat(hantu, `${ent}.${k}  (syarat filter)`, p);
       }
     }
+  }
+
+
+  /*
+   * Daftar (tabel, kolom) yang ditulis sebagai DATA, bukan kode.
+   *
+   * Pendeteksi alarm mati di higieneKembar menyimpan nama kolom yang
+   * diperiksanya sebagai string di dalam tabel { tabel, kolom, … }. Nama
+   * kolom di situ tidak pernah muncul sebagai `entity.kolom` di mana pun,
+   * jadi tidak ada pemeriksa statis yang menyentuhnya — dan salahnya paling
+   * mahal: `Enclosure.capacity` (nama yang benar `max_capacity`) membuat
+   * rasio terisi selalu 0%, sehingga alarm kepadatan kandang yang sehat
+   * dilaporkan MATI setiap minggu. Pendeteksi alarm palsu di dalam
+   * pendeteksi alarm mati.
+   */
+  for (const m of s.matchAll(/\btabel:\s*["'](\w+)["']/g)) {
+    const ent = m[1];
+    if (!skema[ent]) continue;
+    const k = /\bkolom:\s*["'](\w+)["']/.exec(s.slice(m.index, m.index + 900));
+    if (!k) continue;
+    if (!skema[ent].has(k[1])) catat(hantu, `${ent}.${k[1]}  (daftar tabel/kolom)`, p);
   }
 
   // Kolom pengurut: Entity.list("-kolom")  /  Entity.filter({…}, "-kolom")
