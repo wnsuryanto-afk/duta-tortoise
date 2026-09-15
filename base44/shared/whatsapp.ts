@@ -6,6 +6,9 @@
 
 const FONNTE_API_URL = "https://api.fonnte.com/send";
 
+/** Batas pengambilan UserProfile. 29 baris untuk 10 orang per 15-09-2026. */
+const BATAS_PROFIL = 500;
+
 const TOGGLE_MAP = {
   daily_approval: "notif_daily_approval",
   sick_report: "notif_sick_report",
@@ -78,7 +81,7 @@ export async function getPhoneNumbersForRoles(base44, roles) {
  */
 async function nomorDariProfil(base44, email) {
   try {
-    const profil = await base44.asServiceRole.entities.UserProfile.filter({ user_email: email });
+    const profil = await base44.asServiceRole.entities.UserProfile.filter({ user_email: email }, null, BATAS_PROFIL);
     if (!Array.isArray(profil) || profil.length === 0) return "";
     const urut = [...profil].sort((a, b) =>
       String(b.updated_date || b.created_date || "").localeCompare(String(a.updated_date || a.created_date || "")),
@@ -112,7 +115,7 @@ export async function emailDariNomor(base44, nomorMentah) {
   if (cocok && cocok.email) return cocok.email;
 
   try {
-    const profil = await base44.asServiceRole.entities.UserProfile.list(null, 500);
+    const profil = await base44.asServiceRole.entities.UserProfile.list(null, BATAS_PROFIL);
     if (!Array.isArray(profil)) return "";
     const urut = [...profil].sort((a, b) =>
       String(b.updated_date || b.created_date || "").localeCompare(String(a.updated_date || a.created_date || "")),
