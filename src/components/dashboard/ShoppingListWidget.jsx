@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingCart, Plus, Package, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { ShoppingCart, Plus, Package, ChevronLeft, ChevronRight, Filter, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
 
@@ -213,6 +213,7 @@ export default function ShoppingListWidget() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [filterStatus, setFilterStatus] = useState("semua");
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const PAGE_SIZE = 5;
 
   const { data: items = [], isLoading } = useQuery({
@@ -234,9 +235,11 @@ export default function ShoppingListWidget() {
   const progress = items.length > 0 ? Math.round((sudahDibeli / items.length) * 100) : 0;
 
   // Filter & pagination
+  const q = searchQuery.trim().toLowerCase();
   const filteredItems = items.filter(i => {
-    if (filterStatus === "belum_dibeli") return i.status !== "sudah_dibeli";
-    if (filterStatus === "sudah_dibeli") return i.status === "sudah_dibeli";
+    if (filterStatus === "belum_dibeli" && i.status === "sudah_dibeli") return false;
+    if (filterStatus === "sudah_dibeli" && i.status !== "sudah_dibeli") return false;
+    if (q && !`${i.nama_barang || ""} ${i.notes || ""} ${i.platform_beli || ""}`.toLowerCase().includes(q)) return false;
     return true;
   });
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
@@ -251,9 +254,20 @@ export default function ShoppingListWidget() {
           <ShoppingCart className="w-5 h-5 text-primary" />
           <h3 className="font-heading font-semibold text-base text-foreground">Daftar Belanja Obat & Alat</h3>
         </div>
-        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setShowAddDialog(true)}>
-          <Plus className="w-3.5 h-3.5" /> Tambah Item
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              placeholder="Cari barang..."
+              className="h-8 w-40 sm:w-48 pl-7 text-xs"
+            />
+          </div>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setShowAddDialog(true)}>
+            <Plus className="w-3.5 h-3.5" /> Tambah Item
+          </Button>
+        </div>
       </div>
 
       {/* Ringkasan */}
