@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { diPeternakan } from '../../shared/kura.ts';
+import { masukLaporan } from '../../shared/laporan.ts';
 
 /**
  * getRotasiUkur — Pilih 2 kura aktif untuk rotasi timbang & ukur hari ini.
