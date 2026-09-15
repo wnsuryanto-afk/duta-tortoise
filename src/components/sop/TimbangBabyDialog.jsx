@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { panjangMencurigakan } from "@/lib/beratMasukAkal";
 import InputBerat from "@/components/common/InputBerat";
 import { masukLaporan } from "@/lib/laporan";
+import { simpanUkuranSekali, pesanSudahDitimbang } from "@/lib/ukurSekali";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,9 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
       if (curigaPanjang && !window.confirm(`${curigaPanjang}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) { setSavingBaby(false); return; }
 
       // 1. Simpan MeasurementHistory → trigger onMeasurementSaved update Tortoise + dorong foto ke galeri
-      await base44.entities.MeasurementHistory.create({
+      //    Dijaga supaya satu baby hanya punya satu baris per hari: task ini
+      //    dikerjakan bersama, dan dua kiper bisa menimbang baby yang sama.
+      const muatan = {
         tortoise_id: selected.id,
         tortoise_name: selected.name || selected.code,
         date: today,
@@ -110,7 +113,14 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
         notes: "Timbang baby massal 2 mingguan",
         photo_url,
         ...(isTestData ? { is_test_data: true } : {}),
-      });
+      };
+      const hasil = await simpanUkuranSekali(muatan);
+      if (!hasil.dibuat && !hasil.diperbarui) {
+        const ganti = window.confirm(
+          `${pesanSudahDitimbang(hasil.record)}\n\nTekan OK untuk mengganti dengan angka Anda, atau Batal untuk memakai angka yang sudah ada.`,
+        );
+        if (ganti) await simpanUkuranSekali(muatan, { timpa: true });
+      }
       const newDone = new Set(doneIds);
       newDone.add(selected.id);
       setDoneIds(newDone);
