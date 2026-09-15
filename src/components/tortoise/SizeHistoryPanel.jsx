@@ -3,6 +3,7 @@ import { panjangMencurigakan } from "@/lib/beratMasukAkal";
 import InputBerat from "@/components/common/InputBerat";
 import { bacaanGram } from "@/lib/satuanBerat";
 import { masukLaporan } from "@/lib/laporan";
+import { simpanUkuranSekali, pesanSudahDitimbang } from "@/lib/ukurSekali";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
     const curigaPanjang = panjangMencurigakan(form.shell_length_cm);
     if (curigaPanjang && !window.confirm(`${curigaPanjang}\n\nTekan OK untuk tetap menyimpan, atau Batal untuk memperbaiki.`)) return;
     setSaving(true);
-    await base44.entities.MeasurementHistory.create({
+    const muatan = {
       tortoise_id: tortoiseId,
       tortoise_name: tortoiseName,
       date: form.date,
@@ -49,7 +50,21 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
       shell_length_cm: form.shell_length_cm ? Number(form.shell_length_cm) : undefined,
       measured_by: user?.full_name || user?.email || "",
       notes: form.notes,
-    });
+    };
+    // Satu kura, satu catatan ukur per hari. Lihat ukurSekali.js — baris kembar
+    // di sini bukan ketukan ganda, melainkan dua orang mengerjakan task yang sama.
+    const hasil = await simpanUkuranSekali(muatan);
+    if (!hasil.dibuat && !hasil.diperbarui) {
+      const ganti = window.confirm(
+        `${pesanSudahDitimbang(hasil.record)}\n\nTekan OK untuk mengganti dengan angka Anda, atau Batal untuk membatalkan penyimpanan.`,
+      );
+      if (ganti) {
+        await simpanUkuranSekali(muatan, { timpa: true });
+      } else {
+        setSaving(false);
+        return;
+      }
+    }
     qc.invalidateQueries({ queryKey: ["measurement-history", tortoiseId] });
     setShowForm(false);
     setForm({ date: format(new Date(), "yyyy-MM-dd"), weight_grams: "", shell_length_cm: "", notes: "" });
