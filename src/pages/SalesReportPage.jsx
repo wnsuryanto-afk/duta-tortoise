@@ -1,3 +1,4 @@
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -21,7 +22,10 @@ export default function SalesReportPage() {
 
   const { data: sales = [] } = useQuery({
     queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list("-sale_date"),
+    // Tanpa batas eksplisit, SDK memotong di 50 baris — laporan penjualan akan
+    // diam-diam kehilangan transaksi lama begitu jumlahnya lewat 50.
+    // Dan penjualan yang dikecualikan pemilik tidak boleh ikut dihitung.
+    queryFn: () => base44.entities.Sale.list("-sale_date", 1000).then(hanyaLaporan),
   });
 
   const filtered = useMemo(() => sales.filter(s => {
