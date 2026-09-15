@@ -694,8 +694,16 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         return;
       }
 
-      // 1. Simpan MeasurementHistory (trigger onMeasurementSaved → update Tortoise otomatis)
-      await base44.entities.MeasurementHistory.create({
+      /*
+       * 1. Simpan MeasurementHistory (trigger onMeasurementSaved → update
+       *    Tortoise otomatis).
+       *
+       *    Task ini `task_scope: bersama`, jadi kedua kiper melihat kura yang
+       *    sama dan keduanya mengerjakannya. 23 dari 32 baris kembar sampai
+       *    15-09-2026 lahir persis begitu — dua nama, angka sama, berjarak 0
+       *    detik sampai 6 jam. Lihat ukurSekali.js.
+       */
+      const hasil = await simpanUkuranSekali({
         tortoise_id: task.tortoiseId,
         tortoise_name: task.tortoiseName || task.tortoiseCode,
         date: today,
@@ -705,6 +713,28 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         notes: "Rotasi otomatis timbang & ukur",
         ...testTag,
       });
+      if (!hasil.dibuat && !hasil.diperbarui) {
+        // Rekan sudah menimbang kura ini hari ini. Pekerjaannya tetap dihitung
+        // (task tetap dicentang di bawah), tapi angkanya tidak ditulis dua kali
+        // kecuali kiper ini memang ingin menggantinya.
+        const ganti = window.confirm(
+          `${pesanSudahDitimbang(hasil.record)}\n\n` +
+          `Tekan OK untuk mengganti dengan angka Anda, atau Batal untuk memakai angka yang sudah ada. ` +
+          `Task tetap tercentang untuk Anda.`,
+        );
+        if (ganti) {
+          await simpanUkuranSekali({
+            tortoise_id: task.tortoiseId,
+            tortoise_name: task.tortoiseName || task.tortoiseCode,
+            date: today,
+            weight_grams,
+            shell_length_cm: length_cm,
+            measured_by: user.full_name || user.email,
+            notes: "Rotasi otomatis timbang & ukur (diperbarui)",
+            ...testTag,
+          }, { timpa: true });
+        }
+      }
       // 2. Buat MaintenanceLog (centang)
       if (!existingLogItemIds.has(task.id)) {
         await base44.entities.MaintenanceLog.create({
