@@ -1,4 +1,5 @@
 import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format, differenceInMonths, differenceInYears } from "date-fns";
@@ -137,7 +138,10 @@ export default function TortoisePassport() {
     ]).then(async ([t, m, h, s]) => {
       if (!t) { setError("Data kura tidak ditemukan"); setLoading(false); return; }
       setTortoise(t);
-      setMeasurements(m || []);
+      // Baris kembar dan salah ketik ditandai excluded_from_reports, bukan
+      // dihapus. Grafik pertumbuhan harus menghormatinya — kalau tidak, satu
+      // penimbangan yang tercatat dua kali tampak sebagai dua titik.
+      setMeasurements(hanyaLaporan(m || []));
       setHealthRecords(h || []);
       setSettings(s || {});
 
