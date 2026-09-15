@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { profilAktif } from "@/lib/profilUser";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -15,7 +16,11 @@ export default function IncompleteDataWidget() {
   const { data: tortoises = [] } = useQuery({ queryKey: ["tortoises"], queryFn: () => base44.entities.Tortoise.list("-created_date", 300) });
   const { data: breedings = [] } = useQuery({ queryKey: ["breedings-planner"], queryFn: () => base44.entities.Breeding.list("-created_date", 200) });
   const { data: sales = [] } = useQuery({ queryKey: ["sales"], queryFn: () => base44.entities.Sale.list("-sale_date", 200) });
-  const { data: profiles = [] } = useQuery({ queryKey: ["user-profiles-all"], queryFn: () => base44.entities.UserProfile.list() });
+  // Sama seperti halaman kelengkapan data: baris nisan tidak ikut dihitung.
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["user-profiles-all"],
+    queryFn: () => base44.entities.UserProfile.list(null, 500).then(profilAktif),
+  });
   const { data: warehouseItems = [] } = useQuery({ queryKey: ["warehouse-items", "-name", 500], queryFn: () => base44.entities.WarehouseItem.list("-name", 500) });
   const { data: feedStocks = [] } = useQuery({ queryKey: ["feedstocks", "-name", 300], queryFn: () => base44.entities.FeedStock.list("-name", 300) });
 
