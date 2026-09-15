@@ -71,9 +71,13 @@ export default function UnifiedStokPage() {
     queryKey: ["stock-movements"],
     queryFn: () => base44.entities.StockMovement.list("-date", 500),
   });
+  // Satu daftar peminjaman untuk seluruh aplikasi (15-09-2026). Sebelumnya tab
+  // ini membaca ItemBorrow sementara halaman Alat Kerja memakai ToolLoan, jadi
+  // barang yang dicatat di sini tidak pernah terlihat di dashboard maupun masuk
+  // Daftar Belanja saat hilang.
   const { data: borrows = [] } = useQuery({
-    queryKey: ["item-borrows"],
-    queryFn: () => base44.entities.ItemBorrow.list("-borrow_date", 200),
+    queryKey: ["tool-loans"],
+    queryFn: () => base44.entities.ToolLoan.list("-loan_date", 200),
   });
 
   if (!canAccess(role, "stock-gudang") && !canAccess(role, "warehouse") && !canAccess(role, "feed-stock")) {
