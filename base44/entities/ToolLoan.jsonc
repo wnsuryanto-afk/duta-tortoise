@@ -8,7 +8,21 @@
     },
     "warehouse_item_id": {
       "type": "string",
-      "description": "ID WarehouseItem jika dipilih dari katalog (opsional)"
+      "description": "ID WarehouseItem atau FeedStock jika dipilih dari katalog (opsional)"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "warehouse",
+        "feedstock"
+      ],
+      "default": "warehouse",
+      "description": "Asal katalog barang yang dipinjam. Dipindahkan dari ItemBorrow 15-09-2026 saat dua daftar peminjaman disatukan ke sini."
+    },
+    "expected_return_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Rencana tanggal kembali. Dipindahkan dari ItemBorrow 15-09-2026."
     },
     "warehouse_item_sku": {
       "type": "string",
