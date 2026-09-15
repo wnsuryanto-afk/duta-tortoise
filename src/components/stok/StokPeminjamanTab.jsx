@@ -13,9 +13,23 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
-function StatusBadge({ borrow }) {
-  if (borrow.return_date) {
-    const cond = borrow.return_condition;
+/**
+ * StokPeminjamanTab — daftar peminjaman barang gudang & pakan.
+ *
+ * Sampai 15-09-2026 tab ini menulis ke tabel ItemBorrow, sementara halaman
+ * Alat Kerja menulis ke ToolLoan. Dua daftar peminjaman, dua tabel, satu
+ * kenyataan. Alat yang dicatat di sini tidak pernah muncul di dashboard, dan
+ * kalau dikembalikan dalam keadaan rusak atau hilang ia tidak pernah masuk
+ * Daftar Belanja — otomatisasi penggantinya hanya memantau ToolLoan.
+ *
+ * Keduanya masih kosong saat disatukan, jadi tidak ada data yang dipindah.
+ * ToolLoan yang dipertahankan karena dialah yang sudah punya otomatisasi,
+ * widget dashboard, dan jalur foto kondisi. ItemBorrow ditandai usang.
+ */
+
+function StatusBadge({ pinjam }) {
+  if (pinjam.status === "dikembalikan" || pinjam.return_date) {
+    const cond = pinjam.return_condition;
     if (cond === "hilang") return <Badge className="bg-red-100 text-red-700 text-[10px]">❌ Hilang</Badge>;
     if (cond === "rusak") return <Badge className="bg-orange-100 text-orange-700 text-[10px]">⚠️ Rusak</Badge>;
     return <Badge className="bg-green-100 text-green-700 text-[10px]">✅ Dikembalikan</Badge>;
@@ -31,7 +45,6 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
     item_id: "", item_type: "warehouse",
     borrower_name: user?.full_name || "",
     borrower_email: user?.email || "",
-    borrow_date: new Date().toISOString(),
     expected_return_date: "",
     purpose: "", notes: "",
   });
@@ -39,8 +52,8 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const allOptions = [
-    ...warehouseItems.map(i => ({ id: i.id, name: i.name, unit: i.unit, type: "warehouse" })),
-    ...feedstocks.map(i => ({ id: i.id, name: i.name, unit: i.unit, type: "feedstock" })),
+    ...warehouseItems.map(i => ({ id: i.id, name: i.name, sku: i.sku, type: "warehouse" })),
+    ...feedstocks.map(i => ({ id: i.id, name: i.name, sku: i.sku, type: "feedstock" })),
   ];
   const selectedItem = allOptions.find(o => o.id === form.item_id);
 
@@ -54,21 +67,25 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
     e.preventDefault();
     if (!form.item_id || !form.borrower_name) return;
     setSaving(true);
-    await base44.entities.ItemBorrow.create({
-      item_id: form.item_id,
-      item_name: selectedItem?.name || "",
-      item_type: form.item_type,
-      borrower_email: form.borrower_email,
-      borrower_name: form.borrower_name,
-      borrow_date: form.borrow_date,
-      expected_return_date: form.expected_return_date || undefined,
-      purpose: form.purpose,
-      notes: form.notes,
-      approval_status: "approved",
-    });
-    qc.invalidateQueries({ queryKey: ["item-borrows"] });
-    setSaving(false);
-    onClose();
+    try {
+      await base44.entities.ToolLoan.create({
+        tool_name: selectedItem?.name || "",
+        warehouse_item_id: form.item_id,
+        warehouse_item_sku: selectedItem?.sku || null,
+        item_type: form.item_type,
+        borrower_email: form.borrower_email,
+        borrower_name: form.borrower_name,
+        loan_date: format(new Date(), "yyyy-MM-dd"),
+        expected_return_date: form.expected_return_date || undefined,
+        purpose: form.purpose,
+        notes: form.notes,
+        status: "dipinjam",
+      });
+      qc.invalidateQueries({ queryKey: ["tool-loans"] });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -78,12 +95,12 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
         <Select value={form.item_id} onValueChange={handleItemChange}>
           <SelectTrigger className="mt-0.5"><SelectValue placeholder="Pilih item..." /></SelectTrigger>
           <SelectContent>
-            <optgroup label="Alat & Gudang">
-              {warehouseItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-            </optgroup>
-            <optgroup label="Pakan">
-              {feedstocks.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-            </optgroup>
+            {warehouseItems.map(i => (
+              <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+            ))}
+            {feedstocks.map(i => (
+              <SelectItem key={i.id} value={i.id}>{i.name} (pakan)</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -103,6 +120,10 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
         <Label className="text-xs">Catatan</Label>
         <Input value={form.notes} onChange={e => set("notes", e.target.value)} className="mt-0.5" placeholder="Opsional..." />
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Tercatat di daftar yang sama dengan halaman Alat Kerja. Bila nanti dikembalikan
+        dalam keadaan rusak atau hilang, penggantinya masuk Daftar Belanja sendiri.
+      </p>
       <div className="flex gap-2 pt-1">
         <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
         <Button type="submit" className="flex-1" disabled={saving || !form.item_id || !form.borrower_name}>{saving ? "Menyimpan..." : "Simpan"}</Button>
@@ -112,27 +133,31 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
 }
 
 // ── Return Dialog ─────────────────────────────────────────────────────
-function ReturnDialog({ borrow, onClose }) {
+function ReturnDialog({ pinjam, onClose }) {
   const qc = useQueryClient();
   const [condition, setCondition] = useState("baik");
   const [saving, setSaving] = useState(false);
 
   const handleReturn = async () => {
     setSaving(true);
-    await base44.entities.ItemBorrow.update(borrow.id, {
-      return_date: new Date().toISOString(),
-      return_condition: condition,
-    });
-    qc.invalidateQueries({ queryKey: ["item-borrows"] });
-    setSaving(false);
-    onClose();
+    try {
+      await base44.entities.ToolLoan.update(pinjam.id, {
+        return_date: format(new Date(), "yyyy-MM-dd"),
+        return_condition: condition,
+        status: "dikembalikan",
+      });
+      qc.invalidateQueries({ queryKey: ["tool-loans"] });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="space-y-4">
       <div className="bg-muted/50 rounded-xl p-3">
-        <p className="font-semibold text-sm">{borrow.item_name}</p>
-        <p className="text-xs text-muted-foreground">Dipinjam oleh: {borrow.borrower_name}</p>
+        <p className="font-semibold text-sm">{pinjam.tool_name}</p>
+        <p className="text-xs text-muted-foreground">Dipinjam oleh: {pinjam.borrower_name}</p>
       </div>
       <div>
         <Label className="text-xs">Kondisi Saat Dikembalikan *</Label>
@@ -145,6 +170,11 @@ function ReturnDialog({ borrow, onClose }) {
           ))}
         </div>
       </div>
+      {(condition === "rusak" || condition === "hilang") && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-[11px] text-amber-800">
+          ⚠️ Barang {condition} akan otomatis masuk Daftar Belanja sebagai pengganti.
+        </div>
+      )}
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
         <Button className="flex-1" onClick={handleReturn} disabled={saving}>{saving ? "Menyimpan..." : "Tandai Dikembalikan"}</Button>
@@ -154,22 +184,28 @@ function ReturnDialog({ borrow, onClose }) {
 }
 
 // ── MAIN ─────────────────────────────────────────────────────────────
-export default function StokPeminjamanTab({ borrows, warehouseItems, feedstocks }) {
+export default function StokPeminjamanTab({ borrows = [], warehouseItems = [], feedstocks = [] }) {
   const [showForm, setShowForm] = useState(false);
   const [returnItem, setReturnItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState("semua");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
-    return borrows.filter(b => {
-      const matchSearch = !search || b.item_name?.toLowerCase().includes(search.toLowerCase()) || b.borrower_name?.toLowerCase().includes(search.toLowerCase());
-      const isReturned = !!b.return_date;
+    return (borrows || []).filter(b => {
+      const matchSearch = !search || b.tool_name?.toLowerCase().includes(search.toLowerCase()) || b.borrower_name?.toLowerCase().includes(search.toLowerCase());
+      const isReturned = b.status === "dikembalikan" || !!b.return_date;
       if (statusFilter === "dipinjam" && isReturned) return false;
       if (statusFilter === "dikembalikan" && !isReturned) return false;
       if (statusFilter === "hilang_rusak" && !(b.return_condition === "hilang" || b.return_condition === "rusak")) return false;
       return matchSearch;
     });
   }, [borrows, statusFilter, search]);
+
+  const tglAman = (v, pola) => {
+    if (!v) return "-";
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? "-" : format(d, pola, { locale: idLocale });
+  };
 
   return (
     <div className="space-y-4">
@@ -217,17 +253,17 @@ export default function StokPeminjamanTab({ borrows, warehouseItems, feedstocks 
                 filtered.map(b => (
                   <tr key={b.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
-                      {b.borrow_date ? format(new Date(b.borrow_date), "d MMM yy", { locale: idLocale }) : "-"}
+                      {tglAman(b.loan_date, "d MMM yy")}
                     </td>
-                    <td className="px-4 py-2.5 font-medium">{b.item_name}</td>
+                    <td className="px-4 py-2.5 font-medium">{b.tool_name}</td>
                     <td className="px-4 py-2.5 text-xs">{b.borrower_name}</td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{b.purpose || "-"}</td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                      {b.expected_return_date ? format(new Date(b.expected_return_date), "d MMM yy", { locale: idLocale }) : "-"}
+                      {tglAman(b.expected_return_date, "d MMM yy")}
                     </td>
-                    <td className="px-4 py-2.5"><StatusBadge borrow={b} /></td>
+                    <td className="px-4 py-2.5"><StatusBadge pinjam={b} /></td>
                     <td className="px-4 py-2.5 text-right">
-                      {!b.return_date && (
+                      {b.status !== "dikembalikan" && !b.return_date && (
                         <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-green-700" onClick={() => setReturnItem(b)}>
                           <RotateCcw className="w-3 h-3" /> Kembalikan
                         </Button>
@@ -240,7 +276,7 @@ export default function StokPeminjamanTab({ borrows, warehouseItems, feedstocks 
           </table>
         </div>
         <div className="px-4 py-2 border-t text-xs text-muted-foreground bg-muted/20">
-          {filtered.length} peminjaman
+          {filtered.length} peminjaman · daftar yang sama dengan halaman Alat Kerja
         </div>
       </Card>
 
@@ -256,7 +292,7 @@ export default function StokPeminjamanTab({ borrows, warehouseItems, feedstocks 
       <Dialog open={!!returnItem} onOpenChange={o => { if (!o) setReturnItem(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Tandai Dikembalikan</DialogTitle></DialogHeader>
-          {returnItem && <ReturnDialog borrow={returnItem} onClose={() => setReturnItem(null)} />}
+          {returnItem && <ReturnDialog pinjam={returnItem} onClose={() => setReturnItem(null)} />}
         </DialogContent>
       </Dialog>
     </div>
