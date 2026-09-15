@@ -12,6 +12,7 @@ import { Plus, RotateCcw, Search } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { segarkanPeminjaman } from "@/lib/peminjaman";
 
 /**
  * StokPeminjamanTab — daftar peminjaman barang gudang & pakan.
@@ -81,7 +82,7 @@ function BorrowForm({ warehouseItems, feedstocks, onClose }) {
         notes: form.notes,
         status: "dipinjam",
       });
-      qc.invalidateQueries({ queryKey: ["tool-loans"] });
+      segarkanPeminjaman(qc);
       onClose();
     } finally {
       setSaving(false);
@@ -146,7 +147,7 @@ function ReturnDialog({ pinjam, onClose }) {
         return_condition: condition,
         status: "dikembalikan",
       });
-      qc.invalidateQueries({ queryKey: ["tool-loans"] });
+      segarkanPeminjaman(qc);
       onClose();
     } finally {
       setSaving(false);
