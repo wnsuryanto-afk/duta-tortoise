@@ -31,7 +31,7 @@ export default function AnnualGoalWidget({ breedings = [] }) {
   // tanpa batas setiap kali beranda dibuka, hanya untuk menjumlahkan tahun ini.
   const { data: salesToday = [] } = useQuery({
     queryKey: ["sales-for-goal"],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 500),
+    queryFn: () => base44.entities.Sale.list("-sale_date", 500).then(hanyaLaporan),
     staleTime: 5 * 60 * 1000,
   });
   const currentYearRevenue = salesToday
