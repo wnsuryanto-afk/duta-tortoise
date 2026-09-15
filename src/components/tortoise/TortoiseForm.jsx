@@ -738,6 +738,16 @@ export default function TortoiseForm({ open, onClose, editData }) {
               />
               {errors.shell_length_cm && <p className="text-xs text-red-600">{errors.shell_length_cm}</p>}
             </div>
+            <div className="space-y-1.5">
+              <InputBerat
+                gram={form.weight_grams}
+                onChange={(g) => set("weight_grams", g)}
+                panjangCm={form.shell_length_cm}
+                label="Berat"
+                required
+              />
+              {errors.weight_grams && <p className="text-xs text-red-600">{errors.weight_grams}</p>}
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Catatan</Label>
