@@ -135,8 +135,20 @@ Deno.serve(async (req) => {
      */
     const hariIni = wibTanggal();
     let dikirim = 0;
-    if (kembar.length > 0 || ujiTakBertanda.length > 0) {
+    if (kembar.length > 0 || ujiTakBertanda.length > 0 || gagal.length > 0) {
       const bagian: string[] = [];
+      /*
+       * Tabel yang gagal dibaca disebut PALING ATAS, bukan disembunyikan di
+       * JSON. Tabel yang gagal dan tabel yang bersih menghasilkan laporan yang
+       * sama persis kalau kegagalannya tidak disebut — dan seluruh sesi
+       * 15-09-2026 adalah rentetan hal yang gagal tanpa bersuara.
+       */
+      if (gagal.length > 0) {
+        bagian.push(
+          `TIDAK BISA DIPERIKSA (${gagal.length}) — anggap belum diperiksa, bukan bersih:\n` +
+          gagal.map((g) => `${g.tabel}: ${g.alasan}`).join("\n"),
+        );
+      }
       if (kembar.length > 0) {
         const perTabel = new Map<string, number>();
         for (const k of kembar) perTabel.set(k.tabel, (perTabel.get(k.tabel) || 0) + (k.jumlah - 1));
@@ -154,10 +166,12 @@ Deno.serve(async (req) => {
       for (const email of await emailPerRole(base44, ["owner", "admin"])) {
         const dibuat = await notifSekali(base44, {
           recipient_email: email,
-          title: `Higiene data: ${kembar.length} kelompok kembar, ${ujiTakBertanda.length} catatan uji`,
+          title: gagal.length > 0
+            ? `Higiene data: ${gagal.length} tabel gagal diperiksa, ${kembar.length} kelompok kembar`
+            : `Higiene data: ${kembar.length} kelompok kembar, ${ujiTakBertanda.length} catatan uji`,
           message: bagian.join("\n\n").slice(0, 900),
-          type: "warning",
-          priority: "sedang",
+          type: gagal.length > 0 ? "alert" : "warning",
+          priority: gagal.length > 0 ? "tinggi" : "sedang",
           category: "sistem",
           action_label: "Lihat kelengkapan data",
           action_url: "/kelengkapan-data",
