@@ -33,6 +33,7 @@
  * membuat catatan biayanya sendiri; menyediakan tombol gaji di sini akan
  * membuat gaji yang sama masuk dua kali.
  */
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -81,7 +82,9 @@ export default function CatatBiayaPage() {
 
   const { data: riwayat = [] } = useQuery({
     queryKey: ["catat-biaya-riwayat"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 200),
+    // Riwayat ini jadi saran nominal. Transaksi yang dibatalkan atau data uji
+    // tidak boleh muncul sebagai saran — itu mengajarkan angka yang salah.
+    queryFn: () => base44.entities.FinanceTransaction.list("-date", 200).then(hanyaLaporan),
     staleTime: 60 * 1000,
   });
 
