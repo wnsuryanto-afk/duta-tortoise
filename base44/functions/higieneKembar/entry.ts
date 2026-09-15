@@ -77,7 +77,11 @@ const ALARM = [
   {
     nama: "Peringatan kedaluwarsa obat & bahan",
     tabel: "BatchBarang",
-    kolom: "expired_date",
+    // BUKAN "expired_date" — itu nama kolom di WarehouseItem. Di BatchBarang
+    // namanya `tanggal_expired`. Versi pertama pemeriksaan ini salah kolom,
+    // jadi ia membaca sesuatu yang tidak ada dan akan diam selamanya: cacat
+    // yang persis sama dengan yang sedang dicarinya.
+    kolom: "tanggal_expired",
     // Batch yang sudah habis tidak perlu tanggal lagi.
     berlaku: (r: any) => r?.status !== "habis" && (Number(r?.jumlah_sisa) || 0) > 0,
     akibat: "obat lewat tanggal tidak akan pernah ditandai",
