@@ -65,10 +65,7 @@ Deno.serve(async (req) => {
      * sekali. Itu persis cacat yang hari ini ditemukan pada laporan higiene
      * gudang: 23 temuan tiap pekan yang semuanya sudah beres.
      */
-    const punyaMinimum = (i: any) => (Number(i?.minimum_stock) || 0) > 0;
-    const habis = perlu.filter((i: any) => stokHabis(i) && punyaMinimum(i));
-    const menipis = perlu.filter((i: any) => !stokHabis(i));
-    const wajibTanpaMinimum = perlu.filter((i: any) => stokHabis(i) && !punyaMinimum(i));
+    const { habis, menipis, wajibTanpaMinimum } = golonganStok(perlu);
 
     /*
      * Kedaluwarsa ditambahkan 15-09-2026.

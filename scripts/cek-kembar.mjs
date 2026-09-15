@@ -17,7 +17,7 @@
 import fs from "fs";
 
 const PASANGAN = [
-  ["src/lib/stokMenipis.js",   "base44/shared/stok.ts",          ["stokHabis", "stokMenipis", "perluDiperhatikan", "dilacak"]],
+  ["src/lib/stokMenipis.js",   "base44/shared/stok.ts",          ["stokHabis", "stokMenipis", "perluDiperhatikan", "dilacak", "golonganStok"]],
   ["src/lib/laporan.js",       "base44/shared/laporan.ts",       ["masukLaporan"]],
   ["src/lib/populasiKura.js",  "base44/shared/kura.ts",          ["diPeternakan"]],
   ["src/lib/breedingUtils.js", "base44/shared/kura.ts",          ["clutchAktif"]],
