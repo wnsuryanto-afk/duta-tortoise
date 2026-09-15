@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import InputBerat from "@/components/common/InputBerat";
+import { panjangMencurigakan } from "@/lib/beratMasukAkal";
 
 /**
  * UkurFormDialog — form wajib isi berat + panjang saat mencentang task rotasi ukur.
@@ -31,6 +33,11 @@ export default function UkurFormDialog({ open, onClose, onSubmit, tortoise, savi
       setError("Berat dan panjang wajib diisi (angka > 0)");
       return;
     }
+    const pesanPanjang = panjangMencurigakan(l);
+    if (pesanPanjang) {
+      setError(pesanPanjang);
+      return;
+    }
     setError("");
     onSubmit({ weight_grams: w, length_cm: l });
   };
@@ -47,20 +54,22 @@ export default function UkurFormDialog({ open, onClose, onSubmit, tortoise, savi
           {tortoise?.enclosure && (
             <p className="text-xs text-muted-foreground">🏠 Kandang: {tortoise.enclosure}</p>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Berat (gram) *</Label>
-              <Input type="number" min={1} step="0.1" value={weight}
-                onChange={(e) => setWeight(e.target.value)} placeholder="0" autoFocus
-                className="mt-1 h-9 text-sm" />
-            </div>
-            <div>
-              <Label className="text-xs">Panjang (cm) *</Label>
-              <Input type="number" min={0.1} step="0.01" value={length}
-                onChange={(e) => setLength(e.target.value)} placeholder="0"
-                className="mt-1 h-9 text-sm" />
-            </div>
+          <div>
+            <Label className="text-xs">Panjang tempurung (cm) *</Label>
+            <Input type="number" min={0.1} step="0.01" value={length}
+              onChange={(e) => setLength(e.target.value)} placeholder="0" autoFocus
+              className="mt-1 h-9 text-sm" />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Diisi lebih dulu supaya beratnya bisa diperiksa kewajarannya.
+            </p>
           </div>
+          <InputBerat
+            gram={weight}
+            onChange={setWeight}
+            panjangCm={length}
+            label="Berat"
+            required
+          />
           {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
           <p className="text-[11px] text-muted-foreground">
             Isi kedua angka untuk menyimpan & mencentang task.
