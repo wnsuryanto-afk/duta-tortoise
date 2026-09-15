@@ -25,6 +25,7 @@ import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import SupplierPage from "@/pages/SupplierPage";
 import InputBerat from "@/components/common/InputBerat";
 import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
+import DosisKalkulator from "@/components/health/DosisKalkulator";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -127,6 +128,18 @@ export default [
     { id: "3", tool_name: "Tanpa tanggal", borrower_name: "", status: "dipinjam" },
     { id: "4", tool_name: "Tanggal ngawur", loan_date: "bukan-tanggal", expected_return_date: "", status: "dipinjam" },
   ]} warehouseItems={[{ id: "w1", name: "Sekop", sku: "ALT-01" }]} feedstocks={[{ id: "f1", name: "Pelet", sku: "PKN-01" }]} />],
+
+  // Penjaga dosis (15-09-2026). Berat kilogram di kolom gram membuat dosis
+  // obat mengecil seribu kali tanpa satu pun angka terlihat janggal. Kasus
+  // "B31 salah satuan" memakai angka yang benar-benar tersimpan hari itu.
+  ["DosisKalkulator tanpa diagnosis", <DosisKalkulator selectedDiagnoses={[]} />],
+  ["DosisKalkulator tanpa data kura", <DosisKalkulator selectedDiagnoses={["shell_rot"]} tortoiseId="x" tortoises={[]} />],
+  ["DosisKalkulator berat wajar", <DosisKalkulator selectedDiagnoses={["shell_rot"]} tortoiseId="t1"
+    tortoises={[{ id: "t1", weight_grams: 24000, shell_length_cm: 54 }]} />],
+  ["DosisKalkulator B31 salah satuan", <DosisKalkulator selectedDiagnoses={["shell_rot"]} tortoiseId="t1"
+    tortoises={[{ id: "t1", weight_grams: 24, shell_length_cm: 54 }]} />],
+  ["DosisKalkulator tanpa panjang tempurung", <DosisKalkulator selectedDiagnoses={["shell_rot"]} tortoiseId="t1"
+    tortoises={[{ id: "t1", weight_grams: 24 }]} />],
 
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
