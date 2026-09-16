@@ -294,7 +294,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
       {/* ── SECTION 2: STATUS HARI INI ── */}
       <div>
         <h2 className="font-semibold text-sm mb-3 text-foreground">Status Hari Ini</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <MiniCard icon={Users} label="Absensi" value={`${hadirCount}/${totalStaff} hadir`} href="/daily-payroll" />
           <MiniCard icon={CheckCircle} label="Checklist"
             value={`${submittedCount} submit`}
@@ -310,8 +310,6 @@ export default function AdminDashboard({ user, role = "admin" }) {
             urgent={totalCritical > 0}
             href="/stok-unified"
           />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <PettyCashWidget />
         </div>
       </div>
