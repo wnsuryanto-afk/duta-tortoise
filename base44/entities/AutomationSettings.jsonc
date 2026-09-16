@@ -100,6 +100,15 @@
       "type": "string",
       "description": "A16 \u2014 Tanggal WIB terakhir pemeriksaan stok dijalankan"
     },
+    "sinkron_profil_jam": {
+      "type": "string",
+      "default": "08:20",
+      "description": "Jam WIB paling awal penyamaan profil kura boleh berjalan"
+    },
+    "sinkron_profil_terakhir": {
+      "type": "string",
+      "description": "Tanggal WIB terakhir profil kura disamakan dengan timbangan sah terakhir"
+    },
     "anomali_berat_enabled": {
       "type": "boolean",
       "default": false,
