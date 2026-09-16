@@ -26,7 +26,7 @@ import {
 import { toast } from "sonner";
 import {
   ShoppingCart, Package, Truck, CheckCircle2, XCircle, Loader2,
-  Wallet, Receipt, AlertTriangle, ChevronRight, Pencil,
+  Wallet, Receipt, AlertTriangle, ChevronRight, Pencil, Ban,
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
