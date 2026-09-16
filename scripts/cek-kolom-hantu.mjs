@@ -185,6 +185,36 @@ for (const p of berkas(".")) {
   }
 }
 
+/*
+ * ── PENULISAN LEWAT PEMBANTU: setOtomatis() ────────────────────────
+ *
+ * Penanda otomatisasi tidak pernah ditulis dengan
+ * `entities.AutomationSettings.update({...})`, melainkan lewat pembantu
+ * `setOtomatis(base44, otomatis, { kunci: nilai })`. Nama kolomnya ada di
+ * TITIK PANGGIL, bukan di dalam pemanggilan update — jadi pemeriksaan di
+ * atas tidak pernah melihatnya sama sekali.
+ *
+ * Akibatnya nyata: fungsi sinkronProfilKura menulis
+ * `sinkron_profil_terakhir`, kolom yang tidak ada di skema. Penanda
+ * anti-dobelnya dibuang diam-diam, jadi pekerjaan itu dianggap belum
+ * pernah jalan setiap kali dipicu — dan tidak ada satu pun penjaga yang
+ * merah. Ditemukan hanya karena kebetulan angkanya diperiksa tangan.
+ */
+for (const p of berkas(".")) {
+  const s = fs.readFileSync(p, "utf8");
+  for (const m of s.matchAll(/setOtomatis\s*\([^,]+,[^,]+,\s*\{/g)) {
+    const blok = objekDari(s, s.indexOf("{", m.index + m[0].length - 1));
+    if (!blok) continue;
+    for (const km of blok.matchAll(/(?:^|[{,])\s*(\w+)\s*:/g)) {
+      const k = km[1];
+      const kunci = `AutomationSettings.${k}`;
+      if (skema.AutomationSettings?.has(k)) continue;
+      if (!hantu.has(kunci)) hantu.set(kunci, new Set());
+      hantu.get(kunci).add(p);
+    }
+  }
+}
+
 if (takTerperiksa.size > 0) {
   console.log(
     `Catatan: ${takTerperiksa.size} pemanggilan mengirim variabel yang deklarasinya\n` +
