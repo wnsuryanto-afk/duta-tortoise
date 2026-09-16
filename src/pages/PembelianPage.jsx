@@ -738,7 +738,7 @@ export default function PembelianPage() {
                       <Pencil className="w-3.5 h-3.5" /> Perbaiki Data
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => batalkanPesanan(p)}
-                      className="gap-1.5 text-destructive border-destructive/40">
+                      className="gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive">
                       <XCircle className="w-3.5 h-3.5" /> Dibatalkan Penjual
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => buangSalahBaca(p)}
