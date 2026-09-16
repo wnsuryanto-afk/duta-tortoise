@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, BookOpen, Trash2, Loader2 } from "lucide-react";
 
 /**
  * Galeri foto untuk DiagnosisProtocol.
@@ -8,24 +8,53 @@ import { X, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
  * - Lightbox: bg black 90%, navigasi panah, caption, klik area gelap = tutup
  *
  * Jika `images` kosong tapi `image_url` ada → image_url jadi single item.
+ *
+ * Props opsional `onHapusFoto(index, sumber)` memasang tombol hapus per foto.
+ * Ada karena foto masuk ke panduan lewat tombol "Setujui & Masukkan ke
+ * Panduan" — satu klik, tidak bisa ditarik kembali. Foto yang salah kura,
+ * salah penyakit, atau kabur akan dipakai kiper berikutnya sebagai acuan
+ * membandingkan gejala. Menolak sebelum masuk sudah ada; membatalkan
+ * sesudahnya belum.
  */
-export default function DiseaseImageGallery({ protocol }) {
+export default function DiseaseImageGallery({ protocol, onHapusFoto }) {
   // Bangun daftar galeri: prioritaskan `images` array, fallback ke image_url legacy
+  // `_i` = posisi asli di protocol.images, supaya penghapusan menunjuk baris
+  // yang benar walau ada entri kosong yang tersaring di atas.
   const gallery = (() => {
-    const imgs = (protocol.images || []).filter(Boolean).map((img, i) => ({
-      url: typeof img === "string" ? img : img.url,
-      caption: typeof img === "string" ? (i === 0 ? protocol.image_caption : "") : (img.caption || ""),
+    const imgs = (protocol.images || []).map((img, i) => ({
+      url: typeof img === "string" ? img : img?.url,
+      caption: typeof img === "string" ? (i === 0 ? protocol.image_caption : "") : (img?.caption || ""),
+      _i: i,
+      _sumber: "images",
     })).filter(g => g.url);
 
     if (imgs.length > 0) return imgs;
     if (protocol.image_url) {
-      return [{ url: protocol.image_url, caption: protocol.image_caption || "" }];
+      return [{ url: protocol.image_url, caption: protocol.image_caption || "", _i: 0, _sumber: "image_url" }];
     }
     return [];
   })();
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [menghapus, setMenghapus] = useState(false);
+
+  const hapusAktif = async () => {
+    if (!onHapusFoto || !activeImage) return;
+    if (!confirm(
+      "Keluarkan foto ini dari panduan penyakit?\n\n" +
+      "Kiper memakai foto di sini untuk membandingkan gejala, jadi foto yang " +
+      "salah lebih berbahaya daripada tidak ada foto sama sekali."
+    )) return;
+    setMenghapus(true);
+    try {
+      await onHapusFoto(activeImage._i, activeImage._sumber);
+      setLightboxOpen(false);
+      setActiveIdx(0);
+    } finally {
+      setMenghapus(false);
+    }
+  };
 
   // Reset ke index 0 saat protocol berubah (gambar berubah)
   useEffect(() => {
@@ -95,6 +124,18 @@ export default function DiseaseImageGallery({ protocol }) {
           <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
             {safeIdx + 1} / {gallery.length}
           </span>
+        )}
+        {onHapusFoto && (
+          <button
+            type="button"
+            onClick={hapusAktif}
+            disabled={menghapus}
+            title="Keluarkan foto ini dari panduan"
+            aria-label="Keluarkan foto ini dari panduan"
+            className="absolute top-2 right-2 bg-black/60 hover:bg-destructive text-white rounded-full p-1.5 transition-colors disabled:opacity-50"
+          >
+            {menghapus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+          </button>
         )}
       </div>
 
