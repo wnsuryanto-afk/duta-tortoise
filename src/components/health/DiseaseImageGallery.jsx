@@ -39,6 +39,14 @@ export default function DiseaseImageGallery({ protocol, onHapusFoto }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [menghapus, setMenghapus] = useState(false);
 
+  // Reset ke index 0 saat protocol berubah (gambar berubah)
+  useEffect(() => {
+    setActiveIdx(0);
+  }, [protocol.id]);
+
+  const safeIdx = gallery.length > 0 ? Math.min(activeIdx, gallery.length - 1) : 0;
+  const activeImage = gallery[safeIdx];
+
   const hapusAktif = async () => {
     if (!onHapusFoto || !activeImage) return;
     if (!confirm(
@@ -55,14 +63,6 @@ export default function DiseaseImageGallery({ protocol, onHapusFoto }) {
       setMenghapus(false);
     }
   };
-
-  // Reset ke index 0 saat protocol berubah (gambar berubah)
-  useEffect(() => {
-    setActiveIdx(0);
-  }, [protocol.id]);
-
-  const safeIdx = gallery.length > 0 ? Math.min(activeIdx, gallery.length - 1) : 0;
-  const activeImage = gallery[safeIdx];
 
   const goNext = useCallback(() => {
     setActiveIdx(i => (i + 1) % gallery.length);
