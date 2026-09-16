@@ -214,7 +214,8 @@ export default function ShoppingListWidget() {
   const [filterStatus, setFilterStatus] = useState("semua");
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const PAGE_SIZE = 5;
+  const [pageSize, setPageSize] = useState(5);
+  const PAGE_SIZE_OPTIONS = [5, 10, 15, 25, 50, 75, 100];
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["shopping-list"],
@@ -242,9 +243,9 @@ export default function ShoppingListWidget() {
     if (q && !`${i.nama_barang || ""} ${i.notes || ""} ${i.platform_beli || ""}`.toLowerCase().includes(q)) return false;
     return true;
   });
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pageItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pageItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="card-base p-4 space-y-4">
@@ -312,7 +313,21 @@ export default function ShoppingListWidget() {
               <SelectItem value="sudah_dibeli">Sudah Dibeli</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-xs text-muted-foreground">{filteredItems.length} item</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Tampilkan</span>
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+              <SelectTrigger className="w-[68px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map(n => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground">item</span>
+          </div>
+          <span className="text-xs text-muted-foreground ml-auto">{filteredItems.length} item</span>
         </div>
       )}
 
