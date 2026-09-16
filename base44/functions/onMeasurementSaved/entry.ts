@@ -25,10 +25,15 @@
  *    `photos.push()` jalan pada setiap update, jadi satu foto bisa muncul
  *    berkali-kali di galeri profil.
  *
+ * 4. SATU PENIMBANGAN TIDAK LENGKAP MENGHAPUS YANG LENGKAP.
+ *    Ditemukan saat memeriksa hasil perbaikan ini sendiri: B116 diukur
+ *    22 Mei 2026 hanya panjangnya. Menyalin baris terakhir bulat-bulat
+ *    mengosongkan beratnya, padahal 19,9 kg tercatat baik di baris
+ *    sebelumnya. Aturannya sekarang PER KOLOM — lihat shared/ukuran.ts.
+ *
  * Sekarang: sesudah perubahan apa pun, fungsi ini MENGHITUNG ULANG dari
- * seluruh riwayat kura itu dan memakai baris sah yang paling akhir. Kalau
- * tidak ada lagi yang sah, ketiga kolomnya dikosongkan — profil yang kosong
- * jujur, profil yang memuat angka salah tidak.
+ * seluruh riwayat kura itu. Kolom yang tidak pernah terisi dikosongkan —
+ * profil yang kosong jujur, profil yang memuat angka salah tidak.
  *
  * DosisKalkulator membagi dosis obat dengan weight_grams. Itu sebabnya kolom
  * ini tidak boleh salah, bukan sekadar sebaiknya benar.
@@ -36,23 +41,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
-
-function angka(v: any): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/** Baris sah paling akhir: urut tanggal, lalu waktu tulis sebagai pemutus. */
-function palingAkhir(riwayat: any[]): any | null {
-  const sah = (riwayat || []).filter(masukLaporan);
-  if (sah.length === 0) return null;
-  return sah.slice().sort((a, b) => {
-    const ta = String(a?.date || "");
-    const tb = String(b?.date || "");
-    if (ta !== tb) return ta < tb ? 1 : -1;
-    return String(b?.created_date || "").localeCompare(String(a?.created_date || ""));
-  })[0];
-}
+import { ukuranDariRiwayat } from "../../shared/ukuran.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -68,13 +57,7 @@ Deno.serve(async (req) => {
     const riwayat = await base44.asServiceRole.entities.MeasurementHistory.filter(
       { tortoise_id: kuraId }, "-date", BATAS_AMBIL,
     );
-    const acuan = palingAkhir(riwayat || []);
-
-    const updateData: Record<string, any> = {
-      last_weighed_date: acuan?.date || null,
-      weight_grams: angka(acuan?.weight_grams) > 0 ? angka(acuan.weight_grams) : null,
-      shell_length_cm: angka(acuan?.shell_length_cm) > 0 ? angka(acuan.shell_length_cm) : null,
-    };
+    const updateData: Record<string, any> = { ...ukuranDariRiwayat(riwayat || []) };
 
     /*
      * Galeri foto disusun ulang dari riwayat, bukan ditambahi.
@@ -120,7 +103,6 @@ Deno.serve(async (req) => {
 
     return Response.json({
       ok: true,
-      dihitung_dari: acuan?.id || null,
       total_riwayat: (riwayat || []).length,
       sah: (riwayat || []).filter(masukLaporan).length,
       updated: updateData,
