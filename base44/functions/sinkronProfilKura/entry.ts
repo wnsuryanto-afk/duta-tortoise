@@ -34,30 +34,14 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
-import { masukLaporan } from "../../shared/laporan.ts";
+// Aturan ukurannya dipegang shared/ukuran.ts, sama persis dengan yang
+// dipakai automation onMeasurementSaved. Dua salinan aturan yang sama
+// adalah dua jawaban yang menunggu berbeda.
+import { ukuranDariRiwayat, bedaAngka } from "../../shared/ukuran.ts";
 
 function angka(v: any): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
-}
-
-/** Baris sah paling akhir untuk satu kura. Kembaran logika onMeasurementSaved. */
-function palingAkhir(riwayat: any[]): any | null {
-  const sah = (riwayat || []).filter(masukLaporan);
-  if (sah.length === 0) return null;
-  return sah.slice().sort((a, b) => {
-    const ta = String(a?.date || "");
-    const tb = String(b?.date || "");
-    if (ta !== tb) return ta < tb ? 1 : -1;
-    return String(b?.created_date || "").localeCompare(String(a?.created_date || ""));
-  })[0];
-}
-
-/** Beda yang layak disebut. null vs 0 vs "" tidak dihitung sebagai beda. */
-function berbeda(a: any, b: any): boolean {
-  const na = angka(a), nb = angka(b);
-  if (na === 0 && nb === 0) return false;
-  return Math.abs(na - nb) > 0.001;
 }
 
 Deno.serve(async (req) => {
@@ -99,15 +83,25 @@ Deno.serve(async (req) => {
       // menghapus satu-satunya angka yang ada.
       if (riwayat.length === 0) continue;
 
-      const acuan = palingAkhir(riwayat);
-      const baru = {
-        weight_grams: angka(acuan?.weight_grams) > 0 ? angka(acuan.weight_grams) : null,
-        shell_length_cm: angka(acuan?.shell_length_cm) > 0 ? angka(acuan.shell_length_cm) : null,
-        last_weighed_date: acuan?.date || null,
-      };
+      const baru = ukuranDariRiwayat(riwayat);
 
-      const geserBerat = berbeda(t.weight_grams, baru.weight_grams);
-      const geserPanjang = berbeda(t.shell_length_cm, baru.shell_length_cm);
+      /*
+       * Kolom yang sudah terisi di profil TIDAK dikosongkan oleh sapuan ini.
+       *
+       * Sebagian berat dan panjang diketik tangan saat pendataan awal, jauh
+       * sebelum ada MeasurementHistory. Mengosongkannya karena riwayat tidak
+       * memuatnya berarti menghapus satu-satunya angka yang ada — dan angka
+       * itu tidak bisa dikembalikan. Yang boleh dilakukan sapuan ini hanya
+       * MEMPERBAIKI angka yang salah, bukan menghapus angka yang tak
+       * terbukti. Automation per-baris juga memakai aturan ini lewat
+       * shared/ukuran.ts, tapi di sana kolom kosong memang berarti semua
+       * timbangannya sudah dikecualikan.
+       */
+      if (baru.weight_grams === null && angka(t.weight_grams) > 0) baru.weight_grams = angka(t.weight_grams);
+      if (baru.shell_length_cm === null && angka(t.shell_length_cm) > 0) baru.shell_length_cm = angka(t.shell_length_cm);
+
+      const geserBerat = bedaAngka(t.weight_grams, baru.weight_grams);
+      const geserPanjang = bedaAngka(t.shell_length_cm, baru.shell_length_cm);
       const geserTanggal = String(t.last_weighed_date || "") !== String(baru.last_weighed_date || "");
       if (!geserBerat && !geserPanjang && !geserTanggal) continue;
 
@@ -119,8 +113,8 @@ Deno.serve(async (req) => {
       }
 
       const kode = t.code || t.name || t.id;
-      if (!acuan) {
-        dikosongkan.push(`${kode} — semua timbangannya dikecualikan`);
+      if (baru.weight_grams === null) {
+        dikosongkan.push(`${kode} — tidak ada berat sah tersisa`);
       } else if (geserBerat) {
         diperbaiki.push(
           `${kode}: ${angka(t.weight_grams).toLocaleString("id-ID")} g → ` +
