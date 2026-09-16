@@ -55,6 +55,10 @@
       "type": "number",
       "description": "Sisa stok setelah transaksi ini"
     },
+    "batch_id": {
+      "type": "string",
+      "description": "BatchBarang yang ikut berkurang saat pengambilan lewat Ambil Barang. Diisi supaya pembatalan bisa mengembalikan sisa batch, bukan hanya stok barangnya. Tanpa kolom ini, membatalkan satu pengambilan mengembalikan stok gudang tapi meninggalkan batch tetap berkurang - dua angka untuk satu barang yang sama."
+    },
     "keperluan": {
       "type": "string",
       "enum": [

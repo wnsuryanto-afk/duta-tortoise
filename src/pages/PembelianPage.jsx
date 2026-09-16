@@ -26,7 +26,7 @@ import {
 import { toast } from "sonner";
 import {
   ShoppingCart, Package, Truck, CheckCircle2, XCircle, Loader2,
-  Wallet, Receipt, AlertTriangle, ChevronRight, Pencil,
+  Wallet, Receipt, AlertTriangle, ChevronRight, Pencil, Ban,
 } from "lucide-react";
 import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
@@ -444,6 +444,51 @@ export default function PembelianPage() {
   };
 
   /*
+   * ── "Bukan pesanan / salah baca AI" ──
+   *
+   * Beda tegas dari "Dibatalkan Penjual". Yang itu mencatat peristiwa nyata:
+   * penjual membatalkan, barangnya kembali ke daftar belanja, dan catatannya
+   * berbunyi begitu. Memakainya untuk membuang pesanan yang tidak pernah ada
+   * — hasil Terima dari Screenshot yang salah baca — menulis riwayat palsu:
+   * penjual disalahkan untuk kesalahan mesin, dan enam bulan lagi tidak ada
+   * yang bisa membedakan keduanya lagi.
+   *
+   * Jalur ini memakai excluded_from_reports, aturan yang sudah dipakai
+   * seluruh aplikasi untuk "baris ini ada tapi tidak dihitung": angkanya
+   * keluar dari semua laporan, barisnya tetap bisa dilihat dan dikembalikan
+   * lewat widget Data Dikecualikan.
+   */
+  const buangSalahBaca = async (p) => {
+    if (!confirm(
+      "Tandai pesanan ini sebagai salah baca AI?\n\n" +
+      "Barangnya kembali ke daftar belanja dan seluruh angkanya keluar dari laporan. " +
+      "Barisnya tidak dihapus — masih bisa dikembalikan lewat widget Data Dikecualikan."
+    )) return;
+    setBusy(true);
+    try {
+      for (const it of p.items || []) {
+        if (it.shopping_list_id) {
+          await base44.entities.ShoppingList.update(it.shopping_list_id, {
+            status: "belum_dibeli",
+            pembelian_id: null,
+          });
+        }
+      }
+      await base44.entities.PembelianBarang.update(p.id, {
+        status: "dibatalkan",
+        status_utang: "lunas",
+        excluded_from_reports: true,
+        catatan: "Salah baca AI dari screenshot — bukan pesanan yang sebenarnya",
+      });
+      qc.invalidateQueries();
+      toast.success("Ditandai salah baca, keluar dari laporan");
+    } catch (e) {
+      toast.error("Gagal menandai: " + (e?.message || ""));
+    }
+    setBusy(false);
+  };
+
+  /*
    * ── Perbaiki data pesanan yang sudah tersimpan ──
    *
    * Angka dari AI Vision tidak pernah bisa dipercaya seratus persen, dan
@@ -695,6 +740,10 @@ export default function PembelianPage() {
                     <Button size="sm" variant="outline" onClick={() => batalkanPesanan(p)}
                       className="gap-1.5 text-destructive border-destructive/40">
                       <XCircle className="w-3.5 h-3.5" /> Dibatalkan Penjual
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => buangSalahBaca(p)}
+                      className="gap-1.5 text-muted-foreground">
+                      <Ban className="w-3.5 h-3.5" /> Bukan pesanan / salah baca
                     </Button>
                   </div>
                 </div>

@@ -1,0 +1,41 @@
+{
+  "name": "Sinkron Profil Kura",
+  "description": "Samakan Tortoise.weight_grams / shell_length_cm / last_weighed_date dengan penimbangan SAH terakhir, lalu laporkan yang bergeser. Berat ini dipakai DosisKalkulator untuk membagi dosis obat, jadi selisih di sini langsung jadi selisih dosis. Senin 08:20 WIB (01:20 UTC).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "20 1 * * 1",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sinkron_profil_kura",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sinkronProfilKura",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

@@ -13,10 +13,11 @@ import { Ruler, Plus, Weight } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import ExcludeToggle from "@/components/owner/ExcludeToggle";
 
 export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
   const qc = useQueryClient();
-  const { user } = useCurrentUser();
+  const { user, role } = useCurrentUser();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -166,7 +167,25 @@ export default function SizeHistoryPanel({ tortoiseId, tortoiseName }) {
                 )}
                 {h.measured_by && <span className="text-muted-foreground ml-2">oleh {h.measured_by}</span>}
               </div>
-              <span className="text-muted-foreground">{format(new Date(h.date), "d MMM yy", { locale: id })}</span>
+              {/*
+                * Panel ini sudah lama MENAMPILKAN baris yang dikecualikan
+                * (dicoret), tapi tidak ada satu pun cara mengecualikannya dari
+                * sini. Selama itu, satu-satunya jalan memperbaiki timbangan
+                * yang salah ketik adalah lewat luar aplikasi — dan 39 baris
+                * memang harus dibetulkan begitu. Sekarang pemilik bisa
+                * sendiri, dan bisa mengembalikannya kalau keliru.
+                */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-muted-foreground">{format(new Date(h.date), "d MMM yy", { locale: id })}</span>
+                {role === "owner" && (
+                  <ExcludeToggle
+                    record={h}
+                    entityName="MeasurementHistory"
+                    queryKey={["measurement-history", tortoiseId]}
+                    ringkas
+                  />
+                )}
+              </div>
             </div>
           ))}
         </div>
