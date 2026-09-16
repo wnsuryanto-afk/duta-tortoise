@@ -18,6 +18,29 @@ export default function PanduanPenyakitDetailPage() {
   const qc = useQueryClient();
   const { role } = useCurrentUser();
   const canEdit = role === "owner";
+
+  /*
+   * Foto masuk ke panduan lewat satu klik "Setujui & Masukkan ke Panduan"
+   * di panel verifikasi, dan sampai hari ini tidak ada jalan keluarnya.
+   * Foto yang salah penyakit atau terlalu kabur bukan sekadar berantakan:
+   * kiper memakai galeri ini untuk membandingkan gejala kura yang sakit.
+   *
+   * Dua bentuk penyimpanan lama masih hidup berdampingan — array `images`
+   * dan kolom tunggal `image_url` — jadi penghapusannya harus tahu dari
+   * mana foto itu berasal, bukan menebak dari posisinya di layar.
+   */
+  const hapusFoto = async (index, sumber) => {
+    if (sumber === "image_url") {
+      await base44.entities.DiagnosisProtocol.update(protocol.id, {
+        image_url: "", image_caption: "",
+      });
+    } else {
+      const sisa = (protocol.images || []).filter((_, i) => i !== index);
+      await base44.entities.DiagnosisProtocol.update(protocol.id, { images: sisa });
+    }
+    qc.invalidateQueries({ queryKey: ["diagnosis-protocol", id] });
+    qc.invalidateQueries({ queryKey: ["diagnosis-protocols-catalog"] });
+  };
   const [showForm, setShowForm] = useState(false);
 
   const isNew = id === "new";
@@ -103,7 +126,10 @@ export default function PanduanPenyakitDetailPage() {
 
       {/* Image Gallery */}
       <Card className="overflow-hidden">
-        <DiseaseImageGallery protocol={protocol} />
+        <DiseaseImageGallery
+          protocol={protocol}
+          onHapusFoto={canEdit ? hapusFoto : undefined}
+        />
       </Card>
 
       {/* Verifikasi Foto Penyakit (owner only) */}
