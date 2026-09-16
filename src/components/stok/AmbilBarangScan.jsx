@@ -137,6 +137,11 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
         keperluan,
         tortoise_code: butuhKura ? kodeKura : "",
         date: hariIni(),
+        // Batch dicatat di kolomnya sendiri, bukan hanya disebut di catatan.
+        // Pembatalan pergerakan perlu tahu batch mana yang ikut berkurang;
+        // membaca kode batch dari teks catatan akan meleset begitu formatnya
+        // berubah, dan sisa batch diam-diam tidak pernah dikembalikan.
+        batch_id: batch?.id || "",
         status: "selesai",
         by_email: user?.email || "",
         by_name: user?.full_name || user?.email || "",
