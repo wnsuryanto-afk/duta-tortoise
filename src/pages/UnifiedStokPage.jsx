@@ -199,7 +199,7 @@ export default function UnifiedStokPage() {
           <StokInventoryTab feedstocks={feedstocks} warehouseItems={warehouseItems} role={role} />
         </TabsContent>
         <TabsContent value="pergerakan" className="mt-4">
-          <StokPergerakanTab movements={movements} feedstocks={feedstocks} warehouseItems={warehouseItems} role={role} />
+          <StokPergerakanTab movements={movements} feedstocks={feedstocks} warehouseItems={warehouseItems} batches={batchSemua} role={role} />
         </TabsContent>
         <TabsContent value="peminjaman" className="mt-4">
           <StokPeminjamanTab borrows={borrows} warehouseItems={warehouseItems} feedstocks={feedstocks} role={role} />

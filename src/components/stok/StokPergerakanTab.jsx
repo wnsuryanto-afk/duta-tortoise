@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, ArrowUp, ArrowDown, CheckCircle2, Clock, XCircle, Search } from "lucide-react";
+import { Plus, ArrowUp, ArrowDown, CheckCircle2, Clock, XCircle, Search, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canApprove } from "@/lib/permissions";
+import { batalkanPergerakan, pesanKonfirmasi, sudahMenggerakkanStok } from "@/lib/koreksiPergerakan";
+import { toast } from "sonner";
 
 function formatRp(v) { return "Rp " + Number(v || 0).toLocaleString("id-ID"); }
 
@@ -154,7 +156,7 @@ function MovementForm({ feedstocks, warehouseItems, onClose, threshold }) {
 }
 
 // ── MAIN ─────────────────────────────────────────────────────────────
-export default function StokPergerakanTab({ movements, feedstocks, warehouseItems, role }) {
+export default function StokPergerakanTab({ movements, feedstocks, warehouseItems, batches = [], role }) {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   const canApproveRole = canApprove(role);
@@ -163,6 +165,7 @@ export default function StokPergerakanTab({ movements, feedstocks, warehouseItem
   const [typeFilter, setTypeFilter] = useState("semua");
   const [statusFilter, setStatusFilter] = useState("semua");
   const [search, setSearch] = useState("");
+  const [membatalkan, setMembatalkan] = useState(null);
   const threshold = 500000; // default, bisa dari CompanySettings
 
   const filtered = useMemo(() => {
@@ -173,6 +176,46 @@ export default function StokPergerakanTab({ movements, feedstocks, warehouseItem
       return matchType && matchStatus && matchSearch;
     });
   }, [movements, typeFilter, statusFilter, search]);
+
+  /*
+   * Pembatalan satu baris pergerakan.
+   *
+   * Ada karena Ambil Barang menulis baris di sini langsung dari kamera:
+   * salah baca barang atau salah baca jumlah langsung memotong stok, dan
+   * sampai hari ini tidak ada satu pun tombol untuk membatalkannya. Tab
+   * Riwayat Pakan sudah punya sejak lama — barisnya sejenis, perlakuannya
+   * berbeda, dan yang tanpa tombol justru yang diisi mesin.
+   *
+   * Aturan pengembaliannya dipegang lib/koreksiPergerakan, dipakai bersama
+   * dengan tab pakan, supaya tidak ada dua jawaban untuk satu pertanyaan.
+   */
+  const handleBatalkan = async (m) => {
+    const batch = m.batch_id ? batches.find((b) => b.id === m.batch_id) : null;
+    if (!confirm(pesanKonfirmasi(m, { adaBatch: !!batch }))) return;
+    setMembatalkan(m.id);
+    try {
+      const hasil = await batalkanPergerakan(base44, m, {
+        pakan: feedstocks, gudang: warehouseItems, batch: batches,
+      });
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+      qc.invalidateQueries({ queryKey: ["feedstocks"] });
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      qc.invalidateQueries({ queryKey: ["batch-barang"] });
+      // Disebut apa adanya: kalau barangnya sudah tidak ada di daftar,
+      // stoknya TIDAK dikembalikan, dan diam soal itu lebih buruk daripada
+      // tidak menghapus sama sekali.
+      toast.success(
+        sudahMenggerakkanStok(m)
+          ? (hasil.stokDikembalikan
+              ? `Pergerakan dihapus, stok dikembalikan${hasil.batchDikembalikan ? " (termasuk sisa batch)" : ""}`
+              : "Pergerakan dihapus — barangnya tidak ditemukan, stok TIDAK dikembalikan")
+          : "Pergerakan dihapus (belum pernah menggerakkan stok)"
+      );
+    } catch (e) {
+      toast.error("Gagal membatalkan: " + (e?.message || ""));
+    }
+    setMembatalkan(null);
+  };
 
   const handleApprove = async (m) => {
     await base44.entities.StockMovement.update(m.id, {
@@ -287,16 +330,29 @@ export default function StokPergerakanTab({ movements, feedstocks, warehouseItem
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{m.by_name || m.by_email || "-"}</td>
                     <td className="px-4 py-2.5"><StatusBadge status={m.status || "selesai"} /></td>
                     <td className="px-4 py-2.5">
-                      {m.status === "menunggu_approval" && canApproveRole && (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button size="sm" variant="ghost" className="h-7 w-7 text-green-600" onClick={() => handleApprove(m)} title="Setujui">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 text-red-500" onClick={() => handleReject(m)} title="Tolak">
-                            <XCircle className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-end gap-1">
+                        {m.status === "menunggu_approval" && canApproveRole && (
+                          <>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 text-green-600" onClick={() => handleApprove(m)} title="Setujui">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 text-red-500" onClick={() => handleReject(m)} title="Tolak">
+                              <XCircle className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="sm" variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          disabled={membatalkan === m.id}
+                          onClick={() => handleBatalkan(m)}
+                          title="Hapus & kembalikan stok"
+                        >
+                          {membatalkan === m.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Trash2 className="w-3.5 h-3.5" />}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

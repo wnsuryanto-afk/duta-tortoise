@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowUp, ArrowDown, Trash2, Calendar, Package } from "lucide-react";
+import { batalkanPergerakan, pesanKonfirmasi } from "@/lib/koreksiPergerakan";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -72,21 +73,20 @@ export default function RiwayatPakanTab({ movements, items, role, onRefresh }) {
     });
   }, [movements, typeFilter, search, dateFrom, dateTo]);
 
+  /*
+   * Aturan pembatalannya pindah ke lib/koreksiPergerakan supaya tab ini dan
+   * tab Pergerakan Stok gudang menjawab dengan cara yang sama.
+   *
+   * Versi lama di sini mengembalikan stok untuk SETIAP baris, termasuk yang
+   * berstatus menunggu_approval atau ditolak — padahal baris itu belum
+   * pernah menyentuh stok. Membatalkannya justru menambah stok dari
+   * transaksi yang tidak pernah terjadi.
+   */
   const handleDelete = async (tx) => {
-    if (!confirm(`Hapus transaksi ${tx.type} ${tx.quantity} ${tx.unit} ${tx.item_name}?\nStok akan dikembalikan seperti semula.`)) return;
+    if (!confirm(pesanKonfirmasi(tx))) return;
     setDeleting(tx.id);
     try {
-      const item = items.find((i) => i.id === tx.item_id);
-      if (item) {
-        const reversal = tx.type === "masuk" ? -(tx.quantity || 0) : (tx.quantity || 0);
-        const newStock = Math.max(0, (item.current_stock || 0) + reversal);
-        await base44.entities.FeedStock.update(tx.item_id, {
-          current_stock: newStock,
-          last_edited_by: "system (delete reversal)",
-          last_edited_at: new Date().toISOString(),
-        });
-      }
-      await base44.entities.StockMovement.delete(tx.id);
+      await batalkanPergerakan(base44, tx, { pakan: items, gudang: [], batch: [] });
       qc.invalidateQueries({ queryKey: ["feed-movements"] });
       qc.invalidateQueries({ queryKey: ["feedstocks"] });
       onRefresh?.();
