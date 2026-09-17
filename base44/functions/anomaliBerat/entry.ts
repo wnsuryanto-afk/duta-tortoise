@@ -162,8 +162,27 @@ Deno.serve(async (req) => {
         (new Date(terakhir.date).getTime() - new Date(tanggalNaikTerakhir).getTime()) /
         (24 * 60 * 60 * 1000);
       if (selisihHari >= ambangStagnan) {
+        /*
+         * "Tidak naik berat" hanya berarti sesuatu kalau ADA penimbangan
+         * baru untuk dibandingkan.
+         *
+         * AMBON dilaporkan "tidak naik berat sejak 2025-07-12 (320 hari)".
+         * Yang sebenarnya terjadi: AMBON tidak DITIMBANG sejak 2025-07-12.
+         * Dua kalimat itu menyuruh dua pekerjaan berbeda — yang pertama
+         * menyuruh memeriksa kesehatannya, yang kedua menyuruh menimbang —
+         * dan menyebut yang kedua dengan kalimat pertama membuat kiper
+         * mencari penyakit pada kura yang mungkin baik-baik saja.
+         *
+         * Sejak rotasi timbang diganti pemicu (17-09-2026), keadaan ini jadi
+         * lumrah, bukan kekecualian.
+         */
+        const umurBacaan = Math.floor(
+          (Date.parse(hariIni) - Date.parse(terakhir.date)) / 86400000,
+        );
         stagnan.push(
-          `${t.name || t.code || t.id} tidak naik berat sejak ${tanggalNaikTerakhir} (${Math.round(selisihHari)} hari)`,
+          Number.isFinite(umurBacaan) && umurBacaan >= ambangStagnan
+            ? `${t.name || t.code || t.id} belum ditimbang sejak ${terakhir.date} (${umurBacaan} hari) — timbang dulu sebelum disimpulkan`
+            : `${t.name || t.code || t.id} tidak naik berat sejak ${tanggalNaikTerakhir} (${Math.round(selisihHari)} hari)`,
         );
       }
     }
