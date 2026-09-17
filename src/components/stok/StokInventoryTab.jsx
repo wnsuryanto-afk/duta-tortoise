@@ -602,6 +602,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
   const [detailItem, setDetailItem] = useState(null);
   const [photoItem, setPhotoItem] = useState(null);
   const [expiredItem, setExpiredItem] = useState(null);
+  const [pecahItem, setPecahItem] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [selected, setSelected] = useState({});
   const [labelItems, setLabelItems] = useState(null);
@@ -937,6 +938,16 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
             <DialogTitle>Tanggal Kadaluarsa</DialogTitle>
           </DialogHeader>
           {expiredItem && <SetExpiredDialog item={expiredItem} onClose={() => setExpiredItem(null)} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pecah stok yang sudah ada di rak menjadi beberapa batch bertanggal */}
+      <Dialog open={!!pecahItem} onOpenChange={o => { if (!o) setPecahItem(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pecah jadi beberapa batch</DialogTitle>
+          </DialogHeader>
+          {pecahItem && <PecahBatchDialog item={pecahItem} onClose={() => setPecahItem(null)} />}
         </DialogContent>
       </Dialog>
 
