@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole, potongRapi } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { STATUS_KELUAR } from "../../shared/kura.ts";
 
@@ -216,8 +216,11 @@ Deno.serve(async (req) => {
             ? `${baru.length} kura BARU turun berat${turun.length - baru.length > 0 ? ` (+${turun.length - baru.length} lama)` : ""}`
             : `${turun.length + stagnan.length + satuanJanggal.length} kura perlu diperiksa (berat)`,
           message: potongRapi(bagian.join("\n\n"), 900),
-          type: turun.length > 0 || satuanJanggal.length > 0 ? "alert" : "warning",
-          priority: turun.length > 0 || satuanJanggal.length > 0 ? "tinggi" : "sedang",
+          // Prioritas tinggi hanya untuk yang BARU. Temuan lama yang sama
+          // berbunyi keras tiap pagi adalah cara tercepat membuat orang
+          // berhenti membuka notifikasi sama sekali.
+          type: baru.length > 0 || satuanJanggal.length > 0 ? "alert" : "warning",
+          priority: baru.length > 0 || satuanJanggal.length > 0 ? "tinggi" : "sedang",
           category: "kesehatan",
           action_label: "Lihat Daftar Kura",
           action_url: "/tortoise",

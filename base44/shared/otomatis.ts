@@ -180,3 +180,32 @@ export function jamDari(nilai: string): string {
   const w = new Date(d.getTime() + WIB_OFFSET_MS);
   return wibJam(w);
 }
+
+/**
+ * Potong pesan notifikasi pada BATAS BARIS, bukan di tengah kata.
+ *
+ * Kolom pesan notifikasi dipotong keras di 900 karakter. Hasilnya terlihat
+ * begini di HP kiper, 17-09-2026:
+ *
+ *     MENIPIS (3):
+ *     Elektroli
+ *
+ * Bukan hanya jelek — bagian itu jadi tidak bisa dibaca sama sekali, dan
+ * tidak ada apa pun yang memberi tahu bahwa ada yang terpotong. Peringatan
+ * yang separuhnya hilang diam-diam sama saja dengan peringatan yang salah.
+ *
+ * Sekarang: potong di baris terakhir yang muat, lalu KATAKAN berapa baris
+ * yang tidak ikut. Orang yang tahu ada sisanya bisa membuka aplikasi;
+ * orang yang tidak tahu, tidak akan.
+ */
+export function potongRapi(teks: string, batas = 900): string {
+  const t = String(teks || "");
+  if (t.length <= batas) return t;
+  const EKOR = "\n… (+%n baris lagi, buka aplikasi untuk selengkapnya)";
+  const ruang = batas - EKOR.length - 4;
+  const potong = t.slice(0, Math.max(0, ruang));
+  const akhir = potong.lastIndexOf("\n");
+  const kepala = akhir > 0 ? potong.slice(0, akhir) : potong;
+  const sisa = t.slice(kepala.length).split("\n").filter((b) => b.trim()).length;
+  return kepala + EKOR.replace("%n", String(sisa));
+}
