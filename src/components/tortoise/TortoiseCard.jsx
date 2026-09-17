@@ -9,6 +9,7 @@ import { id } from "date-fns/locale";
 import EnclosureHistoryPanel from "./EnclosureHistoryPanel";
 import EggHistoryPanel from "./EggHistoryPanel";
 import SizeHistoryPanel from "./SizeHistoryPanel";
+import LaporMakanPanel from "./LaporMakanPanel";
 import PhotoProgressPanel from "./PhotoProgressPanel";
 import TortoiseQRCode from "./TortoiseQRCode";
 import IncompleteBadge from "@/components/common/IncompleteBadge";
@@ -464,6 +465,7 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
           </DialogTitle>
         </DialogHeader>
         <div className="py-2">
+          <LaporMakanPanel tortoise={tortoise} />
           <SizeHistoryPanel tortoiseId={tortoise.id} tortoiseName={tortoise.name} />
         </div>
       </DialogContent>

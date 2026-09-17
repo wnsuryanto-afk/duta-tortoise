@@ -75,6 +75,18 @@ export async function simpanUkuranSekali(data, opsi = {}) {
   }
 
   const record = await base44.entities.MeasurementHistory.create(data);
+  /*
+   * Laporan "tidak makan" untuk kura ini dianggap sudah dijawab.
+   *
+   * Tanpa ini tugas timbang tetap muncul walau kiper baru saja
+   * mengerjakannya — dan tugas yang tidak bisa dipadamkan dengan bekerja
+   * adalah tugas yang berhenti dikerjakan. Kegagalannya ditelan: penandaan
+   * ini tidak boleh membatalkan penyimpanan pengukuran yang sudah berhasil.
+   */
+  try {
+    const { tandaiSudahDitimbang } = await import("@/lib/laporMakan");
+    await tandaiSudahDitimbang(tortoiseId);
+  } catch { /* penanda gagal, pengukurannya tetap tersimpan */ }
   return { dibuat: true, diperbarui: false, record };
 }
 
