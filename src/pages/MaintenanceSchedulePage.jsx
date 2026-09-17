@@ -12,6 +12,8 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
+import PageHeader from "@/components/common/PageHeader";
+import { TortoiseArt } from "@/components/common/Illustration";
 
 const TODAY = format(new Date(), "yyyy-MM-dd");
 const NOW_HOUR = new Date().getHours();
@@ -245,11 +247,17 @@ export default function MaintenanceSchedulePage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Kebersihan Kandang</h1>
-        <p className="text-muted-foreground text-sm">Checklist kebersihan & perawatan fisik per kandang</p>
-      </div>
+      <PageHeader
+        title="Kebersihan Kandang"
+        subtitle="Checklist harian, mingguan, dan bulanan per kandang"
+        icon={CheckCheck}
+        art={<TortoiseArt size="md" />}
+        chips={[
+          { key: "sisa", icon: AlertCircle, label: "Belum selesai", value: todayTotal - todayDone,
+            tone: todayTotal - todayDone > 0 ? "warn" : "good" },
+          { key: "selesai", icon: CheckCircle2, label: "Selesai hari ini", value: `${todayDone}/${todayTotal}` },
+        ]}
+      />
 
       {/* Alert */}
       {alertLate && (
@@ -259,8 +267,10 @@ export default function MaintenanceSchedulePage() {
         </div>
       )}
 
-      {/* Summary widget */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Tiga kartu angka yang dulu di sini sudah pindah ke kepala halaman:
+          isinya persis sama, dan di ponsel ia memakan 180px sebelum satu pun
+          kandang terlihat. */}
+      <div className="hidden">
         <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-primary">{todayDone}</p>
           <p className="text-xs text-muted-foreground">Selesai Hari Ini</p>

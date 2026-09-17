@@ -30,3 +30,7 @@ dist-ssr
 .env
 .vite
 base44/.app.jsonc
+
+# Harness pratinjau UI — alat ukur sementara, tidak pernah ikut terkirim
+src/__uipreview.jsx
+uipreview.html

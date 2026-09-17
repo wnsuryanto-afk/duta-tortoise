@@ -14,6 +14,8 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { diPeternakan } from "@/lib/populasiKura";
 import { cariKandang } from "@/lib/kandang";
+import PageHeader from "@/components/common/PageHeader";
+import { TortoiseArt } from "@/components/common/Illustration";
 
 export default function EnclosurePage() {
   const qc = useQueryClient();
@@ -122,20 +124,22 @@ export default function EnclosurePage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold text-foreground">Kandang</h1>
-          <p className="text-sm text-muted-foreground">{enclosures.length} kandang terdaftar</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={handleSyncAll} disabled={syncing} className="gap-2">
-            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} /> Sinkronkan Jumlah
-          </Button>
-          <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-primary gap-2">
-            <Plus className="w-4 h-4" /> Tambah Kandang
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Kandang"
+        subtitle={`${enclosures.length} kandang terdaftar`}
+        icon={Home}
+        art={<TortoiseArt size="md" />}
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={handleSyncAll} disabled={syncing} className="gap-1.5">
+              <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} /> Sinkronkan
+            </Button>
+            <Button size="sm" onClick={() => { setEditing(null); setShowForm(true); }} className="gap-1.5">
+              <Plus className="w-4 h-4" /> Tambah
+            </Button>
+          </>
+        }
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

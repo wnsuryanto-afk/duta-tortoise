@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, PackageOpen, Plus, Pencil, Trash2, CheckCircle2, Leaf, QrCode, Printer } from "lucide-react";
+import { AlertTriangle, PackageOpen, Plus, Pencil, Trash2, Leaf, QrCode, Printer, MoreHorizontal, Wallet } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatRp } from "@/lib/skuUtils";
 import StockItemForm from "@/components/stock/StockItemForm";
@@ -22,6 +22,9 @@ import PakanMasukDialog from "@/components/pakan/PakanMasukDialog";
 import PakanKeluarDialog from "@/components/pakan/PakanKeluarDialog";
 import RiwayatPakanTab from "@/components/pakan/RiwayatPakanTab";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import { WarehouseArt } from "@/components/common/Illustration";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 
 const CATEGORIES = [
@@ -164,70 +167,72 @@ export default function FeedStockPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-heading font-bold">Stok Pakan</h1>
-          <p className="text-muted-foreground mt-1">Kelola persediaan pakan kura-kura</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setShowScanner(true)} className="gap-2">
-            <QrCode className="w-4 h-4" /> Scan Barang
-          </Button>
-          <Button variant="outline" onClick={() => setShowPakanMasuk(true)} className="gap-2 bg-green-50 border-green-300 text-green-700 hover:bg-green-100">
-            <ArrowUpCircle className="w-4 h-4" /> Pakan Masuk
-          </Button>
-          <Button variant="outline" onClick={() => setShowPakanKeluar(true)} className="gap-2 bg-red-50 border-red-300 text-red-700 hover:bg-red-100">
-            <ArrowDownCircle className="w-4 h-4" /> Pakan Keluar
-          </Button>
-          {isAdmin && filtered.length > 0 && (
-            <Button variant="outline" onClick={() => setLabelItems(filtered)} className="gap-2">
-              <Printer className="w-4 h-4" /> Label Massal
+      {/* Kepala halaman.
+
+          Sebelum ini: judul polos, lalu LIMA tombol sejajar, lalu ENAM kartu
+          angka. Diukur di ponsel 390px, barang pertama baru terlihat setelah
+          menggulir sekitar 1.500px — keeper yang cuma ingin melihat sisa
+          rumput harus melewati seluruh perkakas administrasi lebih dulu.
+
+          Sekarang angkanya ikut di kepala sebagai chip (satu baris, bisa
+          ditekan untuk menyaring), tombol yang jarang dipakai masuk ke
+          "Lainnya", dan ilustrasinya muncul di layar lebar. */}
+      <PageHeader
+        title="Stok Pakan"
+        subtitle="Rumput, sayur, dan suplemen"
+        icon={Leaf}
+        art={<WarehouseArt size="md" />}
+        chips={[
+          { key: "perlu", icon: AlertTriangle, label: "Perlu diisi", value: lowCount,
+            tone: lowCount > 0 ? "warn" : "good", onClick: () => setLowFilter((v) => !v),
+            title: "Tampilkan hanya yang menipis" },
+          { key: "total", icon: PackageOpen, label: "Jenis pakan", value: stocks.length },
+          { key: "masuk", icon: ArrowUpCircle, label: "Masuk hari ini", value: masukToday.length,
+            tone: masukToday.length > 0 ? "good" : "default" },
+          { key: "keluar", icon: ArrowDownCircle, label: "Keluar hari ini", value: keluarToday.length },
+          ...(isAdmin ? [{ key: "nilai", icon: Wallet, label: "Nilai stok", value: formatRp(totalValue) }] : []),
+        ]}
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => setShowPakanMasuk(true)} className="gap-1.5">
+              <ArrowUpCircle className="w-4 h-4 text-green-600" /> Masuk
             </Button>
-          )}
-          {canCreate && stocks.length === 0 && (
-            <Button variant="outline" onClick={() => setShowSeed(true)}>
-              <Leaf className="w-4 h-4" /> Isi Pakan Ideal Sulcata
+            <Button variant="outline" size="sm" onClick={() => setShowPakanKeluar(true)} className="gap-1.5">
+              <ArrowDownCircle className="w-4 h-4 text-red-500" /> Keluar
             </Button>
-          )}
-          {canCreate && (
-            <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
-              <Plus className="w-4 h-4" /> Tambah Pakan
-            </Button>
-          )}
-        </div>
-      </div>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setEditItem(null); setShowForm(true); }} className="gap-1.5">
+                <Plus className="w-4 h-4" /> Tambah
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5" aria-label="Aksi lainnya">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowScanner(true)} className="gap-2">
+                  <QrCode className="w-4 h-4" /> Scan barang
+                </DropdownMenuItem>
+                {isAdmin && filtered.length > 0 && (
+                  <DropdownMenuItem onClick={() => setLabelItems(filtered)} className="gap-2">
+                    <Printer className="w-4 h-4" /> Cetak label massal
+                  </DropdownMenuItem>
+                )}
+                {canCreate && stocks.length === 0 && (
+                  <DropdownMenuItem onClick={() => setShowSeed(true)} className="gap-2">
+                    <Leaf className="w-4 h-4" /> Isi pakan ideal sulcata
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
 
       {/* Approval queue (admin only) */}
       {isAdmin && <ApprovalQueueCard user={user} />}
-
-      {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10"><PackageOpen className="w-5 h-5 text-primary" /></div>
-          <div><p className="text-2xl font-bold">{stocks.length}</p><p className="text-xs text-muted-foreground">Total Item</p></div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-orange-100"><AlertTriangle className="w-5 h-5 text-orange-600" /></div>
-          <div><p className="text-2xl font-bold text-orange-700">{lowCount}</p><p className="text-xs text-muted-foreground">Perlu Diisi</p></div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-green-100"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
-          <div><p className="text-2xl font-bold text-green-700">{stocks.length - lowCount}</p><p className="text-xs text-muted-foreground">Stok Aman</p></div>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Nilai Total Stok</p>
-          <p className="text-sm font-bold text-primary">{formatRp(totalValue)}</p>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-green-100"><ArrowUpCircle className="w-5 h-5 text-green-600" /></div>
-          <div><p className="text-2xl font-bold text-green-700">{masukToday.length}</p><p className="text-xs text-muted-foreground">Pakan Masuk Hari Ini</p></div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-red-100"><ArrowDownCircle className="w-5 h-5 text-red-500" /></div>
-          <div><p className="text-2xl font-bold text-red-600">{keluarToday.length}</p><p className="text-xs text-muted-foreground">Pakan Keluar Hari Ini</p></div>
-        </Card>
-      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
