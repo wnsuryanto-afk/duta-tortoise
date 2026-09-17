@@ -192,11 +192,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: rotasiUkur = { babies: [], dewasa: [] } } = useQuery({
+  const { data: rotasiUkur = [] } = useQuery({
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {
       const res = await base44.functions.invoke("getRotasiUkur", { date: today });
-      return { babies: res.data?.babies || [], dewasa: res.data?.dewasa || [] };
+      return res.data?.perlu || [];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -326,10 +326,21 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         }
 
         if (titleLower.includes("rotasi otomatis")) {
-          (rotasiUkur.babies || []).forEach(tor => {
+          /*
+           * Satu daftar, bukan dua.
+           *
+           * Dulu babies dan dewasa diulang terpisah karena ambangnya beda per
+           * umur. Sekarang yang membedakan adalah ALASAN — baby bisa masuk
+           * karena tidak makan, dewasa karena sedang diobati — jadi memisahkan
+           * per umur hanya menyiapkan tempat untuk salah label.
+           */
+          (rotasiUkur || []).forEach(tor => {
+            const rutin = tor.alasan === "rutin_baby";
             items.push({
               id: `ukur_rotasi_${tor.id}`,
-              label: `Timbang & ukur ${tor.code} (BABY)`,
+              label: rutin
+                ? `Timbang & ukur ${tor.code} (BABY)`
+                : `Timbang & ukur ${tor.code} (${tor.enclosure})`,
               waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
               icon: "⚖️",
               keterangan: tor.species || "",
