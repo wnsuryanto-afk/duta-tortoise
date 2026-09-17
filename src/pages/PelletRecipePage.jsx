@@ -15,6 +15,7 @@ import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 function formatRp(n) { return "Rp " + Number(n || 0).toLocaleString("id-ID"); }
 
@@ -350,7 +351,7 @@ export default function PelletRecipePage() {
 
         <TabsContent value="produksi" className="mt-4 space-y-3">
           {productions.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">Belum ada riwayat produksi</div>
+            <KeadaanKosong gambar="kotak" judul="Belum ada produksi" keterangan="Setiap batch racikan yang dibuat akan tercatat di sini." />
           ) : productions.map(p => (
             <Card key={p.id} className="p-4">
               <div className="flex items-start justify-between gap-3 flex-wrap">

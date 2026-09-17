@@ -27,6 +27,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import ExcludeToggle from "@/components/owner/ExcludeToggle";
 import { masukLaporan } from "@/lib/laporan";
 import { useTestMode } from "@/lib/useTestMode";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const CATEGORIES = {
   penjualan_tortoise: { label: "Penjualan Tortoise",     color: "bg-green-100 text-green-700",   type: "pemasukan"    },
@@ -469,19 +470,19 @@ export default function FinancePage() {
 
         <TabsContent value="pemasukan" className="mt-4 space-y-2">
           {periodTxAll.filter(t => t.type === "pemasukan").length === 0
-            ? <p className="text-center py-10 text-muted-foreground">Belum ada pemasukan bulan ini</p>
+            ? <KeadaanKosong gambar="uang" judul="Belum ada pemasukan bulan ini" keterangan="Penjualan yang tercatat akan muncul di sini." />
             : periodTxAll.filter(t => t.type === "pemasukan").map(t => <TxRow key={t.id} tx={t} />)}
         </TabsContent>
 
         <TabsContent value="pengeluaran" className="mt-4 space-y-2">
           {periodTxAll.filter(t => t.type === "pengeluaran").length === 0
-            ? <p className="text-center py-10 text-muted-foreground">Belum ada pengeluaran bulan ini</p>
+            ? <KeadaanKosong gambar="uang" judul="Belum ada pengeluaran bulan ini" keterangan="Pembelian, gaji, dan kas kecil masuk ke sini." />
             : periodTxAll.filter(t => t.type === "pengeluaran").map(t => <TxRow key={t.id} tx={t} />)}
         </TabsContent>
 
         <TabsContent value="semua" className="mt-4 space-y-2">
           {periodTxAll.length === 0
-            ? <p className="text-center py-10 text-muted-foreground">Belum ada transaksi bulan ini</p>
+            ? <KeadaanKosong gambar="grafik" judul="Belum ada transaksi bulan ini" />
             : periodTxAll.map(t => <TxRow key={t.id} tx={t} />)}
         </TabsContent>
 

@@ -122,12 +122,12 @@ export default function EnclosurePage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-heading font-bold text-foreground">Kandang</h1>
           <p className="text-sm text-muted-foreground">{enclosures.length} kandang terdaftar</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleSyncAll} disabled={syncing} className="gap-2">
             <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} /> Sinkronkan Jumlah
           </Button>

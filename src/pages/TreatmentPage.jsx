@@ -17,6 +17,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, 
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { diPeternakan } from "@/lib/populasiKura";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const FREQ_LABELS = {
   harian:       "Harian",
@@ -528,7 +529,7 @@ export default function TreatmentPage() {
             )}
           </div>
           {filteredLogs.length === 0 ? (
-            <p className="text-center py-10 text-muted-foreground text-sm">Belum ada log treatment</p>
+            <KeadaanKosong gambar="kesehatan" judul="Belum ada catatan perawatan" keterangan="Perawatan rutin yang sudah dikerjakan akan tercatat di sini." />
           ) : (
             filteredLogs.slice(0, 100).map(l => (
               <Card key={l.id} className="p-3 flex items-center gap-3">

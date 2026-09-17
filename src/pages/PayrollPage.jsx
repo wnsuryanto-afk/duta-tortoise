@@ -19,6 +19,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AlurGaji from "@/components/salary/AlurGaji";
 import AccessDenied from "@/components/common/AccessDenied";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const MAX_KASBON = 1000000;
 
@@ -162,7 +163,7 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
         {isLoading ? (
           <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>
         ) : myKasbons.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Belum ada pengajuan kasbon</div>
+          <KeadaanKosong gambar="tim" judul="Belum ada pengajuan kasbon" keterangan="Pengajuan dari karyawan akan muncul di sini untuk Anda setujui." />
         ) : (
           <div className="divide-y">
             {myKasbons.map(k => {

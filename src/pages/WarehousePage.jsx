@@ -286,8 +286,13 @@ export default function WarehousePage() {
                       <StockBadge item={item} />
                     </div>
 
-                    <div className="flex items-end justify-between mt-3">
-                      <div>
+                    {/* Baris angka stok + tombol aksi.
+                        `min-w-0` pada kolom kiri dan `flex-wrap` pada deretan
+                        tombol: tanpa keduanya, empat tombol ikon mendorong
+                        kartu melewati tepi layar ponsel dan seluruh halaman
+                        ikut bisa digeser ke samping. */}
+                    <div className="flex flex-wrap items-end justify-between gap-2 mt-3">
+                      <div className="min-w-0">
                         <p className={`text-3xl font-bold ${isLow ? "text-orange-700" : ""}`}>
                           {item.current_stock}<span className="text-sm font-normal text-muted-foreground ml-1">{item.unit}</span>
                         </p>
@@ -296,7 +301,7 @@ export default function WarehousePage() {
                           <p className="text-xs text-muted-foreground">{formatRp(item.purchase_price)}/{item.unit}</p>
                         )}
                       </div>
-                      <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+                      <div className="flex flex-wrap gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}>
                         {canTransact && (
                           <Button size="sm" variant="outline" className="h-8 text-xs gap-1"

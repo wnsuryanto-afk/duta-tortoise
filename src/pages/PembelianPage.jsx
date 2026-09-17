@@ -32,6 +32,7 @@ import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { cocokkanBarisBelanja } from "@/lib/daftarBelanja";
 import { useTestMode } from "@/lib/useTestMode";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const today = () => format(new Date(), "yyyy-MM-dd");
@@ -511,7 +512,7 @@ export default function PembelianPage() {
       ) : tab === "menunggu" ? (
         <Section title="Pesanan menunggu barang datang" icon={Truck} count={menunggu.length}>
           {menunggu.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Tidak ada pesanan berjalan.</p>
+            <KeadaanKosong gambar="gudang" judul="Tidak ada pesanan berjalan" keterangan="Pesanan yang sudah dibuat tapi barangnya belum datang muncul di sini." ukuran="sm" />
           ) : (
             <div className="space-y-2">
               {menunggu.map((p) => (
@@ -550,7 +551,7 @@ export default function PembelianPage() {
       ) : (
         <Section title="Riwayat pembelian" icon={Receipt} count={riwayat.length}>
           {riwayat.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Belum ada riwayat.</p>
+            <KeadaanKosong gambar="kotak" judul="Belum ada riwayat pembelian" ukuran="sm" />
           ) : (
             <div className="space-y-2">
               {riwayat.map((p) => (

@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const TODAY = format(new Date(), "yyyy-MM-dd");
 const NOW_HOUR = new Date().getHours();
@@ -296,9 +298,12 @@ export default function MaintenanceSchedulePage() {
 
       {/* Grid */}
       {enclosures.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p>Belum ada data kandang. Tambahkan kandang terlebih dahulu.</p>
-        </div>
+        <KeadaanKosong
+          gambar="kura"
+          judul="Belum ada kandang"
+          keterangan="Checklist kebersihan mengikuti daftar kandang. Daftarkan kandangnya dulu, checklist harian akan muncul sendiri."
+          aksi={<Button asChild><Link to="/kandang">Buka Daftar Kandang</Link></Button>}
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleEnclosures.map(enc => (

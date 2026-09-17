@@ -438,3 +438,14 @@
   }
   .hover-lift:hover { transform: none }
 }
+
+/* ── Deretan yang digeser dengan jari ──
+   Dipakai deretan tab dan baris penyaring yang lebih lebar dari layar ponsel.
+   Batang gulirnya disembunyikan: di ponsel ia tidak pernah disentuh, dan
+   kehadirannya justru memotong tinggi baris tabnya. Menggeser tetap bekerja —
+   dengan jari, roda mouse mendatar, maupun tombol panah saat tab difokus. */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar { display: none; }

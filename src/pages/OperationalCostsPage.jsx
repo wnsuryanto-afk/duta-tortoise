@@ -17,6 +17,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import { useFinanceCategories } from "@/hooks/useEntityCategories";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useTestMode } from "@/lib/useTestMode";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const CATEGORIES = {
   gaji_karyawan: {
@@ -317,7 +318,7 @@ export default function OperationalCostsPage() {
             );
           })}
           {opsTx.length === 0 && !isLoading && (
-            <p className="text-center py-10 text-muted-foreground text-sm">Belum ada catatan biaya operasional</p>
+            <KeadaanKosong gambar="grafik" judul="Belum ada biaya operasional" keterangan="Listrik, air, dan biaya tetap lain dicatat di sini." />
           )}
         </div>
       </Card>
