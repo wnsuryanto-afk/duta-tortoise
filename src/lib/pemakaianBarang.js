@@ -248,3 +248,32 @@ export function rencanaPotongBatch(batches = [], itemId, jumlah) {
 
   return { rencana, kurang: sisaDiambil };
 }
+
+/**
+ * Jalankan rencana FEFO: turunkan sisa batch, tandai yang habis.
+ *
+ * Ada karena menghitung rencananya mudah dan MENYIMPANNYA-lah yang terlupa.
+ * Empat jalur mengurangi stok gudang; sampai 17-09-2026 hanya dua yang ikut
+ * menurunkan sisa batch. Sisanya — tombol +/- di halaman stok, produksi
+ * racikan, produksi pelet — memotong stok gudang saja, sehingga total gudang
+ * dan jumlah sisa seluruh batch perlahan berpisah. Yang membaca angka batch
+ * (peringatan kedaluwarsa, cetak label, urutan FEFO) lalu menunjuk barang
+ * yang sebenarnya sudah habis dipakai.
+ *
+ * Setiap jalur menulis loopnya sendiri berarti empat kesempatan untuk lupa.
+ * Satu fungsi berarti satu.
+ *
+ * @returns {{dipotong: number, kurang: number}} `kurang` > 0 berarti batch
+ *   tercatat tidak cukup menutup jumlah yang keluar — barangnya tetap nyata
+ *   sudah dipakai, jadi ini diberitahukan, bukan digagalkan.
+ */
+export async function potongBatchGudang(base44, batches, itemId, jumlah) {
+  const { rencana, kurang } = rencanaPotongBatch(batches, itemId, jumlah);
+  for (const r of rencana) {
+    await base44.entities.BatchBarang.update(r.id, {
+      jumlah_sisa: r.jumlah_sisa,
+      ...(r.jumlah_sisa === 0 ? { status: "habis" } : {}),
+    });
+  }
+  return { dipotong: rencana.length, kurang };
+}
