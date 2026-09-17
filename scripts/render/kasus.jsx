@@ -15,6 +15,7 @@ import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
+import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
 import TortoiseList from "@/pages/TortoiseList";
 import OperationalToday from "@/components/dashboard/OperationalToday";
 import VetContactPage from "@/pages/VetContactPage";
@@ -69,6 +70,15 @@ export default [
   ["OwnerDashboard tanpa data", <OwnerDashboard />],
   ["RekapPoinGajiPage tanpa data", <RekapPoinGajiPage />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
+
+  /*
+   * Panel lapor "tidak makan" (17-09-2026). Pemicu utama penimbangan sejak
+   * rotasi dihentikan, jadi ia dibuka kiper tiap kali ada yang janggal.
+   * Kasus tanpa kura diperiksa karena panel ini dirender di dalam kartu kura
+   * yang datanya bisa belum termuat.
+   */
+  ["LaporMakanPanel tanpa kura", <LaporMakanPanel tortoise={undefined} />],
+  ["LaporMakanPanel kura biasa", <LaporMakanPanel tortoise={{ id: "t1", code: "A29", name: "A29", enclosure: "N1" }} />],
   ["GuidedHariIni dengan user", <GuidedHariIni user={{ id: "1", email: "a@b.c", full_name: "Sholeh", role: "keeper" }} />],
 
   // Ditambahkan 10-09-2026. Keduanya diubah cukup dalam hari ini dan
