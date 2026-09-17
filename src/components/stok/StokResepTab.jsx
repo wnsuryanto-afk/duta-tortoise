@@ -137,6 +137,11 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           await base44.entities.FeedStock.update(r.item.id, { current_stock: sisa });
         } else {
           await base44.entities.WarehouseItem.update(r.item.id, { current_stock: sisa });
+          // Bahan racikan yang berasal dari gudang ikut menurunkan sisa
+          // batchnya, FEFO. Tanpa ini produksi racikan — pemakaian terbesar
+          // di peternakan ini — memotong stok gudang tanpa menyentuh batch,
+          // dan peringatan kedaluwarsa tetap menghitung bahan yang sudah habis.
+          await potongBatchGudang(base44, batchAktif, r.item.id, r.butuh);
         }
         await base44.entities.StockMovement.create({
           item_id: r.item.id,
