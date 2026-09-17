@@ -17,6 +17,7 @@ import { Plus, Pencil, Trash2, FlaskConical, CheckCircle2, AlertTriangle, X } fr
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { potongBatchGudang } from "@/lib/pemakaianBarang";
 import {
   rincianBahan, masalahBahan, bahanTanpaHarga, totalBiaya,
   hppHasil, jumlahHasil, cariBarangHasil,
@@ -102,6 +103,10 @@ function RecipeForm({ recipe, feedItems, warehouseItems, onClose, onSaved }) {
 }
 
 function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved, userName, userEmail }) {
+  const { data: batchAktif = [] } = useQuery({
+    queryKey: ["batch-barang", "aktif", 500],
+    queryFn: () => base44.entities.BatchBarang.filter({ status: "aktif" }, "-tanggal_terima", 500),
+  });
   const [qty, setQty] = useState(recipe?.yield_kg || "");
   const [producing, setProducing] = useState(false);
   const [gagal, setGagal] = useState("");
