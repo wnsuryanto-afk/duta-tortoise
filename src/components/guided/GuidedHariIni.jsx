@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   MapPin, Heart, CheckCircle2, AlertTriangle,
-  Smile, Star, Bell, X, ClipboardList, Clock, Camera
+  Smile, Star, Bell, X, ClipboardList, Clock, Camera, UtensilsCrossed
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
@@ -127,6 +127,10 @@ export default function GuidedHariIni({ user }) {
   const [msg, setMsg]                   = useState(null);
   const [poinFlash, setPoinFlash]       = useState(null); // { label, poin }
   const [showSakitForm, setShowSakitForm] = useState(false);
+  const [showMakanForm, setShowMakanForm] = useState(false);
+  const [makanKura, setMakanKura] = useState("");
+  const [makanCatatan, setMakanCatatan] = useState("");
+  const [makanReports, setMakanReports] = useState([]);
   const [catatan, setCatatan]           = useState("");
   const [showCatatan, setShowCatatan]   = useState(false);
   const [showSelfie, setShowSelfie]     = useState(false);
@@ -689,6 +693,51 @@ export default function GuidedHariIni({ user }) {
 
   // pakanDone & pakanSaved sekarang dikelola dalam WidgetPakan (self-contained)
 
+  /*
+   * Lapor "tidak makan" — jalur RINGAN, terpisah dari laporan sakit.
+   *
+   * Sebelum ini, satu-satunya cara melaporkan kura tidak makan adalah lewat
+   * "Ada yang Sakit" — yang mewajibkan diagnosis, tingkat keparahan, DAN
+   * perlakuan sebelum bisa disimpan. Petunjuk di layar ini bahkan menyuruh
+   * begitu: "Kura tidak mau makan atau gerak lambat? Pilih Ada yang Sakit".
+   *
+   * Kiper yang melihat pakan tidak disentuh biasanya belum tahu diagnosisnya —
+   * memang itu gunanya menimbang. Meminta diagnosis lebih dulu membuat
+   * laporannya tidak pernah dibuat sama sekali, dan pengamatan paling awal
+   * hilang justru di titik ia paling murah didapat.
+   *
+   * Sekarang cukup pilih kuranya. Kura itu masuk daftar timbang besok pagi;
+   * beratlah yang menjawab apakah ini serius, bukan tebakan kiper.
+   */
+  const handleLaporTidakMakan = async () => {
+    if (!makanKura) {
+      showMsg("warn", "Pilih kuranya dulu ya.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const kura = tortoises.find((t) => t.id === makanKura);
+      const { dibuat } = await catatTidakMakan(kura || { id: makanKura }, {
+        sumber: "tugas_pakan",
+        catatan: makanCatatan.trim(),
+        user,
+      });
+      qc.invalidateQueries({ queryKey: ["laporan-makan"] });
+      qc.invalidateQueries({ queryKey: ["rotasi-ukur"] });
+      setMakanReports((p) => [...p, kura?.code || kura?.name || makanKura]);
+      setMakanKura(""); setMakanCatatan(""); setShowMakanForm(false);
+      showMsg(
+        "ok",
+        dibuat
+          ? `Dicatat. ${kura?.code || "Kura"} masuk daftar timbang.`
+          : "Sudah ada laporan terbuka untuk kura ini.",
+      );
+    } catch (e) {
+      showMsg("error", "Gagal mencatat: " + (e?.message || ""));
+    }
+    setLoading(false);
+  };
+
   const handleLaporKura = async () => {
     if (!sakitForm.kura || sakitForm.diagnosis.length === 0 || !sakitForm.severity) {
       showMsg("warn", "Pilih kura, diagnosis, dan tingkat keparahan dulu ya.");
@@ -1210,23 +1259,33 @@ export default function GuidedHariIni({ user }) {
 
             {kondisiOk === null && sakitReports.length === 0 ? (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => setKondisiOk(true)}
-                    className="bg-green-50 border-2 border-green-300 rounded-2xl p-4 flex flex-col items-center gap-2 active:scale-95 transition-all hover:bg-green-100"
+                    className="bg-green-50 border-2 border-green-300 rounded-2xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-all hover:bg-green-100"
                   >
-                    <Smile className="w-8 h-8 text-green-600" />
-                    <span className="font-bold text-green-800 text-sm">Semua Baik</span>
+                    <Smile className="w-7 h-7 text-green-600" />
+                    <span className="font-bold text-green-800 text-xs text-center leading-tight">Semua Baik</span>
                   </button>
                   <button
-                    onClick={() => { setKondisiOk(false); setShowSakitForm(true); }}
-                    className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 flex flex-col items-center gap-2 active:scale-95 transition-all hover:bg-red-100"
+                    onClick={() => { setKondisiOk(false); setShowMakanForm(true); setShowSakitForm(false); }}
+                    className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-all hover:bg-amber-100"
                   >
-                    <AlertTriangle className="w-8 h-8 text-red-500" />
-                    <span className="font-bold text-red-700 text-sm">Ada yang Sakit</span>
+                    <UtensilsCrossed className="w-7 h-7 text-amber-600" />
+                    <span className="font-bold text-amber-800 text-xs text-center leading-tight">Ada yang Tidak Makan</span>
+                  </button>
+                  <button
+                    onClick={() => { setKondisiOk(false); setShowSakitForm(true); setShowMakanForm(false); }}
+                    className="bg-red-50 border-2 border-red-300 rounded-2xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-all hover:bg-red-100"
+                  >
+                    <AlertTriangle className="w-7 h-7 text-red-500" />
+                    <span className="font-bold text-red-700 text-xs text-center leading-tight">Ada yang Sakit</span>
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground text-center mt-2">💡 Kura tidak mau makan atau gerak lambat? Pilih "Ada yang Sakit"</p>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  💡 Pakan tidak disentuh tapi belum tahu sakit apa? Pilih <strong>Tidak Makan</strong> —
+                  cukup pilih kuranya, nanti ditimbang untuk memastikan.
+                </p>
               </>
             ) : kondisiOk === true && sakitReports.length === 0 ? (
               <div className="flex items-center gap-3 p-3 bg-green-100 rounded-xl">
