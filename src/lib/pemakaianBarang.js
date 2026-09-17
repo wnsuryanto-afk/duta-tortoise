@@ -23,6 +23,18 @@ import { adalahPemakaian } from "./urgensiStok";
 export const KEPERLUAN_KURA = "pengobatan_kura";
 
 /**
+ * Barang dikeluarkan karena lewat tanggal, bukan karena dipakai.
+ *
+ * Sebelum ini ada, satu-satunya cara mengurangi stok obat kedaluwarsa adalah
+ * mencatatnya sebagai "Lainnya" — yang berarti buku mencatat obat itu DIPAKAI.
+ * Dua akibatnya: biayanya masuk sebagai biaya perawatan, dan perkiraan
+ * pemakaian menghitungnya sebagai kecepatan pakai, lalu menyuruh membeli lagi
+ * sebanyak yang dibuang. Alarm kedaluwarsa yang berujung pada pembelian ulang
+ * otomatis adalah alarm yang membuat keadaan lebih buruk.
+ */
+export const KEPERLUAN_BUANG = "dibuang_kedaluwarsa";
+
+/**
  * Keperluan yang masuk akal untuk barang gudang (obat, vitamin, habis pakai).
  * Keperluan pakan sengaja tidak ada di sini — pakan punya alurnya sendiri.
  */
@@ -30,6 +42,7 @@ export const KEPERLUAN_GUDANG = [
   { nilai: "pengobatan_kura", label: "Pengobatan kura", perluKura: true },
   { nilai: "kebersihan", label: "Kebersihan kandang", perluKura: false },
   { nilai: "perbaikan", label: "Perbaikan / pemeliharaan", perluKura: false },
+  { nilai: KEPERLUAN_BUANG, label: "Dibuang — lewat tanggal", perluKura: false },
   { nilai: "lainnya", label: "Lainnya", perluKura: false },
 ];
 

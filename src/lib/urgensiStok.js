@@ -47,6 +47,15 @@ export function adalahPemakaian(t) {
   if (!t) return false;
   if (!masukLaporan(t)) return false;
   if (t.status && !STATUS_TERPAKAI.includes(t.status)) return false;
+  /*
+   * Barang yang dibuang karena lewat tanggal keluar dari gudang, tapi tidak
+   * DIPAKAI. Menghitungnya sebagai pemakaian membuat kecepatan pakai naik
+   * palsu, lalu perkiraan sisa-hari menyuruh membeli lagi sebanyak yang
+   * barusan dibuang — dan biayanya menempel ke kura yang tidak pernah
+   * menerimanya. Satu-satunya tempat pembuangan boleh dihitung adalah buku
+   * stok itu sendiri, dan buku itu memang membacanya lewat jalur lain.
+   */
+  if (t.keperluan === "dibuang_kedaluwarsa") return false;
   const jenis = t.type || t.transaction_type;
   return jenis === "keluar" || jenis === "pakai";
 }
