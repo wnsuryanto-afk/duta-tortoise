@@ -5,7 +5,7 @@ import {
   tanggalMundur,
   sopIdDariTaskId,
   itemIdDariTaskId,
-  petaFotoHarian,, potongRapi } from "../../shared/otomatis.ts";
+  petaFotoHarian, potongRapi } from "../../shared/otomatis.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
