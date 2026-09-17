@@ -19,6 +19,7 @@ import { statusStok, URUTAN_STATUS, stokHabis } from "@/lib/stokMenipis";
 // generate SKU massal, dan pemindai QR untuk menemukan barang dari label cetak.
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
 import PecahBatchDialog from "@/components/stok/PecahBatchDialog";
+import { potongBatchGudang } from "@/lib/pemakaianBarang";
 import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import { toast } from "sonner";
@@ -545,6 +546,12 @@ function AdjustDialog({ item, onClose }) {
   const [mode, setMode] = useState("tambah");
   const [saving, setSaving] = useState(false);
 
+  const { data: batchAktif = [] } = useQuery({
+    queryKey: ["batch-barang", "aktif", 500],
+    queryFn: () => base44.entities.BatchBarang.filter({ status: "aktif" }, "-tanggal_terima", 500),
+    enabled: item?._src !== "feed",
+  });
+
   const handleSave = async () => {
     const delta = Number(amount);
     if (!delta || delta <= 0) return;
@@ -552,6 +559,27 @@ function AdjustDialog({ item, onClose }) {
     const newStock = mode === "tambah" ? item.current_stock + delta : Math.max(0, item.current_stock - delta);
     if (item._src === "feed") await base44.entities.FeedStock.update(item.id, { current_stock: newStock });
     else await base44.entities.WarehouseItem.update(item.id, { current_stock: newStock });
+
+    /*
+     * Sisa batch ikut turun saat stok dikurangi dari sini.
+     *
+     * Tombol ini memotong stok gudang langsung. Tanpa baris di bawah, total
+     * gudang dan jumlah sisa seluruh batch berpisah diam-diam — lalu layar
+     * kedaluwarsa dan urutan FEFO menunjuk botol yang sebenarnya sudah habis.
+     * Penambahan tidak menyentuh batch: barang masuk tanpa tanggal bukan
+     * batch, dan menebak batch mana yang bertambah lebih buruk daripada
+     * tidak mencatatnya (pakai "Pecah jadi batch" untuk itu).
+     */
+    if (item._src !== "feed" && mode === "kurangi") {
+      const { kurang } = await potongBatchGudang(base44, batchAktif, item.id, delta);
+      if (kurang > 0) {
+        toast.warning(
+          `Stok dikurangi, tapi batch tercatat kurang ${kurang} ${item.unit || ""}. ` +
+          "Sisa batch di aplikasi lebih sedikit daripada yang benar-benar diambil.",
+        );
+      }
+      qc.invalidateQueries({ queryKey: ["batch-barang"] });
+    }
     await base44.entities.StockMovement.create({
       item_id: item.id, item_name: item.name,
       item_type: item._src === "feed" ? "feedstock" : "warehouse",
