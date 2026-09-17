@@ -35,9 +35,23 @@ import { perluDitimbang } from "../../shared/timbang.ts";
  * Aturannya dipegang shared/timbang.ts bersama kembaran frontend
  * src/lib/jadwalTimbang.js, dan jawabannya diuji scripts/cek-timbang.mjs.
  *
- * Read-only. Bentuk balasannya dipertahankan ({ babies, dewasa }) supaya
- * daftar tugas harian dan widget keeper tidak perlu diubah sekaligus —
- * tapi tiap baris kini membawa `alasan` yang bisa ditampilkan.
+ * ── SATU DAFTAR, BUKAN DUA ─────────────────────────────────────────
+ *
+ * Balasannya dulu terbagi { babies, dewasa }. Pembagian itu masuk akal saat
+ * ambangnya memang beda per umur (14 hari vs 60 hari). Sekarang yang
+ * membedakan adalah ALASAN, bukan umur — seekor baby bisa masuk karena tidak
+ * makan, seekor dewasa karena sedang diobati. Nama `babies`/`dewasa` jadi
+ * berbohong tentang isinya.
+ *
+ * Lebih penting: memelihara dua bentuk sekaligus adalah cara cacat masuk.
+ * Saat fungsi ini ditulis ulang, kolom `daysAgo` berhenti dikirim sementara
+ * widget beranda kiper masih membacanya — tanpa error, tanpa penjaga yang
+ * merah, hanya tulisan "belum ada catatan ukur" untuk setiap kura. Bentuk
+ * yang dibaca dari sarang array seperti itu tidak bisa dijaga pemeriksa
+ * statis mana pun di repo ini; yang bisa dilakukan adalah tidak punya dua
+ * bentuk untuk dijaga.
+ *
+ * Read-only.
  */
 Deno.serve(async (req) => {
   try {
@@ -95,17 +109,12 @@ Deno.serve(async (req) => {
       prioritas: d.prioritas,
     });
 
-    // Bentuk lama dipertahankan: babies = yang rutin, dewasa = yang berpemicu.
-    const babies = daftar.filter((d: any) => d.kode === "rutin_baby").map(baris);
-    const dewasa = daftar.filter((d: any) => d.kode !== "rutin_baby").map(baris);
+    const perlu = daftar.map(baris);
 
     return Response.json({
       date: targetDate,
-      babies,
-      dewasa,
-      semua: daftar.map(baris),
-      totalBabyCandidates: babies.length,
-      totalAdultCandidates: dewasa.length,
+      perlu,
+      total: perlu.length,
     });
   } catch (error) {
     return Response.json({ error: (error as Error)?.message }, { status: 500 });
