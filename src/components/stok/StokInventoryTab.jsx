@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode, Split } from "lucide-react";
+import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
 import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
