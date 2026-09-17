@@ -13,7 +13,7 @@ export default function KeeperAttentionWidget() {
   });
 
   const today = new Date().toISOString().split("T")[0];
-  const { data: rotasi = { babies: [], dewasa: [] } } = useQuery({
+  const { data: rotasi = [] } = useQuery({
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {
       const res = await base44.functions.invoke("getRotasiUkur", { date: today });
