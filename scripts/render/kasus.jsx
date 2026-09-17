@@ -25,6 +25,7 @@ import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import SupplierPage from "@/pages/SupplierPage";
 import InputBerat from "@/components/common/InputBerat";
 import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
+import PecahBatchDialog from "@/components/stok/PecahBatchDialog";
 import DosisKalkulator from "@/components/health/DosisKalkulator";
 
 /*
@@ -140,6 +141,23 @@ export default [
     tortoises={[{ id: "t1", weight_grams: 24, shell_length_cm: 54 }]} />],
   ["DosisKalkulator tanpa panjang tempurung", <DosisKalkulator selectedDiagnoses={["shell_rot"]} tortoiseId="t1"
     tortoises={[{ id: "t1", weight_grams: 24 }]} />],
+
+  /*
+   * Pecah batch (17-09-2026). Dialog ini menulis BatchBarang untuk stok yang
+   * sudah ada di rak, dan satu-satunya hal yang menjaga aplikasi tidak punya
+   * dua angka untuk satu rak adalah aturan "jumlah batch harus pas dengan
+   * stok". Kasus stok nol dan satuan kosong diperiksa karena keduanya nyata:
+   * banyak barang gudang berstok 0, dan sebagian tidak punya satuan.
+   */
+  ["PecahBatchDialog stok wajar", <PecahBatchDialog
+    item={{ id: "w1", name: "Stone Breaker", sku: "OBT-0008", current_stock: 15, unit: "botol", expired_date: "2026-11-09", purchase_price: 25000 }}
+    onClose={() => {}} />],
+  ["PecahBatchDialog stok nol", <PecahBatchDialog
+    item={{ id: "w2", name: "Barang kosong", sku: "OBT-0099", current_stock: 0 }}
+    onClose={() => {}} />],
+  ["PecahBatchDialog tanpa satuan & tanggal", <PecahBatchDialog
+    item={{ id: "w3", name: "Tanpa apa-apa", current_stock: 2 }}
+    onClose={() => {}} />],
 
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
