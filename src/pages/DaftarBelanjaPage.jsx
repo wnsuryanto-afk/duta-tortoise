@@ -18,6 +18,8 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import PageHeader from "@/components/common/PageHeader";
+import { WarehouseArt } from "@/components/common/Illustration";
 
 export default function DaftarBelanjaPage() {
   const { role } = useCurrentUser();
@@ -65,15 +67,13 @@ export default function DaftarBelanjaPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-heading font-bold flex items-center gap-2">
-          <ShoppingCart className="w-7 h-7 text-blue-500" /> Daftar Belanja
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Barang yang dibutuhkan tugas insidentil tapi belum tersedia. Tandai sudah dibeli agar tugas
-          siap dikerjakan.
-        </p>
-      </div>
+      <PageHeader
+        title="Daftar Belanja"
+        subtitle="Barang yang ditunggu tugas insidentil"
+        icon={ShoppingCart}
+        art={<WarehouseArt size="md" />}
+        description="Tandai sudah dibeli agar tugas yang menunggunya bisa dikerjakan. Pembeliannya sendiri tetap dicatat lewat Kas Kecil atau Biaya Operasional seperti biasa."
+      />
 
       {/* Reminder Kas Kecil */}
       <Card className="p-3.5 border-blue-200 bg-blue-50/50 flex items-center gap-3">

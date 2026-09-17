@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import RempesanRecordForm from "@/components/rempesan/RempesanRecordForm";
+import PageHeader from "@/components/common/PageHeader";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const fmtKg = (n) => `${Number(n || 0).toLocaleString("id-ID")} kg`;
@@ -104,25 +105,27 @@ export default function RempesanPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Truck className="w-6 h-6 text-primary" /> Rempesan
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Catat ambil sayur/rumput. Trip yang disetujui (maks 1 per hari) otomatis masuk slip gaji minggu itu.
-          </p>
-        </div>
-        <Button onClick={() => setShowForm(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Catat Rempesan
-        </Button>
-      </div>
-
-      {pendingCount > 0 && isManager && (
-        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800 font-medium">
-          {pendingCount} rempesan menunggu persetujuan.
-        </div>
-      )}
+      {/* Kalimat lamanya menampung tiga aturan sekaligus (apa yang dicatat,
+          batas satu trip per hari, dan akibatnya pada gaji), dan spanduk
+          "N menunggu persetujuan" di bawahnya adalah kartu tersendiri yang
+          hanya membawa satu angka. Angkanya jadi chip; aturannya turun ke
+          baris keterangan. */}
+      <PageHeader
+        title="Rempesan"
+        subtitle="Catat ambil sayur/rumput"
+        icon={Truck}
+        description="Trip yang disetujui masuk otomatis ke slip gaji minggu itu — maksimal satu trip per hari."
+        chips={
+          pendingCount > 0 && isManager
+            ? [{ key: "menunggu", label: "Menunggu persetujuan", value: pendingCount, tone: "warn" }]
+            : []
+        }
+        actions={
+          <Button onClick={() => setShowForm(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Catat Rempesan
+          </Button>
+        }
+      />
 
       <div className="flex gap-2">
         {[
