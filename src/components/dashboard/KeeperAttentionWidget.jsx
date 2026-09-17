@@ -31,8 +31,12 @@ export default function KeeperAttentionWidget() {
   // 1. Kura sakit
   const sickTortoises = tortoises.filter(sedangSakit);
 
-  // 2. Belum ditimbang (lewat interval)
-  // Dibaca dari getRotasiUkur — sumber yang sama dengan daftar tugas harian.
+  // 2. Perlu ditimbang hari ini — dan KENAPA.
+  // Dibaca dari getRotasiUkur, sumber yang sama dengan daftar tugas harian.
+  //
+  // 17-09-2026: isinya bukan lagi "yang lewat interval". Rotasi diganti
+  // pemicu (tidak makan / sedang diobati / baby jatuh tempo), jadi kura
+  // dewasa sehat tidak muncul di sini walau lama tidak ditimbang.
   //
   // Sebelumnya widget ini menghitung sendiri dengan aturannya sendiri (ambang
   // > interval, hanya membaca last_weighed_date yang kosong pada 93 dari 120
@@ -96,8 +100,17 @@ export default function KeeperAttentionWidget() {
             <span className="text-sm">⚖️</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-amber-800 truncate">{t.code || t.name}</p>
+              {/*
+                * `alasanTeks` datang dari getRotasiUkur. Kolom `daysAgo` yang
+                * dibaca di sini sebelumnya SUDAH TIDAK DIKIRIM sejak fungsi itu
+                * ditulis ulang — hasilnya widget ini akan menulis "belum ada
+                * catatan ukur" untuk setiap kura, tanpa error apa pun. Persis
+                * jenis cacat yang penjaga kolom-baca tidak bisa lihat, karena
+                * ini pembacaan properti biasa, bukan saringan entity.
+                */}
               <p className="text-xs text-amber-600">
-                {t.daysAgo === null ? "belum ada catatan ukur" : `terakhir diukur ${t.daysAgo} hari lalu`}
+                {t.alasanTeks
+                  || (t.lastMeasuredDate ? `terakhir diukur ${t.lastMeasuredDate}` : "belum ada catatan ukur")}
               </p>
             </div>
           </div>
