@@ -113,12 +113,23 @@ Deno.serve(async (req) => {
       }
 
       const kode = t.code || t.name || t.id;
+      /*
+       * Kolom kosong ditulis "kosong", bukan "0 g".
+       *
+       * Laporan 16-09-2026 berbunyi "B116: 19.900 g → 0 g". Yang terjadi
+       * sebenarnya adalah kolomnya DIKOSONGKAN, bukan diisi nol — tapi
+       * pembaca laporan tidak punya cara tahu bedanya, dan "0 g" terbaca
+       * seperti kura seberat nol. Laporan yang menyebut angka salah tentang
+       * perbaikannya sendiri sama buruknya dengan perbaikan yang salah.
+       */
+      const tulisBerat = (v: any) =>
+        angka(v) > 0 ? `${angka(v).toLocaleString("id-ID")} g` : "kosong";
       if (baru.weight_grams === null) {
         dikosongkan.push(`${kode} — tidak ada berat sah tersisa`);
       } else if (geserBerat) {
         diperbaiki.push(
-          `${kode}: ${angka(t.weight_grams).toLocaleString("id-ID")} g → ` +
-          `${angka(baru.weight_grams).toLocaleString("id-ID")} g (timbang ${baru.last_weighed_date})`,
+          `${kode}: ${tulisBerat(t.weight_grams)} → ${tulisBerat(baru.weight_grams)} ` +
+          `(timbang ${baru.last_weighed_date})`,
         );
       } else {
         diperbaiki.push(`${kode}: tanggal/panjang disamakan ke timbangan ${baru.last_weighed_date}`);
