@@ -10,6 +10,8 @@ import { formatRp } from "@/lib/skuUtils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import PageHeader from "@/components/common/PageHeader";
+import { WarehouseArt } from "@/components/common/Illustration";
 
 function SectionHeader({ icon: IconComp, title, count, color = "text-foreground" }) {
   return (
@@ -127,34 +129,42 @@ export default function DashboardStokPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Dashboard Stok</h1>
-        <p className="text-muted-foreground text-sm">Ringkasan stok pakan & gudang secara terpusat</p>
-      </div>
-
-      {/* Nilai & Pengeluaran — summary row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-4 col-span-2 sm:col-span-1">
-          <p className="text-xs text-muted-foreground mb-1">Total Nilai Stok</p>
-          <p className="text-xl font-bold text-primary">{formatRp(totalStockValue)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Pakan: {formatRp(totalFeedValue)} · Gudang: {formatRp(totalWarehouseValue)}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Stok Kritis</p>
-          <p className="text-xl font-bold text-red-600">{allCritical.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">item perlu diisi</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Kadaluarsa &lt;30 hari</p>
-          <p className="text-xl font-bold text-orange-600">{expiringSoon.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">item di gudang</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Pengeluaran Stok Bulan Ini</p>
-          <p className="text-xl font-bold text-red-700">{formatRp(monthExpense)}</p>
-          <p className="text-xs text-muted-foreground mt-1">pakan + obat + vitamin</p>
-        </Card>
-      </div>
+      {/* Empat angka ini dulunya empat Card dalam `grid-cols-2 sm:grid-cols-4`
+          dengan satu kartu `col-span-2`. Di ponsel susunannya jadi 1 + 2 + 1:
+          kartu "Pengeluaran Stok Bulan Ini" berdiri sendirian setengah lebar
+          dengan keterangannya melipat tiga baris, dan 210px harus digulir
+          sebelum daftar stok kritis terlihat. Sebagai chip, keempatnya
+          mengalir rapi dan angkanya sampai lebih dulu. */}
+      <PageHeader
+        title="Dashboard Stok"
+        subtitle="Pakan dan gudang dalam satu layar"
+        icon={Package}
+        art={<WarehouseArt size="md" />}
+        chips={[
+          { key: "nilai", icon: Wallet, label: "Nilai stok", value: formatRp(totalStockValue) },
+          {
+            key: "kritis",
+            icon: AlertTriangle,
+            label: "Kritis",
+            value: allCritical.length,
+            tone: allCritical.length > 0 ? "bad" : "good",
+            title: `Pakan ${formatRp(totalFeedValue)} · Gudang ${formatRp(totalWarehouseValue)}`,
+          },
+          {
+            key: "kadaluarsa",
+            icon: Calendar,
+            label: "Kedaluwarsa <30 hari",
+            value: expiringSoon.length,
+            tone: expiringSoon.length > 0 ? "warn" : "good",
+          },
+          {
+            key: "belanja",
+            icon: TrendingDown,
+            label: "Keluar bulan ini",
+            value: formatRp(monthExpense),
+          },
+        ]}
+      />
 
       {/* A. Stok Kritis */}
       <Card className="p-5">

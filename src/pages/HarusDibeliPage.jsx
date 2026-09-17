@@ -12,9 +12,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  ShoppingCart, PackageX, Loader2, CheckCircle2,
+  ShoppingCart, PackageX, Loader2,
 } from "lucide-react";
 import BoughtItemDialog from "@/components/pettycash/BoughtItemDialog";
+import PageHeader from "@/components/common/PageHeader";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
+import { WarehouseArt } from "@/components/common/Illustration";
 
 const fmtRp = (n) => "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
 
@@ -201,69 +204,40 @@ export default function HarusDibeliPage() {
 
   return (
     <div className="max-w-3xl space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="w-6 h-6 text-primary" />
-          <div>
-            <h1 className="text-lg font-bold font-heading">🛒 Harus Dibeli</h1>
-            <p className="text-xs text-muted-foreground">
-              {allItems.length} barang perlu dibeli
-              {sopCount > 0 && ` · ${sopCount} mengganggu SOP`}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Summary */}
-      <div className="flex flex-wrap gap-2">
-        {sopCount > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center min-w-[80px]">
-            <p className="text-2xl font-bold text-red-600 leading-none">{sopCount}</p>
-            <p className="text-[10px] text-red-700 mt-1">🔴 SOP terganggu</p>
-          </div>
-        )}
-        {obatCount > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-2.5 text-center min-w-[80px]">
-            <p className="text-2xl font-bold text-orange-600 leading-none">{obatCount}</p>
-            <p className="text-[10px] text-orange-700 mt-1">💊 Obat menipis</p>
-          </div>
-        )}
-        {stokMenipis.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-center min-w-[80px]">
-            <p className="text-2xl font-bold text-amber-600 leading-none">{stokMenipis.length}</p>
-            <p className="text-[10px] text-amber-700 mt-1">⚠️ Stok menipis</p>
-          </div>
-        )}
-        {tugasMenunggu.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-center min-w-[80px]">
-            <p className="text-2xl font-bold text-blue-600 leading-none">{tugasMenunggu.length}</p>
-            <p className="text-[10px] text-blue-700 mt-1">📋 Tugas menunggu</p>
-          </div>
-        )}
-        {pengajuanCount > 0 && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 text-center min-w-[80px]">
-            <p className="text-2xl font-bold text-indigo-600 leading-none">{pengajuanCount}</p>
-            <p className="text-[10px] text-indigo-700 mt-1">🛠️ Pengajuan</p>
-          </div>
-        )}
-        {rusakCount > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center min-w-[80px]">
-            <p className="text-2xl font-bold text-red-600 leading-none">{rusakCount}</p>
-            <p className="text-[10px] text-red-700 mt-1">🔴 Barang rusak</p>
-          </div>
-        )}
-      </div>
+      {/* Enam kotak angka berwarna dengan emoji di bawah judul: masing-masing
+          `min-w-[80px]`, jadi di ponsel mereka berjejer dua-dua ke bawah dan
+          barang pertama yang harus dibeli terdorong 158px ke bawah. Angkanya
+          sama, tempatnya yang pindah — sekarang satu baris chip di kepala. */}
+      <PageHeader
+        title="Harus Dibeli"
+        subtitle={
+          allItems.length === 0
+            ? "Tidak ada yang perlu dibeli sekarang"
+            : `${allItems.length} barang perlu dibeli`
+        }
+        icon={ShoppingCart}
+        art={<WarehouseArt size="md" />}
+        chips={[
+          sopCount > 0 && { key: "sop", label: "SOP terganggu", value: sopCount, tone: "bad" },
+          obatCount > 0 && { key: "obat", label: "Obat menipis", value: obatCount, tone: "warn" },
+          stokMenipis.length > 0 && { key: "stok", label: "Stok menipis", value: stokMenipis.length, tone: "warn" },
+          tugasMenunggu.length > 0 && { key: "tugas", label: "Tugas menunggu", value: tugasMenunggu.length },
+          pengajuanCount > 0 && { key: "ajuan", label: "Pengajuan", value: pengajuanCount },
+          rusakCount > 0 && { key: "rusak", label: "Barang rusak", value: rusakCount, tone: "bad" },
+        ].filter(Boolean)}
+      />
 
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="w-7 h-7 text-primary animate-spin" />
         </div>
       ) : allItems.length === 0 ? (
-        <Card className="p-8 text-center">
-          <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-500" />
-          <p className="font-semibold text-green-700">Semua aman!</p>
-          <p className="text-sm text-muted-foreground mt-1">Tidak ada barang yang perlu dibeli sekarang.</p>
+        <Card className="p-2">
+          <KeadaanKosong
+            gambar="gudang"
+            judul="Semua aman"
+            keterangan="Tidak ada stok yang menipis, tidak ada pengajuan alat yang menunggu."
+          />
         </Card>
       ) : (
         <div className="space-y-2">

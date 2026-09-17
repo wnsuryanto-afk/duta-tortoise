@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, Archive } from "lucide-react";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
+import PageHeader from "@/components/common/PageHeader";
 
 const typeConfig = {
   info: { color: "bg-blue-50 border-blue-200 text-blue-800", dot: "bg-blue-500", icon: Info, iconColor: "text-blue-500" },
@@ -155,48 +156,47 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <Bell className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Notifikasi</h1>
-            <p className="text-sm text-muted-foreground">
-              {aktif.length === 0
-                ? "Kotak notifikasi kosong"
-                : unreadCount > 0
-                  ? `${unreadCount} belum dibaca dari ${aktif.length}`
-                  : `Semua sudah dibaca — ${aktif.length} bisa dibersihkan`}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {belumTerlihat > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllRead} disabled={!!sibuk}>
-              <CheckCheck className="w-4 h-4 mr-1" />
-              Tandai {belumTerlihat} dibaca{disaring ? " (yang tampil)" : ""}
-            </Button>
-          )}
-          {terbacaTerlihat > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={bersihkanTerbaca}
-              disabled={!!sibuk}
-              title="Singkirkan notifikasi yang sudah dibaca dari daftar"
-            >
-              <Archive className="w-4 h-4 mr-1" />
-              Bersihkan {terbacaTerlihat}
-            </Button>
-          )}
-          {["owner", "admin"].includes(role) && (
-            <Button size="sm" onClick={() => setShowSend(true)}>
-              <Send className="w-4 h-4 mr-1" /> Kirim Notifikasi
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Notifikasi"
+        /* Anak judul ini dulunya mengulang angka yang ada di chip tepat di
+           bawahnya, dan kalimat "Kotak notifikasi kosong" muncul dua kali:
+           di sini dan di layar kosongnya. Angka biarkan di chip; baris ini
+           menerangkan halamannya. */
+        subtitle="Peringatan dan pengumuman untuk tim"
+        icon={Bell}
+        chips={[
+          { key: "belum", label: "Belum dibaca", value: unreadCount, tone: unreadCount > 0 ? "warn" : "good" },
+          { key: "total", label: "Di kotak", value: aktif.length },
+        ]}
+        actions={
+          <>
+            {belumTerlihat > 0 && (
+              <Button variant="outline" size="sm" onClick={markAllRead} disabled={!!sibuk}>
+                <CheckCheck className="w-4 h-4 mr-1" />
+                Tandai {belumTerlihat} dibaca{disaring ? " (yang tampil)" : ""}
+              </Button>
+            )}
+            {terbacaTerlihat > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={bersihkanTerbaca}
+                disabled={!!sibuk}
+                title="Singkirkan notifikasi yang sudah dibaca dari daftar"
+              >
+                <Archive className="w-4 h-4 mr-1" />
+                Bersihkan {terbacaTerlihat}
+              </Button>
+            )}
+            {["owner", "admin"].includes(role) && (
+              <Button size="sm" onClick={() => setShowSend(true)}>
+                <Send className="w-4 h-4 mr-1" /> Kirim Notifikasi
+              </Button>
+            )}
+          </>
+        }
+      />
+
 
       {/* Kemajuan operasi massal — puluhan pembaruan butuh waktu, dan tanpa
           penanda ini tombolnya terasa tidak berfungsi. */}

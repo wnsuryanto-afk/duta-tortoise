@@ -14,6 +14,8 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import PakanHarianForm, { SOURCES, SOURCE_BADGE } from "@/components/pakan/PakanHarianForm";
+import PageHeader from "@/components/common/PageHeader";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const fmtRp = n => "Rp " + (n || 0).toLocaleString("id-ID");
 
@@ -53,28 +55,32 @@ export default function PakanHarianPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Leaf className="w-6 h-6 text-green-600" /> Pakan Harian
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Pencatatan pengambilan pakan harian</p>
-        </div>
-        {canManage && (
-          <Button onClick={() => setShowForm(true)} className="gap-2 bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4" /> Catat Pengambilan Pakan
-          </Button>
-        )}
-      </div>
-
-      {/* Ringkasan hari ini */}
-      <Card className="p-5">
-        <p className="text-xs text-muted-foreground">Hari ini</p>
-        <p className="text-2xl font-bold text-green-700">{todayTotal} keranjang</p>
-        {todaySources.length > 0 && (
-          <p className="text-sm text-muted-foreground mt-1">({todaySources.join(", ")})</p>
-        )}
-      </Card>
+      {/* Kartu "Hari ini" yang berdiri sendiri di bawah judul memakan satu layar
+          penuh untuk satu angka. Angkanya pindah ke kepala; riwayatnya naik. */}
+      <PageHeader
+        title="Pakan Harian"
+        subtitle="Catatan pengambilan pakan"
+        icon={Leaf}
+        chips={[
+          {
+            key: "hariini",
+            label: "Hari ini",
+            value: `${todayTotal} keranjang`,
+            tone: todayTotal > 0 ? "good" : "warn",
+            title: todaySources.length > 0 ? todaySources.join(", ") : undefined,
+          },
+          ...(todaySources.length > 0
+            ? [{ key: "sumber", label: "Dari", value: todaySources.join(", ") }]
+            : []),
+        ]}
+        actions={
+          canManage && (
+            <Button onClick={() => setShowForm(true)} className="gap-2 bg-green-600 hover:bg-green-700">
+              <Plus className="w-4 h-4" /> Catat Pengambilan
+            </Button>
+          )
+        }
+      />
 
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">
@@ -99,7 +105,11 @@ export default function PakanHarianPage() {
         {isLoading ? (
           <div className="p-10 text-center text-sm text-muted-foreground">Memuat…</div>
         ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">Belum ada catatan</div>
+          <KeadaanKosong
+            gambar="kura"
+            judul="Belum ada catatan"
+            keterangan="Setiap keranjang pakan yang diambil dicatat di sini."
+          />
         ) : (
           <div className="divide-y">
             {filtered.map(l => {

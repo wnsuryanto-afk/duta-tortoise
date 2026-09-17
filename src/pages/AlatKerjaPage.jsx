@@ -18,6 +18,7 @@ import LoanForm from "@/components/tools/LoanForm";
 import ReturnDialog from "@/components/tools/ReturnDialog";
 import RequestForm from "@/components/tools/RequestForm";
 import RequestCard from "@/components/tools/RequestCard";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function AlatKerjaPage() {
   const { user, role } = useCurrentUser();
@@ -63,19 +64,15 @@ export default function AlatKerjaPage() {
 
   return (
     <div className="max-w-3xl space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Wrench className="w-6 h-6 text-primary" />
-          <div>
-            <h1 className="text-lg font-bold font-heading">🔧 Alat Kerja</h1>
-            <p className="text-xs text-muted-foreground">
-              {isKeeper ? "Pinjam, kembalikan, atau ajukan alat" : "Peminjaman & pengajuan alat"}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {isKeeper && (
+      {/* Tanpa chip angka: baris tab tepat di bawah kepala ini sudah memuat
+          angka yang sama — "Sedang Dipinjam (0)", "Pengajuan (0)". Menaruhnya
+          dua kali membuat orang mengira itu dua hal yang berbeda. */}
+      <PageHeader
+        title="Alat Kerja"
+        subtitle={isKeeper ? "Pinjam, kembalikan, atau ajukan alat" : "Peminjaman & pengajuan alat"}
+        icon={Wrench}
+        actions={
+          isKeeper && (
             <>
               <Button size="sm" className="gap-1.5" onClick={() => setShowLoan(true)}>
                 <Plus className="w-4 h-4" /> Pinjam
@@ -87,9 +84,9 @@ export default function AlatKerjaPage() {
                 <PackageX className="w-4 h-4" /> Ajukan
               </Button>
             </>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       {/* KEEPER VIEW */}
       {isKeeper && (

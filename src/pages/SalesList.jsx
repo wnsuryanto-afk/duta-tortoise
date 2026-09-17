@@ -233,12 +233,11 @@ export default function SalesList() {
         subtitle={`${enrichedSales.length} transaksi · Total Rp ${fmt(totalRevenue)}`}
         icon={DollarSign}
         art={<WalletArt size="md" />}
-        chips={[
-          { key: "bulan", icon: ShoppingBag, label: "Bulan ini", value: `${salesThisMonth.length} ekor` },
-          { key: "omzet", icon: DollarSign, label: "Omzet bulan ini", value: `Rp ${fmt(revenueThisMonth)}` },
-          { key: "followup", icon: Clock, label: "Perlu follow-up", value: salesAktif.length,
-            tone: salesAktif.length > 0 ? "warn" : "good" },
-        ]}
+        /* Tanpa chip angka. Keempat StatCard tepat di bawah kepala ini sudah
+           memuat ketiganya — "Bulan Ini" persis sama sampai ke omzetnya di
+           baris bawah kartu — dan jumlah yang perlu follow-up bahkan muncul
+           tiga kali: chip, kartu, dan lencana pada tab "Belum Lunas". Kartunya
+           yang bertahan karena ia juga membawa laba dan margin. */
         actions={
           <>
             <PageTooltip page="sales" />

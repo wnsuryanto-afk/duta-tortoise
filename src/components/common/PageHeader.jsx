@@ -99,7 +99,12 @@ export default function PageHeader({
           {children && <div className="mt-4">{children}</div>}
         </div>
 
-        <div className="flex flex-col items-stretch sm:items-end gap-3 sm:flex-shrink-0 order-first sm:order-none">
+        {/* Di ponsel kolom ini turun ke bawah judul, bukan naik ke atasnya.
+            Semula `order-first`, dengan maksud supaya tombolnya terlihat tanpa
+            menggulir — hasilnya tombol "Buat Tugas" melayang di atas nama
+            halaman, dan orang membaca perintah sebelum tahu sedang di mana.
+            Kepala ini sudah muat satu layar; tombolnya tetap terlihat. */}
+        <div className="flex flex-col items-stretch sm:items-end gap-3 sm:flex-shrink-0">
           {actions && (
             <div className="flex items-center gap-2 flex-wrap sm:justify-end">
               {actions}
