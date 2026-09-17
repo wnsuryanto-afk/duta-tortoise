@@ -343,38 +343,22 @@ export default function TugasHariIni({ user, showTeamView = false }) {
                 : `Timbang & ukur ${tor.code} (${tor.enclosure})`,
               waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
               icon: "⚖️",
-              keterangan: tor.species || "",
-              points: t.points || 0,
-              badge: "Rutin baby",
-              badgeColor: "bg-pink-100 text-pink-700",
-              isUkurRotasi: true,
-              tortoiseId: tor.id,
-              tortoiseCode: tor.code,
-              tortoiseName: tor.name,
-              tortoiseEnclosure: tor.enclosure,
-              terlambat,
-            });
-          });
-          (rotasiUkur.dewasa || []).forEach(tor => {
-            items.push({
-              id: `ukur_rotasi_${tor.id}`,
-              label: `Timbang & ukur ${tor.code} (${tor.enclosure})`,
-              waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
-              icon: "⚖️",
               /*
                * Alasannya ditampilkan, bukan hanya nama kuranya.
                *
-               * Sejak rotasi diganti pemicu (17-09-2026), kura dewasa hanya
-               * muncul kalau ADA sebabnya. "Tidak makan sejak 14 Sep" membuat
-               * kiper tahu apa yang dia kerjakan dan kenapa hari ini; "Ukur
-               * Rotasi" tidak mengatakan apa-apa dan mudah dilewati.
+               * Sejak rotasi diganti pemicu (17-09-2026), kura hanya muncul
+               * kalau ADA sebabnya. "Tidak makan sejak 14 Sep" membuat kiper
+               * tahu apa yang dia kerjakan dan kenapa hari ini; "Ukur Rotasi"
+               * tidak mengatakan apa-apa dan mudah dilewati.
                */
               keterangan: tor.alasanTeks || tor.species || "",
               points: t.points || 0,
-              badge: tor.alasan === "tidak_makan" ? "Tidak makan" : "Sedang diobati",
-              badgeColor: tor.alasan === "tidak_makan"
-                ? "bg-amber-100 text-amber-800"
-                : "bg-red-100 text-red-700",
+              badge: tor.alasan === "tidak_makan" ? "Tidak makan"
+                : tor.alasan === "sedang_diobati" ? "Sedang diobati"
+                : "Rutin baby",
+              badgeColor: tor.alasan === "tidak_makan" ? "bg-amber-100 text-amber-800"
+                : tor.alasan === "sedang_diobati" ? "bg-red-100 text-red-700"
+                : "bg-pink-100 text-pink-700",
               isUkurRotasi: true,
               tortoiseId: tor.id,
               tortoiseCode: tor.code,
