@@ -417,7 +417,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // Pengingat timbang yang berdiri sendiri di sini DIHAPUS.
   //
   // Layar ini sudah memunculkan tugas timbang dari task SOP "Timbang & ukur
-  // kura (ROTASI OTOMATIS - 2 kura/hari)", yang isinya datang dari fungsi
+  // kura yang ada alasannya (ROTASI OTOMATIS)", yang isinya datang dari fungsi
   // getRotasiUkur — satu-satunya tempat yang benar-benar memutuskan kura mana
   // ditimbang hari ini. Blok lama di sini menghitungnya SEKALI LAGI dengan
   // aturan sendiri (ambang berbeda, sumber tanggal berbeda), sehingga satu

@@ -41,8 +41,8 @@ export default function KeeperAttentionWidget() {
   // Sebelumnya widget ini menghitung sendiri dengan aturannya sendiri (ambang
   // > interval, hanya membaca last_weighed_date yang kosong pada 93 dari 120
   // kura dewasa), sementara daftar tugas memakai getRotasiUkur (ambang per
-  // kelompok 14/60 hari, membaca MeasurementHistory). Dua layar menyuruh
-  // menimbang kura yang berbeda pada hari yang sama.
+  // kelompok, membaca MeasurementHistory). Dua layar menyuruh menimbang kura
+  // yang berbeda pada hari yang sama.
   const notWeighed = (rotasi || []).slice(0, 3);
 
   // 3. Pengingat perawatan yang sudah lewat jatuh tempo.
