@@ -1,4 +1,6 @@
-// Wrapper tipis yang re-use PelletRecipePage content (tanpa header/breadcrumb)
+// Tab Resep pada halaman Stok. Dulu berupa wrapper tipis untuk
+// PelletRecipePage; halaman itu sudah dihapus 17-09-2026 karena salinannya
+// mengurangi stok tanpa StockMovement dan tanpa menurunkan sisa batch.
 // Ini re-render konten resep & produksi langsung di dalam tab
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

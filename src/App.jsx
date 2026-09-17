@@ -12,7 +12,6 @@ import BreederRankingPage from '@/pages/BreederRankingPage';
 import StockPredictionPage from '@/pages/StockPredictionPage';
 import PettyCashPage from '@/pages/PettyCashPage';
 import SupplierPage from '@/pages/SupplierPage';
-import PelletRecipePage from '@/pages/PelletRecipePage';
 import OperationalCostsPage from '@/pages/OperationalCostsPage';
 import SalarySlipPage from '@/pages/SalarySlipPage';
 import IncubatorReadingPage from '@/pages/IncubatorReadingPage';
@@ -153,7 +152,23 @@ const AuthenticatedApp = () => {
         <Route path="/stock-prediction" element={<Navigate to="/pembelian" replace />} />
         <Route path="/petty-cash" element={<PettyCashPage />} />
         <Route path="/supplier" element={<SupplierPage />} />
-        <Route path="/pellet-recipe" element={<PelletRecipePage />} />
+        {/*
+          * /pellet-recipe dihapus 17-09-2026, dialihkan seperti /warehouse dan
+          * /feed-stock sebelumnya.
+          *
+          * Halaman itu SALINAN KEDUA dari tab Resep di halaman stok, dan
+          * salinan yang lebih buruk: ia mengurangi stok bahan tanpa menulis
+          * StockMovement sama sekali dan tanpa menurunkan sisa batch. Artinya
+          * produksi pelet lewat halaman itu memakai bahan secara tak terlihat —
+          * tidak masuk perkiraan pemakaian, tidak bisa dibatalkan, tidak ada
+          * jejaknya. Tab Resep melakukan ketiganya dengan benar.
+          *
+          * Tidak ada satu pun tautan di aplikasi menuju ke sana, jadi yang
+          * tersisa hanya orang yang menyimpan URL-nya — dan merekalah yang
+          * justru memakai versi yang rusak. Belum ada kerusakan data: nol
+          * produksi pelet pernah tercatat.
+          */}
+        <Route path="/pellet-recipe" element={<Navigate to="/stok-unified" replace />} />
         <Route path="/operational-costs" element={<OperationalCostsPage />} />
         <Route path="/salary-slip" element={<SalarySlipPage />} />
         <Route path="/approval-poin" element={<ApprovalPoinPage />} />
