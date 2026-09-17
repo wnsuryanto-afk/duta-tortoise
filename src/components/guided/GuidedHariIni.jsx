@@ -2,6 +2,7 @@ import { catatLogSekali } from "@/lib/logSekali";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { catatTidakMakan } from "@/lib/laporMakan";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
@@ -1314,6 +1315,60 @@ export default function GuidedHariIni({ user }) {
                 <button
                   onClick={() => { setShowSakitForm(true); setSavedSakit(null); }}
                   className="w-full text-sm text-red-600 border border-red-200 rounded-xl py-2 hover:bg-red-50"
+                >
+                  + Lapor kura lain
+                </button>
+              </div>
+            )}
+
+            {/* Form "tidak makan" — sengaja jauh lebih ringan dari form sakit:
+                satu pilihan kura, satu catatan opsional. Tidak ada diagnosis,
+                tidak ada tingkat keparahan. Beratlah yang akan menjawabnya. */}
+            {showMakanForm && (
+              <div className="mt-4 space-y-3 p-4 bg-card rounded-2xl border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-foreground text-sm">Kura Tidak Makan</p>
+                  <button onClick={() => setShowMakanForm(false)} aria-label="Tutup">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <TortoiseSearchSelect
+                  tortoises={tortoises}
+                  loading={tortoisesLoading}
+                  error={tortoisesError}
+                  onRetry={refetchTortoises}
+                  value={makanKura}
+                  onChange={(id) => setMakanKura(id)}
+                  placeholder="Pilih kura"
+                />
+                <input
+                  value={makanCatatan}
+                  onChange={(e) => setMakanCatatan(e.target.value)}
+                  placeholder="Catatan (opsional) — cth: pakan pagi utuh"
+                  className="w-full text-sm px-3 py-2 rounded-xl border border-border bg-background"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Kura ini akan muncul di daftar timbang. Berat adalah tanda paling awal,
+                  jauh sebelum kura terlihat sakit.
+                </p>
+                <button
+                  onClick={handleLaporTidakMakan}
+                  disabled={loading || !makanKura}
+                  className="w-full bg-amber-600 text-white font-semibold rounded-xl py-2.5 text-sm disabled:opacity-50 hover:bg-amber-700"
+                >
+                  Catat tidak makan
+                </button>
+              </div>
+            )}
+
+            {makanReports.length > 0 && !showMakanForm && (
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <p className="text-xs text-amber-900">
+                  Dicatat tidak makan: <strong>{makanReports.join(", ")}</strong> — sudah masuk daftar timbang.
+                </p>
+                <button
+                  onClick={() => setShowMakanForm(true)}
+                  className="mt-2 w-full text-sm text-amber-700 border border-amber-300 rounded-xl py-2 hover:bg-amber-100"
                 >
                   + Lapor kura lain
                 </button>
