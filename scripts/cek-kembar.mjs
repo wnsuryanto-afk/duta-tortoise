@@ -21,6 +21,7 @@ const PASANGAN = [
   ["src/lib/laporan.js",       "base44/shared/laporan.ts",       ["masukLaporan"]],
   ["src/lib/populasiKura.js",  "base44/shared/kura.ts",          ["diPeternakan"]],
   ["src/lib/breedingUtils.js", "base44/shared/kura.ts",          ["clutchAktif"]],
+  ["src/lib/jadwalTimbang.js",  "base44/shared/timbang.ts",       ["selisihHari", "golonganRutin", "alasanTimbang", "laporanTerbukaPerKura", "perluDitimbang"]],
   ["src/lib/daftarBelanja.js", "base44/shared/daftarBelanja.ts", ["penandaBaris", "penandaBarang", "penandaMenunggu", "sudahDidaftar", "barisDariBarang", "prioritasDariBarang"]],
 ];
 
