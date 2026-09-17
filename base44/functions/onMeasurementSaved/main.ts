@@ -88,10 +88,29 @@ Deno.serve(async (req) => {
         (m: any) => m?.date === tanggal && masukLaporan(m),
       );
       if (sehari.length > 1) {
+        /*
+         * Nilai sebuah baris = seberapa banyak yang bisa dipercaya darinya.
+         *
+         * Butir terakhir — "berat bukan kelipatan kilogram bulat" — bukan
+         * selera. Sejak Mei 2026, DUA PULUH dari dua puluh penimbangan dewasa
+         * oleh salah satu kiper berakhir tepat di 000 gram (25.000, 28.000,
+         * 31.000, 37.000, …), sementara kiper lain mencatat sampai ratusan
+         * gram (22.800, 25.500, 20.700). Dua puluh dari dua puluh bukan
+         * kebetulan: satu orang membulatkan ke kilogram penuh.
+         *
+         * Pembulatan sampai 900 gram pada kura 20 kg adalah 4,5% — tepat di
+         * bawah ambang peringatan turun berat 5%. Jadi saat dua baris sama
+         * lengkapnya, yang ber-resolusi lebih halus yang dipakai.
+         */
+        const bulatKilo = (m: any) => {
+          const g = angka(m?.weight_grams);
+          return g >= 5000 && g % 1000 === 0;
+        };
         const nilai = (m: any) =>
-          (m?.photo_url ? 4 : 0) +
-          (angka(m?.weight_grams) > 0 ? 2 : 0) +
-          (angka(m?.shell_length_cm) > 0 ? 1 : 0);
+          (m?.photo_url ? 8 : 0) +
+          (angka(m?.weight_grams) > 0 ? 4 : 0) +
+          (angka(m?.shell_length_cm) > 0 ? 2 : 0) +
+          (bulatKilo(m) ? 0 : 1);
         const urut = sehari.slice().sort((a: any, b: any) => {
           const d = nilai(b) - nilai(a);
           if (d !== 0) return d;
