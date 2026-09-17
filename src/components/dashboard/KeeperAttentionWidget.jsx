@@ -17,7 +17,7 @@ export default function KeeperAttentionWidget() {
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {
       const res = await base44.functions.invoke("getRotasiUkur", { date: today });
-      return { babies: res.data?.babies || [], dewasa: res.data?.dewasa || [] };
+      return res.data?.perlu || [];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -43,7 +43,7 @@ export default function KeeperAttentionWidget() {
   // kura dewasa), sementara daftar tugas memakai getRotasiUkur (ambang per
   // kelompok 14/60 hari, membaca MeasurementHistory). Dua layar menyuruh
   // menimbang kura yang berbeda pada hari yang sama.
-  const notWeighed = [...(rotasi.dewasa || []), ...(rotasi.babies || [])].slice(0, 3);
+  const notWeighed = (rotasi || []).slice(0, 3);
 
   // 3. Pengingat perawatan yang sudah lewat jatuh tempo.
   //
