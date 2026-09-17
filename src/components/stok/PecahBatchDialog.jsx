@@ -8,7 +8,7 @@ import { Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { kodeBatch } from "@/lib/pemakaianBarang";
-import { BATAS_AMBIL } from "@/lib/batas";
+import { BATAS_AMBIL } from "@/api/base44Client";
 
 /**
  * PecahBatchDialog — bagi stok yang SUDAH ADA di rak menjadi beberapa batch,

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode } from "lucide-react";
+import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode, Split } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
 import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
@@ -18,6 +18,7 @@ import { statusStok, URUTAN_STATUS, stokHabis } from "@/lib/stokMenipis";
 // supaya penggabungan tidak menghilangkan kemampuan: saringan kelengkapan data,
 // generate SKU massal, dan pemindai QR untuk menemukan barang dari label cetak.
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
+import PecahBatchDialog from "@/components/stok/PecahBatchDialog";
 import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import { toast } from "sonner";
@@ -56,8 +57,22 @@ const LABEL_KATEGORI = {
 };
 
 // ── Expired Date Badge ─────────────────────────────────────────────────
-function ExpiredBadge({ date, item, onSetExpired }) {
+function ExpiredBadge({ date, item, onSetExpired, onPecah }) {
   if (!["obat", "vitamin", "suplemen"].includes(item._cat)) return null;
+  /*
+   * Tombol pecah muncul begitu barang punya stok — bukan hanya saat tanggalnya
+   * sudah diisi. Justru barang dengan dua kiriman berbeda sering hanya punya
+   * satu tanggal tercatat, dan yang hilang adalah yang lebih tua.
+   */
+  const pecah = onPecah && (Number(item.current_stock) || 0) > 0
+    ? (
+      <button onClick={() => onPecah(item)} title="Pecah jadi beberapa batch (tanggal berbeda)"
+        aria-label={`Pecah ${item.name} jadi beberapa batch`}
+        className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border hover:bg-gray-200 transition-colors whitespace-nowrap">
+        ⑂ Pecah
+      </button>
+    )
+    : null;
   if (!date) {
     return (
       <button onClick={() => onSetExpired(item)} title="Set tanggal kadaluarsa"
@@ -67,9 +82,11 @@ function ExpiredBadge({ date, item, onSetExpired }) {
     );
   }
   const days = differenceInDays(parseISO(date), new Date());
-  if (days < 0) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold border border-red-200">🔴 Expired!</span>;
-  if (days <= 30) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 font-semibold border border-yellow-200">🟡 {days}h lagi</span>;
-  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">🟢 {format(parseISO(date), "MMM yy")}</span>;
+  const lencana =
+    days < 0 ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold border border-red-200">🔴 Expired!</span>
+    : days <= 30 ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 font-semibold border border-yellow-200">🟡 {days}h lagi</span>
+    : <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">🟢 {format(parseISO(date), "MMM yy")}</span>;
+  return <span className="inline-flex items-center gap-1 flex-wrap">{lencana}{pecah}</span>;
 }
 
 // ── Photo Thumbnail ────────────────────────────────────────────────────
@@ -845,7 +862,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
                     </td>
                     {/* Expired */}
                     <td className="px-4 py-2.5">
-                      <ExpiredBadge date={item.expired_date} item={item} onSetExpired={i => setExpiredItem(i)} />
+                      <ExpiredBadge date={item.expired_date} item={item} onSetExpired={i => setExpiredItem(i)} onPecah={canEdit ? (i => setPecahItem(i)) : undefined} />
                     </td>
                     {/* Status */}
                     <td className="px-4 py-2.5"><StockStatusBadge item={item} /></td>
