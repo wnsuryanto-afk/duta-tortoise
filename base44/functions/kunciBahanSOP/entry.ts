@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole, potongRapi } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
         await notifSekali(base44, {
           recipient_email: email,
           title: `${terkunci.length} SOP terhenti karena bahan habis`,
-          message: isi.slice(0, 900),
+          message: potongRapi(isi, 900),
           type: "alert",
           priority: "tinggi",
           category: "stok",
