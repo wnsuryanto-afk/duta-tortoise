@@ -39,6 +39,11 @@ const DIKECUALIKAN = {
   "src/components/stok/StokInventoryTab.jsx":
     "Menyimpan formulir edit barang (stok diketik langsung, bukan dikurangi " +
     "pemakaian). Tombol +/- di berkas yang sama SUDAH memanggil potongBatchGudang.",
+  "src/components/stok/AmbilBarangScan.jsx":
+    "Memotong batch TERTENTU, bukan FEFO — dan itu benar: kiper memindai label " +
+    "batch fisik yang ada di tangannya, jadi yang berkurang harus batch itu, " +
+    "bukan yang paling cepat kedaluwarsa. Pemotongannya ada (BatchBarang.update " +
+    "pada batch hasil pindaian); yang tidak dipakai hanya perencana FEFO-nya.",
   "src/components/stok/PecahBatchDialog.jsx":
     "Membuat batch, bukan memakai barang. Hanya menyentuh expired_date.",
   "src/pages/PembelianPage.jsx":
