@@ -196,18 +196,15 @@ export function kodeBatch(sku, tanggalYymmdd, kodeTerpakai = []) {
  * Ada DUA jalur yang mengeluarkan barang, dan sampai sekarang keduanya tidak
  * melakukan hal yang sama:
  *
- *   AmbilBarangScan  → WarehouseItem.current_stock ✓  StockMovement ✓  BatchBarang.jumlah_sisa ✓
- *   HealthForm       → WarehouseItem.current_stock ✓  StockMovement ✓  BatchBarang.jumlah_sisa ✗
+ * Per 17-09-2026 keempat jalur pengurangan stok gudang sudah menurunkan sisa
+ * batch: Ambil Barang (batch hasil pindaian), formulir kesehatan, tombol +/-
+ * di halaman stok, dan produksi racikan. Yang menjaganya tetap begitu adalah
+ * scripts/cek-batch.mjs, bukan ingatan.
  *
- * Jadi mengobati seekor kura lewat formulir kesehatan menurunkan stok gudang
- * tanpa menurunkan sisa batch mana pun. Total gudang dan jumlah sisa seluruh
- * batch perlahan berpisah, dan yang membaca angka batch — peringatan
- * kedaluwarsa, dasbor admin, cetak label — akan menunjukkan barang yang
- * sebenarnya sudah habis dipakai.
- *
- * Belum ada kerusakan pada data sekarang: seluruh 23 batch masih utuh karena
- * belum satu pun pengobatan dicatat lewat jalur itu. Pemotongan pertama lewat
- * formulir kesehatan-lah yang akan memulai selisihnya.
+ * Kalau salah satu lupa, total gudang dan jumlah sisa seluruh batch berpisah
+ * pelan-pelan tanpa error apa pun — dan yang membaca angka batch (peringatan
+ * kedaluwarsa, urutan FEFO, cetak label) menunjuk barang yang sebenarnya
+ * sudah habis dipakai.
  *
  * Urutannya FEFO — yang paling cepat kedaluwarsa dipakai lebih dulu; batch
  * tanpa tanggal kedaluwarsa dipakai terakhir, karena ia tidak mendesak.
