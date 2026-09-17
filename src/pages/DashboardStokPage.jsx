@@ -40,9 +40,18 @@ export default function DashboardStokPage() {
     queryFn: () => base44.entities.WarehouseItem.list("-name", 300),
   });
 
-  const { data: feedingLogs = [] } = useQuery({
-    queryKey: ["feeding-logs"],
-    queryFn: () => base44.entities.FeedingLog.list("-date", 200),
+  // Pemakaian pakan dibaca dari StockMovement, bukan FeedingLog.
+  //
+  // FeedingLog adalah entitas mati: tidak ada satu pun kode di seluruh aplikasi
+  // — peramban maupun server — yang pernah menulisnya. Layar ini satu-satunya
+  // yang membacanya, jadi panel "Pemakaian vs Ideal" selalu menunjukkan nol
+  // pemakaian, dan setiap pakan tampak kekurangan 100% selamanya.
+  //
+  // Pencatatan pemakaian yang sesungguhnya ada di StockMovement, ditulis oleh
+  // potongStokPakan dengan keperluan pemberian pakan.
+  const { data: pergerakanStok = [] } = useQuery({
+    queryKey: ["stock-movements-pakan"],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
   });
 
   const { data: financeTx = [] } = useQuery({
@@ -70,21 +79,33 @@ export default function DashboardStokPage() {
     .sort((a, b) => a._daysLeft - b._daysLeft);
 
   // ─── C. Pemakaian Pakan vs Ideal bulan ini ───────────
-  const monthLogs = feedingLogs.filter(l => l.date && l.date.startsWith(currentMonth));
+  const KEPERLUAN_PAKAN = ["pemberian_pakan", "pakan_pagi", "pakan_siang", "pakan_iguana", "pakan_baby"];
   const feedUsageMap = {};
-  monthLogs.forEach(log => {
-    (log.feed_items || []).forEach(item => {
-      feedUsageMap[item.feedstock_id] = (feedUsageMap[item.feedstock_id] || 0) + (item.quantity || 0);
-    });
+  pergerakanStok.forEach((m) => {
+    if (m.item_type !== "feedstock" || m.type !== "keluar") return;
+    if (!String(m.date || "").startsWith(currentMonth)) return;
+    if (m.is_test_data || m.excluded_from_reports) return;
+    if (m.keperluan && !KEPERLUAN_PAKAN.includes(m.keperluan)) return;
+    feedUsageMap[m.item_id] = (feedUsageMap[m.item_id] || 0) + Number(m.quantity || 0);
   });
+
+  // Pakan yang belum pernah tercatat keluar sama sekali dibedakan dari pakan
+  // yang tercatat sedikit. Nol pemakaian pada pakan yang jelas dipakai setiap
+  // hari berarti pencatatannya yang belum jalan, bukan kuranya yang tidak
+  // makan — dan dua hal itu tidak boleh terlihat sama di layar.
   const feedComparison = feedstocks
     .filter(f => f.daily_ideal > 0)
-    .map(f => ({
-      ...f,
-      used: feedUsageMap[f.id] || 0,
-      ideal: f.daily_ideal * daysInMonth,
-      pct: Math.min(100, Math.round(((feedUsageMap[f.id] || 0) / (f.daily_ideal * daysInMonth)) * 100)),
-    }))
+    .map(f => {
+      const used = feedUsageMap[f.id] || 0;
+      const ideal = f.daily_ideal * daysInMonth;
+      return {
+        ...f,
+        used,
+        ideal,
+        belumTercatat: used === 0,
+        pct: ideal > 0 ? Math.min(100, Math.round((used / ideal) * 100)) : 0,
+      };
+    })
     .sort((a, b) => a.pct - b.pct);
 
   // ─── D. Total Nilai Stok ──────────────────────────────
@@ -220,13 +241,15 @@ export default function DashboardStokPage() {
                 <div className="flex justify-between items-center mb-1">
                   <p className="text-sm font-medium">{f.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {f.used} / {f.ideal.toFixed(1)} {f.unit} ({f.pct}%)
+                    {f.belumTercatat
+                      ? `belum ada pemakaian tercatat · ideal ${f.ideal.toFixed(1)} ${f.unit}`
+                      : `${f.used} / ${f.ideal.toFixed(1)} ${f.unit} (${f.pct}%)`}
                   </p>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${f.pct >= 90 ? "bg-green-500" : f.pct >= 60 ? "bg-yellow-400" : "bg-red-400"}`}
-                    style={{ width: `${f.pct}%` }}
+                    className={`h-full rounded-full transition-all ${f.belumTercatat ? "bg-muted-foreground/30" : f.pct >= 90 ? "bg-green-500" : f.pct >= 60 ? "bg-yellow-400" : "bg-red-400"}`}
+                    style={{ width: f.belumTercatat ? "100%" : `${f.pct}%` }}
                   />
                 </div>
               </div>
