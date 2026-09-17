@@ -8,6 +8,9 @@ import TugasHariIni from "@/components/sop/TugasHariIni";
 import SOPApproval from "@/components/sop/SOPApproval";
 import SOPTaskManager from "@/components/sop/SOPTaskManager";
 import SOPKPI from "@/components/sop/SOPKPI";
+import PageHeader from "@/components/common/PageHeader";
+import { ClipboardList } from "lucide-react";
+import { TeamArt } from "@/components/common/Illustration";
 
 export default function SOPPage() {
   const { user, role } = useCurrentUser();
@@ -17,10 +20,15 @@ export default function SOPPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-heading font-bold">SOP Harian & KPI</h1>
-        <p className="text-muted-foreground mt-1">Jadwal kerja harian, checklist tugas, poin, dan bonus karyawan</p>
-      </div>
+      {/* Layar yang paling sering dibuka di aplikasi ini. Judul `text-3xl`
+          dengan anak kalimat dua baris memakan 100px pertama tiap kali
+          dibuka — padahal yang dicari orang ada di tab pertama. */}
+      <PageHeader
+        title="SOP Harian & KPI"
+        subtitle="Tugas harian, poin, dan bonus"
+        icon={ClipboardList}
+        art={<TeamArt size="md" />}
+      />
 
       <Tabs defaultValue="tugas">
         <TabsList className="flex-wrap h-auto gap-1">

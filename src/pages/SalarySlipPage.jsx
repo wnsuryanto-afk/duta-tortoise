@@ -18,6 +18,9 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 import AlurGaji from "@/components/salary/AlurGaji";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
+import PageHeader from "@/components/common/PageHeader";
+import { WalletArt } from "@/components/common/Illustration";
+import { Receipt } from "lucide-react";
 
 const statusConfig = {
   draft:    { label: "Draft",     color: "bg-muted text-foreground" },
@@ -98,14 +101,23 @@ export default function SalarySlipPage() {
   return (
     <div className="space-y-6">
       <AlurGaji aktif="slip" />
-      <div>
-        <h1 className="text-3xl font-heading font-bold">Slip Gaji Rutin</h1>
-        <p className="text-muted-foreground mt-1">
-          {mode === "weekly"
-            ? "Gaji mingguan karyawan harian (Keeper & Kepala Feeder) — siklus Minggu–Sabtu · klik \"Lihat\" untuk detail, approve & cetak"
-            : "Histori slip gaji bulanan karyawan termasuk bonus poin KPI · klik \"Lihat\" untuk detail & cetak"}
-        </p>
-      </div>
+      {/* Anak kalimat lamanya 121 huruf karena menggabungkan tiga hal: siapa
+          yang digaji, siklusnya, dan cara memakai layarnya. Yang ketiga tidak
+          perlu ditulis — tombol "Lihat" sudah ada di tiap baris. */}
+      <PageHeader
+        title="Slip Gaji Rutin"
+        subtitle={
+          mode === "weekly"
+            ? "Keeper & Kepala Feeder · siklus Minggu–Sabtu"
+            : "Rekap bulanan, termasuk bonus poin KPI"
+        }
+        icon={Receipt}
+        art={<WalletArt size="md" />}
+        chips={[
+          { key: "belum", label: "Belum dibayar", value: fmt(totalPending), tone: totalPending > 0 ? "warn" : "good" },
+          { key: "lunas", label: "Sudah dibayar", value: fmt(totalPaid) },
+        ]}
+      />
 
       {/* Mode toggle */}
       <div className="flex gap-2">

@@ -31,6 +31,7 @@ import UkurFormDialog from "./UkurFormDialog";
 import TimbangBabyDialog from "./TimbangBabyDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 import { pisahJudulTugas } from "@/lib/judulTugas";
+import InfoHint from "@/components/ui/info-hint";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
@@ -796,12 +797,26 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       <div className="bg-card rounded-2xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between mb-2">
           <div>
+            {/* Tiga aturan pemakaian ini dulunya satu baris 105 huruf di KAKI
+                halaman — di bawah seluruh daftar tugas, tempat yang hanya
+                terlihat kalau sudah digulir sampai habis, dan isinya cuma
+                berguna sekali seumur hidup. Kata-katanya utuh, hanya pindah
+                ke tanda tanya di sebelah judul. */}
             <p className="font-bold text-foreground">📋 Tugas Hari Ini — {isMinggu ? "Minggu" : "Senin–Sabtu"}</p>
-            <p className="text-xs text-muted-foreground capitalize">{todayLabel}</p>
+            {/* Tanda tanyanya menempel pada baris TANGGAL, bukan pada judul:
+                di 390px judulnya sudah pas satu baris, dan menambah ikon di
+                sana membuatnya melipat dua. Barisnya sama-sama terlihat. */}
+            <p className="text-xs text-muted-foreground capitalize flex items-center gap-1.5">
+              {todayLabel}
+              <InfoHint>
+                Centang tiap kegiatan setelah selesai, dan lampirkan foto
+                dokumentasinya. Daftar ini mengatur ulang dirinya setiap hari baru.
+              </InfoHint>
+            </p>
           </div>
-          <div className="text-right">
+          <div className="text-right flex-shrink-0">
             <p className="text-2xl font-bold text-green-700">{progressPct}%</p>
-            <p className="text-xs text-muted-foreground">{doneProgress}/{totalProgress} selesai</p>
+            <p className="text-xs text-muted-foreground whitespace-nowrap">{doneProgress}/{totalProgress} selesai</p>
             <p className="text-xs font-bold text-amber-600 flex items-center gap-0.5 justify-end mt-0.5">
               <Star className="w-3 h-3 fill-current" />{myLogs.reduce((s, l) => s + (l.poin_earned || 0), 0)} poin
             </p>
@@ -951,11 +966,6 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           ))}
         </div>
       )}
-
-      {/* Footer */}
-      <div className="rounded-2xl border border-gray-100 bg-card shadow-sm p-3 text-xs text-muted-foreground text-center">
-        ✅ Centang tiap kegiatan setelah selesai · 📷 Lampirkan foto dokumentasi · Reset otomatis setiap hari baru
-      </div>
 
       <ExtraTaskForm
         open={showExtraForm}

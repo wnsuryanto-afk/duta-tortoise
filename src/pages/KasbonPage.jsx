@@ -18,6 +18,8 @@ import { id } from "date-fns/locale";
 import KasbonForm from "@/components/kasbon/KasbonForm";
 import KasbonCard from "@/components/kasbon/KasbonCard";
 import DeductionDialog from "@/components/kasbon/DeductionDialog";
+import PageHeader from "@/components/common/PageHeader";
+import { WalletArt } from "@/components/common/Illustration";
 
 const MAX_KASBON = 1000000;
 const WEEKLY_DEDUCTION = 100000;
@@ -156,14 +158,13 @@ export default function KasbonPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Kasbon Karyawan</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isAdmin ? "Kelola kasbon semua karyawan" : "Riwayat kasbon Anda"}
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title="Kasbon Karyawan"
+        subtitle={isAdmin ? "Kelola kasbon semua karyawan" : "Riwayat kasbon Anda"}
+        icon={Wallet}
+        art={<WalletArt size="md" />}
+        actions={
+          <>
           {isAdmin && (
             <Button onClick={() => setShowAdminForm(true)} className="gap-2">
               <Plus className="w-4 h-4" /> Kasbon Baru
@@ -174,8 +175,9 @@ export default function KasbonPage() {
               <Plus className="w-4 h-4" /> Ajukan Kasbon
             </Button>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Stats */}
       {isAdmin ? (
