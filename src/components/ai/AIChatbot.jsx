@@ -1,6 +1,9 @@
 import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { perluDitimbang } from "@/lib/jadwalTimbang";
+import { ambilLaporanMakan, hariIniWIB } from "@/lib/laporMakan";
+import { diPeternakan } from "@/lib/populasiKura";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Bot, User } from "lucide-react";
@@ -8,7 +11,7 @@ import useCurrentUser from "@/lib/useCurrentUser";
 import { perluDiperhatikan } from "@/lib/stokMenipis";
 
 const QUICK_REPLIES = [
-  "Kura-kura belum ditimbang minggu ini?",
+  "Kura mana yang perlu ditimbang hari ini?",
   "Stok apa yang hampir habis?",
   "Omzet bulan ini berapa?",
   "Pasangan breeding paling produktif?",
@@ -20,10 +23,31 @@ async function fetchContext(message) {
   const parts = [];
 
   if (lower.includes("timbang") || lower.includes("berat")) {
-    const tortoises = await base44.entities.Tortoise.list();
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    const stale = tortoises.filter(t => t.status === "aktif" && (!t.updated_date || new Date(t.updated_date) < cutoff));
-    parts.push(`Kura-kura belum ditimbang >30 hari (${stale.length}): ${stale.slice(0,5).map(t => t.name).join(", ")}${stale.length > 5 ? "..." : ""}`);
+    /*
+     * Dua cacat sekaligus diperbaiki di sini (17-09-2026).
+     *
+     * Pertama, jawaban lama memakai `updated_date` untuk menebak kapan kura
+     * terakhir ditimbang. Kolom itu berubah setiap kali baris kura disentuh
+     * karena apa pun — ganti kandang, perbaiki nama — jadi jawabannya tidak
+     * pernah benar.
+     *
+     * Kedua, pertanyaannya sendiri sudah usang. Sejak rotasi diganti pemicu,
+     * "belum ditimbang 30 hari" bukan lagi masalah: 44 kura dewasa sehat
+     * memang tidak akan ditimbang. Yang berguna dijawab adalah siapa yang
+     * ADA alasannya hari ini.
+     */
+    const [tortoises, laporan] = await Promise.all([
+      base44.entities.Tortoise.list("name", 2000),
+      ambilLaporanMakan(),
+    ]);
+    const perlu = perluDitimbang((tortoises || []).filter(diPeternakan), laporan, hariIniWIB());
+    parts.push(
+      perlu.length === 0
+        ? "Tidak ada kura yang perlu ditimbang hari ini. Sejak 17-09-2026 kura ditimbang hanya kalau ada alasannya: dilaporkan tidak makan, sedang diobati, atau baby yang jatuh tempo rutin 14 hari."
+        : `Perlu ditimbang hari ini (${perlu.length}): ` +
+          perlu.slice(0, 5).map((d) => `${d.kura.code || d.kura.name} — ${d.teks}`).join("; ") +
+          (perlu.length > 5 ? `; +${perlu.length - 5} lagi` : ""),
+    );
   }
   if (lower.includes("stok") || lower.includes("gudang") || lower.includes("habis")) {
     const items = await base44.entities.WarehouseItem.list();
