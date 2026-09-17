@@ -30,6 +30,7 @@ import PhotoPreviewModal from "./PhotoPreviewModal";
 import UkurFormDialog from "./UkurFormDialog";
 import TimbangBabyDialog from "./TimbangBabyDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
+import { pisahJudulTugas } from "@/lib/judulTugas";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
@@ -1109,9 +1110,21 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <p className={`text-sm font-semibold ${isChecked || isLocked ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.label}</p>
+            {/* Pekerjaannya besar, keterangannya kecil di bawah.
+
+                Judul tugas di sini menampung tiga hal sekaligus — pekerjaan,
+                jadwal, dan peringatan: "Mandikan kura + cek (1 hari 1 kandang,
+                BERGILIR)". Diukur pada 37 tugas aktif, 30 di antaranya melipat
+                lebih dari satu baris di lebar ponsel. Tidak ada kata yang
+                dibuang; yang berubah hanya di mana ia diletakkan. */}
+            <p className={`text-sm font-semibold ${isChecked || isLocked ? "line-through text-muted-foreground" : "text-foreground"}`}>{pisahJudulTugas(task.label).pokok}</p>
             {requirePhoto && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex-shrink-0">📷 Wajib Foto</span>
+            )}
+            {pisahJudulTugas(task.label).catatan && (
+              <p className="basis-full text-[11px] leading-snug text-muted-foreground">
+                {pisahJudulTugas(task.label).catatan}
+              </p>
             )}
             {task.terlambat && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white flex-shrink-0 animate-pulse">⏰ Terlambat</span>

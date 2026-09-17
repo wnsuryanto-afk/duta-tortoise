@@ -14,6 +14,7 @@ import { id } from "date-fns/locale";
 import PhotoUploadWithWatermark from "./PhotoUploadWithWatermark";
 import SOPVideoTask from "./SOPVideoTask";
 import { useTestMode } from "@/lib/useTestMode";
+import { pisahJudulTugas } from "@/lib/judulTugas";
 
 const categoryColors = {
   pakan: "bg-green-100 text-green-700",
@@ -287,7 +288,7 @@ export default function SOPChecklist() {
                     />
                     <label htmlFor={task.id} className="flex-1 cursor-pointer">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-sm font-medium">{task.title}</span>
+                        <span className="text-sm font-medium">{pisahJudulTugas(task.title).pokok}</span>
                         <div className="flex items-center gap-1.5">
                           {task.deadline_time && (
                             <span className={`text-[11px] flex items-center gap-0.5 ${isDeadlinePassed(task) ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
@@ -300,6 +301,11 @@ export default function SOPChecklist() {
                           </Badge>
                         </div>
                       </div>
+                      {pisahJudulTugas(task.title).catatan && (
+                        <p className="text-[11px] leading-snug text-muted-foreground mt-0.5">
+                          {pisahJudulTugas(task.title).catatan}
+                        </p>
+                      )}
                       {task.description && (
                         <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>
                       )}
