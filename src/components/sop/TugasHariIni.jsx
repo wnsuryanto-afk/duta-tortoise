@@ -334,7 +334,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
               icon: "⚖️",
               keterangan: tor.species || "",
               points: t.points || 0,
-              badge: "Ukur Rotasi Baby",
+              badge: "Rutin baby",
               badgeColor: "bg-pink-100 text-pink-700",
               isUkurRotasi: true,
               tortoiseId: tor.id,
@@ -350,10 +350,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
               label: `Timbang & ukur ${tor.code} (${tor.enclosure})`,
               waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
               icon: "⚖️",
-              keterangan: tor.species || "",
+              /*
+               * Alasannya ditampilkan, bukan hanya nama kuranya.
+               *
+               * Sejak rotasi diganti pemicu (17-09-2026), kura dewasa hanya
+               * muncul kalau ADA sebabnya. "Tidak makan sejak 14 Sep" membuat
+               * kiper tahu apa yang dia kerjakan dan kenapa hari ini; "Ukur
+               * Rotasi" tidak mengatakan apa-apa dan mudah dilewati.
+               */
+              keterangan: tor.alasanTeks || tor.species || "",
               points: t.points || 0,
-              badge: "Ukur Rotasi",
-              badgeColor: "bg-sky-100 text-sky-700",
+              badge: tor.alasan === "tidak_makan" ? "Tidak makan" : "Sedang diobati",
+              badgeColor: tor.alasan === "tidak_makan"
+                ? "bg-amber-100 text-amber-800"
+                : "bg-red-100 text-red-700",
               isUkurRotasi: true,
               tortoiseId: tor.id,
               tortoiseCode: tor.code,
