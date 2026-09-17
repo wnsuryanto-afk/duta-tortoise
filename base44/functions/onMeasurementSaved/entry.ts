@@ -54,9 +54,69 @@ Deno.serve(async (req) => {
     }
     const kuraId = measurement.tortoise_id;
 
-    const riwayat = await base44.asServiceRole.entities.MeasurementHistory.filter(
+    let riwayat = await base44.asServiceRole.entities.MeasurementHistory.filter(
       { tortoise_id: kuraId }, "-date", BATAS_AMBIL,
     );
+
+    /*
+     * ── SATU BARIS PER KURA PER HARI, DIJAGA DI SERVER ─────────────
+     *
+     * Penjaga sisi layar (lib/ukurSekali.js) memeriksa ke basis data tepat
+     * sebelum menulis, dan itu menutup sebagian besar kasus. Tapi ia tetap
+     * sebuah LOMBA: 16-09-2026 kiper yang sama mengerjakan dua task berbeda
+     * untuk baby yang sama berselang dua menit — "Timbang baby massal" lalu
+     * "Rotasi otomatis" — dan pemeriksaannya tidak melihat baris yang baru
+     * saja ditulis. Dua baris masuk untuk BB-2026028 dan BB-2026030.
+     *
+     * Ada juga jalur yang memang tidak lewat penjaga itu sama sekali
+     * (formulir data kura menulis MeasurementHistory sendiri saat berat
+     * diubah). Pemeriksaan di layar tidak akan pernah bisa menutup jalur
+     * yang tidak memanggilnya.
+     *
+     * Jadi jaminannya dipindah ke sini, tempat yang dilewati SETIAP tulisan.
+     * Yang kalah TIDAK dihapus — hanya ditandai keluar dari laporan, dengan
+     * alasannya tertulis, dan bisa dikembalikan lewat widget Data
+     * Dikecualikan atau tombol di riwayat ukur.
+     *
+     * Yang dipertahankan: baris yang paling banyak isinya (berfoto menang
+     * atas tak berfoto, lalu yang lebih lengkap datanya, lalu yang lebih
+     * dulu ditulis). Kiper yang memotret sudah mengerjakan lebih banyak.
+     */
+    const tanggal = measurement.date;
+    if (tanggal) {
+      const sehari = (riwayat || []).filter(
+        (m: any) => m?.date === tanggal && masukLaporan(m),
+      );
+      if (sehari.length > 1) {
+        const nilai = (m: any) =>
+          (m?.photo_url ? 4 : 0) +
+          (angka(m?.weight_grams) > 0 ? 2 : 0) +
+          (angka(m?.shell_length_cm) > 0 ? 1 : 0);
+        const urut = sehari.slice().sort((a: any, b: any) => {
+          const d = nilai(b) - nilai(a);
+          if (d !== 0) return d;
+          return String(a?.created_date || "").localeCompare(String(b?.created_date || ""));
+        });
+        const menang = urut[0];
+        for (const kalah of urut.slice(1)) {
+          try {
+            await base44.asServiceRole.entities.MeasurementHistory.update(kalah.id, {
+              excluded_from_reports: true,
+              notes:
+                (kalah.notes ? kalah.notes + " — " : "") +
+                `Kembar: kura ini sudah ditimbang ${tanggal}` +
+                (menang?.measured_by ? ` oleh ${menang.measured_by}` : "") +
+                ". Baris ini dikeluarkan otomatis dari laporan.",
+            });
+            kalah.excluded_from_reports = true;
+          } catch { /* gagal menandai satu baris tidak boleh menggagalkan sisanya */ }
+        }
+        riwayat = (riwayat || []).map(
+          (m: any) => (m?.id === menang?.id ? m : sehari.find((x: any) => x.id === m.id) || m),
+        );
+      }
+    }
+
     const updateData: Record<string, any> = { ...ukuranDariRiwayat(riwayat || []) };
 
     /*
