@@ -37,6 +37,8 @@ import {
   kepatuhanBeberapaHari,
   rataRataPersen,
   statusKepatuhan,
+  hariSelesai,
+  AMBANG_BAIK,
 } from "@/lib/kepatuhanSOP";
 
 /*
@@ -99,16 +101,23 @@ export default function KepatuhanSopCard() {
     [enclosures],
   );
 
+  /*
+   * 15 hari diambil supaya SETELAH hari berjalan dibuang masih tersisa 14
+   * hari penuh. Kalau yang diambil 14, rata-ratanya diam-diam jadi 13 hari
+   * sementara judul kartu tetap berkata 14 — angka yang tidak sesuai
+   * labelnya adalah cara paling halus untuk berbohong.
+   */
   const hari = useMemo(
-    () => kepatuhanBeberapaHari(14, sopTasks, logs, jumlahKandang),
+    () => kepatuhanBeberapaHari(15, sopTasks, logs, jumlahKandang),
     [sopTasks, logs, jumlahKandang],
   );
 
   if (!sopTasks.length) return null;
 
   const hariIni = hari[hari.length - 1];
-  const rata14 = rataRataPersen(hari);
-  const rata7 = rataRataPersen(hari.slice(-7));
+  const selesai = hariSelesai(hari);
+  const rata14 = rataRataPersen(selesai);
+  const rata7 = rataRataPersen(selesai.slice(-7));
   const status = statusKepatuhan(rata14);
   const { Ikon } = NADA[status.nada];
   const arahKode =
@@ -142,7 +151,7 @@ export default function KepatuhanSopCard() {
             {status.label}
           </p>
           <p className="text-[11px] text-muted-foreground leading-tight">
-            rata-rata 14 hari
+            rata-rata 14 hari · target {AMBANG_BAIK}%
           </p>
         </div>
       </div>
@@ -157,15 +166,15 @@ export default function KepatuhanSopCard() {
 
       <div className="mt-3">
         <GrafikKepatuhan
-          hari={hari}
-          label={`Kepatuhan SOP harian 14 hari terakhir, rata-rata ${rata14 ?? "belum ada"} persen`}
+          hari={selesai}
+          label={`Kepatuhan SOP harian 14 hari selesai terakhir, rata-rata ${rata14 ?? "belum ada"} persen, target ${AMBANG_BAIK} persen`}
         />
       </div>
 
       {/* Angka harian turun ke sini: penting, tapi bukan yang dipimpin. */}
       <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border">
         <div>
-          <p className="text-[11px] text-muted-foreground">Hari ini</p>
+          <p className="text-[11px] text-muted-foreground">Hari ini (berjalan)</p>
           <p className="text-sm font-semibold text-foreground tabular-nums">
             {hariIni?.persen === null || hariIni?.persen === undefined
               ? "tidak ada tugas"
@@ -188,8 +197,9 @@ export default function KepatuhanSopCard() {
       </div>
 
       <p className="text-[11px] text-muted-foreground mt-2">
-        Ukuran tim, bukan perorangan — sebagian besar tugas berskala bersama. Tugas yang bahannya
-        sedang habis tidak dihitung sebagai kewajiban.
+        Ukuran tim, bukan perorangan — sebagian besar tugas berskala bersama. Rata-rata hanya
+        menghitung hari yang sudah selesai. Tugas yang bahannya sedang habis, dan tugas wadah
+        yang isinya berubah tiap hari seperti rotasi timbang, tidak dihitung sebagai kewajiban.
       </p>
     </div>
   );
