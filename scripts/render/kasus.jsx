@@ -16,6 +16,7 @@ import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
+import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
 import TortoiseList from "@/pages/TortoiseList";
 import OperationalToday from "@/components/dashboard/OperationalToday";
 import VetContactPage from "@/pages/VetContactPage";
@@ -79,6 +80,29 @@ export default [
    */
   ["LaporMakanPanel tanpa kura", <LaporMakanPanel tortoise={undefined} />],
   ["LaporMakanPanel kura biasa", <LaporMakanPanel tortoise={{ id: "t1", code: "A29", name: "A29", enclosure: "N1" }} />],
+
+  /*
+   * Grafik kepatuhan (18-09-2026). Menggambar SVG dari data, jadi kasus yang
+   * diperiksa adalah bentuk data yang benar-benar terjadi: hari tanpa tugas
+   * terjadwal (persen null), deret kosong, dan satu hari saja — ketiganya
+   * membuat perhitungan koordinat membagi dengan nol kalau tidak dijaga.
+   */
+  ["GrafikKepatuhan kosong", <GrafikKepatuhan hari={[]} />],
+  ["GrafikKepatuhan semua null", <GrafikKepatuhan hari={[
+    { tanggal: "2026-09-16", persen: null, selesai: 0, terjadwal: 0 },
+    { tanggal: "2026-09-17", persen: null, selesai: 0, terjadwal: 0 },
+  ]} />],
+  ["GrafikKepatuhan satu hari", <GrafikKepatuhan hari={[
+    { tanggal: "2026-09-17", persen: 96, selesai: 24, terjadwal: 25 },
+  ]} />],
+  ["GrafikKepatuhan 14 hari dengan lubang", <GrafikKepatuhan hari={[
+    { tanggal: "2026-09-04", persen: 88, selesai: 22, terjadwal: 25 },
+    { tanggal: "2026-09-05", persen: 96, selesai: 24, terjadwal: 25 },
+    { tanggal: "2026-09-06", persen: null, selesai: 0, terjadwal: 0 },
+    { tanggal: "2026-09-07", persen: 72, selesai: 18, terjadwal: 25 },
+    { tanggal: "2026-09-08", persen: 100, selesai: 25, terjadwal: 25 },
+    { tanggal: "2026-09-09", persen: 0, selesai: 0, terjadwal: 25 },
+  ]} />],
   ["GuidedHariIni dengan user", <GuidedHariIni user={{ id: "1", email: "a@b.c", full_name: "Sholeh", role: "keeper" }} />],
 
   // Ditambahkan 10-09-2026. Keduanya diubah cukup dalam hari ini dan
