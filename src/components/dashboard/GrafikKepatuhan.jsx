@@ -3,15 +3,16 @@
  *
  * ── KENAPA BUKAN BATANG ────────────────────────────────────────────
  *
- * Kepatuhan di peternakan ini bergerak di pita 85-100%. Pada skala 0-100,
- * empat belas batang setinggi itu terlihat sama persis — mata tidak bisa
- * membedakan 88 dari 97, padahal justru selisih itu yang ingin dilihat.
+ * Kepatuhan di peternakan ini SEMPAT dikira bergerak di pita 85-100%; hitung
+ * ulang 18-09-2026 memperlihatkan pita sebenarnya 44-90%, rata-rata 73%. Pada
+ * skala 0-100, empat belas batang tetap terlihat mirip — mata sulit
+ * membedakan 71 dari 85, padahal justru selisih itu yang ingin dilihat.
  *
  * Memendekkan sumbu supaya selisihnya terlihat adalah kebohongan visual:
  * batang yang dipotong pangkalnya membuat 97% terlihat dua kali lebih besar
  * dari 88%. Jadi sumbunya tetap 0-100, bentuknya yang diganti: garis dengan
  * area tipis membaca perubahan kecil jauh lebih baik daripada batang, dan
- * garis ambang 90% memberi mata tempat berpegang.
+ * garis target (AMBANG_BAIK) memberi mata tempat berpegang.
  *
  * Satu deret data, jadi satu warna dan tanpa legenda — judul kartu sudah
  * menyebut apa yang digambar.
