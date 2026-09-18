@@ -55,58 +55,83 @@ export function terjadwalPada(t, tanggal) {
 }
 
 /**
- * Hitung kepatuhan satu hari.
+ * Tugas yang HARI ITU benar-benar dituntut dari tim.
  *
- * @param {string} tanggal    YYYY-MM-DD
- * @param {Array}  sopTasks   seluruh SOPTask
- * @param {Array}  logs       MaintenanceLog (boleh seluruhnya, disaring di sini)
- * @param {number} jumlahKandang jumlah kandang aktif
- * @returns {{ tanggal, selesai, terjadwal, persen, kandangSelesai, kandangTotal }}
+ * Tiga hal dikeluarkan, dan masing-masing punya alasan yang sudah dibayar
+ * mahal sekali:
+ *
+ *   di_ubin_kandang — dikerjakan di layar Kandang, dicatat sebagai
+ *     `kebersihan_kandang_<kode>`, bukan `sop_<id>`. Dihitung terpisah.
+ *
+ *   di_luar_persen — task WADAH yang isinya berubah tiap hari. Rotasi timbang
+ *     mekar jadi baris `ukur_rotasi_<id_kura>` dan bisa NOL baris pada hari
+ *     tanpa kura yang perlu ditimbang. Sebelum ditandai, ia tercatat gagal 14
+ *     dari 14 hari — termasuk pada hari yang jawaban benarnya "tidak ada yang
+ *     perlu ditimbang" — dan menekan angka kepatuhan 5 poin setiap hari.
+ *
+ *   terkunci_bahan — bahannya nol. Menuntut pekerjaan yang bahannya tidak ada
+ *     lalu menurunkan angka karenanya adalah menghukum tim untuk keadaan
+ *     gudang.
  */
-export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang = 0) {
-  const logHariIni = (logs || []).filter((l) => l.period_key === tanggal && masukLaporan(l));
-
-  // ── Tugas harian biasa (bukan per-kandang) ──
-  // Yang dikeluarkan dari hitungan ini hanya tugas yang dikerjakan lewat ubin
-  // kandang (dihitung terpisah di bawah). Tugas berskala per_kandang yang TIDAK
-  // ada di ubin — mis. "Pemberian pakan kura siang" — tetap dicatat sebagai satu
-  // baris sop_<id> biasa, jadi ia harus ikut dihitung di sini. Mengeluarkannya
-  // hanya karena berlabel per_kandang membuatnya hilang dari kedua angka.
-  const terjadwalList = (sopTasks || []).filter(
-    (t) => t.di_ubin_kandang !== true && t.di_luar_persen !== true && terjadwalPada(t, tanggal),
+export function tugasWajib(sopTasks = [], tanggal) {
+  return (sopTasks || []).filter(
+    (t) =>
+      t.di_ubin_kandang !== true &&
+      t.di_luar_persen !== true &&
+      t.terkunci_bahan !== true &&
+      terjadwalPada(t, tanggal),
   );
-  // Tugas yang bahannya sedang habis tidak dihitung sebagai kewajiban: menuntut
-  // pekerjaan yang bahannya nol lalu menurunkan angka kepatuhan karenanya
-  // menghukum tim untuk keadaan gudang.
-  const wajib = terjadwalList.filter((t) => t.terkunci_bahan !== true);
+}
 
-  const idSelesai = new Set(
-    logHariIni
-      .map((l) => String(l.item_id || ""))
+/** id task yang punya log `sop_<id>` sah pada tanggal itu. */
+export function idSelesaiPada(logs = [], tanggal) {
+  return new Set(
+    (logs || [])
+      .filter((l) => l?.period_key === tanggal && masukLaporan(l))
+      .map((l) => String(l?.item_id || ""))
       .filter((id) => id.startsWith("sop_"))
       .map((id) => id.slice(4)),
   );
-  const selesai = wajib.filter((t) => idSelesai.has(t.id)).length;
+}
 
-  // ── Kebersihan per kandang ──
+/** Tugas yang hari itu dituntut tetapi tidak ada log-nya. */
+export function tugasBelum(sopTasks = [], logs = [], tanggal) {
+  const sudah = idSelesaiPada(logs, tanggal);
+  return tugasWajib(sopTasks, tanggal).filter((t) => !sudah.has(String(t.id)));
+}
+
+/**
+ * Kepatuhan satu hari — dua angka, bukan satu.
+ *
+ * Godaan terbesarnya adalah melebur tugas harian dan kebersihan kandang jadi
+ * satu persen yang rapi. Itu menyembunyikan tebakan: keduanya dicatat dengan
+ * penanda yang berbeda, dan satu angka rapi yang separuhnya tebakan lebih
+ * berbahaya daripada dua angka jujur.
+ *
+ * @param {string} tanggal       YYYY-MM-DD
+ * @param {Array}  sopTasks      seluruh SOPTask
+ * @param {Array}  logs          MaintenanceLog (boleh seluruhnya, disaring di sini)
+ * @param {number} jumlahKandang jumlah kandang yang wajib dikunjungi
+ */
+export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang = 0) {
+  const wajib = tugasWajib(sopTasks, tanggal);
+  const idSelesai = idSelesaiPada(logs, tanggal);
+  const selesai = wajib.filter((t) => idSelesai.has(String(t.id))).length;
+
   const kandangSelesai = new Set(
-    logHariIni
-      .map((l) => String(l.item_id || ""))
+    (logs || [])
+      .filter((l) => l?.period_key === tanggal && masukLaporan(l))
+      .map((l) => String(l?.item_id || ""))
       .filter((id) => id.startsWith("kebersihan_kandang_")),
   ).size;
 
-  // Kandang dihitung sebagai kewajiban bila ADA tugas ubin yang terjadwal hari
-  // itu. Sejak D12 satu ubin mencakup beberapa tugas dengan jadwal berbeda:
-  // kebersihan Senin-Sabtu, pemberian pakan tiap hari. Jadi hari Minggu tetap
-  // menuntut kunjungan kandang meski tanpa pembersihan.
-  //
-  // Penandanya kolom di_ubin_kandang, bukan pencocokan judul: judul berubah
-  // saat SOP dirapikan, dan pencocokan judul yang meleset diam-diam membuat
-  // seluruh kewajiban kandang hilang dari hitungan tanpa satu pun peringatan.
+  // Kandang dituntut bila ADA tugas ubin yang terjadwal hari itu. Sejak D12
+  // satu ubin mencakup beberapa tugas dengan jadwal berbeda: kebersihan
+  // Senin-Sabtu, pemberian pakan tiap hari. Jadi Minggu tetap menuntut
+  // kunjungan kandang meski tanpa pembersihan.
   const adaTugasUbin = (sopTasks || []).some(
     (t) => t.di_ubin_kandang === true && terjadwalPada(t, tanggal),
   );
-  const kandangTotal = adaTugasUbin ? jumlahKandang : 0;
 
   return {
     tanggal,
@@ -114,7 +139,7 @@ export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang =
     terjadwal: wajib.length,
     persen: wajib.length > 0 ? Math.round((selesai / wajib.length) * 100) : null,
     kandangSelesai,
-    kandangTotal,
+    kandangTotal: adaTugasUbin ? jumlahKandang : 0,
   };
 }
 
