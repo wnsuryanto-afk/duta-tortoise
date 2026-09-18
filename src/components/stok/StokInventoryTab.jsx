@@ -967,14 +967,15 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
 
             <div className="flex items-center gap-1.5 ml-auto">
               <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
-                {/* Kotak ini hanya menampilkan angkanya saja — keterangan
-                    "per halaman" sudah terbaca dari daftar pilihannya, dan
-                    menuliskannya di kotak yang sempit membuat angkanya
-                    terpotong jadi "10 / halama". */}
+                {/* Kotak ini hanya menampilkan angkanya saja. Keterangan
+                    "per halaman" sengaja tidak ditulis: di kotak yang sempit
+                    angkanya terpotong jadi "10 / halama", dan deretan angka
+                    sudah jelas maksudnya karena berdiri di sebelah keterangan
+                    "Hal. 1 / 5" di baris yang sama. */}
                 <SelectTrigger className="h-8 w-16 text-xs"><span className="tabular">{perPage}</span></SelectTrigger>
                 <SelectContent>
                   {[10, 25, 50, 75, 100, 200].map(n => (
-                    <SelectItem key={n} value={String(n)}>{n} / halaman</SelectItem>
+                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
