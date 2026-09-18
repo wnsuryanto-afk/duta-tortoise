@@ -906,7 +906,7 @@ async function buildMorningSummary(base44, settings, wibToday: string, wibNow: D
   const wibYesterdayStr = wibDateToStr(wibYesterday);
 
   const [
-    sopTasks, checklistsYesterday, sickRecords, diagnosisProtocols,
+    sopTasks, checklistsYesterday, logKemarin, sickRecords, diagnosisProtocols,
     warehouseItems, feedStocks, tortoises, incidentalTasks,
   ] = await Promise.all([
     base44.asServiceRole.entities.SOPTask.filter({ is_active: true }, null, BATAS_AMBIL),
