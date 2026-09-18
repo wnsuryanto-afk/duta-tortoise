@@ -1,7 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
-import { wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { wibTanggal, notifSekali, emailPerRole, potongRapi } from "../../shared/otomatis.ts";
 
 /**
  * higieneKembar — penyapu baris kembar dan penanda uji yang tidak ikut ditandai.
@@ -302,7 +302,7 @@ Deno.serve(async (req) => {
             : alarmMati.length > 0
               ? `${alarmMati.length} alarm tidak bisa berbunyi, ${kembar.length} kelompok kembar`
               : `Higiene data: ${kembar.length} kelompok kembar, ${ujiTakBertanda.length} catatan uji`,
-          message: bagian.join("\n\n").slice(0, 900),
+          message: potongRapi(bagian.join("\n\n"), 900),
           type: gagal.length > 0 ? "alert" : "warning",
           priority: gagal.length > 0 ? "tinggi" : "sedang",
           category: "sistem",

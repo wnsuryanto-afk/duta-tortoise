@@ -5,8 +5,7 @@ import {
   tanggalMundur,
   sopIdDariTaskId,
   itemIdDariTaskId,
-  petaFotoHarian,
-} from "../../shared/otomatis.ts";
+  petaFotoHarian, potongRapi } from "../../shared/otomatis.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 
 /**
@@ -170,7 +169,7 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.Notification.create({
           recipient_email: o.email,
           title: `${ditahan.length} checklist perlu diperiksa manual`,
-          message: isi.slice(0, 900),
+          message: potongRapi(isi, 900),
           type: "warning",
           priority: "sedang",
           category: "absensi",

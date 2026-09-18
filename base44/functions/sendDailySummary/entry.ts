@@ -3,6 +3,7 @@ import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.
 import { terjadwalPada, tanggalDariWib } from "../../shared/jadwalSOP.ts";
 import { perluDiperhatikan } from "../../shared/stok.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { kepatuhanHari, tugasBelum } from "../../shared/kepatuhan.ts";
 
 /*
  * BATAS_AMBIL dulu didefinisikan di file ini sendiri, lalu ternyata
@@ -351,7 +352,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     users, attendances, checklists, sopTasks,
     warehouseItems, feedStocks, incidentalTasks, toolRequests,
     sickRecords, photoFindings, pakanRecords, treatmentSchedules,
-    stockMovements, tortoises, daftarBelanja,
+    stockMovements, tortoises, daftarBelanja, logHariIni,
   ] = await Promise.all([
     base44.asServiceRole.entities.User.list(null, BATAS_AMBIL),
     base44.asServiceRole.entities.Attendance.filter({ date: wibToday }, null, BATAS_AMBIL),
@@ -368,6 +369,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     base44.asServiceRole.entities.StockMovement.filter({ date: wibToday }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.Tortoise.list("-name", BATAS_AMBIL),
     base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }, null, BATAS_AMBIL).catch(() => []),
+    base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: wibToday }, null, BATAS_AMBIL).catch(() => []),
   ]);
 
   // ── KEHADIRAN ──
@@ -436,17 +438,27 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   }
 
   // ── TUGAS HARI INI ──
-  const scheduledToday = sopTasks.filter(t => isTaskScheduledToday(t, wibNow));
-  const Y_sop = scheduledToday.length;
+  /*
+   * Kepatuhan dihitung dengan SATU definisi bersama: ../../shared/kepatuhan.ts,
+   * kembaran src/lib/kepatuhanSOP.js yang dipakai beranda.
+   *
+   * Yang dipakai dulu di sini adalah pencocokan JUDUL task terhadap
+   * DailyChecklist.completed_tasks[].task_title. Itu rusak tanpa menimbulkan
+   * error: mengganti nama task memutus pasangannya diam-diam, dan task yang
+   * memang tidak pernah lewat checklist — kebersihan per kandang, rotasi
+   * timbang — selamanya masuk daftar "belum selesai" di grup WhatsApp yang
+   * dibaca kipernya sendiri.
+   *
+   * Sekarang sumbernya MaintenanceLog + item_id, sama persis seperti beranda.
+   * Angka di WhatsApp dan angka di beranda harus sama; kalau berbeda, yang
+   * dipercaya kiper adalah yang lebih rendah, dan keduanya berhenti dipercaya.
+   */
+  const kepatuhan = kepatuhanHari(wibToday, sopTasks, logHariIni, 0);
   const todayIncidental = incidentalTasks.filter(t => t.due_date === wibToday && t.status !== "cancelled");
-  const allCompletedTitles = new Set();
   const taskLines: string[] = [];
   for (const cl of checklists) {
     const tasks = cl.completed_tasks || [];
     const X = tasks.length;
-    tasks.forEach(t => {
-      if (t.task_title) allCompletedTitles.add(t.task_title.toLowerCase());
-    });
     const myIncidental = todayIncidental.filter(t =>
       !t.assigned_to_email || t.assigned_to_email === cl.employee_email
     ).length;
@@ -470,8 +482,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     }
     taskLines.push(line);
   }
-  const belumSelesai = scheduledToday
-    .filter(t => !allCompletedTitles.has((t.title || "").toLowerCase()))
+  const belumSelesai = tugasBelum(sopTasks, logHariIni, wibToday)
     .map(t => t.title)
     .filter(Boolean)
     .slice(0, 6);
@@ -480,12 +491,14 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     // Kepatuhan diukur untuk TIM, satu angka untuk hari itu — bukan satu angka
     // per orang. Penyebutnya jumlah tugas terjadwal; pembilangnya tugas yang
     // sudah tersentuh siapa pun.
-    const selesaiTim = scheduledToday.filter(t =>
-      allCompletedTitles.has((t.title || "").toLowerCase())
-    ).length;
-    if (Y_sop > 0) {
-      const pctTim = Math.round((selesaiTim / Y_sop) * 100);
-      lines.push(`Kepatuhan tim: ${selesaiTim}/${Y_sop} tugas (${pctTim}%)`);
+    if (kepatuhan.terjadwal > 0) {
+      lines.push(`Kepatuhan tim: ${kepatuhan.selesai}/${kepatuhan.terjadwal} tugas (${kepatuhan.persen}%)`);
+    }
+    // Kandang dilaporkan sebagai jumlah, bukan persen: penyebutnya (kandang
+    // mana yang wajib) tinggal di src/lib/kandang.js dan belum punya kembaran
+    // backend. Menebaknya di sini berarti mengarang angka.
+    if (kepatuhan.kandangSelesai > 0) {
+      lines.push(`Kandang dikunjungi: ${kepatuhan.kandangSelesai}`);
     }
     lines.push(...taskLines);
     if (belumSelesai.length > 0) {
@@ -893,11 +906,12 @@ async function buildMorningSummary(base44, settings, wibToday: string, wibNow: D
   const wibYesterdayStr = wibDateToStr(wibYesterday);
 
   const [
-    sopTasks, checklistsYesterday, sickRecords, diagnosisProtocols,
+    sopTasks, checklistsYesterday, logKemarin, sickRecords, diagnosisProtocols,
     warehouseItems, feedStocks, tortoises, incidentalTasks,
   ] = await Promise.all([
     base44.asServiceRole.entities.SOPTask.filter({ is_active: true }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.DailyChecklist.filter({ date: wibYesterdayStr }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: wibYesterdayStr }, null, BATAS_AMBIL).catch(() => []),
     base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.WarehouseItem.list("-name", BATAS_AMBIL),
@@ -907,15 +921,14 @@ async function buildMorningSummary(base44, settings, wibToday: string, wibNow: D
   ]);
 
   // ── 1. CARRY-OVER (tugas kemarin belum selesai) ──
-  const yesterdayScheduled = sopTasks.filter(t => isTaskScheduledForDate(t, wibYesterday));
-  const yesterdayCompletedTitles = new Set();
-  for (const cl of checklistsYesterday) {
-    for (const t of (cl.completed_tasks || [])) {
-      if (t.task_title) yesterdayCompletedTitles.add(t.task_title.toLowerCase());
-    }
-  }
-  const carryOver = yesterdayScheduled
-    .filter(t => !yesterdayCompletedTitles.has((t.title || "").toLowerCase()))
+  //
+  // Sumbernya MaintenanceLog + item_id lewat ../../shared/kepatuhan.ts, bukan
+  // pencocokan judul terhadap DailyChecklist. Dengan cara lama, dua tugas
+  // kandang dan tugas rotasi timbang muncul di daftar ini SETIAP PAGI tanpa
+  // kecuali — bukan karena tertinggal, melainkan karena judulnya memang tidak
+  // pernah tercatat di checklist. Pesan pagi yang selalu memuat tuduhan yang
+  // sama adalah pesan yang berhenti dibaca.
+  const carryOver = tugasBelum(sopTasks, logKemarin, wibYesterdayStr)
     .map(t => t.title)
     .filter(Boolean);
   const yesterdayIncidental = incidentalTasks.filter(t =>

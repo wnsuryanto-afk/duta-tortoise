@@ -6,8 +6,19 @@
  *   1. Temuan dari foto (PhotoFinding berstatus aktif) — hasil pembacaan AI
  *      atas foto bukti kerja yang memang sudah diunggah tiap hari. Ini BUKAN
  *      diagnosis; ia hanya menunjuk foto yang perlu dilihat manusia.
- *   2. Kura yang sudah lama tidak ditimbang — tanpa timbangan berkala, turun
- *      berat (tanda paling awal kura sakit) tidak akan pernah ketahuan.
+ *   2. Kura yang PERLU ditimbang hari ini, menurut aturan pemicu di
+ *      lib/jadwalTimbang.js: dilaporkan tidak makan, sedang diobati dengan
+ *      berat sudah basi, atau baby/juvenile yang jatuh tempo rutin.
+ *
+ * ── KENAPA BUKAN LAGI "BELUM DITIMBANG 30 HARI" (17-09-2026) ───────
+ *
+ * Kartu ini dulu menghitung setiap kura yang tidak ditimbang lebih dari 30
+ * hari. Dengan rotasi dihentikan, angka itu akan berisi 44 kura dewasa yang
+ * memang TIDAK AKAN ditimbang — sehat, makan, tidak ada alasan. Kartu yang
+ * menyuruh mengerjakan sesuatu yang memang tidak perlu dikerjakan akan
+ * berhenti dibaca, dan temuan foto di kartu yang sama ikut berhenti dibaca.
+ *
+ * Yang dihitung sekarang hanya yang benar-benar ada tugasnya hari ini.
  *
  * Kartu menghilang sendiri saat tidak ada satu pun yang perlu diperiksa.
  */
@@ -17,8 +28,8 @@ import { base44 } from "@/api/base44Client";
 import { Stethoscope, Camera, Scale } from "lucide-react";
 import { Link } from "react-router-dom";
 import { diPeternakan } from "@/lib/populasiKura";
-
-const BATAS_HARI_TIMBANG = 30;
+import { perluDitimbang } from "@/lib/jadwalTimbang";
+import { ambilLaporanMakan, hariIniWIB } from "@/lib/laporMakan";
 
 export default function KuraPerluDiperiksaCard() {
   const { data: temuan = [] } = useQuery({
@@ -33,14 +44,18 @@ export default function KuraPerluDiperiksaCard() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const belumDitimbang = useMemo(() => {
-    const batas = new Date(Date.now() - BATAS_HARI_TIMBANG * 86400000).toISOString().slice(0, 10);
-    return (tortoises || []).filter(
-      (t) => diPeternakan(t) && (!t.last_weighed_date || t.last_weighed_date < batas),
-    );
-  }, [tortoises]);
+  const { data: laporanMakan = [] } = useQuery({
+    queryKey: ["laporan-makan"],
+    queryFn: ambilLaporanMakan,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  if (temuan.length === 0 && belumDitimbang.length === 0) return null;
+  const perluTimbang = useMemo(
+    () => perluDitimbang((tortoises || []).filter(diPeternakan), laporanMakan, hariIniWIB()),
+    [tortoises, laporanMakan],
+  );
+
+  if (temuan.length === 0 && perluTimbang.length === 0) return null;
 
   return (
     <div className="bg-card rounded-xl border border-border p-4">
@@ -83,21 +98,33 @@ export default function KuraPerluDiperiksaCard() {
         </div>
       )}
 
-      {belumDitimbang.length > 0 && (
+      {perluTimbang.length > 0 && (
         <div className={temuan.length > 0 ? "pt-3 border-t border-border" : ""}>
           <div className="flex items-center gap-1.5">
             <Scale className="w-3.5 h-3.5 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{belumDitimbang.length} kura</span> belum
-              ditimbang lebih dari {BATAS_HARI_TIMBANG} hari
+              <span className="font-semibold text-foreground">{perluTimbang.length} kura</span> perlu
+              ditimbang hari ini
             </p>
             <Link to="/tortoise" className="ml-auto text-xs text-primary hover:underline">
               Daftar →
             </Link>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Timbang bergilir 2 ekor/hari sudah aktif — angka ini akan turun sendiri setiap hari.
-          </p>
+          {/* Alasannya disebut, bukan hanya jumlahnya: itu yang membedakan
+              tugas yang dikerjakan dari angka yang dilewati. */}
+          <div className="mt-1.5 space-y-0.5">
+            {perluTimbang.slice(0, 3).map((d) => (
+              <p key={d.kura.id} className="text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">{d.kura.code || d.kura.name}</span>
+                {" — "}{d.teks}
+              </p>
+            ))}
+            {perluTimbang.length > 3 && (
+              <p className="text-[11px] text-muted-foreground">
+                +{perluTimbang.length - 3} lagi
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

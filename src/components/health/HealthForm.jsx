@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import { barisPengambilan, rencanaPotongBatch } from "@/lib/pemakaianBarang";
+import { barisPengambilan, potongBatchGudang } from "@/lib/pemakaianBarang";
 import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
@@ -204,13 +204,7 @@ export default function HealthForm({ open, onClose, editData }) {
           // Sisa batch ikut turun, FEFO. Tanpa ini total gudang dan jumlah
           // sisa batch berpisah diam-diam, dan layar kedaluwarsa menampilkan
           // barang yang sebenarnya sudah dipakai.
-          const { rencana, kurang } = rencanaPotongBatch(batchAktif, gudang.id, Number(it.quantity));
-          for (const r of rencana) {
-            await base44.entities.BatchBarang.update(r.id, {
-              jumlah_sisa: r.jumlah_sisa,
-              ...(r.jumlah_sisa === 0 ? { status: "habis" } : {}),
-            });
-          }
+          const { kurang } = await potongBatchGudang(base44, batchAktif, gudang.id, Number(it.quantity));
           if (kurang > 0) {
             // Barangnya nyata-nyata sudah dipakai, jadi catatan kesehatan tetap
             // disimpan — yang kurang adalah batch yang tercatat, bukan barangnya.

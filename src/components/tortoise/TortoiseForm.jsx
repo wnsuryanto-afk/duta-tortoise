@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
+import { simpanUkuranSekali } from "@/lib/ukurSekali";
 import { kandangDariNama } from "@/lib/kandang";
 import { perubahanSakit, perubahanSembuh, STATUS_TUTUP } from "@/lib/statusKura";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -452,15 +453,29 @@ export default function TortoiseForm({ open, onClose, editData }) {
     const weightChanged = newWeight && newWeight !== prevWeight;
     const lengthChanged = newLength && newLength !== prevLength;
     if ((weightChanged || lengthChanged) && tortoiseId) {
-      await base44.entities.MeasurementHistory.create({
+      /*
+       * Lewat simpanUkuranSekali, bukan create() langsung.
+       *
+       * Formulir ini satu-satunya jalur yang menulis MeasurementHistory tanpa
+       * penjaga "satu baris per kura per hari". Akibatnya: memperbaiki berat
+       * di profil pada hari kura itu baru saja ditimbang menambah baris kedua
+       * dengan angka berbeda — lalu grafik pertumbuhan menampilkan dua titik
+       * untuk satu penimbangan, dan pemeriksa anomali membaca selisih di
+       * antara keduanya sebagai penurunan berat mendadak.
+       *
+       * Di sini `timpa: true` memang yang diinginkan: orang sedang MENGOREKSI
+       * angka hari itu, bukan menimbang ulang.
+       */
+      await simpanUkuranSekali({
         tortoise_id: tortoiseId,
         tortoise_name: form.name,
         date: new Date().toISOString().split("T")[0],
         weight_grams: newWeight,
         shell_length_cm: newLength,
         notes: "Otomatis dari update data tortoise",
-      });
+      }, { timpa: true });
       queryClient.invalidateQueries({ queryKey: ["measurements"] });
+      queryClient.invalidateQueries({ queryKey: ["measurement-history"] });
     }
 
     queryClient.invalidateQueries({ queryKey: ["tortoises"] });

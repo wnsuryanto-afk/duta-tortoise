@@ -1,0 +1,70 @@
+{
+  "name": "LaporanMakan",
+  "type": "object",
+  "properties": {
+    "tortoise_id": {
+      "type": "string",
+      "description": "Kura yang dilaporkan"
+    },
+    "tortoise_code": {
+      "type": "string",
+      "description": "Kode kura saat dilaporkan, untuk dibaca manusia di notifikasi"
+    },
+    "enclosure_name": {
+      "type": "string",
+      "description": "Kandang saat laporan dibuat"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal WIB laporan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "tidak_makan",
+        "makan_lagi"
+      ],
+      "default": "tidak_makan",
+      "description": "tidak_makan = laporan dibuka. makan_lagi = kura sudah makan kembali, laporan ditutup. Penutupan dicatat sebagai baris baru, bukan mengubah baris lama, supaya berapa lama ia tidak makan bisa dihitung."
+    },
+    "sumber": {
+      "type": "string",
+      "enum": [
+        "tugas_pakan",
+        "halaman_kura",
+        "lainnya"
+      ],
+      "default": "lainnya",
+      "description": "Dari mana laporan masuk: pertanyaan di tugas pakan harian, tombol di halaman kura, atau jalur lain"
+    },
+    "catatan": {
+      "type": "string",
+      "description": "Keterangan kiper \u2014 mis. 'pakan disisakan utuh', 'hanya makan sedikit'"
+    },
+    "dilaporkan_oleh_email": {
+      "type": "string"
+    },
+    "dilaporkan_oleh_nama": {
+      "type": "string"
+    },
+    "sudah_ditimbang": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sudah ada penimbangan sesudah laporan ini. Dipakai supaya tugas timbang tidak muncul lagi setelah dikerjakan, tanpa perlu menutup laporannya."
+    },
+    "excluded_from_reports": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_test_data": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "tortoise_id",
+    "date",
+    "status"
+  ]
+}

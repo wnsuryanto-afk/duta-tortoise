@@ -23,6 +23,18 @@ import { adalahPemakaian } from "./urgensiStok";
 export const KEPERLUAN_KURA = "pengobatan_kura";
 
 /**
+ * Barang dikeluarkan karena lewat tanggal, bukan karena dipakai.
+ *
+ * Sebelum ini ada, satu-satunya cara mengurangi stok obat kedaluwarsa adalah
+ * mencatatnya sebagai "Lainnya" — yang berarti buku mencatat obat itu DIPAKAI.
+ * Dua akibatnya: biayanya masuk sebagai biaya perawatan, dan perkiraan
+ * pemakaian menghitungnya sebagai kecepatan pakai, lalu menyuruh membeli lagi
+ * sebanyak yang dibuang. Alarm kedaluwarsa yang berujung pada pembelian ulang
+ * otomatis adalah alarm yang membuat keadaan lebih buruk.
+ */
+export const KEPERLUAN_BUANG = "dibuang_kedaluwarsa";
+
+/**
  * Keperluan yang masuk akal untuk barang gudang (obat, vitamin, habis pakai).
  * Keperluan pakan sengaja tidak ada di sini — pakan punya alurnya sendiri.
  */
@@ -30,6 +42,7 @@ export const KEPERLUAN_GUDANG = [
   { nilai: "pengobatan_kura", label: "Pengobatan kura", perluKura: true },
   { nilai: "kebersihan", label: "Kebersihan kandang", perluKura: false },
   { nilai: "perbaikan", label: "Perbaikan / pemeliharaan", perluKura: false },
+  { nilai: KEPERLUAN_BUANG, label: "Dibuang — lewat tanggal", perluKura: false },
   { nilai: "lainnya", label: "Lainnya", perluKura: false },
 ];
 
@@ -183,18 +196,15 @@ export function kodeBatch(sku, tanggalYymmdd, kodeTerpakai = []) {
  * Ada DUA jalur yang mengeluarkan barang, dan sampai sekarang keduanya tidak
  * melakukan hal yang sama:
  *
- *   AmbilBarangScan  → WarehouseItem.current_stock ✓  StockMovement ✓  BatchBarang.jumlah_sisa ✓
- *   HealthForm       → WarehouseItem.current_stock ✓  StockMovement ✓  BatchBarang.jumlah_sisa ✗
+ * Per 17-09-2026 keempat jalur pengurangan stok gudang sudah menurunkan sisa
+ * batch: Ambil Barang (batch hasil pindaian), formulir kesehatan, tombol +/-
+ * di halaman stok, dan produksi racikan. Yang menjaganya tetap begitu adalah
+ * scripts/cek-batch.mjs, bukan ingatan.
  *
- * Jadi mengobati seekor kura lewat formulir kesehatan menurunkan stok gudang
- * tanpa menurunkan sisa batch mana pun. Total gudang dan jumlah sisa seluruh
- * batch perlahan berpisah, dan yang membaca angka batch — peringatan
- * kedaluwarsa, dasbor admin, cetak label — akan menunjukkan barang yang
- * sebenarnya sudah habis dipakai.
- *
- * Belum ada kerusakan pada data sekarang: seluruh 23 batch masih utuh karena
- * belum satu pun pengobatan dicatat lewat jalur itu. Pemotongan pertama lewat
- * formulir kesehatan-lah yang akan memulai selisihnya.
+ * Kalau salah satu lupa, total gudang dan jumlah sisa seluruh batch berpisah
+ * pelan-pelan tanpa error apa pun — dan yang membaca angka batch (peringatan
+ * kedaluwarsa, urutan FEFO, cetak label) menunjuk barang yang sebenarnya
+ * sudah habis dipakai.
  *
  * Urutannya FEFO — yang paling cepat kedaluwarsa dipakai lebih dulu; batch
  * tanpa tanggal kedaluwarsa dipakai terakhir, karena ia tidak mendesak.
@@ -234,4 +244,33 @@ export function rencanaPotongBatch(batches = [], itemId, jumlah) {
   }
 
   return { rencana, kurang: sisaDiambil };
+}
+
+/**
+ * Jalankan rencana FEFO: turunkan sisa batch, tandai yang habis.
+ *
+ * Ada karena menghitung rencananya mudah dan MENYIMPANNYA-lah yang terlupa.
+ * Empat jalur mengurangi stok gudang; sampai 17-09-2026 hanya dua yang ikut
+ * menurunkan sisa batch. Sisanya — tombol +/- di halaman stok, produksi
+ * racikan, produksi pelet — memotong stok gudang saja, sehingga total gudang
+ * dan jumlah sisa seluruh batch perlahan berpisah. Yang membaca angka batch
+ * (peringatan kedaluwarsa, cetak label, urutan FEFO) lalu menunjuk barang
+ * yang sebenarnya sudah habis dipakai.
+ *
+ * Setiap jalur menulis loopnya sendiri berarti empat kesempatan untuk lupa.
+ * Satu fungsi berarti satu.
+ *
+ * @returns {{dipotong: number, kurang: number}} `kurang` > 0 berarti batch
+ *   tercatat tidak cukup menutup jumlah yang keluar — barangnya tetap nyata
+ *   sudah dipakai, jadi ini diberitahukan, bukan digagalkan.
+ */
+export async function potongBatchGudang(base44, batches, itemId, jumlah) {
+  const { rencana, kurang } = rencanaPotongBatch(batches, itemId, jumlah);
+  for (const r of rencana) {
+    await base44.entities.BatchBarang.update(r.id, {
+      jumlah_sisa: r.jumlah_sisa,
+      ...(r.jumlah_sisa === 0 ? { status: "habis" } : {}),
+    });
+  }
+  return { dipotong: rencana.length, kurang };
 }

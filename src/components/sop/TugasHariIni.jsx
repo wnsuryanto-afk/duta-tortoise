@@ -192,11 +192,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: rotasiUkur = { babies: [], dewasa: [] } } = useQuery({
+  const { data: rotasiUkur = [] } = useQuery({
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {
       const res = await base44.functions.invoke("getRotasiUkur", { date: today });
-      return { babies: res.data?.babies || [], dewasa: res.data?.dewasa || [] };
+      return res.data?.perlu || [];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -326,34 +326,39 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         }
 
         if (titleLower.includes("rotasi otomatis")) {
-          (rotasiUkur.babies || []).forEach(tor => {
+          /*
+           * Satu daftar, bukan dua.
+           *
+           * Dulu babies dan dewasa diulang terpisah karena ambangnya beda per
+           * umur. Sekarang yang membedakan adalah ALASAN — baby bisa masuk
+           * karena tidak makan, dewasa karena sedang diobati — jadi memisahkan
+           * per umur hanya menyiapkan tempat untuk salah label.
+           */
+          (rotasiUkur || []).forEach(tor => {
+            const rutin = tor.alasan === "rutin_baby";
             items.push({
               id: `ukur_rotasi_${tor.id}`,
-              label: `Timbang & ukur ${tor.code} (BABY)`,
+              label: rutin
+                ? `Timbang & ukur ${tor.code} (BABY)`
+                : `Timbang & ukur ${tor.code} (${tor.enclosure})`,
               waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
               icon: "⚖️",
-              keterangan: tor.species || "",
+              /*
+               * Alasannya ditampilkan, bukan hanya nama kuranya.
+               *
+               * Sejak rotasi diganti pemicu (17-09-2026), kura hanya muncul
+               * kalau ADA sebabnya. "Tidak makan sejak 14 Sep" membuat kiper
+               * tahu apa yang dia kerjakan dan kenapa hari ini; "Ukur Rotasi"
+               * tidak mengatakan apa-apa dan mudah dilewati.
+               */
+              keterangan: tor.alasanTeks || tor.species || "",
               points: t.points || 0,
-              badge: "Ukur Rotasi Baby",
-              badgeColor: "bg-pink-100 text-pink-700",
-              isUkurRotasi: true,
-              tortoiseId: tor.id,
-              tortoiseCode: tor.code,
-              tortoiseName: tor.name,
-              tortoiseEnclosure: tor.enclosure,
-              terlambat,
-            });
-          });
-          (rotasiUkur.dewasa || []).forEach(tor => {
-            items.push({
-              id: `ukur_rotasi_${tor.id}`,
-              label: `Timbang & ukur ${tor.code} (${tor.enclosure})`,
-              waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
-              icon: "⚖️",
-              keterangan: tor.species || "",
-              points: t.points || 0,
-              badge: "Ukur Rotasi",
-              badgeColor: "bg-sky-100 text-sky-700",
+              badge: tor.alasan === "tidak_makan" ? "Tidak makan"
+                : tor.alasan === "sedang_diobati" ? "Sedang diobati"
+                : "Rutin baby",
+              badgeColor: tor.alasan === "tidak_makan" ? "bg-amber-100 text-amber-800"
+                : tor.alasan === "sedang_diobati" ? "bg-red-100 text-red-700"
+                : "bg-pink-100 text-pink-700",
               isUkurRotasi: true,
               tortoiseId: tor.id,
               tortoiseCode: tor.code,
@@ -412,7 +417,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // Pengingat timbang yang berdiri sendiri di sini DIHAPUS.
   //
   // Layar ini sudah memunculkan tugas timbang dari task SOP "Timbang & ukur
-  // kura (ROTASI OTOMATIS - 2 kura/hari)", yang isinya datang dari fungsi
+  // kura yang ada alasannya (ROTASI OTOMATIS)", yang isinya datang dari fungsi
   // getRotasiUkur — satu-satunya tempat yang benar-benar memutuskan kura mana
   // ditimbang hari ini. Blok lama di sini menghitungnya SEKALI LAGI dengan
   // aturan sendiri (ambang berbeda, sumber tanggal berbeda), sehingga satu

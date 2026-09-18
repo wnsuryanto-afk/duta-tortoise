@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, AlertCircle, Egg, Package, Home, FileWarning } from "lucide-react";
 import { formatDateIndonesian } from "@/lib/formatIndonesian";
-import { golonganStok } from "@/lib/stokMenipis";
+import { golonganStok, akanKadaluarsa, sudahKadaluarsa, dilacak } from "@/lib/stokMenipis";
 
 export default function UrgentAlerts() {
   // Telur dalam masa penetasan
@@ -29,13 +29,23 @@ export default function UrgentAlerts() {
     // Penyaringan barang nonaktif dikerjakan perluDiperhatikan() di sisi klien.
     queryFn: () => base44.entities.WarehouseItem.list("name", 500),
   });
-  const expiredMeds = warehouseItems.filter(item => {
-    if (!item.expired_date || item.category !== 'obat') return false;
-    const expDate = new Date(item.expired_date);
-    const today = new Date();
-    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-    return diffDays <= 30;
-  });
+  /*
+   * Gerbang `category === "obat"` dibuang 17-09-2026.
+   *
+   * Gudang punya tujuh kategori; enam di antaranya tidak pernah terlihat di
+   * kartu ini. Vitamin, suplemen, dan bahan habis pakai juga kedaluwarsa —
+   * Baby Oil (suplemen), Vigantol E dan Vitamin B Kompleks (vitamin) semuanya
+   * lolos tanpa suara. Yang lebih buruk: seseorang sudah repot-repot mengetik
+   * tanggalnya, lalu tanggal itu tidak dipakai untuk apa pun.
+   *
+   * Aturannya sekarang sama dengan pemeriksaan stok harian di server, yang
+   * memang tidak pernah menyaring kategori: kalau tanggalnya ada dan sudah
+   * atau hampir lewat, katakan. Kategorinya urusan tampilan, bukan syarat.
+   */
+  const expiredMeds = warehouseItems.filter(
+    (item) => dilacak(item) && (sudahKadaluarsa(item) || akanKadaluarsa(item)),
+  );
+  const sudahLewat = expiredMeds.filter(sudahKadaluarsa);
 
   // Stok yang perlu diperhatikan — aturan dari lib/stokMenipis.
   //
@@ -118,10 +128,14 @@ export default function UrgentAlerts() {
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Package className="w-4 h-4 text-red-600" />
-                <span className="font-semibold text-red-800 text-sm">Obat Kadaluarsa</span>
+                <span className="font-semibold text-red-800 text-sm">Kedaluwarsa</span>
               </div>
-              <p className="text-xs text-red-700">{expiredMeds.length} obat ≤ 30 hari</p>
-              {expiredMeds.slice(0, 2).map((item, i) => (
+              <p className="text-xs text-red-700">
+                {sudahLewat.length > 0
+                  ? `${sudahLewat.length} sudah lewat tanggal${expiredMeds.length > sudahLewat.length ? `, ${expiredMeds.length - sudahLewat.length} ≤ 30 hari` : ""}`
+                  : `${expiredMeds.length} kedaluwarsa ≤ 30 hari`}
+              </p>
+              {[...sudahLewat, ...expiredMeds.filter((i) => !sudahKadaluarsa(i))].slice(0, 2).map((item, i) => (
                 <p key={i} className="text-xs text-red-600 mt-1">
                   {item.name} - {formatDateIndonesian(item.expired_date)}
                 </p>

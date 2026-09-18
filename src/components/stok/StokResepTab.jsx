@@ -1,4 +1,6 @@
-// Wrapper tipis yang re-use PelletRecipePage content (tanpa header/breadcrumb)
+// Tab Resep pada halaman Stok. Dulu berupa wrapper tipis untuk
+// PelletRecipePage; halaman itu sudah dihapus 17-09-2026 karena salinannya
+// mengurangi stok tanpa StockMovement dan tanpa menurunkan sisa batch.
 // Ini re-render konten resep & produksi langsung di dalam tab
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +17,7 @@ import { Plus, Pencil, Trash2, FlaskConical, CheckCircle2, AlertTriangle, X } fr
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { potongBatchGudang } from "@/lib/pemakaianBarang";
 import {
   rincianBahan, masalahBahan, bahanTanpaHarga, totalBiaya,
   hppHasil, jumlahHasil, cariBarangHasil,
@@ -100,6 +103,10 @@ function RecipeForm({ recipe, feedItems, warehouseItems, onClose, onSaved }) {
 }
 
 function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved, userName, userEmail }) {
+  const { data: batchAktif = [] } = useQuery({
+    queryKey: ["batch-barang", "aktif", 500],
+    queryFn: () => base44.entities.BatchBarang.filter({ status: "aktif" }, "-tanggal_terima", 500),
+  });
   const [qty, setQty] = useState(recipe?.yield_kg || "");
   const [producing, setProducing] = useState(false);
   const [gagal, setGagal] = useState("");
@@ -135,6 +142,11 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           await base44.entities.FeedStock.update(r.item.id, { current_stock: sisa });
         } else {
           await base44.entities.WarehouseItem.update(r.item.id, { current_stock: sisa });
+          // Bahan racikan yang berasal dari gudang ikut menurunkan sisa
+          // batchnya, FEFO. Tanpa ini produksi racikan — pemakaian terbesar
+          // di peternakan ini — memotong stok gudang tanpa menyentuh batch,
+          // dan peringatan kedaluwarsa tetap menghitung bahan yang sudah habis.
+          await potongBatchGudang(base44, batchAktif, r.item.id, r.butuh);
         }
         await base44.entities.StockMovement.create({
           item_id: r.item.id,

@@ -15,6 +15,8 @@ import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
+import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
+import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
 import TortoiseList from "@/pages/TortoiseList";
 import OperationalToday from "@/components/dashboard/OperationalToday";
 import VetContactPage from "@/pages/VetContactPage";
@@ -25,6 +27,7 @@ import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import SupplierPage from "@/pages/SupplierPage";
 import InputBerat from "@/components/common/InputBerat";
 import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
+import PecahBatchDialog from "@/components/stok/PecahBatchDialog";
 import DosisKalkulator from "@/components/health/DosisKalkulator";
 
 /*
@@ -68,6 +71,38 @@ export default [
   ["OwnerDashboard tanpa data", <OwnerDashboard />],
   ["RekapPoinGajiPage tanpa data", <RekapPoinGajiPage />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
+
+  /*
+   * Panel lapor "tidak makan" (17-09-2026). Pemicu utama penimbangan sejak
+   * rotasi dihentikan, jadi ia dibuka kiper tiap kali ada yang janggal.
+   * Kasus tanpa kura diperiksa karena panel ini dirender di dalam kartu kura
+   * yang datanya bisa belum termuat.
+   */
+  ["LaporMakanPanel tanpa kura", <LaporMakanPanel tortoise={undefined} />],
+  ["LaporMakanPanel kura biasa", <LaporMakanPanel tortoise={{ id: "t1", code: "A29", name: "A29", enclosure: "N1" }} />],
+
+  /*
+   * Grafik kepatuhan (18-09-2026). Menggambar SVG dari data, jadi kasus yang
+   * diperiksa adalah bentuk data yang benar-benar terjadi: hari tanpa tugas
+   * terjadwal (persen null), deret kosong, dan satu hari saja — ketiganya
+   * membuat perhitungan koordinat membagi dengan nol kalau tidak dijaga.
+   */
+  ["GrafikKepatuhan kosong", <GrafikKepatuhan hari={[]} />],
+  ["GrafikKepatuhan semua null", <GrafikKepatuhan hari={[
+    { tanggal: "2026-09-16", persen: null, selesai: 0, terjadwal: 0 },
+    { tanggal: "2026-09-17", persen: null, selesai: 0, terjadwal: 0 },
+  ]} />],
+  ["GrafikKepatuhan satu hari", <GrafikKepatuhan hari={[
+    { tanggal: "2026-09-17", persen: 96, selesai: 24, terjadwal: 25 },
+  ]} />],
+  ["GrafikKepatuhan 14 hari dengan lubang", <GrafikKepatuhan hari={[
+    { tanggal: "2026-09-04", persen: 88, selesai: 22, terjadwal: 25 },
+    { tanggal: "2026-09-05", persen: 96, selesai: 24, terjadwal: 25 },
+    { tanggal: "2026-09-06", persen: null, selesai: 0, terjadwal: 0 },
+    { tanggal: "2026-09-07", persen: 72, selesai: 18, terjadwal: 25 },
+    { tanggal: "2026-09-08", persen: 100, selesai: 25, terjadwal: 25 },
+    { tanggal: "2026-09-09", persen: 0, selesai: 0, terjadwal: 25 },
+  ]} />],
   ["GuidedHariIni dengan user", <GuidedHariIni user={{ id: "1", email: "a@b.c", full_name: "Sholeh", role: "keeper" }} />],
 
   // Ditambahkan 10-09-2026. Keduanya diubah cukup dalam hari ini dan
@@ -140,6 +175,23 @@ export default [
     tortoises={[{ id: "t1", weight_grams: 24, shell_length_cm: 54 }]} />],
   ["DosisKalkulator tanpa panjang tempurung", <DosisKalkulator selectedDiagnoses={["shell_rot"]} tortoiseId="t1"
     tortoises={[{ id: "t1", weight_grams: 24 }]} />],
+
+  /*
+   * Pecah batch (17-09-2026). Dialog ini menulis BatchBarang untuk stok yang
+   * sudah ada di rak, dan satu-satunya hal yang menjaga aplikasi tidak punya
+   * dua angka untuk satu rak adalah aturan "jumlah batch harus pas dengan
+   * stok". Kasus stok nol dan satuan kosong diperiksa karena keduanya nyata:
+   * banyak barang gudang berstok 0, dan sebagian tidak punya satuan.
+   */
+  ["PecahBatchDialog stok wajar", <PecahBatchDialog
+    item={{ id: "w1", name: "Stone Breaker", sku: "OBT-0008", current_stock: 15, unit: "botol", expired_date: "2026-11-09", purchase_price: 25000 }}
+    onClose={() => {}} />],
+  ["PecahBatchDialog stok nol", <PecahBatchDialog
+    item={{ id: "w2", name: "Barang kosong", sku: "OBT-0099", current_stock: 0 }}
+    onClose={() => {}} />],
+  ["PecahBatchDialog tanpa satuan & tanggal", <PecahBatchDialog
+    item={{ id: "w3", name: "Tanpa apa-apa", current_stock: 2 }}
+    onClose={() => {}} />],
 
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[

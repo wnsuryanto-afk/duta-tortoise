@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole, potongRapi } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { STATUS_KELUAR } from "../../shared/kura.ts";
 
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       arr.sort((a, b) => String(a.date).localeCompare(String(b.date)));
     }
 
-    const turun: string[] = [];
+    const turun: { teks: string; tanggal: string }[] = [];
     const stagnan: string[] = [];
     const satuanJanggal: string[] = [];
 
@@ -134,10 +134,12 @@ Deno.serve(async (req) => {
 
         const selisihPersen = ((beratSebelum - beratAkhir) / beratSebelum) * 100;
         if (selisihPersen >= ambangTurun) {
-          turun.push(
-            `${t.name || t.code || t.id} turun ${selisihPersen.toFixed(1)}% ` +
-            `(${beratSebelum}g → ${beratAkhir}g, ${terakhir.date})`,
-          );
+          turun.push({
+            tanggal: String(terakhir.date || ""),
+            teks:
+              `${t.name || t.code || t.id} turun ${selisihPersen.toFixed(1)}% ` +
+              `(${beratSebelum}g → ${beratAkhir}g, ${terakhir.date})`,
+          });
           continue; // sudah ditandai, tidak perlu dicek stagnan
         }
       }
@@ -160,8 +162,27 @@ Deno.serve(async (req) => {
         (new Date(terakhir.date).getTime() - new Date(tanggalNaikTerakhir).getTime()) /
         (24 * 60 * 60 * 1000);
       if (selisihHari >= ambangStagnan) {
+        /*
+         * "Tidak naik berat" hanya berarti sesuatu kalau ADA penimbangan
+         * baru untuk dibandingkan.
+         *
+         * AMBON dilaporkan "tidak naik berat sejak 2025-07-12 (320 hari)".
+         * Yang sebenarnya terjadi: AMBON tidak DITIMBANG sejak 2025-07-12.
+         * Dua kalimat itu menyuruh dua pekerjaan berbeda — yang pertama
+         * menyuruh memeriksa kesehatannya, yang kedua menyuruh menimbang —
+         * dan menyebut yang kedua dengan kalimat pertama membuat kiper
+         * mencari penyakit pada kura yang mungkin baik-baik saja.
+         *
+         * Sejak rotasi timbang diganti pemicu (17-09-2026), keadaan ini jadi
+         * lumrah, bukan kekecualian.
+         */
+        const umurBacaan = Math.floor(
+          (Date.parse(hariIni) - Date.parse(terakhir.date)) / 86400000,
+        );
         stagnan.push(
-          `${t.name || t.code || t.id} tidak naik berat sejak ${tanggalNaikTerakhir} (${Math.round(selisihHari)} hari)`,
+          Number.isFinite(umurBacaan) && umurBacaan >= ambangStagnan
+            ? `${t.name || t.code || t.id} belum ditimbang sejak ${terakhir.date} (${umurBacaan} hari) — timbang dulu sebelum disimpulkan`
+            : `${t.name || t.code || t.id} tidak naik berat sejak ${tanggalNaikTerakhir} (${Math.round(selisihHari)} hari)`,
         );
       }
     }
@@ -171,16 +192,54 @@ Deno.serve(async (req) => {
       const penerima = await emailPerRole(base44, ["owner", "manajer"]);
       const bagian: string[] = [];
       if (satuanJanggal.length > 0) bagian.push(`SATUAN BERAT JANGGAL (${satuanJanggal.length}):\n` + satuanJanggal.slice(0, 10).join("\n"));
-      if (turun.length > 0) bagian.push(`TURUN BERAT (${turun.length}):\n` + turun.slice(0, 10).join("\n"));
+      /*
+       * Yang BARU lebih dulu, yang basi disebut apa adanya.
+       *
+       * Penurunan berat tetap dilaporkan tiap hari selama kura itu belum
+       * ditimbang ulang — jadi temuan bulan Juli ikut muncul setiap pagi dan
+       * menenggelamkan yang baru. 17-09-2026 laporannya berbunyi "6 kura
+       * perlu diperiksa": tiga dari Juli yang sudah berkali-kali dibaca, dan
+       * DUA baby yang benar-benar turun kemarin. Yang penting ada di urutan
+       * keempat dan kelima.
+       *
+       * Temuan yang tidak bisa dipadamkan dengan bekerja akan berhenti
+       * dibaca. Yang lama tidak dibuang — ia berpindah ke bawah dengan
+       * sebutan yang jujur: bukan "turun berat", melainkan "belum ditimbang
+       * ulang sejak penurunan itu".
+       */
+      const BATAS_BARU_HARI = 21;
+      const usiaHari = (tgl: string) => {
+        const t = Date.parse(tgl);
+        return Number.isFinite(t) ? Math.floor((Date.now() - t) / 86400000) : 9999;
+      };
+      const baru = turun.filter((x) => usiaHari(x.tanggal) <= BATAS_BARU_HARI)
+        .sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+      const lama = turun.filter((x) => usiaHari(x.tanggal) > BATAS_BARU_HARI)
+        .sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+      if (baru.length > 0) {
+        bagian.push(`TURUN BERAT — BARU (${baru.length}):\n` + baru.slice(0, 10).map((x) => x.teks).join("\n"));
+      }
+      if (lama.length > 0) {
+        bagian.push(
+          `TURUN BERAT — BELUM DITIMBANG ULANG (${lama.length}):\n` +
+          lama.slice(0, 10).map((x) => `${x.teks} — ${usiaHari(x.tanggal)} hari lalu`).join("\n") +
+          "\nTimbang ulang untuk memastikan; selama belum, temuan ini terus muncul.",
+        );
+      }
       if (stagnan.length > 0) bagian.push(`BERHENTI TUMBUH (${stagnan.length}):\n` + stagnan.slice(0, 10).join("\n"));
 
       for (const email of penerima) {
         const dibuat = await notifSekali(base44, {
           recipient_email: email,
-          title: `${turun.length + stagnan.length + satuanJanggal.length} kura perlu diperiksa (berat)`,
-          message: bagian.join("\n\n").slice(0, 900),
-          type: turun.length > 0 || satuanJanggal.length > 0 ? "alert" : "warning",
-          priority: turun.length > 0 || satuanJanggal.length > 0 ? "tinggi" : "sedang",
+          title: baru.length > 0
+            ? `${baru.length} kura BARU turun berat${turun.length - baru.length > 0 ? ` (+${turun.length - baru.length} lama)` : ""}`
+            : `${turun.length + stagnan.length + satuanJanggal.length} kura perlu diperiksa (berat)`,
+          message: potongRapi(bagian.join("\n\n"), 900),
+          // Prioritas tinggi hanya untuk yang BARU. Temuan lama yang sama
+          // berbunyi keras tiap pagi adalah cara tercepat membuat orang
+          // berhenti membuka notifikasi sama sekali.
+          type: baru.length > 0 || satuanJanggal.length > 0 ? "alert" : "warning",
+          priority: baru.length > 0 || satuanJanggal.length > 0 ? "tinggi" : "sedang",
           category: "kesehatan",
           action_label: "Lihat Daftar Kura",
           action_url: "/tortoise",
@@ -200,7 +259,7 @@ Deno.serve(async (req) => {
       satuan_janggal: satuanJanggal.length,
       notifikasi_dibuat: dikirim,
       detail_satuan: satuanJanggal.slice(0, 20),
-      detail_turun: turun.slice(0, 20),
+      detail_turun: turun.slice(0, 20).map((x) => x.teks),
       detail_stagnan: stagnan.slice(0, 20),
     });
   } catch (error) {
