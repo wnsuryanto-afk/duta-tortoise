@@ -16,14 +16,27 @@
  * Satu deret data, jadi satu warna dan tanpa legenda — judul kartu sudah
  * menyebut apa yang digambar.
  *
- * Titik hari ini ditebalkan dan diberi label langsung; sisanya tidak diberi
- * angka. Angka di setiap titik membuat grafik jadi tabel yang sulit dibaca.
+ * ── DUA CACAT YANG KETAHUAN SAAT DILIHAT ───────────────────────────
+ *
+ * Versi pertama dirender lalu dipandang, dan dua hal langsung terlihat:
+ *
+ *   `preserveAspectRatio="none"` meregangkan SELURUH isi svg secara
+ *   mendatar, termasuk hurufnya — "batas baik 90%" jadi melar dan garisnya
+ *   menipis tidak rata. Atribut itu dibuang; lebar mengikuti kotak pandang
+ *   secara wajar.
+ *
+ *   Label persen hari ini ditaruh di kanan titik terakhir, dan titik
+ *   terakhir memang berada di tepi kanan — labelnya terpotong dan menabrak
+ *   titiknya sendiri. Sekarang ia ditaruh DI ATAS titik dan ditarik masuk
+ *   bila mepet tepi.
  */
 
 const LEBAR = 320;
-const TINGGI = 84;
-const PAD_ATAS = 10;
-const PAD_BAWAH = 14;
+const TINGGI = 96;
+const PAD_ATAS = 18;     // ruang untuk label persen hari ini
+const PAD_BAWAH = 16;    // ruang untuk keterangan tanggal
+const PAD_KIRI = 5;
+const PAD_KANAN = 7;
 const AMBANG = 90;
 
 function y(persen) {
@@ -32,9 +45,10 @@ function y(persen) {
 }
 
 export default function GrafikKepatuhan({ hari = [], label = "" }) {
+  const lebarPlot = LEBAR - PAD_KIRI - PAD_KANAN;
   const titik = (hari || []).map((h, i) => ({
     ...h,
-    x: hari.length > 1 ? (i / (hari.length - 1)) * (LEBAR - 8) + 4 : LEBAR / 2,
+    x: hari.length > 1 ? PAD_KIRI + (i / (hari.length - 1)) * lebarPlot : LEBAR / 2,
   }));
   const berisi = titik.filter((t) => t.persen !== null && t.persen !== undefined);
   if (berisi.length === 0) {
@@ -45,86 +59,94 @@ export default function GrafikKepatuhan({ hari = [], label = "" }) {
     );
   }
 
-  const garis = berisi.map((t, i) => `${i === 0 ? "M" : "L"}${t.x.toFixed(1)},${y(t.persen).toFixed(1)}`).join(" ");
+  const garis = berisi
+    .map((t, i) => `${i === 0 ? "M" : "L"}${t.x.toFixed(1)},${y(t.persen).toFixed(1)}`)
+    .join(" ");
+  const dasar = (TINGGI - PAD_BAWAH).toFixed(1);
   const area =
-    `M${berisi[0].x.toFixed(1)},${(TINGGI - PAD_BAWAH).toFixed(1)} ` +
+    `M${berisi[0].x.toFixed(1)},${dasar} ` +
     berisi.map((t) => `L${t.x.toFixed(1)},${y(t.persen).toFixed(1)}`).join(" ") +
-    ` L${berisi[berisi.length - 1].x.toFixed(1)},${(TINGGI - PAD_BAWAH).toFixed(1)} Z`;
+    ` L${berisi[berisi.length - 1].x.toFixed(1)},${dasar} Z`;
   const akhir = berisi[berisi.length - 1];
 
+  // Label hari ini ditarik masuk supaya tidak terpotong tepi kanan.
+  const labelX = Math.min(Math.max(akhir.x, 16), LEBAR - 16);
+
   return (
-    <div className="w-full overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${LEBAR} ${TINGGI}`}
-        className="w-full h-[84px] block"
-        role="img"
-        aria-label={label}
-        preserveAspectRatio="none"
+    <svg
+      viewBox={`0 0 ${LEBAR} ${TINGGI}`}
+      className="w-full block"
+      style={{ maxHeight: 110 }}
+      role="img"
+      aria-label={label}
+    >
+      <defs>
+        <linearGradient id="isiKepatuhan" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.26" />
+          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+
+      {/* Garis dasar & ambang 90% — recessive, tugasnya hanya memberi acuan. */}
+      <line
+        x1="0" y1={TINGGI - PAD_BAWAH} x2={LEBAR} y2={TINGGI - PAD_BAWAH}
+        stroke="hsl(var(--border))" strokeWidth="1"
+      />
+      <line
+        x1="0" y1={y(AMBANG)} x2={LEBAR} y2={y(AMBANG)}
+        stroke="hsl(var(--muted-foreground))" strokeWidth="1"
+        strokeDasharray="3 4" opacity="0.45"
+      />
+
+      <path d={area} fill="url(#isiKepatuhan)" />
+      <path
+        d={garis} fill="none" stroke="hsl(var(--primary))"
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      />
+
+      {/*
+        * Sasaran sentuh dibuat lebih besar dari titiknya: lingkaran tembus
+        * pandang radius 10 supaya jari di layar ponsel tetap mengenainya,
+        * sementara titik yang terlihat tetap kecil.
+        */}
+      {berisi.map((t) => (
+        <g key={t.tanggal}>
+          {t.tanggal !== akhir.tanggal && (
+            <circle cx={t.x} cy={y(t.persen)} r="2.4" fill="hsl(var(--primary))" opacity="0.5" />
+          )}
+          <circle cx={t.x} cy={y(t.persen)} r="10" fill="transparent">
+            <title>{`${t.tanggal}: ${t.persen}% (${t.selesai}/${t.terjadwal} tugas)`}</title>
+          </circle>
+        </g>
+      ))}
+
+      {/* Hari ini: titik tebal + cincin permukaan supaya tidak melebur ke garis. */}
+      <circle cx={akhir.x} cy={y(akhir.persen)} r="5.5" fill="hsl(var(--card))" />
+      <circle cx={akhir.x} cy={y(akhir.persen)} r="3.5" fill="hsl(var(--primary))" />
+      <text
+        x={labelX} y={Math.max(y(akhir.persen) - 9, 9)}
+        fontSize="11" fontWeight="700" textAnchor="middle"
+        fill="hsl(var(--foreground))"
       >
-        <defs>
-          <linearGradient id="isiKepatuhan" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
+        {akhir.persen}%
+      </text>
 
-        {/* Garis dasar & ambang 90% — recessive, tugasnya hanya memberi acuan. */}
-        <line
-          x1="0" y1={TINGGI - PAD_BAWAH} x2={LEBAR} y2={TINGGI - PAD_BAWAH}
-          stroke="hsl(var(--border))" strokeWidth="1"
-        />
-        <line
-          x1="0" y1={y(AMBANG)} x2={LEBAR} y2={y(AMBANG)}
-          stroke="hsl(var(--muted-foreground))" strokeWidth="1"
-          strokeDasharray="3 4" opacity="0.5"
-        />
-        <text
-          x="2" y={y(AMBANG) - 3}
-          fontSize="8" fill="hsl(var(--muted-foreground))"
-        >
-          batas baik 90%
-        </text>
-
-        <path d={area} fill="url(#isiKepatuhan)" />
-        <path
-          d={garis} fill="none" stroke="hsl(var(--primary))"
-          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        />
-
-        {/*
-          * Sasaran sentuh dibuat lebih besar dari titiknya: lingkaran tembus
-          * pandang radius 10 supaya jari di layar ponsel tetap mengenainya,
-          * sementara titik yang terlihat tetap kecil.
-          */}
-        {berisi.map((t) => (
-          <g key={t.tanggal}>
-            <circle cx={t.x} cy={y(t.persen)} r="10" fill="transparent">
-              <title>{`${t.tanggal}: ${t.persen}% (${t.selesai}/${t.terjadwal} tugas)`}</title>
-            </circle>
-            {t.tanggal === akhir.tanggal ? null : (
-              <circle cx={t.x} cy={y(t.persen)} r="2.5" fill="hsl(var(--primary))" opacity="0.55" />
-            )}
-          </g>
-        ))}
-
-        {/* Hari ini: titik tebal + cincin permukaan supaya tidak melebur ke garis. */}
-        <circle cx={akhir.x} cy={y(akhir.persen)} r="5.5" fill="hsl(var(--card))" />
-        <circle cx={akhir.x} cy={y(akhir.persen)} r="4" fill="hsl(var(--primary))" />
-        <text
-          x={Math.min(akhir.x + 8, LEBAR - 26)}
-          y={Math.max(y(akhir.persen) + 3, 10)}
-          fontSize="10" fontWeight="700" fill="hsl(var(--foreground))"
-        >
-          {akhir.persen}%
-        </text>
-
-        <text x="2" y={TINGGI - 3} fontSize="8" fill="hsl(var(--muted-foreground))">
-          {titik[0]?.tanggal?.slice(5)}
-        </text>
-        <text x={LEBAR - 2} y={TINGGI - 3} fontSize="8" textAnchor="end" fill="hsl(var(--muted-foreground))">
-          hari ini
-        </text>
-      </svg>
-    </div>
+      {/* Keterangan ditaruh di baris bawah supaya tidak pernah menabrak garis. */}
+      <text x="0" y={TINGGI - 4} fontSize="8.5" fill="hsl(var(--muted-foreground))">
+        {titik[0]?.tanggal?.slice(5)}
+      </text>
+      <text
+        x={LEBAR / 2} y={TINGGI - 4} fontSize="8.5" textAnchor="middle"
+        fill="hsl(var(--muted-foreground))"
+      >
+        garis putus = batas baik 90%
+      </text>
+      <text
+        x={LEBAR} y={TINGGI - 4} fontSize="8.5" textAnchor="end"
+        fill="hsl(var(--muted-foreground))"
+      >
+        hari ini
+      </text>
+    </svg>
   );
 }
