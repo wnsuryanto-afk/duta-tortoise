@@ -720,7 +720,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
    * seolah barangnya tidak ada.
    */
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
+  const [perPage, setPerPage] = useState(10);
 
   useEffect(() => { setPage(1); }, [search, catFilter, stockFilter, lengkapFilter, perPage]);
 
