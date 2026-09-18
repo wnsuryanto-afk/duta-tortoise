@@ -455,14 +455,10 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
    */
   const kepatuhan = kepatuhanHari(wibToday, sopTasks, logHariIni, 0);
   const todayIncidental = incidentalTasks.filter(t => t.due_date === wibToday && t.status !== "cancelled");
-  const allCompletedTitles = new Set();
   const taskLines: string[] = [];
   for (const cl of checklists) {
     const tasks = cl.completed_tasks || [];
     const X = tasks.length;
-    tasks.forEach(t => {
-      if (t.task_title) allCompletedTitles.add(t.task_title.toLowerCase());
-    });
     const myIncidental = todayIncidental.filter(t =>
       !t.assigned_to_email || t.assigned_to_email === cl.employee_email
     ).length;
