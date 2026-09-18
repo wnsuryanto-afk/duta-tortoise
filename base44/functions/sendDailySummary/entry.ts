@@ -911,6 +911,7 @@ async function buildMorningSummary(base44, settings, wibToday: string, wibNow: D
   ] = await Promise.all([
     base44.asServiceRole.entities.SOPTask.filter({ is_active: true }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.DailyChecklist.filter({ date: wibYesterdayStr }, null, BATAS_AMBIL),
+    base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: wibYesterdayStr }, null, BATAS_AMBIL).catch(() => []),
     base44.asServiceRole.entities.HealthRecord.filter({ type: "sakit" }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.DiagnosisProtocol.filter({ is_active: true }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.WarehouseItem.list("-name", BATAS_AMBIL),
@@ -920,15 +921,14 @@ async function buildMorningSummary(base44, settings, wibToday: string, wibNow: D
   ]);
 
   // ── 1. CARRY-OVER (tugas kemarin belum selesai) ──
-  const yesterdayScheduled = sopTasks.filter(t => isTaskScheduledForDate(t, wibYesterday));
-  const yesterdayCompletedTitles = new Set();
-  for (const cl of checklistsYesterday) {
-    for (const t of (cl.completed_tasks || [])) {
-      if (t.task_title) yesterdayCompletedTitles.add(t.task_title.toLowerCase());
-    }
-  }
-  const carryOver = yesterdayScheduled
-    .filter(t => !yesterdayCompletedTitles.has((t.title || "").toLowerCase()))
+  //
+  // Sumbernya MaintenanceLog + item_id lewat ../../shared/kepatuhan.ts, bukan
+  // pencocokan judul terhadap DailyChecklist. Dengan cara lama, dua tugas
+  // kandang dan tugas rotasi timbang muncul di daftar ini SETIAP PAGI tanpa
+  // kecuali — bukan karena tertinggal, melainkan karena judulnya memang tidak
+  // pernah tercatat di checklist. Pesan pagi yang selalu memuat tuduhan yang
+  // sama adalah pesan yang berhenti dibaca.
+  const carryOver = tugasBelum(sopTasks, logKemarin, wibYesterdayStr)
     .map(t => t.title)
     .filter(Boolean);
   const yesterdayIncidental = incidentalTasks.filter(t =>
