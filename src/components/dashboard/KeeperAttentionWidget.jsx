@@ -13,11 +13,11 @@ export default function KeeperAttentionWidget() {
   });
 
   const today = new Date().toISOString().split("T")[0];
-  const { data: rotasi = { babies: [], dewasa: [] } } = useQuery({
+  const { data: rotasi = [] } = useQuery({
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {
       const res = await base44.functions.invoke("getRotasiUkur", { date: today });
-      return { babies: res.data?.babies || [], dewasa: res.data?.dewasa || [] };
+      return res.data?.perlu || [];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -31,15 +31,19 @@ export default function KeeperAttentionWidget() {
   // 1. Kura sakit
   const sickTortoises = tortoises.filter(sedangSakit);
 
-  // 2. Belum ditimbang (lewat interval)
-  // Dibaca dari getRotasiUkur — sumber yang sama dengan daftar tugas harian.
+  // 2. Perlu ditimbang hari ini — dan KENAPA.
+  // Dibaca dari getRotasiUkur, sumber yang sama dengan daftar tugas harian.
+  //
+  // 17-09-2026: isinya bukan lagi "yang lewat interval". Rotasi diganti
+  // pemicu (tidak makan / sedang diobati / baby jatuh tempo), jadi kura
+  // dewasa sehat tidak muncul di sini walau lama tidak ditimbang.
   //
   // Sebelumnya widget ini menghitung sendiri dengan aturannya sendiri (ambang
   // > interval, hanya membaca last_weighed_date yang kosong pada 93 dari 120
   // kura dewasa), sementara daftar tugas memakai getRotasiUkur (ambang per
-  // kelompok 14/60 hari, membaca MeasurementHistory). Dua layar menyuruh
-  // menimbang kura yang berbeda pada hari yang sama.
-  const notWeighed = [...(rotasi.dewasa || []), ...(rotasi.babies || [])].slice(0, 3);
+  // kelompok, membaca MeasurementHistory). Dua layar menyuruh menimbang kura
+  // yang berbeda pada hari yang sama.
+  const notWeighed = (rotasi || []).slice(0, 3);
 
   // 3. Pengingat perawatan yang sudah lewat jatuh tempo.
   //
@@ -96,8 +100,17 @@ export default function KeeperAttentionWidget() {
             <span className="text-sm">⚖️</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-amber-800 truncate">{t.code || t.name}</p>
+              {/*
+                * `alasanTeks` datang dari getRotasiUkur. Kolom `daysAgo` yang
+                * dibaca di sini sebelumnya SUDAH TIDAK DIKIRIM sejak fungsi itu
+                * ditulis ulang — hasilnya widget ini akan menulis "belum ada
+                * catatan ukur" untuk setiap kura, tanpa error apa pun. Persis
+                * jenis cacat yang penjaga kolom-baca tidak bisa lihat, karena
+                * ini pembacaan properti biasa, bukan saringan entity.
+                */}
               <p className="text-xs text-amber-600">
-                {t.daysAgo === null ? "belum ada catatan ukur" : `terakhir diukur ${t.daysAgo} hari lalu`}
+                {t.alasanTeks
+                  || (t.lastMeasuredDate ? `terakhir diukur ${t.lastMeasuredDate}` : "belum ada catatan ukur")}
               </p>
             </div>
           </div>

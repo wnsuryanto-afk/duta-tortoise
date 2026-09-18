@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibTanggal, wibNow, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibTanggal, wibNow, sudahWaktunya, notifSekali, emailPerRole, potongRapi } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getSettings, getEmployeePhone } from "../../shared/whatsapp.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { STATUS_KELUAR } from "../../shared/kura.ts";
@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
       const ok = await notifSekali(base44, {
         recipient_email: email,
         title: `Kebersihan data mingguan — ${temuan.length} hal perlu dirapikan`,
-        message: isi.slice(0, 900),
+        message: potongRapi(isi, 900),
         type: "info",
         priority: "sedang",
         category: "sistem",

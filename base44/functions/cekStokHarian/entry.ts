@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole, potongRapi } from "../../shared/otomatis.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import {
   stokPerluDiperhatikan, golonganStok, dilacak,
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
           // Judul sengaja hanya menghitung yang bisa langsung dikerjakan.
           // Barang wajib-ada tanpa minimum disebut di badan pesan, bukan di
           // angka yang dilihat orang sekilas.
-          message: bagian.join("\n\n").slice(0, 900),
+          message: potongRapi(bagian.join("\n\n"), 900),
           type: habis.length > 0 || lewatTanggal.length > 0 ? "alert" : "warning",
           priority: habis.length > 0 || lewatTanggal.length > 0 ? "tinggi" : "sedang",
           category: "stok",

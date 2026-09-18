@@ -18,6 +18,8 @@ import { statusStok, URUTAN_STATUS, stokHabis } from "@/lib/stokMenipis";
 // supaya penggabungan tidak menghilangkan kemampuan: saringan kelengkapan data,
 // generate SKU massal, dan pemindai QR untuk menemukan barang dari label cetak.
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
+import PecahBatchDialog from "@/components/stok/PecahBatchDialog";
+import { potongBatchGudang } from "@/lib/pemakaianBarang";
 import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import { toast } from "sonner";
@@ -56,8 +58,22 @@ const LABEL_KATEGORI = {
 };
 
 // ── Expired Date Badge ─────────────────────────────────────────────────
-function ExpiredBadge({ date, item, onSetExpired }) {
+function ExpiredBadge({ date, item, onSetExpired, onPecah }) {
   if (!["obat", "vitamin", "suplemen"].includes(item._cat)) return null;
+  /*
+   * Tombol pecah muncul begitu barang punya stok — bukan hanya saat tanggalnya
+   * sudah diisi. Justru barang dengan dua kiriman berbeda sering hanya punya
+   * satu tanggal tercatat, dan yang hilang adalah yang lebih tua.
+   */
+  const pecah = onPecah && (Number(item.current_stock) || 0) > 0
+    ? (
+      <button onClick={() => onPecah(item)} title="Pecah jadi beberapa batch (tanggal berbeda)"
+        aria-label={`Pecah ${item.name} jadi beberapa batch`}
+        className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border hover:bg-gray-200 transition-colors whitespace-nowrap">
+        ⑂ Pecah
+      </button>
+    )
+    : null;
   if (!date) {
     return (
       <button onClick={() => onSetExpired(item)} title="Set tanggal kadaluarsa"
@@ -67,9 +83,11 @@ function ExpiredBadge({ date, item, onSetExpired }) {
     );
   }
   const days = differenceInDays(parseISO(date), new Date());
-  if (days < 0) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold border border-red-200">🔴 Expired!</span>;
-  if (days <= 30) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 font-semibold border border-yellow-200">🟡 {days}h lagi</span>;
-  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">🟢 {format(parseISO(date), "MMM yy")}</span>;
+  const lencana =
+    days < 0 ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold border border-red-200">🔴 Expired!</span>
+    : days <= 30 ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 font-semibold border border-yellow-200">🟡 {days}h lagi</span>
+    : <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">🟢 {format(parseISO(date), "MMM yy")}</span>;
+  return <span className="inline-flex items-center gap-1 flex-wrap">{lencana}{pecah}</span>;
 }
 
 // ── Photo Thumbnail ────────────────────────────────────────────────────
@@ -528,6 +546,12 @@ function AdjustDialog({ item, onClose }) {
   const [mode, setMode] = useState("tambah");
   const [saving, setSaving] = useState(false);
 
+  const { data: batchAktif = [] } = useQuery({
+    queryKey: ["batch-barang", "aktif", 500],
+    queryFn: () => base44.entities.BatchBarang.filter({ status: "aktif" }, "-tanggal_terima", 500),
+    enabled: item?._src !== "feed",
+  });
+
   const handleSave = async () => {
     const delta = Number(amount);
     if (!delta || delta <= 0) return;
@@ -535,6 +559,27 @@ function AdjustDialog({ item, onClose }) {
     const newStock = mode === "tambah" ? item.current_stock + delta : Math.max(0, item.current_stock - delta);
     if (item._src === "feed") await base44.entities.FeedStock.update(item.id, { current_stock: newStock });
     else await base44.entities.WarehouseItem.update(item.id, { current_stock: newStock });
+
+    /*
+     * Sisa batch ikut turun saat stok dikurangi dari sini.
+     *
+     * Tombol ini memotong stok gudang langsung. Tanpa baris di bawah, total
+     * gudang dan jumlah sisa seluruh batch berpisah diam-diam — lalu layar
+     * kedaluwarsa dan urutan FEFO menunjuk botol yang sebenarnya sudah habis.
+     * Penambahan tidak menyentuh batch: barang masuk tanpa tanggal bukan
+     * batch, dan menebak batch mana yang bertambah lebih buruk daripada
+     * tidak mencatatnya (pakai "Pecah jadi batch" untuk itu).
+     */
+    if (item._src !== "feed" && mode === "kurangi") {
+      const { kurang } = await potongBatchGudang(base44, batchAktif, item.id, delta);
+      if (kurang > 0) {
+        toast.warning(
+          `Stok dikurangi, tapi batch tercatat kurang ${kurang} ${item.unit || ""}. ` +
+          "Sisa batch di aplikasi lebih sedikit daripada yang benar-benar diambil.",
+        );
+      }
+      qc.invalidateQueries({ queryKey: ["batch-barang"] });
+    }
     await base44.entities.StockMovement.create({
       item_id: item.id, item_name: item.name,
       item_type: item._src === "feed" ? "feedstock" : "warehouse",
@@ -585,6 +630,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
   const [detailItem, setDetailItem] = useState(null);
   const [photoItem, setPhotoItem] = useState(null);
   const [expiredItem, setExpiredItem] = useState(null);
+  const [pecahItem, setPecahItem] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [selected, setSelected] = useState({});
   const [labelItems, setLabelItems] = useState(null);
@@ -845,7 +891,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
                     </td>
                     {/* Expired */}
                     <td className="px-4 py-2.5">
-                      <ExpiredBadge date={item.expired_date} item={item} onSetExpired={i => setExpiredItem(i)} />
+                      <ExpiredBadge date={item.expired_date} item={item} onSetExpired={i => setExpiredItem(i)} onPecah={canEdit ? (i => setPecahItem(i)) : undefined} />
                     </td>
                     {/* Status */}
                     <td className="px-4 py-2.5"><StockStatusBadge item={item} /></td>
@@ -920,6 +966,16 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
             <DialogTitle>Tanggal Kadaluarsa</DialogTitle>
           </DialogHeader>
           {expiredItem && <SetExpiredDialog item={expiredItem} onClose={() => setExpiredItem(null)} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pecah stok yang sudah ada di rak menjadi beberapa batch bertanggal */}
+      <Dialog open={!!pecahItem} onOpenChange={o => { if (!o) setPecahItem(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pecah jadi beberapa batch</DialogTitle>
+          </DialogHeader>
+          {pecahItem && <PecahBatchDialog item={pecahItem} onClose={() => setPecahItem(null)} />}
         </DialogContent>
       </Dialog>
 

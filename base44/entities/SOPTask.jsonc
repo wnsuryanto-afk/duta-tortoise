@@ -202,6 +202,11 @@
     "terkunci_alasan": {
       "type": "string",
       "description": "A9 \u2014 Bahan apa yang habis, untuk ditampilkan ke keeper."
+    },
+    "di_luar_persen": {
+      "type": "boolean",
+      "default": false,
+      "description": "18-09-2026: task WADAH yang isinya berubah tiap hari, jadi tidak bisa dinilai sebagai satu centang. Contohnya 'Timbang kura yang ada alasannya (ROTASI OTOMATIS)': di layar kiper ia mekar jadi beberapa baris ukur_rotasi_<id_kura>, dan bisa juga NOL baris kalau memang tidak ada kura yang perlu ditimbang hari itu. Kepatuhan hanya mengenal sop_<id>, sehingga task ini tercatat gagal 14 dari 14 hari \u2014 termasuk pada hari yang jawaban benarnya adalah 'tidak ada yang perlu ditimbang'. Task bertanda ini dikeluarkan dari persentase dan dilaporkan dengan angkanya sendiri, sama seperti kebersihan kandang. Ditandai lewat kolom, bukan pencocokan judul."
     }
   },
   "required": [

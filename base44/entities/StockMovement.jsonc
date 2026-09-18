@@ -70,6 +70,7 @@
         "pengobatan_kura",
         "kebersihan",
         "perbaikan",
+        "dibuang_kedaluwarsa",
         "lainnya"
       ],
       "description": "Keperluan pengambilan (untuk barang keluar)"
