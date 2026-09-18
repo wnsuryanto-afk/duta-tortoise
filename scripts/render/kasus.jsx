@@ -33,6 +33,7 @@ import UnifiedStokPage from "@/pages/UnifiedStokPage";
 import StokInventoryTab from "@/components/stok/StokInventoryTab";
 import StokPergerakanTab from "@/components/stok/StokPergerakanTab";
 import StokResepTab from "@/components/stok/StokResepTab";
+import dataStok from "./data-stok.json";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -210,6 +211,9 @@ export default [
       { id: "w1", name: "Stone Breaker", category: "obat", unit: "botol", current_stock: 3, minimum_stock: 2, purchase_price: 25000, sku: "OBT-0001", expired_date: "2026-11-09" },
       { id: "w2", name: "Spuit", category: "habis_pakai", unit: "pcs", current_stock: 0, minimum_stock: 10, purchase_price: 1000, sku: "ALT-0002" },
     ]} />],
+  ["StokInventoryTab data asli owner", <StokInventoryTab feedstocks={dataStok.feedstocks} warehouseItems={dataStok.warehouseItems} role="owner" />],
+  ["StokInventoryTab data asli kepala feeder", <StokInventoryTab feedstocks={dataStok.feedstocks} warehouseItems={dataStok.warehouseItems} role="kepala_feeder" />],
+  ["StokPergerakanTab data asli", <StokPergerakanTab movements={dataStok.movements} feedstocks={dataStok.feedstocks} warehouseItems={dataStok.warehouseItems} batches={dataStok.batches} role="owner" />],
   ["StokPergerakanTab tanpa data", <StokPergerakanTab movements={[]} feedstocks={[]} warehouseItems={[]} batches={[]} role="owner" />],
   ["StokResepTab tanpa data", <StokResepTab role="owner" />],
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
