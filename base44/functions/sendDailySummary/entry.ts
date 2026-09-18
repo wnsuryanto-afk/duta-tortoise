@@ -436,7 +436,29 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
   }
 
   // ── TUGAS HARI INI ──
-  const scheduledToday = sopTasks.filter(t => isTaskScheduledToday(t, wibNow));
+  /*
+   * Penyebut disaring dengan aturan yang SAMA seperti kartu kepatuhan
+   * (src/lib/kepatuhanSOP.js), bukan hanya "terjadwal hari ini".
+   *
+   * Tanpa saringan ini, pesan WhatsApp sore menuduh tim atas tiga hal yang
+   * bukan kelalaian mereka:
+   *   - di_ubin_kandang  : dikerjakan di layar Kandang, judulnya tidak pernah
+   *                        muncul di completed_tasks, jadi selamanya masuk
+   *                        daftar "Belum selesai".
+   *   - di_luar_persen   : task wadah seperti rotasi timbang, yang isinya bisa
+   *                        NOL baris pada hari tanpa kura yang perlu ditimbang.
+   *   - terkunci_bahan   : bahannya memang habis.
+   *
+   * Angka di grup WhatsApp dan angka di beranda harus sama. Kalau berbeda,
+   * yang dipercaya kiper adalah yang lebih rendah, dan keduanya berhenti
+   * dipercaya.
+   */
+  const scheduledToday = sopTasks.filter(t =>
+    t.di_ubin_kandang !== true &&
+    t.di_luar_persen !== true &&
+    t.terkunci_bahan !== true &&
+    isTaskScheduledToday(t, wibNow)
+  );
   const Y_sop = scheduledToday.length;
   const todayIncidental = incidentalTasks.filter(t => t.due_date === wibToday && t.status !== "cancelled");
   const allCompletedTitles = new Set();
