@@ -3,6 +3,7 @@ import { getSettings, normalizePhone, trackAICall } from "../../shared/whatsapp.
 import { terjadwalPada, tanggalDariWib } from "../../shared/jadwalSOP.ts";
 import { perluDiperhatikan } from "../../shared/stok.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { kepatuhanHari, tugasBelum } from "../../shared/kepatuhan.ts";
 
 /*
  * BATAS_AMBIL dulu didefinisikan di file ini sendiri, lalu ternyata
@@ -351,7 +352,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     users, attendances, checklists, sopTasks,
     warehouseItems, feedStocks, incidentalTasks, toolRequests,
     sickRecords, photoFindings, pakanRecords, treatmentSchedules,
-    stockMovements, tortoises, daftarBelanja,
+    stockMovements, tortoises, daftarBelanja, logHariIni,
   ] = await Promise.all([
     base44.asServiceRole.entities.User.list(null, BATAS_AMBIL),
     base44.asServiceRole.entities.Attendance.filter({ date: wibToday }, null, BATAS_AMBIL),
@@ -368,6 +369,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     base44.asServiceRole.entities.StockMovement.filter({ date: wibToday }, null, BATAS_AMBIL),
     base44.asServiceRole.entities.Tortoise.list("-name", BATAS_AMBIL),
     base44.asServiceRole.entities.ShoppingList.filter({ status: "belum_dibeli" }, null, BATAS_AMBIL).catch(() => []),
+    base44.asServiceRole.entities.MaintenanceLog.filter({ period_key: wibToday }, null, BATAS_AMBIL).catch(() => []),
   ]);
 
   // ── KEHADIRAN ──
@@ -437,29 +439,21 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
 
   // ── TUGAS HARI INI ──
   /*
-   * Penyebut disaring dengan aturan yang SAMA seperti kartu kepatuhan
-   * (src/lib/kepatuhanSOP.js), bukan hanya "terjadwal hari ini".
+   * Kepatuhan dihitung dengan SATU definisi bersama: ../../shared/kepatuhan.ts,
+   * kembaran src/lib/kepatuhanSOP.js yang dipakai beranda.
    *
-   * Tanpa saringan ini, pesan WhatsApp sore menuduh tim atas tiga hal yang
-   * bukan kelalaian mereka:
-   *   - di_ubin_kandang  : dikerjakan di layar Kandang, judulnya tidak pernah
-   *                        muncul di completed_tasks, jadi selamanya masuk
-   *                        daftar "Belum selesai".
-   *   - di_luar_persen   : task wadah seperti rotasi timbang, yang isinya bisa
-   *                        NOL baris pada hari tanpa kura yang perlu ditimbang.
-   *   - terkunci_bahan   : bahannya memang habis.
+   * Yang dipakai dulu di sini adalah pencocokan JUDUL task terhadap
+   * DailyChecklist.completed_tasks[].task_title. Itu rusak tanpa menimbulkan
+   * error: mengganti nama task memutus pasangannya diam-diam, dan task yang
+   * memang tidak pernah lewat checklist — kebersihan per kandang, rotasi
+   * timbang — selamanya masuk daftar "belum selesai" di grup WhatsApp yang
+   * dibaca kipernya sendiri.
    *
-   * Angka di grup WhatsApp dan angka di beranda harus sama. Kalau berbeda,
-   * yang dipercaya kiper adalah yang lebih rendah, dan keduanya berhenti
-   * dipercaya.
+   * Sekarang sumbernya MaintenanceLog + item_id, sama persis seperti beranda.
+   * Angka di WhatsApp dan angka di beranda harus sama; kalau berbeda, yang
+   * dipercaya kiper adalah yang lebih rendah, dan keduanya berhenti dipercaya.
    */
-  const scheduledToday = sopTasks.filter(t =>
-    t.di_ubin_kandang !== true &&
-    t.di_luar_persen !== true &&
-    t.terkunci_bahan !== true &&
-    isTaskScheduledToday(t, wibNow)
-  );
-  const Y_sop = scheduledToday.length;
+  const kepatuhan = kepatuhanHari(wibToday, sopTasks, logHariIni, 0);
   const todayIncidental = incidentalTasks.filter(t => t.due_date === wibToday && t.status !== "cancelled");
   const allCompletedTitles = new Set();
   const taskLines: string[] = [];
@@ -492,8 +486,7 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     }
     taskLines.push(line);
   }
-  const belumSelesai = scheduledToday
-    .filter(t => !allCompletedTitles.has((t.title || "").toLowerCase()))
+  const belumSelesai = tugasBelum(sopTasks, logHariIni, wibToday)
     .map(t => t.title)
     .filter(Boolean)
     .slice(0, 6);
@@ -502,12 +495,14 @@ async function buildDailySummary(base44, settings, wibToday: string, wibNow: Dat
     // Kepatuhan diukur untuk TIM, satu angka untuk hari itu — bukan satu angka
     // per orang. Penyebutnya jumlah tugas terjadwal; pembilangnya tugas yang
     // sudah tersentuh siapa pun.
-    const selesaiTim = scheduledToday.filter(t =>
-      allCompletedTitles.has((t.title || "").toLowerCase())
-    ).length;
-    if (Y_sop > 0) {
-      const pctTim = Math.round((selesaiTim / Y_sop) * 100);
-      lines.push(`Kepatuhan tim: ${selesaiTim}/${Y_sop} tugas (${pctTim}%)`);
+    if (kepatuhan.terjadwal > 0) {
+      lines.push(`Kepatuhan tim: ${kepatuhan.selesai}/${kepatuhan.terjadwal} tugas (${kepatuhan.persen}%)`);
+    }
+    // Kandang dilaporkan sebagai jumlah, bukan persen: penyebutnya (kandang
+    // mana yang wajib) tinggal di src/lib/kandang.js dan belum punya kembaran
+    // backend. Menebaknya di sini berarti mengarang angka.
+    if (kepatuhan.kandangSelesai > 0) {
+      lines.push(`Kandang dikunjungi: ${kepatuhan.kandangSelesai}`);
     }
     lines.push(...taskLines);
     if (belumSelesai.length > 0) {
