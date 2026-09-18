@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode } from "lucide-react";
+import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
 import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
@@ -708,6 +708,31 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
       });
   }, [allItems, search, catFilter, stockFilter, lengkapFilter]);
 
+  /*
+   * ── Halaman daftar ──────────────────────────────────────────────────
+   *
+   * Daftar ini memuat seluruh pakan dan isi gudang sekaligus, dan menggulirnya
+   * sampai bawah untuk menemukan satu botol obat bukan cara kerja gudang.
+   * Karena itu barisnya dipotong per halaman.
+   *
+   * Saat saringan berubah, halaman dikembalikan ke awal: kalau tidak, mencari
+   * "alkohol" sementara posisinya di halaman 7 menampilkan halaman kosong —
+   * seolah barangnya tidak ada.
+   */
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+
+  useEffect(() => { setPage(1); }, [search, catFilter, stockFilter, lengkapFilter, perPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  // Halaman aktif dijepit: menghapus atau menyaring barang bisa membuat jumlah
+  // halaman menyusut sementara nomor halaman masih menunjuk halaman yang sudah
+  // tidak ada — dan itu menampilkan tabel kosong.
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const dari = filtered.length === 0 ? 0 : (currentPage - 1) * perPage + 1;
+  const sampai = Math.min(currentPage * perPage, filtered.length);
+
   const criticalMandatory = allItems.filter(i => i.is_mandatory && ["habis", "menipis"].includes(stockStatus(i))).length;
   const mandatoryEmpty    = allItems.filter(stokHabis).length;
 
@@ -826,14 +851,19 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
                     <input
                       type="checkbox"
                       className="w-3.5 h-3.5 accent-primary"
-                      checked={filtered.length > 0 && filtered.every(i => selected[i._src + "_" + i.id])}
+                      title="Pilih semua yang tampil di halaman ini"
+                      checked={pageItems.length > 0 && pageItems.every(i => selected[i._src + "_" + i.id])}
                       onChange={(e) => {
+                        // Centang di kepala tabel berlaku untuk baris yang
+                        // TERLIHAT saja. Mencentang barang di halaman lain yang
+                        // tidak tampil membuat label tercetak untuk barang yang
+                        // tidak pernah dilihat pemilihnya.
                         if (e.target.checked) {
-                          setSelected(prev => ({ ...prev, ...Object.fromEntries(filtered.map(i => [i._src + "_" + i.id, true])) }));
+                          setSelected(prev => ({ ...prev, ...Object.fromEntries(pageItems.map(i => [i._src + "_" + i.id, true])) }));
                         } else {
                           setSelected(prev => {
                             const n = { ...prev };
-                            filtered.forEach(i => delete n[i._src + "_" + i.id]);
+                            pageItems.forEach(i => delete n[i._src + "_" + i.id]);
                             return n;
                           });
                         }
@@ -850,7 +880,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map(item => (
+                {pageItems.map(item => (
                   <tr key={item._src + item.id} className={`hover:bg-muted/30 transition-colors ${stockStatus(item) === "habis" ? "bg-red-50/50" : ""}`}>
                     {/* Select */}
                     <td className="px-2 py-2">
@@ -926,8 +956,44 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2 border-t text-xs text-muted-foreground bg-muted/20">
-            {filtered.length} item ditampilkan dari {allItems.length} total
+          {/* Bilah halaman — sekaligus menyebut rentang yang sedang dilihat,
+              supaya angkanya bisa dicocokkan dengan hasil saringan di atas. */}
+          <div className="px-4 py-2 border-t bg-muted/20 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>
+              Menampilkan <strong className="text-foreground">{dari}–{sampai}</strong> dari{" "}
+              <strong className="text-foreground">{filtered.length}</strong> item
+              {filtered.length !== allItems.length && <> (total {allItems.length})</>}
+            </span>
+
+            <div className="flex items-center gap-1.5 ml-auto">
+              <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
+                <SelectTrigger className="h-8 w-[104px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[25, 50, 100, 200].map(n => (
+                    <SelectItem key={n} value={String(n)}>{n} / halaman</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline" size="icon" className="h-8 w-8"
+                disabled={currentPage <= 1}
+                onClick={() => setPage(currentPage - 1)}
+                title="Halaman sebelumnya"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+              <span className="px-1 whitespace-nowrap">
+                Hal. <strong className="text-foreground">{currentPage}</strong> / {totalPages}
+              </span>
+              <Button
+                variant="outline" size="icon" className="h-8 w-8"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(currentPage + 1)}
+                title="Halaman berikutnya"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
         </Card>
       )}
