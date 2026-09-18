@@ -31,13 +31,20 @@
  *   bila mepet tepi.
  */
 
+import { AMBANG_BAIK } from "@/lib/kepatuhanSOP";
+
 const LEBAR = 320;
 const TINGGI = 96;
 const PAD_ATAS = 18;     // ruang untuk label persen hari ini
 const PAD_BAWAH = 16;    // ruang untuk keterangan tanggal
 const PAD_KIRI = 5;
 const PAD_KANAN = 7;
-const AMBANG = 90;
+/*
+ * Ambang TIDAK ditulis ulang di sini. Grafik dan kartu harus memakai lantai
+ * target yang sama; dua konstanta 90 di dua berkas adalah cara paling mudah
+ * untuk membuat grafik dan kartu bercerita beda setelah salah satunya diubah.
+ */
+const AMBANG = AMBANG_BAIK;
 
 function y(persen) {
   const tinggiPlot = TINGGI - PAD_ATAS - PAD_BAWAH;
@@ -120,7 +127,14 @@ export default function GrafikKepatuhan({ hari = [], label = "" }) {
         </g>
       ))}
 
-      {/* Hari ini: titik tebal + cincin permukaan supaya tidak melebur ke garis. */}
+      {/*
+        * Titik terakhir = hari SELESAI terakhir, bukan hari ini.
+        *
+        * Hari berjalan sengaja tidak diplot: pada pukul 08.00 ia selalu 0%
+        * dan grafiknya terbaca seperti tim yang ambruk semalam. Angka hari
+        * ini tetap ada, di baris bawah kartu, dengan keterangan "sedang
+        * berjalan" supaya tidak tertukar dengan hari yang gagal.
+        */
       <circle cx={akhir.x} cy={y(akhir.persen)} r="5.5" fill="hsl(var(--card))" />
       <circle cx={akhir.x} cy={y(akhir.persen)} r="3.5" fill="hsl(var(--primary))" />
       <text
@@ -139,13 +153,13 @@ export default function GrafikKepatuhan({ hari = [], label = "" }) {
         x={LEBAR / 2} y={TINGGI - 4} fontSize="8.5" textAnchor="middle"
         fill="hsl(var(--muted-foreground))"
       >
-        garis putus = batas baik 90%
+        {`garis putus = target ${AMBANG}%`}
       </text>
       <text
         x={LEBAR} y={TINGGI - 4} fontSize="8.5" textAnchor="end"
         fill="hsl(var(--muted-foreground))"
       >
-        hari ini
+        {akhir.tanggal?.slice(5)}
       </text>
     </svg>
   );
