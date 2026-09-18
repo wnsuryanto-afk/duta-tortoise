@@ -812,7 +812,14 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
           onGenerateSKU={handleGenerateSKU}
           generatingSKU={generatingSKU}
         />
-        <div className="flex items-center gap-2 ml-auto">
+        {/*
+          Di layar sempit (≤373px) kelompok tombol ini dulu memaksa satu baris
+          sendiri selebar isinya — totalnya melebihi lebar layar, sehingga
+          tombol "+ Tambah Item" di ujung kanan terpotong dan tidak bisa
+          ditekan. Sekarang kelompoknya mengambil lebar penuh dan tombolnya
+          boleh turun ke baris berikutnya, jadi tidak ada yang terpotong.
+        */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
           <Button variant="outline" className="gap-1.5 h-9 text-sm" onClick={() => setShowScanner(true)}>
             <QrCode className="w-4 h-4" /> Scan Barang
           </Button>
