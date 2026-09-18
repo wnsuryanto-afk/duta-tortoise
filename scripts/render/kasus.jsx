@@ -29,6 +29,10 @@ import InputBerat from "@/components/common/InputBerat";
 import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
 import PecahBatchDialog from "@/components/stok/PecahBatchDialog";
 import DosisKalkulator from "@/components/health/DosisKalkulator";
+import UnifiedStokPage from "@/pages/UnifiedStokPage";
+import StokInventoryTab from "@/components/stok/StokInventoryTab";
+import StokPergerakanTab from "@/components/stok/StokPergerakanTab";
+import StokResepTab from "@/components/stok/StokResepTab";
 
 /*
   PENJAGA INI SUDAH DIUJI BISA GAGAL (03-09-2026).
@@ -193,6 +197,21 @@ export default [
     item={{ id: "w3", name: "Tanpa apa-apa", current_stock: 2 }}
     onClose={() => {}} />],
 
+  /*
+   * Halaman Stok & Gudang (18-09-2026). Dilaporkan gagal render di lapangan;
+   * kasus di bawah merendernya pada keadaan aplikasi baru dibuka — data belum
+   * termuat, daftar kosong.
+   */
+  ["UnifiedStokPage tanpa data", <UnifiedStokPage />],
+  ["StokInventoryTab tanpa data", <StokInventoryTab feedstocks={[]} warehouseItems={[]} role="owner" />],
+  ["StokInventoryTab barang contoh", <StokInventoryTab role="owner"
+    feedstocks={[{ id: "f1", name: "Rumput", category: "rumput", unit: "kg", current_stock: 12, minimum_stock: 5, price_per_unit: 3000, sku: "PKN-0001", is_active: true }]}
+    warehouseItems={[
+      { id: "w1", name: "Stone Breaker", category: "obat", unit: "botol", current_stock: 3, minimum_stock: 2, purchase_price: 25000, sku: "OBT-0001", expired_date: "2026-11-09" },
+      { id: "w2", name: "Spuit", category: "habis_pakai", unit: "pcs", current_stock: 0, minimum_stock: 10, purchase_price: 1000, sku: "ALT-0002" },
+    ]} />],
+  ["StokPergerakanTab tanpa data", <StokPergerakanTab movements={[]} feedstocks={[]} warehouseItems={[]} batches={[]} role="owner" />],
+  ["StokResepTab tanpa data", <StokResepTab role="owner" />],
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
     { morph: "normal", gender: "betina" },
