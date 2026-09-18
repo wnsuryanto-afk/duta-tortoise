@@ -3,13 +3,13 @@
  *
  * ── KENAPA BUKAN BATANG ────────────────────────────────────────────
  *
- * Kepatuhan di peternakan ini bergerak di pita 85–100%. Pada skala 0–100,
+ * Kepatuhan di peternakan ini bergerak di pita 85-100%. Pada skala 0-100,
  * empat belas batang setinggi itu terlihat sama persis — mata tidak bisa
  * membedakan 88 dari 97, padahal justru selisih itu yang ingin dilihat.
  *
  * Memendekkan sumbu supaya selisihnya terlihat adalah kebohongan visual:
  * batang yang dipotong pangkalnya membuat 97% terlihat dua kali lebih besar
- * dari 88%. Jadi sumbunya tetap 0–100, bentuknya yang diganti: garis dengan
+ * dari 88%. Jadi sumbunya tetap 0-100, bentuknya yang diganti: garis dengan
  * area tipis membaca perubahan kecil jauh lebih baik daripada batang, dan
  * garis ambang 90% memberi mata tempat berpegang.
  *
@@ -20,10 +20,10 @@
  *
  * Versi pertama dirender lalu dipandang, dan dua hal langsung terlihat:
  *
- *   `preserveAspectRatio="none"` meregangkan SELURUH isi svg secara
- *   mendatar, termasuk hurufnya — "batas baik 90%" jadi melar dan garisnya
- *   menipis tidak rata. Atribut itu dibuang; lebar mengikuti kotak pandang
- *   secara wajar.
+ *   preserveAspectRatio="none" meregangkan SELURUH isi svg secara mendatar,
+ *   termasuk hurufnya — "batas baik 90%" jadi melar dan garisnya menipis
+ *   tidak rata. Atribut itu dibuang; lebar mengikuti kotak pandang secara
+ *   wajar.
  *
  *   Label persen hari ini ditaruh di kanan titik terakhir, dan titik
  *   terakhir memang berada di tepi kanan — labelnya terpotong dan menabrak
@@ -134,16 +134,18 @@ export default function GrafikKepatuhan({ hari = [], label = "" }) {
         * dan grafiknya terbaca seperti tim yang ambruk semalam. Angka hari
         * ini tetap ada, di baris bawah kartu, dengan keterangan "sedang
         * berjalan" supaya tidak tertukar dengan hari yang gagal.
-        */
-      <circle cx={akhir.x} cy={y(akhir.persen)} r="5.5" fill="hsl(var(--card))" />
-      <circle cx={akhir.x} cy={y(akhir.persen)} r="3.5" fill="hsl(var(--primary))" />
-      <text
-        x={labelX} y={Math.max(y(akhir.persen) - 9, 9)}
-        fontSize="11" fontWeight="700" textAnchor="middle"
-        fill="hsl(var(--foreground))"
-      >
-        {akhir.persen}%
-      </text>
+        */}
+      <g>
+        <circle cx={akhir.x} cy={y(akhir.persen)} r="5.5" fill="hsl(var(--card))" />
+        <circle cx={akhir.x} cy={y(akhir.persen)} r="3.5" fill="hsl(var(--primary))" />
+        <text
+          x={labelX} y={Math.max(y(akhir.persen) - 9, 9)}
+          fontSize="11" fontWeight="700" textAnchor="middle"
+          fill="hsl(var(--foreground))"
+        >
+          {akhir.persen}%
+        </text>
+      </g>
 
       {/* Keterangan ditaruh di baris bawah supaya tidak pernah menabrak garis. */}
       <text x="0" y={TINGGI - 4} fontSize="8.5" fill="hsl(var(--muted-foreground))">
