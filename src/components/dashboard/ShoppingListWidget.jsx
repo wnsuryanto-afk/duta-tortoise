@@ -249,26 +249,38 @@ export default function ShoppingListWidget() {
 
   return (
     <div className="card-base p-4 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="w-5 h-5 text-primary" />
+      {/*
+        Header membungkus di layar sempit. Sebelumnya judul, kolom pencarian,
+        dan tombol dipaksa satu baris, sehingga di telepon tombol "Tambah Item"
+        mendorong tepi kanan kartu keluar batas. Di telepon judul kini menempati
+        barisnya sendiri, pencarian mengambil sisa lebar, dan tombolnya menjadi
+        kotak ikon "+"; di layar lebar tampilannya tidak berubah.
+      */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto sm:mr-auto min-w-0">
+          <ShoppingCart className="w-5 h-5 text-primary flex-shrink-0" />
           <h3 className="font-heading font-semibold text-base text-foreground">Daftar Belanja Obat & Alat</h3>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              placeholder="Cari barang..."
-              className="h-8 w-40 sm:w-48 pl-7 text-xs"
-            />
-          </div>
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setShowAddDialog(true)}>
-            <Plus className="w-3.5 h-3.5" /> Tambah Item
-          </Button>
+        <div className="relative flex-1 sm:flex-none min-w-0">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+            placeholder="Cari barang..."
+            className="h-8 w-full sm:w-48 pl-7 text-xs"
+          />
         </div>
+        <Button
+          size="icon"
+          variant="outline"
+          aria-label="Tambah Item"
+          title="Tambah Item"
+          className="h-8 w-8 flex-shrink-0 gap-1.5 text-xs sm:w-auto sm:px-3"
+          onClick={() => setShowAddDialog(true)}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Tambah Item</span>
+        </Button>
       </div>
 
       {/* Ringkasan */}
@@ -340,7 +352,7 @@ export default function ShoppingListWidget() {
         <div className="text-center py-6 text-muted-foreground text-sm">
           <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-30" />
           <p>Daftar belanja kosong</p>
-          <p className="text-xs mt-1">Klik "+ Tambah Item" untuk mulai</p>
+          <p className="text-xs mt-1">Tekan tombol + di atas untuk mulai</p>
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground text-sm">
