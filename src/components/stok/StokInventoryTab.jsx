@@ -969,7 +969,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
               <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
                 <SelectTrigger className="h-8 w-[104px] text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {[25, 50, 100, 200].map(n => (
+                  {[10, 25, 50, 75, 100, 200].map(n => (
                     <SelectItem key={n} value={String(n)}>{n} / halaman</SelectItem>
                   ))}
                 </SelectContent>
