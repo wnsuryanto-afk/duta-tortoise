@@ -73,7 +73,7 @@ export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang =
   // baris sop_<id> biasa, jadi ia harus ikut dihitung di sini. Mengeluarkannya
   // hanya karena berlabel per_kandang membuatnya hilang dari kedua angka.
   const terjadwalList = (sopTasks || []).filter(
-    (t) => t.di_ubin_kandang !== true && terjadwalPada(t, tanggal),
+    (t) => t.di_ubin_kandang !== true && t.di_luar_persen !== true && terjadwalPada(t, tanggal),
   );
   // Tugas yang bahannya sedang habis tidak dihitung sebagai kewajiban: menuntut
   // pekerjaan yang bahannya nol lalu menurunkan angka kepatuhan karenanya
@@ -118,6 +118,24 @@ export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang =
   };
 }
 
+/**
+ * Hari yang sudah selesai — hari berjalan dibuang.
+ *
+ * Kenapa ini ada (18-09-2026): rata-rata 14 hari memasukkan HARI INI, yang
+ * pada pukul 08.00 baru 0% karena kiper belum mulai. Akibatnya kartu selalu
+ * menampilkan angka lebih rendah dari kenyataan sepanjang pagi, dan naik
+ * sendiri menjelang sore. Yang terbaca oleh pemilik bukan "hari baru mulai"
+ * melainkan "tim memburuk". Pada data 5-18 Sep selisihnya 5 poin penuh
+ * (63% vs 68%).
+ *
+ * Hari ini tidak hilang — ia ditampilkan terpisah sebagai angka berjalan.
+ * Yang dibuang hanyalah perannya dalam rata-rata, karena hari yang belum
+ * selesai bukan hari yang gagal.
+ */
+export function hariSelesai(daftar = []) {
+  return (daftar || []).slice(0, -1);
+}
+
 /** Kepatuhan untuk N hari terakhir, terurut dari yang paling lama ke hari ini. */
 export function kepatuhanBeberapaHari(hariTerakhir, sopTasks, logs, jumlahKandang, sampai = new Date()) {
   const hasil = [];
@@ -137,10 +155,29 @@ export function rataRataPersen(daftar = []) {
   return Math.round(angka.reduce((a, b) => a + b, 0) / angka.length);
 }
 
+/**
+ * Lantai target kepatuhan — SATU angka, dipakai kartu maupun grafik.
+ *
+ * Ditetapkan Iwan pada 18-09-2026 di 85%, menggantikan 90%. Alasannya bukan
+ * pelonggaran: setelah dua kebocoran alat ukur ditutup (tugas rotasi timbang
+ * yang mustahil dicentang, dan hari berjalan yang ikut dirata-rata), angka
+ * sebenarnya 73%. Garis 90% membuat kiper melihat merah berbulan-bulan dan
+ * berhenti mempercayainya.
+ *
+ * Ini LANTAI TETAP, bukan rata-rata bergerak. Goal "di atas rata-rata" akan
+ * mengejar ekornya sendiri: setiap kenaikan menaikkan targetnya sendiri, dan
+ * angkanya bisa naik tanpa satu pun pekerjaan tambahan — cukup dengan
+ * menghapus tugas yang sering gagal dari SOP.
+ *
+ * Kalau lantainya diubah, ubah DI SINI saja.
+ */
+export const AMBANG_BAIK = 85;
+export const AMBANG_PERHATIAN = 70;
+
 /** Status yang diucapkan, bukan hanya warna. */
 export function statusKepatuhan(persen) {
   if (persen === null || persen === undefined) return { label: "Belum ada data", nada: "netral" };
-  if (persen >= 90) return { label: "Baik", nada: "baik" };
-  if (persen >= 70) return { label: "Perlu perhatian", nada: "sedang" };
+  if (persen >= AMBANG_BAIK) return { label: "Baik", nada: "baik" };
+  if (persen >= AMBANG_PERHATIAN) return { label: "Perlu perhatian", nada: "sedang" };
   return { label: "Rendah", nada: "buruk" };
 }
