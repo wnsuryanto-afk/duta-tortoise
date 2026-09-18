@@ -300,24 +300,28 @@ export default function TortoiseList() {
       />
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
-        <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="kura" className="flex-1 sm:flex-none gap-1.5">
+        {/* Lima tab tidak muat di lebar ponsel: dengan flex-1 tiap tab
+            dihimpit sampai label dan angkanya terpotong, dan karena labelnya
+            whitespace-nowrap isinya meluber keluar kotak. Sekarang deretan
+            tabnya digulir ke samping — tiap tab selebar isinya sendiri. */}
+        <TabsList className="w-full sm:w-auto overflow-x-auto justify-start">
+          <TabsTrigger value="kura" className="shrink-0 gap-1.5">
             <Shell className="w-4 h-4" /> Kura-kura
             <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "aktif" && !t.is_archived).length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="kandang" className="flex-1 sm:flex-none gap-1.5">
+          <TabsTrigger value="kandang" className="shrink-0 gap-1.5">
             <Home className="w-4 h-4" /> Kandang
             <Badge variant="secondary" className="text-xs ml-1">{enclosures.filter(e => e.is_active !== false).length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="karantina" className="flex-1 sm:flex-none gap-1.5">
+          <TabsTrigger value="karantina" className="shrink-0 gap-1.5">
             <CalendarX className="w-4 h-4" /> Karantina
             <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.in_quarantine === true).length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="kematian" className="flex-1 sm:flex-none gap-1.5">
+          <TabsTrigger value="kematian" className="shrink-0 gap-1.5">
             <Skull className="w-4 h-4" /> Kematian
             <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "mati" || t.is_archived).length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="terjual" className="flex-1 sm:flex-none gap-1.5">
+          <TabsTrigger value="terjual" className="shrink-0 gap-1.5">
             <ShoppingBag className="w-4 h-4" /> Terjual
             <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "terjual").length}</Badge>
           </TabsTrigger>
