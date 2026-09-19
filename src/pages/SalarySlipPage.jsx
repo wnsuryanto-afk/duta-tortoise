@@ -18,15 +18,14 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 import AlurGaji from "@/components/salary/AlurGaji";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
+import { ringkasUangSlip, rupaStatusSlip } from "@/lib/slipGaji";
 import PageHeader from "@/components/common/PageHeader";
 import { WalletArt } from "@/components/common/Illustration";
 import { Receipt } from "lucide-react";
 
-const statusConfig = {
-  draft:    { label: "Draft",     color: "bg-muted text-foreground" },
-  approved: { label: "Disetujui", color: "bg-blue-100 text-blue-700" },
-  paid:     { label: "Dibayar",   color: "bg-green-100 text-green-700" },
-};
+// Rupa status pindah ke lib/slipGaji.js. Peta lama di sini tidak memuat
+// "dibatalkan", dan pemanggilnya jatuh ke `|| statusConfig.draft` — slip yang
+// sudah dibatalkan tampil persis seperti slip yang menunggu diproses.
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -93,8 +92,13 @@ export default function SalarySlipPage() {
     return Object.entries(map).sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
   }, [filtered]);
 
-  const totalPaid = filtered.filter(s => s.status === "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
-  const totalPending = filtered.filter(s => s.status !== "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
+  // `status !== "paid"` bukan "belum dibayar", melainkan "apa pun selain
+  // dibayar" — dan yang ikut tertangkap adalah slip yang sudah DIBATALKAN.
+  // Di data yang ada, kelima slip berstatus dibatalkan dan ditandai
+  // dikecualikan dari laporan; jumlahnya Rp 4.925.850 terbaca sebagai gaji
+  // yang masih harus dibayarkan padahal tidak sepeser pun terutang.
+  const { dibayar: totalPaid, terutang: totalPending, batal: totalBatal, jumlahBatal } =
+    ringkasUangSlip(filtered);
 
   if (!canAccess(role, "payroll") && !canAccess(role, "salary-slip")) return <AccessDenied />;
 
@@ -116,6 +120,12 @@ export default function SalarySlipPage() {
         chips={[
           { key: "belum", label: "Belum dibayar", value: fmt(totalPending), tone: totalPending > 0 ? "warn" : "good" },
           { key: "lunas", label: "Sudah dibayar", value: fmt(totalPaid) },
+          // Slip batal disebut, bukan dihilangkan: lima slip yang lenyap dari
+          // hitungan tanpa keterangan lebih membingungkan daripada lima slip
+          // yang tertulis batal.
+          ...(jumlahBatal > 0
+            ? [{ key: "batal", label: `${jumlahBatal} slip dibatalkan`, value: fmt(totalBatal) }]
+            : []),
         ]}
       />
 
@@ -225,14 +235,14 @@ export default function SalarySlipPage() {
           ) : (
             <div className="space-y-3">
               {filtered.map(slip => {
-                const conf = statusConfig[slip.status] || statusConfig.draft;
+                const conf = rupaStatusSlip(slip.status);
                 return (
                   <Card key={slip.id} className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-semibold">{resolveName(slip.employee_email, slip.employee_name)}</span>
-                          <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
+                          <Badge className={`text-[11px] ${conf.kelas}`}>{conf.label}</Badge>
                           <Badge variant="outline" className="text-[11px]">{formatRole(slip.employee_role)}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">

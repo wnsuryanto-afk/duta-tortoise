@@ -19,6 +19,7 @@ import AlurGaji from "@/components/salary/AlurGaji";
 import { hanyaLaporan } from "@/lib/laporan";
 import { ringkasPoin } from "@/lib/poinChecklist";
 import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
+import { rupaStatusSlip } from "@/lib/slipGaji";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -502,14 +503,12 @@ export default function RekapPoinGajiPage() {
                       {row.existingSlip ? "Update" : "Generate"}
                     </Button>
                   </div>
+                  {/* Rantai `? :` ini dulu berakhir di "Draft", jadi slip yang
+                      sudah dibatalkan terbaca sebagai slip yang menunggu
+                      diproses — tepat di sebelah tombol "Update". */}
                   {row.existingSlip && (
-                    <Badge className={`text-[10px] ${
-                      row.existingSlip.status === "paid" ? "bg-green-100 text-green-700" :
-                      row.existingSlip.status === "approved" ? "bg-blue-100 text-blue-700" :
-                      "bg-muted text-foreground"
-                    }`}>
-                      {row.existingSlip.status === "paid" ? "✓ Dibayar" :
-                       row.existingSlip.status === "approved" ? "Disetujui" : "Draft"}
+                    <Badge className={`text-[10px] ${rupaStatusSlip(row.existingSlip.status).kelas}`}>
+                      {rupaStatusSlip(row.existingSlip.status).label}
                     </Badge>
                   )}
                 </div>

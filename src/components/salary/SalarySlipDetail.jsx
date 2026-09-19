@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Printer, CheckCircle2, XCircle, Clock, X, ChevronDown, ChevronRight, ImagePlus } from "lucide-react";
+import { Printer, CheckCircle2, XCircle, X, ChevronDown, ChevronRight, ImagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
@@ -13,14 +13,9 @@ import { formatRole } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
 import PaymentProofDialog from "@/components/salary/PaymentProofDialog";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
+import { rupaStatusSlip } from "@/lib/slipGaji";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
-
-const statusConfig = {
-  draft:    { label: "Draft",     icon: Clock,        color: "bg-muted text-foreground" },
-  approved: { label: "Disetujui", icon: CheckCircle2, color: "bg-blue-100 text-blue-700" },
-  paid:     { label: "Dibayar",   icon: CheckCircle2, color: "bg-green-100 text-green-700" },
-};
 
 export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const { user, role } = useCurrentUser();
@@ -40,8 +35,9 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const canReview = ["owner", "admin", "manajer"].includes(role);
   const canPay = role === "owner";
   const settings = companySettings || {};
-  const conf = statusConfig[slip.status] || statusConfig.draft;
-  const StatusIcon = conf.icon;
+  // Status tak dikenal tidak lagi menyamar jadi "Draft" — lihat lib/slipGaji.js.
+  const conf = rupaStatusSlip(slip.status);
+  const StatusIcon = conf.ikon;
 
   const isWeekly = slip.period_type === "weekly";
   // Nilai per poin untuk tampilan: pakai snapshot slip bila ada (slip mingguan baru),
@@ -187,7 +183,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
           <DialogTitle className="flex items-center justify-between pr-6">
             <span>Detail Slip Gaji</span>
             <div className="flex items-center gap-2">
-              <Badge className={`text-xs ${conf.color}`}>
+              <Badge className={`text-xs ${conf.kelas}`}>
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {conf.label}
               </Badge>

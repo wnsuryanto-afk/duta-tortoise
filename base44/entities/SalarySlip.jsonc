@@ -178,10 +178,11 @@
       "enum": [
         "draft",
         "approved",
-        "paid"
+        "paid",
+        "dibatalkan"
       ],
       "default": "draft",
-      "description": "draft \u2192 approved (diperiksa admin) \u2192 paid (dibayar owner)"
+      "description": "draft \u2192 approved (diperiksa admin) \u2192 paid (dibayar owner). \"dibatalkan\" sudah ada di data tetapi belum pernah tercantum di sini, sehingga tiga layar menampilkannya sebagai \"Draft\" \u2014 slip batal terlihat seperti slip yang menunggu diproses. Kata yang sama sudah jadi status resmi di Pembelian dan Tugas Insidentil."
     },
     "approved_by": {
       "type": "string",
