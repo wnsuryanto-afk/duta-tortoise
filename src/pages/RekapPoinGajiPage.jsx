@@ -16,9 +16,9 @@ import { toast } from "sonner";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import AlurGaji from "@/components/salary/AlurGaji";
-import { useVegTrips } from "@/hooks/useVegTrips";
 import { hanyaLaporan } from "@/lib/laporan";
 import { ringkasPoin } from "@/lib/poinChecklist";
+import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -71,7 +71,13 @@ export default function RekapPoinGajiPage() {
     queryFn: async () => hanyaLaporan(await base44.entities.OvertimeLog.list("-date", 300)),
   });
 
-  const { data: vegTripsMap = {} } = useVegTrips(selectedMonth);
+  // Sumber upah trip disatukan ke RempesanLog — sama dengan slip mingguan.
+  // Lihat catatan di lib/rempesan.js: sebelumnya ada TIGA sumber berbeda untuk
+  // satu kejadian yang sama, dan yang dipakai bergantung pada layar mana.
+  const { data: rempesanLogs = [] } = useQuery({
+    queryKey: ["rempesan-logs"],
+    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
+  });
 
   const monthStart = selectedMonth + "-01";
   const monthEnd = format(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1), "yyyy-MM") + "-01";
@@ -87,7 +93,7 @@ export default function RekapPoinGajiPage() {
       const salaryType = daily ? "harian" : "bulanan";
       const absentDeduction = config?.absent_deduction || 0;
       const overtimeRate = config?.overtime_rate_per_hour || 0;
-      const vegRate = config?.vegetable_rate_per_trip || 0;
+      const { tarif: vegRate } = tarifTrip(config);
 
       // Poin dari BonusReward (existing)
       const empBonus = bonusRewards.find(b => b.employee_email === emp.email && b.period === selectedMonth);
@@ -122,8 +128,13 @@ export default function RekapPoinGajiPage() {
       const totalOvertimeHours = empOvertime.reduce((s, o) => s + (o.hours || 0), 0);
       const overtimePay = totalOvertimeHours * overtimeRate;
 
-      const vegData = vegTripsMap[emp.email] || { trips: 0, dates: [] };
-      const totalVegTrips = daily ? vegData.trips : 0;
+      // `monthEnd` di halaman ini adalah tanggal 1 bulan BERIKUTNYA dan dipakai
+      // eksklusif (`date < monthEnd`) — batasnya disebut tegas supaya trip di
+      // hari terakhir bulan tidak hilang maupun terhitung dua kali.
+      const vegData = daily
+        ? tripPerPeriode(rempesanLogs, emp.email, monthStart, monthEnd, { akhirInklusif: false })
+        : { trips: 0, tanggal: [] };
+      const totalVegTrips = vegData.trips;
       const vegPay = totalVegTrips * vegRate;
 
       let effectiveBase = salaryType === "harian" ? hadirDays * baseSalary : baseSalary;
@@ -154,12 +165,12 @@ export default function RekapPoinGajiPage() {
         emp, config, totalPoin, targetTercapai, selisihPoin,
         bonus, potonganPoin, kpiBonus, netTotal, effectiveBase,
         poinMenungguBulan, jumlahMenunggu,
-        overtimePay, vegPay, vegTrips: totalVegTrips, vegDates: vegData.dates,
+        overtimePay, vegPay, vegTrips: totalVegTrips, vegDates: vegData.tanggal,
         deduction, kasbonDeduction, kasbonIdsToDeduct, kasbonRemaining, hadirDays,
         existingSlip, pointValue,
       };
     });
-  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegTripsMap, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING]);
+  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, rempesanLogs, selectedMonth, TARGET_POIN_SETTING, NILAI_PER_POIN_SETTING]);
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
@@ -194,9 +205,14 @@ export default function RekapPoinGajiPage() {
       base_salary: row.effectiveBase,
       kpi_bonus: row.kpiBonus,
       overtime_pay: row.overtimePay,
-      vegetable_pay: row.vegPay,
-      vegetable_trips: row.vegTrips,
-      vegetable_trip_dates: row.vegDates,
+      // Sejak sumbernya RempesanLog, upah trip ditulis ke kolom rempesan_*
+      // seperti yang sudah dilakukan slip mingguan. Kolom vegetable_* sudah
+      // ditandai "(Legacy)" di skema; diisi nol supaya slip lama tetap bisa
+      // dicetak sementara slip baru tidak lagi menambah angka ke sana.
+      vegetable_pay: 0, vegetable_trips: 0, vegetable_trip_dates: [],
+      rempesan_pay: row.vegPay,
+      rempesan_trips: row.vegTrips,
+      rempesan_dates: row.vegDates,
       absent_deduction: row.deduction,
       kasbon_deduction: row.kasbonDeduction,
       kasbon_ids: row.kasbonIdsToDeduct,
@@ -272,9 +288,10 @@ export default function RekapPoinGajiPage() {
         base_salary: row.effectiveBase,
         kpi_bonus: row.kpiBonus,
         overtime_pay: row.overtimePay,
-        vegetable_pay: row.vegPay,
-        vegetable_trips: row.vegTrips,
-        vegetable_trip_dates: row.vegDates,
+        vegetable_pay: 0, vegetable_trips: 0, vegetable_trip_dates: [],
+        rempesan_pay: row.vegPay,
+        rempesan_trips: row.vegTrips,
+        rempesan_dates: row.vegDates,
         absent_deduction: row.deduction,
         kasbon_deduction: row.kasbonDeduction,
         kasbon_ids: row.kasbonIdsToDeduct,

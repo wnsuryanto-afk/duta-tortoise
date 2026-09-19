@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { useVegTrips } from "@/hooks/useVegTrips";
 import { hanyaLaporan } from "@/lib/laporan";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,7 +78,14 @@ export default function MonthlySalaryPage() {
     enabled: isAdmin,
   });
 
-  const { data: vegTripsMap = {} } = useVegTrips(period, isAdmin);
+  // Upah trip dibaca dari RempesanLog — sumber yang sama dengan slip mingguan.
+  // Sebelumnya `useVegTrips` menurunkannya dari PakanHarian, sehingga pratinjau
+  // bulanan dan slip mingguan menjawab berbeda untuk trip yang sama.
+  const { data: rempesanLogs = [] } = useQuery({
+    queryKey: ["rempesan-logs"],
+    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
+    enabled: isAdmin,
+  });
 
   const { data: bonusRewards = [] } = useQuery({
     queryKey: ["bonus-rewards", period],
@@ -124,7 +130,7 @@ export default function MonthlySalaryPage() {
         bonusRewards,
         attendances,
         overtimeLogs,
-        vegTripsMap,
+        rempesanLogs,
         kasbons,
         periode: period,
         awal,
@@ -154,7 +160,7 @@ export default function MonthlySalaryPage() {
         netSalary: h.bersih,
       };
     }).sort((a, b) => b.netSalary - a.netSalary);
-  }, [salaryConfigs, users, attendances, checklists, bonusRewards, overtimeLogs, vegTripsMap, kasbons, userProfiles, period]);
+  }, [salaryConfigs, users, attendances, checklists, bonusRewards, overtimeLogs, rempesanLogs, kasbons, userProfiles, period]);
 
   const totalNet = salaryData.reduce((s, e) => s + e.netSalary, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === period)?.label || period;

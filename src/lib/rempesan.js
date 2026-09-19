@@ -36,8 +36,12 @@
  * `rempesan_rate_per_trip` **kosong di keempat baris SalaryConfig**. Angka
  * Rp 30.000 yang tampil di mana-mana berasal dari nilai cadangan yang ditulis
  * di dalam kode (`?? 30000`), bukan dari setelan yang pernah disimpan pemilik.
- * Selama kolomnya kosong, mengubah tarif lewat halaman pengaturan adalah
- * satu-satunya cara membuatnya berhenti menjadi tebakan kode.
+ *
+ * Yang tersimpan justru kolom jalur lama, `vegetable_rate_per_trip` — berisi
+ * Rp 30.000 pada keeper dan kepala_feeder. Karena itu `tarifTrip` memakainya
+ * sebagai cadangan kedua sebelum jatuh ke angka mati: kebetulan nilainya sama,
+ * tetapi yang satu keputusan pemilik dan yang satu tebakan pemrogram, dan
+ * keduanya tidak boleh diperlakukan sama.
  */
 
 /** Alasan absensi yang berarti "orang ini sedang mengambil pakan". */
@@ -52,14 +56,26 @@ export const MAKS_TRIP_PER_HARI = 1;
 /**
  * Tarif satu trip untuk sebuah konfigurasi peran.
  *
- * Mengembalikan `{ tarif, dariSetelan }`. `dariSetelan` false berarti angkanya
- * cadangan dari kode — pemanggil boleh mengatakannya apa adanya alih-alih
- * menampilkannya seolah-olah itu keputusan pemilik.
+ * Mengembalikan `{ tarif, dariSetelan, sumber }`. `dariSetelan` false berarti
+ * angkanya cadangan dari kode — pemanggil boleh mengatakannya apa adanya
+ * alih-alih menampilkannya seolah-olah itu keputusan pemilik.
+ *
+ * `vegetable_rate_per_trip` dipakai sebagai cadangan KEDUA, sebelum angka
+ * mati di kode. Itu tarif jalur lama, dan di data yang ada ia BERISI
+ * (Rp 30.000 pada keeper dan kepala_feeder) sementara
+ * `rempesan_rate_per_trip` kosong. Memakainya lebih setia pada keputusan
+ * pemilik daripada jatuh ke angka yang ditulis pemrogram.
  */
 export function tarifTrip(config) {
-  const t = config?.rempesan_rate_per_trip;
-  if (typeof t === "number" && t >= 0) return { tarif: t, dariSetelan: true };
-  return { tarif: TARIF_TRIP_BAWAAN, dariSetelan: false };
+  const baru = config?.rempesan_rate_per_trip;
+  if (typeof baru === "number" && baru >= 0) {
+    return { tarif: baru, dariSetelan: true, sumber: "rempesan" };
+  }
+  const lama = config?.vegetable_rate_per_trip;
+  if (typeof lama === "number" && lama > 0) {
+    return { tarif: lama, dariSetelan: true, sumber: "sayur_lama" };
+  }
+  return { tarif: TARIF_TRIP_BAWAAN, dariSetelan: false, sumber: "bawaan" };
 }
 
 /** Catatan yang masih "hidup" — ditolak tidak menghalangi pencatatan ulang. */
@@ -138,4 +154,87 @@ export function tripSah(logs = []) {
 export function tripKembar(log, logs = []) {
   if (!log || log.status !== "approved") return false;
   return !tripSah(logs).some((l) => l.id === log.id);
+}
+
+/**
+ * Trip yang dibayar untuk satu orang pada satu rentang tanggal.
+ *
+ * SATU-SATUNYA tempat yang boleh menjawab "berapa trip yang dibayar". Sebelum
+ * ini ada TIGA jawaban, masing-masing dari sumber yang berbeda:
+ *
+ *   1. `RempesanLog` disetujui           → slip MINGGUAN
+ *   2. `PakanHarian` bersumber sayur     → pratinjau & penerbit BULANAN
+ *   3. `VegetablePickup`                 → halaman "Hitung Gaji"
+ *
+ * Satu kejadian nyata yang sama — keeper pergi mengambil pakan — dibayar dari
+ * tiga tempat yang tidak saling tahu, dengan dua kolom tarif yang berbeda
+ * (`rempesan_rate_per_trip` dan `vegetable_rate_per_trip`). Berapa yang
+ * diterima orangnya bergantung pada jenis slip mana yang kebetulan diterbitkan
+ * pemilik bulan itu.
+ *
+ * Yang ketiga ditulis pemilik sendiri lewat dialog "Catat Sayur" di halaman
+ * Payroll — pemilik mencatatkan trip atas nama karyawan, tanpa persetujuan,
+ * karena ia sendiri yang menyetujui. Isinya nol, tetapi jalurnya hidup. Yang
+ * membuatnya berbahaya: kolom `trips` boleh diisi lebih dari satu dan
+ * dijumlahkan tanpa membuang tanggal kembar, sehingga ia bisa membayar dua
+ * trip sehari padahal seluruh aplikasi lain sepakat maksimal satu.
+ *
+ * `RempesanLog` yang dipilih karena hanya ia yang punya persetujuan pemilik,
+ * berat, dan foto. Skema SalarySlip pun sudah menandai `vegetable_pay`,
+ * `vegetable_trips`, dan `vegetable_trip_dates` sebagai "(Legacy)" serta
+ * menyediakan `rempesan_pay`/`rempesan_trips`/`rempesan_dates` — perpindahannya
+ * memang sudah dimulai, hanya tidak pernah diselesaikan.
+ *
+ * Batas akhirnya HARUS disebut di tempat pemanggilan. Slip mingguan memakai
+ * Minggu–Sabtu dengan kedua ujung ikut (`akhirInklusif`, bawaan), sedangkan
+ * `hitungGaji` bulanan memakai `date < akhir`. Diam-diam menganggap keduanya
+ * sama berarti satu trip di hari terakhir periode hilang atau terhitung dua
+ * kali, dan itu persis jenis selisih yang tidak akan pernah ada yang melapor.
+ */
+export function tripPerPeriode(logs = [], email, awal, akhir, { akhirInklusif = true } = {}) {
+  if (!email || !awal || !akhir) return { trips: 0, tanggal: [] };
+  const tanggal = tripSah(logs)
+    .filter((l) => l.employee_email === email)
+    .filter((l) => l.date >= awal && (akhirInklusif ? l.date <= akhir : l.date < akhir))
+    .map((l) => l.date)
+    .sort();
+  return { trips: tanggal.length, tanggal };
+}
+
+/**
+ * Hari yang menurut catatan PAKAN dipakai mengambil sayur/rumput, tetapi
+ * rempesannya belum pernah dicatat.
+ *
+ * Dipakai bersama `hariRumputBelumDicatat`. Sejak upah trip hanya dibayar dari
+ * `RempesanLog`, hari yang cuma tercatat di `PakanHarian` tidak lagi
+ * menghasilkan uang — jadi ia harus DITAGIH, bukan dibiarkan hilang diam-diam.
+ * Itu bedanya merapikan dengan memotong.
+ */
+export const SUMBER_PAKAN_TRIP = ["sayur_pasar", "campur"];
+
+export function hariPakanBelumDicatat(pakanHarian = [], logs = [], { email } = {}) {
+  const terlihat = new Set();
+  return (pakanHarian || [])
+    .filter((p) => SUMBER_PAKAN_TRIP.includes(p?.feed_source))
+    .filter((p) => p.recorded_by_email && p.log_date && p.log_date !== "null")
+    .filter((p) => (email ? p.recorded_by_email === email : true))
+    .filter((p) => !sudahAdaRempesan(logs, p.recorded_by_email, p.log_date))
+    .filter((p) => {
+      // Satu hari hanya ditagih sekali meski pakannya dicatat beberapa kali.
+      const kunci = `${p.recorded_by_email}|${p.log_date}`;
+      if (terlihat.has(kunci)) return false;
+      terlihat.add(kunci);
+      return true;
+    })
+    .map((p) => ({
+      id: `pakan-${p.id}`,
+      email: p.recorded_by_email,
+      nama: p.recorded_by_name || p.recorded_by_email,
+      tanggal: p.log_date,
+      jamMasuk: "",
+      fotoUrl: "",
+      catatan: p.notes || "dari catatan Pakan Harian",
+      dariPakan: true,
+    }))
+    .sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
 }

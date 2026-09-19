@@ -17,6 +17,7 @@ import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import WeeklyRateSettings from "@/components/salary/WeeklyRateSettings";
 import { getWeekOptions, formatWeekLabel, getWeekEnd, safeParseDate, calcWeeklyOvertime } from "@/lib/weeklySalaryUtils";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
+import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const DAY_LABELS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
@@ -102,7 +103,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
       const config = salaryConfigs.find((c) => c.role === emp.role) || {};
       const dailyRate = config.base_salary ?? DEFAULT_RATES.base_salary;
       const overtimeRate = config.overtime_rate_per_hour ?? DEFAULT_RATES.overtime_rate_per_hour;
-      const rempesanRate = config.rempesan_rate_per_trip ?? DEFAULT_RATES.rempesan_rate_per_trip;
+      const { tarif: rempesanRate } = tarifTrip(config);
 
       const empAtt = weekAttendances.filter((a) => a.employee_email === emp.email);
       const hadirDays = empAtt.filter((a) => a.status === "hadir").length;
@@ -121,13 +122,14 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         : Number(manualOvertime[emp.email] || 0);
       const overtimePay = overtimeHours * overtimeRate;
 
-      // Rempesan: dedup per tanggal, maks 1 trip per hari
-      const rempesanDatesSet = new Set();
-      weekRempesan
-        .filter((r) => r.employee_email === emp.email)
-        .forEach((r) => { if (r.date) rempesanDatesSet.add(r.date); });
-      const rempesanDates = [...rempesanDatesSet].sort();
-      const rempesanTrips = rempesanDates.length;
+      // Rempesan: dedup per tanggal, maks 1 trip per hari. Perhitungannya
+      // sekarang dipinjam dari lib/rempesan.js — fungsi yang sama persis
+      // dipakai pratinjau dan penerbit slip BULANAN, supaya tiga layar tidak
+      // lagi menjawab berbeda untuk trip yang sama. Minggu–Sabtu keduanya ikut,
+      // jadi batas akhirnya inklusif.
+      const { trips: rempesanTrips, tanggal: rempesanDates } = tripPerPeriode(
+        rempesanLogs, emp.email, weekStart, weekEnd, { akhirInklusif: true },
+      );
       const rempesanPay = rempesanTrips * rempesanRate;
 
       // Poin dari checklist approved
@@ -177,7 +179,7 @@ export default function WeeklySlipManager({ settings, isManagerRole, user }) {
         existingSlip, slipPaid, profile,
       };
     });
-  }, [employees, salaryConfigs, weekAttendances, weekChecklists, weekRempesan, kasbons, slips, weekStart, nilaiPerPoin, nilaiNol, poinBonusEnabled, autoOvertime, manualOvertime, kasbonDecisions, days, userProfiles]);
+  }, [employees, salaryConfigs, weekAttendances, weekChecklists, weekRempesan, rempesanLogs, kasbons, slips, weekStart, nilaiPerPoin, nilaiNol, poinBonusEnabled, autoOvertime, manualOvertime, kasbonDecisions, days, userProfiles]);
 
   const totalNet = rekapData.reduce((s, r) => s + r.netTotal, 0);
   const totalPoin = rekapData.reduce((s, r) => s + r.poin, 0);

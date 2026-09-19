@@ -31,6 +31,7 @@
  */
 
 import { ringkasPoin } from "@/lib/poinChecklist";
+import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
 
 /** Peran yang dibayar harian; sisanya dibayar bulanan flat. */
 export const PERAN_HARIAN = ["keeper", "kepala_feeder"];
@@ -118,7 +119,7 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     bonusRewards = [],
     attendances = [],
     overtimeLogs = [],
-    vegTripsMap = {},
+    rempesanLogs = [],
     kasbons = [],
     periode,
     awal,
@@ -162,10 +163,25 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     .reduce((t, o) => t + (o.hours || 0), 0);
   const upahLembur = jamLembur * (config.overtime_rate_per_hour || 0);
 
-  const sayur = vegTripsMap[email] || { trips: 0, dates: [] };
-  // Uang sayur hanya untuk peran harian — merekalah yang menjemput sayur.
-  const tripSayur = harian ? sayur.trips || 0 : 0;
-  const upahSayur = tripSayur * (config.vegetable_rate_per_trip || 0);
+  // Upah trip ambil sayur/rumput. Sebelum ini dihitung dari `PakanHarian`
+  // bersumber "sayur pasar" dikali `vegetable_rate_per_trip`, sementara slip
+  // MINGGUAN menghitungnya dari `RempesanLog` yang disetujui dikali
+  // `rempesan_rate_per_trip`. Satu kejadian nyata yang sama, dua sumber yang
+  // tidak saling tahu — berapa yang diterima orangnya bergantung pada jenis
+  // slip mana yang kebetulan diterbitkan bulan itu.
+  //
+  // Sekarang keduanya membaca `RempesanLog` lewat satu fungsi. Yang dipilih
+  // RempesanLog karena hanya ia yang lewat persetujuan pemilik; `PakanHarian`
+  // tidak punya alur persetujuan sama sekali, jadi membayar darinya berarti
+  // membayar tanpa ada yang menyetujui.
+  //
+  // `akhir` di berkas ini EKSKLUSIF (`date < akhir`), berbeda dari slip
+  // mingguan yang inklusif — karena itu batasnya disebut tegas di sini.
+  const sayur = harian
+    ? tripPerPeriode(rempesanLogs, email, awal, akhir, { akhirInklusif: false })
+    : { trips: 0, tanggal: [] };
+  const tripSayur = sayur.trips;
+  const upahSayur = tripSayur * tarifTrip(config).tarif;
 
   const kasbon = hitungKasbon({ kasbons, email, periode });
 
@@ -196,7 +212,7 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     upahLembur,
 
     tripSayur,
-    tanggalSayur: sayur.dates || [],
+    tanggalSayur: sayur.tanggal || [],
     upahSayur,
 
     potonganKasbon: kasbon.potongan,

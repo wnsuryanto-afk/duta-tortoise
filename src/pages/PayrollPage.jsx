@@ -18,6 +18,7 @@ import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AlurGaji from "@/components/salary/AlurGaji";
+import { tripPerPeriode, tarifTrip, sudahAdaRempesan } from "@/lib/rempesan";
 import AccessDenied from "@/components/common/AccessDenied";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
 
@@ -492,25 +493,66 @@ function OvertimeDialog({ open, onClose, employees }) {
   );
 }
 
+/**
+ * Pemilik mencatatkan trip ambil sayur atas nama karyawan.
+ *
+ * Dulu menulis `VegetablePickup` — entitas yang tidak dibaca oleh satu pun
+ * layar yang menerbitkan slip, jadi trip yang dicatat di sini tidak pernah
+ * sampai ke gaji siapa pun. Sekarang menulis `RempesanLog`, sumber yang sama
+ * dengan slip mingguan dan bulanan.
+ *
+ * Langsung berstatus `approved`: yang mencatat adalah pemilik, dan pemilik
+ * adalah yang menyetujui — meminta dia menyetujui catatannya sendiri hanya
+ * menambah satu ketukan tanpa menambah pengawasan apa pun.
+ *
+ * Kolom "Jumlah Trip" dihapus. Ia dulu boleh diisi lebih dari satu dan
+ * dijumlahkan tanpa membuang tanggal kembar, padahal slip mingguan, halaman
+ * Rempesan, dan formulir keeper semuanya sepakat maksimal satu trip per hari.
+ */
 function VegetableDialog({ open, onClose, employees }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), trips: "1", notes: "" });
+  const [form, setForm] = useState({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), weight_kg: "", notes: "" });
   const [saving, setSaving] = useState(false);
+  const [galat, setGalat] = useState("");
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSave = async () => {
     const emp = employees.find(e => e.email === form.employee_email);
     setSaving(true);
-    await base44.entities.VegetablePickup.create({
-      ...form,
-      trips: Number(form.trips),
-      employee_id: emp?.id || "",
-      employee_name: emp?.full_name || emp?.email || "",
-    });
-    qc.invalidateQueries({ queryKey: ["vegetable-pickups"] });
-    setSaving(false);
-    onClose();
-    setForm({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), trips: "1", notes: "" });
+    setGalat("");
+    try {
+      // Dibaca ulang dari server tepat sebelum membuat — penjaga yang sama
+      // dipakai formulir keeper. Satu trip per hari berlaku untuk siapa pun
+      // yang mencatatnya, termasuk pemilik.
+      const adaDulu = await base44.entities.RempesanLog.filter({
+        employee_email: form.employee_email,
+        date: form.date,
+      });
+      if (sudahAdaRempesan(adaDulu, form.employee_email, form.date)) {
+        setGalat("Tanggal ini sudah punya catatan rempesan — satu trip per hari.");
+        setSaving(false);
+        return;
+      }
+      await base44.entities.RempesanLog.create({
+        employee_email: form.employee_email,
+        employee_name: emp?.full_name || emp?.email || "",
+        employee_id: emp?.id || "",
+        date: form.date,
+        weight_kg: Number(form.weight_kg) || 0,
+        notes: form.notes || "",
+        status: "approved",
+        approved_by: "Dicatat pemilik di Hitung Gaji",
+        approved_date: format(new Date(), "yyyy-MM-dd"),
+        recorded_by_name: "Pemilik",
+      });
+      qc.invalidateQueries({ queryKey: ["rempesan-logs"] });
+      setSaving(false);
+      onClose();
+      setForm({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), weight_kg: "", notes: "" });
+    } catch (e) {
+      setGalat(e?.message || "Gagal menyimpan.");
+      setSaving(false);
+    }
   };
 
   return (
@@ -529,9 +571,13 @@ function VegetableDialog({ open, onClose, employees }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Tanggal</Label><Input type="date" value={form.date} onChange={e => set("date", e.target.value)} /></div>
-            <div><Label>Jumlah Trip</Label><Input type="number" value={form.trips} onChange={e => set("trips", e.target.value)} min={1} /></div>
+            <div><Label>Berat (kg)</Label><Input type="number" step="0.1" min="0" value={form.weight_kg} onChange={e => set("weight_kg", e.target.value)} placeholder="opsional" /></div>
           </div>
           <div><Label>Catatan</Label><Input value={form.notes} onChange={e => set("notes", e.target.value)} /></div>
+          <p className="text-xs text-muted-foreground">
+            Tercatat langsung sebagai <b>disetujui</b> — satu trip per hari, masuk slip periode itu.
+          </p>
+          {galat && <p className="text-xs text-destructive">{galat}</p>}
           <div className="flex gap-2 pt-1">
             <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
             <Button className="flex-1" onClick={handleSave} disabled={saving || !form.employee_email}>{saving ? "..." : "Simpan"}</Button>
@@ -568,9 +614,14 @@ export default function PayrollPage() {
     queryKey: ["overtime-logs"],
     queryFn: () => base44.entities.OvertimeLog.list("-date", 300),
   });
-  const { data: vegetablePickups = [] } = useQuery({
-    queryKey: ["vegetable-pickups"],
-    queryFn: () => base44.entities.VegetablePickup.list("-date", 300),
+  // Dulu halaman ini membaca `VegetablePickup`, entitas yang hanya ditulis oleh
+  // dialog "Catat Sayur" di halaman ini sendiri — dan tidak dibaca oleh satu
+  // pun layar yang benar-benar menerbitkan slip. Jadi trip yang dicatat pemilik
+  // di sini tidak pernah sampai ke gaji siapa pun. Sekarang sumbernya sama
+  // dengan slip mingguan dan bulanan: RempesanLog.
+  const { data: rempesanLogs = [] } = useQuery({
+    queryKey: ["rempesan-logs"],
+    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
   });
   const { data: bonusRewards = [] } = useQuery({
     queryKey: ["bonus-rewards"],
@@ -586,7 +637,8 @@ export default function PayrollPage() {
 
   const monthAttendances = attendances.filter(a => a.date >= monthStart && a.date <= monthEnd);
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);
-  const monthVegetable = vegetablePickups.filter(v => v.date >= monthStart && v.date <= monthEnd);
+  const monthRempesan = rempesanLogs.filter(r => r.date >= monthStart && r.date <= monthEnd);
+
 
   const payrollData = useMemo(() => {
     return employees.map(emp => {
@@ -594,7 +646,7 @@ export default function PayrollPage() {
       const salaryType = config?.salary_type || "bulanan";
       const baseSalary = config?.base_salary || 0;
       const overtimeRate = config?.overtime_rate_per_hour || 0;
-      const vegRate = config?.vegetable_rate_per_trip || 0;
+      const { tarif: vegRate } = tarifTrip(config);
       const pointValue = config?.point_value || 0;
       const absentDeduction = config?.absent_deduction || 0;
 
@@ -605,8 +657,11 @@ export default function PayrollPage() {
       const empOvertime = monthOvertime.filter(o => o.employee_email === emp.email);
       const totalOvertimeHours = empOvertime.reduce((s, o) => s + (o.hours || 0), 0);
 
-      const empVegetable = monthVegetable.filter(v => v.employee_email === emp.email);
-      const totalVegTrips = empVegetable.reduce((s, v) => s + (v.trips || 0), 0);
+      // Batas bulan di halaman ini INKLUSIF (`<= monthEnd`), berbeda dari
+      // penerbit slip bulanan — disebut tegas supaya tidak jadi selisih diam.
+      const { trips: totalVegTrips } = tripPerPeriode(
+        rempesanLogs, emp.email, monthStart, monthEnd, { akhirInklusif: true },
+      );
 
       const period = selectedMonth;
       const empBonus = bonusRewards.find(b => b.employee_email === emp.email && b.period === period);
@@ -638,7 +693,7 @@ export default function PayrollPage() {
         totalVegTrips, vegPay, totalPoints, pointPay, deduction, kasbonDeduction, totalSalary,
       };
     });
-  }, [employees, salaryConfigs, monthAttendances, monthOvertime, monthVegetable, bonusRewards, kasbons, selectedMonth]);
+  }, [employees, salaryConfigs, monthAttendances, monthOvertime, rempesanLogs, bonusRewards, kasbons, selectedMonth]);
 
   const fmt = (n) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
@@ -859,19 +914,29 @@ export default function PayrollPage() {
             <p className="text-sm text-muted-foreground">Log pengambilan sayur {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })}</p>
             {isOwnerOrManajer && <Button size="sm" onClick={() => setShowVegetable(true)}><Plus className="w-4 h-4 mr-1.5" />Catat Sayur</Button>}
           </div>
-          {monthVegetable.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">Belum ada log pengambilan sayur bulan ini</Card>
+          {/* Daftar ini dulu membaca `VegetablePickup`, sementara angka trip di
+              tab sebelahnya dihitung dari sumber lain — dua tab di halaman yang
+              sama bisa menyebut bulan yang sama dengan dua jumlah berbeda.
+              Keduanya kini membaca RempesanLog. */}
+          {monthRempesan.length === 0 ? (
+            <Card className="p-8 text-center text-muted-foreground">Belum ada trip ambil sayur/rumput bulan ini</Card>
           ) : (
             <div className="space-y-2">
-              {monthVegetable.map(v => (
-                <Card key={v.id} className="px-4 py-3 flex items-center justify-between">
-                  <div>
+              {monthRempesan.map(v => (
+                <Card key={v.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="font-medium text-sm">{v.employee_name}</p>
-                    <p className="text-xs text-muted-foreground">{format(new Date(v.date), "d MMM yyyy", { locale: id })} · {v.notes || "–"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(v.date), "d MMM yyyy", { locale: id })}
+                      {v.weight_kg ? ` · ${v.weight_kg} kg` : ""}
+                      {v.notes ? ` · ${v.notes}` : ""}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Leaf className="w-4 h-4 text-lime-600" />
-                    <span className="font-semibold text-lime-700">{v.trips} trip</span>
+                    <span className={`text-xs font-semibold ${v.status === "approved" ? "text-lime-700" : v.status === "rejected" ? "text-destructive" : "text-amber-600"}`}>
+                      {v.status === "approved" ? "Disetujui" : v.status === "rejected" ? "Ditolak" : "Menunggu"}
+                    </span>
                   </div>
                 </Card>
               ))}

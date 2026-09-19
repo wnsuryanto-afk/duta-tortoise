@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Leaf, Image as ImageIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { hariRumputBelumDicatat } from "@/lib/rempesan";
+import { hariRumputBelumDicatat, hariPakanBelumDicatat } from "@/lib/rempesan";
 import RempesanRecordForm from "@/components/rempesan/RempesanRecordForm";
 
 /**
@@ -43,8 +43,22 @@ export default function RumputBelumDicatat({ email, milikSendiri = false, batas 
     queryKey: ["rempesan-logs"],
     queryFn: () => base44.entities.RempesanLog.list("-date", 300),
   });
+  // Catatan Pakan Harian bersumber sayur/campur dulu ikut dibayar di slip
+  // BULANAN lewat jalurnya sendiri. Sejak upah trip hanya berasal dari
+  // RempesanLog, hari yang cuma tercatat di sana tidak lagi menghasilkan uang
+  // — jadi ia ikut ditagih di sini, bukan dibiarkan hilang tanpa suara.
+  const { data: pakan = [] } = useQuery({
+    queryKey: ["pakan-harian-trip"],
+    queryFn: () => base44.entities.PakanHarian.list("-log_date", 300),
+  });
 
-  const hari = hariRumputBelumDicatat(absensi, logs, { email });
+  const hari = [
+    ...hariRumputBelumDicatat(absensi, logs, { email }),
+    ...hariPakanBelumDicatat(pakan, logs, { email }),
+  ]
+    // Satu hari cukup ditagih sekali meski jejaknya ada di absensi DAN di pakan.
+    .filter((h, i, a) => a.findIndex((x) => x.email === h.email && x.tanggal === h.tanggal) === i)
+    .sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
   if (hari.length === 0) return null;
 
   const tampil = hari.slice(0, batas);
@@ -75,9 +89,14 @@ export default function RumputBelumDicatat({ email, milikSendiri = false, batas 
               <p className="text-sm font-medium">
                 {format(parseISO(h.tanggal), "EEEE, d MMM", { locale: idLocale })}
               </p>
+              {/* Hari yang jejaknya dari Pakan Harian tidak punya jam masuk —
+                  jangan menulis "Masuk " yang kosong di belakangnya. */}
               <p className="text-[11px] text-muted-foreground">
-                {milikSendiri ? `Masuk ${h.jamMasuk}` : `${h.nama} · masuk ${h.jamMasuk}`}
-                {h.catatan ? ` · ${h.catatan}` : ""}
+                {[
+                  milikSendiri ? null : h.nama,
+                  h.jamMasuk ? `masuk ${h.jamMasuk}` : null,
+                  h.catatan || null,
+                ].filter(Boolean).join(" · ")}
               </p>
             </div>
             {h.fotoUrl && (
