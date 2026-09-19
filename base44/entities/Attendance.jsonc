@@ -56,7 +56,25 @@
     },
     "late_minutes": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "Menit setelah jam mulai shift. Sudah ada sejak awal tetapi bernilai 0 di seluruh 117 baris yang pernah tercatat \u2014 satu-satunya yang pernah mengisinya adalah fungsi server autoAttendance, dan fungsi itu belum pernah membuat satu baris pun. Sejak sekarang diisi juga oleh tombol check-in."
+    },
+    "late_reason": {
+      "type": "string",
+      "enum": [
+        "cari_rumput",
+        "tugas_luar",
+        "terlambat"
+      ],
+      "description": "Alasan jam masuk melewati ambang (satu jam). cari_rumput dan tugas_luar adalah PEKERJAAN, bukan kelalaian; keduanya tidak menambah maupun mengurangi upah \u2014 hanya menerangkan jam masuknya. Kosong pada baris lama, karena aplikasi memang belum pernah menanyakannya."
+    },
+    "late_note": {
+      "type": "string",
+      "description": "Keterangan yang ditulis sendiri oleh yang bersangkutan. Wajib untuk tugas_luar dan terlambat."
+    },
+    "late_photo_url": {
+      "type": "string",
+      "description": "Foto bukti, wajib untuk cari_rumput. Rumput adalah barang yang bisa difoto; ban bocor tidak, karena itu alasan lain hanya menuntut keterangan tertulis."
     },
     "overtime_hours": {
       "type": "number",

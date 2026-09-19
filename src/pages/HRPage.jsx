@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -239,7 +240,11 @@ function AttendanceSummaryTab() {
             <div>
               <p className="font-medium text-sm">{r.employee_name}</p>
               <p className="text-xs text-muted-foreground">{r.check_in && `Masuk: ${r.check_in}`}{r.check_out && ` · Pulang: ${r.check_out}`}</p>
-              {r.late_minutes > 0 && <p className="text-xs text-amber-600">Terlambat {r.late_minutes} menit</p>}
+              {/* Dulu baris ini hanya berbunyi "Terlambat N menit" — dan N
+                  selalu 0, karena tombol check-in tidak pernah menulis
+                  `late_minutes`. Sekarang menitnya benar-benar tercatat, dan
+                  yang ditampilkan bukan cuma angkanya melainkan sebabnya. */}
+              <KeteranganMasuk att={r} tampilkanRingan />
             </div>
             <Badge className={r.status==="hadir"?"bg-green-100 text-green-700":r.status==="izin"?"bg-amber-100 text-amber-700":"bg-red-100 text-red-700"}>{r.status}</Badge>
           </CardContent></Card>

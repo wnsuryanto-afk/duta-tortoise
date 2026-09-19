@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import { getCurrentPosition, haversineDistance } from "@/components/attendance/useGPSLocation";
 import { barisAbsensiSah, catatCheckIn, catatCheckOut } from "@/lib/absensi";
+import { menitTerlambat, perluAlasan } from "@/lib/keterlambatan";
+import AlasanTerlambatDialog from "@/components/attendance/AlasanTerlambatDialog";
+import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
 import { useTestMode } from "@/lib/useTestMode";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import BonusBulanIni from "./BonusBulanIni";
@@ -129,6 +132,7 @@ export default function GuidedHariIni({ user }) {
   const [showCatatan, setShowCatatan]   = useState(false);
   const [showSelfie, setShowSelfie]     = useState(false);
   const [selfieMode, setSelfieMode]     = useState(null); // "checkin" | "checkout"
+  const [menungguAlasan, setMenungguAlasan] = useState(null);
   const [sembuhPrompt, setSembuhPrompt]   = useState(new Set()); // tortoise_id yg sedang ditanya "sudah sembuh?"
   const [savingPerawatan, setSavingPerawatan] = useState(null); // tortoise_id sedang mencatat perawatan
 
@@ -409,6 +413,20 @@ export default function GuidedHariIni({ user }) {
 
   const handleCheckIn = async (selfieUrl) => {
     if (hasCheckedIn) return;
+    const jam = nowStr();
+    // Selfie sudah diambil; alasannya ditanyakan sesudah itu dan SEBELUM baris
+    // dibuat. Jamnya dikunci di sini supaya yang tersimpan sama dengan yang
+    // ditunjukkan di dialog — bukan jam beberapa menit kemudian setelah orangnya
+    // selesai memotret rumput.
+    if (perluAlasan(jam, salaryConfig?.shift_start)) {
+      setMenungguAlasan({ jam, menit: menitTerlambat(jam, salaryConfig?.shift_start), selfieUrl });
+      return;
+    }
+    await jalankanCheckIn(jam, selfieUrl, null);
+  };
+
+  const jalankanCheckIn = async (jam, selfieUrl, isianAlasan) => {
+    setMenungguAlasan(null);
     setLoading(true);
     let lat = null, lng = null, verified = false;
     try {
@@ -425,11 +443,14 @@ export default function GuidedHariIni({ user }) {
     let sudahAda = false;
     try {
       ({ sudahAda } = await catatCheckIn({
-        user, tanggal: today, jam: nowStr(),
+        user, tanggal: today, jam,
         lat, lng, verified,
         shiftStart: salaryConfig?.shift_start,
         shiftEnd: salaryConfig?.shift_end,
         selfieUrl,
+        alasan: isianAlasan?.alasan,
+        catatanAlasan: isianAlasan?.catatan,
+        fotoAlasan: isianAlasan?.fotoUrl,
         tandaUji: testModeTag,
       }));
     } catch (err) {
@@ -1327,11 +1348,25 @@ export default function GuidedHariIni({ user }) {
           title={selfieMode === "checkin" ? "Selfie Check In" : "Selfie Check Out"}
         />
 
+        <AlasanTerlambatDialog
+          open={!!menungguAlasan}
+          onClose={() => setMenungguAlasan(null)}
+          jamMasuk={menungguAlasan?.jam}
+          menitTelat={menungguAlasan?.menit}
+          namaKaryawan={user?.full_name}
+          onSimpan={(isian) =>
+            jalankanCheckIn(menungguAlasan.jam, menungguAlasan.selfieUrl, isian)
+          }
+        />
+
         {/* Selfie preview */}
         {attendance?.selfie_checkin_url && (
           <div className="flex items-center gap-2 px-1">
             <img src={attendance.selfie_checkin_url} alt="Selfie masuk" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
-            <span className="text-xs text-muted-foreground">Selfie masuk {attendance.check_in}</span>
+            <div className="min-w-0">
+              <span className="text-xs text-muted-foreground">Selfie masuk {attendance.check_in}</span>
+              <KeteranganMasuk att={attendance} />
+            </div>
           </div>
         )}
 

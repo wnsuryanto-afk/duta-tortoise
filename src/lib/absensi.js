@@ -39,6 +39,7 @@
 
 import { base44 } from "@/api/base44Client";
 import { SHIFT_BAWAAN, keMenit, jamLembur, adaBuktiKerjaLembur } from "@/lib/weeklySalaryUtils";
+import { menitTerlambat, periksaIsianAlasan, perluAlasan } from "@/lib/keterlambatan";
 
 export { SHIFT_BAWAAN, keMenit, jamLembur };
 
@@ -76,9 +77,25 @@ export async function bacaAbsensi(email, tanggal) {
  * baru yang dibuat — yang dikembalikan adalah baris yang sudah ada, dan pemanggil
  * sebaiknya memberi tahu bahwa orang ini memang sudah absen hari ini.
  */
-export async function catatCheckIn({ user, tanggal, jam, lat, lng, verified, shiftStart, shiftEnd, selfieUrl, tandaUji }) {
+export async function catatCheckIn({
+  user, tanggal, jam, lat, lng, verified, shiftStart, shiftEnd, selfieUrl, tandaUji,
+  alasan, catatanAlasan, fotoAlasan,
+}) {
   const sudah = await bacaAbsensi(user?.email, tanggal);
   if (sudah) return { record: sudah, sudahAda: true };
+
+  const mulai = shiftStart || SHIFT_BAWAAN.mulai;
+  const telat = menitTerlambat(jam, mulai);
+
+  // Penjaga terakhir, bukan satu-satunya. Layar sudah menahan tombolnya sampai
+  // alasannya lengkap; pemeriksaan di sini memastikan jalur mana pun yang
+  // memanggil fungsi ini tidak bisa menyelinapkan baris telat tanpa keterangan.
+  if (perluAlasan(jam, mulai)) {
+    const { sah, kurang } = periksaIsianAlasan({
+      alasan, catatan: catatanAlasan, fotoUrl: fotoAlasan,
+    });
+    if (!sah) throw new Error(kurang);
+  }
 
   const record = await base44.entities.Attendance.create({
     employee_id: user.id,
@@ -90,8 +107,17 @@ export async function catatCheckIn({ user, tanggal, jam, lat, lng, verified, shi
     check_in_lat: lat ?? null,
     check_in_lng: lng ?? null,
     location_verified: !!verified,
-    shift_start: shiftStart || SHIFT_BAWAAN.mulai,
+    shift_start: mulai,
     shift_end: shiftEnd || SHIFT_BAWAAN.selesai,
+    // `late_minutes` sudah ada di skema sejak awal dan bernilai 0 di seluruh
+    // 117 baris yang pernah tercatat — jalur check-in manusia tidak pernah
+    // menulisnya. Sejak sekarang ditulis apa adanya, termasuk ketika alasannya
+    // adalah pekerjaan: jam 08:07 tetap 08:07, yang bertambah cuma
+    // keterangannya.
+    late_minutes: telat ?? 0,
+    ...(alasan ? { late_reason: alasan } : {}),
+    ...(catatanAlasan ? { late_note: String(catatanAlasan).trim() } : {}),
+    ...(fotoAlasan ? { late_photo_url: fotoAlasan } : {}),
     ...(selfieUrl ? { selfie_checkin_url: selfieUrl } : {}),
     ...(tandaUji || {}),
   });

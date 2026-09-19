@@ -14,6 +14,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getCurrentPosition, haversineDistance } from "@/components/attendance/useGPSLocation";
 import { barisAbsensiSah, catatCheckIn, catatCheckOut } from "@/lib/absensi";
+import { menitTerlambat, perluAlasan } from "@/lib/keterlambatan";
+import AlasanTerlambatDialog from "@/components/attendance/AlasanTerlambatDialog";
+import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
 import { useTestMode } from "@/lib/useTestMode";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
@@ -39,6 +42,10 @@ export default function KeeperDashboard() {
   const [checkLoading, setCheckLoading] = useState(false);
   const [gpsError, setGpsError] = useState(null);
   const [locationWarning, setLocationWarning] = useState(null);
+  // Jam masuk yang menunggu alasannya. Dikunci saat dialog dibuka supaya jam
+  // yang tersimpan sama persis dengan jam yang ditunjukkan ke orangnya —
+  // bukan jam beberapa menit kemudian saat dia selesai memotret rumputnya.
+  const [menungguAlasan, setMenungguAlasan] = useState(null);
 
   // ── Absensi ──
   const { data: todayAttendance } = useQuery({
@@ -110,6 +117,20 @@ export default function KeeperDashboard() {
 
   const handleCheckIn = async () => {
     if (!user) return;
+    const jam = nowStr();
+    const mulai = salaryConfig?.shift_start;
+    // Alasan ditanyakan DULU, sebelum GPS dan sebelum baris dibuat. Menanyakan
+    // sesudah baris tersimpan berarti ada jendela di mana barisnya sudah ada
+    // tanpa keterangan, dan orang bisa menutup dialognya begitu saja.
+    if (perluAlasan(jam, mulai)) {
+      setMenungguAlasan({ jam, menit: menitTerlambat(jam, mulai) });
+      return;
+    }
+    await jalankanCheckIn(jam, null);
+  };
+
+  const jalankanCheckIn = async (jam, isianAlasan) => {
+    setMenungguAlasan(null);
     setCheckLoading(true);
     setGpsError(null);
     setLocationWarning(null);
@@ -132,10 +153,13 @@ export default function KeeperDashboard() {
 
     try {
       const { sudahAda } = await catatCheckIn({
-        user, tanggal: today, jam: nowStr(),
+        user, tanggal: today, jam,
         lat, lng, verified,
         shiftStart: salaryConfig?.shift_start,
         shiftEnd: salaryConfig?.shift_end,
+        alasan: isianAlasan?.alasan,
+        catatanAlasan: isianAlasan?.catatan,
+        fotoAlasan: isianAlasan?.fotoUrl,
         tandaUji: testModeTag,
       });
       if (sudahAda) setLocationWarning("Kamu sudah check in hari ini — absensinya tidak dicatat dua kali.");
@@ -275,10 +299,15 @@ export default function KeeperDashboard() {
             <div>
               <p className="font-semibold text-sm">Absensi Hari Ini</p>
               {hasCheckedIn ? (
-                <p className="text-xs text-muted-foreground">
-                  Masuk: <span className="font-medium text-primary">{todayAttendance.check_in}</span>
-                  {hasCheckedOut && <> · Keluar: <span className="font-medium text-green-600">{todayAttendance.check_out}</span></>}
-                </p>
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Masuk: <span className="font-medium text-primary">{todayAttendance.check_in}</span>
+                    {hasCheckedOut && <> · Keluar: <span className="font-medium text-green-600">{todayAttendance.check_out}</span></>}
+                  </p>
+                  {/* Keterangan jam masuk dikembalikan ke orangnya, bukan hanya
+                      disimpan diam-diam untuk dilihat pemilik. */}
+                  <KeteranganMasuk att={todayAttendance} />
+                </>
               ) : (
                 <p className="text-xs text-muted-foreground">Belum absen hari ini</p>
               )}
@@ -465,6 +494,15 @@ export default function KeeperDashboard() {
           </div>
         </div>
       </Card>
+
+      <AlasanTerlambatDialog
+        open={!!menungguAlasan}
+        onClose={() => setMenungguAlasan(null)}
+        jamMasuk={menungguAlasan?.jam}
+        menitTelat={menungguAlasan?.menit}
+        namaKaryawan={user?.full_name}
+        onSimpan={(isian) => jalankanCheckIn(menungguAlasan.jam, isian)}
+      />
     </div>
   );
 }
