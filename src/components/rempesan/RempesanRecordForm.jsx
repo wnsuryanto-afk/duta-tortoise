@@ -5,25 +5,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Camera, Save } from "lucide-react";
+import { Loader2, Camera, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useImageCompression } from "@/lib/useImageCompression";
+import { sudahAdaRempesan, tarifTrip } from "@/lib/rempesan";
 
 /**
  * Form pencatatan rempesan oleh keeper.
  * Wajib isi: tanggal, berat hasil (kg), dan foto.
+ *
+ * `tanggalAwal`, `fotoAwal`, dan `catatanAwal` dipakai saat formulir ini
+ * dibuka dari jejak absensi "cari rumput": tanggal dan fotonya sudah ada,
+ * jadi yang tersisa diketik orangnya hanyalah beratnya. Lihat lib/rempesan.js
+ * untuk alasan kenapa barisnya tidak dibuat otomatis saja.
  */
-export default function RempesanRecordForm({ onClose }) {
+export default function RempesanRecordForm({
+  onClose, onSaved, tanggalAwal, fotoAwal, catatanAwal, konfigTarif,
+}) {
   const { user } = useCurrentUser();
-  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [date, setDate] = useState(tanggalAwal || format(new Date(), "yyyy-MM-dd"));
   const [weight, setWeight] = useState("");
-  const [notes, setNotes] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [notes, setNotes] = useState(catatanAwal || "");
+  const [photoUrl, setPhotoUrl] = useState(fotoAwal || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const { compressImage } = useImageCompression();
+  const { tarif, dariSetelan } = tarifTrip(konfigTarif);
 
   const handlePhoto = async (e) => {
     const file = e.target.files?.[0];
@@ -49,6 +58,22 @@ export default function RempesanRecordForm({ onClose }) {
     if (!photoUrl) { toast.error("Foto wajib diunggah"); return; }
     setSaving(true);
     try {
+      // Dibaca ulang dari server TEPAT sebelum membuat, bukan dari cache.
+      // Upah rempesan dibayar per TRIP, dan slip mingguan hanya menghitung satu
+      // trip per tanggal — jadi catatan kedua di tanggal yang sama tidak
+      // menambah upah, ia hanya membuat halaman Rempesan menampilkan
+      // "Rp 30.000" dua kali untuk uang yang dibayarkan sekali. Penyakit yang
+      // sama persis pernah melahirkan hari absensi kembar.
+      const adaDulu = await base44.entities.RempesanLog.filter({
+        employee_email: user.email,
+        date,
+      });
+      if (sudahAdaRempesan(adaDulu, user.email, date)) {
+        toast.error("Rempesan tanggal ini sudah pernah dicatat — satu trip per hari.");
+        setSaving(false);
+        return;
+      }
+
       await base44.entities.RempesanLog.create({
         employee_email: user.email,
         employee_name: user?.full_name || user?.email,
@@ -61,6 +86,7 @@ export default function RempesanRecordForm({ onClose }) {
         recorded_by_name: user?.full_name || user?.email,
       });
       toast.success("Rempesan tercatat — menunggu persetujuan");
+      onSaved?.();
       onClose();
     } catch (err) {
       toast.error("Gagal menyimpan: " + (err?.message || "kesalahan"));
@@ -75,8 +101,19 @@ export default function RempesanRecordForm({ onClose }) {
           <DialogTitle>Catat Rempesan</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          {/* Kalimat ini dulu berbunyi "Rp 30.000 (menurut pengaturan)".
+              `rempesan_rate_per_trip` kosong di keempat baris SalaryConfig,
+              jadi angka itu sebenarnya nilai cadangan `?? 30000` di dalam kode
+              — bukan setelan yang pernah disimpan. Sekarang dikatakan apa
+              adanya, supaya tidak ada yang mengira tarifnya sudah ditentukan. */}
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-            Rempesan = ambil sayur/rumput. Satu trip per hari dihitung Rp 30.000 (menurut pengaturan) setelah disetujui, otomatis masuk slip gaji minggu itu.
+            Rempesan = ambil sayur/rumput. Satu trip per hari, dihitung{" "}
+            <b>Rp {tarif.toLocaleString("id-ID")}</b> setelah disetujui dan otomatis masuk
+            slip gaji minggu itu.
+            {!dariSetelan && (
+              <> Tarif ini masih angka bawaan aplikasi — belum pernah disimpan di
+              Pengaturan Tarif Mingguan.</>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Tanggal *</Label>
@@ -97,7 +134,26 @@ export default function RempesanRecordForm({ onClose }) {
           <div className="space-y-1.5">
             <Label>Foto Hasil Timbangan *</Label>
             {photoUrl ? (
-              <img src={photoUrl} alt="Rempesan" className="w-full h-32 object-cover rounded-lg border" />
+              <div className="space-y-1.5">
+                <img src={photoUrl} alt="Rempesan" className="w-full h-32 object-cover rounded-lg border" />
+                {/* Sebelumnya foto yang sudah terunggah tidak bisa diganti sama
+                    sekali. Itu jadi masalah nyata begitu formulir ini bisa
+                    dibuka dari absensi: yang terbawa adalah foto RUMPUTNYA,
+                    sedangkan yang diminta di sini foto TIMBANGANNYA. */}
+                <button
+                  type="button"
+                  onClick={() => setPhotoUrl("")}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <RefreshCw className="w-3 h-3" /> Ganti foto
+                </button>
+                {fotoAwal && photoUrl === fotoAwal && (
+                  <p className="text-[11px] text-amber-700 dark:text-amber-500">
+                    Ini foto rumput dari absensi pagi tadi. Kalau sudah ditimbang,
+                    ganti dengan foto timbangannya.
+                  </p>
+                )}
+              </div>
             ) : (
               <label className="flex flex-col items-center justify-center gap-1 h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/40">
                 {uploading ? (

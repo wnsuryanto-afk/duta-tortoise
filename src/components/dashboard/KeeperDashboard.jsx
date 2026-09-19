@@ -17,6 +17,7 @@ import { barisAbsensiSah, catatCheckIn, catatCheckOut } from "@/lib/absensi";
 import { menitTerlambat, perluAlasan } from "@/lib/keterlambatan";
 import AlasanTerlambatDialog from "@/components/attendance/AlasanTerlambatDialog";
 import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
+import RumputBelumDicatat from "@/components/rempesan/RumputBelumDicatat";
 import { useTestMode } from "@/lib/useTestMode";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
@@ -343,6 +344,12 @@ export default function KeeperDashboard() {
             )}
           </div>
         </div>
+
+        {/* Hari ambil rumput yang rempesannya belum dicatat. Ditaruh di layar
+            yang dibuka tiap hari, bukan hanya di halaman Rempesan yang jarang
+            dibuka — itulah sebabnya RempesanLog selama ini nol isinya meski
+            halaman, formulir, dan tarifnya sudah lengkap sejak lama. */}
+        <RumputBelumDicatat email={user?.email} milikSendiri batas={4} />
 
         {/* Lembur info */}
         {hasCheckedOut && overtime > 0 && (

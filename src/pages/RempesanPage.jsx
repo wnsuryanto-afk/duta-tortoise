@@ -13,6 +13,8 @@ import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import RempesanRecordForm from "@/components/rempesan/RempesanRecordForm";
 import PageHeader from "@/components/common/PageHeader";
+import RumputBelumDicatat from "@/components/rempesan/RumputBelumDicatat";
+import { tripKembar, tarifTrip } from "@/lib/rempesan";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const fmtKg = (n) => `${Number(n || 0).toLocaleString("id-ID")} kg`;
@@ -36,7 +38,6 @@ export default function RempesanPage() {
   const { data: configs = [] } = useQuery({
     queryKey: ["salary-configs"],
     queryFn: () => base44.entities.SalaryConfig.list(),
-    enabled: isManager,
   });
 
   // Resolve nama dari User berdasarkan email
@@ -46,10 +47,10 @@ export default function RempesanPage() {
     return m;
   }, [users]);
 
-  const rate = useMemo(() => {
-    const c = configs.find((x) => x.role === "keeper") || {};
-    return c.rempesan_rate_per_trip ?? 30000;
-  }, [configs]);
+  const { tarif: rate, dariSetelan: tarifTersimpan } = useMemo(
+    () => tarifTrip(configs.find((x) => x.role === "keeper")),
+    [configs],
+  );
 
   const visible = useMemo(() => {
     let list = isManager ? logs : logs.filter((l) => l.employee_email === user?.email);
@@ -114,7 +115,12 @@ export default function RempesanPage() {
         title="Rempesan"
         subtitle="Catat ambil sayur/rumput"
         icon={Truck}
-        description="Trip yang disetujui masuk otomatis ke slip gaji minggu itu — maksimal satu trip per hari."
+        description={
+          `Trip yang disetujui masuk otomatis ke slip gaji minggu itu — maksimal satu trip per hari, Rp ${rate.toLocaleString("id-ID")} per trip.` +
+          (tarifTersimpan
+            ? ""
+            : " Tarif itu masih angka bawaan aplikasi; simpan di Pengaturan Tarif Mingguan supaya jadi keputusan Anda.")
+        }
         chips={
           pendingCount > 0 && isManager
             ? [{ key: "menunggu", label: "Menunggu persetujuan", value: pendingCount, tone: "warn" }]
@@ -125,6 +131,14 @@ export default function RempesanPage() {
             <Plus className="w-4 h-4" /> Catat Rempesan
           </Button>
         }
+      />
+
+      {/* Sambungan ke absensi: hari yang alasan check-in-nya "cari rumput"
+          tetapi rempesannya belum pernah dicatat. Inilah yang membuat jejak
+          foto di absensi menagih sesuatu, bukan cuma tersimpan. */}
+      <RumputBelumDicatat
+        email={isManager ? undefined : user?.email}
+        milikSendiri={!isManager}
       />
 
       <div className="flex gap-2">
@@ -177,8 +191,18 @@ export default function RempesanPage() {
                     {log.date ? format(new Date(log.date), "EEEE, d MMMM yyyy", { locale: id }) : "—"} · {fmtKg(log.weight_kg)}
                   </p>
                   {log.notes && <p className="text-xs text-muted-foreground mt-0.5">"{log.notes}"</p>}
+                  {/* Slip mingguan hanya membayar SATU trip per tanggal. Baris
+                      kedua di tanggal yang sama pernah tetap berbunyi
+                      "Nilai trip: Rp 30.000", sehingga dua baris terbaca
+                      Rp 60.000 untuk uang yang dibayarkan sekali. */}
                   {log.status === "approved" && (
-                    <p className="text-xs text-green-700 mt-0.5">Nilai trip: {fmt(log.trip_value || rate)}</p>
+                    tripKembar(log, logs) ? (
+                      <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">
+                        Trip kembar di tanggal ini — tidak menambah upah, yang dibayar satu trip saja.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-green-700 mt-0.5">Nilai trip: {fmt(log.trip_value || rate)}</p>
+                    )
                   )}
                   {log.status === "rejected" && log.rejection_reason && (
                     <p className="text-xs text-red-600 mt-0.5">Alasan: {log.rejection_reason}</p>
@@ -207,7 +231,12 @@ export default function RempesanPage() {
         </div>
       </Card>
 
-      {showForm && <RempesanRecordForm onClose={() => { setShowForm(false); qc.invalidateQueries({ queryKey: ["rempesan-logs"] }); }} />}
+      {showForm && (
+        <RempesanRecordForm
+          konfigTarif={configs.find((x) => x.role === "keeper")}
+          onClose={() => { setShowForm(false); qc.invalidateQueries({ queryKey: ["rempesan-logs"] }); }}
+        />
+      )}
 
       {rejectTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setRejectTarget(null)}>
