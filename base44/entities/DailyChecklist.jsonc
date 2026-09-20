@@ -1,212 +1,255 @@
 {
   "name": "DailyChecklist",
-  "type": "object",
   "properties": {
-    "date": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal checklist"
+    "approved_at": {
+      "description": "Waktu checklist disetujui/ditolak. Sudah ditulis Beranda Kepala Feeder di tiga tempat, tetapi field-nya belum pernah ada sehingga waktunya selalu hilang.",
+      "format": "date-time",
+      "type": "string"
     },
-    "employee_id": {
-      "type": "string",
-      "description": "ID karyawan"
+    "approved_by": {
+      "description": "Nama admin yang approve",
+      "type": "string"
     },
-    "employee_name": {
-      "type": "string",
-      "description": "Nama karyawan"
+    "approved_by_email": {
+      "description": "Email penyetuju. Dipakai Audit Mingguan untuk memisahkan checklist yang disetujui orang lain dari yang disetujui pemilik sendiri, tanpa menebak dari nama.",
+      "type": "string"
     },
-    "employee_email": {
-      "type": "string",
-      "description": "Email karyawan"
+    "approved_points": {
+      "default": 0,
+      "description": "Poin yang disetujui admin",
+      "type": "number"
+    },
+    "audit_owner_at": {
+      "description": "Waktu pemilik mengaudit persetujuan ini.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "audit_owner_note": {
+      "description": "Catatan pemilik saat mengoreksi hasil persetujuan orang lain.",
+      "type": "string"
+    },
+    "audit_owner_status": {
+      "description": "Hasil Audit Mingguan pemilik atas persetujuan yang dilakukan orang lain. Kosong = belum diaudit.",
+      "enum": [
+        "sesuai",
+        "dikoreksi"
+      ],
+      "type": "string"
     },
     "completed_tasks": {
-      "type": "array",
+      "description": "Daftar task yang diselesaikan",
       "items": {
-        "type": "object",
         "properties": {
-          "task_id": {
+          "ai_apresiasi": {
+            "description": "Apresiasi positif dari AI untuk keeper (hangat & sopan)",
             "type": "string"
-          },
-          "task_title": {
-            "type": "string"
-          },
-          "points": {
-            "type": "number"
-          },
-          "notes": {
-            "type": "string"
-          },
-          "recorded_at": {
-            "type": "string",
-            "description": "Jam pencatatan task (HH:mm WIB) \u2014 untuk ditampilkan di Approval Poin & deteksi centang beruntun"
-          },
-          "photo_url": {
-            "type": "string",
-            "description": "URL bukti foto penyelesaian task"
-          },
-          "photo_taken_at": {
-            "type": "string",
-            "description": "Jam pengambilan foto (HH:mm)"
-          },
-          "photo_notes": {
-            "type": "string",
-            "description": "Catatan keeper saat upload foto bukti (opsional)"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "completed",
-              "skipped_no_stock"
-            ],
-            "default": "completed",
-            "description": "completed = task dikerjakan, skipped_no_stock = dilewati karena stok kosong"
-          },
-          "deadline_passed": {
-            "type": "boolean",
-            "description": "Task dikerjakan lewat tenggat, sehingga poinnya nol. Menjelaskan kenapa poinnya nol saat status-nya tetap completed."
-          },
-          "skip_reason": {
-            "type": "string",
-            "description": "Alasan skip (mis: Stok kosong)"
-          },
-          "ai_verified": {
-            "type": "boolean",
-            "description": "Hasil AI Vision: true=foto sesuai task, false=tidak sesuai"
           },
           "ai_confidence": {
-            "type": "number",
-            "description": "Tingkat keyakinan AI (0-100)"
+            "description": "Tingkat keyakinan AI (0-100)",
+            "type": "number"
           },
-          "ai_reason": {
-            "type": "string",
-            "description": "Alasan singkat dari AI (legacy, untuk owner badge)"
-          },
-          "ai_apresiasi": {
-            "type": "string",
-            "description": "Apresiasi positif dari AI untuk keeper (hangat & sopan)"
-          },
-          "ai_saran": {
-            "type": "string",
-            "description": "Saran membangun dari AI untuk keeper (1-2 kalimat, atau kosong jika sudah bagus)"
-          },
-          "ai_temuan_penting": {
-            "type": "string",
-            "description": "Temuan penting untuk owner (mis: kandang becek, kura lesu) \u2014 kosong jika tidak ada"
+          "ai_error": {
+            "description": "Alasan jika analisis AI gagal (mis: gambar tidak terbaca / layanan sibuk)",
+            "type": "string"
           },
           "ai_findings": {
-            "type": "string",
-            "description": "Legacy field \u2014 gunakan ai_temuan_penting"
+            "description": "Legacy field \u2014 gunakan ai_temuan_penting",
+            "type": "string"
+          },
+          "ai_reason": {
+            "description": "Alasan singkat dari AI (legacy, untuk owner badge)",
+            "type": "string"
+          },
+          "ai_saran": {
+            "description": "Saran membangun dari AI untuk keeper (1-2 kalimat, atau kosong jika sudah bagus)",
+            "type": "string"
           },
           "ai_status": {
-            "type": "string",
+            "description": "Status pemeriksaan AI: belum_diperiksa / sedang_diproses / selesai / gagal",
             "enum": [
               "belum_diperiksa",
               "sedang_diproses",
               "selesai",
               "gagal"
             ],
-            "description": "Status pemeriksaan AI: belum_diperiksa / sedang_diproses / selesai / gagal"
+            "type": "string"
           },
-          "ai_error": {
-            "type": "string",
-            "description": "Alasan jika analisis AI gagal (mis: gambar tidak terbaca / layanan sibuk)"
+          "ai_temuan_penting": {
+            "description": "Temuan penting untuk owner (mis: kandang becek, kura lesu) \u2014 kosong jika tidak ada",
+            "type": "string"
           },
-          "photo_age_warning": {
-            "type": "string",
-            "description": "Peringatan jika foto berusia >2 jam (kemungkinan bukan diambil saat itu)"
+          "ai_verified": {
+            "description": "Hasil AI Vision: true=foto sesuai task, false=tidak sesuai",
+            "type": "boolean"
           },
-          "photo_time_warning": {
-            "type": "string",
-            "description": "Peringatan jika foto diambil di luar jam tugas"
+          "deadline_passed": {
+            "description": "Task dikerjakan lewat tenggat, sehingga poinnya nol. Menjelaskan kenapa poinnya nol saat status-nya tetap completed.",
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
           },
           "owner_note": {
-            "type": "string",
-            "description": "Catatan pribadi dari owner ke keeper (teks bebas)"
-          }
-        }
-      },
-      "description": "Daftar task yang diselesaikan"
-    },
-    "photo_proofs": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
+            "description": "Catatan penyetuju ke keeper untuk tugas INI \u2014 wajib diisi bila poin tugas ini dipotong. Teks bebas.",
+            "type": "string"
+          },
+          "photo_age_warning": {
+            "description": "Peringatan jika foto berusia >2 jam (kemungkinan bukan diambil saat itu)",
+            "type": "string"
+          },
+          "photo_notes": {
+            "description": "Catatan keeper saat upload foto bukti (opsional)",
+            "type": "string"
+          },
+          "photo_taken_at": {
+            "description": "Jam pengambilan foto (HH:mm)",
+            "type": "string"
+          },
+          "photo_time_warning": {
+            "description": "Peringatan jika foto diambil di luar jam tugas",
+            "type": "string"
+          },
+          "photo_url": {
+            "description": "URL bukti foto penyelesaian task",
+            "type": "string"
+          },
+          "points": {
+            "type": "number"
+          },
+          "potong_kode": {
+            "description": "Sebab baku pemotongan poin tugas ini, dipilih dari daftar cepat. Dipisah dari owner_note supaya bisa dihitung: tanpa kode, pola 'foto selalu ditolak' tidak akan pernah terlihat.",
+            "enum": [
+              "foto_tidak_sesuai",
+              "lewat_tenggat",
+              "tidak_dikerjakan",
+              "kualitas_kurang",
+              "lainnya"
+            ],
+            "type": "string"
+          },
+          "recorded_at": {
+            "description": "Jam pencatatan task (HH:mm WIB) \u2014 untuk ditampilkan di Approval Poin & deteksi centang beruntun",
+            "type": "string"
+          },
+          "skip_reason": {
+            "description": "Alasan skip (mis: Stok kosong)",
+            "type": "string"
+          },
+          "status": {
+            "default": "completed",
+            "description": "completed = task dikerjakan, skipped_no_stock = dilewati karena stok kosong",
+            "enum": [
+              "completed",
+              "skipped_no_stock"
+            ],
+            "type": "string"
+          },
           "task_id": {
             "type": "string"
           },
+          "task_title": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "date": {
+      "description": "Tanggal checklist",
+      "format": "date",
+      "type": "string"
+    },
+    "employee_email": {
+      "description": "Email karyawan",
+      "type": "string"
+    },
+    "employee_id": {
+      "description": "ID karyawan",
+      "type": "string"
+    },
+    "employee_name": {
+      "description": "Nama karyawan",
+      "type": "string"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)",
+      "type": "boolean"
+    },
+    "is_test_data": {
+      "default": false,
+      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan",
+      "type": "boolean"
+    },
+    "notes": {
+      "description": "Catatan tambahan",
+      "type": "string"
+    },
+    "photo_proofs": {
+      "description": "Bukti foto penyelesaian task",
+      "items": {
+        "properties": {
           "photo_url": {
             "type": "string"
           },
           "taken_at": {
-            "type": "string",
-            "description": "Jam pengambilan foto (HH:mm)"
+            "description": "Jam pengambilan foto (HH:mm)",
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "description": "Bukti foto penyelesaian task"
+      "type": "array"
     },
-    "total_points_claimed": {
-      "type": "number",
-      "default": 0,
-      "description": "Total poin yang diklaim"
+    "rejection_reason": {
+      "description": "Alasan poin dipotong atau checklist ditolak. WAJIB diisi (min. 10 huruf) bila approved_points < total_points_claimed \u2014 sampai 20 September 2026 kolom ini kosong di kelima pemotongan yang pernah terjadi, termasuk yang memangkas 206 poin jadi 10.",
+      "type": "string"
+    },
+    "rejection_reason_kode": {
+      "description": "Sebab baku pemotongan, dipilih dari daftar cepat supaya bisa dihitung per sebab.",
+      "enum": [
+        "foto_tidak_sesuai",
+        "lewat_tenggat",
+        "tidak_dikerjakan",
+        "kualitas_kurang",
+        "lainnya"
+      ],
+      "type": "string"
     },
     "status": {
-      "type": "string",
+      "default": "submitted",
+      "description": "Status checklist",
       "enum": [
         "submitted",
         "approved",
         "rejected"
       ],
-      "default": "submitted",
-      "description": "Status checklist"
-    },
-    "approved_by": {
-      "type": "string",
-      "description": "Nama admin yang approve"
-    },
-    "approved_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Waktu checklist disetujui/ditolak. Sudah ditulis Beranda Kepala Feeder di tiga tempat, tetapi field-nya belum pernah ada sehingga waktunya selalu hilang."
-    },
-    "approved_points": {
-      "type": "number",
-      "default": 0,
-      "description": "Poin yang disetujui admin"
-    },
-    "rejection_reason": {
-      "type": "string",
-      "description": "Alasan ditolak"
-    },
-    "notes": {
-      "type": "string",
-      "description": "Catatan tambahan"
-    },
-    "excluded_from_reports": {
-      "type": "boolean",
-      "default": false,
-      "description": "Dikecualikan dari laporan (owner only)"
-    },
-    "is_test_data": {
-      "type": "boolean",
-      "default": false,
-      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan"
+      "type": "string"
     },
     "stok_dipotong": {
-      "type": "boolean",
       "default": false,
-      "description": "A6 - Stok bahan untuk checklist ini sudah dikurangi. Penjaga anti-dobel: sekali true, tidak akan dipotong lagi."
+      "description": "A6 - Stok bahan untuk checklist ini sudah dikurangi. Penjaga anti-dobel: sekali true, tidak akan dipotong lagi.",
+      "type": "boolean"
     },
     "stok_dipotong_at": {
-      "type": "string",
+      "description": "A6 - Waktu pemotongan stok dijalankan.",
       "format": "date-time",
-      "description": "A6 - Waktu pemotongan stok dijalankan."
+      "type": "string"
+    },
+    "total_points_claimed": {
+      "default": 0,
+      "description": "Total poin yang diklaim",
+      "type": "number"
     }
   },
   "required": [
     "date",
     "employee_name",
     "employee_email"
-  ]
+  ],
+  "type": "object"
 }
