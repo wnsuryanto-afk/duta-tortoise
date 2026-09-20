@@ -134,6 +134,45 @@
       "type": "boolean",
       "default": true,
       "description": "Saran AI (apresiasi + saran membangun) ditampilkan ke keeper. Jika false, keeper tidak melihat saran AI (penilaian teknis tetap untuk owner)."
+    },
+    "poin_tambahan_opsi": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": [
+        0,
+        5,
+        10,
+        15
+      ],
+      "description": "Pilihan poin yang boleh diberikan penilai untuk satu tugas Inisiatif. Disimpan di sini, bukan ditulis mati di kode, supaya bisa diubah tanpa membangun ulang aplikasi."
+    },
+    "poin_tambahan_maks_harian": {
+      "type": "number",
+      "default": 30,
+      "description": "Batas total poin Inisiatif yang bisa diterima SATU orang dalam SATU hari. Penilai tetap bisa menilai tugas berikutnya, tetapi poin di atas batas ini tidak ditambahkan."
+    },
+    "approver_roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "owner",
+        "manajer",
+        "kepala_feeder"
+      ],
+      "description": "Peran yang boleh menyetujui/memotong poin checklist harian. Tidak ada yang boleh menyetujui checklist miliknya sendiri, dan checklist milik kepala_feeder hanya bisa disetujui manajer atau owner \u2014 aturan itu ada di lib/persetujuanPoin.js dan tidak bisa dilonggarkan lewat daftar ini."
+    },
+    "target_poin_tim": {
+      "type": "number",
+      "description": "D16 - Total poin SELURUH tim dalam sebulan yang membuka bonus tingkat Dasar. Dibuat bersama karena poin yang tersedia terbatas dan dibagi antar kiper."
+    },
+    "musim_bertelur_aktif": {
+      "type": "boolean",
+      "default": false,
+      "description": "D26 - Sakelar musim bertelur. Jadwal perawatan 'musiman' hanya muncul di layar kiper selama sakelar ini menyala."
     }
   },
   "required": [

@@ -122,6 +122,17 @@
           "owner_note": {
             "type": "string",
             "description": "Catatan pribadi dari owner ke keeper (teks bebas)"
+          },
+          "potong_kode": {
+            "type": "string",
+            "enum": [
+              "foto_tidak_sesuai",
+              "lewat_tenggat",
+              "tidak_dikerjakan",
+              "kualitas_kurang",
+              "lainnya"
+            ],
+            "description": "Sebab baku pemotongan poin tugas ini. Dipisah dari owner_note supaya bisa dihitung: tanpa kode, pola 'foto selalu ditolak' tidak akan pernah terlihat."
           }
         }
       },
@@ -202,6 +213,38 @@
       "type": "string",
       "format": "date-time",
       "description": "A6 - Waktu pemotongan stok dijalankan."
+    },
+    "rejection_reason_kode": {
+      "type": "string",
+      "enum": [
+        "foto_tidak_sesuai",
+        "lewat_tenggat",
+        "tidak_dikerjakan",
+        "kualitas_kurang",
+        "lainnya"
+      ],
+      "description": "Sebab baku pemotongan, dipilih dari daftar cepat supaya bisa dihitung per sebab."
+    },
+    "approved_by_email": {
+      "type": "string",
+      "description": "Email penyetuju. Dipakai Audit Mingguan untuk memisahkan checklist yang disetujui orang lain dari yang disetujui pemilik sendiri."
+    },
+    "audit_owner_status": {
+      "type": "string",
+      "enum": [
+        "sesuai",
+        "dikoreksi"
+      ],
+      "description": "Hasil Audit Mingguan pemilik atas persetujuan yang dilakukan orang lain. Kosong = belum diaudit."
+    },
+    "audit_owner_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Waktu pemilik mengaudit persetujuan ini."
+    },
+    "audit_owner_note": {
+      "type": "string",
+      "description": "Catatan pemilik saat mengoreksi hasil persetujuan orang lain."
     }
   },
   "required": [

@@ -107,6 +107,19 @@
       "type": "boolean",
       "default": false,
       "description": "Dikecualikan dari laporan (owner only)"
+    },
+    "poin_dinilai_oleh": {
+      "type": "string",
+      "description": "Email penilai. Dipisah dari approved_by yang berisi nama, supaya bisa dicocokkan dengan User tanpa menebak dari nama."
+    },
+    "penilaian_note": {
+      "type": "string",
+      "description": "Catatan penilai untuk yang mengerjakan \u2014 opsional, tetapi inilah satu-satunya cara orangnya tahu kenapa poinnya sekian."
+    },
+    "menunggu_penilaian": {
+      "type": "boolean",
+      "default": true,
+      "description": "Tugas Inisiatif yang dikirim keeper menunggu dinilai. Dipisahkan dari approval_status supaya layar bisa membedakan 'belum dinilai' dari 'sudah dinilai nol'."
     }
   },
   "required": [
