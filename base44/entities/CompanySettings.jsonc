@@ -1,151 +1,181 @@
 {
   "name": "CompanySettings",
-  "type": "object",
   "properties": {
-    "company_name": {
-      "type": "string",
-      "description": "Nama perusahaan untuk KOP surat"
-    },
-    "company_address": {
-      "type": "string",
-      "description": "Alamat perusahaan"
-    },
-    "company_city": {
-      "type": "string",
-      "description": "Kota"
-    },
-    "company_phone": {
-      "type": "string",
-      "description": "Nomor telepon"
-    },
-    "company_email": {
-      "type": "string",
-      "description": "Email perusahaan"
-    },
-    "company_logo_url": {
-      "type": "string",
-      "description": "URL logo perusahaan"
-    },
-    "director_name": {
-      "type": "string",
-      "description": "Nama direktur / pimpinan untuk tanda tangan"
-    },
-    "director_title": {
-      "type": "string",
-      "description": "Jabatan direktur / pimpinan",
-      "default": "Pimpinan"
-    },
-    "min_poin_bulanan": {
-      "type": "number",
-      "default": 300,
-      "description": "Target minimum poin per bulan per karyawan. Dipakai sebagai tingkat DASAR bila target bertingkat belum diisi."
-    },
-    "musim_bertelur_aktif": {
-      "type": "boolean",
-      "default": false,
-      "description": "D26 - Sakelar musim bertelur. Jadwal perawatan berfrekuensi 'musiman' (boost kalsium betina, cek kloaka) hanya muncul di layar kiper selama sakelar ini menyala. Sengaja manual, bukan dari kalender: yang menentukan musim adalah tanda di lapangan - betina mulai gelisah, menggali, mencari tempat bertelur - dan yang melihatnya pemilik, bukan aplikasi."
-    },
-    "target_poin_tim": {
-      "type": "number",
-      "description": "D16 - Total poin SELURUH tim dalam sebulan yang membuka bonus tingkat Dasar. Dibuat bersama karena poin yang tersedia terbatas dan dibagi antar kiper: target Dasar perorangan membuat kiper berebut tugas, karena menaikkan poin sendiri berarti menurunkan poin rekannya. Ambang pribadi min_poin_bulanan tetap berlaku sebagai lantai agar tidak ada yang menumpang penuh pada kerja rekan."
-    },
-    "target_poin_bagus": {
-      "type": "number",
-      "description": "B1 - Tingkat kedua: poin per bulan untuk bonus 'Bagus'. Harus di atas min_poin_bulanan."
-    },
-    "target_poin_luar_biasa": {
-      "type": "number",
-      "description": "B1 - Tingkat ketiga: poin per bulan untuk bonus 'Luar biasa'."
-    },
-    "bonus_dasar": {
-      "type": "number",
-      "default": 0,
-      "description": "B1 - Rupiah bonus sekali bayar bila tingkat Dasar tercapai. 0 = belum diisi owner."
-    },
-    "bonus_bagus": {
-      "type": "number",
-      "default": 0,
-      "description": "B1 - Rupiah bonus sekali bayar bila tingkat Bagus tercapai."
-    },
-    "bonus_luar_biasa": {
-      "type": "number",
-      "default": 0,
-      "description": "B1 - Rupiah bonus sekali bayar bila tingkat Luar biasa tercapai."
-    },
-    "nilai_per_poin": {
-      "type": "number",
-      "default": 500,
-      "description": "Nilai rupiah per poin untuk bonus gaji"
-    },
-    "farm_lat": {
-      "type": "number",
-      "description": "Latitude lokasi kandang"
-    },
-    "farm_lng": {
-      "type": "number",
-      "description": "Longitude lokasi kandang"
-    },
-    "farm_location_radius": {
-      "type": "number",
-      "default": 200,
-      "description": "Radius toleransi checkout dalam meter"
-    },
-    "setting_key": {
-      "type": "string",
-      "default": "main",
-      "description": "Key unik (selalu 'main') untuk single-record pattern"
-    },
-    "stok_approval_threshold": {
-      "type": "number",
-      "default": 500000,
-      "description": "Nilai minimum stok keluar yang memerlukan approval (Rp)"
-    },
-    "auto_overtime_enabled": {
-      "type": "boolean",
+    "ai_saran_enabled": {
       "default": true,
-      "description": "Hitung lembur otomatis dari jam check-in/out. Bila false, jam lembur diisi manual owner/admin di slip."
-    },
-    "poin_bonus_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Aktifkan bonus poin menjadi uang. Bawaan MATI \u2014 poin tetap dicatat sebagai pencapaian tetapi tidak dibayar sampai dinyalakan."
-    },
-    "test_mode_active": {
-      "type": "boolean",
-      "default": false,
-      "description": "Mode testing aktif \u2014 semua data baru akan ditandai is_test_data=true"
-    },
-    "test_mode_started_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Waktu test mode diaktifkan"
-    },
-    "test_mode_started_by": {
-      "type": "string",
-      "description": "Email user yang mengaktifkan test mode"
-    },
-    "hpp_fallback_per_ekor": {
-      "type": "number",
-      "default": 100000,
-      "description": "Fallback biaya perawatan per ekor per bulan jika belum ada data pengeluaran (Rp)"
-    },
-    "hpp_include_salary": {
-      "type": "boolean",
-      "default": true,
-      "description": "Sertakan gaji dalam perhitungan biaya per ekor untuk HPP"
+      "description": "Saran AI (apresiasi + saran membangun) ditampilkan ke keeper. Jika false, keeper tidak melihat saran AI (penilaian teknis tetap untuk owner).",
+      "type": "boolean"
     },
     "ai_vision_enabled": {
-      "type": "boolean",
       "default": true,
-      "description": "Aktifkan AI Vision keseluruhan untuk verifikasi foto task. Jika false, foto tidak dianalisis AI."
+      "description": "Aktifkan AI Vision keseluruhan untuk verifikasi foto task. Jika false, foto tidak dianalisis AI.",
+      "type": "boolean"
     },
-    "ai_saran_enabled": {
-      "type": "boolean",
+    "approver_roles": {
+      "default": [
+        "owner",
+        "manajer",
+        "kepala_feeder"
+      ],
+      "description": "Peran yang boleh menyetujui/memotong poin checklist harian. Tidak ada yang boleh menyetujui checklist miliknya sendiri, dan checklist milik kepala_feeder hanya bisa disetujui manajer atau owner \u2014 aturan itu ada di lib/persetujuanPoin.js dan tidak bisa dilonggarkan lewat daftar ini.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "auto_overtime_enabled": {
       "default": true,
-      "description": "Saran AI (apresiasi + saran membangun) ditampilkan ke keeper. Jika false, keeper tidak melihat saran AI (penilaian teknis tetap untuk owner)."
+      "description": "Hitung lembur otomatis dari jam check-in/out. Bila false, jam lembur diisi manual owner/admin di slip.",
+      "type": "boolean"
+    },
+    "bonus_bagus": {
+      "default": 0,
+      "description": "B1 - Rupiah bonus sekali bayar bila tingkat Bagus tercapai.",
+      "type": "number"
+    },
+    "bonus_dasar": {
+      "default": 0,
+      "description": "B1 - Rupiah bonus sekali bayar bila tingkat Dasar tercapai. 0 = belum diisi owner.",
+      "type": "number"
+    },
+    "bonus_luar_biasa": {
+      "default": 0,
+      "description": "B1 - Rupiah bonus sekali bayar bila tingkat Luar biasa tercapai.",
+      "type": "number"
+    },
+    "company_address": {
+      "description": "Alamat perusahaan",
+      "type": "string"
+    },
+    "company_city": {
+      "description": "Kota",
+      "type": "string"
+    },
+    "company_email": {
+      "description": "Email perusahaan",
+      "type": "string"
+    },
+    "company_logo_url": {
+      "description": "URL logo perusahaan",
+      "type": "string"
+    },
+    "company_name": {
+      "description": "Nama perusahaan untuk KOP surat",
+      "type": "string"
+    },
+    "company_phone": {
+      "description": "Nomor telepon",
+      "type": "string"
+    },
+    "director_name": {
+      "description": "Nama direktur / pimpinan untuk tanda tangan",
+      "type": "string"
+    },
+    "director_title": {
+      "default": "Pimpinan",
+      "description": "Jabatan direktur / pimpinan",
+      "type": "string"
+    },
+    "farm_lat": {
+      "description": "Latitude lokasi kandang",
+      "type": "number"
+    },
+    "farm_lng": {
+      "description": "Longitude lokasi kandang",
+      "type": "number"
+    },
+    "farm_location_radius": {
+      "default": 200,
+      "description": "Radius toleransi checkout dalam meter",
+      "type": "number"
+    },
+    "hpp_fallback_per_ekor": {
+      "default": 100000,
+      "description": "Fallback biaya perawatan per ekor per bulan jika belum ada data pengeluaran (Rp)",
+      "type": "number"
+    },
+    "hpp_include_salary": {
+      "default": true,
+      "description": "Sertakan gaji dalam perhitungan biaya per ekor untuk HPP",
+      "type": "boolean"
+    },
+    "min_poin_bulanan": {
+      "default": 300,
+      "description": "Target minimum poin per bulan per karyawan. Dipakai sebagai tingkat DASAR bila target bertingkat belum diisi.",
+      "type": "number"
+    },
+    "musim_bertelur_aktif": {
+      "default": false,
+      "description": "D26 - Sakelar musim bertelur. Jadwal perawatan berfrekuensi 'musiman' (boost kalsium betina, cek kloaka) hanya muncul di layar kiper selama sakelar ini menyala. Sengaja manual, bukan dari kalender: yang menentukan musim adalah tanda di lapangan - betina mulai gelisah, menggali, mencari tempat bertelur - dan yang melihatnya pemilik, bukan aplikasi.",
+      "type": "boolean"
+    },
+    "nilai_per_poin": {
+      "default": 500,
+      "description": "Nilai rupiah per poin untuk bonus gaji",
+      "type": "number"
+    },
+    "poin_bonus_enabled": {
+      "default": false,
+      "description": "Aktifkan bonus poin menjadi uang. Bawaan MATI \u2014 poin tetap dicatat sebagai pencapaian tetapi tidak dibayar sampai dinyalakan.",
+      "type": "boolean"
+    },
+    "poin_tambahan_maks_harian": {
+      "default": 30,
+      "description": "Batas total poin Inisiatif yang bisa diterima SATU orang dalam SATU hari. Penilai tetap bisa menilai tugas berikutnya, tetapi poin di atas batas ini tidak ditambahkan.",
+      "type": "number"
+    },
+    "poin_tambahan_opsi": {
+      "default": [
+        0,
+        5,
+        10,
+        15
+      ],
+      "description": "Pilihan poin yang boleh diberikan penilai untuk satu tugas Inisiatif. Disimpan di sini, bukan ditulis mati di kode, supaya bisa diubah tanpa membangun ulang aplikasi.",
+      "items": {
+        "type": "number"
+      },
+      "type": "array"
+    },
+    "setting_key": {
+      "default": "main",
+      "description": "Key unik (selalu 'main') untuk single-record pattern",
+      "type": "string"
+    },
+    "stok_approval_threshold": {
+      "default": 500000,
+      "description": "Nilai minimum stok keluar yang memerlukan approval (Rp)",
+      "type": "number"
+    },
+    "target_poin_bagus": {
+      "description": "B1 - Tingkat kedua: poin per bulan untuk bonus 'Bagus'. Harus di atas min_poin_bulanan.",
+      "type": "number"
+    },
+    "target_poin_luar_biasa": {
+      "description": "B1 - Tingkat ketiga: poin per bulan untuk bonus 'Luar biasa'.",
+      "type": "number"
+    },
+    "target_poin_tim": {
+      "description": "D16 - Total poin SELURUH tim dalam sebulan yang membuka bonus tingkat Dasar. Dibuat bersama karena poin yang tersedia terbatas dan dibagi antar kiper: target Dasar perorangan membuat kiper berebut tugas, karena menaikkan poin sendiri berarti menurunkan poin rekannya. Ambang pribadi min_poin_bulanan tetap berlaku sebagai lantai agar tidak ada yang menumpang penuh pada kerja rekan.",
+      "type": "number"
+    },
+    "test_mode_active": {
+      "default": false,
+      "description": "Mode testing aktif \u2014 semua data baru akan ditandai is_test_data=true",
+      "type": "boolean"
+    },
+    "test_mode_started_at": {
+      "description": "Waktu test mode diaktifkan",
+      "format": "date-time",
+      "type": "string"
+    },
+    "test_mode_started_by": {
+      "description": "Email user yang mengaktifkan test mode",
+      "type": "string"
     }
   },
   "required": [
     "company_name"
-  ]
+  ],
+  "type": "object"
 }
