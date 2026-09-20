@@ -17,6 +17,7 @@ import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 import PageHeader from "@/components/common/PageHeader";
 import { TeamArt } from "@/components/common/Illustration";
 import { saldoTerkini } from "@/lib/kasKecil";
+import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
@@ -207,6 +208,9 @@ export default function KepalaFeederDashboard({ user }) {
           { key: "poin", icon: Star, label: "Poin saya hari ini", value: myTodayPoin },
         ]}
       />
+
+      {/* Checklist tim yang menggantung lebih dari sehari. */}
+      <PengingatPersetujuan />
 
       {/* ── MOTIVASI HARIAN ── */}
       <MotivasiHarianCard />

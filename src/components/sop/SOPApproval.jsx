@@ -19,6 +19,11 @@ import { logActivity } from "@/lib/logActivity";
 import { reverifySinglePhoto } from "@/lib/photoVerification";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import PhotoPreviewModal from "./PhotoPreviewModal";
+import AlasanPotongPoin from "@/components/sop/AlasanPotongPoin";
+import { useCompanySettings } from "@/lib/useCompanySettings";
+import {
+  bolehMenyetujui, periksaAlasanPotong, adaPemotongan, labelSebab,
+} from "@/lib/persetujuanPoin";
 
 const statusConfig = {
   submitted: { label: "Menunggu", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -51,16 +56,27 @@ function checkBeruntun(tasks) {
 export default function SOPApproval() {
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
+  const pengaturan = useCompanySettings();
   const isOwner = role === "owner";
   const { data: users = [] } = useActiveUsers();
   // Nama karyawan di-resolve dari entity User berdasarkan email (bukan dari
   // field nama yang tersalin di checklist) supaya perubahan nama di Manajemen
   // User langsung berlaku di semua tempat.
   const empName = (c) => users.find((u) => u.email === c?.employee_email)?.full_name || c?.employee_name || "—";
+  // `DailyChecklist` tidak menyimpan peran pemiliknya, jadi diambil dari User.
+  // Penting untuk aturan "checklist kepala_feeder hanya untuk manajer/owner":
+  // Angsolo berperan kepala_feeder DAN mengisi checklist harian sendiri.
+  const empRole = (c) => users.find((u) => u.email === c?.employee_email)?.role || "";
+  const checklistBerperan = (c) => ({ ...c, employee_role: empRole(c) });
   const [expanded, setExpanded] = useState({});
   const [taskChecked, setTaskChecked] = useState({});
   const [manualPoin, setManualPoin] = useState({});
   const [rejectReason, setRejectReason] = useState({});
+  // Sebab baku + kalimat pemotongan, per checklist. Disimpan terpisah dari
+  // rejectReason karena "potong sebagian lewat Setujui" dan "tolak seluruhnya"
+  // adalah dua tombol yang berbeda, dan dulu hanya yang kedua meminta alasan.
+  const [potongKode, setPotongKode] = useState({});
+  const [potongTeks, setPotongTeks] = useState({});
   const [processing, setProcessing] = useState({});
   const [filterStatus, setFilterStatus] = useState("submitted");
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -250,18 +266,70 @@ export default function SOPApproval() {
     });
   };
 
+  /**
+   * Beri tahu yang bersangkutan bahwa poinnya dipotong, beserta sebabnya.
+   *
+   * Sebelum ini tidak ada satu pun jalur yang memberitahukannya. Poin hilang,
+   * dan orangnya baru tahu saat melihat angka di layar sendiri — tanpa tahu
+   * kenapa, dan tanpa bisa bertanya ke siapa.
+   *
+   * Kegagalan mengirim notifikasi TIDAK membatalkan persetujuannya: poin yang
+   * sudah diputuskan tetap tersimpan, hanya kabarnya yang gagal.
+   */
+  const kabariKeeper = async (c, disetujui, kode, teks) => {
+    try {
+      const hilang = Number(c.total_points_claimed || 0) - Number(disetujui || 0);
+      await base44.entities.Notification.create({
+        recipient_email: c.employee_email,
+        title: `Poin ${format(new Date(c.date), "d MMM", { locale: id })} dipotong ${hilang}`,
+        message: `${labelSebab(kode)} — ${teks}\n\nDiklaim ${c.total_points_claimed || 0}, disetujui ${disetujui}. Diperiksa oleh ${user?.full_name || user?.email}.`,
+        type: "warning",
+        priority: "sedang",
+        category: "lainnya",
+        action_url: "/sop",
+        action_label: "Lihat checklist",
+        related_entity_id: c.id,
+        related_entity_type: "DailyChecklist",
+        created_at: new Date().toISOString(),
+      });
+    } catch {
+      // Dibiarkan diam di sini saja — persetujuannya sendiri sudah tersimpan.
+    }
+  };
+
   const handleApprove = async (c) => {
     const willApprove = getWillApprove(c);
+
+    // Penjaga hak: tidak ada yang boleh menyetujui checklist miliknya sendiri,
+    // dan checklist kepala_feeder hanya boleh disetujui manajer/owner.
+    const izin = bolehMenyetujui({ penilai: { ...user, role }, checklist: checklistBerperan(c), settings: pengaturan });
+    if (!izin.boleh) { toast.error(izin.sebab); return; }
+
+    // Penjaga alasan. Memotong 196 dari 206 poin lewat tombol ini dulu tidak
+    // meminta apa pun — hanya "Tolak" yang meminta alasan.
+    const kode = potongKode[c.id];
+    const teks = potongTeks[c.id];
+    const { sah, kurang } = periksaAlasanPotong({ checklist: c, akanDisetujui: willApprove, kode, teks });
+    if (!sah) { toast.error(kurang); return; }
+
+    const dipotong = adaPemotongan(c, willApprove);
     setProcessing((p) => ({ ...p, [c.id]: true }));
     try {
       await base44.entities.DailyChecklist.update(c.id, {
         status: "approved",
         approved_by: user?.full_name || user?.email,
+        approved_by_email: user?.email || "",
         // Beranda Kepala Feeder mencatat waktunya, layar ini tidak — jadi kapan
         // sebuah checklist disetujui bergantung pada layar mana yang dipakai.
         approved_at: new Date().toISOString(),
         approved_points: willApprove,
+        ...(dipotong
+          ? { rejection_reason: String(teks).trim(), rejection_reason_kode: kode }
+          : {}),
       });
+      if (dipotong) {
+        await kabariKeeper(c, willApprove, kode, String(teks).trim());
+      }
       await logActivity({
         action: "approve",
         entity_type: "DailyChecklist",
@@ -290,10 +358,12 @@ export default function SOPApproval() {
       await base44.entities.DailyChecklist.update(c.id, {
         status: "rejected",
         approved_by: user?.full_name || user?.email,
+        approved_by_email: user?.email || "",
         approved_at: new Date().toISOString(),
         approved_points: 0,
         rejection_reason: reason,
       });
+      await kabariKeeper(c, 0, "lainnya", reason);
       await logActivity({
         action: "reject",
         entity_type: "DailyChecklist",
@@ -450,6 +520,17 @@ export default function SOPApproval() {
             const isOpen = !!expanded[c.id];
             const willApprove = getWillApprove(c);
             const cm = getCheckedMap(c);
+            const izinC = bolehMenyetujui({
+              penilai: { ...user, role },
+              checklist: checklistBerperan(c),
+              settings: pengaturan,
+            });
+            const alasanC = periksaAlasanPotong({
+              checklist: c,
+              akanDisetujui: willApprove,
+              kode: potongKode[c.id],
+              teks: potongTeks[c.id],
+            });
 
             return (
               <Card key={c.id} className="p-4">
@@ -646,8 +727,17 @@ export default function SOPApproval() {
 
                     {c.notes && <p className="text-xs text-muted-foreground italic">Catatan keeper: {c.notes}</p>}
 
-                    {/* Approval actions — owner only, only for submitted */}
-                    {c.status === "submitted" && isOwner && (
+                    {/* Persetujuan. Dulu `isOwner` — hanya owner. Sekarang haknya
+                        ditentukan per checklist oleh lib/persetujuanPoin.js:
+                        kepala_feeder dan manajer ikut boleh, tetapi tidak ada
+                        yang boleh menyetujui checklist miliknya sendiri, dan
+                        checklist kepala_feeder tetap hanya untuk manajer/owner. */}
+                    {c.status === "submitted" && !izinC.boleh && (
+                      <p className="text-xs text-muted-foreground italic pt-2 border-t">
+                        {izinC.sebab}
+                      </p>
+                    )}
+                    {c.status === "submitted" && izinC.boleh && (
                       <div className="space-y-3 pt-2 border-t">
                         <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
                           <Sparkles className="w-3 h-3" /> Penilaian AI bisa keliru, gunakan sebagai bantuan.
@@ -684,6 +774,17 @@ export default function SOPApproval() {
                           />
                         </div>
 
+                        {willApprove < totalClaimed && (
+                          <AlasanPotongPoin
+                            checklist={c}
+                            akanDisetujui={willApprove}
+                            kode={potongKode[c.id]}
+                            teks={potongTeks[c.id]}
+                            onKode={(k) => setPotongKode((p) => ({ ...p, [c.id]: k }))}
+                            onTeks={(t) => setPotongTeks((p) => ({ ...p, [c.id]: t }))}
+                          />
+                        )}
+
                         <Textarea
                           placeholder="Alasan penolakan (wajib jika menolak)"
                           className="h-14 text-xs resize-none"
@@ -695,7 +796,7 @@ export default function SOPApproval() {
                           <Button
                             size="sm"
                             onClick={() => handleApprove(c)}
-                            disabled={processing[c.id] || willApprove === 0}
+                            disabled={processing[c.id] || willApprove === 0 || !alasanC.sah}
                             className="flex-1"
                           >
                             {processing[c.id] ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}

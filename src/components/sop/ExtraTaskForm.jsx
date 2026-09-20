@@ -56,7 +56,7 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
       await base44.entities.MaintenanceLog.create({
         check_key: `${user.email}__extra__${Date.now()}__${today}`,
         enclosure_id: "extra",
-        enclosure_name: "Tugas Tambahan",
+        enclosure_name: "Inisiatif",
         freq: "harian",
         item_id: `extra_${Date.now()}`,
         item_label: form.title.trim(),
@@ -65,8 +65,14 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
         done_at: format(new Date(), "HH:mm"),
         done_by: user.full_name || user.email,
         done_by_email: user.email,
+        // `poin_earned: 0` di sini BUKAN hasil penilaian — ia nilai awal
+        // sebelum ada yang menilai. Selama tiga bulan nol itu tidak pernah
+        // diganti: 234 catatan Inisiatif, semuanya nol, semuanya "pending".
+        // `menunggu_penilaian` memisahkan "belum dinilai" dari "dinilai nol",
+        // dua hal yang dulu terlihat sama persis di layar.
         poin_earned: 0,
         is_extra: true,
+        menunggu_penilaian: true,
         extra_description: form.description.trim(),
         photo_url: photo || "",
         approval_status: "pending",
@@ -84,7 +90,7 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Plus className="w-5 h-5" /> Tambah Pekerjaan
+            <Plus className="w-5 h-5" /> Catat Inisiatif
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">

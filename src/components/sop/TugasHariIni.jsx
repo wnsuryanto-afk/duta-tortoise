@@ -31,6 +31,8 @@ import UkurFormDialog from "./UkurFormDialog";
 import TimbangBabyDialog from "./TimbangBabyDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 import { pisahJudulTugas } from "@/lib/judulTugas";
+import { opsiPoin, hitungPemberian, poinTerpakaiHari, maksHarian } from "@/lib/poinInisiatif";
+import { peranPenyetuju, labelSebab } from "@/lib/persetujuanPoin";
 import InfoHint from "@/components/ui/info-hint";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
@@ -106,7 +108,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { isOwnerTestSave } = useCurrentUser();
-  const testTag = isOwnerTestSave ? { is_test_data: true } : {};
+  // Checklist milik pemilik selalu data uji. Dia memakai layar keeper untuk
+  // mencoba aplikasinya, bukan untuk bekerja di kandang — tanpa aturan ini
+  // percobaannya ikut terhitung sebagai poin dan kehadiran tim.
+  const akunUji = (user?.email || "").toLowerCase() === "wnsuryanto@gmail.com";
+  const testTag = (isOwnerTestSave || akunUji)
+    ? { is_test_data: true, excluded_from_reports: true }
+    : {};
   const today = format(new Date(), "yyyy-MM-dd");
   const now = new Date();
   const dow = now.getDay();
@@ -779,13 +787,68 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     }
   };
 
-  const handleApproveExtra = async (log, poin) => {
-    await base44.entities.MaintenanceLog.update(log.id, {
-      approval_status: "approved",
-      approved_by: user.full_name || user.email,
-      approved_at: format(new Date(), "yyyy-MM-dd HH:mm"),
-      poin_earned: poin,
+  // Dihitung di sini, bukan di dalam ExtraTaskRow: aturannya melarang hook
+  // di komponen bersarang, dan ketiganya sama untuk seluruh baris.
+  const opsiInisiatif = opsiPoin(companySettings);
+  const maksInisiatif = maksHarian(companySettings);
+  const bolehMenilaiInisiatif = peranPenyetuju(companySettings).includes(user?.role);
+
+  const handleApproveExtra = async (log, poin, catatan) => {
+    // Batas harian berlaku pada YANG MENERIMA, bukan pada yang menilai. Kalau
+    // kuotanya sudah habis, tugasnya tetap tercatat dinilai — yang berubah
+    // hanya poinnya, dan itu DIKATAKAN alih-alih dipotong diam-diam.
+    const { diberikan, pesan } = hitungPemberian({
+      diminta: poin,
+      logs: allLogsToday,
+      email: log.done_by_email,
+      tanggal: log.period_key,
+      settings: companySettings,
+      kecualikanId: log.id,
     });
+
+    try {
+      await base44.entities.MaintenanceLog.update(log.id, {
+        // Nol yang DIPUTUSKAN ditandai "rejected" supaya bisa dibedakan dari
+        // nol yang belum pernah dilihat siapa pun — 234 catatan lama semuanya
+        // nol jenis kedua.
+        approval_status: diberikan > 0 ? "approved" : "rejected",
+        menunggu_penilaian: false,
+        approved_by: user.full_name || user.email,
+        poin_dinilai_oleh: user.email || "",
+        approved_at: format(new Date(), "yyyy-MM-dd HH:mm"),
+        poin_earned: diberikan,
+        ...(catatan ? { penilaian_note: String(catatan).trim() } : {}),
+      });
+
+      // Kabari yang mengerjakan — inilah yang selama ini tidak pernah ada.
+      try {
+        await base44.entities.Notification.create({
+          recipient_email: log.done_by_email,
+          title: `Inisiatif "${log.item_label}" dinilai ${diberikan} poin`,
+          message: [
+            catatan ? String(catatan).trim() : "",
+            pesan,
+            `Dinilai oleh ${user.full_name || user.email}.`,
+          ].filter(Boolean).join("\n\n"),
+          type: diberikan > 0 ? "success" : "info",
+          priority: "rendah",
+          category: "lainnya",
+          action_url: "/sop",
+          action_label: "Lihat",
+          related_entity_id: log.id,
+          related_entity_type: "MaintenanceLog",
+          created_at: new Date().toISOString(),
+        });
+      } catch {
+        // Penilaiannya sudah tersimpan; hanya kabarnya yang gagal.
+      }
+
+      if (pesan) toast.warning(pesan);
+      else toast.success(`Inisiatif dinilai ${diberikan} poin`);
+    } catch (e) {
+      toast.error("Gagal menyimpan penilaian: " + (e?.message || e));
+      return;
+    }
     refetchAllLogs();
     refetchLogs();
   };
@@ -838,7 +901,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             </button>
           )}
           <button onClick={() => setShowExtraForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg px-3 py-1.5 hover:bg-amber-50">
-            <Plus className="w-3.5 h-3.5" /> Tambah Pekerjaan
+            <Plus className="w-3.5 h-3.5" /> Catat Inisiatif
           </button>
           {canCatatPakan && (
             <button onClick={() => setShowPakanForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50">
@@ -858,15 +921,47 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           </div>
         </div>
       )}
-      {myChecklistStatus && myChecklistStatus.status === "approved" && (
-        <div className="rounded-2xl border border-green-200 bg-green-50 p-3 flex items-center gap-2.5">
-          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-green-800">Disetujui: {myChecklistStatus.approved_points || 0} poin</p>
-            {myChecklistStatus.approved_by && <p className="text-xs text-green-700">oleh {myChecklistStatus.approved_by}</p>}
+      {myChecklistStatus && myChecklistStatus.status === "approved" && (() => {
+        // Poin yang dipotong beserta ALASANNYA. Sebelum ini spanduk ini hanya
+        // menyebut angka yang disetujui — jadi orang yang poinnya dipangkas
+        // dari 206 jadi 10 melihat "Disetujui: 10 poin" tanpa satu kata pun
+        // tentang sebabnya, dan tidak ada layar lain yang menyimpannya.
+        const diklaim = Number(myChecklistStatus.total_points_claimed || 0);
+        const disetujui = Number(myChecklistStatus.approved_points || 0);
+        const dipotong = disetujui < diklaim;
+        return (
+          <div className={`rounded-2xl border p-3 flex items-start gap-2.5 ${dipotong ? "border-amber-300 bg-amber-50" : "border-green-200 bg-green-50"}`}>
+            {dipotong
+              ? <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              : <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />}
+            <div className="min-w-0">
+              <p className={`text-sm font-semibold ${dipotong ? "text-amber-900" : "text-green-800"}`}>
+                {dipotong
+                  ? `Disetujui ${disetujui} dari ${diklaim} poin — ${diklaim - disetujui} hangus`
+                  : `Disetujui: ${disetujui} poin`}
+              </p>
+              {dipotong && myChecklistStatus.rejection_reason && (
+                <p className="text-xs text-amber-800 mt-0.5">
+                  {myChecklistStatus.rejection_reason_kode
+                    ? `${labelSebab(myChecklistStatus.rejection_reason_kode)} — `
+                    : ""}
+                  {myChecklistStatus.rejection_reason}
+                </p>
+              )}
+              {dipotong && !myChecklistStatus.rejection_reason && (
+                <p className="text-xs text-amber-800 mt-0.5 italic">
+                  Alasannya tidak tercatat — persetujuan ini dibuat sebelum alasan diwajibkan.
+                </p>
+              )}
+              {myChecklistStatus.approved_by && (
+                <p className={`text-xs mt-0.5 ${dipotong ? "text-amber-700" : "text-green-700"}`}>
+                  oleh {myChecklistStatus.approved_by}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
       {myChecklistStatus && myChecklistStatus.status === "rejected" && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-3 flex items-center gap-2.5">
           <X className="w-4 h-4 text-red-600 flex-shrink-0" />
@@ -960,9 +1055,18 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       {/* Extra Tasks */}
       {extraTasks.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1">Pekerjaan Tambahan</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1">Inisiatif</p>
           {extraTasks.map(log => (
-            <ExtraTaskRow key={log.id} log={log} showTeamView={showTeamView} user={user} onApprove={handleApproveExtra} />
+            <ExtraTaskRow
+              key={log.id}
+              log={log}
+              showTeamView={showTeamView}
+              user={user}
+              onApprove={handleApproveExtra}
+              opsi={opsiInisiatif}
+              sisaKuota={Math.max(0, maksInisiatif - poinTerpakaiHari(allLogsToday, log.done_by_email, log.period_key, { kecualikanId: log.id }))}
+              bolehMenilai={bolehMenilaiInisiatif}
+            />
           ))}
         </div>
       )}
@@ -1299,12 +1403,29 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
   );
 }
 
-// ── Extra Task Row ──
-function ExtraTaskRow({ log, showTeamView, user, onApprove }) {
-  const [poinInput, setPoinInput] = useState("10");
-  const isAdmin = ["owner", "admin", "manajer", "kepala_feeder"].includes(user?.role);
+/**
+ * ── Baris Inisiatif ──
+ *
+ * Dulu penilaiannya berupa kotak angka bebas (0-100) yang muncul hanya di
+ * `showTeamView`. Hasilnya: 234 catatan Inisiatif sejak 23 Juni, seluruhnya
+ * bernilai nol dan berstatus "pending" — tidak satu pun pernah dinilai.
+ *
+ * Sekarang pilihannya terbatas pada angka yang disimpan di pengaturan
+ * (`poin_tambahan_opsi`), ada catatan penilai, dan hasilnya ditampilkan
+ * kembali ke yang mengerjakan — termasuk ketika nilainya nol, karena "dinilai
+ * nol dengan alasan" dan "tidak pernah dilihat" adalah dua hal yang berbeda.
+ *
+ * `opsi`, `sisaKuota`, dan `bolehMenilai` dihitung di induknya dan diturunkan
+ * sebagai prop: komponen ini tidak memegang kueri sendiri.
+ */
+function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15], sisaKuota = 30, bolehMenilai = false }) {
+  const [poinPilih, setPoinPilih] = useState(null);
+  const [catatan, setCatatan] = useState("");
+  const isAdmin = bolehMenilai;
   const isPending = log.approval_status === "pending" || !log.approval_status;
   const isApproved = log.approval_status === "approved";
+  const isDinilai = ["approved", "rejected"].includes(log.approval_status);
+  const milikSendiri = log.done_by_email === user?.email;
 
   return (
     <div className={`rounded-2xl border-2 shadow-sm ${isApproved ? "border-green-300 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
@@ -1314,9 +1435,10 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2 flex-wrap">
               <p className="text-sm font-semibold text-foreground">{log.item_label}</p>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Tambahan</span>
-              {isApproved && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">✓ Approved +{log.poin_earned}p</span>}
-              {isPending && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Menunggu Approval</span>}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Inisiatif</span>
+              {isApproved && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Dinilai +{log.poin_earned}p</span>}
+              {log.approval_status === "rejected" && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Dinilai 0p</span>}
+              {isPending && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">Menunggu penilaian</span>}
             </div>
             {log.extra_description && <p className="text-xs text-muted-foreground mt-0.5">{log.extra_description}</p>}
             <p className="text-xs text-muted-foreground mt-0.5">oleh {log.done_by} · {log.done_at}</p>
@@ -1331,18 +1453,64 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove }) {
           )}
         </div>
 
-        {/* Approval actions for admin */}
-        {showTeamView && isAdmin && isPending && (
-          <div className="mt-3 pt-3 border-t border-amber-200 flex items-center gap-2">
-            <input type="number" value={poinInput} onChange={e => setPoinInput(e.target.value)} className="w-16 h-8 rounded-lg border border-border text-center text-sm" min="0" max="100" />
-            <span className="text-xs text-muted-foreground">poin</span>
-            <button onClick={() => onApprove(log, parseInt(poinInput) || 0)} className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">
-              <Check className="w-3 h-3" /> Approve
-            </button>
-            <button onClick={() => onApprove(log, 0)} className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-foreground text-xs font-bold rounded-lg hover:bg-gray-300">
-              <X className="w-3 h-3" /> Tolak
-            </button>
+        {/* Hasil penilaian — ditampilkan ke SIAPA PUN yang melihat baris ini,
+            termasuk yang mengerjakannya. Tanpa ini, keeper hanya melihat
+            angkanya berubah tanpa tahu siapa yang menilai dan kenapa. */}
+        {isDinilai && (log.penilaian_note || log.approved_by) && (
+          <div className="mt-2.5 pt-2.5 border-t border-green-200 text-xs">
+            {log.penilaian_note && <p className="text-foreground">{log.penilaian_note}</p>}
+            {log.approved_by && (
+              <p className="text-muted-foreground mt-0.5">Dinilai oleh {log.approved_by}</p>
+            )}
           </div>
+        )}
+
+        {/* Penilaian. Aturan konflik sama dengan checklist: tidak ada yang
+            menilai pekerjaannya sendiri. */}
+        {isAdmin && isPending && !milikSendiri && (
+          <div className="mt-3 pt-3 border-t border-amber-200 space-y-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-muted-foreground mr-0.5">Beri poin:</span>
+              {opsi.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPoinPilih(n)}
+                  className={`min-w-[38px] h-8 px-2 rounded-lg text-xs font-bold border transition-colors ${
+                    poinPilih === n
+                      ? "bg-green-700 text-white border-green-700"
+                      : "bg-card text-foreground border-border hover:bg-green-50"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <input
+              value={catatan}
+              onChange={(e) => setCatatan(e.target.value)}
+              placeholder="Catatan untuk yang mengerjakan (opsional)"
+              className="w-full h-8 rounded-lg border border-border px-2.5 text-xs bg-card"
+            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => onApprove(log, poinPilih, catatan)}
+                disabled={poinPilih === null}
+                className="flex items-center gap-1 px-3 py-1.5 bg-green-700 text-white text-xs font-bold rounded-lg hover:bg-green-800 disabled:opacity-40"
+              >
+                <Check className="w-3 h-3" /> Simpan penilaian
+              </button>
+              <span className="text-[11px] text-muted-foreground">
+                Sisa kuota hari ini {sisaKuota} poin
+              </span>
+            </div>
+          </div>
+        )}
+
+        {isAdmin && isPending && milikSendiri && (
+          <p className="mt-2.5 pt-2.5 border-t border-amber-200 text-[11px] text-muted-foreground italic">
+            Inisiatif sendiri dinilai orang lain.
+          </p>
         )}
       </div>
     </div>

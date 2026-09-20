@@ -8,6 +8,8 @@ import TugasHariIni from "@/components/sop/TugasHariIni";
 import SOPApproval from "@/components/sop/SOPApproval";
 import SOPTaskManager from "@/components/sop/SOPTaskManager";
 import SOPKPI from "@/components/sop/SOPKPI";
+import AuditMingguan from "@/components/sop/AuditMingguan";
+import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
 import PageHeader from "@/components/common/PageHeader";
 import { ClipboardList } from "lucide-react";
 import { TeamArt } from "@/components/common/Illustration";
@@ -37,9 +39,13 @@ export default function SOPPage() {
           {isAdmin && <TabsTrigger value="approval">Verifikasi</TabsTrigger>}
           <TabsTrigger value="kpi">KPI & Poin</TabsTrigger>
           {canManageSOP && <TabsTrigger value="tasks">Kelola SOP</TabsTrigger>}
+          {role === "owner" && <TabsTrigger value="audit">Audit Mingguan</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="tugas" className="mt-6">
+        <TabsContent value="tugas" className="mt-6 space-y-4">
+          {/* Pengingat untuk penyetuju — checklist yang menggantung lebih dari
+              sehari. Ditaruh di tab yang memang dibuka tiap hari. */}
+          <PengingatPersetujuan />
           <TugasHariIni user={user} showTeamView={isAdmin} />
         </TabsContent>
 
@@ -57,6 +63,11 @@ export default function SOPPage() {
         {canManageSOP && (
           <TabsContent value="tasks" className="mt-6">
             <SOPTaskManager />
+          </TabsContent>
+        )}
+        {role === "owner" && (
+          <TabsContent value="audit" className="mt-6">
+            <AuditMingguan />
           </TabsContent>
         )}
       </Tabs>
