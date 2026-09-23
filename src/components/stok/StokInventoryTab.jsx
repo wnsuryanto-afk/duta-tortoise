@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
-import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
+import ModalCetakLabel from "@/components/label/ModalCetakLabel";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 function formatRp(v) { return "Rp " + Number(v || 0).toLocaleString("id-ID"); }
@@ -805,7 +805,8 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
 
       {/* Cetak Label */}
       {labelItems && (
-        <WarehouseLabelModal open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
+        <ModalCetakLabel open={!!labelItems} items={labelItems}
+          onClose={() => setLabelItems(null)} judul="Cetak Label Stok" />
       )}
     </div>
   );

@@ -17,7 +17,7 @@ import BarangMasukDialog from "@/components/stock/BarangMasukDialog";
 import BarangKeluarDialog from "@/components/stock/BarangKeluarDialog";
 import RiwayatTransaksiTab from "@/components/stock/RiwayatTransaksiTab";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
-import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
+import ModalCetakLabel from "@/components/label/ModalCetakLabel";
 import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
 import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
@@ -408,7 +408,8 @@ export default function WarehousePage() {
       )}
 
       {labelItems && (
-        <WarehouseLabelModal open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
+        <ModalCetakLabel open={!!labelItems} items={labelItems}
+          onClose={() => setLabelItems(null)} judul="Cetak Label Gudang" />
       )}
 
       <QRScannerDialog open={showScanner} onClose={() => setShowScanner(false)} onResult={handleScanResult} />

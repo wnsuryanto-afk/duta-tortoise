@@ -3,11 +3,11 @@
  *
  * ── Dua hal yang salah sebelum berkas ini ada ───────────────────────────────
  *
- * 1. **Pilihan ukuran hanya ada di satu layar.** `NiimbotLabelGenerator`
- *    (halaman Stok Pakan) menawarkan tiga ukuran. `WarehouseLabelModal` —
- *    yang dipakai halaman Gudang dan tab Stok — tidak menawarkan apa pun:
- *    lebar 400 dan tinggi 240 ditulis mati di dalam kode, dan kalimat
- *    petunjuknya menyebut "atur ukuran 50×30mm" sebagai satu-satunya pilihan.
+ * 1. **Pilihan ukuran hanya ada di satu layar.** Modal label Stok Pakan
+ *    menawarkan tiga ukuran. Modal label Gudang — yang dipakai halaman
+ *    Gudang dan tab Stok — tidak menawarkan apa pun: lebar 400 dan tinggi 240
+ *    ditulis mati di dalam kode, dan kalimat petunjuknya menyebut "atur ukuran
+ *    50×30mm" sebagai satu-satunya pilihan.
  *
  * 2. **Empat puluh persen label gudang kosong.** Isinya berakhir di piksel
  *    ke-144 dari 240: QR dipatok 108px, dan setiap baris teks memakai jarak
@@ -26,7 +26,16 @@
  * membuatnya tertata benar.
  */
 
-/** Printer Niimbot bekerja di 203 DPI. */
+/**
+ * Printer label termal di peternakan ini adalah Xprinter, dan 203 DPI adalah
+ * resolusi yang dipakai hampir semua modelnya.
+ *
+ * Angka ini menentukan KETAJAMAN, bukan ukuran cetaknya: yang menentukan
+ * ukuran adalah ukuran kertas yang diatur di aplikasi printernya. Kalau
+ * modelnya ternyata 300 DPI, labelnya tetap keluar 50 × 30 mm — hanya saja
+ * gambarnya diperbesar sedikit oleh aplikasinya dan hurufnya jadi kurang tajam.
+ * Kalau itu terjadi, cukup ubah angka di bawah ini; seluruh tata letak ikut.
+ */
 export const DPI = 203;
 export const PX_PER_MM = DPI / 25.4;
 
@@ -47,13 +56,21 @@ function batas(nilai, min, maks) {
  *
  * Urut dari kecil ke besar supaya sejajar dengan cara orang memilih —
  * melihat barangnya dulu, baru mencari ukuran yang sepadan.
+ *
+ * ── Kenapa cuma dua ────────────────────────────────────────────────────────
+ *
+ * Karena cuma dua gulungan itu yang ada di peternakan. Menawarkan ukuran yang
+ * gulungannya tidak dipunyai bukan kemurahan hati: ia cuma jebakan salah cetak
+ * — label yang sudah terlanjur keluar di gulungan yang salah tidak bisa
+ * dikembalikan jadi stiker kosong.
+ *
+ * Menambahnya nanti cukup satu baris di sini. `rencanaLabel` tidak punya satu
+ * pun percabangan per ID; ia menghitung dari milimeternya, jadi ukuran apa pun
+ * yang ditambahkan langsung tertata benar tanpa menyentuh penggambarnya.
  */
 export const UKURAN_LABEL = [
   { id: "30x15", mmW: 30, mmH: 15, label: "30 × 15 mm", untuk: "Ampul, botol kecil, sachet" },
-  { id: "40x30", mmW: 40, mmH: 30, label: "40 × 30 mm", untuk: "Dus obat, kotak kecil" },
-  { id: "50x30", mmW: 50, mmH: 30, label: "50 × 30 mm", untuk: "Kebanyakan barang gudang" },
-  { id: "50x40", mmW: 50, mmH: 40, label: "50 × 40 mm", untuk: "Jerigen, ember, toples" },
-  { id: "60x40", mmW: 60, mmH: 40, label: "60 × 40 mm", untuk: "Karung, drum, alat besar" },
+  { id: "50x30", mmW: 50, mmH: 30, label: "50 × 30 mm", untuk: "Dus, jerigen, karung, alat" },
 ];
 
 export const UKURAN_BAWAAN = "50x30";

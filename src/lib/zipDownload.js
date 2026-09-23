@@ -1,6 +1,6 @@
 /**
  * Utilitas unduh file — PNG satuan & ZIP (native, tanpa library eksternal).
- * Dipakai oleh WarehouseLabelModal untuk ekspor label gudang.
+ * Dipakai ModalCetakLabel untuk mengekspor banyak label sekaligus.
  */
 
 export function downloadDataUrl(dataUrl, name) {

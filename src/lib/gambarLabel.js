@@ -3,8 +3,8 @@
  *
  * Sebelum ini ada dua, dan keduanya berselisih:
  *
- *   · `NiimbotLabelGenerator` (Stok Pakan)   — punya 3 pilihan ukuran
- *   · `WarehouseLabelModal` (Gudang & Stok)  — tanpa pilihan, 400×240 mati
+ *   · modal label Stok Pakan   — punya 3 pilihan ukuran
+ *   · modal label Gudang       — tanpa pilihan, 400×240 mati
  *
  * Keduanya menggambar hal yang sama — QR, nama, SKU — dengan angka yang
  * berbeda, dan keduanya memutuskan tata letak lewat percabangan per ID ukuran
@@ -16,9 +16,9 @@
  * lib/ukuranLabel.js dan mengikutinya. Menambah ukuran cukup dilakukan di
  * daftar sana.
  *
- * Hasilnya MONOKROM — hitam putih. Printer termal Niimbot memang tidak bisa
- * mencetak warna, jadi apa pun yang berwarna di pratinjau hanya akan jadi
- * abu-abu kotor di stikernya.
+ * Hasilnya MONOKROM — hitam putih. Printer termal memang tidak bisa mencetak
+ * warna, jadi apa pun yang berwarna di pratinjau hanya akan jadi abu-abu kotor
+ * di stikernya.
  */
 
 import QRCode from "qrcode";

@@ -11,7 +11,7 @@ import { formatRp } from "@/lib/skuUtils";
 import StockItemForm from "@/components/stock/StockItemForm";
 import StockTransactionDialog from "@/components/stock/StockTransactionDialog";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
-import NiimbotLabelGenerator from "@/components/stock/NiimbotLabelGenerator";
+import ModalCetakLabel from "@/components/label/ModalCetakLabel";
 import ItemDetailDialog from "@/components/stock/ItemDetailDialog";
 import ApprovalQueueCard from "@/components/stock/ApprovalQueueCard";
 import DataLengkapFilter from "@/components/stock/DataLengkapFilter";
@@ -407,8 +407,8 @@ export default function FeedStockPage() {
       )}
 
       {labelItems && (
-        <NiimbotLabelGenerator open={!!labelItems} items={labelItems}
-          onClose={() => setLabelItems(null)} />
+        <ModalCetakLabel open={!!labelItems} items={labelItems}
+          onClose={() => setLabelItems(null)} judul="Cetak Label Stok Pakan" />
       )}
 
       {showPakanMasuk && (
