@@ -1,158 +1,31 @@
 /**
  * WarehouseLabelModal — cetak label barang gudang untuk printer thermal Niimbot.
  *
- * Label PNG 50×30mm MONOKROME (hitam-putih). Isi:
- *  - Strip kode kategori (OBT/VIT/ALT/dll) — dari prefix SKU, fallback kode kategori.
- *  - QR code berisi SKU (generate dari field sku).
- *  - Nama barang, SKU, fungsi singkat (dari notes, jika ada).
- *  - Baris "Exp: ____________" kosong untuk diisi manual.
+ * Ukurannya DIPILIH saat mencetak, karena barang di gudang ini tidak seukuran:
+ * ada ampul dan sachet, ada juga karung dan drum. Sebelum ini modal ini memakai
+ * 400×240 piksel yang ditulis mati di dalam kode, dan kalimat petunjuknya
+ * menyebut "atur ukuran 50×30mm" seolah itu satu-satunya pilihan — padahal
+ * layar Stok Pakan sudah lama punya tiga pilihan ukuran.
  *
- * Barang tanpa SKU tetap ditampilkan; pada label ditandai "BELUM ADA SKU"
- * (tanpa QR). Tidak mengubah data/stok gudang — hanya menghasilkan gambar.
- *
- * Hasil: unduh PNG satuan, atau ZIP untuk banyak barang (impor ke app Niimbot).
+ * Tata letak dan penggambarannya kini dipinjam dari lib/ukuranLabel.js dan
+ * lib/gambarLabel.js, sama persis dengan yang dipakai Stok Pakan. Itu juga yang
+ * menutup ruang kosong 40% di bawah label: dulu QR dipatok 108px dan setiap
+ * baris teks memakai jarak tetap dari atas, sehingga isinya berhenti di piksel
+ * ke-144 dari 240 berapa pun ukuran stikernya.
  */
 import { useEffect, useState } from "react";
-import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Printer, Info, AlertTriangle } from "lucide-react";
 import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload";
-
-const CAT_CODE = {
-  obat: "OBT",
-  vitamin: "VIT",
-  suplemen: "SPL",
-  alat_kerja: "ALT",
-  peralatan: "PRL",
-  lainnya: "LNN",
-};
-
-// 50×30mm @ ~8px/mm (≈203 DPI)
-const W = 400;
-const H = 240;
-
-function wrapText(ctx, text, maxWidth, maxLines) {
-  const words = String(text).split(/\s+/);
-  const lines = [];
-  let line = "";
-  for (const word of words) {
-    const test = line ? line + " " + word : word;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-      if (lines.length >= maxLines - 1) break;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  if (lines.length > maxLines) lines.length = maxLines;
-  if (lines.length === maxLines) {
-    let last = lines[maxLines - 1];
-    while (last.length > 0 && ctx.measureText(last + "…").width > maxWidth) last = last.slice(0, -1);
-    if (last !== lines[maxLines - 1]) lines[maxLines - 1] = last + "…";
-  }
-  return lines;
-}
-
-function truncateText(ctx, text, maxWidth) {
-  if (ctx.measureText(text).width <= maxWidth) return text;
-  let t = text;
-  while (t.length > 0 && ctx.measureText(t + "…").width > maxWidth) t = t.slice(0, -1);
-  return t + "…";
-}
-
-async function renderWarehouseLabel(canvas, item) {
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, W, H);
-
-  const sku = item.sku || "";
-  const strip = (sku.split("-")[0] || "").toUpperCase() || CAT_CODE[item.category] || "LNN";
-  const stripH = 26;
-
-  // Strip kategori (hitam, teks putih)
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, W, stripH);
-  ctx.fillStyle = "#ffffff";
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
-  ctx.font = "bold 15px Arial";
-  ctx.fillText(strip, 10, stripH / 2);
-  ctx.font = "10px Arial";
-  ctx.textAlign = "right";
-  ctx.fillText("DUTA TORTOISE", W - 8, stripH / 2);
-
-  // Area QR
-  const padY = stripH + 10;
-  const qrSize = 108;
-  const qrX = 10;
-  const qrY = padY;
-
-  if (sku) {
-    const qr = document.createElement("canvas");
-    await QRCode.toCanvas(qr, sku, {
-      width: qrSize,
-      margin: 1,
-      color: { dark: "#000000", light: "#ffffff" },
-    });
-    ctx.drawImage(qr, qrX, qrY, qrSize, qrSize);
-  } else {
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(qrX, qrY, qrSize, qrSize);
-    ctx.fillStyle = "#000000";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 12px Arial";
-    ctx.fillText("BELUM", qrX + qrSize / 2, qrY + qrSize / 2 - 18);
-    ctx.fillText("ADA SKU", qrX + qrSize / 2, qrY + qrSize / 2);
-    ctx.font = "9px Arial";
-    ctx.fillText("(tanpa QR)", qrX + qrSize / 2, qrY + qrSize / 2 + 18);
-  }
-
-  // Kolom teks
-  const tx = qrX + qrSize + 12;
-  const tw = W - tx - 10;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  ctx.fillStyle = "#000000";
-
-  // Nama barang (bold, max 2 baris)
-  ctx.font = "bold 17px Arial";
-  const nameLines = wrapText(ctx, item.name || "—", tw, 2);
-  let y = padY;
-  for (const line of nameLines) {
-    ctx.fillText(line, tx, y);
-    y += 20;
-  }
-
-  // SKU
-  ctx.font = "13px monospace";
-  ctx.fillText(sku ? `SKU: ${sku}` : "SKU: -", tx, padY + 52);
-
-  // Fungsi singkat (dari notes, jika ada)
-  if (item.notes) {
-    ctx.font = "11px Arial";
-    ctx.fillText(truncateText(ctx, item.notes, tw), tx, padY + 72);
-  }
-
-  // Baris Exp kosong
-  ctx.font = "12px monospace";
-  ctx.fillText("Exp: ____________", tx, padY + 92);
-}
-
-function fileName(item) {
-  const base = (item.sku || item.name || "item").replace(/[^a-zA-Z0-9_-]+/g, "_");
-  return `label-${base}.png`;
-}
+import { UKURAN_LABEL, UKURAN_BAWAAN, cariUkuran } from "@/lib/ukuranLabel";
+import { gambarLabel, namaBerkasLabel } from "@/lib/gambarLabel";
 
 export default function WarehouseLabelModal({ open, items = [], onClose }) {
   const [previews, setPreviews] = useState([]);
   const [generating, setGenerating] = useState(false);
+  const [ukuranId, setUkuranId] = useState(UKURAN_BAWAAN);
+  const ukuran = cariUkuran(ukuranId);
 
   useEffect(() => {
     if (!open || !items.length) {
@@ -165,7 +38,7 @@ export default function WarehouseLabelModal({ open, items = [], onClose }) {
       const out = [];
       for (const item of items) {
         const c = document.createElement("canvas");
-        await renderWarehouseLabel(c, item);
+        await gambarLabel(c, item, ukuran);
         if (cancelled) return;
         out.push({ item, dataUrl: c.toDataURL("image/png") });
       }
@@ -177,11 +50,11 @@ export default function WarehouseLabelModal({ open, items = [], onClose }) {
     return () => {
       cancelled = true;
     };
-  }, [open, items]);
+  }, [open, items, ukuran]);
 
   const noSkuCount = items.filter((i) => !i.sku).length;
 
-  const handleDownloadOne = (p) => downloadDataUrl(p.dataUrl, fileName(p.item));
+  const handleDownloadOne = (p) => downloadDataUrl(p.dataUrl, namaBerkasLabel(p.item, ukuran.id));
 
   const handleDownloadAll = () => {
     if (previews.length === 0) return;
@@ -189,8 +62,8 @@ export default function WarehouseLabelModal({ open, items = [], onClose }) {
       handleDownloadOne(previews[0]);
       return;
     }
-    const files = previews.map((p) => ({ name: fileName(p.item), bytes: dataUrlToBytes(p.dataUrl) }));
-    downloadZip(files, "label-gudang.zip");
+    const files = previews.map((p) => ({ name: namaBerkasLabel(p.item, ukuran.id), bytes: dataUrlToBytes(p.dataUrl) }));
+    downloadZip(files, `label-gudang-${ukuran.id}.zip`);
   };
 
   return (
@@ -207,7 +80,10 @@ export default function WarehouseLabelModal({ open, items = [], onClose }) {
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold mb-1">Cara cetak ke Niimbot:</p>
-            <p>Download lalu impor ke app Niimbot untuk cetak. Pilih "Import Gambar" di app Niimbot, atur ukuran 50×30mm, lalu cetak.</p>
+            <p>
+              Download lalu impor ke app Niimbot. Pilih &quot;Import Gambar&quot;, atur ukuran
+              kertas ke <b>{ukuran.label}</b> — sama dengan yang dipilih di bawah — lalu cetak.
+            </p>
           </div>
         </div>
 
@@ -217,6 +93,36 @@ export default function WarehouseLabelModal({ open, items = [], onClose }) {
             <p>{noSkuCount} barang belum punya SKU — tetap dibuat labelnya namun tanpa QR (ditandai "BELUM ADA SKU").</p>
           </div>
         )}
+
+        {/* Pemilih ukuran. Yang memilih sedang memegang barangnya, jadi tiap
+            pilihan menyebut barang apa yang cocok — "40 × 30 mm" sendirian
+            tidak memberi tahu apakah ia muat di botol yang ada di tangan. */}
+        <div>
+          <p className="text-xs font-semibold mb-1.5">Ukuran stiker</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {UKURAN_LABEL.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => setUkuranId(u.id)}
+                className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
+                  ukuranId === u.id
+                    ? "border-primary bg-primary/8 ring-1 ring-primary/30"
+                    : "border-border bg-card hover:bg-muted/50"
+                }`}
+              >
+                <span className="block text-xs font-semibold tabular-nums">{u.label}</span>
+                <span className="block text-[10px] text-muted-foreground leading-tight mt-0.5">
+                  {u.untuk}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            Pilih yang sama dengan gulungan stiker yang terpasang di printer. Label kecil
+            otomatis menampilkan lebih sedikit keterangan supaya tetap terbaca.
+          </p>
+        </div>
 
         <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
           {items.length} item dipilih: {items.slice(0, 3).map((i) => i.name).join(", ")}
@@ -240,9 +146,25 @@ export default function WarehouseLabelModal({ open, items = [], onClose }) {
             <div className="space-y-3">
               {previews.map(({ item, dataUrl }, idx) => (
                 <div key={idx} className="border rounded-lg p-3 flex items-center gap-3">
-                  <img src={dataUrl} alt={item.name} className="border rounded bg-white" style={{ height: 72 }} />
+                  {/* Lebarnya mengikuti perbandingan sisi ukuran terpilih,
+                      supaya pratinjaunya memperlihatkan bentuk stiker yang akan
+                      keluar. Di layar ponsel tingginya diturunkan: pratinjau
+                      setinggi 72px menyisakan 90px untuk namanya, dan nama
+                      barang gudang di sini rata-rata jauh lebih panjang. */}
+                  <img
+                    src={dataUrl}
+                    alt={item.name}
+                    className="border rounded bg-white flex-shrink-0 h-14 sm:h-[72px]"
+                    style={{ aspectRatio: `${ukuran.mmW} / ${ukuran.mmH}` }}
+                  />
+                  {/* Nama DIBUNGKUS, bukan dipotong. `truncate` memaksa satu
+                      baris tanpa putus, dan lebar minimum baris itu merambat
+                      naik ke kolom grid dialog: di layar 390px seluruh isi
+                      dialog jadi 475px dan tombolnya tergeser keluar layar.
+                      Dibungkus, yang menentukan lebar minimum hanyalah kata
+                      terpanjang — dan namanya pun terbaca utuh. */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
+                    <p className="text-sm font-medium line-clamp-2 break-words">{item.name}</p>
                     <p className="text-xs text-muted-foreground font-mono">
                       {item.sku ? `QR isi SKU: ${item.sku}` : "belum ada SKU (tanpa QR)"}
                     </p>

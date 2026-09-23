@@ -1,113 +1,51 @@
-import { useRef, useState } from "react";
-import QRCode from "qrcode";
+/**
+ * NiimbotLabelGenerator — label stok pakan untuk printer thermal Niimbot.
+ *
+ * Layar inilah yang sudah lebih dulu punya pilihan ukuran, sementara layar
+ * Gudang tidak punya sama sekali. Sekarang keduanya memakai daftar ukuran dan
+ * penggambar yang SAMA (lib/ukuranLabel.js + lib/gambarLabel.js), jadi
+ * pilihannya bertambah dari tiga jadi lima dan hasilnya tidak lagi berbeda
+ * bentuk hanya karena dicetak dari layar yang berbeda.
+ *
+ * Penggambar lamanya memutuskan tata letak dari ID ukuran
+ * (`size.id === "30x15" ? 32 : 52`), sehingga ukuran yang tidak disebut di
+ * percabangan itu akan digambar memakai angka milik ukuran lain — pilihan
+ * ukuran yang tidak pernah benar-benar bisa bertambah.
+ */
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Printer, Info } from "lucide-react";
-import { formatRp } from "@/lib/skuUtils";
-
-// Label sizes in mm → px at 203 DPI (1mm = 7.99px ≈ 8px)
-const LABEL_SIZES = [
-  { id: "50x30", label: "50 × 30 mm", w: 400, h: 240, showPrice: true },
-  { id: "40x30", label: "40 × 30 mm", w: 320, h: 240, showPrice: true },
-  { id: "30x15", label: "30 × 15 mm", w: 240, h: 120, showPrice: false },
-];
-
-async function renderLabel(canvas, item, size) {
-  const ctx = canvas.getContext("2d");
-  const { w, h, showPrice } = size;
-  canvas.width = w;
-  canvas.height = h;
-
-  // Background
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, w, h);
-
-  // Border
-  ctx.strokeStyle = "#cccccc";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, w - 2, h - 2);
-
-  // QR Code
-  const qrSize = Math.round(h * 0.75);
-  const qrCanvas = document.createElement("canvas");
-  await QRCode.toCanvas(qrCanvas, item.sku || item.code || item.name, {
-    width: qrSize,
-    margin: 0,
-    color: { dark: "#000000", light: "#ffffff" },
-  });
-  const qrX = 8;
-  const qrY = Math.round((h - qrSize) / 2);
-  ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
-
-  // Text area
-  const textX = qrX + qrSize + 10;
-  const textW = w - textX - 8;
-  ctx.fillStyle = "#111111";
-
-  // Name (bold, wrap if needed)
-  const nameFontSize = size.id === "30x15" ? 14 : 18;
-  ctx.font = `bold ${nameFontSize}px Arial`;
-  const maxNameW = textW;
-  let name = item.name || "";
-  while (ctx.measureText(name).width > maxNameW && name.length > 4) {
-    name = name.slice(0, -1);
-  }
-  if (name !== item.name) name += "…";
-  ctx.fillText(name, textX, size.id === "30x15" ? 32 : 52);
-
-  // SKU
-  const skuFontSize = size.id === "30x15" ? 10 : 12;
-  ctx.font = `${skuFontSize}px monospace`;
-  ctx.fillStyle = "#555555";
-  const sku = item.sku || item.code || "-";
-  ctx.fillText(sku, textX, size.id === "30x15" ? 50 : 76);
-
-  // Price (only for larger labels)
-  if (showPrice) {
-    const price = item.price_per_unit || item.purchase_price;
-    if (price) {
-      ctx.font = "bold 13px Arial";
-      ctx.fillStyle = "#1a6e2c";
-      ctx.fillText(formatRp(price) + "/" + (item.unit || "pcs"), textX, 102);
-    }
-  }
-
-  // Category badge at bottom
-  ctx.font = "10px Arial";
-  ctx.fillStyle = "#888888";
-  ctx.fillText((item.category || "").toUpperCase(), textX, h - 14);
-}
+import { UKURAN_LABEL, UKURAN_BAWAAN, cariUkuran } from "@/lib/ukuranLabel";
+import { gambarLabel, namaBerkasLabel } from "@/lib/gambarLabel";
 
 export default function NiimbotLabelGenerator({ items = [], open, onClose }) {
-  const [selectedSize, setSelectedSize] = useState("50x30");
+  const [ukuranId, setUkuranId] = useState(UKURAN_BAWAAN);
   const [previews, setPreviews] = useState([]);
   const [generating, setGenerating] = useState(false);
-  const canvasRefs = useRef([]);
-
-  const size = LABEL_SIZES.find((s) => s.id === selectedSize);
+  const ukuran = cariUkuran(ukuranId);
 
   const handleGenerate = async () => {
     setGenerating(true);
     const results = [];
     for (const item of items) {
       const canvas = document.createElement("canvas");
-      await renderLabel(canvas, item, size);
+      await gambarLabel(canvas, item, ukuran);
       results.push({ item, dataUrl: canvas.toDataURL("image/png") });
     }
     setPreviews(results);
     setGenerating(false);
   };
 
-  const handleDownload = (dataUrl, name) => {
+  const handleDownload = (dataUrl, item) => {
     const a = document.createElement("a");
     a.href = dataUrl;
-    a.download = `label-${name.replace(/\s+/g, "_")}-${selectedSize}.png`;
+    a.download = namaBerkasLabel(item, ukuran.id);
     a.click();
   };
 
   const handleDownloadAll = () => {
-    previews.forEach(({ dataUrl, item }) => handleDownload(dataUrl, item.name));
+    previews.forEach(({ dataUrl, item }) => handleDownload(dataUrl, item));
   };
 
   return (
@@ -130,26 +68,37 @@ export default function NiimbotLabelGenerator({ items = [], open, onClose }) {
               <li>Simpan gambar ke HP/komputer Anda</li>
               <li>Buka aplikasi <strong>Niimbot</strong> di HP</li>
               <li>Pilih "Import Gambar" → pilih file PNG yang diunduh</li>
-              <li>Atur ukuran sesuai stiker → Cetak</li>
+              <li>Atur ukuran kertas ke <strong>{ukuran.label}</strong> → Cetak</li>
             </ol>
           </div>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium block mb-1">Pilih Ukuran Label</label>
-            <Select value={selectedSize} onValueChange={setSelectedSize}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LABEL_SIZES.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.label} {!s.showPrice && "· tanpa harga"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <p className="text-xs font-semibold mb-1.5">Ukuran stiker</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {UKURAN_LABEL.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => { setUkuranId(u.id); setPreviews([]); }}
+                  className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
+                    ukuranId === u.id
+                      ? "border-primary bg-primary/8 ring-1 ring-primary/30"
+                      : "border-border bg-card hover:bg-muted/50"
+                  }`}
+                >
+                  <span className="block text-xs font-semibold tabular-nums">{u.label}</span>
+                  <span className="block text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    {u.untuk}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Pilih yang sama dengan gulungan stiker di printer. Label kecil otomatis
+              menampilkan lebih sedikit keterangan supaya tetap terbaca.
+            </p>
           </div>
 
           <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
@@ -174,12 +123,26 @@ export default function NiimbotLabelGenerator({ items = [], open, onClose }) {
             <div className="space-y-3">
               {previews.map(({ item, dataUrl }, idx) => (
                 <div key={idx} className="border rounded-lg p-3 flex items-center gap-3">
-                  <img src={dataUrl} alt={item.name} className="border rounded" style={{ height: 80 }} />
+                  {/* Lebarnya mengikuti perbandingan sisi ukuran terpilih,
+                      dan tingginya diturunkan di layar ponsel supaya nama
+                      barangnya kebagian ruang. */}
+                  <img
+                    src={dataUrl}
+                    alt={item.name}
+                    className="border rounded bg-white flex-shrink-0 h-14 sm:h-20"
+                    style={{ aspectRatio: `${ukuran.mmW} / ${ukuran.mmH}` }}
+                  />
+                  {/* Nama DIBUNGKUS, bukan dipotong. `truncate` memaksa satu
+                      baris tanpa putus, dan lebar minimum baris itu merambat
+                      naik ke kolom grid dialog: di layar 390px seluruh isi
+                      dialog jadi 475px dan tombolnya tergeser keluar layar.
+                      Dibungkus, yang menentukan lebar minimum hanyalah kata
+                      terpanjang — dan namanya pun terbaca utuh. */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
+                    <p className="text-sm font-medium line-clamp-2 break-words">{item.name}</p>
                     <p className="text-xs text-muted-foreground font-mono">{item.sku || item.code}</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => handleDownload(dataUrl, item.name)}>
+                  <Button size="sm" variant="outline" onClick={() => handleDownload(dataUrl, item)}>
                     <Download className="w-3.5 h-3.5 mr-1" /> PNG
                   </Button>
                 </div>
