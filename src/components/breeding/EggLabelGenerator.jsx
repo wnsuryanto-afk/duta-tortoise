@@ -7,6 +7,23 @@ import { Download, Printer, Loader2, AlertTriangle, CheckCircle2, FileText } fro
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { renderColorLabelHTML } from "@/components/breeding/colorEggLabel";
+import { UKURAN_LABEL } from "@/lib/ukuranLabel";
+
+/**
+ * Ukuran mana yang bisa keluar dari printer TERMAL.
+ *
+ * Jawabannya bukan pendapat: printer termal hanya bisa mencetak selebar
+ * gulungan yang terpasang, dan gulungan yang ada di peternakan terdaftar di
+ * lib/ukuranLabel.js. Ukuran yang tidak ada di sana — 100×50 dan 40×30 —
+ * tidak punya gulungannya.
+ *
+ * Itu tetap sah untuk mode WARNA, karena di situ labelnya dicetak di kertas A4
+ * lalu dipotong tangan; kertas bisa dipotong seukuran apa pun.
+ *
+ * Sebelum ini ketiganya ditawarkan di kedua mode, dan yang jadi BAWAAN adalah
+ * printer termal dengan label 100×50 mm — gabungan yang tidak mungkin keluar.
+ */
+const ADA_GULUNGANNYA = new Set(UKURAN_LABEL.map((u) => u.id));
 
 // Definisi ukuran fisik (mm) dan konfigurasi font dasar (px @ 203 DPI)
 const SIZE_DEFS = [
@@ -238,14 +255,21 @@ function fileStem(b) {
 
 export default function EggLabelGenerator({ breedings = [], allActiveBreedings = [], tortoises = [], open, onClose }) {
   const [printerMode, setPrinterMode] = useState("thermal");
-  const [sizeId, setSizeId] = useState("100x50");
+  const [sizeId, setSizeId] = useState(
+    SIZE_DEFS.find((s) => ADA_GULUNGANNYA.has(s.id))?.id || SIZE_DEFS[0].id,
+  );
   const [previews, setPreviews] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [a4Generating, setA4Generating] = useState(false);
   const [a4Done, setA4Done] = useState(false);
   const [doneIdx, setDoneIdx] = useState(null);
 
-  const sizeDef = SIZE_DEFS.find((s) => s.id === sizeId);
+  // Mode warna mencetak di kertas A4 lalu dipotong, jadi ukuran apa pun boleh.
+  // Mode termal dibatasi gulungan yang benar-benar ada.
+  const ukuranBoleh = printerMode === "color"
+    ? SIZE_DEFS
+    : SIZE_DEFS.filter((s) => ADA_GULUNGANNYA.has(s.id));
+  const sizeDef = ukuranBoleh.find((s) => s.id === sizeId) || ukuranBoleh[0];
   const colorMode = printerMode === "color";
 
   const handleGenerate = async () => {
@@ -321,7 +345,15 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
           {/* Jenis printer */}
           <div>
             <label className="text-xs font-medium block mb-1">Jenis Printer</label>
-            <Select value={printerMode} onValueChange={(v) => { setPrinterMode(v); setPreviews([]); setA4Done(false); }}>
+            <Select value={printerMode} onValueChange={(v) => {
+                setPrinterMode(v);
+                setPreviews([]);
+                setA4Done(false);
+                // Pindah ke termal sementara ukurannya 100×50 akan meninggalkan
+                // pilihan yang tidak ada gulungannya; betulkan di sini.
+                const boleh = v === "color" ? SIZE_DEFS : SIZE_DEFS.filter((x) => ADA_GULUNGANNYA.has(x.id));
+                if (!boleh.some((x) => x.id === sizeId)) setSizeId(boleh[0].id);
+              }}>
               <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="thermal">Printer Termal (XP-420B) — hitam-putih 203 DPI</SelectItem>
@@ -336,7 +368,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
             <Select value={sizeId} onValueChange={(v) => { setSizeId(v); setPreviews([]); }}>
               <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {SIZE_DEFS.map((s) => (
+                {ukuranBoleh.map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.label}{s.full ? " (lengkap)" : " (ringkas)"}</SelectItem>
                 ))}
               </SelectContent>
@@ -345,6 +377,10 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
               {sizeDef.full
                 ? "Label lengkap: pita, kode induk, jumlah telur, tabel info, kotak candling, suhu, kaki."
                 : "Versi ringkas: pita, kode induk, jumlah telur, candling, QR."}
+              {printerMode !== "color" && ukuranBoleh.length < SIZE_DEFS.length && (
+                <> Hanya ukuran yang ada gulungannya yang ditampilkan; ukuran lain dicetak
+                lewat mode warna di kertas A4 lalu dipotong.</>
+              )}
             </p>
           </div>
 

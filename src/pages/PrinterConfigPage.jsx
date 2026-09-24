@@ -19,6 +19,38 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import AccessDenied from "@/components/common/AccessDenied";
+import { Link } from "react-router-dom";
+import { UKURAN_LABEL, UKURAN_BAWAAN, cariUkuran } from "@/lib/ukuranLabel";
+
+/**
+ * Label yang benar-benar bisa dibuka dari suatu layar, beserta ukuran yang
+ * benar-benar dihasilkannya. Kalau ada yang ditambah atau dihapus, daftar ini
+ * ikut — daftar yang menyebut label yang tidak ada membuat orang membeli
+ * gulungan yang salah.
+ */
+const LABEL_TERSEDIA = [
+  {
+    judul: "\u{1F4E6} Label barang gudang & stok",
+    ukuran: "50\u00d730 / 30\u00d715",
+    isi: "QR berisi SKU, nama barang, baris tanggal kedaluwarsa",
+    di: "Halaman Gudang · tab Stok · Stok Pakan — tombol Cetak Label",
+    ke: "/warehouse",
+  },
+  {
+    judul: "\u{1F422} Label QR kura-kura",
+    ukuran: "50\u00d730",
+    isi: "QR yang dipindai membuka paspor kura, nama, kode",
+    di: "Halaman Label Kura",
+    ke: "/label-kura",
+  },
+  {
+    judul: "\u{1F95A} Label telur",
+    ukuran: "50\u00d730",
+    isi: "Kode induk, nomor telur, tanggal candling",
+    di: "Halaman Penangkaran — tombol label pada satu penangkaran",
+    ke: "/breeding",
+  },
+];
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const CONN_TYPES = {
@@ -45,7 +77,11 @@ const CONN_TYPES = {
   },
 };
 
-const PAPER_SIZES = ["40x30mm", "50x30mm", "100x100mm", "100x150mm", "108x80mm"];
+// Ukuran kertas diambil dari katalog yang SAMA dengan yang dipakai dialog cetak
+// label. Sebelum ini daftarnya berdiri sendiri dan memuat 100x150mm, 108x80mm
+// dan seterusnya — ukuran yang gulungannya tidak ada di peternakan, sehingga
+// yang tersimpan di sini tidak mungkin cocok dengan yang keluar dari printer.
+const PAPER_SIZES = UKURAN_LABEL.map((u) => `${u.mmW}x${u.mmH}mm`);
 
 const XPRINTER_MODELS = [
   "XP-420B",
@@ -60,7 +96,8 @@ const XPRINTER_MODELS = [
 
 const EMPTY_FORM = {
   name: "", model: "XP-420B", connection_type: "usb_dialog",
-  ip_address: "", port: 9100, paper_size: "100x150mm",
+  ip_address: "", port: 9100,
+  paper_size: `${cariUkuran(UKURAN_BAWAAN).mmW}x${cariUkuran(UKURAN_BAWAAN).mmH}mm`,
   print_density: 8, print_speed: 4, location: "", is_active: true,
   is_default: false, notes: "",
 };
@@ -217,7 +254,13 @@ function PrinterFormDialog({ open, onClose, editPrinter }) {
     }
     setTesting(true);
     setTestResult(null);
-    // For LAN/WiFi, we can only do a basic fetch check since direct TCP is blocked by browser
+    // Peramban tidak bisa membuka soket TCP mentah, jadi yang dilakukan di sini
+    // cuma satu permintaan HTTP ke alamatnya. Itu TIDAK membuktikan apa pun
+    // tentang printernya: `mode: "no-cors"` menghasilkan respons buram yang
+    // tetap dianggap berhasil, dan port 9100 tidak berbicara HTTP sama sekali.
+    // Karena itu hasilnya disebut "alamat menjawab", bukan "printer siap" —
+    // yang terakhir akan dibaca sebagai "berarti sudah bisa mencetak", padahal
+    // tidak ada satu pun jalur di aplikasi ini yang mengirim job ke printer.
     try {
       await fetch(`http://${form.ip_address}:${form.port || 9100}`, {
         method: "GET", mode: "no-cors", signal: AbortSignal.timeout(3000),
@@ -370,17 +413,21 @@ function PrinterFormDialog({ open, onClose, editPrinter }) {
                   </Button>
                   {testResult === "ok" && (
                     <span className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Printer terjangkau
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Alamat menjawab
                     </span>
                   )}
                   {testResult === "fail" && (
                     <span className="flex items-center gap-1.5 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3">
-                      <XCircle className="w-3.5 h-3.5" /> Tidak terjangkau
+                      <XCircle className="w-3.5 h-3.5" /> Alamat tidak menjawab
                     </span>
                   )}
                 </div>
-                {testResult === "fail" && (
-                  <p className="text-[11px] text-muted-foreground">Cek IP address, pastikan printer menyala, kabel terhubung, dan print bridge aktif.</p>
+                {testResult && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Pemeriksaan ini hanya menyentuh alamatnya dari peramban — ia tidak
+                    membuktikan printernya siap, dan aplikasi ini memang belum bisa
+                    mengirim job lewat jaringan.
+                  </p>
                 )}
               </div>
             )}
@@ -417,7 +464,7 @@ function TestPrintModal({ printer, onClose }) {
       w.document.write(`
         <html><head><title>Test Print — ${printer.name}</title>
         <style>
-          @page { size: ${printer.paper_size || "100x150mm"}; margin: 4mm; }
+          @page { size: ${printer.paper_size || "50x30mm"}; margin: 4mm; }
           body { font-family: sans-serif; text-align: center; padding: 8px; }
           .big { font-size: 24px; font-weight: bold; margin: 8px 0; }
           .small { font-size: 11px; color: #666; }
@@ -429,7 +476,7 @@ function TestPrintModal({ printer, onClose }) {
           <div class="border">
             <p class="small">Printer: ${printer.name}</p>
             <p class="small">Model: ${printer.model || "XP-420B"}</p>
-            <p class="small">Kertas: ${printer.paper_size || "100x150mm"}</p>
+            <p class="small">Kertas: ${printer.paper_size || "50x30mm"}</p>
             <p class="small">Tanggal: ${new Date().toLocaleDateString("id-ID")}</p>
           </div>
           <p class="small" style="margin-top:8px">✅ Jika teks ini tercetak, printer berfungsi normal.</p>
@@ -438,7 +485,14 @@ function TestPrintModal({ printer, onClose }) {
       `);
       w.document.close();
     } else {
-      toast.info("Mode LAN/WiFi: kirim job ke print bridge. Pastikan bridge aktif di komputer server.");
+      // Tidak ada print bridge di aplikasi ini — tidak di layar mana pun, tidak
+      // di fungsi backend mana pun. Sebelumnya tombol ini menampilkan "kirim job
+      // ke print bridge" lalu menutup dialog, sehingga yang menekannya wajar
+      // mengira jobnya terkirim. Tidak ada yang pernah terkirim.
+      toast.error(
+        "Belum bisa cetak langsung lewat jaringan. Cetak label lewat tombol Cetak Label di halaman Gudang atau Stok: PNG-nya diunduh, lalu diimpor di aplikasi printer.",
+        { duration: 8000 },
+      );
     }
     onClose();
   };
@@ -453,7 +507,9 @@ function TestPrintModal({ printer, onClose }) {
         </DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Akan mencetak halaman tes ke <strong>{printer?.name}</strong> ({CONN_TYPES[printer?.connection_type]?.badge}).
+            {printer?.connection_type === "usb_dialog"
+              ? <>Akan membuka dialog cetak peramban untuk <strong>{printer?.name}</strong>.</>
+              : <>Printer <strong>{printer?.name}</strong> tercatat sebagai {CONN_TYPES[printer?.connection_type]?.badge}.</>}
           </p>
           {printer?.connection_type === "usb_dialog" && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
@@ -461,14 +517,20 @@ function TestPrintModal({ printer, onClose }) {
             </div>
           )}
           {(printer?.connection_type === "lan" || printer?.connection_type === "wifi") && (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-700">
-              Job akan dikirim ke IP <span className="font-mono">{printer?.ip_address}:{printer?.port}</span> via print bridge.
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+              <p className="font-semibold mb-1">Cetak langsung lewat jaringan belum ada.</p>
+              <p>
+                Aplikasi ini tidak mengirim job ke printer. Labelnya diunduh sebagai PNG
+                lewat tombol <b>Cetak Label</b> di halaman Gudang, Stok, atau Stok Pakan,
+                lalu diimpor di aplikasi printernya.
+              </p>
             </div>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Batal</Button>
-          <Button onClick={handlePrint} className="gap-2">
+          <Button onClick={handlePrint} className="gap-2"
+            disabled={printer?.connection_type !== "usb_dialog"}>
             <Printer className="w-4 h-4" /> Cetak Sekarang
           </Button>
         </DialogFooter>
@@ -536,14 +598,19 @@ export default function PrinterConfigPage() {
               XP-420B secara default datang dengan USB. Versi LAN/WiFi tersedia sebagai opsi tambahan saat beli (perlu cek spesifikasi printer Anda).
             </p>
             <p className="text-xs text-blue-700 mt-1.5 leading-relaxed">
-              <strong>Web browser tidak bisa langsung kirim print ke printer jaringan.</strong> Solusi:
+              <strong>Aplikasi ini tidak mengirim job langsung ke printer.</strong> Labelnya
+              diunduh sebagai gambar, lalu diimpor dan dicetak lewat aplikasi printer.
             </p>
             <ul className="text-xs text-blue-700 mt-1 space-y-0.5 ml-3 list-disc">
-              <li><strong>Mode USB:</strong> paling mudah, langsung pakai dialog browser</li>
-              <li><strong>Mode LAN/WiFi:</strong> butuh "Print Bridge" di komputer yang selalu nyala</li>
+              <li><strong>Mode USB:</strong> tombol Tes Print membuka dialog cetak peramban</li>
+              <li>
+                <strong>Mode LAN/WiFi:</strong> belum didukung. Halaman ini menyimpan alamat
+                IP dan port, tetapi tidak ada satu pun bagian aplikasi yang mengirim ke sana.
+              </li>
             </ul>
             <p className="text-xs text-blue-700 mt-2 font-medium">
-              💡 Rekomendasi peternakan kecil: Pakai Mode USB dari satu komputer admin pusat.
+              Yang dipakai dari halaman ini: ukuran kertas printer bawaan menentukan ukuran
+              yang terpilih lebih dulu saat mencetak label.
             </p>
           </div>
         </div>
@@ -587,32 +654,42 @@ export default function PrinterConfigPage() {
         </div>
       )}
 
-      {/* Template Labels Section */}
+      {/* ── Label yang benar-benar ada ────────────────────────────────────
+          Bagian ini dulu mendaftarkan empat "template": Label QR Kura-kura
+          (disebut 100×150mm, padahal 50×30), Label Barcode Gudang (disebut
+          Code128, padahal QR), Label Pengiriman dan Label Identitas Kandang
+          — dua terakhir tidak ada di mana pun di aplikasi ini. Penutupnya
+          menyebut tombol "Print Label" yang juga tidak pernah ada.
+
+          Daftar yang salah lebih buruk daripada tidak ada daftar: yang
+          membacanya akan membeli gulungan 100×150 untuk label kura-kura yang
+          sebenarnya 50×30. Sekarang yang didaftarkan hanya yang bisa dibuka,
+          dengan ukuran yang benar dan tautan ke tempatnya. */}
       <div className="space-y-3">
         <h2 className="font-heading font-semibold text-lg flex items-center gap-2">
-          <Settings2 className="w-5 h-5 text-primary" /> Template Label Tersedia
+          <Settings2 className="w-5 h-5 text-primary" /> Label yang bisa dicetak
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            { title: "🐢 Label QR Kura-kura", size: "100×150mm", desc: "QR profil, nama, morph, gender, berat, kandang", color: "bg-green-50 border-green-200" },
-            { title: "📦 Label Barcode Gudang", size: "50×30mm", desc: "Barcode Code128, nama item, stok, expired", color: "bg-blue-50 border-blue-200" },
-            { title: "📮 Label Pengiriman", size: "100×150mm", desc: "Nama pembeli, alamat, QR tracking, order ID", color: "bg-amber-50 border-amber-200" },
-            { title: "🏠 Label Identitas Kandang", size: "100×100mm", desc: "Nama kandang, kapasitas, QR list kura-kura", color: "bg-purple-50 border-purple-200" },
-          ].map((t, i) => (
-            <div key={i} className={`p-3.5 rounded-xl border ${t.color}`}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-sm">{t.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t.desc}</p>
+          {LABEL_TERSEDIA.map((t) => (
+            <Link key={t.ke} to={t.ke}
+              className="p-3.5 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors block">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm">{t.judul}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t.isi}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t.di}</p>
                 </div>
-                <span className="text-[10px] bg-white/70 border border-current/20 rounded-full px-2 py-0.5 font-mono flex-shrink-0 ml-2">
-                  {t.size}
+                <span className="text-[10px] bg-muted border border-border rounded-full px-2 py-0.5 font-mono flex-shrink-0 tabular-nums">
+                  {t.ukuran}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">Template dapat diakses dari halaman Kura-kura, Gudang, dan Penjualan via tombol "Print Label".</p>
+        <p className="text-xs text-muted-foreground">
+          Semuanya diunduh sebagai gambar lalu dicetak lewat aplikasi printer — aplikasi ini
+          tidak mengirim job langsung ke printer.
+        </p>
       </div>
 
       {/* Dialogs */}

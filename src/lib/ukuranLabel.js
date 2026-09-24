@@ -80,6 +80,44 @@ export function cariUkuran(id) {
 }
 
 /**
+ * Ubah tulisan ukuran kertas dari halaman Printer & Label jadi id di katalog.
+ *
+ * Halaman itu menyimpannya sebagai "50x30mm"; katalog ini memakai "50x30".
+ * Bentuk lain yang mungkin diketik atau tersimpan dari versi lama ikut
+ * diterima: spasi, huruf besar, dan tanda × alih-alih x.
+ *
+ * Mengembalikan null bila tidak ada yang cocok — termasuk untuk ukuran yang
+ * memang tidak ada gulungannya, seperti "100x150mm" yang masih tersimpan dari
+ * daftar lama. Yang memanggil lalu memakai ukuran bawaan, bukan memaksakan
+ * ukuran yang tidak bisa dicetak.
+ */
+export function idDariKertas(kertas) {
+  const t = String(kertas ?? "")
+    .toLowerCase()
+    .replace(/\u00d7/g, "x")
+    .replace(/mm/g, "")
+    .replace(/\s+/g, "");
+  return UKURAN_LABEL.find((u) => u.id === t)?.id || null;
+}
+
+/**
+ * Ukuran yang MESTINYA terpasang di printer, menurut halaman Printer & Label.
+ *
+ * Ini satu-satunya hal dari halaman itu yang bisa benar-benar dipakai. Sisanya
+ * — alamat IP, port, kepekatan, kecepatan — adalah setelan untuk mengirim job
+ * langsung ke printer lewat jaringan, dan aplikasi ini tidak punya jalur itu:
+ * labelnya diunduh sebagai PNG lalu diimpor di aplikasi printernya.
+ *
+ * Sebelum ini tidak ada satu pun layar yang membaca PrinterConfig, jadi apa pun
+ * yang diisi di sana tidak pernah berpengaruh ke mana-mana.
+ */
+export function ukuranTerpasang(printers) {
+  const daftar = (printers || []).filter((p) => p.is_active !== false);
+  const pilih = daftar.find((p) => p.is_default) || daftar[0];
+  return pilih ? idDariKertas(pilih.paper_size) : null;
+}
+
+/**
  * Rencana tata letak untuk satu ukuran.
  *
  * Semua angkanya diturunkan dari lebar dan tinggi dalam milimeter. Penggambar
