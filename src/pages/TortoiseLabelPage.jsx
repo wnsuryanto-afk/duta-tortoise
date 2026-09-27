@@ -7,6 +7,7 @@
  * Ukuran label 50×30 mm, cocok untuk printer termal XP-420B.
  */
 import { useState, useMemo, useEffect } from "react";
+import { kandangDariKura } from "@/lib/kandang";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import QRCode from "qrcode";
@@ -32,7 +33,7 @@ export default function TortoiseLabelPage() {
   );
 
   const kandangList = useMemo(
-    () => [...new Set(active.map((t) => t.enclosure).filter(Boolean))].sort(),
+    () => kandangDariKura(active),
     [active]
   );
 

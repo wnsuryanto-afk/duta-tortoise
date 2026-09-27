@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { kandangDariKura } from "@/lib/kandang";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -200,7 +201,7 @@ export default function DailyChecklistTab() {
     queryFn: () => base44.entities.TreatmentLog.filter({ done_date: TODAY }, "-created_date", 1000),
   });
 
-  const enclosures = useMemo(() => [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort(), [tortoises]);
+  const enclosures = useMemo(() => kandangDariKura(tortoises), [tortoises]);
   const filteredTortoises = encFilter === "semua" ? tortoises : tortoises.filter(t => t.enclosure === encFilter);
 
   const handleCheck = async (tortoise, treatId, key, existingLog) => {

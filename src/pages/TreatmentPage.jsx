@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { kandangDariKura } from "@/lib/kandang";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -187,7 +188,7 @@ export default function TreatmentPage() {
     queryFn: () => base44.entities.HealthReminder.list("-due_date", 200),
   });
 
-  const enclosures = [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort();
+  const enclosures = kandangDariKura(tortoises);
 
   // Items for dropdown filters
   const tortoiseFilterItems = tortoises.map(t => ({ id: t.id, label: t.name }));

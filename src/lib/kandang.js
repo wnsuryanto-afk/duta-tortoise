@@ -417,3 +417,37 @@ export function bobotKandang(nama, enclosures = []) {
 export function poinUbinUntuk(nama, enclosures, sopTasks, terjadwalPada, tanggal) {
   return poinUbinKandang(sopTasks, terjadwalPada, tanggal) * bobotKandang(nama, enclosures);
 }
+
+/**
+ * Nama kandang untuk penyaring yang dibangun DARI DATA KURA.
+ *
+ * Sebagian layar tidak memuat daftar Enclosure dan menyusun pilihan
+ * kandangnya dari kura: `tortoises.map(t => t.enclosure)`. Bentuk itu punya
+ * satu cacat yang sudah pernah menggigit — kura yang sudah MATI atau TERJUAL
+ * tetap memegang nama kandang terakhirnya, dan namanya ikut terbawa ke
+ * daftar pilihan.
+ *
+ * Begitulah "N1" tetap muncul sebagai pilihan berhari-hari setelah N1, N2 dan
+ * N3 digabung jadi N: satu kura terjual (B85) masih menyimpan "N1" di
+ * kolomnya. Kandangnya sudah diarsipkan, isinya nol, tetapi namanya hidup
+ * terus di dropdown karena yang membangun dropdown tidak menyaring
+ * populasinya.
+ *
+ * Saat ini masih ada empat kura seperti itu (tiga mati, satu terjual) yang
+ * memegang E1, E5 dan W1. Ketiganya kandang aktif, jadi belum ada yang
+ * terlihat salah — mekanismenya yang masih hidup, dan ia akan menggigit lagi
+ * pada kandang berikutnya yang diarsipkan.
+ *
+ * Yang dipakai di sini definisi populasi yang sama dengan seluruh aplikasi
+ * (lib/populasiKura.js), bukan `status !== "terjual" && status !== "mati"`
+ * yang ditulis ulang di belasan tempat dan selalu lupa "diarsipkan".
+ */
+export function kandangDariKura(tortoises = []) {
+  const nama = new Set();
+  for (const t of tortoises) {
+    if (!diPeternakan(t)) continue;
+    const n = String(t?.enclosure || "").trim();
+    if (n) nama.add(n);
+  }
+  return [...nama].sort(bandingkanKandang);
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { kandangDariKura } from "@/lib/kandang";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
@@ -149,7 +150,9 @@ export default function SOPTaskManager() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const enclosures = [...new Set(tortoises.map(t => t.enclosure).filter(Boolean))].sort();
+  // Kura mati/terjual tidak lagi ikut menghidupkan nama kandangnya di daftar
+  // pilihan — lihat lib/kandang.js.
+  const enclosures = kandangDariKura(tortoises);
 
   // Barang gudang untuk mengisi required_skus. Kolom itu SUDAH lama dibaca
   // aturan urgensi ("barang ini menghentikan SOP, jadi selalu gawat") tapi
