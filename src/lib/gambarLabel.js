@@ -5,6 +5,9 @@
  *
  *   · modal label Stok Pakan   — punya 3 pilihan ukuran
  *   · modal label Gudang       — tanpa pilihan, 400×240 mati
+ *   · lib/labelBarang.js       — salinan ketiga untuk label BATCH, 50×30 mati,
+ *                                petunjuknya masih menyebut printer Niimbot
+ *                                padahal printernya Xprinter
  *
  * Keduanya menggambar hal yang sama — QR, nama, SKU — dengan angka yang
  * berbeda, dan keduanya memutuskan tata letak lewat percabangan per ID ukuran
@@ -19,6 +22,20 @@
  * Hasilnya MONOKROM — hitam putih. Printer termal memang tidak bisa mencetak
  * warna, jadi apa pun yang berwarna di pratinjau hanya akan jadi abu-abu kotor
  * di stikernya.
+ *
+ * ── Dua macam label, satu penggambar ───────────────────────────────────────
+ *
+ *   Label rak    QR berisi SKU. Menempel di rak, umurnya panjang, tanggal
+ *                kedaluwarsanya ditulis tangan karena satu rak dilewati banyak
+ *                pembelian.
+ *   Label batch  QR berisi kode batch. Menempel di botol yang datang bersama
+ *                satu pesanan, membawa tanggal kedaluwarsanya sendiri.
+ *
+ * Keduanya harus terbaca oleh pemindai yang sama dan terlihat seragam di rak.
+ * Karena itu perbedaannya dititipkan sebagai ISI, bukan sebagai penggambar
+ * kedua: `label_strip`, `label_qr`, `label_jenisKode`, `label_exp`. Penggambar
+ * yang disalin akan pelan-pelan berbeda — QR bergeser, strip menyempit — dan
+ * label yang tidak seragam adalah label yang diragukan orang di lapangan.
  */
 
 import QRCode from "qrcode";
@@ -36,8 +53,12 @@ const KODE_KATEGORI = {
   lainnya: "LNN",
 };
 
-/** Kode strip: dari awalan SKU bila ada, kalau tidak dari kategorinya. */
+/**
+ * Kode strip: yang dititipkan pemanggil bila ada (label batch memakai
+ * "BATCH"), kalau tidak dari awalan SKU, kalau tidak dari kategorinya.
+ */
 export function kodeStrip(item) {
+  if (item?.label_strip) return String(item.label_strip).toUpperCase();
   const sku = String(item?.sku || item?.code || "");
   const awalan = (sku.split("-")[0] || "").toUpperCase();
   if (awalan) return awalan;
@@ -134,7 +155,10 @@ export async function gambarLabel(canvas, item, ukuran) {
   }
 
   // ── QR ────────────────────────────────────────────────────────────────────
-  const isiQr = item?.sku || item?.code || "";
+  // Label rak memindahkan SKU; label batch memindahkan kode batch. Yang
+  // berbeda hanya isinya — bentuk dan ukurannya tetap sama.
+  const isiQr = item?.label_qr || item?.sku || item?.code || "";
+  const jenisKode = String(item?.label_jenisKode || "SKU").toUpperCase();
   ctx.textAlign = "left";
   if (isiQr) {
     const qc = document.createElement("canvas");
@@ -156,7 +180,7 @@ export async function gambarLabel(canvas, item, ukuran) {
     const f = Math.max(8, Math.round(r.qr.ukuran * 0.13));
     ctx.font = `bold ${f}px Arial`;
     ctx.fillText("BELUM", r.qr.x + r.qr.ukuran / 2, r.qr.y + r.qr.ukuran / 2 - f);
-    ctx.fillText("ADA SKU", r.qr.x + r.qr.ukuran / 2, r.qr.y + r.qr.ukuran / 2 + f * 0.2);
+    ctx.fillText(`ADA ${jenisKode}`, r.qr.x + r.qr.ukuran / 2, r.qr.y + r.qr.ukuran / 2 + f * 0.2);
   }
 
   // ── Kolom teks ────────────────────────────────────────────────────────────
@@ -177,13 +201,16 @@ export async function gambarLabel(canvas, item, ukuran) {
 
   if (r.muat.sku) {
     ctx.font = `${r.font.sku}px monospace`;
-    ctx.fillText(potong(ctx, isiQr ? `SKU ${isiQr}` : "SKU —", r.teks.w), r.teks.x, y);
+    ctx.fillText(potong(ctx, isiQr ? `${jenisKode} ${isiQr}` : `${jenisKode} —`, r.teks.w), r.teks.x, y);
     y += r.tinggiBaris.sku + r.jeda;
   }
 
   if (r.muat.exp) {
+    // Label batch membawa tanggal kedaluwarsanya sendiri — itulah alasan ia
+    // ada. Label rak tidak bisa: satu rak dilewati banyak pembelian, jadi yang
+    // dicetak hanya garis untuk ditulis tangan.
     ctx.font = `${r.font.kecil}px monospace`;
-    ctx.fillText(potong(ctx, "Exp: ____________", r.teks.w), r.teks.x, y);
+    ctx.fillText(potong(ctx, item?.label_exp ? `Exp: ${item.label_exp}` : "Exp: ____________", r.teks.w), r.teks.x, y);
     y += r.tinggiBaris.kecil + r.jeda;
   }
 
@@ -197,6 +224,6 @@ export async function gambarLabel(canvas, item, ukuran) {
 
 /** Nama berkas PNG untuk satu barang. */
 export function namaBerkasLabel(item, ukuranId) {
-  const dasar = String(item?.sku || item?.name || "item").replace(/[^a-zA-Z0-9_-]+/g, "_");
+  const dasar = String(item?.label_qr || item?.sku || item?.name || "item").replace(/[^a-zA-Z0-9_-]+/g, "_");
   return `label-${dasar}-${ukuranId}.png`;
 }

@@ -20,37 +20,18 @@
  * lib/gambarLabel.js (penggambar).
  */
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Printer, Info, AlertTriangle } from "lucide-react";
 import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload";
-import { UKURAN_LABEL, UKURAN_BAWAAN, cariUkuran, ukuranTerpasang } from "@/lib/ukuranLabel";
+import PemilihUkuranLabel, { useUkuranLabel } from "@/components/label/PemilihUkuranLabel";
 import { gambarLabel, namaBerkasLabel } from "@/lib/gambarLabel";
 
 export default function ModalCetakLabel({ open, items = [], onClose, judul = "Cetak Label" }) {
   const [previews, setPreviews] = useState([]);
   const [generating, setGenerating] = useState(false);
 
-  // `null` berarti "ikut gulungan yang tercatat di printer". Begitu orangnya
-  // menekan salah satu kartu, pilihannya yang dipakai sampai dialog ditutup.
-  const [ukuranDipilih, setUkuranDipilih] = useState(null);
-
-  // Halaman Printer & Label sudah ada sejak lama, tetapi TIDAK ADA satu pun
-  // layar yang pernah membacanya — apa pun yang diisi di sana tidak pernah
-  // berpengaruh ke mana-mana. Inilah yang akhirnya membacanya.
-  const { data: printers = [] } = useQuery({
-    queryKey: ["printer-config"],
-    queryFn: () => base44.entities.PrinterConfig.list(),
-    staleTime: 5 * 60 * 1000,
-    enabled: open,
-  });
-
-  const dariPrinter = ukuranTerpasang(printers);
-  const ukuranId = ukuranDipilih ?? dariPrinter ?? UKURAN_BAWAAN;
-  const ukuran = cariUkuran(ukuranId);
-  const ikutPrinter = ukuranDipilih === null && dariPrinter !== null;
+  const { ukuran, ukuranId, ikutPrinter, pilih, lepas } = useUkuranLabel(open);
 
   useEffect(() => {
     if (!open || !items.length) {
@@ -95,7 +76,7 @@ export default function ModalCetakLabel({ open, items = [], onClose, judul = "Ce
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setPreviews([]); setUkuranDipilih(null); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setPreviews([]); lepas(); } }}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -131,37 +112,7 @@ export default function ModalCetakLabel({ open, items = [], onClose, judul = "Ce
           </div>
         )}
 
-        {/* Pemilih ukuran. Yang memilih sedang memegang barangnya, jadi tiap
-            pilihan menyebut barang apa yang cocok — "50 × 30 mm" sendirian
-            tidak memberi tahu apakah ia muat di botol yang ada di tangan. */}
-        <div>
-          <p className="text-xs font-semibold mb-1.5">Ukuran stiker</p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {UKURAN_LABEL.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => setUkuranDipilih(u.id)}
-                className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
-                  ukuranId === u.id
-                    ? "border-primary bg-primary/8 ring-1 ring-primary/30"
-                    : "border-border bg-card hover:bg-muted/50"
-                }`}
-              >
-                <span className="block text-xs font-semibold tabular-nums">{u.label}</span>
-                <span className="block text-[10px] text-muted-foreground leading-tight mt-0.5">
-                  {u.untuk}
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1.5">
-            {ikutPrinter
-              ? "Terpilih mengikuti gulungan yang tercatat di halaman Printer & Label. Ganti di sini kalau gulungan di printer sedang berbeda."
-              : "Pilih yang sama dengan gulungan stiker yang terpasang di printer."}{" "}
-            Label kecil otomatis menampilkan lebih sedikit keterangan supaya tetap terbaca.
-          </p>
-        </div>
+        <PemilihUkuranLabel ukuranId={ukuranId} ikutPrinter={ikutPrinter} onPilih={pilih} />
 
         <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
           {items.length} item dipilih: {items.slice(0, 3).map((i) => i.name).join(", ")}
@@ -220,7 +171,7 @@ export default function ModalCetakLabel({ open, items = [], onClose, judul = "Ce
         ) : null}
 
         <div className="flex justify-end pt-1">
-          <Button variant="outline" onClick={() => { onClose(); setPreviews([]); setUkuranDipilih(null); }}>Tutup</Button>
+          <Button variant="outline" onClick={() => { onClose(); setPreviews([]); lepas(); }}>Tutup</Button>
         </div>
       </DialogContent>
     </Dialog>

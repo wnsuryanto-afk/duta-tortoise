@@ -18,6 +18,12 @@
  * Menandai "sudah dicetak" bukan basa-basi: itu yang membedakan batch yang
  * labelnya sudah tertempel dari yang belum, supaya pencetakan berikutnya tidak
  * mengulang seluruh isi gudang.
+ *
+ * Gambarnya sendiri dibuat lib/gambarLabel.js — penggambar yang sama dengan
+ * label rak. Modal ini sempat punya penggambarnya sendiri (lib/labelBarang.js)
+ * dengan ukuran 50×30 ditulis mati dan petunjuk yang menyebut printer Niimbot,
+ * padahal printernya Xprinter dan gulungan 30×15 juga ada. Selama
+ * penggambarnya dua, pilihan ukuran cuma sampai ke salah satunya.
  */
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,26 +33,35 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ExpiryVisionScan from "@/components/ai/ExpiryVisionScan";
 import { Input } from "@/components/ui/input";
-import { Download, Printer, Info, Loader2 } from "lucide-react";
+import { Download, Printer, Info, Loader2, AlertTriangle } from "lucide-react";
 import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload";
-import { gambarLabel, namaBerkasLabel } from "@/lib/labelBarang";
+import PemilihUkuranLabel, { useUkuranLabel } from "@/components/label/PemilihUkuranLabel";
+import { rencanaLabel } from "@/lib/ukuranLabel";
+import { gambarLabel, namaBerkasLabel } from "@/lib/gambarLabel";
 
 const rp = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 
-async function gambarLabelBatch(canvas, batch) {
-  await gambarLabel(canvas, {
-    strip: "BATCH",
-    qrText: batch.batch_code || "",
-    judul: batch.nama_barang || "—",
-    mono: batch.batch_code || "(tanpa kode)",
-    kecil: `${batch.jumlah_awal ?? batch.jumlah_sisa ?? 0} ${batch.satuan || ""} · ${rp(batch.harga_satuan)}/${batch.satuan || "unit"}`,
-    // Tanggal asli, bukan garis kosong. Inilah alasan label batch ada.
-    bawah: batch.tanggal_expired ? `Exp: ${batch.tanggal_expired}` : "Exp: tidak dicatat",
-  });
+/**
+ * Batch diterjemahkan jadi isi label, bukan jadi penggambar kedua.
+ *
+ * `label_exp` yang terisi adalah bedanya dengan label rak: tanggal aslinya
+ * ikut tercetak, bukan garis kosong untuk ditulis tangan. Itulah alasan label
+ * batch ada — urutan pengambilan stok memakai tanggal itu.
+ */
+function isiLabel(batch, exp) {
+  return {
+    name: batch.nama_barang || "—",
+    label_strip: "BATCH",
+    label_qr: batch.batch_code || "",
+    label_jenisKode: "KODE",
+    label_exp: exp || "",
+    notes: `${batch.jumlah_awal ?? batch.jumlah_sisa ?? 0} ${batch.satuan || ""} · ${rp(batch.harga_satuan)}`,
+  };
 }
 
 export default function BatchLabelModal({ open, batches = [], onClose }) {
   const qc = useQueryClient();
+  const { ukuran, ukuranId, ikutPrinter, pilih, lepas } = useUkuranLabel(open);
   const [previews, setPreviews] = useState([]);
   const [membuat, setMembuat] = useState(false);
   const [menandai, setMenandai] = useState(false);
@@ -95,7 +110,7 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
         const c = document.createElement("canvas");
         // Pratinjau ikut memakai tanggal yang BARU diketik, belum disimpan —
         // supaya orangnya melihat labelnya berubah dan tahu isiannya masuk.
-        await gambarLabelBatch(c, { ...b, tanggal_expired: expOf(b) });
+        await gambarLabel(c, isiLabel(b, expOf(b)), ukuran);
         if (batal) return;
         out.push({ batch: b, dataUrl: c.toDataURL("image/png") });
       }
@@ -103,7 +118,7 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
     })();
     return () => { batal = true; };
      
-  }, [open, batches, tanggal]);
+  }, [open, batches, tanggal, ukuran]);
 
   const tandaiDicetak = async (daftar) => {
     setMenandai(true);
@@ -117,7 +132,7 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
   };
 
   const unduhSatu = async (p) => {
-    downloadDataUrl(p.dataUrl, namaBerkasLabel(p.batch.batch_code));
+    downloadDataUrl(p.dataUrl, namaBerkasLabel(isiLabel(p.batch), ukuranId));
     await tandaiDicetak([p.batch]);
   };
 
@@ -125,16 +140,20 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
     if (previews.length === 0) return;
     if (previews.length === 1) return unduhSatu(previews[0]);
     downloadZip(
-      previews.map((p) => ({ name: namaBerkasLabel(p.batch.batch_code), bytes: dataUrlToBytes(p.dataUrl) })),
-      "label-batch.zip"
+      previews.map((p) => ({
+        name: namaBerkasLabel(isiLabel(p.batch), ukuranId),
+        bytes: dataUrlToBytes(p.dataUrl),
+      })),
+      `label-batch-${ukuranId}.zip`
     );
     await tandaiDicetak(previews.map((p) => p.batch));
   };
 
   const tanpaExp = batches.filter((b) => !b.tanggal_expired).length;
+  const muatExp = rencanaLabel(ukuran.mmW, ukuran.mmH).muat.exp;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setPreviews([]); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setPreviews([]); lepas(); } }}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -148,8 +167,9 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
             <p className="font-semibold mb-1">Tempel di botol/kemasannya, bukan di rak.</p>
             <p>
               QR-nya berisi kode batch, jadi saat dipindai aplikasi tahu persis botol mana yang
-              diambil — beserta tanggal kedaluwarsa dan harga belinya. Unduh lalu impor ke app
-              Niimbot, ukuran 50×30mm.
+              diambil — beserta tanggal kedaluwarsa dan harga belinya. Unduh PNG-nya, impor di
+              aplikasi printer Anda, atur kertas ke <b>{ukuran.label}</b>, dan cetak pada
+              <b> skala 100%</b>.
             </p>
           </div>
         </div>
@@ -171,6 +191,28 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
           dulu — pekerjaan yang tidak ada hubungannya. Batch tanpa tanggal
           ditaruh di atas karena itu yang sedang dikejar.
         */}
+        <PemilihUkuranLabel ukuranId={ukuranId} ikutPrinter={ikutPrinter} onPilih={pilih} />
+
+        {/*
+          Di gulungan kecil baris Exp tidak muat — hurufnya akan jatuh di bawah
+          batas keterbacaan kertas termal, jadi perencana tata letak membuangnya.
+          Untuk label rak itu tidak apa-apa; yang dibuang cuma garis kosong.
+          Untuk label batch yang dibuang adalah TANGGALNYA, dan tanggal itulah
+          alasan label batch ada. Dikatakan di sini, sebelum satu gulungan
+          terlanjur tercetak tanpa tanggal.
+        */}
+        {!muatExp && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p>
+              Di ukuran {ukuran.label} tanggal kedaluwarsa <b>tidak ikut tercetak</b> — labelnya
+              terlalu kecil untuk baris tambahan yang masih terbaca. Kodenya tetap terbaca oleh
+              pemindai, tapi orang yang berdiri di depan rak tidak bisa membaca tanggalnya tanpa
+              memindai. Pakai 50 × 30 mm kalau tanggalnya perlu terlihat langsung.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2">
           {[...batches]
             .sort((a, b) => (a.tanggal_expired ? 1 : 0) - (b.tanggal_expired ? 1 : 0))
@@ -237,7 +279,12 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
             <div className="space-y-3">
               {previews.map(({ batch, dataUrl }) => (
                 <div key={batch.id} className="border rounded-lg p-3 flex items-center gap-3">
-                  <img src={dataUrl} alt={batch.batch_code} className="border rounded bg-white" style={{ height: 72 }} />
+                  <img
+                    src={dataUrl}
+                    alt={batch.batch_code}
+                    className="border rounded bg-white flex-shrink-0 h-14 sm:h-[72px]"
+                    style={{ aspectRatio: `${ukuran.mmW} / ${ukuran.mmH}` }}
+                  />
                   <div className="flex-1 min-w-0 space-y-1">
                     <p className="text-sm font-medium truncate">{batch.nama_barang}</p>
                     <p className="text-xs text-muted-foreground font-mono truncate">{batch.batch_code}</p>
@@ -260,7 +307,7 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
         ) : null}
 
         <div className="flex justify-end pt-1">
-          <Button variant="outline" onClick={() => { onClose(); setPreviews([]); }}>Tutup</Button>
+          <Button variant="outline" onClick={() => { onClose(); setPreviews([]); lepas(); }}>Tutup</Button>
         </div>
       </DialogContent>
     </Dialog>
