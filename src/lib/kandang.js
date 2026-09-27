@@ -387,3 +387,33 @@ export function poinUbinKandang(sopTasks = [], terjadwalPada, tanggal) {
     0,
   );
 }
+
+/**
+ * SATU DEFINISI: satu ubin kandang itu setara berapa kandang.
+ *
+ * Poin ubin dihitung per KETUKAN, bukan per luas atau per ekor. Itu tidak
+ * pernah jadi soal selama satu kandang fisik = satu ubin. Begitu N1, N2 dan
+ * N3 digabung jadi N, kiper kehilangan dua ubin sehari — 30 poin pada hari
+ * biasa, 46 pada hari yang ada pembersihan — padahal kuranya tetap 28 ekor
+ * di 84 m² dan pekerjaannya tidak berkurang sepetak pun. Yang berkurang
+ * hanya jumlah ketukannya.
+ *
+ * Bobot menutup selisih itu tanpa memalsukan apa pun: N bernilai 3 karena ia
+ * memang tiga kandang yang dijadikan satu. Disimpan di data, bukan di kode,
+ * supaya penggabungan berikutnya tidak perlu menunggu aplikasi dibangun ulang.
+ *
+ * Kosong, nol, negatif, atau bukan angka dianggap 1 — sebuah kandang yang
+ * datanya belum lengkap tidak boleh membuat kerja nyata bernilai nol.
+ */
+export function bobotKandang(nama, enclosures = []) {
+  const kandang = (Array.isArray(enclosures) ? enclosures : []).find(
+    (e) => String(e?.code || e?.name || "").trim() === String(nama || "").trim(),
+  );
+  const b = Number(kandang?.bobot_poin);
+  return Number.isFinite(b) && b > 0 ? b : 1;
+}
+
+/** Poin satu ubin kandang tertentu, sudah dikalikan bobotnya. */
+export function poinUbinUntuk(nama, enclosures, sopTasks, terjadwalPada, tanggal) {
+  return poinUbinKandang(sopTasks, terjadwalPada, tanggal) * bobotKandang(nama, enclosures);
+}

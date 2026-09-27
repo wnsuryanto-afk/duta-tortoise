@@ -54,6 +54,11 @@
     "ronda_harian": {
       "type": "boolean",
       "description": "Apakah kandang ini termasuk ronda harian kiper - satu ubin di layar Hari Ini, dengan poin pakan + cek kesehatan dan pembersihan. Sebelum field ini ada, daftarnya ditulis mati di src/lib/kandang.js, sehingga menggabungkan N1-N3 menjadi N membuat 28 kura hilang dari ronda sampai kodenya diubah dan dibangun ulang. Kosong berarti ikut daftar lama itu sebagai cadangan."
+    },
+    "bobot_poin": {
+      "type": "number",
+      "default": 1,
+      "description": "Berapa kandang nilainya satu ubin ini. Poin ubin dikalikan angka ini. Ada karena poin dihitung per KETUKAN, bukan per luas atau per ekor: menggabungkan N1-N3 menjadi N memangkas penghasilan kiper 2 ubin sehari padahal kuranya tetap 28 ekor di 84 m2. N diberi bobot 3. Kosong atau 0 dianggap 1."
     }
   },
   "required": [

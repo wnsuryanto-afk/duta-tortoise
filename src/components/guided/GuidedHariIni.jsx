@@ -30,7 +30,7 @@ import { perubahanSakit } from "@/lib/statusKura";
 import { tandaiSembuh } from "@/lib/kesehatanKura";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { catatPerawatanHarian } from "@/lib/perawatanHarian";
-import { kandangWajib, tugasUbinKandang, poinUbinKandang } from "@/lib/kandang";
+import { kandangWajib, tugasUbinKandang, poinUbinKandang, bobotKandang } from "@/lib/kandang";
 import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { jadwalBerlaku, sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
 import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
@@ -596,7 +596,11 @@ export default function GuidedHariIni({ user }) {
   const settledKandangCount = daftarKandang.filter(k =>
     kandangSaved.has(k) || (allKandangDoneMap[k] && allKandangDoneMap[k].done_by_email !== user.email)
   ).length;
-  const poinKandang = kandangSaved.size * poinKebersihan;
+  // Dijumlahkan per ubin, bukan `jumlah × poin`: satu ubin bisa bernilai lebih
+  // dari satu kandang. N bernilai 3 karena ia gabungan N1, N2 dan N3 — kuranya
+  // tetap 28 ekor di 84 m² walau ketukannya tinggal satu.
+  const poinUbin = (k) => poinKebersihan * bobotKandang(k, enclosures);
+  const poinKandang = [...kandangSaved].reduce((n, k) => n + poinUbin(k), 0);
   const poinKura    = sakitReports.length * 15;
   const poinCheckin = hasCheckedIn ? 5 : 0;
   const totalPoin   = poinCheckin + poinKandang + poinKura;
@@ -673,14 +677,16 @@ export default function GuidedHariIni({ user }) {
         done_at: nowStr(),
         done_by: user.full_name || user.email,
         done_by_email: user.email,
-        poin_earned: poinKebersihan,
+        // Angka inilah yang mengalir ke gaji: onMaintenanceDone menjumlahkannya
+        // ke total_points_claimed pada DailyChecklist hari itu.
+        poin_earned: poinUbin(k),
       };
       if (photoUrl) logData.photo_url = photoUrl;
       await catatLogSekali(logData);
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
       setLastCheckAtMs(Date.now()); // mulai jeda 60 dtk untuk kandang berikutnya
       refetchML();
-      flashPoin(k, poinKebersihan);
+      flashPoin(k, poinUbin(k));
       if (photoUrl) {
         syncPhotoToChecklist({
           employeeEmail: user.email, date: today,
@@ -1210,6 +1216,11 @@ export default function GuidedHariIni({ user }) {
             <p className="text-xs text-muted-foreground mb-3">
               Tap kandang yang sudah selesai dikunjungi ·{" "}
               <span className="text-green-600 font-medium">+{poinKebersihan} poin per kandang</span>
+              {daftarKandang.some(k => bobotKandang(k, enclosures) > 1) && (
+                <span className="text-green-600 font-medium">
+                  {" "}· kandang gabungan bernilai lebih, tertulis di ubinnya
+                </span>
+              )}
               {requirePhotoKebersihan && <span className="text-red-500 font-medium"> · 📷 Wajib foto per kandang</span>}
             </p>
             {tugasUbin.length > 0 && (
@@ -1247,6 +1258,11 @@ export default function GuidedHariIni({ user }) {
                   >
                     {(done || other) ? <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" /> : null}
                     <span className={other ? "line-through opacity-80" : ""}>{k}</span>
+                    {bobotKandang(k, enclosures) > 1 && !other && (
+                      <span className={`text-[8px] font-semibold mt-0.5 ${done ? "text-white/90" : "text-green-600"}`}>
+                        +{poinUbin(k)} poin
+                      </span>
+                    )}
                     {other && <span className="text-[7px] font-normal mt-0.5 truncate w-full text-center px-0.5">{(other.done_by || "Rekan").split(" ")[0]}</span>}
                   </button>
                 );
