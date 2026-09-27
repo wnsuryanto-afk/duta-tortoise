@@ -1,17 +1,43 @@
 {
   "name": "SOPTask",
-  "type": "object",
   "properties": {
-    "title": {
-      "type": "string",
-      "description": "Nama task SOP"
+    "ai_check_points": {
+      "description": "Daftar hal yang diperiksa AI pada foto task ini (panduan per task). Kosong = penilaian umum.",
+      "type": "string"
     },
-    "description": {
-      "type": "string",
-      "description": "Deskripsi task"
+    "assigned_to_email": {
+      "description": "Email karyawan khusus (kosong = siapa saja)",
+      "type": "string"
+    },
+    "assigned_to_name": {
+      "description": "Nama karyawan khusus",
+      "type": "string"
+    },
+    "boleh_carryover": {
+      "default": false,
+      "description": "Apakah task boleh dibawa tertunggak (carry-over) ke hari berikutnya",
+      "type": "boolean"
+    },
+    "bulan_aktif": {
+      "description": "Bulan berapa saja task ini berlaku (1=Januari ... 12=Desember). Kosong = berlaku sepanjang tahun. Dipakai untuk pekerjaan yang jadwalnya lebih jarang daripada bulanan (mis. tiap 2 bulan pada bulan ganjil) atau musiman.",
+      "items": {
+        "type": "number"
+      },
+      "type": "array"
+    },
+    "butuh_bahan_gudang": {
+      "default": false,
+      "description": "Apakah task butuh bahan dari gudang (cek stok sebelum dikerjakan)",
+      "type": "boolean"
+    },
+    "catat_pakan": {
+      "default": false,
+      "description": "27-09-2026: mencentang task ini membuka formulir Catat Pakan Harian, dan centangnya baru masuk setelah catatannya tersimpan \u2014 persis seperti baris timbang kura yang sudah bekerja begitu. Dibuat karena PakanHarian hanya terisi TIGA kali sejak aplikasi berdiri: tombol 'Catat Pengambilan Pakan' ada, tapi ia satu dari empat tombol kecil di kepala halaman, tidak terikat tugas apa pun, tidak berpoin, dan tidak pernah ditagih. Menempelkannya ke tugas yang memang sudah dikerjakan tiap hari tidak menambah beban \u2014 ia hanya membuat pekerjaan yang sudah dilakukan meninggalkan angkanya. Ditandai lewat kolom, bukan pencocokan judul, supaya mengganti nama task tidak diam-diam mematikannya.",
+      "type": "boolean"
     },
     "category": {
-      "type": "string",
+      "default": "lainnya",
+      "description": "Kategori task",
       "enum": [
         "pakan",
         "kebersihan",
@@ -22,101 +48,153 @@
         "perawatan",
         "lainnya"
       ],
-      "default": "lainnya",
-      "description": "Kategori task"
+      "type": "string"
     },
-    "points": {
-      "type": "number",
-      "default": 10,
-      "description": "Poin per task selesai"
+    "deadline_time": {
+      "description": "Batas waktu pengerjaan (HH:mm)",
+      "type": "string"
+    },
+    "description": {
+      "description": "Deskripsi task",
+      "type": "string"
+    },
+    "di_luar_persen": {
+      "default": false,
+      "description": "18-09-2026: task WADAH yang isinya berubah tiap hari, jadi tidak bisa dinilai sebagai satu centang. Contohnya 'Timbang kura yang ada alasannya (ROTASI OTOMATIS)': di layar kiper ia mekar jadi beberapa baris ukur_rotasi_<id_kura>, dan bisa juga NOL baris kalau memang tidak ada kura yang perlu ditimbang hari itu. Kepatuhan hanya mengenal sop_<id>, sehingga task ini tercatat gagal 14 dari 14 hari \u2014 termasuk pada hari yang jawaban benarnya adalah 'tidak ada yang perlu ditimbang'. Task bertanda ini dikeluarkan dari persentase dan dilaporkan dengan angkanya sendiri, sama seperti kebersihan kandang. Ditandai lewat kolom, bukan pencocokan judul.",
+      "type": "boolean"
+    },
+    "di_ubin_kandang": {
+      "default": false,
+      "description": "D12: dikerjakan lewat ubin kandang di layar kiper, bukan sebagai baris tersendiri. Satu ketukan pada satu kandang menyelesaikan SEMUA task bertanda ini sekaligus, dan poinnya dijumlahkan. Dipakai karena kiper memang mendatangi tiap kandang satu kali: membersihkan, memberi pakan, dan mengecek kesehatan dalam kunjungan yang sama. Ditandai lewat kolom ini, bukan lewat pencocokan judul, supaya mengganti nama task tidak diam-diam mematikan poinnya.",
+      "type": "boolean"
     },
     "frequency": {
-      "type": "string",
+      "default": "harian",
+      "description": "Frekuensi task",
       "enum": [
         "harian",
         "mingguan",
         "bulanan"
       ],
-      "default": "harian",
-      "description": "Frekuensi task"
+      "type": "string"
     },
-    "weekly_days": {
-      "type": "array",
-      "items": {
-        "type": "number"
-      },
-      "description": "Hari dalam seminggu untuk task mingguan (0=Minggu, 1=Senin,...6=Sabtu)"
-    },
-    "monthly_dates": {
-      "type": "array",
-      "items": {
-        "type": "number"
-      },
-      "description": "Tanggal-tanggal dalam bulan untuk task bulanan (1-31)"
-    },
-    "bulan_aktif": {
-      "type": "array",
-      "items": {
-        "type": "number"
-      },
-      "description": "Bulan berapa saja task ini berlaku (1=Januari ... 12=Desember). Kosong = berlaku sepanjang tahun. Dipakai untuk pekerjaan yang jadwalnya lebih jarang daripada bulanan (mis. tiap 2 bulan pada bulan ganjil) atau musiman."
-    },
-    "target_enclosures": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Kandang yang dituju (kosong = semua)"
-    },
-    "target_tortoise_ids": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "ID kura-kura yang dituju (kosong = semua)"
-    },
-    "target_tortoise_names": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Nama kura-kura yang dituju"
-    },
-    "deadline_time": {
-      "type": "string",
-      "description": "Batas waktu pengerjaan (HH:mm)"
-    },
-    "require_photo": {
-      "type": "boolean",
-      "default": false,
-      "description": "Apakah task wajib disertai foto bukti"
-    },
-    "ai_check_points": {
-      "type": "string",
-      "description": "Daftar hal yang diperiksa AI pada foto task ini (panduan per task). Kosong = penilaian umum."
-    },
-    "boleh_carryover": {
-      "type": "boolean",
-      "default": false,
-      "description": "Apakah task boleh dibawa tertunggak (carry-over) ke hari berikutnya"
+    "is_active": {
+      "default": true,
+      "description": "Task aktif atau tidak",
+      "type": "boolean"
     },
     "jenis_carryover": {
-      "type": "string",
+      "default": "1hari",
+      "description": "Jenis carry-over: 1hari = boleh dibawa 1 hari, tertunggak = boleh menumpuk, hangus = batal jika tidak dikerjakan",
       "enum": [
         "1hari",
         "tertunggak",
         "hangus"
       ],
-      "default": "1hari",
-      "description": "Jenis carry-over: 1hari = boleh dibawa 1 hari, tertunggak = boleh menumpuk, hangus = batal jika tidak dikerjakan"
+      "type": "string"
     },
-    "butuh_bahan_gudang": {
-      "type": "boolean",
+    "monthly_dates": {
+      "description": "Tanggal-tanggal dalam bulan untuk task bulanan (1-31)",
+      "items": {
+        "type": "number"
+      },
+      "type": "array"
+    },
+    "pakan_terpakai": {
+      "description": "A6 \u2014 Bahan yang habis terpakai setiap kali task ini dikerjakan. Diisi sekali, lalu stok berkurang sendiri saat task dicentang, sehingga tidak perlu lagi pencatatan pakan manual.",
+      "items": {
+        "properties": {
+          "jumlah": {
+            "description": "Jumlah terpakai sekali kerja, dalam satuan bahan tersebut",
+            "type": "number"
+          },
+          "nama": {
+            "description": "Nama bahan, untuk dibaca manusia",
+            "type": "string"
+          },
+          "sku": {
+            "description": "SKU bahan (PKN-xxxx untuk stok pakan, SKU gudang untuk obat/suplemen)",
+            "type": "string"
+          },
+          "sumber": {
+            "default": "pakan",
+            "description": "Diambil dari Stok Pakan atau dari Gudang",
+            "enum": [
+              "pakan",
+              "gudang"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "points": {
+      "default": 10,
+      "description": "Poin per task selesai",
+      "type": "number"
+    },
+    "require_photo": {
       "default": false,
-      "description": "Apakah task butuh bahan dari gudang (cek stok sebelum dikerjakan)"
+      "description": "Apakah task wajib disertai foto bukti",
+      "type": "boolean"
+    },
+    "required_skus": {
+      "description": "SKU item gudang yang dibutuhkan (untuk cek stok)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "target_enclosures": {
+      "description": "Kandang yang dituju (kosong = semua)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "target_tortoise_ids": {
+      "description": "ID kura-kura yang dituju (kosong = semua)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "target_tortoise_names": {
+      "description": "Nama kura-kura yang dituju",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "task_scope": {
+      "default": "bersama",
+      "description": "Scope penguncian: bersama = sekali untuk semua orang, pribadi = masing-masing karyawan, per_kandang = per kandang (perlu target_enclosures), per_kura = per kura-kura (perlu target_tortoise_ids)",
+      "enum": [
+        "bersama",
+        "pribadi",
+        "per_kandang",
+        "per_kura"
+      ],
+      "type": "string"
+    },
+    "terkunci_alasan": {
+      "description": "A9 \u2014 Bahan apa yang habis, untuk ditampilkan ke keeper.",
+      "type": "string"
+    },
+    "terkunci_bahan": {
+      "default": false,
+      "description": "A9 \u2014 Diisi otomatis: true bila bahan yang dibutuhkan task ini habis, sehingga task tidak bisa dikerjakan hari ini.",
+      "type": "boolean"
+    },
+    "title": {
+      "description": "Nama task SOP",
+      "type": "string"
     },
     "wajib_untuk_role": {
-      "type": "string",
+      "default": "semua",
+      "description": "Role yang wajib mengerjakan task ini (semua = siapa saja)",
       "enum": [
         "semua",
         "keeper",
@@ -125,92 +203,19 @@
         "manajer",
         "owner"
       ],
-      "default": "semua",
-      "description": "Role yang wajib mengerjakan task ini (semua = siapa saja)"
+      "type": "string"
     },
-    "is_active": {
-      "type": "boolean",
-      "default": true,
-      "description": "Task aktif atau tidak"
-    },
-    "task_scope": {
-      "type": "string",
-      "enum": [
-        "bersama",
-        "pribadi",
-        "per_kandang",
-        "per_kura"
-      ],
-      "default": "bersama",
-      "description": "Scope penguncian: bersama = sekali untuk semua orang, pribadi = masing-masing karyawan, per_kandang = per kandang (perlu target_enclosures), per_kura = per kura-kura (perlu target_tortoise_ids)"
-    },
-    "assigned_to_email": {
-      "type": "string",
-      "description": "Email karyawan khusus (kosong = siapa saja)"
-    },
-    "assigned_to_name": {
-      "type": "string",
-      "description": "Nama karyawan khusus"
-    },
-    "required_skus": {
-      "type": "array",
+    "weekly_days": {
+      "description": "Hari dalam seminggu untuk task mingguan (0=Minggu, 1=Senin,...6=Sabtu)",
       "items": {
-        "type": "string"
+        "type": "number"
       },
-      "description": "SKU item gudang yang dibutuhkan (untuk cek stok)"
-    },
-    "pakan_terpakai": {
-      "type": "array",
-      "description": "A6 \u2014 Bahan yang habis terpakai setiap kali task ini dikerjakan. Diisi sekali, lalu stok berkurang sendiri saat task dicentang, sehingga tidak perlu lagi pencatatan pakan manual.",
-      "items": {
-        "type": "object",
-        "properties": {
-          "sku": {
-            "type": "string",
-            "description": "SKU bahan (PKN-xxxx untuk stok pakan, SKU gudang untuk obat/suplemen)"
-          },
-          "nama": {
-            "type": "string",
-            "description": "Nama bahan, untuk dibaca manusia"
-          },
-          "jumlah": {
-            "type": "number",
-            "description": "Jumlah terpakai sekali kerja, dalam satuan bahan tersebut"
-          },
-          "sumber": {
-            "type": "string",
-            "enum": [
-              "pakan",
-              "gudang"
-            ],
-            "default": "pakan",
-            "description": "Diambil dari Stok Pakan atau dari Gudang"
-          }
-        }
-      }
-    },
-    "terkunci_bahan": {
-      "type": "boolean",
-      "default": false,
-      "description": "A9 \u2014 Diisi otomatis: true bila bahan yang dibutuhkan task ini habis, sehingga task tidak bisa dikerjakan hari ini."
-    },
-    "di_ubin_kandang": {
-      "type": "boolean",
-      "default": false,
-      "description": "D12: dikerjakan lewat ubin kandang di layar kiper, bukan sebagai baris tersendiri. Satu ketukan pada satu kandang menyelesaikan SEMUA task bertanda ini sekaligus, dan poinnya dijumlahkan. Dipakai karena kiper memang mendatangi tiap kandang satu kali: membersihkan, memberi pakan, dan mengecek kesehatan dalam kunjungan yang sama. Ditandai lewat kolom ini, bukan lewat pencocokan judul, supaya mengganti nama task tidak diam-diam mematikan poinnya."
-    },
-    "terkunci_alasan": {
-      "type": "string",
-      "description": "A9 \u2014 Bahan apa yang habis, untuk ditampilkan ke keeper."
-    },
-    "di_luar_persen": {
-      "type": "boolean",
-      "default": false,
-      "description": "18-09-2026: task WADAH yang isinya berubah tiap hari, jadi tidak bisa dinilai sebagai satu centang. Contohnya 'Timbang kura yang ada alasannya (ROTASI OTOMATIS)': di layar kiper ia mekar jadi beberapa baris ukur_rotasi_<id_kura>, dan bisa juga NOL baris kalau memang tidak ada kura yang perlu ditimbang hari itu. Kepatuhan hanya mengenal sop_<id>, sehingga task ini tercatat gagal 14 dari 14 hari \u2014 termasuk pada hari yang jawaban benarnya adalah 'tidak ada yang perlu ditimbang'. Task bertanda ini dikeluarkan dari persentase dan dilaporkan dengan angkanya sendiri, sama seperti kebersihan kandang. Ditandai lewat kolom, bukan pencocokan judul."
+      "type": "array"
     }
   },
   "required": [
     "title",
     "points"
-  ]
+  ],
+  "type": "object"
 }
