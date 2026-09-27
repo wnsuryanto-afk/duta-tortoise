@@ -42,14 +42,21 @@ export default function KomposisiKawanan({ tortoises = [], enclosures = [] }) {
     const h = Object.fromEntries(KELOMPOK.map((k) => [k.kunci, 0]));
     ada.forEach((t) => { h[kelompokkan(t)] += 1; });
 
-    const perKandang = enclosures.map((e) => {
-      const isi = ada.filter((t) => cariKandang(t, enclosures).kandang?.id === e.id);
-      return {
-        id: e.id, nama: e.name, isi: isi.length,
-        kapasitas: e.max_capacity || 0,
-        sakit: isi.filter(sedangSakit).length,
-      };
-    }).filter((k) => k.isi > 0 || k.kapasitas > 0)
+    // Kandang yang diarsipkan tidak ikut. N1, N2 dan N3 digabung jadi N pada
+    // 27 September 2026; catatannya disimpan demi 382 catatan kebersihan yang
+    // menyebut namanya, tetapi menampilkannya di sini membuat kandang Utara
+    // terlihat empat buah — dan tiga di antaranya selamanya 0 ekor, sehingga
+    // ikut menurunkan gambaran kepadatan yang dibaca orang.
+    const perKandang = enclosures
+      .filter((e) => e?.is_archived !== true && e?.is_active !== false)
+      .map((e) => {
+        const isi = ada.filter((t) => cariKandang(t, enclosures).kandang?.id === e.id);
+        return {
+          id: e.id, nama: e.name, isi: isi.length,
+          kapasitas: e.max_capacity || 0,
+          sakit: isi.filter(sedangSakit).length,
+        };
+      }).filter((k) => k.isi > 0 || k.kapasitas > 0)
       .sort((a, b) => {
         const ra = a.kapasitas ? a.isi / a.kapasitas : 0;
         const rb = b.kapasitas ? b.isi / b.kapasitas : 0;

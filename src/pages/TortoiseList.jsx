@@ -456,10 +456,35 @@ export default function TortoiseList() {
                     { label: "Kandang Baby", prefix: "Baby" },
                     { label: "Bonsai", prefix: "Bonsai" },
                   ];
+                  /*
+                   * Kandang yang SUDAH DIARSIPKAN tidak ditawarkan sebagai
+                   * penyaring. N1, N2 dan N3 digabung jadi kandang N pada 27
+                   * September 2026; catatannya sengaja disimpan supaya 382
+                   * catatan kebersihan dan 14 riwayat pindah yang menyebut
+                   * namanya tetap punya rujukan, tetapi menawarkannya di sini
+                   * hanya membuat empat kandang Utara terlihat padahal
+                   * fisiknya satu.
+                   *
+                   * Perkecualiannya: nama yang masih DIPAKAI kura hidup tetap
+                   * muncul, bahkan bila kandangnya diarsipkan atau tidak pernah
+                   * terdaftar. Menyembunyikannya akan membuat kura itu tidak
+                   * bisa ditemukan lewat penyaring mana pun.
+                   */
+                  const diarsipkan = new Set(
+                    enclosures.filter(e => e?.is_archived === true || e?.is_active === false)
+                              .map(e => e?.name).filter(Boolean)
+                  );
+                  const dipakaiKuraHidup = new Set(
+                    tortoises.filter(t => t?.enclosure && t.status !== "mati"
+                                          && t.status !== "terjual" && !t.is_archived)
+                             .map(t => t.enclosure)
+                  );
                   const semuaNama = [...new Set([
                     ...enclosures.map(e => e?.name),
                     ...tortoises.map(t => t?.enclosure),
-                  ].filter(Boolean))];
+                  ].filter(Boolean))].filter(
+                    n => !diarsipkan.has(n) || dipakaiKuraHidup.has(n)
+                  );
                   const hidup = (t) => t.status !== "mati" && t.status !== "terjual" && t.status !== "diarsipkan";
                   const hitung = (nama) => tortoises.filter(t => t.enclosure === nama && hidup(t)).length;
                   const terpakai = new Set();
