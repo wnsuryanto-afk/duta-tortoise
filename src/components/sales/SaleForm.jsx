@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { kosongkanKandang } from "@/lib/kandang";
 import { recalcEnclosureCounts } from "@/lib/enclosureCount";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,8 +92,7 @@ export default function SaleForm({ open, onClose, editData }) {
             ? kuraTerjual.status
             : kuraTerjual?.previous_status,
           last_status_change: new Date().toISOString().split("T")[0],
-          enclosure: "",
-          enclosure_id: "",
+          ...kosongkanKandang(),
         });
         // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.
         try { await recalcEnclosureCounts(); } catch { /* penjualan tetap tersimpan */ }

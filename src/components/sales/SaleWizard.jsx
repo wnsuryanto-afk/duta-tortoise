@@ -1,3 +1,4 @@
+import { kosongkanKandang } from "@/lib/kandang";
 import { useState, useEffect } from "react";
 import { recalcEnclosureCounts } from "@/lib/enclosureCount";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -700,8 +701,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
           status: "terjual",
           is_currently_sick: false,
           previous_status: prevTortoise?.status || "aktif",
-          enclosure: "",
-          enclosure_id: "",
+          ...kosongkanKandang(),
           last_status_change: today,
         });
         // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.

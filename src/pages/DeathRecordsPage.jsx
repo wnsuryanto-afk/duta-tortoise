@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { kosongkanKandang } from "@/lib/kandang";
 import { recalcEnclosureCounts } from "@/lib/enclosureCount";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -302,6 +303,13 @@ export default function DeathRecordsPage() {
       // Kura yang mati harus keluar dari daftar sakit, kalau tidak dia tetap
       // muncul di layar keeper dan di penghitung "Sakit" selamanya.
       is_currently_sick: false,
+      // ...dan harus melepaskan kandangnya. Alur PENJUALAN sudah melakukan ini
+      // sejak lama; alur kematian tidak, sehingga tiga kura mati (HF5, F14,
+      // B119) masih memegang E1 dan E5 sampai hari ini. Nama kandang yang
+      // ditinggalkan itu ikut terbawa ke daftar pilihan kandang di empat layar
+      // — mekanisme yang sama yang dulu membuat "N1" bertahan berhari-hari
+      // sesudah kandangnya digabung.
+      ...kosongkanKandang(),
       ...deathData,
     });
     // Kandang harus dihitung ulang: kura mati bukan lagi penghuni.

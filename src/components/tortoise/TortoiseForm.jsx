@@ -1,4 +1,5 @@
 import InputBerat from "@/components/common/InputBerat";
+import { STATUS_KELUAR } from "@/lib/populasiKura";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,7 +190,13 @@ export default function TortoiseForm({ open, onClose, editData }) {
     if (!form.morph) e.morph = "Morph wajib dipilih";
     if (!form.source || form.source === "tidak_diketahui") e.source = "Asal kura-kura wajib dipilih";
     if (!form.status) e.status = "Status wajib dipilih";
-    if (!form.enclosure) e.enclosure = "Kandang wajib dipilih";
+    // Kandang wajib HANYA untuk kura yang masih dirawat. Kura mati, terjual,
+    // atau diarsipkan memang tidak menempati kandang mana pun — mewajibkannya
+    // berarti formulir ini menolak menyimpan data yang justru sudah benar,
+    // dan memaksa orang mengisi kandang untuk kura yang sudah tidak ada.
+    if (!form.enclosure && !STATUS_KELUAR.includes(form.status)) {
+      e.enclosure = "Kandang wajib dipilih";
+    }
     if (!form.weight_grams) e.weight_grams = "Berat wajib diisi";
     if (!form.shell_length_cm) e.shell_length_cm = "Panjang cangkang wajib diisi";
     if (!form.purchase_date && !form.birth_date) e.purchase_date = "Tanggal masuk/lahir wajib diisi";
