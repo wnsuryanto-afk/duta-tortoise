@@ -1,0 +1,10 @@
+import { chromium } from "playwright-core";
+const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const d = new Date(); d.setHours(16, 30, 0, 0);
+await p.clock.setFixedTime(d);
+await p.goto("http://localhost:5199/uipreview.html", { waitUntil: "networkidle" });
+await p.waitForTimeout(2000);
+const kartu = p.locator("text=Target SOP Hari Ini").locator("xpath=ancestor::*[contains(@class,'p-5')][1]");
+await kartu.screenshot({ path: "/tmp/claude-0/kartu-sop.png" });
+await b.close();

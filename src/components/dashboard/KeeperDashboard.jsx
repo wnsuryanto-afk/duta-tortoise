@@ -32,6 +32,22 @@ import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
 import { toast } from "sonner";
 import { TortoiseArt } from "@/components/common/Illustration";
 
+/**
+ * Lama dalam menit, ditulis sebagaimana orang mengucapkannya.
+ *
+ * "Terlambat 745m" bukan informasi — yang membacanya harus membagi sendiri
+ * dengan 60 untuk tahu bahwa itu dua belas jam. Di bawah satu jam menitnya
+ * yang penting; di atas itu jamnya.
+ */
+function lamanya(menit) {
+  const n = Math.abs(Math.round(menit));
+  if (n < 60) return `${n} menit`;
+  // Di atas satu jam, menitnya tidak menambah apa pun yang dipakai orang untuk
+  // memutuskan — dan "Lewat 8 jam 55 menit" tidak muat sebaris di layar ponsel,
+  // jadi ia pecah di tengah frasa menjadi "Lewat 8 jam 55 / menit".
+  return `${Math.round(n / 60)} jam`;
+}
+
 function getMinutesUntil(timeStr) {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(":").map(Number);
@@ -249,11 +265,40 @@ export default function KeeperDashboard() {
   const doneCount = tugasHariIni.filter((t) => completedTaskIds.has(t.id)).length;
   const sopSubmitted = todayChecklist?.status === "submitted" || todayChecklist?.status === "approved";
 
-  const urgentSOP = tugasHariIni
+  // Tugas yang belum dikerjakan dan tenggatnya sudah dekat atau sudah lewat.
+  //
+  // Jendelanya dulu `-30 <= sisa <= 60`: setengah jam sesudah tenggat, tugas
+  // yang belum dikerjakan MENGHILANG dari kartu. Yang tersisa cuma kalimat
+  // "Tidak ada task mendesak saat ini" — di kartu yang pada baris di atasnya
+  // menulis "1 dari 6 task selesai". Pukul 12 siang empat tugas sudah lewat
+  // tenggat dan kartunya bilang tidak ada yang mendesak; pukul setengah lima
+  // sore, saat kelimanya tidak akan dikerjakan lagi hari itu, kartunya masih
+  // bilang hal yang sama.
+  //
+  // Jendela seperti itu masuk akal untuk NOTIFIKASI — "sebentar lagi jatuh
+  // tempo" memang cuma relevan sebentar. Tapi ini bukan notifikasi, ini
+  // keadaan hari itu, dan tugas yang lewat tenggat tidak berhenti perlu
+  // dikerjakan hanya karena sudah lewat setengah jam.
+  //
+  // Sekarang yang lewat tenggat tidak pernah pergi, dan ia yang ditaruh di
+  // atas. Yang masih di depan tetap dibatasi satu jam ke depan supaya kartunya
+  // tidak berubah jadi salinan seluruh daftar SOP — untuk itu ada /sop.
+  const belumSelesai = tugasHariIni
     .filter((t) => t.deadline_time && !completedTaskIds.has(t.id))
     .map((t) => ({ ...t, minutesLeft: getMinutesUntil(t.deadline_time) }))
-    .filter((t) => t.minutesLeft !== null && t.minutesLeft <= 60 && t.minutesLeft >= -30)
+    .filter((t) => t.minutesLeft !== null);
+
+  const lewatTenggat = belumSelesai
+    .filter((t) => t.minutesLeft < 0)
     .sort((a, b) => a.minutesLeft - b.minutesLeft);
+  const segeraJatuhTempo = belumSelesai
+    .filter((t) => t.minutesLeft >= 0 && t.minutesLeft <= 60)
+    .sort((a, b) => a.minutesLeft - b.minutesLeft);
+
+  // Paling banyak empat baris di kartu beranda. Sisanya dihitung, bukan
+  // didaftar — daftar sepanjang layar membuat orang berhenti membacanya.
+  const urgentSOP = [...lewatTenggat, ...segeraJatuhTempo];
+  const urgentTampil = urgentSOP.slice(0, 4);
 
   const upcomingReminders = reminders
     .filter((r) => {
@@ -454,20 +499,29 @@ export default function KeeperDashboard() {
           </div>
         ) : urgentSOP.length > 0 ? (
           <div className="space-y-2">
-            {urgentSOP.map((task) => {
+            {urgentTampil.map((task) => {
               const isOverdue = task.minutesLeft < 0;
               return (
-                <div key={task.id} className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border ${isOverdue ? "bg-red-50 border-red-200" : "bg-orange-50 border-orange-200"}`}>
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className={`w-4 h-4 ${isOverdue ? "text-red-500" : "text-orange-500"}`} />
-                    <span className="font-medium">{task.title}</span>
+                // `min-w-0` pada nama dan `flex-shrink-0` pada tenggatnya
+                // bukan hiasan: tanpa keduanya nama tugas dan sisa waktunya
+                // berebut lebar yang sama, dan di layar 390px yang mengalah
+                // adalah tenggatnya — ia pecah di tengah frasa.
+                <div key={task.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm border ${isOverdue ? "bg-red-50 border-red-200" : "bg-orange-50 border-orange-200"}`}>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <AlertTriangle className={`w-4 h-4 flex-shrink-0 ${isOverdue ? "text-red-500" : "text-orange-500"}`} />
+                    <span className="font-medium line-clamp-2 break-words">{task.title}</span>
                   </div>
-                  <span className={`text-xs font-bold ${isOverdue ? "text-red-600" : "text-orange-600"}`}>
-                    {isOverdue ? `Terlambat ${Math.abs(task.minutesLeft)}m` : `${task.minutesLeft}m lagi`}
+                  <span className={`text-xs font-bold flex-shrink-0 whitespace-nowrap ${isOverdue ? "text-red-600" : "text-orange-600"}`}>
+                    {isOverdue ? `Lewat ${lamanya(task.minutesLeft)}` : `${lamanya(task.minutesLeft)} lagi`}
                   </span>
                 </div>
               );
             })}
+            {urgentSOP.length > urgentTampil.length && (
+              <Link to="/sop" className="block text-xs text-muted-foreground px-1 hover:text-foreground">
+                dan {urgentSOP.length - urgentTampil.length} tugas lagi yang belum dikerjakan →
+              </Link>
+            )}
           </div>
         ) : totalDailyTasks === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-2">Belum ada task SOP aktif</p>

@@ -1,0 +1,16 @@
+import { chromium } from "playwright-core";
+const jam = process.argv[2] || "16:30";
+const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const errs = [];
+p.on("pageerror", e => errs.push("PAGEERROR: " + e.message));
+const d = new Date(); const [h, m] = jam.split(":").map(Number); d.setHours(h, m, 0, 0);
+await p.clock.setFixedTime(d);
+await p.goto("http://localhost:5199/uipreview.html", { waitUntil: "networkidle" });
+await p.waitForTimeout(2000);
+await p.screenshot({ path: `/tmp/claude-0/kiper-${jam.replace(":", "")}.png`, fullPage: true });
+const t = await p.evaluate(() => document.body.innerText);
+const cari = (re) => (t.match(re) || ["(tidak ada)"])[0];
+console.log(`jam ${jam} →`, cari(/\d+ dari \d+ task selesai/), "|", cari(/Tidak ada task mendesak[^\n]*|Lewat [^\n]*|[0-9]+ (menit|jam)[^\n]* lagi|Belum ada task SOP aktif/));
+console.log(errs.slice(0,3).join("\n") || "");
+await b.close();
