@@ -92,9 +92,19 @@ export const STATUS_TUTUP = STATUS_KELUAR;
  *
  * Selama dua penanda itu masih ada, keduanya harus dibaca lewat fungsi ini.
  */
-export function sedangSakit(kura) {
-  return kura?.status === "sakit" || !!kura?.is_currently_sick;
-}
+//
+// ── Satu definisi, bukan dua ───────────────────────────────────────────────
+//
+// Berkas ini pernah punya salinannya sendiri, dan salinan itu BERBEDA: ia
+// tidak membuang kura yang sudah diarsipkan, sementara salinan di
+// lib/populasiKura.js membuangnya. Jadi kura sakit yang diarsipkan terhitung
+// sakit di kartu kura dan di komposisi kawanan, tetapi tidak terhitung di
+// beranda, Daftar Kura, dan ringkasan pagi.
+//
+// Keduanya ditulis untuk memperbaiki masalah yang sama - sebelas layar yang
+// membaca dua penanda sakit dengan cara berbeda - dan justru menjadi kasus
+// kesembilan belas dari masalah itu. Sekarang benar-benar satu.
+export { sedangSakit } from "@/lib/populasiKura";
 
 /** Apakah kedua penanda sakit sepakat? */
 export function tandaSelaras(kura) {
