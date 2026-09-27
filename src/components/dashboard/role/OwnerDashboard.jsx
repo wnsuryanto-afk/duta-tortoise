@@ -31,7 +31,7 @@ import { TortoiseArt } from "@/components/common/Illustration";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
-import { diPeternakan } from "@/lib/populasiKura";
+import { diPeternakan, hanyaDiPeternakan, aktifSehat, sedangSakit } from "@/lib/populasiKura";
 import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
@@ -366,12 +366,33 @@ export default function OwnerDashboard({ user }) {
   const warehouseValue = warehouseItems.reduce((s, f) => s + (f.current_stock || 0) * (f.purchase_price || 0), 0);
   const totalStockValue = feedValue + warehouseValue;
 
-  // ── Tortoise Calcs ────────────────────────────────
-  // Hanya status "aktif", exclude is_archived (F14, B119 sudah diarsipkan dengan status "mati")
-  const activeTortoises = tortoises.filter(t => t.status === "aktif" && !t.is_archived);
-  const sickTortoises = tortoises.filter(t => (t.status === "sakit" || t.is_currently_sick) && !t.is_archived);
+  // ── Hitungan kura ─────────────────────────────────
+  //
+  // DUA angka, dan bedanya penting:
+  //
+  //   kuraDiPeternakan  semua yang masih ada dan masih diurus — termasuk yang
+  //                     sakit, breeding, dan karantina. Ini PENYEBUT untuk
+  //                     apa pun yang dibagi rata, karena kura sakit tetap
+  //                     makan dan tetap menempati kandang.
+  //   activeTortoises   yang sehat dan berjalan normal. Ini dipakai hanya
+  //                     ketika yang ditanyakan memang "berapa yang sehat",
+  //                     berdampingan dengan hitungan yang sakit.
+  //
+  // Keduanya dulu ditulis tangan di sini, dan yang dipakai membagi biaya
+  // adalah yang SEHAT. Enam kura sakit dari dua ratus berarti biaya per ekor
+  // dihitung dengan penyebut 194, bukan 200 — naik 3%, dan catatan di layar
+  // ini menyebut angka itu "dasar HPP saat menentukan harga jual". Harga jual
+  // yang didasarkan pada biaya yang dilebihkan bukan kesalahan yang terlihat;
+  // ia cuma membuat penawaran kalah tanpa alasan yang diketahui.
+  //
+  // Definisinya sekarang diambil dari lib/populasiKura.js. Berkas itu ditulis
+  // persis untuk masalah ini, dan beranda ini salah satu dari lima tempat yang
+  // disebut di catatannya — tapi salinan tangannya masih di sini.
+  const kuraDiPeternakan = hanyaDiPeternakan(tortoises);
+  const activeTortoises = tortoises.filter(aktifSehat);
+  const sickTortoises = tortoises.filter(sedangSakit);
   const soldThisMonth = tortoises.filter(t => t.status === "terjual" && !t.is_archived && (t.last_status_change || "").startsWith(thisMonthKey));
-  const costPerTortoise = activeTortoises.length > 0 ? Math.round(expenseThis / activeTortoises.length) : 0;
+  const costPerTortoise = kuraDiPeternakan.length > 0 ? Math.round(expenseThis / kuraDiPeternakan.length) : 0;
 
   // ── Breeding Calcs ────────────────────────────────
   const activeBreedings = breedings.filter(clutchAktif);
@@ -469,7 +490,8 @@ export default function OwnerDashboard({ user }) {
   // ── Pakan Efficiency ──────────────────────────────
   const feedExpenseThis = finThisMonth.filter(f => f.type === "pengeluaran" && f.category === "pakan").reduce((s, f) => s + f.amount, 0);
   const feedExpenseLast = finLastMonth.filter(f => f.type === "pengeluaran" && f.category === "pakan").reduce((s, f) => s + f.amount, 0);
-  const feedPerTortoise = activeTortoises.length > 0 ? Math.round(feedExpenseThis / activeTortoises.length) : 0;
+  // Pakan dimakan setiap kura yang ada, bukan hanya yang sehat.
+  const feedPerTortoise = kuraDiPeternakan.length > 0 ? Math.round(feedExpenseThis / kuraDiPeternakan.length) : 0;
 
   // ── SDM ───────────────────────────────────────────
   const settings = companySettings[0] || {};
@@ -673,8 +695,11 @@ export default function OwnerDashboard({ user }) {
     });
   }
 
-  if (sickTortoises.length > 0 && activeTortoises.length > 0) {
-    const rasio = Math.round((sickTortoises.length / activeTortoises.length) * 100);
+  // Penyebutnya seluruh kura yang ada — termasuk yang sakit itu sendiri.
+  // Membaginya dengan yang sehat saja membuat kalimat "% populasi" menyebut
+  // persentase dari sesuatu yang bukan populasi.
+  if (sickTortoises.length > 0 && kuraDiPeternakan.length > 0) {
+    const rasio = Math.round((sickTortoises.length / kuraDiPeternakan.length) * 100);
     catatan.push({
       tone: rasio >= 10 ? "warning" : "info",
       title: `${sickTortoises.length} kura sedang sakit (${rasio}% populasi)`,
@@ -704,7 +729,7 @@ export default function OwnerDashboard({ user }) {
     catatan.push({
       tone: "note",
       title: `Biaya ${fmt(costPerTortoise)} per ekor bulan ini`,
-      body: `Total pengeluaran ${fmt(expenseThis)} dibagi ${activeTortoises.length} kura aktif. Pakai angka ini sebagai dasar HPP saat menentukan harga jual.`,
+      body: `Total pengeluaran ${fmt(expenseThis)} dibagi ${kuraDiPeternakan.length} kura yang ada di peternakan — termasuk yang sakit, breeding, dan karantina, karena semuanya tetap makan dan menempati kandang. Pakai angka ini sebagai dasar HPP saat menentukan harga jual.`,
     });
   }
 
@@ -719,7 +744,12 @@ export default function OwnerDashboard({ user }) {
         subtitle={today}
         art={<TortoiseArt size="md" />}
         chips={[
-          { key: "kura", icon: Shell, label: "Kura aktif", value: activeTortoises.length },
+          // Lencana ini dulu menyebut 194 sementara kartu "Kawanan hari ini"
+          // di layar yang sama menyebut 200. Keduanya benar untuk pertanyaan
+          // yang berbeda, tapi tidak ada satu pun keterangan di layar yang
+          // mengatakan itu — jadi yang terbaca cuma dua angka yang berselisih.
+          // Yang di atas kini menjawab pertanyaan yang sama dengan kartunya.
+          { key: "kura", icon: Shell, label: "Kura di peternakan", value: kuraDiPeternakan.length },
           { key: "sakit", icon: Heart, label: "Sakit", value: sickTortoises.length,
             tone: sickTortoises.length > 0 ? "warn" : "good" },
           { key: "telur", icon: Egg, label: "Telur aktif", value: totalEggs },
@@ -976,7 +1006,7 @@ export default function OwnerDashboard({ user }) {
           <KpiCard icon={Shell} label="Biaya per Ekor/Bulan" href="/tortoise"
             color="bg-primary/10 text-primary"
             value={fmt(costPerTortoise)}
-            sub={<span className="text-xs text-muted-foreground">dari {activeTortoises.length} kura aktif</span>}
+            sub={<span className="text-xs text-muted-foreground">dari {kuraDiPeternakan.length} kura di peternakan</span>}
           />
           <KpiCard icon={Package} label="Nilai Stok Gudang" href="/stok-unified"
             color="bg-violet-100 text-violet-700"
