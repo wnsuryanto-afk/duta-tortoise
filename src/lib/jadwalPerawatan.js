@@ -28,15 +28,12 @@ function hariMinggu(d) {
   return d.getDay();
 }
 
-/**
- * Selisih hari penuh antara dua tanggal, memakai tengah malam lokal supaya
- * jam pemberian tidak menggeser hitungan.
- */
-function selisihHari(dari, sampai) {
-  const a = new Date(dari.getFullYear(), dari.getMonth(), dari.getDate());
-  const b = new Date(sampai.getFullYear(), sampai.getMonth(), sampai.getDate());
-  return Math.round((b - a) / 86400000);
-}
+// Selisih hari memakai tengah malam lokal — supaya jam pemberian tidak
+// menggeser hitungan. Aturannya sekarang di lib/safeDate.js, satu untuk
+// seluruh aplikasi.
+import { selisihHari as hariAntara } from "@/lib/safeDate";
+
+const selisihHari = (dari, sampai) => hariAntara(dari, sampai) ?? 0;
 
 /**
  * Apakah jadwal ini berlaku pada tanggal tertentu?

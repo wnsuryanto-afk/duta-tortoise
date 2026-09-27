@@ -27,6 +27,8 @@
 //    tercatat nol rupiah biaya perawatan.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { selisihHari as hariAntara } from "@/lib/safeDate";
+
 export const HARI_PER_BULAN = 30;
 
 function angka(v) {
@@ -34,17 +36,21 @@ function angka(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function keTanggal(v) {
-  if (!v) return null;
-  const d = v instanceof Date ? v : new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
+/**
+ * Lama dalam hari, tidak pernah negatif.
+ *
+ * Hitungannya sendiri ada di lib/safeDate.js. Yang khas di sini hanyalah
+ * penjepitan ke nol: "dipelihara minus dua hari" bukan keadaan yang bisa
+ * terjadi, jadi tanggal yang terbalik dibaca sebagai belum berjalan, bukan
+ * sebagai biaya negatif yang mengurangi HPP kura lain.
+ *
+ * Salinan lama berkas ini membaca teks tanggal sebagai tengah malam UTC lalu
+ * membandingkannya dengan `new Date()` waktu lokal — tujuh jam yang tergeser,
+ * yang bisa menjadi satu hari penuh saat dibulatkan, pada sebagian kura saja,
+ * tergantung jam berapa halamannya dibuka.
+ */
 export function selisihHari(mulai, selesai) {
-  const a = keTanggal(mulai);
-  const b = keTanggal(selesai);
-  if (!a || !b) return 0;
-  return Math.max(0, Math.round((b - a) / 86400000));
+  return Math.max(0, hariAntara(mulai, selesai) ?? 0);
 }
 
 /** Kura yang lahir di peternakan ini, bukan dibeli. */
@@ -61,7 +67,7 @@ export function lahirDiFarm(kura) {
  */
 export function bulanDiFarm(kura, tanggalAkhir) {
   if (!kura) return 0;
-  const akhir = keTanggal(tanggalAkhir) || new Date();
+  const akhir = tanggalAkhir || new Date();
   const mulai = lahirDiFarm(kura)
     ? kura.birth_date
     : (kura.purchase_date || kura.created_date);

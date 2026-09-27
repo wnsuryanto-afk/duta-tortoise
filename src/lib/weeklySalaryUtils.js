@@ -1,32 +1,16 @@
 import { format, subWeeks } from "date-fns";
-import { id } from "date-fns/locale";
+import { safeParseDate, isValidDate, safeFormatDate } from "@/lib/safeDate";
 
 // Minggu pertama slip mingguan diluncurkan: 12 Juli 2026 (Minggu)
 export const WEEK_LAUNCH_START = "2026-07-12";
 
-// Cek apakah nilai adalah Date valid
-export function isValidDate(d) {
-  return d instanceof Date && !isNaN(d.getTime());
-}
-
-// Parse aman — return Date atau null (untuk undefined/null/"null"/teks invalid)
-export function safeParseDate(value) {
-  if (value === undefined || value === null || value === "") return null;
-  if (typeof value === "string" && (value === "null" || value === "undefined")) return null;
-  const d = value instanceof Date ? value : new Date(value);
-  return isValidDate(d) ? d : null;
-}
-
-// Format aman — return string terformat atau fallback "—" jika tanggal invalid
-export function safeFormatDate(value, pattern, fallback = "—") {
-  const d = safeParseDate(value);
-  if (!d) return fallback;
-  try {
-    return format(d, pattern, { locale: id });
-  } catch {
-    return fallback;
-  }
-}
+// Pembaca tanggalnya ada di lib/safeDate.js. Berkas ini pernah punya
+// salinannya sendiri, dan `safeFormatDate`-nya berselisih dengan yang di sana:
+// argumen ketiga di sini `fallback`, di sana `locale`. Nama, jumlah argumen,
+// dan jenis kembaliannya sama persis — jadi salah impor tidak menghasilkan
+// error, hanya membuat SELURUH tanggal di layar itu jadi "—" tanpa suara.
+// Diteruskan dari satu tempat supaya selisih seperti itu tidak bisa lahir lagi.
+export { safeParseDate, isValidDate, safeFormatDate };
 
 // Cek apakah string berformat YYYY-MM (periode bulanan lama)
 export function isMonthPeriod(str) {
@@ -60,7 +44,7 @@ export function formatWeekLabel(startDate) {
   const end = getWeekEnd(start);
   if (!isValidDate(end)) return "—";
   try {
-    return `Minggu, ${format(start, "d MMMM", { locale: id })} – Sabtu, ${format(end, "d MMMM yyyy", { locale: id })}`;
+    return `Minggu, ${safeFormatDate(start, "d MMMM")} – Sabtu, ${safeFormatDate(end, "d MMMM yyyy")}`;
   } catch {
     return "—";
   }

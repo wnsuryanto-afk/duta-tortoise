@@ -41,13 +41,19 @@
  * Kura dewasa yang sehat dan makan tidak lagi masuk daftar sama sekali.
  */
 
-/** Hari antara dua tanggal "YYYY-MM-DD"; null bila tidak terbaca. */
-export function selisihHari(dari, sampai) {
-  const a = Date.parse(dari);
-  const b = Date.parse(sampai);
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-  return Math.floor((b - a) / 86400000);
-}
+/**
+ * Hari antara dua tanggal; null bila tidak terbaca.
+ *
+ * Diteruskan dari lib/safeDate.js. Berkas ini pernah punya salinannya sendiri
+ * — salah satu dari empat — dan salinan itu membaca teks tanggal sebagai
+ * tengah malam UTC. Selama kedua sisinya sama-sama teks tanggal hasilnya sama;
+ * begitu salah satunya waktu sekarang, selisihnya bergeser tujuh jam.
+ *
+ * Diimpor lalu diekspor ulang, bukan `export ... from`: bentuk itu tidak
+ * mengikat namanya di berkas ini, dan tiga pemakaian di bawah akan patah.
+ */
+import { selisihHari } from "@/lib/safeDate";
+export { selisihHari };
 
 /** Jeda rutin untuk baby & juvenile, dalam hari. */
 export const JEDA_BABY_HARI = 14;

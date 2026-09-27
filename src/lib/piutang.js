@@ -18,14 +18,11 @@
  * benar-benar ada, dan justru itu yang menentukan mana yang perlu ditagih.
  */
 
-/** Berapa hari antara dua tanggal "YYYY-MM-DD". */
-function selisihHari(dari, sampai) {
-  if (!dari) return 0;
-  const a = new Date(dari + "T00:00:00");
-  const b = new Date(sampai + "T00:00:00");
-  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return 0;
-  return Math.max(0, Math.round((b - a) / 86400000));
-}
+// Umur piutang tidak pernah negatif: tagihan bertanggal besok belum berumur,
+// bukan berumur minus. Hitungannya sendiri di lib/safeDate.js.
+import { selisihHari as hariAntara } from "@/lib/safeDate";
+
+const selisihHari = (dari, sampai) => Math.max(0, hariAntara(dari, sampai) ?? 0);
 
 /**
  * Sisa tagihan satu penjualan.
