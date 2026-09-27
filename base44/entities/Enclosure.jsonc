@@ -1,6 +1,11 @@
 {
   "name": "Enclosure",
   "properties": {
+    "bobot_poin": {
+      "default": 1,
+      "description": "Berapa kandang nilainya satu ubin ini. Poin ubin dikalikan angka ini. Ada karena poin dihitung per KETUKAN, bukan per luas atau per ekor: menggabungkan N1-N3 menjadi N memangkas penghasilan kiper 2 ubin sehari padahal kuranya tetap 28 ekor di 84 m2. N diberi bobot 3. Kosong atau 0 dianggap 1.",
+      "type": "number"
+    },
     "current_count": {
       "default": 0,
       "type": "number"
