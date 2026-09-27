@@ -5,6 +5,7 @@ import SOPApproval from "@/components/sop/SOPApproval";
 import SOPTaskManager from "@/components/sop/SOPTaskManager";
 import SOPKPI from "@/components/sop/SOPKPI";
 import AuditMingguan from "@/components/sop/AuditMingguan";
+import TenggatVsNyata from "@/components/sop/TenggatVsNyata";
 import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
 import PageHeader from "@/components/common/PageHeader";
 import { ClipboardList } from "lucide-react";
@@ -30,7 +31,7 @@ export default function SOPPage() {
 
       <Tabs defaultValue="tugas">
         <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="tugas">📋 Tugas Hari Ini</TabsTrigger>
+          <TabsTrigger value="tugas">Tugas Hari Ini</TabsTrigger>
           {isAdmin && <TabsTrigger value="approval">Verifikasi</TabsTrigger>}
           <TabsTrigger value="kpi">KPI & Poin</TabsTrigger>
           {canManageSOP && <TabsTrigger value="tasks">Kelola SOP</TabsTrigger>}
@@ -58,8 +59,12 @@ export default function SOPPage() {
           </TabsContent>
         )}
         {role === "owner" && (
-          <TabsContent value="audit" className="mt-6">
+          <TabsContent value="audit" className="mt-6 space-y-6">
             <AuditMingguan />
+            {/* Ditaruh di tab audit, bukan di layar kiper: yang bisa mengubah
+                tenggat adalah pemilik, dan pertanyaan "kenapa kepatuhannya
+                rendah" memang pertanyaan yang dibawa ke sini. */}
+            <TenggatVsNyata />
           </TabsContent>
         )}
       </Tabs>
