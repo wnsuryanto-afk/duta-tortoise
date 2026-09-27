@@ -2,8 +2,12 @@
   "name": "PakanHarian",
   "properties": {
     "basket_count": {
-      "description": "Jumlah keranjang yang diambil/diberikan",
+      "description": "Jumlah keranjang yang diambil/diberikan. Dipakai untuk pakan yang memang dihitung per keranjang. Untuk pakan yang DITIMBANG, isi weight_kg \u2014 bukan kolom ini. Tiga catatan pertama (Jul\u2013Sep 2026) sempat memakai kolom ini untuk kilogram (Mentimun 64,97), jadi angka lama di sini tidak selalu berarti keranjang.",
       "type": "number"
+    },
+    "excluded_from_reports": {
+      "description": "Dikecualikan dari laporan",
+      "type": "boolean"
     },
     "feed_source": {
       "default": "rumput",
@@ -20,6 +24,10 @@
       "description": "Detail jenis pakan (contoh: kangkung, sawi, rumput gajah)",
       "type": "string"
     },
+    "is_test_data": {
+      "description": "Data uji, tidak ikut laporan",
+      "type": "boolean"
+    },
     "log_date": {
       "description": "Tanggal pencatatan",
       "format": "date",
@@ -30,7 +38,7 @@
       "type": "string"
     },
     "photo_url": {
-      "description": "Foto bukti ambilan pakan (wajib)",
+      "description": "Foto bukti \u2014 diarahkan ke layar timbangan supaya angkanya bisa diperiksa ulang, bukan foto pakannya saja.",
       "type": "string"
     },
     "recorded_by_email": {
@@ -49,6 +57,10 @@
       ],
       "type": "string"
     },
+    "sop_task_id": {
+      "description": "SOPTask yang dicentang saat catatan ini dibuat. Diisi otomatis bila pencatatan datang dari layar Tugas Hari Ini, kosong bila dicatat lepas dari tugas.",
+      "type": "string"
+    },
     "trip_cost_rokok": {
       "description": "Biaya rokok tukar keranjang (Rp), hanya jika sayur pasar",
       "type": "number"
@@ -60,12 +72,15 @@
     "trip_finance_tx_id": {
       "description": "ID FinanceTransaction biaya trip (jika dibuat)",
       "type": "string"
+    },
+    "weight_kg": {
+      "description": "Berat timbangan dalam kilogram. Ini satuan yang sebenarnya dipakai di lapangan untuk sebagian besar pakan; sebelum kolom ini ada, beratnya terpaksa dituliskan ke basket_count sehingga 64,97 kg tercatat sebagai 64,97 keranjang.",
+      "type": "number"
     }
   },
   "required": [
     "log_date",
     "session",
-    "basket_count",
     "recorded_by_name"
   ],
   "type": "object"
