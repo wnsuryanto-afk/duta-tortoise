@@ -69,7 +69,7 @@ export default function KeeperAttentionWidget() {
       <div className="bg-card rounded-xl border border-border p-4">
         <div className="flex items-center gap-2 mb-2">
           <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">⚠️ Perlu Perhatian</h2>
+          <h2 className="font-semibold text-sm">Perlu Perhatian</h2>
         </div>
         <p className="text-sm text-green-600 font-medium">✓ Semua kondisi normal hari ini</p>
       </div>
@@ -80,7 +80,7 @@ export default function KeeperAttentionWidget() {
     <div className="bg-card rounded-xl border border-orange-200 p-4">
       <div className="flex items-center gap-2 mb-3">
         <AlertTriangle className="w-4 h-4 text-orange-500" />
-        <h2 className="font-semibold text-sm">⚠️ Perlu Perhatian</h2>
+        <h2 className="font-semibold text-sm">Perlu Perhatian</h2>
         <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
           {sickTortoises.length + notWeighed.length + overdueTreatments.length} item
         </span>

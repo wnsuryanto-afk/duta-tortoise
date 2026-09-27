@@ -453,7 +453,7 @@ export default function KepalaFeederDashboard({ user }) {
         <div className="bg-card rounded-xl border border-red-200 p-4">
           <div className="flex items-center gap-2 mb-3">
             <Package className="w-4 h-4 text-red-500" />
-            <h2 className="font-semibold text-sm text-foreground">📦 Stok Kritis</h2>
+            <h2 className="font-semibold text-sm text-foreground">Stok Kritis</h2>
             <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
               {criticalWarehouseStock.length + criticalFeedStock.length} item
             </span>

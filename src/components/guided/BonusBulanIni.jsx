@@ -41,7 +41,18 @@ function keMenit(hm) {
   return h * 60 + (Number.isFinite(m) ? m : 0);
 }
 
-export default function BonusBulanIni({ user }) {
+/**
+ * `rinciTugas` menentukan apakah tugas yang lewat tenggat didaftar satu per
+ * satu atau cukup dihitung.
+ *
+ * Di alur "Kerja Hari Ini" kartu ini satu-satunya yang menyebut tugas lewat
+ * tenggat, jadi daftarnya perlu. Di beranda kiper ada kartu "Target SOP Hari
+ * Ini" tepat di atasnya yang sudah mendaftar tugas yang sama — dua daftar
+ * berisi hal yang sama di satu layar membuat orang berhenti membaca keduanya.
+ * Yang tetap dibawa ke beranda adalah hal yang TIDAK ada di kartu SOP: berapa
+ * poin yang belum didapat karenanya.
+ */
+export default function BonusBulanIni({ user, rinciTugas = true }) {
   const now = new Date();
   const today = format(now, "yyyy-MM-dd");
   const monthKey = format(now, "yyyy-MM");
@@ -224,27 +235,54 @@ export default function BonusBulanIni({ user }) {
         </div>
       </div>
 
-      {/* Batang kemajuan dengan penanda tiap tingkat */}
+      {/*
+        ── Batang kemajuan dan tingkatannya ──────────────────────────────────
+
+        Nama tingkat dulu ditempelkan tepat di atas posisinya pada batang,
+        masing-masing ditengahkan pada penandanya. Bentuk itu tidak bisa benar
+        di layar ponsel: tingkat terakhir selalu duduk di 100%, jadi separuh
+        tulisannya jatuh di luar kartu — "Luar biasa" tercetak "Luar bia".
+        Menempelkannya ke tepi kanan cuma memindahkan masalahnya: di lebar 358
+        px ia lalu menabrak "Bagus" menjadi "BagLusar biasa".
+
+        Tiga nama memang tidak muat berjejer di ruang selebar itu, dan
+        ketepatan posisinya pun tidak membeli apa-apa — tidak ada garis penanda
+        yang digambar di batangnya. Maka posisinya ditukar dengan sesuatu yang
+        lebih berguna: ANGKA TARGETNYA. "Bagus 5.000" memberi tahu apa yang
+        harus dicapai; sebuah nama yang melayang di atas batang tidak.
+
+        Penandanya sekarang digambar DI DALAM batang sebagai garis tipis, jadi
+        letak tiap tingkat tetap terlihat tanpa memakai ruang tulisan.
+      */}
       <div className="px-4 pb-1">
         <div className="relative h-3 rounded-full bg-white/70 dark:bg-white/10 overflow-hidden border border-green-200 dark:border-green-900">
           <div
             className="h-full rounded-full bg-gradient-to-r from-green-500 to-lime-400"
             style={{ width: `${persen}%`, transition: "width .9s cubic-bezier(.16,1,.3,1)" }}
           />
-        </div>
-        <div className="relative h-5 mt-1">
           {tingkatan.map((t) => {
             const kiri = Math.min(100, (t.target / targetAkhir) * 100);
+            if (kiri >= 99.5) return null; // ujung batang sudah jadi penandanya sendiri
+            return (
+              <span
+                key={t.nama}
+                className="absolute top-0 bottom-0 w-px bg-green-900/25 dark:bg-green-100/25"
+                style={{ left: `${kiri}%` }}
+              />
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5">
+          {tingkatan.map((t) => {
             const sudah = poinBulanIni >= t.target;
             return (
               <span
                 key={t.nama}
-                className={`absolute -translate-x-1/2 text-[9.5px] font-bold whitespace-nowrap ${
-                  sudah ? "text-green-700 dark:text-green-400" : "text-green-900/40 dark:text-green-100/40"
+                className={`text-[10px] font-bold whitespace-nowrap tabular-nums ${
+                  sudah ? "text-green-700 dark:text-green-400" : "text-green-900/45 dark:text-green-100/45"
                 }`}
-                style={{ left: `${kiri}%` }}
               >
-                {sudah ? "✓ " : ""}{t.nama}
+                {sudah ? "\u2713 " : ""}{t.nama} {t.target.toLocaleString("id-ID")}
               </span>
             );
           })}
@@ -299,6 +337,7 @@ export default function BonusBulanIni({ user }) {
               {poinHangus > 0 && <> — {poinHangus} poin belum didapat</>}
             </p>
           </div>
+          {rinciTugas && (
           <ul className="space-y-0.5">
             {lewatTenggat.slice(0, 4).map((t) => (
               <li key={t.id} className="text-xs text-amber-800/90 dark:text-amber-300/90 flex justify-between gap-2">
@@ -312,6 +351,7 @@ export default function BonusBulanIni({ user }) {
               </li>
             )}
           </ul>
+          )}
           <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-1.5">
             Masih bisa dikerjakan — yang lewat tenggat tetap dicatat, hanya poinnya tidak keluar.
           </p>

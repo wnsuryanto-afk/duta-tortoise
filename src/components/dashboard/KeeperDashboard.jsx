@@ -29,6 +29,7 @@ import MotivasiHarianCard from "@/components/dashboard/MotivasiHarianCard";
 import PageHeader from "@/components/common/PageHeader";
 import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
+import BonusBulanIni from "@/components/guided/BonusBulanIni";
 import { toast } from "sonner";
 import { TortoiseArt } from "@/components/common/Illustration";
 
@@ -574,25 +575,28 @@ export default function KeeperDashboard() {
       {/* ── 3.7 PERLU PERHATIAN ── */}
       <KeeperAttentionWidget />
 
-      {/* ── 4. KPI RINGKAS ── */}
-      <Card className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
-        <div className="flex items-center gap-2 mb-3">
-          <Star className="w-5 h-5 text-amber-500 fill-current" />
-          <h2 className="font-semibold text-base text-amber-800">
-            KPI Bulan Ini — {format(new Date(), "MMMM", { locale: id })}
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/70 rounded-xl p-3 text-center">
-            <p className="text-2xl font-heading font-bold text-amber-700">{approvedPoints}</p>
-            <p className="text-xs text-amber-600 mt-0.5">Poin Terkumpul</p>
-          </div>
-          <div className="bg-white/70 rounded-xl p-3 text-center">
-            <p className="text-2xl font-heading font-bold text-amber-700">{approvedDays}</p>
-            <p className="text-xs text-amber-600 mt-0.5">Hari Disetujui</p>
-          </div>
-        </div>
-      </Card>
+      {/*
+        ── BONUS BULAN INI ──
+
+        Di sini dulu ada kartu "KPI Bulan Ini" berisi dua angka: poin
+        terkumpul dan hari disetujui. Keduanya SUDAH tertulis di lencana
+        paling atas halaman ini — variabel yang sama persis, `approvedPoints`
+        dan `approvedDays` — hanya saja diulang di dasar gulungan, tempat
+        keduanya paling tidak berguna. Kartu yang tidak menambah apa pun
+        bukan cuma pemborosan ruang; ia membuat orang berhenti membaca kartu.
+
+        Yang menggantikannya menjawab pertanyaan yang benar-benar dipunyai
+        orangnya: poin ini menuju ke mana. BonusBulanIni sudah ada dan sudah
+        matang — tingkat bonus, perkiraan rupiah, tugas yang lewat tenggat
+        beserta poin yang hilang — tetapi selama ini hanya muncul di alur
+        "Kerja Hari Ini", bukan di beranda yang dibuka setiap pagi.
+
+        `kurangTim` dipisahkan dari `kurangPribadi` di sana dengan sengaja:
+        kalau yang kurang poin TIM, bekerja lebih keras sendirian tidak akan
+        menutupnya. Itu justru yang perlu dilihat sejak pagi, bukan di akhir
+        bulan.
+      */}
+      <BonusBulanIni user={user} rinciTugas={false} />
 
       <AlasanTerlambatDialog
         open={!!menungguAlasan}

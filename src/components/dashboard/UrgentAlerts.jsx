@@ -105,7 +105,7 @@ export default function UrgentAlerts() {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle className="w-6 h-6 text-orange-600 animate-pulse" />
-          <h2 className="font-semibold text-orange-800">⚠️ Alert Urgent</h2>
+          <h2 className="font-semibold text-orange-800">Alert Urgent</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
