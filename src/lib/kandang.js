@@ -230,6 +230,34 @@ export const KANDANG_LIST = [
  */
 export function kandangWajib(enclosures = []) {
   if (!Array.isArray(enclosures) || enclosures.length === 0) return [...KANDANG_LIST];
+
+  const layak = (e) =>
+    e?.is_active !== false &&
+    e?.is_archived !== true &&
+    Number(e?.current_count || 0) > 0;
+
+  // ── Jalur utama: ronda ditentukan DATA, bukan daftar di kode ─────────────
+  //
+  // Selama daftarnya ditulis mati di berkas ini, menggabungkan N1-N3 menjadi
+  // N membuat 28 kura HILANG dari ronda harian: ubinnya tidak muncul, pakan
+  // dan kebersihannya tidak punya jalur pencatatan, dan tidak ada satu pun
+  // catatan MaintenanceLog untuk kandang N sampai kodenya diubah lalu
+  // dibangun ulang. Menandainya di data membuat penggabungan atau penambahan
+  // kandang berikutnya berlaku seketika, tanpa menyentuh kode.
+  const bertanda = enclosures.some((e) => typeof e?.ronda_harian === "boolean");
+  if (bertanda) {
+    const hasil = enclosures
+      .filter((e) => e?.ronda_harian === true && layak(e))
+      .map((e) => String(e?.code || e?.name || "").trim())
+      .filter(Boolean)
+      .sort(bandingkanKandang);
+    // Kalau seluruh kandang ronda sedang kosong, kiper tetap diberi daftarnya
+    // — layar tanpa ubin sama sekali terbaca sebagai aplikasi rusak.
+    if (hasil.length > 0) return hasil;
+    return [...KANDANG_LIST];
+  }
+
+  // ── Cadangan: daftar tetap, untuk data yang belum sempat ditandai ────────
   const peta = new Map();
   for (const e of enclosures) {
     const kode = String(e?.code || e?.name || "").trim();
@@ -238,7 +266,7 @@ export function kandangWajib(enclosures = []) {
   const hasil = KANDANG_LIST.filter((kode) => {
     const e = peta.get(kode);
     if (!e) return true; // tidak dikenal di Enclosure -> tetap wajib
-    if (e.is_active === false) return false;
+    if (e.is_active === false || e.is_archived === true) return false;
     return Number(e.current_count || 0) > 0;
   });
   return hasil.length > 0 ? hasil : [...KANDANG_LIST];

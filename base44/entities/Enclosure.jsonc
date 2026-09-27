@@ -50,6 +50,10 @@
       "type": "boolean",
       "default": false,
       "description": "Apakah data sudah diarsipkan"
+    },
+    "ronda_harian": {
+      "type": "boolean",
+      "description": "Apakah kandang ini termasuk ronda harian kiper - satu ubin di layar Hari Ini, dengan poin pakan + cek kesehatan dan pembersihan. Sebelum field ini ada, daftarnya ditulis mati di src/lib/kandang.js, sehingga menggabungkan N1-N3 menjadi N membuat 28 kura hilang dari ronda sampai kodenya diubah dan dibangun ulang. Kosong berarti ikut daftar lama itu sebagai cadangan."
     }
   },
   "required": [

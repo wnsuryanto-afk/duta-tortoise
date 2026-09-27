@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 export default function EnclosureForm({ enclosure, onClose, onSaved }) {
   const isEdit = !!enclosure;
   const [form, setForm] = useState(enclosure || {
-    name: "", type: "indoor", is_active: true,
+    name: "", type: "indoor", is_active: true, ronda_harian: true,
     size_m2: "", max_capacity: "", current_count: 0,
     ideal_temp_min: "", ideal_temp_max: "", ideal_humidity: "",
     location: "", photo_url: "", notes: ""
@@ -111,6 +111,26 @@ export default function EnclosureForm({ enclosure, onClose, onSaved }) {
             <div className="col-span-2 flex items-center gap-3">
               <Switch checked={form.is_active} onCheckedChange={v=>set("is_active",v)} />
               <Label>Kandang Aktif</Label>
+            </div>
+            {/* Sebelum sakelar ini ada, daftar kandang ronda ditulis mati di
+                src/lib/kandang.js. Menggabungkan N1-N3 menjadi N karena itu
+                membuat 28 kura hilang dari ronda harian kiper sampai kodenya
+                diubah dan aplikasinya dibangun ulang — ubinnya tidak muncul,
+                dan pakan serta kebersihannya tidak punya jalur pencatatan. */}
+            <div className="col-span-2 flex items-start gap-3">
+              <Switch
+                checked={form.ronda_harian !== false}
+                onCheckedChange={v=>set("ronda_harian",v)}
+                className="mt-0.5"
+              />
+              <div className="min-w-0">
+                <Label>Masuk ronda harian kiper</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Muncul sebagai ubin di layar Hari Ini, dengan poin pakan + cek kesehatan
+                  dan pembersihan. Matikan untuk kandang Baby dan Bonsai yang tidak
+                  dikunjungi tiap hari.
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
