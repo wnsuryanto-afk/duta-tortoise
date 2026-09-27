@@ -2,7 +2,12 @@
   "name": "Perkawinan",
   "type": "object",
   "description": "Satu pengamatan kura kawin. Dipisahkan dari Breeding karena Breeding mewajibkan egg_laying_date, egg_count dan incubator_name - artinya sebuah clutch hanya bisa dicatat SESUDAH bertelur. Kawin yang dilihat kiper hari ini tidak punya telur, jadi tidak bisa jadi baris Breeding tanpa melemahkan validasi seluruh alur telur. Field Breeding.mating_date tetap ada dan diisi dari sini saat clutch dibuat.",
-  "required": ["male_id", "female_id", "mating_date", "recorded_by"],
+  "required": [
+    "male_id",
+    "female_id",
+    "mating_date",
+    "recorded_by"
+  ],
   "properties": {
     "male_id": {
       "type": "string",
@@ -12,21 +17,44 @@
       "type": "string",
       "description": "Nama jantan saat dicatat, untuk tampilan cepat. Bukan penghubung."
     },
-    "female_id": { "type": "string", "description": "Id kura betina." },
+    "female_id": {
+      "type": "string",
+      "description": "Id kura betina."
+    },
     "female_name": {
       "type": "string",
       "description": "Nama betina saat dicatat, untuk tampilan cepat. Bukan penghubung."
     },
-    "mating_date": { "type": "string", "format": "date", "description": "Tanggal kawin terlihat." },
-    "enclosure": { "type": "string", "description": "Kandang tempat terlihat." },
-    "notes": { "type": "string" },
-    "photo_url": { "type": "string", "description": "Foto bukti, opsional." },
-    "recorded_by": { "type": "string", "description": "Email yang mencatat." },
-    "recorded_by_name": { "type": "string" },
+    "mating_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kawin terlihat."
+    },
+    "enclosure": {
+      "type": "string",
+      "description": "Kandang tempat terlihat."
+    },
+    "notes": {
+      "type": "string"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto bukti, opsional."
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Email yang mencatat."
+    },
+    "recorded_by_name": {
+      "type": "string"
+    },
     "breeding_id": {
       "type": "string",
       "description": "Diisi bila perkawinan ini kemudian menghasilkan clutch, menunjuk baris Breeding-nya."
     },
-    "is_archived": { "type": "boolean", "default": false }
+    "is_archived": {
+      "type": "boolean",
+      "default": false
+    }
   }
 }
