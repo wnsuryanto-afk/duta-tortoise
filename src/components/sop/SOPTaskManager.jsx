@@ -47,6 +47,7 @@ const DEFAULT_FORM = {
   wajib_untuk_role: "semua",
   ai_check_points: "",
   assigned_to_email: "", assigned_to_name: "",
+  catat_pakan: false,
 };
 
 function ToggleChip({ label, selected, onClick }) {
@@ -434,6 +435,26 @@ export default function SOPTaskManager() {
                   />
                   📷 Wajib Foto (kamera langsung saat centang)
                 </label>
+              </div>
+
+              {/*
+                Tugas yang membawa pencatatan pakan. Dipasang di SATU tugas
+                saja; kalau dinyalakan di dua tugas, kiper diminta menimbang
+                dua kali sehari untuk pekerjaan yang sama.
+              */}
+              <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  <Switch
+                    checked={form.catat_pakan || false}
+                    onCheckedChange={(v) => setForm(p => ({ ...p, catat_pakan: v }))}
+                  />
+                  🥬 Mencentang tugas ini membuka Catat Pakan Harian
+                </label>
+                <p className="text-[10px] text-muted-foreground mt-1.5 ml-11">
+                  Centangnya baru masuk setelah beratnya tersimpan. Pasang di tugas yang
+                  memang saat itu pakannya ada di tangan dan bisa ditimbang — nyalakan di
+                  satu tugas saja.
+                </p>
               </div>
 
               {form.require_photo && (

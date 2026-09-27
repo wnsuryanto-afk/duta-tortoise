@@ -26,17 +26,39 @@ const SOURCE_BADGE = {
   lainnya: "bg-muted text-foreground",
 };
 
+/**
+ * Satuan pencatatan.
+ *
+ * Sampai 27-09-2026 hanya ada satu kolom jumlah, dan namanya "jumlah
+ * keranjang". Tapi yang sungguh dilakukan di lapangan adalah MENIMBANG:
+ * catatan 8 September berbunyi Mentimun 64,97 — enam puluh lima kilogram,
+ * tersimpan sebagai enam puluh lima keranjang.
+ *
+ * Akibatnya bukan cuma label yang salah. Integrasi stok mencocokkan bahan
+ * dengan `unit === "keranjang"`, jadi "Mentimun" yang sudah ada di daftar
+ * pakan DALAM KILOGRAM tidak pernah ketemu — yang dibuat malah "Mentimun"
+ * kedua bersatuan keranjang. Satu bahan, dua baris stok, dua angka yang
+ * sama-sama tidak bisa dipakai merencanakan belanja.
+ */
+const SATUAN = [
+  // Label dijaga pendek: di lebar 390px "Kilogram (timbangan)" terpotong di
+  // dalam kotak pilihan menjadi "Kilogram (timban…".
+  { value: "kg", label: "Kilogram", singkat: "kg" },
+  { value: "keranjang", label: "Keranjang", singkat: "keranjang" },
+];
+
 const EMPTY = {
   log_date: format(new Date(), "yyyy-MM-dd"),
   feed_source: "rumput",
   feed_type_detail: "",
-  basket_count: "",
+  satuan: "kg",
+  jumlah: "",
   notes: "",
   trip_cost_solar: "",
   trip_cost_rokok: "",
 };
 
-export default function PakanHarianForm({ open, onClose, user, onSaved }) {
+export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskId = "", judul = "Catat Pengambilan Pakan" }) {
   const { testModeTag } = useTestMode();
   const [form, setForm] = useState(EMPTY);
   const [photoFile, setPhotoFile] = useState(null);
@@ -60,12 +82,13 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
   };
 
   const handleSave = async () => {
-    if (!form.log_date || !form.basket_count) {
-      toast.error("Lengkapi tanggal & jumlah keranjang");
+    const jumlah = Number(form.jumlah);
+    if (!form.log_date || !(jumlah > 0)) {
+      toast.error(`Lengkapi tanggal & jumlah (${form.satuan === "kg" ? "kilogram" : "keranjang"})`);
       return;
     }
     if (!photoFile && !photoPreview) {
-      toast.error("Foto bukti wajib diunggah");
+      toast.error("Foto timbangan wajib diunggah");
       return;
     }
     setSaving(true);
@@ -93,12 +116,17 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
         trip_finance_tx_id = tx.id;
       }
 
+      // Angkanya masuk ke kolom yang sesuai satuannya, tidak lagi selalu ke
+      // basket_count. Kolom yang tidak dipakai dibiarkan kosong, bukan diisi
+      // nol — nol berarti "ditimbang dan hasilnya nol", dan itu bukan
+      // yang terjadi.
       const pakanHarian = await base44.entities.PakanHarian.create({
         log_date: form.log_date,
         session: "pagi",
         feed_source: form.feed_source,
         feed_type_detail: form.feed_type_detail,
-        basket_count: Number(form.basket_count),
+        ...(form.satuan === "kg" ? { weight_kg: jumlah } : { basket_count: jumlah }),
+        sop_task_id: sopTaskId || "",
         photo_url,
         notes: form.notes,
         recorded_by_name: user?.full_name || user?.email,
@@ -140,14 +168,17 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
             // Satuannya HARUS ikut dicocokkan. Ada "Mentimun" dalam kg di daftar
             // pakan; menambahkan keranjang ke sana akan mencampur dua satuan
             // pada satu angka stok.
+            // Satuannya ikut satuan yang dicatat, bukan selalu "keranjang".
+            // Dengan begitu "Mentimun" dalam kg yang sudah ada di daftar pakan
+            // benar-benar ketemu, dan tidak lahir "Mentimun" kedua.
             let feedItem = allFeed.find(s =>
-              kunci(s.name) === kunci(namaStok) && s.unit === "keranjang"
+              kunci(s.name) === kunci(namaStok) && s.unit === form.satuan
             );
             if (!feedItem) {
               feedItem = await base44.entities.FeedStock.create({
                 name: namaStok,
                 category: mapping.category,
-                unit: "keranjang",
+                unit: form.satuan,
                 current_stock: 0,
                 minimum_stock: 1,
                 price_per_unit: 0,
@@ -157,8 +188,8 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
               });
             }
 
-            const qtyKeranjang = Number(form.basket_count) || 0;
-            const newStock = (feedItem.current_stock || 0) + qtyKeranjang;
+            const qtyMasuk = jumlah;
+            const newStock = (feedItem.current_stock || 0) + qtyMasuk;
 
             await base44.entities.StockMovement.create({
               item_id: feedItem.id,
@@ -166,8 +197,8 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
               item_name: feedItem.name,
               item_sku: feedItem.sku || "",
               type: "masuk",
-              quantity: qtyKeranjang,
-              unit: "keranjang",
+              quantity: qtyMasuk,
+              unit: form.satuan,
               stock_after: newStock,
               feed_source: mapping.feed_source,
               by_email: user?.email || "",
@@ -182,7 +213,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
             await base44.entities.FeedStock.update(feedItem.id, {
               current_stock: newStock,
               last_restocked_date: form.log_date,
-              last_restocked_qty: qtyKeranjang,
+              last_restocked_qty: qtyMasuk,
               last_edited_by: user?.email || "",
               last_edited_at: new Date().toISOString(),
             });
@@ -201,7 +232,9 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
       if (stokGagal) {
         toast.warning(`Pengambilan pakan tercatat, tetapi stok GAGAL diperbarui — ${stokGagal}`);
       } else {
-        toast.success("Pengambilan pakan tercatat" + (addToStock ? " & stok diperbarui" : ""));
+        toast.success(
+          `Pakan tercatat ${jumlah} ${form.satuan}` + (addToStock ? " & stok diperbarui" : ""),
+        );
       }
       onSaved?.();
       setForm(EMPTY);
@@ -218,7 +251,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Catat Pengambilan Pakan</DialogTitle>
+          <DialogTitle>{judul}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 mt-2">
           <div className="grid grid-cols-2 gap-3">
@@ -242,13 +275,40 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
             <Input value={form.feed_type_detail} onChange={e => set("feed_type_detail", e.target.value)} className="mt-1" placeholder="cth: kangkung, sawi, rumput gajah" />
           </div>
 
-          <div>
-            <Label className="text-xs">Jumlah keranjang *</Label>
-            <Input type="number" min={0} value={form.basket_count} onChange={e => set("basket_count", e.target.value)} className="mt-1" placeholder="5" />
+          {/* Satuan dipilih lebih dulu, karena ia yang menentukan arti angkanya
+              — dan sebelum ini tidak ada pilihan sama sekali, sehingga berat
+              terpaksa ditulis ke kolom "keranjang". */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Satuan *</Label>
+              <Select value={form.satuan} onValueChange={v => set("satuan", v)}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SATUAN.map(u => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">
+                {form.satuan === "kg" ? "Berat timbangan (kg) *" : "Jumlah keranjang *"}
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                step={form.satuan === "kg" ? "0.01" : "1"}
+                inputMode="decimal"
+                value={form.jumlah}
+                onChange={e => set("jumlah", e.target.value)}
+                className="mt-1"
+                placeholder={form.satuan === "kg" ? "64.97" : "5"}
+              />
+            </div>
           </div>
 
           <div>
-            <Label className="text-xs">Foto bukti ambilan *</Label>
+            <Label className="text-xs">
+              {form.satuan === "kg" ? "Foto timbangan *" : "Foto bukti ambilan *"}
+            </Label>
             {photoPreview ? (
               <div className="relative mt-1">
                 <img src={photoPreview} alt="Bukti" className="w-full h-40 object-cover rounded-lg border" />
@@ -259,7 +319,9 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
             ) : (
               <label className="mt-1 flex flex-col items-center justify-center gap-1 h-28 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 text-muted-foreground">
                 <Camera className="w-6 h-6" />
-                <span className="text-xs">Buka kamera / pilih foto</span>
+                <span className="text-xs">
+                  {form.satuan === "kg" ? "Foto layar timbangannya" : "Buka kamera / pilih foto"}
+                </span>
                 <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])} />
               </label>
             )}

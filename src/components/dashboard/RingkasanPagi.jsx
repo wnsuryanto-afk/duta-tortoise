@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
+import { teksJumlah } from "@/lib/pakanHarian";
 import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { isBatchSegera, getNextMilestone } from "@/lib/breedingCalendarUtils";
@@ -152,7 +153,8 @@ export default function RingkasanPagi({ bagian = "semua" }) {
   const exp7 = activeFin.filter(f => f.type === "pengeluaran" && f.date >= weekAgo && f.date <= today).reduce((s, f) => s + (f.amount || 0), 0);
 
   const activeBreedings = breedings.filter(clutchAktif);
-  const pakanBaskets = pakan.reduce((s, p) => s + (p.basket_count || 0), 0);
+  // Dua satuan, dua angka. Lihat lib/pakanHarian.js.
+  const pakanTeks = teksJumlah(pakan);
 
   // Penyebut "Hadir X/Y" hanya karyawan harian (keeper & kepala_feeder).
   // Admin/manajer/owner tidak dihitung sebagai "belum masuk".
@@ -320,8 +322,14 @@ export default function RingkasanPagi({ bagian = "semua" }) {
             <p className="text-[10px] text-muted-foreground leading-tight mt-1">👥 Hadir</p>
           </Link>
           <Link to="/pakan-harian" className="bg-card border border-border rounded-xl p-2.5 text-center hover:shadow-md transition-shadow">
-            <p className="text-xl font-bold text-green-600 leading-none">{pakanBaskets}</p>
-            <p className="text-[10px] text-muted-foreground leading-tight mt-1">🥬 Keranjang</p>
+            {/* Satuannya ikut apa yang dicatat, tidak lagi selalu "keranjang" —
+                kotak ini pernah menulis "64,97 Keranjang" untuk 64,97 kg
+                mentimun. Kosong berarti hari ini memang belum ada yang
+                mencatat, dan itu kabar tersendiri. */}
+            <p className={`text-sm font-bold leading-tight ${pakanTeks ? "text-green-600" : "text-amber-600"}`}>
+              {pakanTeks || "Belum dicatat"}
+            </p>
+            <p className="text-[10px] text-muted-foreground leading-tight mt-1">🥬 Pakan hari ini</p>
           </Link>
         </div>
         {/* Absensi detail: nama + jam yang sudah masuk, dan yang belum */}

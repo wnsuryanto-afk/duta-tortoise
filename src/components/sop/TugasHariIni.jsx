@@ -42,7 +42,7 @@ import InfoHint from "@/components/ui/info-hint";
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
   { id: "abs_masuk",  label: "Absensi jam masuk",  waktu: "07:00",      icon: "🏁", structural: true },
-  { id: "istirahat",  label: "Istirahat",          waktu: "11:45–13:00", icon: "☕", noCheck: true },
+  { id: "istirahat",  label: "Istirahat",          waktu: "12:00–13:00", icon: "☕", noCheck: true },
   { id: "abs_pulang", label: "Absensi jam pulang", waktu: "16:00",      icon: "🏠", structural: true },
 ];
 const ABSENSI_IDS = new Set(["abs_masuk", "abs_pulang"]);
@@ -169,6 +169,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [showPakanForm, setShowPakanForm] = useState(false);
   const [ukurTarget, setUkurTarget] = useState(null);
   const [timbangBabyTask, setTimbangBabyTask] = useState(null);
+  // Tugas pakan yang sedang dicentang. Formulirnya dibuka lebih dulu, dan
+  // centangnya baru masuk setelah catatannya tersimpan.
+  const [pakanTask, setPakanTask] = useState(null);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
   const [photoSavedIds, setPhotoSavedIds] = useState(new Set());
   const [refreshing, setRefreshing] = useState(false);
@@ -466,6 +469,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           task_scope: t.task_scope || "bersama",
           assigned_to_email: t.assigned_to_email || "",
           assigned_to_name: t.assigned_to_name || "",
+          // Ditandai lewat kolom `catat_pakan`, bukan lewat pencocokan judul —
+          // sama seperti di_ubin_kandang dan di_luar_persen. Mengganti nama
+          // task tidak boleh diam-diam mematikannya.
+          isCatatPakan: t.catat_pakan === true,
           terlambat,
         });
       });
@@ -867,6 +874,52 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     }
   };
 
+  /**
+   * Catatan pakan tersimpan → tugasnya ikut tercentang.
+   *
+   * Urutannya sengaja begini dan bukan sebaliknya: yang membuktikan
+   * pekerjaan selesai adalah ANGKANYA, bukan centangnya. Kalau centangnya
+   * lebih dulu, catatannya kembali jadi pekerjaan tambahan yang bisa
+   * dilewati — dan itulah keadaan sebelum ini: PakanHarian terisi tiga kali
+   * sejak aplikasi berdiri, sementara pakannya jelas diberikan tiap hari.
+   */
+  const handlePakanTercatat = async () => {
+    const task = pakanTask;
+    if (!task || savingId) return;
+    setSavingId(task.id);
+    try {
+      const lock = await checkTaskLock(task);
+      if (lock) {
+        refetchAllLogs();
+        refetchLogs();
+        setPakanTask(null);
+        return;
+      }
+      if (!existingLogItemIds.has(task.id)) {
+        await catatLogSekali({
+          check_key: `${user.email}__tugas__${task.id}__${today}`,
+          enclosure_id: "tugas_harian", enclosure_name: "Tugas Harian",
+          freq: "harian", item_id: task.id, item_label: task.label,
+          period_key: today, is_done: true,
+          done_at: format(new Date(), "HH:mm"),
+          done_by: user.full_name || user.email,
+          done_by_email: user.email,
+          poin_earned: task.points || 0,
+          ...testTag,
+        });
+        registerCheckTime();
+      }
+      setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
+      refetchLogs();
+      setPakanTask(null);
+      qc.invalidateQueries({ queryKey: ["pakan-harian-today"] });
+      qc.invalidateQueries({ queryKey: ["pakan-harian-list"] });
+    } catch {
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   // Dihitung di sini, bukan di dalam ExtraTaskRow: aturannya melarang hook
   // di komponen bersarang, dan ketiganya sama untuk seluruh baris.
   const opsiInisiatif = opsiPoin(companySettings);
@@ -1138,6 +1191,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             onCheck={() => handleCheck(task)}
             onUkurCheck={() => setUkurTarget(task)}
             onTimbangBabyCheck={() => setTimbangBabyTask(task)}
+            isCatatPakan={task.isCatatPakan}
+            onCatatPakanCheck={() => setPakanTask(task)}
             onPhotoUpload={(file) => handlePhotoUpload(task.id, file)}
             onPhotoCheck={(file) => handlePhotoCheck(task, file)}
             onPhotoNotes={(notes) => handlePhotoNotes(task.id, notes)}
@@ -1186,9 +1241,24 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           open={showPakanForm}
           onClose={() => setShowPakanForm(false)}
           user={user}
-          onSaved={() => qc.invalidateQueries({ queryKey: ["pakan-harian-today"] })}
+          onSaved={() => {
+            qc.invalidateQueries({ queryKey: ["pakan-harian-today"] });
+            qc.invalidateQueries({ queryKey: ["pakan-harian-list"] });
+          }}
         />
       )}
+
+      {/* Formulir yang dibuka dari TUGAS-nya. Sengaja terpisah dari yang di
+          atas supaya tombol lepas di kepala halaman tetap bisa dipakai
+          mencatat ambilan kedua tanpa mengubah status tugasnya. */}
+      <PakanHarianForm
+        open={!!pakanTask}
+        onClose={() => setPakanTask(null)}
+        user={user}
+        sopTaskId={pakanTask?.id?.replace(/^sop_/, "") || ""}
+        judul={pakanTask ? pakanTask.label : "Catat Pakan Harian"}
+        onSaved={handlePakanTercatat}
+      />
 
       <UkurFormDialog
         open={!!ukurTarget}
@@ -1214,7 +1284,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 }
 
 // ── Task Row Component (sederhana, tanpa lock UI) ──
-function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, isTimbangBaby, onCheck, onUkurCheck, onTimbangBabyCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled, getCooldownRemaining }) {
+function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attendance, photoUrl, uploadingPhoto, photoSaved, teamWho, showTeam, requirePhoto, isUkurRotasi, isTimbangBaby, isCatatPakan, onCatatPakanCheck, onCheck, onUkurCheck, onTimbangBabyCheck, onPhotoUpload, onPhotoCheck, onPhotoNotes, photoNotes, aiSaran, aiSaranEnabled, getCooldownRemaining }) {
   const isIstirahat = task.noCheck;
   const poin = task.points || 0;
   const cameraRef = useRef(null);
@@ -1299,6 +1369,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
       return;
     }
     if (saveError) setSaveError(false);
+    if (isCatatPakan && !isChecked) { onCatatPakanCheck(); return; }
     if (isTimbangBaby && !isChecked) { onTimbangBabyCheck(); return; }
     if (isUkurRotasi && !isChecked) { onUkurCheck(); return; }
     if (requirePhoto && !isChecked) {

@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Leaf, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { SOURCES } from "./PakanHarianForm";
+import { teksJumlah, sudahDicatat } from "@/lib/pakanHarian";
 
 export default function PakanHarianWidget() {
   const today = format(new Date(), "yyyy-MM-dd");
@@ -14,7 +15,10 @@ export default function PakanHarianWidget() {
     staleTime: 60 * 1000,
   });
 
-  const total = logs.reduce((s, l) => s + (l.basket_count || 0), 0);
+  // Kilogram dan keranjang TIDAK dijumlahkan jadi satu angka — 65 kg + 7
+  // keranjang bukan 72 apa pun. Lihat lib/pakanHarian.js.
+  const jumlah = teksJumlah(logs);
+  const adaCatatan = sudahDicatat(logs);
   const sources = [...new Set(logs.map(l => l.feed_source).filter(Boolean))];
   const sourceLabels = sources.map(s => SOURCES.find(x => x.value === s)?.label || s).join(", ");
 
@@ -27,7 +31,9 @@ export default function PakanHarianWidget() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Pakan hari ini</p>
-            <p className="text-lg font-bold text-green-700">{total} keranjang</p>
+            <p className={`text-lg font-bold ${adaCatatan ? "text-green-700" : "text-amber-700"}`}>
+              {adaCatatan ? jumlah : "Belum dicatat"}
+            </p>
             {sourceLabels && <p className="text-[11px] text-muted-foreground">{sourceLabels}</p>}
           </div>
         </div>

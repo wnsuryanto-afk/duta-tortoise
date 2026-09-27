@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Plus, Leaf } from "lucide-react";
+import { teksJumlah, teksBaris } from "@/lib/pakanHarian";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -34,7 +35,7 @@ export default function PakanHarianPage() {
   });
 
   const todayLogs = logs.filter(l => l.log_date === today);
-  const todayTotal = todayLogs.reduce((s, l) => s + (l.basket_count || 0), 0);
+  const todayTotal = teksJumlah(todayLogs);
   const todaySources = [...new Set(todayLogs.map(l => l.feed_source).filter(Boolean))]
     .map(s => SOURCES.find(x => x.value === s)?.label || s);
 
@@ -65,8 +66,8 @@ export default function PakanHarianPage() {
           {
             key: "hariini",
             label: "Hari ini",
-            value: `${todayTotal} keranjang`,
-            tone: todayTotal > 0 ? "good" : "warn",
+            value: todayTotal || "Belum dicatat",
+            tone: todayTotal ? "good" : "warn",
             title: todaySources.length > 0 ? todaySources.join(", ") : undefined,
           },
           ...(todaySources.length > 0
@@ -133,7 +134,7 @@ export default function PakanHarianPage() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {l.basket_count || 0} keranjang
+                      {teksBaris(l)}
                       {l.feed_type_detail && ` · ${l.feed_type_detail}`}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
