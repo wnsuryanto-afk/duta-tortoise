@@ -177,6 +177,11 @@ export default function TenggatVsNyata({ hariKeBelakang = 30 }) {
                 <div className="mt-2.5 flex items-center justify-between gap-2 flex-wrap">
                   <p className="text-xs text-muted-foreground min-w-0">
                     Usul tenggat baru: <b className="text-foreground tabular-nums">{b.usul}</b>
+                    {b.mentokHariKerja && (
+                      <>
+                        {" "}— mentok batas hari kerja
+                      </>
+                    )}
                   </p>
                   <Button
                     size="sm"
@@ -190,8 +195,25 @@ export default function TenggatVsNyata({ hariKeBelakang = 30 }) {
                   </Button>
                 </div>
               ) : (
-                <p className="mt-2 text-[11px] text-green-700 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Tenggatnya sudah sepadan — tidak perlu digeser.
+                <p className={`mt-2 text-[11px] flex items-start gap-1 ${b.mentokHariKerja ? "text-amber-700" : "text-green-700"}`}>
+                  {b.mentokHariKerja ? (
+                    <>
+                      <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      {/* Tenggatnya sudah di batas hari kerja dan pekerjaannya
+                          tetap lewat. Yang bisa diperbaiki bukan tenggatnya
+                          lagi — menggesernya cuma memindahkan kemustahilan ke
+                          sesudah jam pulang. */}
+                      <span>
+                        Sudah di batas hari kerja dan masih lewat. Yang perlu ditinjau jadwalnya,
+                        bukan tenggatnya — pekerjaan ini tidak muat sebelum jam pulang.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      <span>Tenggatnya sudah sepadan — tidak perlu digeser.</span>
+                    </>
+                  )}
                 </p>
               )}
             </div>

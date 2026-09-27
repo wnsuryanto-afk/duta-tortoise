@@ -84,6 +84,23 @@ function bulatkanLima(menit) {
 export const KELONGGARAN_MENIT = 10;
 
 /**
+ * Tenggat terakhir yang masih masuk akal dalam satu hari kerja.
+ *
+ * Jam pulang 07:00–16:00, dan usulan yang dihitung murni dari p80 bisa
+ * melewatinya: "Perawatan tanaman detail" dikerjakan p80 pukul 15:51, jadi
+ * usulan polos jatuh 16:05 — lima menit SESUDAH orangnya pulang. Tenggat
+ * seperti itu sama mustahilnya dengan tenggat sebelum jam datang; ia cuma
+ * memindahkan kemustahilannya ke ujung yang lain, dan tetap menghasilkan
+ * keterlambatan pada hari yang sebenarnya normal.
+ *
+ * Maka usulan dijepit di 15:55 — lima menit sebelum pulang. Pekerjaan yang
+ * p80-nya memang sudah menyentuh jam pulang tidak akan pernah punya tenggat
+ * yang longgar; yang bisa diperbaiki bukan tenggatnya, melainkan jadwalnya,
+ * dan itu keputusan manusia.
+ */
+export const TENGGAT_MAKS = "15:55";
+
+/**
  * Bandingkan tenggat tiap tugas dengan jam pengerjaan yang sungguh tercatat.
  *
  * @param {Array} sopTasks  SOPTask aktif
@@ -121,8 +138,15 @@ export function bandingkanTenggat(sopTasks = [], logs = [], opsi = {}) {
     // berarti menurunkan standar pada pekerjaan yang sebenarnya sudah jalan.
     const cukupData = jam.length >= minData;
     const seringTelat = telat / jam.length > 0.5;
+    const maks = keMenit(TENGGAT_MAKS);
+    const usulMenit = Math.min(bulatkanLima(p80 + KELONGGARAN_MENIT), maks);
+    // Usulan yang sudah menyentuh batas hari kerja DAN tidak lebih longgar
+    // daripada tenggat sekarang bukan perbaikan — menyetelnya hanya memindahkan
+    // angka tanpa mengubah apa pun. Baris itu ditandai `mentokHariKerja` supaya
+    // layar bisa mengatakan bahwa yang perlu ditinjau adalah JADWALNYA.
+    const mentokHariKerja = cukupData && seringTelat && usulMenit >= maks;
     const usul =
-      cukupData && seringTelat ? keJam(bulatkanLima(p80 + KELONGGARAN_MENIT)) : null;
+      cukupData && seringTelat && usulMenit > batas ? keJam(usulMenit) : null;
 
     hasil.push({
       id: t.id,
@@ -134,6 +158,7 @@ export function bandingkanTenggat(sopTasks = [], logs = [], opsi = {}) {
       telat,
       persenTelat: Math.round((telat / jam.length) * 100),
       usul,
+      mentokHariKerja,
       // Tenggat yang TIDAK PERNAH dipenuhi adalah kasusnya sendiri: ia bukan
       // aturan yang sesekali dilanggar, melainkan aturan yang mustahil.
       mustahil: cukupData && telat === jam.length,
