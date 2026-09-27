@@ -1,19 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { terjadwalPada } from "@/lib/kepatuhanSOP";
+import { tugasJatuhTempo, lamanya } from "@/lib/kepatuhanSOP";
 import { AlertTriangle, Clock } from "lucide-react";
 import { format } from "date-fns";
 
-function getMinutesUntil(timeStr) {
-  if (!timeStr) return null;
-  const now = new Date();
-  const [h, m] = timeStr.split(":").map(Number);
-  const deadline = new Date();
-  deadline.setHours(h, m, 0, 0);
-  return Math.floor((deadline - now) / 60000);
-}
-
+/**
+ * SOPDeadlineAlert — tugas yang tenggatnya dekat atau sudah lewat hari ini.
+ *
+ * Komponen ini pernah punya salinannya sendiri dari hitungan itu, lengkap
+ * dengan `getMinutesUntil` yang sama persis dengan dua berkas lain, dan
+ * jendela `-30 <= sisa <= 60`. Jendela itu MEMBUANG tugas yang lewat tenggat
+ * lebih dari setengah jam — persis tugas yang paling perlu dikejar. Jam empat
+ * sore, saat tak satu pun dari tugas pagi akan dikerjakan lagi hari itu,
+ * spanduk ini justru paling sunyi.
+ *
+ * Hitungannya sekarang di lib/kepatuhanSOP.js, satu untuk tiga layar.
+ */
 export default function SOPDeadlineAlert() {
   const { user } = useCurrentUser();
   const today = format(new Date(), "yyyy-MM-dd");
@@ -43,24 +46,21 @@ export default function SOPDeadlineAlert() {
     return null;
   }
 
-  // Tugas yang jatuh tempo HARI INI dengan deadline_time yang belum selesai.
-  // Sebelumnya disaring `frequency === "harian"`, sehingga tugas mingguan
-  // bertenggat — yang justru paling mudah terlewat karena tidak muncul tiap
-  // hari — tidak pernah memicu peringatan ini sama sekali.
-  const urgentTasks = tasks
-    .filter((t) => t.di_ubin_kandang !== true && terjadwalPada(t, today))
-    .filter((t) => t.deadline_time && !completedTaskIds.has(t.id))
-    .map((t) => ({ ...t, minutesLeft: getMinutesUntil(t.deadline_time) }))
-    .filter((t) => t.minutesLeft !== null && t.minutesLeft <= 60 && t.minutesLeft >= -30)
-    .sort((a, b) => a.minutesLeft - b.minutesLeft);
-
-  if (urgentTasks.length === 0) return null;
+  // Yang lewat tenggat tidak pernah dibatasi; yang belum, dibatasi satu jam
+  // ke depan. Paling banyak lima baris di spanduk — sisanya dihitung.
+  const { semua, lewat } = tugasJatuhTempo(tasks, completedTaskIds, today);
+  if (semua.length === 0) return null;
+  const urgentTasks = semua.slice(0, 5);
 
   return (
     <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4 space-y-3 animate-pulse-once">
       <div className="flex items-center gap-2 text-red-700 font-semibold">
         <AlertTriangle className="w-5 h-5 fill-red-200 text-red-600" />
-        <span>Pengingat! Task SOP Mendekati Batas Waktu</span>
+        <span>
+          {lewat.length > 0
+            ? `${lewat.length} tugas SOP sudah lewat tenggat`
+            : "Task SOP mendekati batas waktu"}
+        </span>
       </div>
       <div className="space-y-2">
         {urgentTasks.map((task) => {
@@ -69,7 +69,7 @@ export default function SOPDeadlineAlert() {
           return (
             <div
               key={task.id}
-              className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+              className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm ${
                 isOverdue
                   ? "bg-red-100 border border-red-300"
                   : isVeryUrgent
@@ -77,30 +77,38 @@ export default function SOPDeadlineAlert() {
                   : "bg-yellow-50 border border-yellow-300"
               }`}
             >
-              <div className="flex items-center gap-2">
+              {/* Nama membungkus, sisa waktu tidak menyusut — tanpa min-w-0 di
+                  kiri dan flex-shrink-0 di kanan, di layar ponsel yang mengalah
+                  adalah sisa waktunya dan ia pecah di tengah frasa. */}
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Clock
-                  className={`w-4 h-4 ${
+                  className={`w-4 h-4 flex-shrink-0 ${
                     isOverdue ? "text-red-600" : isVeryUrgent ? "text-orange-500" : "text-yellow-600"
                   }`}
                 />
-                <span className={`font-medium ${isOverdue ? "text-red-700" : "text-foreground"}`}>
+                <span className={`font-medium line-clamp-2 break-words ${isOverdue ? "text-red-700" : "text-foreground"}`}>
                   {task.title}
                 </span>
               </div>
               <span
-                className={`text-xs font-bold whitespace-nowrap ml-2 ${
+                className={`text-xs font-bold whitespace-nowrap ml-2 flex-shrink-0 ${
                   isOverdue ? "text-red-600" : isVeryUrgent ? "text-orange-600" : "text-yellow-700"
                 }`}
               >
                 {isOverdue
-                  ? `Terlambat ${Math.abs(task.minutesLeft)} mnt`
+                  ? `Lewat ${lamanya(task.minutesLeft)}`
                   : task.minutesLeft === 0
                   ? "Sekarang!"
-                  : `${task.minutesLeft} mnt lagi`}
+                  : `${lamanya(task.minutesLeft)} lagi`}
               </span>
             </div>
           );
         })}
+        {semua.length > urgentTasks.length && (
+          <p className="text-[11px] text-red-700/80 px-1">
+            dan {semua.length - urgentTasks.length} tugas lagi
+          </p>
+        )}
       </div>
     </div>
   );

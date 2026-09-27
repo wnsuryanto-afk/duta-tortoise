@@ -206,3 +206,67 @@ export function statusKepatuhan(persen) {
   if (persen >= AMBANG_PERHATIAN) return { label: "Perlu perhatian", nada: "sedang" };
   return { label: "Rendah", nada: "buruk" };
 }
+
+// ── Tugas hari ini yang tenggatnya dekat atau sudah lewat ────────────────────
+//
+// Pertanyaan "tugas mana yang sudah lewat tenggat hari ini" dijawab di TIGA
+// tempat dengan kodenya masing-masing, dan ketiganya menyalin fungsi bantu
+// `getMinutesUntil` yang sama persis:
+//
+//   dashboard/KeeperDashboard.jsx    kartu "Target SOP Hari Ini"
+//   dashboard/SOPDeadlineAlert.jsx   spanduk merah di dasbor admin
+//   guided/BonusBulanIni.jsx         hitungan poin yang belum didapat
+//
+// Dua yang pertama memakai jendela `-30 <= sisa <= 60`, dan jendela itu
+// membuang tugas yang lewat tenggat lebih dari setengah jam — persis tugas
+// yang paling perlu dikejar. Yang ketiga tidak: ia memakai `sekarang > batas`
+// tanpa batas bawah, sehingga tiga layar bisa menyebut tiga angka berbeda
+// untuk hari yang sama.
+//
+// Satu definisi di sini. Yang berbeda antar layar tinggal cara menampilkannya.
+
+import { keMenit } from "@/lib/tenggatNyata";
+
+/**
+ * Tugas terjadwal hari ini yang belum selesai dan bertenggat, beserta sisa
+ * menitnya (negatif = sudah lewat).
+ *
+ * @param {Array} sopTasks   SOPTask aktif
+ * @param {Set}   selesaiIds id tugas yang sudah dikerjakan hari ini
+ * @param {string} tanggal   "YYYY-MM-DD"
+ * @param {Date}  sekarang
+ * @returns {{ lewat: Array, segera: Array, semua: Array }}
+ *          `segera` dibatasi satu jam ke depan; `lewat` TIDAK pernah dibatasi.
+ */
+export function tugasJatuhTempo(sopTasks = [], selesaiIds = new Set(), tanggal, sekarang = new Date()) {
+  const menitSekarang = sekarang.getHours() * 60 + sekarang.getMinutes();
+
+  const daftar = [];
+  for (const t of sopTasks) {
+    if (!t || t.is_active === false) continue;
+    if (t.di_ubin_kandang === true) continue;
+    if (!terjadwalPada(t, tanggal)) continue;
+    if (selesaiIds.has(t.id)) continue;
+    const batas = keMenit(t.deadline_time);
+    if (batas === null) continue;
+    daftar.push({ ...t, minutesLeft: batas - menitSekarang });
+  }
+
+  const urut = (a, b) => a.minutesLeft - b.minutesLeft;
+  const lewat = daftar.filter((t) => t.minutesLeft < 0).sort(urut);
+  // Batas satu jam ke depan sengaja dipertahankan: "nanti sore" bukan sesuatu
+  // yang perlu diteriakkan pagi-pagi. Yang tidak boleh dibatasi adalah yang
+  // sudah lewat.
+  const segera = daftar.filter((t) => t.minutesLeft >= 0 && t.minutesLeft <= 60).sort(urut);
+
+  return { lewat, segera, semua: [...lewat, ...segera] };
+}
+
+/** Lama dalam menit, ditulis sebagaimana orang mengucapkannya. */
+export function lamanya(menit) {
+  const n = Math.abs(Math.round(menit));
+  if (n < 60) return `${n} menit`;
+  // Di atas satu jam, menitnya tidak menambah apa pun yang dipakai orang untuk
+  // memutuskan — dan "8 jam 55 menit" tidak muat sebaris di layar ponsel.
+  return `${Math.round(n / 60)} jam`;
+}

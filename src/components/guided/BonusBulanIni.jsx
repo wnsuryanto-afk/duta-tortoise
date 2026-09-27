@@ -29,17 +29,10 @@ import { ringkasPoin } from "@/lib/poinChecklist";
 import { format } from "date-fns";
 import { Star, Trophy, Clock, TrendingUp, Flame, Users } from "lucide-react";
 import { statusBonus } from "@/lib/bonus";
-import { terjadwalPada } from "@/lib/kepatuhanSOP";
+import { tugasJatuhTempo } from "@/lib/kepatuhanSOP";
 import { masukLaporan } from "@/lib/laporan";
 
 const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
-
-/** Menit sejak tengah malam dari "HH:mm". */
-function keMenit(hm) {
-  const [h, m] = String(hm || "").split(":").map(Number);
-  if (!Number.isFinite(h)) return null;
-  return h * 60 + (Number.isFinite(m) ? m : 0);
-}
 
 /**
  * `rinciTugas` menentukan apakah tugas yang lewat tenggat didaftar satu per
@@ -56,7 +49,6 @@ export default function BonusBulanIni({ user, rinciTugas = true }) {
   const now = new Date();
   const today = format(now, "yyyy-MM-dd");
   const monthKey = format(now, "yyyy-MM");
-  const menitSekarang = now.getHours() * 60 + now.getMinutes();
 
   const { data: settings } = useQuery({
     queryKey: ["company-settings"],
@@ -157,6 +149,12 @@ export default function BonusBulanIni({ user, rinciTugas = true }) {
   const bonusTingkat = tercapai?.bonus || 0;
 
   // ── Tugas yang tenggatnya sudah lewat hari ini (B3) ──
+  //
+  // Hitungannya di lib/kepatuhanSOP.js, sama dengan yang dipakai beranda kiper
+  // dan spanduk admin. Sebelumnya ketiganya punya salinannya sendiri dan dua
+  // di antaranya memakai jendela yang membuang tugas yang lewat lebih dari
+  // setengah jam, sehingga tiga layar bisa menyebut tiga angka berbeda untuk
+  // hari yang sama.
   const lewatTenggat = useMemo(() => {
     if (!sopTasks.length) return [];
     const tanggalHariIni = format(now, "yyyy-MM-dd");
@@ -164,23 +162,28 @@ export default function BonusBulanIni({ user, rinciTugas = true }) {
     // Task per-kandang sengaja tidak dihitung di sini: jumlahnya bergantung
     // pada berapa kandang yang tersisa, dan angka setengah benar soal poin
     // hilang lebih berbahaya daripada tidak ada angka sama sekali.
-    return sopTasks
-      .filter((t) => t.task_scope !== "per_kandang")
-      .filter((t) => terjadwalPada(t, tanggalHariIni))
-      .filter((t) => {
-        const batas = keMenit(t.deadline_time);
-        return batas !== null && menitSekarang > batas;
-      })
-      .filter((t) => {
-        const sudah = (logsHariIni || []).some((l) => {
-          if (l.item_id !== `sop_${t.id}`) return false;
-          if (t.task_scope === "pribadi") return l.done_by_email === user?.email;
-          return true;
-        });
-        return !sudah;
-      })
-      .map((t) => ({ id: t.id, judul: t.title, poin: Number(t.points || 0), batas: t.deadline_time }));
-  }, [sopTasks, logsHariIni, menitSekarang, user?.email, now]);
+    const selesai = new Set(
+      sopTasks
+        .filter((t) =>
+          (logsHariIni || []).some((l) => {
+            if (l.item_id !== `sop_${t.id}`) return false;
+            if (t.task_scope === "pribadi") return l.done_by_email === user?.email;
+            return true;
+          }),
+        )
+        .map((t) => t.id),
+    );
+
+    const { lewat } = tugasJatuhTempo(
+      sopTasks.filter((t) => t.task_scope !== "per_kandang"),
+      selesai,
+      tanggalHariIni,
+      now,
+    );
+    return lewat.map((t) => ({
+      id: t.id, judul: t.title, poin: Number(t.points || 0), batas: t.deadline_time,
+    }));
+  }, [sopTasks, logsHariIni, user?.email, now]);
 
   const poinHangus = lewatTenggat.reduce((s, t) => s + t.poin, 0);
 

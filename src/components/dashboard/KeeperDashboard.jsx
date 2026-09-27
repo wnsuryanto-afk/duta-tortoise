@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { buatAbsenSekali } from "@/lib/checkInSekali";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { terjadwalPada } from "@/lib/kepatuhanSOP";
+import { terjadwalPada, tugasJatuhTempo, lamanya } from "@/lib/kepatuhanSOP";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,30 +32,6 @@ import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
 import BonusBulanIni from "@/components/guided/BonusBulanIni";
 import { toast } from "sonner";
 import { TortoiseArt } from "@/components/common/Illustration";
-
-/**
- * Lama dalam menit, ditulis sebagaimana orang mengucapkannya.
- *
- * "Terlambat 745m" bukan informasi — yang membacanya harus membagi sendiri
- * dengan 60 untuk tahu bahwa itu dua belas jam. Di bawah satu jam menitnya
- * yang penting; di atas itu jamnya.
- */
-function lamanya(menit) {
-  const n = Math.abs(Math.round(menit));
-  if (n < 60) return `${n} menit`;
-  // Di atas satu jam, menitnya tidak menambah apa pun yang dipakai orang untuk
-  // memutuskan — dan "Lewat 8 jam 55 menit" tidak muat sebaris di layar ponsel,
-  // jadi ia pecah di tengah frasa menjadi "Lewat 8 jam 55 / menit".
-  return `${Math.round(n / 60)} jam`;
-}
-
-function getMinutesUntil(timeStr) {
-  if (!timeStr) return null;
-  const [h, m] = timeStr.split(":").map(Number);
-  const deadline = new Date();
-  deadline.setHours(h, m, 0, 0);
-  return Math.floor((deadline - new Date()) / 60000);
-}
 
 export default function KeeperDashboard() {
   const queryClient = useQueryClient();
@@ -266,39 +242,14 @@ export default function KeeperDashboard() {
   const doneCount = tugasHariIni.filter((t) => completedTaskIds.has(t.id)).length;
   const sopSubmitted = todayChecklist?.status === "submitted" || todayChecklist?.status === "approved";
 
-  // Tugas yang belum dikerjakan dan tenggatnya sudah dekat atau sudah lewat.
-  //
-  // Jendelanya dulu `-30 <= sisa <= 60`: setengah jam sesudah tenggat, tugas
-  // yang belum dikerjakan MENGHILANG dari kartu. Yang tersisa cuma kalimat
-  // "Tidak ada task mendesak saat ini" — di kartu yang pada baris di atasnya
-  // menulis "1 dari 6 task selesai". Pukul 12 siang empat tugas sudah lewat
-  // tenggat dan kartunya bilang tidak ada yang mendesak; pukul setengah lima
-  // sore, saat kelimanya tidak akan dikerjakan lagi hari itu, kartunya masih
-  // bilang hal yang sama.
-  //
-  // Jendela seperti itu masuk akal untuk NOTIFIKASI — "sebentar lagi jatuh
-  // tempo" memang cuma relevan sebentar. Tapi ini bukan notifikasi, ini
-  // keadaan hari itu, dan tugas yang lewat tenggat tidak berhenti perlu
-  // dikerjakan hanya karena sudah lewat setengah jam.
-  //
-  // Sekarang yang lewat tenggat tidak pernah pergi, dan ia yang ditaruh di
-  // atas. Yang masih di depan tetap dibatasi satu jam ke depan supaya kartunya
-  // tidak berubah jadi salinan seluruh daftar SOP — untuk itu ada /sop.
-  const belumSelesai = tugasHariIni
-    .filter((t) => t.deadline_time && !completedTaskIds.has(t.id))
-    .map((t) => ({ ...t, minutesLeft: getMinutesUntil(t.deadline_time) }))
-    .filter((t) => t.minutesLeft !== null);
-
-  const lewatTenggat = belumSelesai
-    .filter((t) => t.minutesLeft < 0)
-    .sort((a, b) => a.minutesLeft - b.minutesLeft);
-  const segeraJatuhTempo = belumSelesai
-    .filter((t) => t.minutesLeft >= 0 && t.minutesLeft <= 60)
-    .sort((a, b) => a.minutesLeft - b.minutesLeft);
+  // Hitungannya di lib/kepatuhanSOP.js — satu definisi untuk tiga layar yang
+  // menanyakan hal yang sama (beranda kiper, spanduk admin, kartu bonus).
+  // Yang lewat tenggat tidak pernah dibuang; yang belum, dibatasi satu jam ke
+  // depan supaya kartunya tidak jadi salinan seluruh daftar SOP.
+  const { semua: urgentSOP } = tugasJatuhTempo(tugasHariIni, completedTaskIds, today);
 
   // Paling banyak empat baris di kartu beranda. Sisanya dihitung, bukan
   // didaftar — daftar sepanjang layar membuat orang berhenti membacanya.
-  const urgentSOP = [...lewatTenggat, ...segeraJatuhTempo];
   const urgentTampil = urgentSOP.slice(0, 4);
 
   const upcomingReminders = reminders
