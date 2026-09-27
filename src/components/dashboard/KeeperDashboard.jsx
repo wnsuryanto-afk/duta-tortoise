@@ -20,6 +20,7 @@ import { menitTerlambat, perluAlasan } from "@/lib/keterlambatan";
 import AlasanTerlambatDialog from "@/components/attendance/AlasanTerlambatDialog";
 import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
 import RumputBelumDicatat from "@/components/rempesan/RumputBelumDicatat";
+import HariTanpaChecklist from "@/components/sop/HariTanpaChecklist";
 import { useTestMode } from "@/lib/useTestMode";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
@@ -383,6 +384,10 @@ export default function KeeperDashboard() {
             Rempesan yang jarang dibuka — itulah sebabnya RempesanLog selama ini
             nol isinya meski halaman, formulir, dan tarifnya sudah lengkap. */}
         <RumputBelumDicatat email={user?.email} milikSendiri batas={4} />
+
+        {/* Hari sendiri yang absensinya hadir tapi checklistnya kosong.
+            Ditagih besoknya, selagi orangnya masih ingat kerja apa saja. */}
+        <HariTanpaChecklist email={user?.email} milikSendiri mundur={14} />
 
         {/* Lembur info */}
         {hasCheckedOut && overtime > 0 && (

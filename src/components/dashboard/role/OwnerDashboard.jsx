@@ -23,6 +23,7 @@ import KepatuhanSopCard from "@/components/dashboard/KepatuhanSopCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import PageHeader from "@/components/common/PageHeader";
 import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
+import HariTanpaChecklist from "@/components/sop/HariTanpaChecklist";
 import NoteCard from "@/components/common/NoteCard";
 import InfoHint from "@/components/ui/info-hint";
 import { Sparkline } from "@/components/ui/sparkline";
@@ -750,6 +751,10 @@ export default function OwnerDashboard({ user }) {
       {/* Checklist yang menggantung lebih dari sehari — owner tetap
           melihatnya meski persetujuannya sudah didelegasikan. */}
       <PengingatPersetujuan />
+
+      {/* Hari yang dikerjakan tapi tidak pernah tercatat. 13-15 Agustus 2026
+          lolos tiga bulan tanpa ada satu layar pun yang menyebutkannya. */}
+      <HariTanpaChecklist />
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi bagian="harian" />
