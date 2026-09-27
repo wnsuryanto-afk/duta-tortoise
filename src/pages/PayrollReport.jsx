@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { poinDisetujui } from "@/lib/poinChecklist";
+import { hanyaLaporan } from "@/lib/laporan";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,14 +45,17 @@ export default function PayrollReport() {
   const { data: checklists = [], isLoading: loadingCL } = useQuery({
     queryKey: ["checklists-period", selectedPeriod],
     queryFn: async () => {
-      // Dulu: ambil SEMUA checklist approved lalu saring bulan di browser.
-      // Karena SDK memotong di batas ambil, laporan gaji bisa kehilangan
-      // hari kerja tanpa tanda apa pun. Sekarang bulannya disaring di server.
+      // Dua penjagaan, keduanya perlu:
+      //  · Bulan disaring DI SERVER. Dulu semua checklist approved diambil
+      //    lalu disaring di browser, dan karena SDK memotong di batas ambil,
+      //    laporan gaji bisa kehilangan hari kerja tanpa tanda apa pun.
+      //  · `hanyaLaporan` membuang checklist Mode Uji supaya data uji tidak
+      //    ikut terhitung jadi rupiah.
       const all = await base44.entities.DailyChecklist.filter({
         status: "approved",
         date: { $gte: `${selectedPeriod}-01`, $lte: `${selectedPeriod}-31` },
       });
-      return all.filter((c) => c.date?.startsWith(selectedPeriod));
+      return hanyaLaporan(all).filter((c) => c.date?.startsWith(selectedPeriod));
     },
     enabled: isAdmin,
   });
@@ -67,7 +72,7 @@ export default function PayrollReport() {
       };
     }
     employeeMap[c.employee_email].approvedDays += 1;
-    employeeMap[c.employee_email].approvedPoints += c.approved_points || 0;
+    employeeMap[c.employee_email].approvedPoints += poinDisetujui(c);
   });
 
   // Merge with bonus reward records

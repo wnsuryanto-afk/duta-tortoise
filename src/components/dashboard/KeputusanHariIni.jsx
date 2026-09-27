@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useViewAsGuard } from "@/lib/useViewAsGuard";
 import { canAccess } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
+import { poinDiklaim } from "@/lib/poinChecklist";
 import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import { penandaMenunggu, sudahDidaftar, barisDariBarang } from "@/lib/daftarBelanja";
 import InfoHint from "@/components/ui/info-hint";
@@ -144,7 +145,7 @@ export default function KeputusanHariIni() {
     const gagal = [];
 
     for (const c of berfoto) {
-      const poin = c.total_points_claimed || 0;
+      const poin = poinDiklaim(c);
       try {
         await base44.entities.DailyChecklist.update(c.id, {
           status: "approved",

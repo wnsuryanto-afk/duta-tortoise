@@ -18,7 +18,8 @@ import { toast } from "sonner";
 import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import AlurGaji from "@/components/salary/AlurGaji";
-import { useVegTrips } from "@/hooks/useVegTrips";
+import { hanyaLaporan } from "@/lib/laporan";
+import { rupaStatusSlip } from "@/lib/slipGaji";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -63,15 +64,21 @@ export default function RekapPoinGajiPage() {
 
   const { data: attendances = [] } = useQuery({
     queryKey: ["attendances-all"],
-    queryFn: () => base44.entities.Attendance.list("-date", 500),
+    queryFn: async () => hanyaLaporan(await base44.entities.Attendance.list("-date", 500)),
   });
 
   const { data: overtimeLogs = [] } = useQuery({
     queryKey: ["overtime-logs"],
-    queryFn: () => base44.entities.OvertimeLog.list("-date", 300),
+    queryFn: async () => hanyaLaporan(await base44.entities.OvertimeLog.list("-date", 300)),
   });
 
-  const { data: vegTripsMap = {} } = useVegTrips(selectedMonth);
+  // Sumber upah trip disatukan ke RempesanLog — sama dengan slip mingguan.
+  // Lihat catatan di lib/rempesan.js: sebelumnya ada TIGA sumber berbeda untuk
+  // satu kejadian yang sama, dan yang dipakai bergantung pada layar mana.
+  const { data: rempesanLogs = [] } = useQuery({
+    queryKey: ["rempesan-logs"],
+    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
+  });
 
   const monthStart = selectedMonth + "-01";
   const monthEnd = format(new Date(selectedMonth + "-01").setMonth(new Date(selectedMonth + "-01").getMonth() + 1), "yyyy-MM") + "-01";
@@ -100,7 +107,7 @@ export default function RekapPoinGajiPage() {
       bonusRewards,
       attendances,
       overtimeLogs,
-      vegTripsMap,
+      rempesanLogs,
       kasbons,
       periode: selectedMonth,
       awal: monthStart,
@@ -141,7 +148,7 @@ export default function RekapPoinGajiPage() {
         ),
       };
     });
-  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, vegTripsMap, selectedMonth, monthStart, monthEnd, TARGET_POIN_SETTING, settings]);
+  }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, rempesanLogs, selectedMonth, monthStart, monthEnd, TARGET_POIN_SETTING, settings]);
 
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
@@ -433,6 +440,11 @@ export default function RekapPoinGajiPage() {
                       {row.totalPoin}p × {fmt(row.pointValue)}
                       {row.potonganPoin > 0 && ` − ${fmt(row.potonganPoin)}`}
                     </p>
+                    {row.poinMenungguBulan > 0 && (
+                      <p className="text-[10px] text-amber-600">
+                        ⏳ {row.poinMenungguBulan}p dari {row.jumlahMenunggu} checklist belum disetujui
+                      </p>
+                    )}
                   </div>
 
                   {/* Gaji Pokok */}
@@ -485,14 +497,12 @@ export default function RekapPoinGajiPage() {
                       {row.existingSlip ? "Update" : "Generate"}
                     </Button>
                   </div>
+                  {/* Rantai `? :` ini dulu berakhir di "Draft", jadi slip yang
+                      sudah dibatalkan terbaca sebagai slip yang menunggu
+                      diproses — tepat di sebelah tombol "Update". */}
                   {row.existingSlip && (
-                    <Badge className={`text-[10px] ${
-                      row.existingSlip.status === "paid" ? "bg-green-100 text-green-700" :
-                      row.existingSlip.status === "approved" ? "bg-blue-100 text-blue-700" :
-                      "bg-muted text-foreground"
-                    }`}>
-                      {row.existingSlip.status === "paid" ? "✓ Dibayar" :
-                       row.existingSlip.status === "approved" ? "Disetujui" : "Draft"}
+                    <Badge className={`text-[10px] ${rupaStatusSlip(row.existingSlip.status).kelas}`}>
+                      {rupaStatusSlip(row.existingSlip.status).label}
                     </Badge>
                   )}
                 </div>

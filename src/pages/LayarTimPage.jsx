@@ -14,6 +14,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { poinDisetujui, poinDiklaim } from "@/lib/poinChecklist";
+import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
 import { format, subDays, addDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { masukLaporan } from "@/lib/laporan";
@@ -84,7 +86,9 @@ function KeeperCard({ checklist, attendance }) {
 
   const kandangNoPhoto = kandang.filter((t) => !t.photo_url).length;
   const withPhoto = tasks.filter((t) => t.photo_url).length;
-  const totalPoin = checklist?.approved_points ?? checklist?.total_points_claimed ?? 0;
+  // Layar ini menampilkan keadaan hari ini, bukan uang: untuk checklist yang
+  // masih menunggu, yang pantas ditampilkan adalah klaimnya.
+  const totalPoin = checklist?.status === "approved" ? poinDisetujui(checklist) : poinDiklaim(checklist);
 
   // Foto menyusul: jarak jam centang vs jam foto diambil > 20 menit
   const lateProof = tasks
@@ -195,6 +199,11 @@ function KeeperCard({ checklist, attendance }) {
             <Flag tone="warn">Check-in tercatat di luar radius kandang.</Flag>
           )
         )}
+        {/* Kenapa jam masuknya lain — termasuk foto rumputnya bila ada.
+            Diletakkan di sini, di layar yang memang dibuka pemilik untuk
+            memeriksa hari kerja tim, bukan disimpan diam-diam di basis data. */}
+        <KeteranganMasuk att={attendance} tampilkanRingan className="px-1" />
+
         {tasks.length === 0 && !isManual && (
           <p className="text-xs text-muted-foreground px-1">Belum ada tugas tercatat hari ini.</p>
         )}

@@ -32,8 +32,8 @@
 
 import { nilaiPerPoin } from "@/lib/nilaiPoin";
 import { masukLaporan } from "@/lib/laporan";
-
-
+import { ringkasPoin } from "@/lib/poinChecklist";
+import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
 /*
   ATURAN GAJI YANG BERLAKU (keputusan Iwan, 01-09-2026):
 
@@ -110,33 +110,35 @@ export function adalahPeranHarian(role) {
 /**
  * Poin seorang karyawan pada satu periode.
  *
- * Checklist yang ditolak tidak dihitung. Poin yang sudah disetujui menang atas
- * poin yang baru diklaim; bila keduanya kosong, poin dijumlahkan dari tugas
- * yang tercentang.
+ * Hanya checklist yang SUDAH DISETUJUI yang menghasilkan poin. Sebelum ini
+ * penyaringnya `status !== "rejected"`, yang ikut menghitung klaim yang belum
+ * diperiksa siapa pun — dan menghitungnya PENUH, karena
+ * `0 || total_points_claimed` jatuh ke klaimnya. Lihat catatan lengkapnya di
+ * lib/poinChecklist.js.
+ *
+ * `menunggu` dikembalikan terpisah supaya pemanggil bisa menyebutnya apa adanya
+ * alih-alih membiarkan poin itu menghilang tanpa penjelasan.
  */
 export function hitungPoin({ checklists = [], bonusRewards = [], email, awal, akhir, periode }) {
-  const dariChecklist = checklists
-    .filter((c) => c.employee_email === email && c.date >= awal && c.date < akhir)
-    // Checklist Mode Uji dan checklist yang dikecualikan pemilik tidak dibayar.
-    // Tanpa saringan ini, mencoba aplikasi sebagai keeper menaikkan gaji orang
-    // yang perannya sedang ditiru, dan tombol "Kecualikan dari laporan" tidak
-    // berpengaruh apa pun pada uang yang keluar.
-    .filter(masukLaporan)
-    .filter((c) => c.status !== "rejected")
-    .reduce((total, c) => {
-      const poin =
-        c.approved_points ||
-        c.total_points_claimed ||
-        (Array.isArray(c.completed_tasks)
-          ? c.completed_tasks.reduce((t, x) => t + (x.points || 0), 0)
-          : 0);
-      return total + (poin || 0);
-    }, 0);
+  // Dua saringan, dan keduanya menentukan uang yang keluar:
+  //
+  //  · `masukLaporan` membuang checklist Mode Uji dan yang dikecualikan
+  //    pemilik. Tanpa itu, mencoba aplikasi sebagai keeper menaikkan gaji
+  //    orang yang perannya sedang ditiru, dan tombol "Kecualikan dari
+  //    laporan" tidak berpengaruh apa pun pada uang yang keluar.
+  //
+  //  · `ringkasPoin` hanya menjadikan rupiah poin yang SUDAH DISETUJUI.
+  //    Sebelum ini saringannya `status !== "rejected"`, jadi klaim yang belum
+  //    diperiksa ikut dibayar penuh — lihat catatan di lib/poinChecklist.js.
+  const punyaSaya = checklists.filter(
+    (c) => c.employee_email === email && c.date >= awal && c.date < akhir,
+  ).filter(masukLaporan);
+  const { disetujui: dariChecklist, menunggu, jumlahMenunggu } = ringkasPoin(punyaSaya);
 
   const bonus = bonusRewards.find((b) => b.employee_email === email && b.period === periode);
   const dariBonus = bonus?.total_points || 0;
 
-  return { dariChecklist, dariBonus, total: dariChecklist + dariBonus };
+  return { dariChecklist, dariBonus, menunggu, jumlahMenunggu, total: dariChecklist + dariBonus };
 }
 
 /**
@@ -304,7 +306,7 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     bonusRewards = [],
     attendances = [],
     overtimeLogs = [],
-    vegTripsMap = {},
+    rempesanLogs = [],
     kasbons = [],
     periode,
     awal,
@@ -389,10 +391,25 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     .reduce((t, o) => t + (o.hours || 0), 0);
   const upahLembur = jamLembur * (config.overtime_rate_per_hour || 0);
 
-  const sayur = vegTripsMap[email] || { trips: 0, dates: [] };
-  // Uang sayur hanya untuk peran harian — merekalah yang menjemput sayur.
-  const tripSayur = harian ? sayur.trips || 0 : 0;
-  const upahSayur = tripSayur * (config.vegetable_rate_per_trip || 0);
+  // Upah trip ambil sayur/rumput. Sebelum ini dihitung dari `PakanHarian`
+  // bersumber "sayur pasar" dikali `vegetable_rate_per_trip`, sementara slip
+  // MINGGUAN menghitungnya dari `RempesanLog` yang disetujui dikali
+  // `rempesan_rate_per_trip`. Satu kejadian nyata yang sama, dua sumber yang
+  // tidak saling tahu — berapa yang diterima orangnya bergantung pada jenis
+  // slip mana yang kebetulan diterbitkan bulan itu.
+  //
+  // Sekarang keduanya membaca `RempesanLog` lewat satu fungsi. Yang dipilih
+  // RempesanLog karena hanya ia yang lewat persetujuan pemilik; `PakanHarian`
+  // tidak punya alur persetujuan sama sekali, jadi membayar darinya berarti
+  // membayar tanpa ada yang menyetujui.
+  //
+  // `akhir` di berkas ini EKSKLUSIF (`date < akhir`), berbeda dari slip
+  // mingguan yang inklusif — karena itu batasnya disebut tegas di sini.
+  const sayur = harian
+    ? tripPerPeriode(rempesanLogs, email, awal, akhir, { akhirInklusif: false })
+    : { trips: 0, tanggal: [] };
+  const tripSayur = sayur.trips;
+  const upahSayur = tripSayur * tarifTrip(config).tarif;
 
   const kasbon = hitungKasbon({ kasbons, email, periode });
 
@@ -428,7 +445,7 @@ export function hitungGajiKaryawan(karyawan, sumber) {
     upahLembur,
 
     tripSayur,
-    tanggalSayur: sayur.dates || [],
+    tanggalSayur: sayur.tanggal || [],
     upahSayur,
 
     potonganKasbon: kasbon.potongan,

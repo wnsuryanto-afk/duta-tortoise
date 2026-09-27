@@ -22,6 +22,7 @@ import PoinBonusTim from "@/components/dashboard/PoinBonusTim";
 import KepatuhanSopCard from "@/components/dashboard/KepatuhanSopCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import PageHeader from "@/components/common/PageHeader";
+import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
 import NoteCard from "@/components/common/NoteCard";
 import InfoHint from "@/components/ui/info-hint";
 import { Sparkline } from "@/components/ui/sparkline";
@@ -746,6 +747,9 @@ export default function OwnerDashboard({ user }) {
         yang pertama perlu dilihat sebelum memutuskan belanja apa pun.
       */}
       <LabaRugiWidget />
+      {/* Checklist yang menggantung lebih dari sehari — owner tetap
+          melihatnya meski persetujuannya sudah didelegasikan. */}
+      <PengingatPersetujuan />
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi bagian="harian" />

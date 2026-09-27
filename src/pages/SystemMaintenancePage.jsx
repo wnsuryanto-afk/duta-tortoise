@@ -12,6 +12,8 @@ import PemindahanKandang from "@/components/owner/PemindahanKandang";
 import PenandaSakit from "@/components/owner/PenandaSakit";
 import TransaksiKembar from "@/components/owner/TransaksiKembar";
 import BarangKembar from "@/components/owner/BarangKembar";
+import IsiTanggalKedaluwarsa from "@/components/owner/IsiTanggalKedaluwarsa";
+import PotonganTanpaAlasan from "@/components/owner/PotonganTanpaAlasan";
 import AISaranToggle from "@/components/settings/AISaranToggle";
 
 export default function SystemMaintenancePage() {
@@ -76,6 +78,13 @@ export default function SystemMaintenancePage() {
 
       {/* Barang gudang & pakan kembar — membereskan data lama, aman diulang */}
       <BarangKembar />
+
+      {/* Tanggal kedaluwarsa obat & vitamin — mengisi, tidak pernah menghapus */}
+      <IsiTanggalKedaluwarsa />
+
+      {/* Laporan saja — pemotongan poin yang terjadi sebelum alasan diwajibkan.
+          Tidak mengubah data apa pun; keputusannya di tangan pemilik. */}
+      <PotonganTanpaAlasan />
 
       {/* Mode Testing */}
       <div>

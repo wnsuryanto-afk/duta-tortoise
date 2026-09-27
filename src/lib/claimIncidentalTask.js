@@ -11,6 +11,8 @@
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 
+import { checklistSah } from "@/lib/poinChecklist";
+
 export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhotoReason } = {}) {
   // Re-fetch untuk race condition protection (dua orang klaim bersamaan)
   const fresh = await base44.entities.IncidentalTask.get(task.id);
@@ -42,15 +44,27 @@ export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhoto
     employee_email: user.email,
     date: today,
   });
-  const cl = existing[0];
+  const cl = checklistSah(existing);
 
   let dailyChecklistId;
+  let kembaliKeAntrean = false;
   if (cl) {
     dailyChecklistId = cl.id;
     const already = (cl.completed_tasks || []).some((t) => t.task_id === taskId);
-    if (!already && (cl.status === "draft" || cl.status === "submitted")) {
+    if (!already) {
+      // Dulu blok ini hanya berjalan bila status "draft" atau "submitted".
+      // Bila checklist hari itu SUDAH DISETUJUI — pemilik menyetujui pagi,
+      // tugas insidentil dikerjakan sore — poinnya hilang tanpa suara:
+      // IncidentalTask tetap ditandai selesai dan tetap menunjuk checklist yang
+      // isinya tidak pernah memuat tugas itu. Pekerjaannya nyata, upahnya nol.
+      //
+      // Sekarang tugasnya selalu masuk. Bila checklistnya sudah diputuskan,
+      // ia kembali ke antrean persetujuan supaya poin barunya diperiksa —
+      // `approved_points` lama sengaja dibiarkan agar pemilik masih melihat
+      // keputusan yang tadi ia ambil.
       const completed_tasks = [...(cl.completed_tasks || []), taskEntry];
       const total_points_claimed = completed_tasks.reduce((s, t) => s + (t.points || 0), 0);
+      kembaliKeAntrean = cl.status === "approved" || cl.status === "rejected";
       await base44.entities.DailyChecklist.update(cl.id, {
         completed_tasks,
         total_points_claimed,
@@ -80,4 +94,6 @@ export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhoto
     done_photo_url: photoUrl || undefined,
     done_notes: notes || (noPhotoReason ? `(Tanpa foto) ${noPhotoReason}` : undefined),
   });
+
+  return { dailyChecklistId, kembaliKeAntrean };
 }

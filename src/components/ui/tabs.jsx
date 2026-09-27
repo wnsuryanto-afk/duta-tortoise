@@ -5,11 +5,32 @@ import { cn } from "@/lib/utils"
 
 const Tabs = TabsPrimitive.Root
 
+/**
+ * TabsList — bisa digeser mendatar bila tab-nya tidak muat.
+ *
+ * Bawaannya `inline-flex` tanpa jalan keluar apa pun saat isinya lebih lebar
+ * dari layar. Label Indonesia panjang-panjang ("Semua Transaksi", "Pengeluaran",
+ * "Pengaturan"), dan di ponsel 390px deretan itu mendorong SELURUH HALAMAN
+ * melebar — bukan cuma tabnya. Diukur pada lebar ponsel:
+ *
+ *     Laporan Keuangan   isi 676px  →  halaman meleset 286px ke samping
+ *     Daftar Kura        isi 569px  →  179px
+ *     Penjualan          isi 420px  →   30px
+ *     Gudang             isi 409px  →   19px
+ *
+ * Akibatnya seluruh halaman bisa digeser ke kanan, judul ikut bergeser keluar
+ * layar, dan tombol di tepi kanan tidak bisa dijangkau tanpa menggeser dulu.
+ *
+ * `overflow-x-auto` menahan lebarnya di dalam deretan tab itu sendiri:
+ * halamannya diam, tabnya yang digeser. `scrollbar-none` menyembunyikan
+ * batangnya di ponsel — geser dengan jari sudah cukup — dan `max-w-full`
+ * mencegah `inline-flex` melar melewati induknya.
+ */
 const TabsList = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+      "inline-flex h-9 max-w-full items-center justify-start overflow-x-auto scrollbar-none rounded-lg bg-muted p-1 text-muted-foreground",
       className
     )}
     {...props} />

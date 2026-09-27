@@ -67,11 +67,18 @@ export default function IncidentalTaskList({ user }) {
     if (!confirmTask) return;
     setProcessingId(confirmTask.id);
     try {
-      await claimIncidentalTask(confirmTask, user, { photoUrl, notes, noPhotoReason });
+      const { kembaliKeAntrean } = await claimIncidentalTask(confirmTask, user, { photoUrl, notes, noPhotoReason });
       qc.invalidateQueries({ queryKey: ["incidental-tasks-mine"] });
       qc.invalidateQueries({ queryKey: ["incidental-tasks-done-today"] });
       qc.invalidateQueries({ queryKey: ["my-checklist-today"] });
-      toast.success(`Tugas diklaim: +${confirmTask.points} poin menunggu approval`);
+      qc.invalidateQueries({ queryKey: ["checklist-today"] });
+      if (kembaliKeAntrean) {
+        toast.success(
+          `Tugas diklaim: +${confirmTask.points} poin. Checklist hari ini sudah sempat diputuskan, jadi kembali menunggu persetujuan bersama tugas ini.`,
+        );
+      } else {
+        toast.success(`Tugas diklaim: +${confirmTask.points} poin menunggu approval`);
+      }
     } catch (e) {
       toast.error("Gagal mengklaim: " + (e.message || e));
       throw e;

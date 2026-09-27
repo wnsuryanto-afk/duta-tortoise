@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { useVegTrips } from "@/hooks/useVegTrips";
+import { hanyaLaporan } from "@/lib/laporan";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,13 +57,14 @@ export default function MonthlySalaryPage() {
   const { data: checklists = [] } = useQuery({
     queryKey: ["checklists-salary", period],
     queryFn: async () => {
-      // Bulan disaring di server, bukan di browser — kalau tidak, batas ambil
-      // SDK memotong data dan gaji terhitung kurang tanpa peringatan.
+      // Bulan disaring di server — kalau tidak, batas ambil SDK memotong data
+      // dan gaji terhitung kurang tanpa peringatan. `hanyaLaporan` membuang
+      // checklist Mode Uji supaya data uji tidak jadi rupiah.
       const all = await base44.entities.DailyChecklist.filter({
         status: "approved",
         date: { $gte: `${period}-01`, $lte: `${period}-31` },
       });
-      return all.filter((c) => c.date?.startsWith(period));
+      return hanyaLaporan(all).filter((c) => c.date?.startsWith(period));
     },
     enabled: isAdmin,
   });
@@ -72,7 +73,7 @@ export default function MonthlySalaryPage() {
     queryKey: ["attendance-salary", period],
     queryFn: async () => {
       const all = await base44.entities.Attendance.list("-date", 1000);
-      return all.filter((a) => a.date?.startsWith(period));
+      return hanyaLaporan(all).filter((a) => a.date?.startsWith(period));
     },
     enabled: isAdmin,
   });
@@ -81,12 +82,19 @@ export default function MonthlySalaryPage() {
     queryKey: ["overtime-salary", period],
     queryFn: async () => {
       const all = await base44.entities.OvertimeLog.list("-date", 500);
-      return all.filter((o) => o.date?.startsWith(period));
+      return hanyaLaporan(all).filter((o) => o.date?.startsWith(period));
     },
     enabled: isAdmin,
   });
 
-  const { data: vegTripsMap = {} } = useVegTrips(period, isAdmin);
+  // Upah trip dibaca dari RempesanLog — sumber yang sama dengan slip mingguan.
+  // Sebelumnya `useVegTrips` menurunkannya dari PakanHarian, sehingga pratinjau
+  // bulanan dan slip mingguan menjawab berbeda untuk trip yang sama.
+  const { data: rempesanLogs = [] } = useQuery({
+    queryKey: ["rempesan-logs"],
+    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
+    enabled: isAdmin,
+  });
 
   const { data: bonusRewards = [] } = useQuery({
     queryKey: ["bonus-rewards", period],
@@ -134,7 +142,7 @@ export default function MonthlySalaryPage() {
         bonusRewards,
         attendances,
         overtimeLogs,
-        vegTripsMap,
+        rempesanLogs,
         kasbons,
         periode: period,
         awal,
@@ -165,7 +173,7 @@ export default function MonthlySalaryPage() {
         netSalary: h.bersih,
       };
     }).sort((a, b) => b.netSalary - a.netSalary);
-  }, [salaryConfigs, users, attendances, checklists, bonusRewards, overtimeLogs, vegTripsMap, kasbons, userProfiles, period, companySettings]);
+  }, [salaryConfigs, users, attendances, checklists, bonusRewards, overtimeLogs, rempesanLogs, kasbons, userProfiles, period, companySettings]);
 
   const totalNet = salaryData.reduce((s, e) => s + e.netSalary, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === period)?.label || period;

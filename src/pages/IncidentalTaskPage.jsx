@@ -19,6 +19,9 @@ import { toast } from "sonner";
 import IncidentalTaskForm from "@/components/incidental/IncidentalTaskForm";
 import IncidentalTaskUsulanForm from "@/components/incidental/IncidentalTaskUsulanForm";
 import IncidentalTaskUsulanSection from "@/components/incidental/IncidentalTaskUsulanSection";
+import PageHeader from "@/components/common/PageHeader";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
+import { TeamArt } from "@/components/common/Illustration";
 
 export default function IncidentalTaskPage() {
   const { user, role } = useCurrentUser();
@@ -106,47 +109,40 @@ export default function IncidentalTaskPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-heading font-bold flex items-center gap-2">
-            <Pin className="w-7 h-7 text-orange-500" /> Tugas Insidentil
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Beri tugas dadakan langsung ke karyawan — muncul di checklist "Tugas Hari Ini" mereka & ikut alur approval poin.
-          </p>
-        </div>
-        {isManagerLevel(role) ? (
-          <Button onClick={() => setShowForm(true)} className="gap-1.5">
-            <Plus className="w-4 h-4" /> Buat Tugas
-          </Button>
-        ) : (
-          <Button onClick={() => setShowUsulanForm(true)} className="gap-1.5">
-            <Plus className="w-4 h-4" /> Usulkan Tugas
-          </Button>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div className={`grid gap-3 ${isManagerLevel(role) ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
-          <p className="text-xs text-muted-foreground">Belum Dikerjakan</p>
-        </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-blue-600">{stats.done}</p>
-          <p className="text-xs text-muted-foreground">Dikerjakan</p>
-        </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-muted-foreground">{stats.cancelled}</p>
-          <p className="text-xs text-muted-foreground">Dibatalkan</p>
-        </Card>
-        {isManagerLevel(role) && (
-          <Card className="p-4 text-center border-yellow-200 bg-yellow-50">
-            <p className="text-2xl font-bold text-yellow-600">{stats.usulan}</p>
-            <p className="text-xs text-muted-foreground">Menunggu Persetujuan</p>
-          </Card>
-        )}
-      </div>
+      {/* Judul `text-3xl` + kalimat 108 huruf + empat kartu angka memakan 195px
+          pertama di ponsel — tugasnya sendiri baru muncul di bawah itu. Angkanya
+          pindah jadi chip, kalimat panjangnya diringkas jadi anak judul, dan
+          keterangan lengkapnya tetap ada sebagai `description`. */}
+      <PageHeader
+        title="Tugas Insidentil"
+        subtitle="Tugas dadakan di luar checklist harian"
+        icon={Pin}
+        art={<TeamArt size="md" />}
+        description={
+          isManagerLevel(role)
+            ? "Tugas yang dibuat di sini langsung muncul di \"Tugas Hari Ini\" karyawan dan ikut alur approval poin."
+            : "Usulan yang kamu kirim menunggu persetujuan manajer sebelum jadi tugas."
+        }
+        chips={[
+          { key: "belum", label: "Belum", value: stats.pending, tone: stats.pending > 0 ? "warn" : "default" },
+          { key: "dikerjakan", label: "Dikerjakan", value: stats.done },
+          { key: "batal", label: "Dibatalkan", value: stats.cancelled },
+          ...(isManagerLevel(role)
+            ? [{ key: "usulan", label: "Menunggu persetujuan", value: stats.usulan, tone: stats.usulan > 0 ? "warn" : "default" }]
+            : []),
+        ]}
+        actions={
+          isManagerLevel(role) ? (
+            <Button onClick={() => setShowForm(true)} className="gap-1.5">
+              <Plus className="w-4 h-4" /> Buat Tugas
+            </Button>
+          ) : (
+            <Button onClick={() => setShowUsulanForm(true)} className="gap-1.5">
+              <Plus className="w-4 h-4" /> Usulkan Tugas
+            </Button>
+          )
+        }
+      />
 
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">
@@ -168,14 +164,27 @@ export default function IncidentalTaskPage() {
           <Loader2 className="w-7 h-7 text-primary animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-12 text-center text-muted-foreground">
-          <Pin className="w-10 h-10 mx-auto mb-2 opacity-20" />
-          <p className="font-semibold">Belum ada tugas insidentil</p>
-          <p className="text-sm mt-1">
-            {isManagerLevel(role)
-              ? 'Klik "Buat Tugas" untuk memberi tugas dadakan ke karyawan.'
-              : 'Klik "Usulkan Tugas" untuk mengajukan pekerjaan ke owner/manajer.'}
-          </p>
+        <Card className="p-2">
+          <KeadaanKosong
+            gambar="tim"
+            judul="Belum ada tugas insidentil"
+            keterangan={
+              isManagerLevel(role)
+                ? "Tugas dadakan yang kamu buat muncul di sini dan di layar karyawan."
+                : "Usulan yang kamu kirim muncul di sini sambil menunggu persetujuan."
+            }
+            aksi={
+              isManagerLevel(role) ? (
+                <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
+                  <Plus className="w-4 h-4" /> Buat Tugas
+                </Button>
+              ) : (
+                <Button size="sm" onClick={() => setShowUsulanForm(true)} className="gap-1.5">
+                  <Plus className="w-4 h-4" /> Usulkan Tugas
+                </Button>
+              )
+            }
+          />
         </Card>
       ) : (
         <div className="space-y-3">

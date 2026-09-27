@@ -20,6 +20,9 @@ import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { diPeternakan } from "@/lib/populasiKura";
 import { sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
+import PageHeader from "@/components/common/PageHeader";
+import { HealthArt } from "@/components/common/Illustration";
 
 const FREQ_LABELS = {
   harian:       "Harian",
@@ -381,17 +384,24 @@ export default function TreatmentPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Treatment & Pengingat</h1>
-          <p className="text-muted-foreground text-sm">Jadwal treatment rutin & pengingat kesehatan kura-kura</p>
-        </div>
-        {canEdit && (
-          <Button onClick={() => openForm()} className="gap-2">
-            <Plus className="w-4 h-4" /> Tambah Jadwal
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Treatment & Pengingat"
+        subtitle="Jadwal perawatan rutin kura-kura"
+        icon={ClipboardList}
+        art={<HealthArt size="md" />}
+        chips={
+          pendingRemindersCount > 0
+            ? [{ key: "ingat", label: "Pengingat belum selesai", value: pendingRemindersCount, tone: "warn" }]
+            : []
+        }
+        actions={
+          canEdit && (
+            <Button onClick={() => openForm()} className="gap-2">
+              <Plus className="w-4 h-4" /> Tambah Jadwal
+            </Button>
+          )
+        }
+      />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto gap-1">
@@ -649,7 +659,7 @@ export default function TreatmentPage() {
             )}
           </div>
           {filteredLogs.length === 0 ? (
-            <p className="text-center py-10 text-muted-foreground text-sm">Belum ada log treatment</p>
+            <KeadaanKosong gambar="kesehatan" judul="Belum ada catatan perawatan" keterangan="Perawatan rutin yang sudah dikerjakan akan tercatat di sini." />
           ) : (
             filteredLogs.slice(0, 100).map(l => (
               <Card key={l.id} className="p-3 flex items-center gap-3">

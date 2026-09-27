@@ -27,7 +27,7 @@ export function ThemeProvider({ children }) {
       }
     };
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   const applyTheme = (t) => {

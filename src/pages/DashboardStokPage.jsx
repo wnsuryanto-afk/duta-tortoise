@@ -3,15 +3,18 @@ import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { adalahPemakaian } from "@/lib/urgensiStok";
+import { periksaKedaluwarsa } from "@/lib/kedaluwarsa";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, Calendar, Wallet, Leaf } from "lucide-react";
+import { AlertTriangle, Package, Calendar, Wallet, Leaf, TrendingDown} from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { formatRp } from "@/lib/skuUtils";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
+import PageHeader from "@/components/common/PageHeader";
+import { WarehouseArt } from "@/components/common/Illustration";
 
 function SectionHeader({ icon: IconComp, title, count, color = "text-foreground" }) {
   return (
@@ -71,10 +74,12 @@ export default function DashboardStokPage() {
   ].sort((a, b) => (a.current_stock / (a.minimum_stock || 1)) - (b.current_stock / (b.minimum_stock || 1)));
 
   // ─── B. Akan Kadaluarsa ───────────────────────────────
+  // Botol multi-dosis yang sudah dibuka ikut dihitung: masa pakainya sering
+  // habis jauh sebelum tanggal pada kemasan.
   const expiringSoon = warehouseItems
-    .filter(i => i.expired_date)
-    .map(i => ({ ...i, _daysLeft: Math.ceil((new Date(i.expired_date) - today) / 86400000) }))
-    .filter(i => i._daysLeft <= 30 && i._daysLeft >= 0)
+    .map((i) => ({ i, k: periksaKedaluwarsa(i, today) }))
+    .filter(({ k }) => k.tingkat === "segera_pakai" || k.tingkat === "lewat")
+    .map(({ i, k }) => ({ ...i, _daysLeft: k.sisa, _sebab: k.sebab }))
     .sort((a, b) => a._daysLeft - b._daysLeft);
 
   // ─── C. Pemakaian Pakan vs Ideal bulan ini ───────────
@@ -85,14 +90,24 @@ export default function DashboardStokPage() {
     if (!String(m.date || "").startsWith(currentMonth)) return;
     feedUsageMap[m.item_id] = (feedUsageMap[m.item_id] || 0) + Math.abs(Number(m.quantity) || 0);
   });
+
+  // Pakan yang belum pernah tercatat keluar sama sekali dibedakan dari pakan
+  // yang tercatat sedikit. Nol pemakaian pada pakan yang jelas dipakai setiap
+  // hari berarti pencatatannya yang belum jalan, bukan kuranya yang tidak
+  // makan — dan dua hal itu tidak boleh terlihat sama di layar.
   const feedComparison = feedstocks
     .filter(f => f.daily_ideal > 0)
-    .map(f => ({
-      ...f,
-      used: feedUsageMap[f.id] || 0,
-      ideal: f.daily_ideal * daysInMonth,
-      pct: Math.min(100, Math.round(((feedUsageMap[f.id] || 0) / (f.daily_ideal * daysInMonth)) * 100)),
-    }))
+    .map(f => {
+      const used = feedUsageMap[f.id] || 0;
+      const ideal = f.daily_ideal * daysInMonth;
+      return {
+        ...f,
+        used,
+        ideal,
+        belumTercatat: used === 0,
+        pct: ideal > 0 ? Math.min(100, Math.round((used / ideal) * 100)) : 0,
+      };
+    })
     .sort((a, b) => a.pct - b.pct);
 
   // ─── D. Total Nilai Stok ──────────────────────────────
@@ -114,34 +129,42 @@ export default function DashboardStokPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Dashboard Stok</h1>
-        <p className="text-muted-foreground text-sm">Ringkasan stok pakan & gudang secara terpusat</p>
-      </div>
-
-      {/* Nilai & Pengeluaran — summary row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-4 col-span-2 sm:col-span-1">
-          <p className="text-xs text-muted-foreground mb-1">Total Nilai Stok</p>
-          <p className="text-xl font-bold text-primary">{formatRp(totalStockValue)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Pakan: {formatRp(totalFeedValue)} · Gudang: {formatRp(totalWarehouseValue)}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Stok Kritis</p>
-          <p className="text-xl font-bold text-red-600">{allCritical.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">item perlu diisi</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Kadaluarsa &lt;30 hari</p>
-          <p className="text-xl font-bold text-orange-600">{expiringSoon.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">item di gudang</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Pengeluaran Stok Bulan Ini</p>
-          <p className="text-xl font-bold text-red-700">{formatRp(monthExpense)}</p>
-          <p className="text-xs text-muted-foreground mt-1">pakan + obat + vitamin</p>
-        </Card>
-      </div>
+      {/* Empat angka ini dulunya empat Card dalam `grid-cols-2 sm:grid-cols-4`
+          dengan satu kartu `col-span-2`. Di ponsel susunannya jadi 1 + 2 + 1:
+          kartu "Pengeluaran Stok Bulan Ini" berdiri sendirian setengah lebar
+          dengan keterangannya melipat tiga baris, dan 210px harus digulir
+          sebelum daftar stok kritis terlihat. Sebagai chip, keempatnya
+          mengalir rapi dan angkanya sampai lebih dulu. */}
+      <PageHeader
+        title="Dashboard Stok"
+        subtitle="Pakan dan gudang dalam satu layar"
+        icon={Package}
+        art={<WarehouseArt size="md" />}
+        chips={[
+          { key: "nilai", icon: Wallet, label: "Nilai stok", value: formatRp(totalStockValue) },
+          {
+            key: "kritis",
+            icon: AlertTriangle,
+            label: "Kritis",
+            value: allCritical.length,
+            tone: allCritical.length > 0 ? "bad" : "good",
+            title: `Pakan ${formatRp(totalFeedValue)} · Gudang ${formatRp(totalWarehouseValue)}`,
+          },
+          {
+            key: "kadaluarsa",
+            icon: Calendar,
+            label: "Kedaluwarsa <30 hari",
+            value: expiringSoon.length,
+            tone: expiringSoon.length > 0 ? "warn" : "good",
+          },
+          {
+            key: "belanja",
+            icon: TrendingDown,
+            label: "Keluar bulan ini",
+            value: formatRp(monthExpense),
+          },
+        ]}
+      />
 
       {/* A. Stok Kritis */}
       <Card className="p-5">
@@ -195,10 +218,18 @@ export default function DashboardStokPage() {
                 <div key={item.id} className={`flex items-center gap-3 p-2.5 rounded-xl border ${urgency}`}>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">Exp: {format(parseISO(item.expired_date), "d MMM yyyy", { locale: id })}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item._sebab === "botol_terbuka"
+                        ? `Botol terbuka sejak ${item.tanggal_botol_dibuka || "?"}`
+                        : item.expired_date
+                          ? `Exp: ${format(parseISO(item.expired_date), "d MMM yyyy", { locale: id })}`
+                          : "Tanggal kemasan belum diisi"}
+                    </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className={`text-sm font-bold ${textColor}`}>{item._daysLeft} hari lagi</p>
+                    <p className={`text-sm font-bold ${textColor}`}>
+                      {item._daysLeft < 0 ? `Lewat ${Math.abs(item._daysLeft)} hari` : `${item._daysLeft} hari lagi`}
+                    </p>
                     <p className="text-xs text-muted-foreground">Stok: {item.current_stock} {item.unit}</p>
                   </div>
                 </div>
@@ -220,13 +251,15 @@ export default function DashboardStokPage() {
                 <div className="flex justify-between items-center mb-1">
                   <p className="text-sm font-medium">{f.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {f.used} / {f.ideal.toFixed(1)} {f.unit} ({f.pct}%)
+                    {f.belumTercatat
+                      ? `belum ada pemakaian tercatat · ideal ${f.ideal.toFixed(1)} ${f.unit}`
+                      : `${f.used} / ${f.ideal.toFixed(1)} ${f.unit} (${f.pct}%)`}
                   </p>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${f.pct >= 90 ? "bg-green-500" : f.pct >= 60 ? "bg-yellow-400" : "bg-red-400"}`}
-                    style={{ width: `${f.pct}%` }}
+                    className={`h-full rounded-full transition-all ${f.belumTercatat ? "bg-muted-foreground/30" : f.pct >= 90 ? "bg-green-500" : f.pct >= 60 ? "bg-yellow-400" : "bg-red-400"}`}
+                    style={{ width: f.belumTercatat ? "100%" : `${f.pct}%` }}
                   />
                 </div>
               </div>

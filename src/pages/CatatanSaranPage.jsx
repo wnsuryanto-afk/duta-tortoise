@@ -4,6 +4,9 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { MessageCircle, Loader2 } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
+import { TeamArt } from "@/components/common/Illustration";
 
 /**
  * CatatanSaranPage — halaman "💬 Catatan & Saran" untuk keeper/feeder.
@@ -44,24 +47,28 @@ export default function CatatanSaranPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <MessageCircle className="w-6 h-6 text-primary" /> Catatan & Saran
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Catatan dari AI dan owner untuk bantu kamu bekerja lebih baik.
-        </p>
-      </div>
+      <PageHeader
+        title="Catatan & Saran"
+        subtitle="Masukan dari owner dan dari foto tugasmu"
+        icon={MessageCircle}
+        art={<TeamArt size="md" />}
+        chips={
+          visibleEntries.length > 0
+            ? [{ key: "jml", label: "Catatan", value: visibleEntries.length }]
+            : []
+        }
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </div>
       ) : visibleEntries.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-30" />
-          <p>Belum ada catatan. Kerjakan task dengan foto untuk mendapat saran.</p>
-        </div>
+        <KeadaanKosong
+          gambar="tim"
+          judul="Belum ada catatan"
+          keterangan="Kerjakan tugas sambil memotret hasilnya — sarannya muncul di sini."
+        />
       ) : (
         <div className="space-y-3">
           {visibleEntries.map((e, i) => {

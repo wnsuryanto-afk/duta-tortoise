@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +13,8 @@ import { MessageSquare, Send, Loader2, Eye, CheckCircle, XCircle, Filter } from 
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
+import PageHeader from "@/components/common/PageHeader";
+import { TeamArt } from "@/components/common/Illustration";
 
 const STATUS_CONFIG = {
   baru:             { label: "Baru",            color: "bg-yellow-100 text-yellow-700" },
@@ -207,19 +208,21 @@ export default function KritikSaranPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <MessageSquare className="w-5 h-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Kotak Masukan</h1>
-          <p className="text-sm text-muted-foreground">Kritik & saran untuk kemajuan bersama — masukan yang ditindaklanjuti dapat 10 poin bonus</p>
-        </div>
-        {canReview && newCount > 0 && (
-          <Badge className="ml-auto bg-red-500 text-white">{newCount} baru</Badge>
-        )}
-      </div>
+      {/* Anak kalimat lamanya 88 huruf dan memuat dua hal sekaligus: ajakan
+          dan imbalannya. Yang menggerakkan orang adalah imbalannya, jadi
+          itu yang naik jadi chip; ajakannya cukup satu frasa. */}
+      <PageHeader
+        title="Kotak Masukan"
+        subtitle="Kritik & saran untuk kemajuan bersama"
+        icon={MessageSquare}
+        art={<TeamArt size="md" />}
+        chips={[
+          { key: "bonus", label: "Masukan yang ditindaklanjuti", value: "+10 poin", tone: "good" },
+          ...(canReview && newCount > 0
+            ? [{ key: "baru", label: "Belum ditinjau", value: newCount, tone: "warn" }]
+            : []),
+        ]}
+      />
 
       {/* Form Submit */}
       {canSubmit && (

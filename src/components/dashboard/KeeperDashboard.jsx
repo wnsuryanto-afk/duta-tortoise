@@ -14,7 +14,13 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
+import { getCurrentPosition, haversineDistance } from "@/components/attendance/useGPSLocation";
+import { barisAbsensiSah, catatCheckOut } from "@/lib/absensi";
+import { menitTerlambat, perluAlasan } from "@/lib/keterlambatan";
+import AlasanTerlambatDialog from "@/components/attendance/AlasanTerlambatDialog";
+import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
+import RumputBelumDicatat from "@/components/rempesan/RumputBelumDicatat";
+import { useTestMode } from "@/lib/useTestMode";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
 import KeeperAttentionWidget from "@/components/dashboard/KeeperAttentionWidget";
 import PakanHarianWidget from "@/components/pakan/PakanHarianWidget";
@@ -36,18 +42,23 @@ function getMinutesUntil(timeStr) {
 export default function KeeperDashboard() {
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
+  const { testModeTag } = useTestMode();
   const today = format(new Date(), "yyyy-MM-dd");
   const currentPeriod = format(new Date(), "yyyy-MM");
   const [checkLoading, setCheckLoading] = useState(false);
   const [gpsError, setGpsError] = useState(null);
   const [locationWarning, setLocationWarning] = useState(null);
+  // Jam masuk yang menunggu alasannya. Dikunci saat dialog dibuka supaya jam
+  // yang tersimpan sama persis dengan jam yang ditunjukkan ke orangnya —
+  // bukan jam beberapa menit kemudian saat dia selesai memotret rumputnya.
+  const [menungguAlasan, setMenungguAlasan] = useState(null);
 
   // ── Absensi ──
   const { data: todayAttendance } = useQuery({
     queryKey: ["attendance-today", user?.email, today],
     queryFn: async () => {
       const res = await base44.entities.Attendance.filter({ employee_email: user.email, date: today });
-      return res[0] || null;
+      return barisAbsensiSah(res);
     },
     enabled: !!user?.email,
     refetchInterval: 30000,
@@ -112,6 +123,20 @@ export default function KeeperDashboard() {
 
   const handleCheckIn = async () => {
     if (!user) return;
+    const jam = nowStr();
+    const mulai = salaryConfig?.shift_start;
+    // Alasan ditanyakan DULU, sebelum GPS dan sebelum baris dibuat. Menanyakan
+    // sesudah baris tersimpan berarti ada jendela di mana barisnya sudah ada
+    // tanpa keterangan, dan orang bisa menutup dialognya begitu saja.
+    if (perluAlasan(jam, mulai)) {
+      setMenungguAlasan({ jam, menit: menitTerlambat(jam, mulai) });
+      return;
+    }
+    await jalankanCheckIn(jam, null);
+  };
+
+  const jalankanCheckIn = async (jam, isianAlasan) => {
+    setMenungguAlasan(null);
     setCheckLoading(true);
     setGpsError(null);
     setLocationWarning(null);
@@ -158,13 +183,13 @@ export default function KeeperDashboard() {
     setGpsError(null);
     setLocationWarning(null);
 
+    let posisi = null;
     if (farmConfigured) {
       // GPS gagal tidak mengunci check out — lihat catatan di GuidedHariIni.
       let pos = null;
       try {
         pos = await getCurrentPosition();
-      } catch (err) {
-        setGpsError(null);
+      } catch {
         setLocationWarning("GPS tidak terbaca. Check out tetap dicatat, tapi ditandai tanpa lokasi.");
       }
       if (pos) {
@@ -175,44 +200,31 @@ export default function KeeperDashboard() {
           return;
         }
       }
-      const checkoutTime = nowStr();
-      const shiftEnd = todayAttendance.shift_end || salaryConfig?.shift_end || "16:00";
-      const overtimeHours = calcOvertimeHours(checkoutTime, shiftEnd);
-      await base44.entities.Attendance.update(todayAttendance.id, {
-        check_out: checkoutTime,
-        check_out_lat: pos ? pos.lat : null,
-        check_out_lng: pos ? pos.lng : null,
-        checkout_location_verified: !!pos,
-        overtime_hours: overtimeHours,
-      });
-      if (overtimeHours > 0) {
-        await base44.entities.OvertimeLog.create({
-          employee_name: todayAttendance.employee_name,
-          employee_email: todayAttendance.employee_email,
-          date: today,
-          hours: overtimeHours,
-          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
-        });
-      }
-    } else {
-      const checkoutTime = nowStr();
-      const shiftEnd = todayAttendance.shift_end || salaryConfig?.shift_end || "16:00";
-      const overtimeHours = calcOvertimeHours(checkoutTime, shiftEnd);
-      await base44.entities.Attendance.update(todayAttendance.id, {
-        check_out: checkoutTime,
-        overtime_hours: overtimeHours,
-      });
-      if (overtimeHours > 0) {
-        await base44.entities.OvertimeLog.create({
-          employee_name: todayAttendance.employee_name,
-          employee_email: todayAttendance.employee_email,
-          date: today,
-          hours: overtimeHours,
-          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
-        });
-      }
+      posisi = pos;
     }
-    queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
+
+    try {
+      const { lembur, lemburKasar, adaBukti } = await catatCheckOut({
+        absensi: { ...todayAttendance, shift_end: todayAttendance.shift_end || salaryConfig?.shift_end },
+        jam: nowStr(),
+        lat: posisi ? posisi.lat : null,
+        lng: posisi ? posisi.lng : null,
+        adaLokasi: !!posisi,
+        checklist: todayChecklist,
+        tandaUji: testModeTag,
+      });
+      if (!adaBukti && lemburKasar > 0 && lembur === 0) {
+        setLocationWarning(
+          "Kamu pulang lewat jam shift, tapi tidak ada tugas yang tercatat setelah jam itu — jadi lembur belum dihitung. Centang dulu pekerjaan yang kamu kerjakan sore ini.",
+        );
+      }
+    } catch (err) {
+      setGpsError(`Check out gagal tersimpan: ${err.message}. Coba lagi.`);
+      setCheckLoading(false);
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
     queryClient.invalidateQueries({ queryKey: ["overtime-logs"] });
     setCheckLoading(false);
   };
@@ -305,10 +317,15 @@ export default function KeeperDashboard() {
             <div>
               <p className="font-semibold text-sm">Absensi Hari Ini</p>
               {hasCheckedIn ? (
-                <p className="text-xs text-muted-foreground">
-                  Masuk: <span className="font-medium text-primary">{todayAttendance.check_in}</span>
-                  {hasCheckedOut && <> · Keluar: <span className="font-medium text-green-600">{todayAttendance.check_out}</span></>}
-                </p>
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Masuk: <span className="font-medium text-primary">{todayAttendance.check_in}</span>
+                    {hasCheckedOut && <> · Keluar: <span className="font-medium text-green-600">{todayAttendance.check_out}</span></>}
+                  </p>
+                  {/* Keterangan jam masuk dikembalikan ke orangnya, bukan hanya
+                      disimpan diam-diam untuk dilihat pemilik. */}
+                  <KeteranganMasuk att={todayAttendance} />
+                </>
               ) : (
                 <p className="text-xs text-muted-foreground">Belum absen hari ini</p>
               )}
@@ -360,6 +377,12 @@ export default function KeeperDashboard() {
           hasCheckedIn={hasCheckedIn}
           onPesan={(jenis, teks) => (jenis === "warn" ? toast.error(teks) : toast.success(teks))}
         />
+
+        {/* Rumput yang sudah diambil tapi belum dicatat.
+            Ditaruh di layar yang dibuka tiap hari, bukan cuma di halaman
+            Rempesan yang jarang dibuka — itulah sebabnya RempesanLog selama ini
+            nol isinya meski halaman, formulir, dan tarifnya sudah lengkap. */}
+        <RumputBelumDicatat email={user?.email} milikSendiri batas={4} />
 
         {/* Lembur info */}
         {hasCheckedOut && overtime > 0 && (
@@ -511,6 +534,15 @@ export default function KeeperDashboard() {
           </div>
         </div>
       </Card>
+
+      <AlasanTerlambatDialog
+        open={!!menungguAlasan}
+        onClose={() => setMenungguAlasan(null)}
+        jamMasuk={menungguAlasan?.jam}
+        menitTelat={menungguAlasan?.menit}
+        namaKaryawan={user?.full_name}
+        onSimpan={(isian) => jalankanCheckIn(menungguAlasan.jam, isian)}
+      />
     </div>
   );
 }

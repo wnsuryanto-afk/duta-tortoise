@@ -109,6 +109,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
       });
 
       // ── INTEGRASI STOK PAKAN (anti-dobel via linked_pakan_harian_id) ──
+      let stokGagal = null;
       if (addToStock && pakanHarian?.id) {
         try {
           const existingMove = await base44.entities.StockMovement.filter({
@@ -123,13 +124,28 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
             };
             const mapping = SOURCE_MAP[form.feed_source] || SOURCE_MAP.lainnya;
 
+            // Nama stok mengikuti JENIS pakannya bila keeper menyebutkannya.
+            //
+            // Sebelum ini yang dipakai selalu nama ember dari SOURCE_MAP, dan
+            // `feed_type_detail` dibuang begitu saja. Akibatnya makanan yang
+            // berbeda menumpuk jadi satu: pada 8 September 2026, Mentimun 64,97
+            // keranjang dan Waloh 7 keranjang sama-sama masuk ke "Pakan
+            // Lainnya", sehingga stoknya berbunyi 71,97 keranjang "lainnya" —
+            // angka yang tidak bisa dipakai merencanakan apa pun.
+            const detail = String(form.feed_type_detail || "").trim();
+            const namaStok = detail || mapping.name;
+
+            const kunci = (t) => String(t || "").trim().toLowerCase().replace(/\s+/g, " ");
             const allFeed = await base44.entities.FeedStock.list("-created_date", 200);
+            // Satuannya HARUS ikut dicocokkan. Ada "Mentimun" dalam kg di daftar
+            // pakan; menambahkan keranjang ke sana akan mencampur dua satuan
+            // pada satu angka stok.
             let feedItem = allFeed.find(s =>
-              s.name?.toLowerCase() === mapping.name.toLowerCase() && s.unit === "keranjang"
+              kunci(s.name) === kunci(namaStok) && s.unit === "keranjang"
             );
             if (!feedItem) {
               feedItem = await base44.entities.FeedStock.create({
-                name: mapping.name,
+                name: namaStok,
                 category: mapping.category,
                 unit: "keranjang",
                 current_stock: 0,
@@ -175,11 +191,18 @@ export default function PakanHarianForm({ open, onClose, user, onSaved }) {
             qc.invalidateQueries({ queryKey: ["feed-movements"] });
           }
         } catch (e) {
-          console.error("Stock integration error:", e);
+          // Dulu kegagalan di sini hanya masuk console, lalu layar tetap
+          // mengumumkan "stok diperbarui". Orang yang mencatat pakan tidak
+          // punya cara tahu bahwa stoknya sebenarnya tidak bertambah.
+          stokGagal = e?.message || "penyebabnya tidak terbaca";
         }
       }
 
-      toast.success("Pengambilan pakan tercatat" + (addToStock ? " & stok diperbarui" : ""));
+      if (stokGagal) {
+        toast.warning(`Pengambilan pakan tercatat, tetapi stok GAGAL diperbarui — ${stokGagal}`);
+      } else {
+        toast.success("Pengambilan pakan tercatat" + (addToStock ? " & stok diperbarui" : ""));
+      }
       onSaved?.();
       setForm(EMPTY);
       clearPhoto();

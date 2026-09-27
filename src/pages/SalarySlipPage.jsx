@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, TrendingUp, Users, Filter, Star, CheckCircle2, XCircle, Eye } from "lucide-react";
+import { FileText, TrendingUp, Users, Filter, Star, CheckCircle2, XCircle, Eye, Receipt } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess, formatRole } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
@@ -15,16 +15,13 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 import AlurGaji from "@/components/salary/AlurGaji";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
+import { ringkasUangSlip, rupaStatusSlip } from "@/lib/slipGaji";
+import PageHeader from "@/components/common/PageHeader";
+import { WalletArt } from "@/components/common/Illustration";
 
-const statusConfig = {
-  draft:    { label: "Draft",     color: "bg-muted text-foreground" },
-  approved: { label: "Disetujui", color: "bg-blue-100 text-blue-700" },
-  paid:     { label: "Dibayar",   color: "bg-green-100 text-green-700" },
-  // Slip yang dibatalkan tetap ditampilkan, tidak dihapus: alasan pembatalannya
-  // ada di kolom catatan, dan riwayat yang hilang lebih membingungkan daripada
-  // riwayat yang bertanda.
-  dibatalkan: { label: "Dibatalkan", color: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 line-through" },
-};
+// Rupa status pindah ke lib/slipGaji.js. Peta lama di sini tidak memuat
+// "dibatalkan", dan pemanggilnya jatuh ke `|| statusConfig.draft` — slip yang
+// sudah dibatalkan tampil persis seperti slip yang menunggu diproses.
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -91,20 +88,41 @@ export default function SalarySlipPage() {
     return Object.entries(map).sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
   }, [filtered]);
 
-  const totalPaid = filtered.filter(s => s.status === "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
-  const totalPending = filtered.filter(s => s.status !== "paid").reduce((sum, s) => sum + (s.net_total || 0), 0);
+  // `status !== "paid"` bukan "belum dibayar", melainkan "apa pun selain
+  // dibayar" — dan yang ikut tertangkap adalah slip yang sudah DIBATALKAN.
+  // Di data yang ada, kelima slip berstatus dibatalkan dan ditandai
+  // dikecualikan dari laporan; jumlahnya Rp 4.925.850 terbaca sebagai gaji
+  // yang masih harus dibayarkan padahal tidak sepeser pun terutang.
+  const { dibayar: totalPaid, terutang: totalPending, batal: totalBatal, jumlahBatal } =
+    ringkasUangSlip(filtered);
 
   if (!canAccess(role, "payroll") && !canAccess(role, "salary-slip")) return <AccessDenied />;
 
   return (
     <div className="space-y-6">
       <AlurGaji aktif="slip" />
-      <div>
-        <h1 className="text-3xl font-heading font-bold">Slip Gaji Rutin</h1>
-        <p className="text-muted-foreground mt-1">
-          Histori slip gaji bulanan karyawan termasuk bonus poin KPI · klik "Lihat" untuk detail &amp; cetak
-        </p>
-      </div>
+      {/* Anak kalimat lamanya 121 huruf karena menggabungkan tiga hal: siapa
+          yang digaji, siklusnya, dan cara memakai layarnya. Yang ketiga tidak
+          perlu ditulis — tombol "Lihat" sudah ada di tiap baris. */}
+      <PageHeader
+        title="Slip Gaji Rutin"
+        // Layar ini memuat slip mingguan DAN bulanan sekaligus, jadi anak
+        // kalimatnya tidak boleh mengaku salah satu. Versi cabang memakai
+        // variabel `mode` yang tidak pernah ada di layar ini.
+        subtitle="Slip mingguan dan bulanan, termasuk bonus poin KPI"
+        icon={Receipt}
+        art={<WalletArt size="md" />}
+        chips={[
+          { key: "belum", label: "Belum dibayar", value: fmt(totalPending), tone: totalPending > 0 ? "warn" : "good" },
+          { key: "lunas", label: "Sudah dibayar", value: fmt(totalPaid) },
+          // Slip batal disebut, bukan dihilangkan: lima slip yang lenyap dari
+          // hitungan tanpa keterangan lebih membingungkan daripada lima slip
+          // yang tertulis batal.
+          ...(jumlahBatal > 0
+            ? [{ key: "batal", label: `${jumlahBatal} slip dibatalkan`, value: fmt(totalBatal) }]
+            : []),
+        ]}
+      />
 
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -198,14 +216,14 @@ export default function SalarySlipPage() {
           ) : (
             <div className="space-y-3">
               {filtered.map(slip => {
-                const conf = statusConfig[slip.status] || statusConfig.draft;
+                const conf = rupaStatusSlip(slip.status);
                 return (
                   <Card key={slip.id} className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-semibold">{resolveName(slip.employee_email, slip.employee_name)}</span>
-                          <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
+                          <Badge className={`text-[11px] ${conf.kelas}`}>{conf.label}</Badge>
                           <Badge variant="outline" className="text-[11px]">{formatRole(slip.employee_role)}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">

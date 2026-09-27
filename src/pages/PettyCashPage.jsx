@@ -25,6 +25,8 @@ import TopUpRequestForm from "@/components/pettycash/TopUpRequestForm";
 import TopUpRequestList from "@/components/pettycash/TopUpRequestList";
 import DisburseProofDialog from "@/components/pettycash/DisburseProofDialog";
 import { saldoTerkini } from "@/lib/kasKecil";
+import PageHeader from "@/components/common/PageHeader";
+import { WalletArt } from "@/components/common/Illustration";
 
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
@@ -243,12 +245,12 @@ export default function PettyCashPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <Wallet className="w-6 h-6 text-primary" /> Kas Kecil
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">Saldo kas kecil operasional & request dana</p>
-      </div>
+      <PageHeader
+        title="Kas Kecil"
+        subtitle="Saldo operasional & permintaan dana"
+        icon={Wallet}
+        art={<WalletArt size="md" />}
+      />
 
       {/* ── SALDO PANEL ── */}
       {isOwnerAdminManajer && (

@@ -72,8 +72,14 @@ export default function PageHeader({
     >
       <LeafPattern className="text-primary opacity-[0.045]" />
 
-      <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div className="min-w-0 md:flex-1">
+      {/* Di ponsel kepala ini MENUMPUK, tidak berdampingan.
+          Sebelumnya `flex` tanpa arah: kolom tombol `flex-shrink-0` memakan
+          hampir seluruh 390px, kolom judul tersisa sekitar 100px — judulnya
+          terpotong, anak kalimatnya melipat empat baris, dan chip angkanya
+          berjejer ke bawah satu per baris alih-alih mengalir. Itu sebabnya
+          kepala ini nyaris tak dipakai halaman mana pun. */}
+      <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5">
             {Icon && (
               <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/12 text-primary flex-shrink-0">
@@ -87,7 +93,7 @@ export default function PageHeader({
                 {title}
               </h1>
               {subtitle && (
-                <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{subtitle}</p>
               )}
             </div>
           </div>
@@ -112,9 +118,16 @@ export default function PageHeader({
           {children && <div className="mt-4">{children}</div>}
         </div>
 
-        <div className="flex flex-col md:items-end gap-3 md:flex-shrink-0">
+        {/* Di ponsel kolom ini turun ke bawah judul, bukan naik ke atasnya.
+            Semula `order-first`, dengan maksud supaya tombolnya terlihat tanpa
+            menggulir — hasilnya tombol "Buat Tugas" melayang di atas nama
+            halaman, dan orang membaca perintah sebelum tahu sedang di mana.
+            Kepala ini sudah muat satu layar; tombolnya tetap terlihat. */}
+        <div className="flex flex-col items-stretch sm:items-end gap-3 sm:flex-shrink-0">
           {actions && (
-            <div className="flex items-center gap-2 flex-wrap justify-start md:justify-end">{actions}</div>
+            <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+              {actions}
+            </div>
           )}
           {art && (
             <div className="hidden md:block opacity-90 animate-float">{art}</div>

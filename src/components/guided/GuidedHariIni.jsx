@@ -9,7 +9,12 @@ import {
   MapPin, Heart, CheckCircle2, AlertTriangle,
   Smile, Star, Bell, X, ClipboardList, Clock, Camera, UtensilsCrossed
 } from "lucide-react";
-import { getCurrentPosition, haversineDistance, calcOvertimeHours } from "@/components/attendance/useGPSLocation";
+import { getCurrentPosition, haversineDistance } from "@/components/attendance/useGPSLocation";
+import { barisAbsensiSah, catatCheckIn, catatCheckOut } from "@/lib/absensi";
+import { menitTerlambat, perluAlasan } from "@/lib/keterlambatan";
+import AlasanTerlambatDialog from "@/components/attendance/AlasanTerlambatDialog";
+import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
+import { useTestMode } from "@/lib/useTestMode";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import BonusBulanIni from "./BonusBulanIni";
 import TugasHariIni from "@/components/sop/TugasHariIni";
@@ -111,6 +116,7 @@ function Widget({ children, done = false, className = "" }) {
 // ── Main Component ──────────────────────────────────────────────────────
 export default function GuidedHariIni({ user }) {
   const qc = useQueryClient();
+  const { testModeTag } = useTestMode();
   const today = format(new Date(), "yyyy-MM-dd");
 
   // ── Local state ──
@@ -136,6 +142,7 @@ export default function GuidedHariIni({ user }) {
   const [showCatatan, setShowCatatan]   = useState(false);
   const [showSelfie, setShowSelfie]     = useState(false);
   const [selfieMode, setSelfieMode]     = useState(null); // "checkin" | "checkout"
+  const [menungguAlasan, setMenungguAlasan] = useState(null);
   const [sembuhPrompt, setSembuhPrompt]   = useState(new Set()); // tortoise_id yg sedang ditanya "sudah sembuh?"
   const [savingPerawatan, setSavingPerawatan] = useState(null); // tortoise_id sedang mencatat perawatan
 
@@ -144,7 +151,7 @@ export default function GuidedHariIni({ user }) {
     queryKey: ["attendance-today", user?.email, today],
     queryFn: async () => {
       const res = await base44.entities.Attendance.filter({ employee_email: user.email, date: today });
-      return res[0] || null;
+      return barisAbsensiSah(res);
     },
     enabled: !!user?.email,
     staleTime: 2 * 60 * 1000,
@@ -441,6 +448,20 @@ export default function GuidedHariIni({ user }) {
 
   const handleCheckIn = async (selfieUrl) => {
     if (hasCheckedIn) return;
+    const jam = nowStr();
+    // Selfie sudah diambil; alasannya ditanyakan sesudah itu dan SEBELUM baris
+    // dibuat. Jamnya dikunci di sini supaya yang tersimpan sama dengan yang
+    // ditunjukkan di dialog — bukan jam beberapa menit kemudian setelah orangnya
+    // selesai memotret rumput.
+    if (perluAlasan(jam, salaryConfig?.shift_start)) {
+      setMenungguAlasan({ jam, menit: menitTerlambat(jam, salaryConfig?.shift_start), selfieUrl });
+      return;
+    }
+    await jalankanCheckIn(jam, selfieUrl, null);
+  };
+
+  const jalankanCheckIn = async (jam, selfieUrl, isianAlasan) => {
+    setMenungguAlasan(null);
     setLoading(true);
     let lat = null, lng = null, verified = false;
     try {
@@ -454,21 +475,32 @@ export default function GuidedHariIni({ user }) {
     } catch {
       showMsg("warn", "Tidak bisa dapat lokasi GPS. Izinkan akses lokasi di HP kamu.");
     }
-    await base44.entities.Attendance.create({
-      employee_id: user.id,
-      employee_name: user.full_name || user.email,
-      employee_email: user.email,
-      date: today,
-      check_in: nowStr(),
-      status: "hadir",
-      check_in_lat: lat, check_in_lng: lng,
-      location_verified: verified,
-      shift_start: salaryConfig?.shift_start || "08:00",
-      shift_end: salaryConfig?.shift_end || "16:00",
-      selfie_checkin_url: selfieUrl || "",
-    });
-    qc.invalidateQueries({ queryKey: ["attendance-today"] });
-    flashPoin("Check in", 5);
+    let sudahAda = false;
+    try {
+      ({ sudahAda } = await catatCheckIn({
+        user, tanggal: today, jam,
+        lat, lng, verified,
+        shiftStart: salaryConfig?.shift_start,
+        shiftEnd: salaryConfig?.shift_end,
+        selfieUrl,
+        alasan: isianAlasan?.alasan,
+        catatanAlasan: isianAlasan?.catatan,
+        fotoAlasan: isianAlasan?.fotoUrl,
+        tandaUji: testModeTag,
+      }));
+    } catch (err) {
+      showMsg("error", `Check in gagal tersimpan: ${err.message}. Coba lagi.`);
+      setLoading(false);
+      return;
+    }
+
+    // Kueri harus benar-benar segar sebelum tombolnya dilepas: `hasCheckedIn`
+    // dibaca dari cache, dan selama cache masih basi tombol check-in tampil
+    // aktif lagi. Ketukan kedua di jendela itulah yang melahirkan baris kembar.
+    await qc.invalidateQueries({ queryKey: ["attendance-today"] });
+
+    if (sudahAda) showMsg("warn", "Kamu sudah check in hari ini — absensinya tidak dicatat dua kali.");
+    else flashPoin("Check in", 5);
     setLoading(false);
   };
 
@@ -477,6 +509,7 @@ export default function GuidedHariIni({ user }) {
   const handleCheckOut = async (selfieUrl) => {
     if (hasCheckedOut || !attendance) return;
     setLoading(true);
+    let posisi = null;
     if (farmConfigured) {
       // GPS mati / izin ditolak BUKAN alasan mengunci orang dari check out.
       // Check out tetap jalan, tapi ditandai tidak terverifikasi agar terlihat
@@ -493,43 +526,30 @@ export default function GuidedHariIni({ user }) {
       } else {
         showMsg("warn", "GPS tidak terbaca. Check out tetap dicatat, tapi ditandai tanpa lokasi.");
       }
-      const checkoutTime = nowStr();
-      const shiftEnd = attendance.shift_end || salaryConfig?.shift_end || "16:00";
-      const ot = calcOvertimeHours(checkoutTime, shiftEnd);
-      await base44.entities.Attendance.update(attendance.id, {
-        check_out: checkoutTime,
-        check_out_lat: pos ? pos.lat : null,
-        check_out_lng: pos ? pos.lng : null,
-        checkout_location_verified: !!pos,
-        overtime_hours: ot,
-        selfie_checkout_url: selfieUrl || "",
-      });
-      if (ot > 0) {
-        await base44.entities.OvertimeLog.create({
-          employee_name: attendance.employee_name,
-          employee_email: attendance.employee_email,
-          date: today, hours: ot,
-          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
-        });
-      }
-    } else {
-      const checkoutTime = nowStr();
-      const shiftEnd = attendance.shift_end || salaryConfig?.shift_end || "16:00";
-      const ot = calcOvertimeHours(checkoutTime, shiftEnd);
-      await base44.entities.Attendance.update(attendance.id, {
-        check_out: checkoutTime, overtime_hours: ot,
-        selfie_checkout_url: selfieUrl || "",
-      });
-      if (ot > 0) {
-        await base44.entities.OvertimeLog.create({
-          employee_name: attendance.employee_name,
-          employee_email: attendance.employee_email,
-          date: today, hours: ot,
-          notes: `Lembur otomatis dari checkout ${checkoutTime}`,
-        });
-      }
+      posisi = pos;
     }
-    qc.invalidateQueries({ queryKey: ["attendance-today"] });
+
+    try {
+      const { lembur, lemburKasar, adaBukti } = await catatCheckOut({
+        absensi: { ...attendance, shift_end: attendance.shift_end || salaryConfig?.shift_end },
+        jam: nowStr(),
+        lat: posisi ? posisi.lat : null,
+        lng: posisi ? posisi.lng : null,
+        adaLokasi: !!posisi,
+        selfieUrl,
+        tandaUji: testModeTag,
+      });
+      if (!adaBukti && lemburKasar > 0 && lembur === 0) {
+        showMsg("warn", "Kamu pulang lewat jam shift, tapi tidak ada tugas yang tercatat setelah jam itu — lembur belum dihitung. Centang dulu pekerjaan sore ini.");
+      }
+    } catch (err) {
+      showMsg("error", `Check out gagal tersimpan: ${err.message}. Coba lagi.`);
+      setLoading(false);
+      return;
+    }
+
+    await qc.invalidateQueries({ queryKey: ["attendance-today"] });
+    qc.invalidateQueries({ queryKey: ["overtime-logs"] });
     showMsg("success", "Check out berhasil! Kerja bagus hari ini.");
     setLoading(false);
   };
@@ -1554,11 +1574,25 @@ export default function GuidedHariIni({ user }) {
           title={selfieMode === "checkin" ? "Selfie Check In" : "Selfie Check Out"}
         />
 
+        <AlasanTerlambatDialog
+          open={!!menungguAlasan}
+          onClose={() => setMenungguAlasan(null)}
+          jamMasuk={menungguAlasan?.jam}
+          menitTelat={menungguAlasan?.menit}
+          namaKaryawan={user?.full_name}
+          onSimpan={(isian) =>
+            jalankanCheckIn(menungguAlasan.jam, menungguAlasan.selfieUrl, isian)
+          }
+        />
+
         {/* Selfie preview */}
         {attendance?.selfie_checkin_url && (
           <div className="flex items-center gap-2 px-1">
             <img src={attendance.selfie_checkin_url} alt="Selfie masuk" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
-            <span className="text-xs text-muted-foreground">Selfie masuk {attendance.check_in}</span>
+            <div className="min-w-0">
+              <span className="text-xs text-muted-foreground">Selfie masuk {attendance.check_in}</span>
+              <KeteranganMasuk att={attendance} />
+            </div>
           </div>
         )}
 

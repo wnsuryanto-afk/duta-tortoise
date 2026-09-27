@@ -20,10 +20,12 @@ import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AlurGaji from "@/components/salary/AlurGaji";
+import { sudahAdaRempesan } from "@/lib/rempesan";
 import AccessDenied from "@/components/common/AccessDenied";
 import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
 import { useVegTrips } from "@/hooks/useVegTrips";
 import { useCompanySettings } from "@/lib/useCompanySettings";
+import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const MAX_KASBON = 1000000;
 
@@ -182,7 +184,7 @@ function KasbonTab({ user, role, isOwnerOrManajer }) {
         {isLoading ? (
           <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>
         ) : myKasbons.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Belum ada pengajuan kasbon</div>
+          <KeadaanKosong gambar="tim" judul="Belum ada pengajuan kasbon" keterangan="Pengajuan dari karyawan akan muncul di sini untuk Anda setujui." />
         ) : (
           <div className="divide-y">
             {myKasbons.map(k => {
@@ -508,6 +510,100 @@ function OvertimeDialog({ open, onClose, employees }) {
   );
 }
 
+/**
+ * Pemilik mencatatkan trip ambil sayur atas nama karyawan.
+ *
+ * Dulu menulis `VegetablePickup` — entitas yang tidak dibaca oleh satu pun
+ * layar yang menerbitkan slip, jadi trip yang dicatat di sini tidak pernah
+ * sampai ke gaji siapa pun. Sekarang menulis `RempesanLog`, sumber yang sama
+ * dengan slip mingguan dan bulanan.
+ *
+ * Langsung berstatus `approved`: yang mencatat adalah pemilik, dan pemilik
+ * adalah yang menyetujui — meminta dia menyetujui catatannya sendiri hanya
+ * menambah satu ketukan tanpa menambah pengawasan apa pun.
+ *
+ * Kolom "Jumlah Trip" dihapus. Ia dulu boleh diisi lebih dari satu dan
+ * dijumlahkan tanpa membuang tanggal kembar, padahal slip mingguan, halaman
+ * Rempesan, dan formulir keeper semuanya sepakat maksimal satu trip per hari.
+ */
+function VegetableDialog({ open, onClose, employees }) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), weight_kg: "", notes: "" });
+  const [saving, setSaving] = useState(false);
+  const [galat, setGalat] = useState("");
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSave = async () => {
+    const emp = employees.find(e => e.email === form.employee_email);
+    setSaving(true);
+    setGalat("");
+    try {
+      // Dibaca ulang dari server tepat sebelum membuat — penjaga yang sama
+      // dipakai formulir keeper. Satu trip per hari berlaku untuk siapa pun
+      // yang mencatatnya, termasuk pemilik.
+      const adaDulu = await base44.entities.RempesanLog.filter({
+        employee_email: form.employee_email,
+        date: form.date,
+      });
+      if (sudahAdaRempesan(adaDulu, form.employee_email, form.date)) {
+        setGalat("Tanggal ini sudah punya catatan rempesan — satu trip per hari.");
+        setSaving(false);
+        return;
+      }
+      await base44.entities.RempesanLog.create({
+        employee_email: form.employee_email,
+        employee_name: emp?.full_name || emp?.email || "",
+        employee_id: emp?.id || "",
+        date: form.date,
+        weight_kg: Number(form.weight_kg) || 0,
+        notes: form.notes || "",
+        status: "approved",
+        approved_by: "Dicatat pemilik di Hitung Gaji",
+        approved_date: format(new Date(), "yyyy-MM-dd"),
+        recorded_by_name: "Pemilik",
+      });
+      qc.invalidateQueries({ queryKey: ["rempesan-logs"] });
+      setSaving(false);
+      onClose();
+      setForm({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), weight_kg: "", notes: "" });
+    } catch (e) {
+      setGalat(e?.message || "Gagal menyimpan.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Catat Pengambilan Sayur</DialogTitle></DialogHeader>
+        <div className="space-y-3 mt-2">
+          <div>
+            <Label>Karyawan *</Label>
+            <Select value={form.employee_email} onValueChange={v => set("employee_email", v)}>
+              <SelectTrigger><SelectValue placeholder="Pilih karyawan" /></SelectTrigger>
+              <SelectContent>
+                {employees.map(e => <SelectItem key={e.id} value={e.email}>{e.full_name || e.email}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Tanggal</Label><Input type="date" value={form.date} onChange={e => set("date", e.target.value)} /></div>
+            <div><Label>Berat (kg)</Label><Input type="number" step="0.1" min="0" value={form.weight_kg} onChange={e => set("weight_kg", e.target.value)} placeholder="opsional" /></div>
+          </div>
+          <div><Label>Catatan</Label><Input value={form.notes} onChange={e => set("notes", e.target.value)} /></div>
+          <p className="text-xs text-muted-foreground">
+            Tercatat langsung sebagai <b>disetujui</b> — satu trip per hari, masuk slip periode itu.
+          </p>
+          {galat && <p className="text-xs text-destructive">{galat}</p>}
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
+            <Button className="flex-1" onClick={handleSave} disabled={saving || !form.employee_email}>{saving ? "..." : "Simpan"}</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function PayrollPage() {
   const { user, role } = useCurrentUser();
@@ -547,6 +643,15 @@ export default function PayrollPage() {
     queryKey: ["overtime-logs"],
     queryFn: () => base44.entities.OvertimeLog.list("-date", 300),
   });
+  // Dulu halaman ini membaca `VegetablePickup`, entitas yang hanya ditulis oleh
+  // dialog "Catat Sayur" di halaman ini sendiri — dan tidak dibaca oleh satu
+  // pun layar yang benar-benar menerbitkan slip. Jadi trip yang dicatat pemilik
+  // di sini tidak pernah sampai ke gaji siapa pun. Sekarang sumbernya sama
+  // dengan slip mingguan dan bulanan: RempesanLog.
+  const { data: rempesanLogs = [] } = useQuery({
+    queryKey: ["rempesan-logs"],
+    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
+  });
   const { data: bonusRewards = [] } = useQuery({
     queryKey: ["bonus-rewards"],
     queryFn: () => base44.entities.BonusReward.list("-period", 50),
@@ -566,6 +671,8 @@ export default function PayrollPage() {
 
   const monthAttendances = attendances.filter(a => a.date >= monthStart && a.date <= monthEnd);
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);
+  const monthRempesan = rempesanLogs.filter(r => r.date >= monthStart && r.date <= monthEnd);
+
 
   /**
    * SATU rumus gaji — lib/hitungGaji.js.
@@ -593,7 +700,7 @@ export default function PayrollPage() {
       bonusRewards,
       attendances: monthAttendances,
       overtimeLogs: monthOvertime,
-      vegTripsMap,
+      rempesanLogs,
       kasbons,
       periode: selectedMonth,
       awal: monthStart,
@@ -623,7 +730,7 @@ export default function PayrollPage() {
         totalSalary: h.bersih,
       };
     });
-  }, [employees, salaryConfigs, dailyChecklists, monthAttendances, monthOvertime, vegTripsMap, bonusRewards, kasbons, selectedMonth, monthStart, monthEndExclusive, settings]);
+  }, [employees, salaryConfigs, dailyChecklists, monthAttendances, monthOvertime, rempesanLogs, bonusRewards, kasbons, selectedMonth, monthStart, monthEndExclusive, settings]);
 
   const fmt = (n) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
@@ -851,13 +958,13 @@ export default function PayrollPage() {
           <p className="text-sm text-muted-foreground">
             Trip ambil sayur {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })} — dihitung otomatis dari catatan pakan harian
           </p>
-          {Object.keys(vegTripsMap).length === 0 ? (
+          {Object.keys(rempesanLogs).length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground">
               Belum ada trip ambil sayur bulan ini
             </Card>
           ) : (
             <div className="space-y-2">
-              {Object.entries(vegTripsMap).map(([email, data]) => {
+              {Object.entries(rempesanLogs).map(([email, data]) => {
                 const emp = users.find((u) => u.email === email);
                 return (
                   <Card key={email} className="px-4 py-3 flex items-center justify-between">

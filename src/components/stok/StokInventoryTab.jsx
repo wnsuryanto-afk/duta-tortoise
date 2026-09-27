@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
-import WarehouseLabelModal from "@/components/warehouse/WarehouseLabelModal";
+import ModalCetakLabel from "@/components/label/ModalCetakLabel";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { statusStok, URUTAN_STATUS, stokHabis } from "@/lib/stokMenipis";
 // Dibawa dari halaman /warehouse dan /feed-stock yang digabungkan ke sini,
@@ -1001,7 +1001,8 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
 
       {/* Cetak Label */}
       {labelItems && (
-        <WarehouseLabelModal open={!!labelItems} items={labelItems} onClose={() => setLabelItems(null)} />
+        <ModalCetakLabel open={!!labelItems} items={labelItems}
+          onClose={() => setLabelItems(null)} judul="Cetak Label Stok" />
       )}
 
       {/* Scan label cetak untuk menemukan barangnya */}

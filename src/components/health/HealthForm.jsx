@@ -20,6 +20,7 @@ import DosisKalkulator from "./DosisKalkulator";
 import TreatmentItemsPicker from "./TreatmentItemsPicker";
 import TortoiseSearchSelect from "./TortoiseSearchSelect";
 import { useTestMode } from "@/lib/useTestMode";
+import { terapkanPemakaianObat, menjadiPengeluaran } from "@/lib/pemakaianObat";
 
 const SEVERITY_OPTIONS = [
   { value: "ringan",  label: "🟢 Ringan" },
@@ -143,6 +144,29 @@ export default function HealthForm({ open, onClose, editData }) {
     } else {
       savedRecord = await base44.entities.HealthRecord.create({ ...data, ...testModeTag });
     }
+
+    // ── Obat yang diberikan mengurangi stok gudang ──
+    //
+    // Sebelum ini tidak ada satu pun jalur di aplikasi yang mengurangi stok
+    // karena pengobatan, jadi angka stok obat hanya pernah naik. Itu yang
+    // membuat gudang terbaca 505 ampul Vitamin B dan 22 ampul Oxytocin.
+    //
+    // Dihitung sebagai SELISIH terhadap catatan lama, supaya menyimpan ulang
+    // catatan yang sudah ada tidak memotong stok untuk kedua kalinya.
+    if (cleanItems.length > 0 || (editData?.treatment_items || []).length > 0) {
+      const { gagal } = await terapkanPemakaianObat({
+        record: { ...data, id: savedRecord?.id || editData?.id },
+        itemsLama: editData?.treatment_items || [],
+        itemsBaru: cleanItems,
+        user: await base44.auth.me().catch(() => null),
+        tandaUji: testModeTag,
+      });
+      // Stok yang meleset diam-diam adalah persis cacat yang sedang diperbaiki
+      // di sini, jadi kegagalannya disebutkan.
+      if (gagal.length > 0) {
+        toast.error(`Stok ${gagal.length} obat gagal disesuaikan — ${gagal[0]}`);
+      }
+    }
     // ── Sambungkan catatan kesehatan ke status kura ──
     // Sebelumnya HealthRecord dibuat tanpa pernah menandai kuranya, sehingga
     // penghitung "Sakit" di Daftar Kura selalu 0 meski ada catatan sakit aktif.
@@ -214,6 +238,39 @@ export default function HealthForm({ open, onClose, editData }) {
             );
           }
         } catch { /* satu bahan gagal tidak boleh membatalkan catatan kesehatannya */ }
+      }
+    }
+
+    // Catatan keuangan HANYA untuk obat yang dibeli dadakan di luar stok.
+    //
+    // Obat yang diambil dari gudang sudah dibiayakan saat DIBELI — dua puluh
+    // pembelian yang ada semuanya sudah masuk laba rugi begitu barangnya
+    // diterima. Mencatatnya lagi di sini menghitung rupiah yang sama dua kali.
+    // Biayanya tetap tersimpan pada catatan kesehatan sebagai atribusi ke kura
+    // yang bersangkutan, hanya tidak menjadi pengeluaran baru.
+    if (menjadiPengeluaran(data)) {
+      const diagDesc = (data.diagnoses || []).slice(0, 2).join(", ");
+      const txDesc = `Obat: ${data.tortoise_name}${diagDesc ? " - " + diagDesc : ""}`;
+      const existingTxId = editData?.finance_tx_id;
+      if (existingTxId) {
+        await base44.entities.FinanceTransaction.update(existingTxId, {
+          amount: data.biaya_obat,
+          date: data.date,
+          description: txDesc,
+        });
+      } else {
+        const tx = await base44.entities.FinanceTransaction.create({
+          type: "pengeluaran",
+          category: "obat_perawatan",
+          amount: data.biaya_obat,
+          date: data.date,
+          description: txDesc,
+          reference_id: savedRecord?.id || editData?.id || "",
+          ...testModeTag,
+        });
+        if (tx?.id && savedRecord?.id) {
+          await base44.entities.HealthRecord.update(savedRecord.id, { finance_tx_id: tx.id });
+        }
       }
       try {
         await base44.entities.HealthRecord.update(idCatatan, { stok_dipotong: true });

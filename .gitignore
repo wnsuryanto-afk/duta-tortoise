@@ -41,6 +41,6 @@ base44/.app.jsonc
 /scan.cjs
 /.ujitmp/
 
-# Harness pratinjau UI sementara — tidak ikut repo
+# Harness pratinjau UI — alat ukur sementara, tidak pernah ikut terkirim
 uipreview.html
 src/__uipreview.jsx

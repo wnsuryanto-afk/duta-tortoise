@@ -102,7 +102,7 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
       if (!batal) { setPreviews(out); setMembuat(false); }
     })();
     return () => { batal = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [open, batches, tanggal]);
 
   const tandaiDicetak = async (daftar) => {

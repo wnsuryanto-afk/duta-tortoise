@@ -149,3 +149,61 @@ export function prioritasDariBarang(item, urgensi = item || {}) {
   if (minimum > 0 && stok <= minimum) return "minggu_ini";
   return "bulan_ini";
 }
+
+/** Nama dirapikan untuk dibandingkan: spasi ganda dan huruf besar diabaikan. */
+function kunciNama(teks) {
+  return String(teks || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/* ── Dari cabang perbaikan, digabungkan 27 September 2026 ──────────────────
+ *
+ * Berkas ini lahir dua kali di dua garis pengembangan yang terpisah, dengan
+ * nama yang sama tetapi isi yang berbeda: sisi yang hidup menangani "barang ini
+ * sudah menunggu di daftar belanja?", sisi cabang menangani "baris mana yang
+ * cocok dengan barang yang baru datang?". Keduanya dipakai, jadi keduanya
+ * disimpan.
+ */
+
+/**
+ * Baris daftar belanja yang ditutup oleh satu barang yang diterima.
+ *
+ * Urutan pencocokan sengaja: penunjuk dulu, nama paling belakang. Nama adalah
+ * pencocokan yang paling mudah meleset — nama di daftar belanja sering
+ * ditulis panjang ("Oxytocin 10 IU/ml [OBT-0104] - APOTEK/POULTRY") sementara
+ * nama barang gudang pendek. Karena itu nama hanya dipakai bila tidak ada satu
+ * pun penunjuk yang cocok.
+ *
+ * Mengembalikan ARRAY: satu barang bisa menutup lebih dari satu baris bila
+ * daftar belanja terlanjur punya baris kembar untuk barang yang sama.
+ */
+export function cocokkanBarisBelanja(daftar = [], itemPesanan = {}, barangGudang = null) {
+  const terbuka = (daftar || []).filter((b) => b && b.status === "belum_dibeli");
+  if (terbuka.length === 0) return [];
+
+  // 1. Penunjuk langsung dari pesanannya sendiri.
+  if (itemPesanan.shopping_list_id) {
+    const langsung = terbuka.filter((b) => b.id === itemPesanan.shopping_list_id);
+    if (langsung.length > 0) return langsung;
+  }
+
+  // 2. Penunjuk ke barang gudang — cara paling andal setelah id barisnya.
+  const idBarang = barangGudang?.id || itemPesanan.warehouse_item_id || "";
+  if (idBarang) {
+    const lewatId = terbuka.filter((b) => b.warehouse_item_id === idBarang);
+    if (lewatId.length > 0) return lewatId;
+  }
+
+  // 3. SKU.
+  const sku = String(itemPesanan.item_sku || barangGudang?.sku || "").trim();
+  if (sku) {
+    const lewatSku = terbuka.filter((b) => String(b.item_sku || "").trim() === sku);
+    if (lewatSku.length > 0) return lewatSku;
+  }
+
+  // 4. Nama — hanya bila tidak ada penunjuk sama sekali, dan hanya bila
+  //    keduanya sama persis. Pencocokan longgar di sini akan menutup baris
+  //    yang salah, dan baris yang tertutup keliru tidak akan pernah dibeli.
+  const nama = kunciNama(barangGudang?.name || itemPesanan.nama_barang);
+  if (!nama) return [];
+  return terbuka.filter((b) => kunciNama(b.nama_barang) === nama);
+}
