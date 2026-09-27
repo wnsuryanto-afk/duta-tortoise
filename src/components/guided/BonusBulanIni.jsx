@@ -352,8 +352,25 @@ export default function BonusBulanIni({ user, rinciTugas = true }) {
             )}
           </ul>
           )}
+          {/*
+            Kalimat di sini dulu berbunyi "yang lewat tenggat tetap dicatat,
+            hanya poinnya tidak keluar" — dan itu TIDAK BENAR. Tidak ada satu
+            pun tempat di aplikasi ini yang memotong poin karena tenggat
+            terlewat: TugasHariIni menulis `poin_earned: task.points` apa
+            adanya, `total_points_claimed` adalah jumlah poin tugas tanpa
+            faktor waktu, dan fungsi autoApprovePoin menyetujui jumlah itu
+            utuh. Pemotongan poin hanya terjadi bila PEMILIK memutuskannya,
+            dan lib/persetujuanPoin.js mewajibkan dia menuliskan alasannya.
+
+            Kalimat yang keliru itu merugikan dua arah: ia membuat orang
+            percaya pekerjaan yang terlambat sudah tidak ada gunanya —
+            sehingga tugasnya dilewati sama sekali, persis kebalikan dari yang
+            diinginkan peternakan — dan ia menjanjikan sanksi yang tidak
+            pernah dijalankan.
+          */}
           <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-1.5">
-            Masih bisa dikerjakan — yang lewat tenggat tetap dicatat, hanya poinnya tidak keluar.
+            Masih bisa dikerjakan, dan poinnya tetap dicatat — tapi tenggat yang lewat
+            ikut terlihat saat pemilik memverifikasi.
           </p>
         </div>
       )}

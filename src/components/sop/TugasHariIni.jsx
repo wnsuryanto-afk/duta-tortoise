@@ -47,9 +47,53 @@ const STRUCTURAL = [
 ];
 const ABSENSI_IDS = new Set(["abs_masuk", "abs_pulang"]);
 
+/**
+ * Ikon per kategori tugas.
+ *
+ * Dua hal yang salah sebelum ini, dan keduanya soal arti, bukan selera:
+ *
+ * 1. Cadangannya "✅". Kategori "perawatan" TIDAK ADA di peta ini padahal
+ *    empat tugas aktif memakainya, dan "lainnya" (lima tugas) dipetakan ke
+ *    tanda centang itu juga. Jadi sembilan dari tiga puluh lima tugas aktif
+ *    tampil dengan CENTANG HIJAU di sebelah lingkaran centangnya yang masih
+ *    kosong. Di layar yang seluruh gunanya mencentang, tidak ada lambang yang
+ *    lebih menyesatkan daripada centang yang bukan centang.
+ *
+ * 2. "🏠" dipakai untuk kebersihan, sekaligus untuk baris absensi jam pulang,
+ *    sekaligus untuk baris kunjungan kandang — tiga hal berbeda, satu lambang.
+ *
+ * Sekarang tiap kategori punya lambangnya sendiri yang menggambarkan
+ * pekerjaannya, dan cadangannya netral.
+ */
+const IKON_CADANGAN = "📌";
+
+/**
+ * Apakah tenggat HARI INI sudah lewat? null bila tugasnya memang tak bertenggat.
+ *
+ * Ini bukan `task.terlambat`. `terlambat` berarti tugas terbawa dari HARI
+ * SEBELUMNYA (`lastDue < today`) — lebih berat, dan ditandai merah menyala.
+ * Yang ini lebih ringan: tugas hari ini yang jamnya sudah lewat.
+ *
+ * Tanda itu sama sekali tidak ada di layar ini sebelumnya, padahal dua layar
+ * lain sudah menyebutnya: kartu "Target SOP Hari Ini" di beranda menulis
+ * "Lewat 8 jam", dan kartu bonus menghitung poinnya. Yang paling perlu tahu
+ * justru yang sedang berdiri di layar ini dengan tugasnya di tangan — dan
+ * justru layar ini yang diam.
+ */
+function tenggatLewat(batasJam, sekarang = new Date()) {
+  // Dijaga di depan: `String("").split(":")` menghasilkan [""], dan Number("")
+  // adalah 0 — angka yang lolos Number.isFinite. Tanpa baris ini setiap baris
+  // TANPA tenggat (istirahat, absensi, tugas "saat ada waktu") dibaca
+  // bertenggat pukul 00:00, jadi selalu lewat.
+  if (!batasJam) return null;
+  const [h, m] = String(batasJam).split(":").map(Number);
+  if (!Number.isFinite(h)) return null;
+  const menitBatas = h * 60 + (Number.isFinite(m) ? m : 0);
+  return sekarang.getHours() * 60 + sekarang.getMinutes() > menitBatas;
+}
 const CATEGORY_ICON = {
-  pakan: "🐢", kebersihan: "🏠", pemeriksaan: "❤️",
-  breeding: "🥚", administrasi: "📝", suplemen: "💊", lainnya: "✅",
+  pakan: "🥬", kebersihan: "🧹", pemeriksaan: "🔍", perawatan: "🩺",
+  breeding: "🥚", administrasi: "📝", suplemen: "💊", lainnya: "🔧",
 };
 const CATEGORY_BADGE = {
   pakan: "bg-green-100 text-green-700",
@@ -320,7 +364,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             items.push({
               id: `kebersihan_kandang_intro`,
               label: `Kunjungan kandang — dikerjakan di layar Kandang`,
-              waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+              waktu: t.deadline_time ? `sebelum ${t.deadline_time}` : "Saat ada waktu",
+              batasJam: t.deadline_time || null,
               icon: "🏠",
               keterangan: "",
               points: kebersihanPoints,
@@ -351,7 +396,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
               label: rutin
                 ? `Timbang & ukur ${tor.code} (BABY)`
                 : `Timbang & ukur ${tor.code} (${tor.enclosure})`,
-              waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+              waktu: t.deadline_time ? `sebelum ${t.deadline_time}` : "Saat ada waktu",
+              batasJam: t.deadline_time || null,
               icon: "⚖️",
               /*
                * Alasannya ditampilkan, bukan hanya nama kuranya.
@@ -383,7 +429,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           items.push({
             id: `sop_${t.id}`,
             label: t.title,
-            waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
+            waktu: t.deadline_time ? `sebelum ${t.deadline_time}` : "Saat ada waktu",
+            batasJam: t.deadline_time || null,
             icon: "⚖️",
             keterangan: t.description || "",
             points: t.points || 0,
@@ -402,8 +449,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         items.push({
           id: `sop_${t.id}`,
           label: t.title,
-          waktu: t.deadline_time ? `≤ ${t.deadline_time}` : "Saat ada waktu",
-          icon: CATEGORY_ICON[t.category] || "✅",
+          waktu: t.deadline_time ? `sebelum ${t.deadline_time}` : "Saat ada waktu",
+          batasJam: t.deadline_time || null,
+          icon: CATEGORY_ICON[t.category] || IKON_CADANGAN,
           keterangan: t.description || "",
           points: t.points || 0,
           badge: t.category,
@@ -674,7 +722,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
 
       // ── BACKGROUND: AI Vision + deteksi foto lama (non-blocking, jangan tunggu keeper) ──
       const ageInfo = detectPhotoAge(file);
-      const deadlineTime = task.waktu?.startsWith("≤ ") ? task.waktu.replace("≤ ", "") : null;
+      // Jamnya dibaca dari `batasJam`, bukan dikupas dari teks yang tampil di
+      // layar. Teks itu pernah berbunyi "≤ 07:30" dan sekarang "sebelum 07:30";
+      // apa pun yang mengupasnya akan diam-diam berhenti bekerja setiap kali
+      // kalimatnya diperhalus.
+      const deadlineTime = task.batasJam || null;
       const timeWarning = checkDeadlineTime(deadlineTime, new Date());
       runPhotoVerificationInBackground({
         photoUrl: file_url, task, user, today,
@@ -918,6 +970,20 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         </div>
         {progressPct === 100 && <p className="text-center text-sm font-bold text-green-700 mt-2">🏆 Semua tugas selesai!</p>}
 
+        {/*
+          Aturan jeda disebut SEKALI di sini, bukan sekali di tiap baris.
+          Lencana "Jeda 60 dtk" dulu menempel di kesepuluh kartu tugas, dan
+          kesepuluhnya berbunyi sama persis — sepuluh salinan satu kalimat
+          tidak menyampaikan sepuluh kali lebih banyak, ia cuma mendorong
+          keterangan yang memang berbeda tiap baris (poin, tenggat, kategori)
+          ke baris berikutnya. Saat jedanya benar-benar berjalan, hitungan
+          mundurnya tetap muncul di kartu yang bersangkutan.
+        */}
+        <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1">
+          <Clock className="w-3 h-3 flex-shrink-0" />
+          Ada jeda 60 detik antar pencentangan — hitungan mundurnya muncul di kartunya.
+        </p>
+
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted disabled:opacity-60">
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} /> {refreshing ? "Memuat..." : "Refresh"}
@@ -1015,22 +1081,30 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         {allTasks.map((task, idx) => {
           if (task.isKebersihanIntro) {
             return (
-              <div key={task.id} className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-3.5 flex items-center gap-3 shadow-sm">
-                <span className="text-lg flex-shrink-0 leading-none">🏠</span>
+              /*
+                Di layar 390px tombol "Buka layar Kandang →" memakan sekitar
+                160px, dan judulnya menerima sisanya: "Kunjungan kandang —
+                dikerjakan di layar Kandang" pecah jadi empat baris di kolom
+                selebar seratus lima puluh piksel. Di ponsel tombolnya turun ke
+                bawah dan memakai lebar penuh; mulai dari lebar sm ia kembali
+                berdampingan seperti semula.
+              */
+              <div key={task.id} className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-3.5 flex flex-col sm:flex-row sm:items-center gap-3 shadow-sm">
+                <span className="text-lg flex-shrink-0 leading-none hidden sm:block">🏠</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-lg leading-none sm:hidden">🏠</span>
                     <p className="text-sm font-semibold text-foreground">{task.label}</p>
                     {task.require_photo && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600"><Camera className="w-3 h-3" /> Wajib Foto</span>
                     )}
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda 60 dtk</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{kebersihanProgress.done} dari {kebersihanProgress.total} kandang selesai</p>
                   <div className="w-full h-1.5 bg-blue-100 rounded-full mt-2 overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${kebersihanProgress.total ? (kebersihanProgress.done / kebersihanProgress.total) * 100 : 0}%` }} />
                   </div>
                 </div>
-                <button onClick={() => navigate("/")} className="flex-shrink-0 text-xs font-bold px-3 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all">Buka layar Kandang →</button>
+                <button onClick={() => navigate("/")} className="flex-shrink-0 w-full sm:w-auto text-xs font-bold px-3 py-2.5 sm:py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all">Buka layar Kandang →</button>
               </div>
             );
           }
@@ -1167,6 +1241,11 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
   };
   useEffect(() => () => { if (cooldownTimer.current) clearInterval(cooldownTimer.current); }, []);
   const isLocked = !!lockedInfo;
+  // Hanya untuk tugas yang belum selesai — tenggat yang lewat pada tugas yang
+  // sudah dikerjakan bukan kabar, cuma kebisingan.
+  const lewatHariIni =
+    !isChecked && !isLocked && !isAbsensi && !isIstirahat &&
+    tenggatLewat(task.batasJam) === true;
   const lockedLabel = lockedInfo
     ? (lockedInfo.kind === "done"
         ? `Sudah dikerjakan ${lockedInfo.name}${lockedInfo.time ? ` jam ${lockedInfo.time}` : ""}`
@@ -1245,6 +1324,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
       : isLocked ? "border-border bg-muted"
       : isChecked ? "border-green-300 bg-green-50"
       : task.terlambat ? "border-red-300 bg-red-50"
+      : lewatHariIni ? "border-amber-300 bg-amber-50/60"
       : "border-gray-100 bg-card"
     } shadow-sm`}>
       <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi && !isLocked ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
@@ -1271,14 +1351,16 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
             {task.terlambat && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white flex-shrink-0 animate-pulse">⏰ Terlambat</span>
             )}
+            {/* Lewat tenggat HARI INI — lebih ringan dari carry-over, jadi
+                warnanya pun lebih ringan dan tidak berkedip. Dua tingkat yang
+                berbeda harus terlihat berbeda; kalau keduanya merah menyala,
+                yang benar-benar tertinggal sehari tidak lagi menonjol. */}
+            {!task.terlambat && lewatHariIni && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex-shrink-0">Lewat tenggat</span>
+            )}
             {task.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${task.badgeColor}`}>{task.badge}</span>}
             {!isIstirahat && !isAbsensi && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">+{poin} poin</span>
-            )}
-            {!isIstirahat && !isAbsensi && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 flex-shrink-0 inline-flex items-center gap-0.5">
-                <Clock className="w-2.5 h-2.5" /> Jeda 60 dtk
-              </span>
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
