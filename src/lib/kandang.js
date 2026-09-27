@@ -214,7 +214,10 @@ export function kandangPenuh(kandang, tortoises = [], enclosures = [], kecualika
 export const KANDANG_LIST = [
   "W1", "W2", "W3", "W4", "W5",
   "E1", "E2", "E3", "E4", "E5",
-  "N1", "N2", "N3", "L1", "L2",
+  // N1, N2 dan N3 digabung jadi satu kandang N. Ketiganya tidak dihapus —
+  // hanya diarsipkan — supaya 382 baris catatan kebersihan dan 14 baris
+  // riwayat pindah kandang yang menyebut namanya tetap terbaca benar.
+  "N", "L1", "L2",
 ];
 
 /**
@@ -264,7 +267,11 @@ export function kandangWajib(enclosures = []) {
  */
 export const URUTAN_KELOMPOK = ["W", "N", "E", "L", "Baby", "Bonsai"];
 
-const POLA_KANDANG = /^(Baby|Bonsai|[WNEL])\s*(\d+)$/i;
+// Angkanya OPSIONAL. Sebelum ini polanya mewajibkan `\d+`, sehingga kandang
+// bernama "N" saja — hasil penggabungan N1–N3 — tidak cocok sama sekali dan
+// terlempar ke urutan paling belakang, di bawah Bonsai. Itu persis kejadian
+// yang dulu menimpa N3 dan membuat orang menyimpulkan datanya hilang.
+const POLA_KANDANG = /^(Baby|Bonsai|[WNEL])\s*(\d*)$/i;
 
 /**
  * Kunci pengurutan satu nama kandang.
@@ -281,7 +288,8 @@ export function kunciUrutKandang(nama) {
   const awalan = m[1].length === 1 ? m[1].toUpperCase()
     : m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
   const i = URUTAN_KELOMPOK.indexOf(awalan);
-  return [i === -1 ? URUTAN_KELOMPOK.length : i, Number(m[2]), teks.toLowerCase()];
+  // Tanpa angka ("N") dianggap 0, jadi ia berdiri di depan kelompoknya sendiri.
+  return [i === -1 ? URUTAN_KELOMPOK.length : i, m[2] ? Number(m[2]) : 0, teks.toLowerCase()];
 }
 
 /** Pembanding untuk Array.prototype.sort atas nama-nama kandang. */
@@ -291,6 +299,32 @@ export function bandingkanKandang(a, b) {
   if (ka[0] !== kb[0]) return ka[0] - kb[0];
   if (ka[1] !== kb[1]) return ka[1] - kb[1];
   return ka[2].localeCompare(kb[2]);
+}
+
+/**
+ * SATU DEFINISI: kandang mana yang boleh DIPILIH di formulir dan dialog pindah.
+ *
+ * Kandang yang diarsipkan masih harus ada sebagai catatan — 382 baris
+ * kebersihan dan 14 baris riwayat pindah menyebut N1, N2 dan N3 sebagai teks,
+ * dan menghapus catatannya membuat nama-nama itu yatim di laporan. Tetapi ia
+ * tidak boleh lagi ditawarkan sebagai tujuan: memilihnya akan memasukkan kura
+ * ke kandang yang secara fisik sudah tidak ada.
+ *
+ * `sertakan` adalah perkecualiannya. Kura yang masih tercatat di kandang
+ * arsip — misalnya kura terjual yang terakhir ada di N1 — harus tetap melihat
+ * kandangnya sendiri di daftar. Tanpa itu, membuka formulirnya memperlihatkan
+ * pilihan kosong, dan menyimpan tanpa menyadarinya akan menghapus keterangan
+ * kandang terakhirnya tanpa ada yang meminta.
+ */
+export function kandangBisaDipilih(enclosures = [], sertakan = "") {
+  const daftar = Array.isArray(enclosures) ? enclosures : [];
+  const hidup = daftar.filter((e) => e?.is_active !== false && e?.is_archived !== true);
+  const sudahAda = new Set(hidup.map((e) => e?.name));
+  const tambahan =
+    sertakan && !sudahAda.has(sertakan)
+      ? daftar.filter((e) => e?.name === sertakan)
+      : [];
+  return [...hidup, ...tambahan].sort((a, b) => bandingkanKandang(a?.name, b?.name));
 }
 
 /**

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { logActivity } from "@/lib/logActivity";
 import { base44 } from "@/api/base44Client";
-import { kandangDariNama, tulisKandang } from "@/lib/kandang";
+import { kandangDariNama, tulisKandang, kandangBisaDipilih } from "@/lib/kandang";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -74,9 +74,12 @@ export default function MoveEnclosureDialog({ tortoise, open, onClose, onMoved }
 
   const isiKandang = (enc) => hitungIsiKandang(enc, semuaKura, enclosures, tortoise?.id);
 
+  // Kandang arsip tidak boleh jadi TUJUAN pindah: memilihnya memasukkan kura
+  // ke kandang yang secara fisik sudah tidak ada. Kandang asal memang sudah
+  // dikecualikan di bawah, jadi tidak perlu perkecualian `sertakan` di sini.
   const filteredEnclosures = useMemo(() => {
     const q = search.toLowerCase();
-    return enclosures.filter(e =>
+    return kandangBisaDipilih(enclosures).filter(e =>
       e.name !== tortoise?.enclosure &&
       (!q || e.name?.toLowerCase().includes(q))
     );

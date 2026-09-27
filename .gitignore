@@ -40,3 +40,7 @@ base44/.app.jsonc
 /s2.cjs
 /scan.cjs
 /.ujitmp/
+
+# Harness pratinjau UI sementara — tidak ikut repo
+uipreview.html
+src/__uipreview.jsx

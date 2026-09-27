@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, Printer, ScanLine } from "lucide-react";
+import { Plus, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, Printer, ScanLine, Heart } from "lucide-react";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
 import EggLabelGenerator, { isCandlingLate } from "@/components/breeding/EggLabelGenerator";
 import EggQRPreview from "@/components/breeding/EggQRPreview";
+import CatatKawinDialog from "@/components/breeding/CatatKawinDialog";
+import DaftarPasangan from "@/components/breeding/DaftarPasangan";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
@@ -124,6 +126,7 @@ export default function BreedingAndEggs() {
   const { role } = useCurrentUser();
   const perms = getPerms(role, "breeding");
   const [showForm, setShowForm] = useState(false);
+  const [showKawin, setShowKawin] = useState(false);
   const [editData, setEditData] = useState(null);
   const [hatchBreeding, setHatchBreeding] = useState(null);
   const [showLabelDialog, setShowLabelDialog] = useState(false);
@@ -275,6 +278,16 @@ export default function BreedingAndEggs() {
                 Unduh Label Aktif
               </Button>
             )}
+            {/* Mencatat kawin sengaja berdiri sendiri, di depan "Tambah Data".
+                Yang mencatatnya adalah kiper di kandang, dan yang dilihatnya
+                adalah kawinnya — dua minggu sebelum ada telur untuk dilaporkan
+                lewat formulir clutch. */}
+            {perms.canCreate && (
+              <Button variant="outline" onClick={() => setShowKawin(true)}>
+                <Heart className="w-4 h-4 mr-2" />
+                Catat Kawin
+              </Button>
+            )}
             {perms.canCreate && (
               <Button onClick={() => { setEditData(null); setShowForm(true); }} className="hover-lift">
                 <Plus className="w-4 h-4 mr-2" />
@@ -286,13 +299,27 @@ export default function BreedingAndEggs() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        {/* Dua baris di ponsel, satu baris di layar lebar. Enam tab dalam satu
+            baris selebar 390px membuat labelnya saling menimpa sampai tidak
+            terbaca — "Pasangan" dan "Pembiakan" tercetak di atas satu sama
+            lain. `h-auto` diperlukan karena tinggi bawaan TabsList dipatok
+            untuk satu baris. */}
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1">
+          <TabsTrigger value="pasangan">Pasangan</TabsTrigger>
           <TabsTrigger value="pembiakan">Pembiakan</TabsTrigger>
           <TabsTrigger value="telur">Telur & Inkubasi</TabsTrigger>
           <TabsTrigger value="inkubator">Inkubator</TabsTrigger>
           <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
           <TabsTrigger value="statistik">Statistik</TabsTrigger>
         </TabsList>
+
+        {/* TAB: PASANGAN — siapa berpasangan dengan siapa.
+            Ditaruh paling depan karena inilah yang ditanyakan lebih dulu di
+            lapangan, dan karena sampai sekarang tidak ada satu layar pun yang
+            bisa menjawabnya. */}
+        <TabsContent value="pasangan" className="space-y-3">
+          <DaftarPasangan />
+        </TabsContent>
 
         {/* TAB 1: PEMBIAKAN */}
         <TabsContent value="pembiakan" className="space-y-4">
@@ -794,6 +821,9 @@ export default function BreedingAndEggs() {
 
       {showForm && (
         <BreedingForm open={showForm} onClose={() => setShowForm(false)} editData={editData} />
+      )}
+      {showKawin && (
+        <CatatKawinDialog open={showKawin} onClose={() => setShowKawin(false)} />
       )}
 
       <HatchDialog

@@ -99,7 +99,7 @@ export const NAV_ACCESS = {
 
 export const PAGE_PERMISSIONS = {
   owner: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
+    tortoise:  { canCreate: true,  canEdit: true,  canDelete: true,  canMove: true,  canViewPrice: true,  canViewSales: true  },
     breeding:  { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
     health:    { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
     finance:   { canCreate: true,  canEdit: true,  canDelete: true,  canViewPrice: true,  canViewSales: true  },
@@ -110,7 +110,7 @@ export const PAGE_PERMISSIONS = {
     payroll:   { canCreate: true,  canEdit: true,  canDelete: true,  canViewAll: true },
   },
   admin: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false, canMove: true,  canViewPrice: true,  canViewSales: true  },
     breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
     health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
     finance:   { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
@@ -121,7 +121,7 @@ export const PAGE_PERMISSIONS = {
     payroll:   { canCreate: true,  canEdit: true,  canDelete: false, canViewAll: false },
   },
   manajer: {
-    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
+    tortoise:  { canCreate: true,  canEdit: true,  canDelete: false, canMove: true,  canViewPrice: true,  canViewSales: true  },
     breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
     health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
     finance:   { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: true,  canViewSales: true  },
@@ -132,7 +132,7 @@ export const PAGE_PERMISSIONS = {
     payroll:   { canCreate: true,  canEdit: true,  canDelete: false, canViewAll: false },
   },
   kepala_feeder: {
-    tortoise:  { canCreate: false, canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    tortoise:  { canCreate: false, canEdit: true,  canDelete: false, canMove: true,  canViewPrice: false, canViewSales: false },
     breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
     health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
     finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
@@ -145,7 +145,10 @@ export const PAGE_PERMISSIONS = {
     pellet:    { canCreate: true,  canEdit: true,  canDelete: false },
   },
   keeper: {
-    tortoise:  { canCreate: false, canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
+    // Kiper MELIHAT daftar kura, tidak mengubahnya. `canMove` tetap menyala
+    // karena yang memindahkan kura antar kandang memang kiper di lapangan,
+    // dan itu keputusan terpisah dari mengubah identitas kuranya.
+    tortoise:  { canCreate: false, canEdit: false, canDelete: false, canMove: true,  canViewPrice: false, canViewSales: false },
     breeding:  { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
     health:    { canCreate: true,  canEdit: true,  canDelete: false, canViewPrice: false, canViewSales: false },
     finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
@@ -156,7 +159,7 @@ export const PAGE_PERMISSIONS = {
     payroll:   { canCreate: false, canEdit: false, canDelete: false, canViewAll: false },
   },
   investor: {
-    tortoise:  { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
+    tortoise:  { canCreate: false, canEdit: false, canDelete: false, canMove: false, canViewPrice: false, canViewSales: false },
     breeding:  { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
     health:    { canCreate: false, canEdit: false, canDelete: false, canViewPrice: false, canViewSales: false },
     finance:   { canCreate: false, canEdit: false, canDelete: false, canViewPrice: true,  canViewSales: true  },
@@ -174,7 +177,7 @@ export function canAccess(role, section) {
 
 export function getPerms(role, section) {
   return PAGE_PERMISSIONS[role]?.[section] ?? {
-    canCreate: false, canEdit: false, canDelete: false,
+    canCreate: false, canEdit: false, canDelete: false, canMove: false,
     canViewPrice: false, canViewSales: false,
   };
 }
@@ -184,6 +187,10 @@ export function canPerformAction(role, section, action) {
   if (action === "create")     return perms.canCreate;
   if (action === "edit")       return perms.canEdit;
   if (action === "delete")     return perms.canDelete;
+  // Memindah kura antar kandang. Peran yang tidak menyebutkannya mewarisi
+  // jawaban `canEdit`, supaya menambahkan peran baru tidak diam-diam
+  // membuka kemampuan memindahkan.
+  if (action === "move")       return perms.canMove ?? perms.canEdit;
   if (action === "viewPrice")  return perms.canViewPrice;
   if (action === "viewSales")  return perms.canViewSales;
   return false;

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { simpanUkuranSekali } from "@/lib/ukurSekali";
-import { kandangDariNama } from "@/lib/kandang";
+import { kandangDariNama, kandangBisaDipilih } from "@/lib/kandang";
 import { perubahanSakit, perubahanSembuh, STATUS_TUTUP } from "@/lib/statusKura";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, AlertTriangle } from "lucide-react";
@@ -166,9 +166,17 @@ export default function TortoiseForm({ open, onClose, editData }) {
     queryFn: () => base44.entities.Enclosure.list(),
   });
 
+  // Kandang arsip tidak ditawarkan — kecuali kandang yang SEDANG dipakai kura
+  // ini. Tanpa perkecualian itu, membuka kura yang masih tercatat di kandang
+  // arsip memperlihatkan pilihan kosong, dan menyimpan akan menghapus
+  // keterangan kandang terakhirnya tanpa ada yang meminta.
   useEffect(() => {
-    setEnclosureOptions(enclosures.map(e => e.name).filter(Boolean));
-  }, [enclosures]);
+    setEnclosureOptions(
+      kandangBisaDipilih(enclosures, editData?.enclosure || "")
+        .map((e) => e.name)
+        .filter(Boolean),
+    );
+  }, [enclosures, editData?.enclosure]);
 
   const validate = () => {
     const e = {};

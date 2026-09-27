@@ -635,7 +635,7 @@ export default function TortoiseList() {
           ) : viewMode === "semua" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[...filtered].sort((a, b) => ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[a.status] ?? 0) - ({ aktif: 0, baby: 1, sakit: 2, breeding: 3, mati: 4, terjual: 5, diarsipkan: 6 }[b.status] ?? 0)).map((t) => (
-                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} onSell={perms.canCreate ? handleSell : null} />
+                <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canMove ? handleMove : null} onSell={perms.canCreate ? handleSell : null} />
               ))}
             </div>
           ) : (
@@ -671,7 +671,7 @@ export default function TortoiseList() {
                     {!collapsed && (
                       <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         {items.map((t) => (
-                           <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canEdit ? handleMove : null} onSell={perms.canCreate ? handleSell : null} />
+                           <TortoiseCard key={t.id} tortoise={t} healthStatus={getHealthStatus(t.id)} latestHealth={latestHealthMap[t.id]} parentIndicator={getParentIndicator(t)} isSick={sickTortoiseIds.has(t.id)} onEdit={perms.canEdit ? handleEdit : null} onDelete={ownerCanDelete ? handleDelete : null} onMove={perms.canMove ? handleMove : null} onSell={perms.canCreate ? handleSell : null} />
                         ))}
                       </div>
                     )}
