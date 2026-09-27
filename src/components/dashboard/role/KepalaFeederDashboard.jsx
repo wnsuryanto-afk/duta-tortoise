@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { targetPoinBulanan } from "@/lib/bonus";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { poinDisetujui, poinDiklaim } from "@/lib/poinChecklist";
@@ -116,7 +117,9 @@ export default function KepalaFeederDashboard({ user }) {
   // bukan `balance`, jadi angka yang tampil selalu Rp 0 — di layar orang yang
   // justru memegang kas kecilnya.
   const pettyCashBalance = saldoTerkini(pettyCashLedger);
-  const targetPoin = settings.min_poin_bulanan || 300;
+  // Lihat lib/bonus.js: tanpa angka cadangan yang menyala saat setelan
+  // belum tiba.
+  const targetPoin = targetPoinBulanan(settings);
 
   const keepers = allUsers.filter(u => u.role === "keeper");
 
@@ -397,14 +400,22 @@ export default function KepalaFeederDashboard({ user }) {
           <div className="space-y-3">
             {keepers.map(k => {
               const poin = poinByKeeper[k.email] || 0;
-              const pct = Math.min(100, (poin / targetPoin) * 100);
-              const achieved = poin >= targetPoin;
+              // Target null: batangnya kosong dan tidak ada vonis tercapai.
+              // `poin / null` menghasilkan Infinity, dan `poin >= null`
+              // meluluskan siapa pun yang poinnya nol atau lebih.
+              const pct = targetPoin === null ? 0 : Math.min(100, (poin / targetPoin) * 100);
+              const achieved = targetPoin !== null && poin >= targetPoin;
               return (
                 <div key={k.id}>
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="font-medium">{k.full_name || k.email}</span>
-                    <span className={`text-xs font-semibold ${achieved ? "text-green-600" : "text-red-500"}`}>
-                      {poin} poin {achieved ? "✓ Target" : `✗ Kurang ${targetPoin - poin}`}
+                    <span className={`text-xs font-semibold ${targetPoin === null ? "text-muted-foreground" : achieved ? "text-green-600" : "text-red-500"}`}>
+                      {poin} poin{" "}
+                      {targetPoin === null
+                        ? "· target belum diatur"
+                        : achieved
+                        ? "✓ Target"
+                        : `✗ Kurang ${targetPoin - poin}`}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-muted rounded-full">

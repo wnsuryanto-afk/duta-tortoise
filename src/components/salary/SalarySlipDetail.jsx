@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { targetPoinBulanan } from "@/lib/bonus";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -173,7 +174,8 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const hasPoinDed = (slip.poin_deduction || 0) > 0;
   // Sama seperti nilai poin: pakai snapshot slip bila ada, supaya penilaian
   // "Tercapai" pada slip lama tidak ikut berubah saat targetnya diubah.
-  const targetPoin = slip.target_poin_saat_itu || settings.min_poin_bulanan || 300;
+  // null berarti targetnya memang belum diketahui — lihat lib/bonus.js.
+  const targetPoin = targetPoinBulanan(settings, slip);
 
   return (
     <>
@@ -235,12 +237,23 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                 <tr className="bg-amber-50/40">
                   <td className="p-2 border border-border">
                     Total Poin KPI
-                    <span className="text-xs text-muted-foreground ml-1">({slip.total_poin || 0} poin · Target: {targetPoin} poin)</span>
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({slip.total_poin || 0} poin · Target:{" "}
+                      {targetPoin === null ? "belum diatur" : `${targetPoin} poin`})
+                    </span>
                   </td>
                   <td className="p-2 border border-border text-right">
-                    <span className={`text-xs font-medium ${(slip.total_poin || 0) >= targetPoin ? "text-green-600" : "text-red-600"}`}>
-                      {(slip.total_poin || 0) >= targetPoin ? "✓ Tercapai" : `✗ ${slip.poin_status || ""}`}
-                    </span>
+                    {/* Tanpa target yang diketahui tidak ada vonis sama sekali.
+                        Lencana "Tercapai" di slip gaji ikut menentukan bagaimana
+                        orang membaca angka gajinya sendiri — menebaknya bukan
+                        pilihan. */}
+                    {targetPoin === null ? (
+                      <span className="text-xs text-muted-foreground">target belum diatur</span>
+                    ) : (
+                      <span className={`text-xs font-medium ${(slip.total_poin || 0) >= targetPoin ? "text-green-600" : "text-red-600"}`}>
+                        {(slip.total_poin || 0) >= targetPoin ? "✓ Tercapai" : `✗ ${slip.poin_status || ""}`}
+                      </span>
+                    )}
                   </td>
                 </tr>
               )}

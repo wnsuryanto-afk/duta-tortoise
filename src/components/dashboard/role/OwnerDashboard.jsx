@@ -32,6 +32,7 @@ import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { diPeternakan, hanyaDiPeternakan, aktifSehat, sedangSakit } from "@/lib/populasiKura";
+import { targetPoinBulanan } from "@/lib/bonus";
 import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
 import { piutangPerPembeli } from "@/lib/piutang";
@@ -492,7 +493,9 @@ export default function OwnerDashboard({ user }) {
   // ── SDM ───────────────────────────────────────────
   const settings = companySettings[0] || {};
   const nilaiPerPoin = settings.nilai_per_poin || 0;
-  const targetPoin = settings.min_poin_bulanan || 300;
+  // Tanpa angka cadangan: 300 adalah sepersebelas target sebenarnya (3.500),
+  // dan ia menyala tiap kali setelannya belum tiba. Lihat lib/bonus.js.
+  const targetPoin = targetPoinBulanan(settings);
 
   // kasbon outstanding
   const activeKasbons = kasbons.filter(k => k.status === "active" || k.remaining_amount > 0);
@@ -663,8 +666,11 @@ export default function OwnerDashboard({ user }) {
       rank: i + 1,
       name: s.employee_name,
       poin: s.total_poin || 0,
-      achieved: (s.total_poin || 0) >= targetPoin,
-      diff: targetPoin - (s.total_poin || 0),
+      // Tanpa target yang diketahui, TIDAK ADA yang dinyatakan tercapai.
+      // `x >= null` memaksa null jadi 0, jadi tanpa penjagaan ini semua orang
+      // lulus pada detik-detik sebelum setelannya tiba.
+      achieved: targetPoin !== null && (s.total_poin || 0) >= targetPoin,
+      diff: targetPoin === null ? null : targetPoin - (s.total_poin || 0),
     }));
 
   const rankEmoji = ["🥇", "🥈", "🥉"];

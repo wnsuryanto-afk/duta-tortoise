@@ -89,3 +89,41 @@ export function statusBonus({ settings, poinPribadi = 0, poinTim = 0 }) {
       berikut && berikut.targetTim > 0 ? Math.max(0, berikut.targetTim - Number(poinTim || 0)) : 0,
   };
 }
+
+/**
+ * Target poin bulanan perorangan, atau null bila memang belum diketahui.
+ *
+ * ── Kenapa null, dan bukan angka cadangan ─────────────────────────────────
+ *
+ * Lima layar menulis `settings.min_poin_bulanan || 300`. Targetnya yang
+ * sebenarnya 3.500 — sebelas kali lipat angka cadangan itu.
+ *
+ * `||` tidak hanya menyala saat setelan belum pernah diisi. Ia juga menyala
+ * pada saat-saat pertama halaman dibuka, selagi CompanySettings masih dalam
+ * perjalanan dan `settings` masih `{}`. Pada detik-detik itu layar memakai
+ * target 300 dan mengumumkan "Target tercapai" untuk kiper berpoin 2.582 —
+ * lalu berubah sendiri jadi "Kurang 918 poin" begitu setelannya tiba. Yang
+ * membacanya sempat melihat kabar baik yang tidak pernah benar.
+ *
+ * Di slip gaji akibatnya lebih jauh lagi: lencana "Target tercapai" ikut
+ * menentukan bagaimana orang membaca angka gajinya sendiri.
+ *
+ * Angka cadangan untuk sesuatu yang menentukan uang selalu salah: entah ia
+ * terlalu rendah dan memuji orang yang belum sampai, atau terlalu tinggi dan
+ * menyalahkan orang yang sudah. Yang benar adalah mengatakan bahwa targetnya
+ * belum diketahui — dan lib/bonus.js sudah memakai aturan itu sejak awal
+ * (`.filter(t => t.target > 0)`: tingkat tanpa target diabaikan, bukan
+ * ditebak).
+ *
+ * @param {object} settings CompanySettings
+ * @param {object} slip     slip gaji, bila ada snapshot targetnya
+ * @returns {number|null}
+ */
+export function targetPoinBulanan(settings, slip) {
+  // Snapshot di slip menang: penilaian "Tercapai" pada slip lama tidak boleh
+  // ikut berubah saat targetnya diubah bulan ini.
+  const dariSlip = Number(slip?.target_poin_saat_itu);
+  if (Number.isFinite(dariSlip) && dariSlip > 0) return dariSlip;
+  const dariSetelan = Number(settings?.min_poin_bulanan);
+  return Number.isFinite(dariSetelan) && dariSetelan > 0 ? dariSetelan : null;
+}

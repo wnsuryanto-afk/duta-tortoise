@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { targetPoinBulanan } from "@/lib/bonus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -255,17 +256,32 @@ export default function SalarySlipPage() {
                               <Star className="w-3.5 h-3.5 text-amber-500" />
                               <span className="text-xs font-medium">{slip.total_poin || slip.total_points || 0} poin</span>
                             </div>
-                            {(slip.total_poin || 0) >= (settings.min_poin_bulanan || 300) ? (
-                              <div className="flex items-center gap-1 text-green-600">
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span className="text-xs">Target tercapai</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 text-red-500">
-                                <XCircle className="w-3.5 h-3.5" />
-                                <span className="text-xs">{slip.poin_status || `Kurang ${(settings.min_poin_bulanan || 300) - (slip.total_poin || 0)} poin`}</span>
-                              </div>
-                            )}
+                            {/* Angka cadangan 300 dilepas: target sebenarnya
+                                3.500, dan `||` menyalakan cadangan itu setiap
+                                kali setelannya belum tiba — daftar slip sempat
+                                berkata "Target tercapai" untuk semua orang.
+                                Lihat lib/bonus.js. */}
+                            {(() => {
+                              const target = targetPoinBulanan(settings, slip);
+                              if (target === null) {
+                                return (
+                                  <span className="text-xs text-muted-foreground">target belum diatur</span>
+                                );
+                              }
+                              return (slip.total_poin || 0) >= target ? (
+                                <div className="flex items-center gap-1 text-green-600">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span className="text-xs">Target tercapai</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-red-500">
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  <span className="text-xs">
+                                    {slip.poin_status || `Kurang ${target - (slip.total_poin || 0)} poin`}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                         {slip.paid_date && (
