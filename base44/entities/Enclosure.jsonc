@@ -1,60 +1,64 @@
 {
   "name": "Enclosure",
-  "type": "object",
   "properties": {
-    "name": {
-      "type": "string"
-    },
-    "type": {
-      "type": "string",
-      "enum": [
-        "indoor",
-        "outdoor",
-        "greenhouse"
-      ],
-      "default": "indoor"
-    },
-    "size_m2": {
-      "type": "number"
-    },
-    "max_capacity": {
-      "type": "number"
-    },
     "current_count": {
-      "type": "number",
-      "default": 0
-    },
-    "ideal_temp_min": {
-      "type": "number"
-    },
-    "ideal_temp_max": {
+      "default": 0,
       "type": "number"
     },
     "ideal_humidity": {
       "type": "number"
     },
+    "ideal_temp_max": {
+      "type": "number"
+    },
+    "ideal_temp_min": {
+      "type": "number"
+    },
+    "is_active": {
+      "default": true,
+      "type": "boolean"
+    },
+    "is_archived": {
+      "default": false,
+      "description": "Apakah data sudah diarsipkan",
+      "type": "boolean"
+    },
     "location": {
+      "type": "string"
+    },
+    "max_capacity": {
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    },
+    "notes": {
       "type": "string"
     },
     "photo_url": {
       "type": "string"
     },
-    "is_active": {
-      "type": "boolean",
-      "default": true
+    "ronda_harian": {
+      "description": "Apakah kandang ini termasuk ronda harian kiper - satu ubin di layar Hari Ini, dengan poin pakan + cek kesehatan dan pembersihan. Sebelum field ini ada, daftarnya ditulis mati di src/lib/kandang.js, sehingga menggabungkan N1-N3 menjadi N membuat 28 kura hilang dari ronda sampai kodenya diubah dan dibangun ulang. Kosong berarti ikut daftar lama itu sebagai cadangan.",
+      "type": "boolean"
     },
-    "notes": {
+    "size_m2": {
+      "type": "number"
+    },
+    "type": {
+      "default": "indoor",
+      "enum": [
+        "indoor",
+        "outdoor",
+        "greenhouse"
+      ],
       "type": "string"
-    },
-    "is_archived": {
-      "type": "boolean",
-      "default": false,
-      "description": "Apakah data sudah diarsipkan"
     }
   },
   "required": [
     "name",
     "type",
     "max_capacity"
-  ]
+  ],
+  "type": "object"
 }
