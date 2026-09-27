@@ -236,13 +236,9 @@ export default function OwnerDashboard({ user }) {
     refetchInterval: false,
   });
 
-  const { data: dailyChecklists = [] } = useQuery({
-    queryKey: ["owner-checklists"],
-    queryFn: () => base44.entities.DailyChecklist.filter({ date: format(now, "yyyy-MM-dd") }),
-    enabled: phase2Ready,
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: false,
-  });
+  // Kueri `owner-checklists` (checklist bertanggal hari ini) ikut dilepas
+  // bersama baris peringatannya — ia satu-satunya pembacanya. Satu permintaan
+  // jaringan yang hilang dari tiap pembukaan beranda pemilik.
 
   const { data: pendingApproval = [] } = useQuery({
     queryKey: ["owner-pending-approval"],
@@ -625,8 +621,18 @@ export default function OwnerDashboard({ user }) {
       type: "yellow",
       msg: `Piutang ${b.terlamaHari} hari: ${b.nama} — ${fmt(b.sisa)}`,
     }));
-  const pendingChecklists = dailyChecklists.filter(c => c.status === "submitted").length;
-  if (pendingChecklists > 0) criticalAlerts.push({ type: "yellow", msg: `${pendingChecklists} checklist belum diapprove` });
+  // Checklist yang menunggu persetujuan SENGAJA tidak ditambahkan ke daftar
+  // peringatan di sini. Kartu "Checklist menunggu approval" tepat di bawahnya
+  // sudah menyebut angkanya, lengkap dengan tautan untuk mengerjakannya.
+  //
+  // Dan dua angka itu dulu berselisih, bukan sekali-sekali melainkan hampir
+  // setiap hari: baris peringatan ini menghitung dari `dailyChecklists`, yang
+  // hanya mengambil checklist BERTANGGAL HARI INI; kartunya menghitung dari
+  // `pendingApproval`, yang mengambil semua yang berstatus "submitted" tanpa
+  // batas tanggal. Senin pagi baris ini menulis "0 checklist belum diapprove"
+  // sementara kartu di bawahnya menulis "12" — dan yang menulis nol justru
+  // yang dipasang untuk menarik perhatian. Tumpukan persetujuan, menurut
+  // sifatnya, menumpuk pada hari-hari selain hari ini.
 
   // Daftar ini tidak pernah dibatasi: sebelas peringatan berarti sebelas kotak
   // selebar layar, dan di peternakan dengan dua puluh kura sakit bisa menjadi
