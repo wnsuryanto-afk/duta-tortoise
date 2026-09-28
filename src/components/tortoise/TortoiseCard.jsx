@@ -18,6 +18,8 @@ import TortoiseCompletenessPanel from "./TortoiseCompletenessPanel";
 import { canViewPrice } from "@/lib/permissions";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { AgeBadge } from "./AgeDisplay";
+import { alasanTimbang } from "@/lib/jadwalTimbang";
+import { tanggalHariIni } from "@/lib/safeDate";
 import TortoiseLineagePanel from "./TortoiseLineagePanel";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -308,14 +310,44 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
           <div className="mt-1.5">
             <AgeBadge birthDate={tortoise.birth_date} />
             {tortoise.last_weighed_date && (() => {
+              /*
+                ── KENAPA ATURAN 30 HARI DI SINI DIBUANG ──────────────────
+                Kartu ini punya aturannya sendiri: lewat 30 hari sejak
+                penimbangan terakhir, nyalakan lencana MERAH "Perlu
+                ditimbang!". Aturan itu sisa dari rotasi lama.
+
+                Pada 17-09-2026 rotasi penimbangan kura dewasa sehat
+                DIHENTIKAN dengan sengaja, dan alasannya ditulis panjang di
+                lib/jadwalTimbang.js: kura dewasa 20-37 kg sulit dipegang,
+                rotasinya tidak pernah menyelesaikan satu putaran pun, jadi
+                janji "semua tersapu tiap 60 hari" diganti tiga pemicu yang
+                benar-benar bisa dikerjakan — tidak makan, sedang diobati,
+                dan baby/juvenile tiap 14 hari.
+
+                Kartu ini tidak ikut berubah. Akibatnya hari ini 110 kura
+                dewasa SEHAT menyalakan alarm merah untuk pekerjaan yang
+                sudah diputuskan tidak perlu; 44 di antaranya menunjukkan
+                443 hari dan tidak akan pernah padam. Alarm yang tidak bisa
+                dipadamkan mengajari orang mengabaikan warna merah — termasuk
+                saat yang menyala adalah kura yang benar-benar sakit.
+
+                Sekarang yang memutuskan alasanTimbang() di jadwalTimbang.js,
+                satu-satunya definisi resmi. `laporanTerbuka` diisi null:
+                kartu ini tidak memuat LaporanMakan, dan pemicu "tidak makan"
+                memang sudah tampil di daftar tugas kiper serta di widget
+                perhatian. Yang hilang di sini cuma pengulangannya.
+
+                Tanggal penimbangan terakhir TETAP ditampilkan — itu berguna.
+                Yang berhenti adalah menyebutnya mendesak padahal bukan.
+              */
               const lastWeighed = new Date(tortoise.last_weighed_date);
               const today = new Date();
               const diffDays = Math.floor((today - lastWeighed) / (1000 * 60 * 60 * 24));
-              const interval = tortoise.weighing_interval_days || 30;
-              const needsWeighing = diffDays > interval;
+              const alasan = alasanTimbang(tortoise, null, tanggalHariIni());
+              const needsWeighing = !!alasan;
               return (
                 <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border ml-1 ${needsWeighing ? "bg-red-100 text-red-700 border-red-200 font-semibold" : "bg-muted text-muted-foreground border-border"}`}>
-                  ⚖️ {needsWeighing ? `Perlu ditimbang! (${diffDays}h lalu)` : `Ditimbang ${diffDays}h lalu`}
+                  ⚖️ {needsWeighing ? `Perlu ditimbang — ${alasan.teks}` : `Ditimbang ${diffDays}h lalu`}
                 </span>
               );
             })()}
