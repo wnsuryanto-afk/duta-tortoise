@@ -1238,7 +1238,19 @@ export default function GuidedHariIni({ user }) {
               </div>
             )}
 
-            <div className="grid grid-cols-5 gap-2">
+            {/*
+              Empat kolom, bukan lima.
+              
+              Dengan lima kolom, enam belas ubin tersusun 5+5+5+1 — "Bonsai 4"
+              berdiri sendirian di baris terakhir. Dengan empat kolom jumlah
+              barisnya SAMA (4), ubinnya lebih lebar, dan tidak ada yang yatim.
+              
+              Lebarnya juga yang menentukan namanya terbaca: sampai hari ini
+              seluruh kandang bernama dua karakter ("W1", "N"), lalu empat
+              kandang Bonsai masuk ronda dan "Bonsai 1" tidak muat di ubin
+              selebar 66 piksel.
+            */}
+            <div className="grid grid-cols-4 gap-2">
               {daftarKandang.map(k => {
                 const done = kandangDone.has(k);
                 const isPending = pendingKandang === k;
@@ -1257,7 +1269,16 @@ export default function GuidedHariIni({ user }) {
                     }`}
                   >
                     {(done || other) ? <CheckCircle2 className="w-3.5 h-3.5 mb-0.5" /> : null}
-                    <span className={other ? "line-through opacity-80" : ""}>{k}</span>
+                    {/* Nama panjang mengecil dan boleh turun baris. Ubin ini
+                        aspect-square, jadi ruang tingginya ada; yang tidak ada
+                        ruangnya adalah lebar. */}
+                    <span
+                      className={`text-center leading-tight break-words px-0.5 ${
+                        k.length > 4 ? "text-[10px]" : "text-xs"
+                      } ${other ? "line-through opacity-80" : ""}`}
+                    >
+                      {k}
+                    </span>
                     {bobotKandang(k, enclosures) > 1 && !other && (
                       <span className={`text-[8px] font-semibold mt-0.5 ${done ? "text-white/90" : "text-green-600"}`}>
                         +{poinUbin(k)} poin
