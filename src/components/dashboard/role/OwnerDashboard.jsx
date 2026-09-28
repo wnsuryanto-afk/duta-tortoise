@@ -15,6 +15,7 @@ import PettyCashWidget from "@/components/pettycash/PettyCashWidget";
 import IncidentalTaskCard from "@/components/dashboard/IncidentalTaskCard";
 import DiseaseClusterWarningCard from "@/components/dashboard/DiseaseClusterWarningCard";
 import RingkasanPagi from "@/components/dashboard/RingkasanPagi";
+import SeksiPerluDitindak from "@/components/dashboard/SeksiPerluDitindak";
 import LabaRugiWidget from "@/components/dashboard/LabaRugiWidget";
 import SopTerkunciCard from "@/components/dashboard/SopTerkunciCard";
 import KuraPerluDiperiksaCard from "@/components/dashboard/KuraPerluDiperiksaCard";
@@ -36,10 +37,11 @@ import { diPeternakan, hanyaDiPeternakan, aktifSehat, sedangSakit } from "@/lib/
 import { targetPoinBulanan } from "@/lib/bonus";
 import { cariKandang } from "@/lib/kandang";
 import { masukLaporan } from "@/lib/laporan";
+import { hitungOmzet, rentangTahun } from "@/lib/omzet";
+import { kueriUang } from "@/lib/kueriUang";
 import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
 import { periksaStok } from "@/lib/stokMenipis";
-import GrafikUang from "@/components/ui/grafik-uang";
 import { clutchAktif } from "@/lib/breedingUtils";
 
 // ─── Helpers ───────────────────────────────────────
@@ -159,16 +161,12 @@ export default function OwnerDashboard({ user }) {
   const thisMonthKey = format(now, "yyyy-MM");
 
   // ── Fase 1: data kritis — dimuat segera ──────────
-  const { data: finances = [] } = useQuery({
-    queryKey: ["owner-finances"],
-    // ytdIncome di bawah menjumlahkan pemasukan SETAHUN dari daftar ini.
-    // Dengan batas 100 dan transaksi 200+ baris, angka pemasukan tahun
-    // berjalan di dasbor pemilik dihitung dari separuh datanya — selalu
-    // lebih kecil dari yang sebenarnya, tanpa tanda apa pun.
-    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
-    staleTime: 10 * 60 * 1000,
-    refetchInterval: false,
-  });
+  // Kunci bersama — lihat lib/kueriUang.js. Lencana "Laba 2026" di kepala
+  // halaman ini dan kartu "Keuangan 2026" tepat di bawahnya menjumlahkan
+  // tabel yang sama dengan rumus yang sama; kalau salinan cache-nya dua,
+  // keduanya bisa menyebut angka berbeda tiap kali salah satunya menyegarkan
+  // lebih dulu.
+  const { data: finances = [] } = useQuery({ ...kueriUang, refetchInterval: false });
 
   const { data: tortoises = [] } = useQuery({
     queryKey: ["owner-tortoises"],
@@ -338,6 +336,24 @@ export default function OwnerDashboard({ user }) {
   const profit = incomeThis - expenseThis;
   const margin = incomeThis > 0 ? (profit / incomeThis * 100).toFixed(1) : "0.0";
 
+  /*
+    Angka SETAHUN untuk lencana di kepala halaman.
+
+    Lencana itu dulu menyebut "Laba bulan ini". Sesudah kartu keuangan di
+    bawahnya berpindah ke setahun, layar ini memuat dua angka laba sekaligus:
+    -Rp 6,3 juta sebulan di kepala, +Rp 40,7 juta setahun sepuluh sentimeter
+    di bawahnya. Keduanya benar dan keduanya berlabel, tapi dua angka laba
+    yang berselisih di satu layar adalah persis keluhan yang sudah beberapa
+    kali muncul di aplikasi ini.
+
+    Dihitung lewat lib/omzet.js — pustaka yang sama dengan kartunya, supaya
+    tidak ada dua rumus yang harus dijaga tetap sepakat. Angka sebulan tetap
+    hidup di bagian "Kesehatan Finansial Bulan Ini" yang memang berjudul
+    bulanan, dan di grafik batang per bulan.
+  */
+  const tahunIni = now.getFullYear();
+  const setahun = hitungOmzet(finances, rentangTahun(tahunIni));
+
   // Deret 7 hari terakhir untuk sparkline. Dihitung dari transaksi yang sudah
   // ditarik di layar ini — tidak ada query tambahan ke server.
   const deret7Hari = (() => {
@@ -461,20 +477,6 @@ export default function OwnerDashboard({ user }) {
       .filter(s => (s.date || s.sale_date || s.created_date || "").startsWith(key))
       .reduce((sum, s) => sum + (s.price || s.amount || 0), 0);
     return { name: MONTH_NAMES_ID[d.getMonth()], value: total };
-  });
-
-  // Deret uang masuk DAN keluar per bulan. Sebelumnya hanya pemasukan yang
-  // digambar, jadi grafiknya tidak pernah bisa menjawab pertanyaan yang
-  // sebenarnya ditanyakan pemilik: bulan mana yang untung.
-  const arusKas6Bulan = Array.from({ length: 6 }).map((_, i) => {
-    const d = subMonths(now, 5 - i);
-    const key = format(d, "yyyy-MM");
-    const bulanIni = activeFinances.filter(f => (f.date || "").startsWith(key));
-    return {
-      label: MONTH_NAMES_ID[d.getMonth()],
-      masuk: bulanIni.filter(f => f.type === "pemasukan").reduce((s, f) => s + (f.amount || 0), 0),
-      keluar: bulanIni.filter(f => f.type === "pengeluaran").reduce((s, f) => s + (f.amount || 0), 0),
-    };
   });
 
   const expenseByCategory = [
@@ -766,8 +768,8 @@ export default function OwnerDashboard({ user }) {
           { key: "sakit", icon: Heart, label: "Sakit", value: sickTortoises.length,
             tone: sickTortoises.length > 0 ? "warn" : "good" },
           { key: "telur", icon: Egg, label: "Telur aktif", value: totalEggs },
-          { key: "laba", icon: DollarSign, label: "Laba bulan ini", value: fmt(profit),
-            tone: profit >= 0 ? "good" : "bad" },
+          { key: "laba", icon: DollarSign, label: `Laba ${tahunIni}`, value: fmt(setahun.laba),
+            tone: setahun.laba >= 0 ? "good" : "bad" },
           { key: "alert", icon: AlertTriangle, label: "Perlu perhatian", value: criticalAlerts.length,
             tone: criticalAlerts.length > 0 ? "warn" : "good" },
         ]}
@@ -791,33 +793,42 @@ export default function OwnerDashboard({ user }) {
         yang pertama perlu dilihat sebelum memutuskan belanja apa pun.
       */}
       <LabaRugiWidget />
-      {/* Checklist yang menggantung lebih dari sehari — owner tetap
-          melihatnya meski persetujuannya sudah didelegasikan. */}
-      <PengingatPersetujuan />
 
-      {/* Hari yang dikerjakan tapi tidak pernah tercatat. 13-15 Agustus 2026
-          lolos tiga bulan tanpa ada satu layar pun yang menyebutkannya. */}
-      <HariTanpaChecklist />
+      {/* ── PERLU DITINDAK ──
+          Ketujuh kartu penagih dulu terpecah: tiga di sini, empat lagi di
+          bawah Ringkasan Pagi, jadi urutan bacanya tagihan → ringkasan →
+          tagihan lagi. Sekarang semuanya di satu bingkai, berurutan dari yang
+          menghentikan pekerjaan hari ini sampai yang bisa menunggu.
 
-      {/* Uang yang sudah dijanjikan ke orang tertentu, dengan alasan tertulis,
-          dan belum keluar. Ditaruh di beranda karena daftar yang harus sengaja
-          dicari — di tab KPI & Poin — bukan pengingat. */}
-      <BonusBelumDibayar />
+          Semuanya `return null` saat tidak ada isinya, dan seksinya ikut
+          hilang — lihat SeksiPerluDitindak. */}
+      <SeksiPerluDitindak>
+        {/* Kerja hari ini tidak bisa jalan: bahan habis, SOP terkunci. */}
+        <SopTerkunciCard />
+        {/* Makhluk hidup yang menunggu diperiksa. */}
+        <KuraPerluDiperiksaCard />
+        <DiseaseClusterWarningCard canDismiss />
+        {/* Checklist yang menggantung lebih dari sehari — owner tetap
+            melihatnya meski persetujuannya sudah didelegasikan. */}
+        <PengingatPersetujuan />
+        {/* Uang yang sudah dijanjikan ke orang tertentu, dengan alasan
+            tertulis, dan belum keluar. Ditaruh di beranda karena daftar yang
+            harus sengaja dicari — di tab KPI & Poin — bukan pengingat. */}
+        <BonusBelumDibayar />
+        {/* Hari yang dikerjakan tapi tidak pernah tercatat. 13-15 Agustus 2026
+            lolos tiga bulan tanpa ada satu layar pun yang menyebutkannya. */}
+        <HariTanpaChecklist />
+        {/* Kecenderungan kepatuhan — penting, tapi tidak menuntut tindakan
+            sebelum yang di atasnya beres. */}
+        <KepatuhanSopCard />
+      </SeksiPerluDitindak>
 
-      {/* ── RINGKASAN PAGI ── */}
+      {/* ── RINGKASAN PAGI ──
+          Sesudah tagihan, bukan sebelumnya: di hari yang normal tagihannya
+          kosong dan ringkasan ini langsung menyusul kartu keuangan; di hari
+          yang tidak normal, yang menuntut tindakan memang harus lebih dulu. */}
       <RingkasanPagi bagian="harian" />
 
-      {/* ── PERINGATAN KLUSTER PENYAKIT ── */}
-      <DiseaseClusterWarningCard canDismiss />
-
-      {/* ── YANG MENGHENTIKAN PEKERJAAN ──
-          Ditaruh di atas segalanya karena ini satu-satunya yang membuat kerja
-          hari ini tidak bisa jalan: bahan habis sehingga SOP terkunci. Ketiga
-          kartu di bawah menghilang sendiri saat tidak ada isinya, jadi beranda
-          tidak bertambah panjang di hari yang normal. */}
-      <SopTerkunciCard />
-      <KuraPerluDiperiksaCard />
-      <KepatuhanSopCard />
       <PoinBonusTim />
 
       {/* ── ROW 13: ALERT KRITIS ── */}
@@ -953,18 +964,19 @@ export default function OwnerDashboard({ user }) {
           <PettyCashWidget />
         </div>
 
-        {/* Enam bulan uang masuk dan keluar berdampingan. Angka-angka di kartu
-            atas hanya menyebutkan bulan ini; yang menentukan keputusan adalah
-            arahnya, dan itu cuma terbaca dari bentuknya. */}
-        <div className="mt-4 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-baseline justify-between gap-3 mb-1">
-            <p className="text-sm font-semibold">Arus Uang 6 Bulan</p>
-            <Link to="/finance" className="text-xs text-primary hover:underline flex-shrink-0">
-              Laporan Keuangan
-            </Link>
-          </div>
-          <GrafikUang data={arusKas6Bulan} tinggi={230} />
-        </div>
+        {/* Grafik "Arus Uang 6 Bulan" dulu ada di sini dan sudah DIHAPUS.
+
+            LabaRugiWidget di kepala halaman kini menggambar grafik yang sama —
+            komponen yang sama, angka yang sama — untuk SELURUH bulan tahun
+            berjalan, bukan enam terakhir. Dua grafik dengan isi identik di satu
+            halaman cuma memperpanjang gulungan dan memaksa pembaca memastikan
+            keduanya cocok.
+
+            Yang hilang: di awal Januari grafik tahun berjalan cuma sebatang,
+            sedangkan yang enam bulan masih menjangkau tahun lalu. Itu ditukar
+            sadar — batangnya harus menjumlah ke angka besar di atasnya, dan
+            grafik berjalan enam bulan tidak akan pernah cocok dengan omzet
+            tahun kalender. */}
       </div>
 
 

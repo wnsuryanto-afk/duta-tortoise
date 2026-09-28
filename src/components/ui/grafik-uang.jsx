@@ -82,7 +82,12 @@ export default function GrafikUang({ data = [], tinggi = 220, className }) {
   return (
     <div className={className}>
       <ResponsiveContainer width="100%" height={tinggi}>
-        <BarChart data={data} margin={{ top: 18, right: 6, left: -6, bottom: 0 }} barGap={2}>
+        {/* Ruang kanan 26px, bukan 6px: label angka bulan terakhir ditaruh
+            di TENGAH batangnya, jadi separuhnya menjulur ke kanan. Selama
+            grafik ini cuma dipakai untuk enam bulan di layar lebar,
+            julurannya masih muat. Begitu dipakai untuk sembilan sampai dua
+            belas bulan di kartu selebar 390px, "662 rb" terpotong tepi. */}
+        <BarChart data={data} margin={{ top: 18, right: 26, left: -6, bottom: 0 }} barGap={2}>
           {/* Kisi horizontal saja, dan sengaja pudar: ia alat bantu baca,
               bukan bagian dari datanya. */}
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.7} />

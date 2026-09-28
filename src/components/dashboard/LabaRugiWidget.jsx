@@ -1,69 +1,67 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, ChevronRight, Wallet } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { format } from "date-fns";
 import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
-import { hitungOmzet } from "@/lib/omzet";
+import GrafikUang from "@/components/ui/grafik-uang";
+import { hitungOmzet, omzetPerBulan, rentangTahun, bulanRugiBeruntun } from "@/lib/omzet";
+import { kueriUang } from "@/lib/kueriUang";
 
 const fmt = (n) => `Rp ${Math.round(n || 0).toLocaleString("id-ID")}`;
 
 /**
- * LabaRugiWidget — keuangan bulan berjalan, dengan OMZET sebagai angka utama.
+ * LabaRugiWidget — keuangan SETAHUN, dengan omzet sebagai angka utama.
  *
- * ── Kenapa omzet yang paling besar ─────────────────────────────────────────
+ * ── Kenapa setahun, bukan sebulan ──────────────────────────────────────────
  *
- * Sebelumnya yang dicetak besar adalah LABA, dan omzet hanya muncul sebagai
- * tulisan kecil "Pemasukan Rp X" di atas batang. Itu membalik urutan yang
- * sebenarnya dipakai orang: omzet menjawab "berapa yang masuk bulan ini",
- * pertanyaan pertama yang ditanyakan siapa pun yang membuka beranda. Laba
- * adalah kesimpulannya, bukan pembukanya — dan laba yang berdiri sendirian
- * tanpa omzet di sebelahnya tidak bisa dibaca: rugi Rp 600.000 pada omzet nol
- * berarti hal yang sama sekali berbeda dari rugi Rp 600.000 pada omzet sepuluh
- * juta.
+ * Kartu ini sempat menampilkan bulan berjalan. Untuk September 2026 hasilnya:
+ * omzet Rp 0, rugi Rp 662.453. Betul semuanya, dan tetap menyesatkan —
+ * peternakan ini menjual Rp 27,9 juta di Juni dan Rp 28,6 juta di Juli.
+ * Sebulan terlalu pendek untuk usaha yang penjualannya datang berombak: satu
+ * bulan sepi terbaca seperti usaha yang berhenti.
  *
- * Laba dan pengeluaran tetap ada, satu tingkat di bawahnya.
+ * Setahun menjawab pertanyaan yang sebenarnya: sepanjang 2026 masuk berapa.
  *
- * ── Nol yang dikatakan, bukan nol yang dibiarkan ───────────────────────────
+ * ── Kenapa tetap ada grafik bulanan ────────────────────────────────────────
  *
- * September 2026 tidak punya satu pun penjualan. Angka besar "Rp 0" tanpa
- * keterangan terbaca seperti layar yang gagal memuat. Maka saat omzetnya nol,
- * kalimat di bawahnya menyebutkan itu apa adanya.
+ * Angka tahunan punya kelemahan yang berkebalikan: Rp 58 juta terbaca bagus
+ * padahal dua bulan terakhir merugi. Angka tahunan menjawab "sudah sejauh
+ * mana", grafiknya menjawab "sedang ke mana" — dan yang kedua itu yang
+ * menentukan keputusan belanja minggu depan. Karena itu keduanya ada, dan
+ * kalimat di bawah grafik menyebut rentetan bulan rugi terakhir dengan
+ * terang-terangan supaya tidak tenggelam di bawah angka besar.
+ *
+ * Grafiknya memakai <GrafikUang> yang sudah dipakai di layar keuangan —
+ * warnanya sian/kuning, bukan hijau/merah, supaya terbaca oleh mata buta
+ * warna merah-hijau. Lihat components/ui/grafik-uang.jsx.
  */
 export default function LabaRugiWidget() {
   const now = new Date();
+  const tahun = now.getFullYear();
+  const bulanSekarang = now.getMonth() + 1;
   const monthKey = format(now, "yyyy-MM");
-  const namaBulan = format(now, "MMMM", { locale: idLocale });
-  const dari = format(startOfMonth(now), "yyyy-MM-dd");
-  const sampai = format(endOfMonth(now), "yyyy-MM-dd");
+  const { dari, sampai } = rentangTahun(tahun);
 
   const costData = useCostPerTortoise(monthKey);
 
   /*
-    Tanpa batas eksplisit — sengaja.
-
-    Kartu ini dulu membaca 200 baris terakhir, sementara lencana "Laba bulan
-    ini" di kepala beranda pemilik membaca tanpa batas. Rumus keduanya sama,
-    jadi selama tabelnya di bawah 200 baris keduanya sepakat. Pembungkus di
-    api/base44Client.js memakai BATAS_AMBIL dan MEMPERINGATKAN saat hasilnya
-    pas di batas; limit eksplisit yang lebih kecil mematikan penjagaan itu.
+    Kunci cache bersama, tanpa batas baris — alasan lengkapnya di
+    lib/kueriUang.js. Ringkasnya: kartu ini dan lencana "Laba <tahun>" di
+    kepala beranda pemilik menjumlahkan tabel yang sama, jadi keduanya harus
+    membaca salinan yang sama; dan yang dijumlah kini setahun penuh, bukan
+    sebulan, sehingga limit eksplisit yang kecil jauh lebih berbahaya.
   */
-  const { data: finances = [] } = useQuery({
-    queryKey: ["widget-labugi-finances", monthKey],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: finances = [] } = useQuery(kueriUang);
 
   const k = useMemo(() => hitungOmzet(finances, { dari, sampai }), [finances, dari, sampai]);
+  const perBulan = useMemo(
+    () => omzetPerBulan(finances, tahun, bulanSekarang),
+    [finances, tahun, bulanSekarang]
+  );
+  const rugiBeruntun = useMemo(() => bulanRugiBeruntun(perBulan), [perBulan]);
 
-  // Batang perbandingan. Keduanya diukur terhadap yang terbesar, supaya yang
-  // lebih besar selalu penuh dan perbandingannya langsung terbaca.
-  const maks = Math.max(k.totalMasuk, k.pengeluaran, 1);
-  const persenMasuk = Math.round((k.totalMasuk / maks) * 100);
-  const persenKeluar = Math.round((k.pengeluaran / maks) * 100);
   const untung = k.laba >= 0;
 
   return (
@@ -71,7 +69,7 @@ export default function LabaRugiWidget() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <Wallet className="w-4 h-4 text-green-700 flex-shrink-0" />
-          <p className="font-semibold text-sm truncate">Keuangan {namaBulan}</p>
+          <p className="font-semibold text-sm truncate">Keuangan {tahun}</p>
         </div>
         <Link
           to="/finance"
@@ -81,10 +79,10 @@ export default function LabaRugiWidget() {
         </Link>
       </div>
 
-      {/* ── Omzet: angka utama ── */}
+      {/* ── Omzet setahun: angka utama ── */}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wide text-green-700">
-          Omzet bulan ini
+          Omzet tahun {tahun}
         </p>
         <p className="text-3xl font-extrabold text-green-900 leading-tight mt-0.5 tabular-nums break-words">
           {fmt(k.omzet)}
@@ -92,29 +90,51 @@ export default function LabaRugiWidget() {
         <p className="text-xs text-muted-foreground mt-1">
           {k.omzet > 0
             ? `dari ${k.jumlahPenjualan} penjualan`
-            : "belum ada penjualan bulan ini"}
-          {k.pemasukanLain > 0 && (
-            <> · pemasukan lain {fmt(k.pemasukanLain)}</>
-          )}
+            : `belum ada penjualan sepanjang ${tahun}`}
+          {k.pemasukanLain > 0 && <> · pemasukan lain {fmt(k.pemasukanLain)}</>}
         </p>
       </div>
 
-      {/* ── Perbandingan masuk vs keluar ── */}
-      <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden flex mt-3">
-        <div
-          className="h-full bg-green-500 transition-all"
-          style={{ width: `${persenMasuk}%` }}
-        />
-        <div
-          className="h-full bg-red-400 transition-all"
-          style={{ width: `${persenKeluar}%` }}
-        />
-      </div>
+      {/* ── Naik turunnya per bulan ──
+          Kalau tahunnya belum punya satu baris pun, grafiknya tidak digambar
+          sama sekali: kotak kosong setinggi 190px tidak menambah apa pun di
+          atas kalimat "belum ada penjualan sepanjang 2026" yang sudah ada
+          tepat di atasnya. Ini keadaan yang akan terlihat tiap 1 Januari. */}
+      {k.jumlahBaris > 0 && (
+        <div className="mt-3">
+          <GrafikUang data={perBulan} tinggi={190} />
+        </div>
+      )}
 
-      {/* ── Pengeluaran & laba, satu tingkat di bawah omzet ── */}
+      {/*
+        Rentetan bulan rugi terakhir, disebut terang-terangan.
+
+        Ini penyeimbang angka tahunan di atasnya: omzet Rp 58 juta setahun
+        tidak boleh menutupi kenyataan bahwa dua bulan terakhir merugi. Kalau
+        tidak ada rentetannya, baris ini tidak muncul sama sekali.
+      */}
+      {rugiBeruntun.length > 0 && (
+        <p className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          {rugiBeruntun.length === 1 ? (
+            <>
+              <span className="font-semibold">{rugiBeruntun[0].label}</span> rugi{" "}
+              {fmt(Math.abs(rugiBeruntun[0].laba))}
+            </>
+          ) : (
+            <>
+              <span className="font-semibold">
+                {rugiBeruntun.length} bulan terakhir rugi
+              </span>{" "}
+              — {rugiBeruntun.map((b) => `${b.label} ${fmt(Math.abs(b.laba))}`).join(", ")}
+            </>
+          )}
+        </p>
+      )}
+
+      {/* ── Pengeluaran & laba setahun, satu tingkat di bawah omzet ── */}
       <div className="grid grid-cols-2 gap-2 mt-3">
         <div className="rounded-lg bg-white/70 border border-border px-3 py-2">
-          <p className="text-[11px] text-muted-foreground">Pengeluaran</p>
+          <p className="text-[11px] text-muted-foreground">Pengeluaran {tahun}</p>
           <p className="text-base font-bold text-red-600 tabular-nums break-words leading-tight">
             {fmt(k.pengeluaran)}
           </p>
@@ -130,7 +150,7 @@ export default function LabaRugiWidget() {
             ) : (
               <TrendingDown className="w-3 h-3 text-red-600" />
             )}
-            {untung ? "Laba" : "Rugi"}
+            {untung ? "Laba" : "Rugi"} {tahun}
           </p>
           <p
             className={`text-base font-bold tabular-nums break-words leading-tight ${
@@ -142,8 +162,10 @@ export default function LabaRugiWidget() {
         </div>
       </div>
 
+      {/* Satu-satunya angka bulanan yang tersisa di kartu ini, dan labelnya
+          menyebutkan itu — biaya per ekor memang hanya berarti per bulan. */}
       <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span className="flex-shrink-0">Biaya per ekor/bulan</span>
+        <span className="flex-shrink-0">Biaya per ekor bulan ini</span>
         <span className="font-semibold tabular-nums text-right">
           {fmt(costData?.biayaPerEkor || 0)}
           {!costData?.isDataAktual && <span className="text-amber-500 ml-1">(estimasi)</span>}

@@ -6,6 +6,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
+import { kueriUang } from "@/lib/kueriUang";
 import { Link } from "react-router-dom";
 import { teksJumlah } from "@/lib/pakanHarian";
 import { format, subDays } from "date-fns";
@@ -89,13 +90,10 @@ export default function RingkasanPagi({ bagian = "semua" }) {
     queryFn: () => base44.entities.Sale.list("-sale_date"),
     staleTime: 5 * 60 * 1000,
   });
-  const { data: finances = [] } = useQuery({
-    queryKey: ["owner-finances"],
-    // Batas 100 sementara transaksi sudah 200+ baris — ringkasan uang pagi
-    // dihitung dari separuh datanya. Batas dilepas ke pembungkus (2.000).
-    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
-    staleTime: 5 * 60 * 1000,
-  });
+  // Kunci bersama — lihat lib/kueriUang.js. Layar ini dan lencana di kepala
+  // beranda pemilik menjumlahkan tabel yang sama; dua salinan cache berarti
+  // dua angka yang bisa berselisih beberapa menit tanpa keterangan apa pun.
+  const { data: finances = [] } = useQuery(kueriUang);
   const { data: breedings = [] } = useQuery({
     queryKey: ["owner-breedings"],
     queryFn: () => base44.entities.Breeding.list("-created_date"),
