@@ -20,12 +20,11 @@
  * pendek: besok, bukan tiga bulan lagi, selagi orangnya masih ingat.
  */
 
-/** Hari ini dalam yyyy-MM-dd, waktu setempat (bukan UTC). */
-export function tanggalHariIni(sekarang = new Date()) {
-  const d = new Date(sekarang.getFullYear(), sekarang.getMonth(), sekarang.getDate());
-  const p = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
+// Hari ini menurut jam setempat. Rumahnya sekarang lib/safeDate.js — pustaka
+// tanggal, bukan pustaka fitur. Diteruskan dari sini supaya pemanggil yang
+// sudah ada tidak perlu diubah.
+import { tanggalHariIni } from "@/lib/safeDate";
+export { tanggalHariIni };
 
 /** Mundur `n` hari dari sebuah tanggal yyyy-MM-dd. */
 export function mundurHari(tanggal, n) {

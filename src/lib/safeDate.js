@@ -127,3 +127,20 @@ export function pagiLokal(nilai) {
   if (!d) return null;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
+
+/**
+ * Hari ini dalam "YYYY-MM-DD", menurut jam SETEMPAT.
+ *
+ * Bukan `new Date().toISOString().slice(0,10)`, yang memberi tanggal UTC: di
+ * Jakarta setiap hari sebelum pukul tujuh pagi, cara itu masih menyebut
+ * tanggal kemarin — dan pekerjaan di peternakan ini dimulai pukul tujuh.
+ *
+ * Tinggal di sini, bukan di lib/hariBolong.js tempat ia lahir: itu pustaka
+ * fitur, ini pustaka tanggal. hariBolong.js meneruskannya supaya pemanggil
+ * lama tetap bekerja.
+ */
+export function tanggalHariIni(sekarang = new Date()) {
+  const d = sekarang instanceof Date && !isNaN(sekarang.getTime()) ? sekarang : new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}

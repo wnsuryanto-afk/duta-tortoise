@@ -24,6 +24,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import PageHeader from "@/components/common/PageHeader";
 import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
 import HariTanpaChecklist from "@/components/sop/HariTanpaChecklist";
+import BonusBelumDibayar from "@/components/owner/BonusBelumDibayar";
 import NoteCard from "@/components/common/NoteCard";
 import InfoHint from "@/components/ui/info-hint";
 import { Sparkline } from "@/components/ui/sparkline";
@@ -797,6 +798,11 @@ export default function OwnerDashboard({ user }) {
       {/* Hari yang dikerjakan tapi tidak pernah tercatat. 13-15 Agustus 2026
           lolos tiga bulan tanpa ada satu layar pun yang menyebutkannya. */}
       <HariTanpaChecklist />
+
+      {/* Uang yang sudah dijanjikan ke orang tertentu, dengan alasan tertulis,
+          dan belum keluar. Ditaruh di beranda karena daftar yang harus sengaja
+          dicari — di tab KPI & Poin — bukan pengingat. */}
+      <BonusBelumDibayar />
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi bagian="harian" />
