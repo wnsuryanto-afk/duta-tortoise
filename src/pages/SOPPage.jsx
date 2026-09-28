@@ -6,6 +6,7 @@ import SOPTaskManager from "@/components/sop/SOPTaskManager";
 import SOPKPI from "@/components/sop/SOPKPI";
 import AuditMingguan from "@/components/sop/AuditMingguan";
 import TenggatVsNyata from "@/components/sop/TenggatVsNyata";
+import TugasTidakDikerjakan from "@/components/sop/TugasTidakDikerjakan";
 import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
 import PageHeader from "@/components/common/PageHeader";
 import { ClipboardList } from "lucide-react";
@@ -65,6 +66,12 @@ export default function SOPPage() {
                 tenggat adalah pemilik, dan pertanyaan "kenapa kepatuhannya
                 rendah" memang pertanyaan yang dibawa ke sini. */}
             <TenggatVsNyata />
+            {/* Dua pertanyaan berbeda, sengaja berdampingan: yang di atas
+                mengukur KETERLAMBATAN, yang di bawah mengukur KETIADAAN.
+                Selama hanya ada yang pertama, tugas yang tidak pernah
+                dikerjakan sama sekali tidak muncul di mana pun — ia tidak
+                meninggalkan baris untuk dibaca. */}
+            <TugasTidakDikerjakan />
           </TabsContent>
         )}
       </Tabs>
