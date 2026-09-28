@@ -15,7 +15,7 @@ export function useCostPerTortoise(period) {
 
   const { data: finances = [] } = useQuery({
     queryKey: ["hpp-finances", monthKey],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
     staleTime: 5 * 60 * 1000,
   });
 

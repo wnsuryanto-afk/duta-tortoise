@@ -294,7 +294,7 @@ export default function FinancePage() {
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["finance-transactions"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 1000),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
   });
 
   useQuery({

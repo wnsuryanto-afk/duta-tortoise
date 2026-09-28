@@ -58,7 +58,7 @@ export default function DashboardStokPage() {
 
   const { data: financeTx = [] } = useQuery({
     queryKey: ["finance-transactions"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 1000).then(hanyaLaporan),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date").then(hanyaLaporan),
   });
 
   if (!canAccess(role, "warehouse")) return <AccessDenied />;

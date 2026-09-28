@@ -30,7 +30,7 @@ export default function InvestorDashboard({ user }) {
 
   const { data: finances = [] } = useQuery({
     queryKey: ["investor-finances"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 200),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
     staleTime: 10 * 60 * 1000,
   });
 

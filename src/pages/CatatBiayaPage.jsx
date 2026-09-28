@@ -84,7 +84,7 @@ export default function CatatBiayaPage() {
     queryKey: ["catat-biaya-riwayat"],
     // Riwayat ini jadi saran nominal. Transaksi yang dibatalkan atau data uji
     // tidak boleh muncul sebagai saran — itu mengajarkan angka yang salah.
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 200).then(hanyaLaporan),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date").then(hanyaLaporan),
     staleTime: 60 * 1000,
   });
 

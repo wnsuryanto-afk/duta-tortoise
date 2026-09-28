@@ -17,9 +17,25 @@ export default function LabaRugiWidget() {
 
   const costData = useCostPerTortoise(monthKey);
 
+  /*
+    Tanpa batas eksplisit — sengaja.
+
+    Kartu ini dulu membaca 200 baris terakhir, sementara lencana "Laba bulan
+    ini" di kepala beranda pemilik membaca tanpa batas. Rumus keduanya SAMA
+    persis (pemasukan - pengeluaran, disaring bulan berjalan dan masukLaporan),
+    jadi selama tabelnya di bawah 200 baris keduanya sepakat. FinanceTransaction
+    sekarang 129 baris dan bertambah sekitar 29 per bulan: sekitar dua setengah
+    bulan lagi, kartu ini mulai menghitung bulan berjalan dari potongan data
+    sementara lencana di atasnya tidak — dua angka laba berbeda, bersebelahan,
+    tanpa satu pun tanda bahwa salah satunya salah.
+
+    Pembungkus di api/base44Client.js memang dibuat untuk ini: tanpa limit ia
+    memakai BATAS_AMBIL dan MEMPERINGATKAN saat hasilnya pas di batas. Limit
+    eksplisit yang lebih kecil mematikan penjagaan itu.
+  */
   const { data: finances = [] } = useQuery({
     queryKey: ["widget-labugi-finances", monthKey],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 200),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
     staleTime: 5 * 60 * 1000,
   });
 

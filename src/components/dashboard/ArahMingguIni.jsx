@@ -100,7 +100,7 @@ export default function ArahMingguIni() {
   });
   const { data: keuangan = [] } = useQuery({
     queryKey: ["tren-finance"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 400),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
     enabled: siap,
     staleTime: 10 * 60 * 1000,
   });

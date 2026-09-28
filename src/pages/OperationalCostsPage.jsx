@@ -115,7 +115,7 @@ export default function OperationalCostsPage() {
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["finance-transactions-ops"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500).then(hanyaLaporan),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date").then(hanyaLaporan),
   });
 
   const { data: salarySlips = [] } = useQuery({

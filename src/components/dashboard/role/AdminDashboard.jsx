@@ -121,7 +121,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
 
   const { data: finances = [] } = useQuery({
     queryKey: ["admin-fin", thisMonthKey],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 300).then(hanyaLaporan),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date").then(hanyaLaporan),
     staleTime: 5 * 60 * 1000,
   });
 

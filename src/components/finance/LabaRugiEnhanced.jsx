@@ -33,7 +33,7 @@ export default function LabaRugiEnhanced({ period }) {
 
   const { data: finances = [] } = useQuery({
     queryKey: ["labarugi-finances", selectedPeriod],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 1000),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
     staleTime: 3 * 60 * 1000,
   });
 

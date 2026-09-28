@@ -28,7 +28,7 @@ export default function PengaturanHPP() {
   // Fetch data untuk tabel riwayat biaya per ekor
   const { data: allFinanceTx = [] } = useQuery({
     queryKey: ["finance-transactions-hpp"],
-    queryFn: () => base44.entities.FinanceTransaction.list("-date", 500),
+    queryFn: () => base44.entities.FinanceTransaction.list("-date"),
   });
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-hpp"],
