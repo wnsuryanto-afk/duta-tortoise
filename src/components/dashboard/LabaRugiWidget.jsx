@@ -1,19 +1,44 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, ChevronRight, Wallet } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
-import { masukLaporan } from "@/lib/laporan";
+import { hitungOmzet } from "@/lib/omzet";
 
-const fmt = n => `Rp ${(n || 0).toLocaleString("id-ID")}`;
+const fmt = (n) => `Rp ${Math.round(n || 0).toLocaleString("id-ID")}`;
 
+/**
+ * LabaRugiWidget — keuangan bulan berjalan, dengan OMZET sebagai angka utama.
+ *
+ * ── Kenapa omzet yang paling besar ─────────────────────────────────────────
+ *
+ * Sebelumnya yang dicetak besar adalah LABA, dan omzet hanya muncul sebagai
+ * tulisan kecil "Pemasukan Rp X" di atas batang. Itu membalik urutan yang
+ * sebenarnya dipakai orang: omzet menjawab "berapa yang masuk bulan ini",
+ * pertanyaan pertama yang ditanyakan siapa pun yang membuka beranda. Laba
+ * adalah kesimpulannya, bukan pembukanya — dan laba yang berdiri sendirian
+ * tanpa omzet di sebelahnya tidak bisa dibaca: rugi Rp 600.000 pada omzet nol
+ * berarti hal yang sama sekali berbeda dari rugi Rp 600.000 pada omzet sepuluh
+ * juta.
+ *
+ * Laba dan pengeluaran tetap ada, satu tingkat di bawahnya.
+ *
+ * ── Nol yang dikatakan, bukan nol yang dibiarkan ───────────────────────────
+ *
+ * September 2026 tidak punya satu pun penjualan. Angka besar "Rp 0" tanpa
+ * keterangan terbaca seperti layar yang gagal memuat. Maka saat omzetnya nol,
+ * kalimat di bawahnya menyebutkan itu apa adanya.
+ */
 export default function LabaRugiWidget() {
   const now = new Date();
   const monthKey = format(now, "yyyy-MM");
-  const thisMonthStart = format(startOfMonth(now), "yyyy-MM-dd");
-  const thisMonthEnd = format(endOfMonth(now), "yyyy-MM-dd");
+  const namaBulan = format(now, "MMMM", { locale: idLocale });
+  const dari = format(startOfMonth(now), "yyyy-MM-dd");
+  const sampai = format(endOfMonth(now), "yyyy-MM-dd");
 
   const costData = useCostPerTortoise(monthKey);
 
@@ -21,17 +46,10 @@ export default function LabaRugiWidget() {
     Tanpa batas eksplisit — sengaja.
 
     Kartu ini dulu membaca 200 baris terakhir, sementara lencana "Laba bulan
-    ini" di kepala beranda pemilik membaca tanpa batas. Rumus keduanya SAMA
-    persis (pemasukan - pengeluaran, disaring bulan berjalan dan masukLaporan),
-    jadi selama tabelnya di bawah 200 baris keduanya sepakat. FinanceTransaction
-    sekarang 129 baris dan bertambah sekitar 29 per bulan: sekitar dua setengah
-    bulan lagi, kartu ini mulai menghitung bulan berjalan dari potongan data
-    sementara lencana di atasnya tidak — dua angka laba berbeda, bersebelahan,
-    tanpa satu pun tanda bahwa salah satunya salah.
-
-    Pembungkus di api/base44Client.js memang dibuat untuk ini: tanpa limit ia
-    memakai BATAS_AMBIL dan MEMPERINGATKAN saat hasilnya pas di batas. Limit
-    eksplisit yang lebih kecil mematikan penjagaan itu.
+    ini" di kepala beranda pemilik membaca tanpa batas. Rumus keduanya sama,
+    jadi selama tabelnya di bawah 200 baris keduanya sepakat. Pembungkus di
+    api/base44Client.js memakai BATAS_AMBIL dan MEMPERINGATKAN saat hasilnya
+    pas di batas; limit eksplisit yang lebih kecil mematikan penjagaan itu.
   */
   const { data: finances = [] } = useQuery({
     queryKey: ["widget-labugi-finances", monthKey],
@@ -39,78 +57,94 @@ export default function LabaRugiWidget() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const periodFinances = finances.filter(f =>
-    f.date >= thisMonthStart && f.date <= thisMonthEnd && masukLaporan(f)
-  );
+  const k = useMemo(() => hitungOmzet(finances, { dari, sampai }), [finances, dari, sampai]);
 
-  const pemasukan = periodFinances
-    .filter(f => f.type === "pemasukan")
-    .reduce((s, f) => s + (f.amount || 0), 0);
-
-  const pengeluaran = periodFinances
-    .filter(f => f.type === "pengeluaran")
-    .reduce((s, f) => s + (f.amount || 0), 0);
-
-  // Tidak ada yang ditambahkan di luar FinanceTransaction.
-  //
-  // Pencairan kas kecil adalah perpindahan uang ke kotak kas, bukan biaya —
-  // belanjanya sudah tercatat berkategori "kas_kecil". Gaji juga TIDAK
-  // ditambahkan lagi: sejak D18, slip yang ditandai dibayar membuat
-  // FinanceTransaction-nya sendiri, jadi gajinya sudah ada di `pengeluaran`.
-  // Menambahkan breakdown.gaji_karyawan di atasnya akan menghitung setiap gaji
-  // dua kali mulai dari slip pertama yang ditandai dibayar.
-  const totalPengeluaran = pengeluaran;
-  const labaRugi = pemasukan - totalPengeluaran;
-  const maxVal = Math.max(pemasukan, totalPengeluaran, 1);
-  const incomePct = Math.round((pemasukan / maxVal) * 100);
-  const expensePct = Math.round((totalPengeluaran / maxVal) * 100);
+  // Batang perbandingan. Keduanya diukur terhadap yang terbesar, supaya yang
+  // lebih besar selalu penuh dan perbandingannya langsung terbaca.
+  const maks = Math.max(k.totalMasuk, k.pengeluaran, 1);
+  const persenMasuk = Math.round((k.totalMasuk / maks) * 100);
+  const persenKeluar = Math.round((k.pengeluaran / maks) * 100);
+  const untung = k.laba >= 0;
 
   return (
     <Card className="p-4 bg-gradient-to-br from-green-50/50 to-white border-green-200">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">💰</span>
-          <p className="font-semibold text-sm">Laba Rugi Bulan Ini</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <Wallet className="w-4 h-4 text-green-700 flex-shrink-0" />
+          <p className="font-semibold text-sm truncate">Keuangan {namaBulan}</p>
         </div>
-        <Link to="/finance" className="text-xs text-primary hover:underline flex items-center gap-1">
+        <Link
+          to="/finance"
+          className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0"
+        >
           Detail <ChevronRight className="w-3 h-3" />
         </Link>
       </div>
 
-      {/* Progress bar */}
-      <div className="space-y-2 mb-3">
-        <div className="flex justify-between text-xs">
-          <span className="text-green-600 font-medium">Pemasukan {fmt(pemasukan)}</span>
-          <span className="text-red-500 font-medium">{fmt(totalPengeluaran)} Pengeluaran</span>
+      {/* ── Omzet: angka utama ── */}
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-green-700">
+          Omzet bulan ini
+        </p>
+        <p className="text-3xl font-extrabold text-green-900 leading-tight mt-0.5 tabular-nums break-words">
+          {fmt(k.omzet)}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {k.omzet > 0
+            ? `dari ${k.jumlahPenjualan} penjualan`
+            : "belum ada penjualan bulan ini"}
+          {k.pemasukanLain > 0 && (
+            <> · pemasukan lain {fmt(k.pemasukanLain)}</>
+          )}
+        </p>
+      </div>
+
+      {/* ── Perbandingan masuk vs keluar ── */}
+      <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden flex mt-3">
+        <div
+          className="h-full bg-green-500 transition-all"
+          style={{ width: `${persenMasuk}%` }}
+        />
+        <div
+          className="h-full bg-red-400 transition-all"
+          style={{ width: `${persenKeluar}%` }}
+        />
+      </div>
+
+      {/* ── Pengeluaran & laba, satu tingkat di bawah omzet ── */}
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <div className="rounded-lg bg-white/70 border border-border px-3 py-2">
+          <p className="text-[11px] text-muted-foreground">Pengeluaran</p>
+          <p className="text-base font-bold text-red-600 tabular-nums break-words leading-tight">
+            {fmt(k.pengeluaran)}
+          </p>
         </div>
-        <div className="w-full h-3 bg-muted rounded-full overflow-hidden flex">
-          <div className="h-full bg-green-500 rounded-l-full transition-all" style={{ width: `${incomePct}%` }} />
-          <div className="h-full bg-red-400 rounded-r-full transition-all" style={{ width: `${expensePct}%` }} />
+        <div
+          className={`rounded-lg px-3 py-2 border ${
+            untung ? "bg-green-100/70 border-green-200" : "bg-red-100/70 border-red-200"
+          }`}
+        >
+          <p className="text-[11px] flex items-center gap-1 text-muted-foreground">
+            {untung ? (
+              <TrendingUp className="w-3 h-3 text-green-600" />
+            ) : (
+              <TrendingDown className="w-3 h-3 text-red-600" />
+            )}
+            {untung ? "Laba" : "Rugi"}
+          </p>
+          <p
+            className={`text-base font-bold tabular-nums break-words leading-tight ${
+              untung ? "text-green-700" : "text-red-700"
+            }`}
+          >
+            {fmt(Math.abs(k.laba))}
+          </p>
         </div>
       </div>
 
-      {/* Laba / Rugi */}
-      <div className={`rounded-lg p-3 ${labaRugi >= 0 ? "bg-green-100/70" : "bg-red-100/70"}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {labaRugi >= 0
-              ? <TrendingUp className="w-5 h-5 text-green-600" />
-              : <TrendingDown className="w-5 h-5 text-red-600" />
-            }
-            <span className={`text-sm font-bold ${labaRugi >= 0 ? "text-green-800" : "text-red-800"}`}>
-              {labaRugi >= 0 ? "LABA" : "RUGI"}
-            </span>
-          </div>
-          <span className={`text-lg font-bold ${labaRugi >= 0 ? "text-green-700" : "text-red-700"}`}>
-            {fmt(Math.abs(labaRugi))}
-          </span>
-        </div>
-      </div>
-
-      {/* Biaya per ekor */}
-      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-        <span>Biaya per ekor/bulan</span>
-        <span className="font-semibold">
+      <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span className="flex-shrink-0">Biaya per ekor/bulan</span>
+        <span className="font-semibold tabular-nums text-right">
           {fmt(costData?.biayaPerEkor || 0)}
           {!costData?.isDataAktual && <span className="text-amber-500 ml-1">(estimasi)</span>}
         </span>
