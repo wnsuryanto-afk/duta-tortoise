@@ -130,7 +130,7 @@ function ProtocolCard({ protocol }) {
                 return (
                   <div
                     key={i}
-                    className="flex items-start gap-2.5 bg-white/70 rounded-lg px-2.5 py-2 border border-border"
+                    className="flex items-start gap-2.5 bg-white/70 dark:bg-card/70 rounded-lg px-2.5 py-2 border border-border"
                   >
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#1B4332] text-white flex items-center justify-center text-xs font-bold">
                       {i + 1}
@@ -151,7 +151,7 @@ function ProtocolCard({ protocol }) {
               {protocol.treatment_items.map((item, i) => {
                 const routeIcon = getRouteIcon(item.rute);
                 return (
-                  <div key={i} className="bg-white/70 rounded-lg px-2.5 py-2 border border-border">
+                  <div key={i} className="bg-white/70 dark:bg-card/70 rounded-lg px-2.5 py-2 border border-border">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg flex-shrink-0">{routeIcon}</span>
                       <span className="font-semibold text-sm text-[#1B4332]">{item.obat_name}</span>

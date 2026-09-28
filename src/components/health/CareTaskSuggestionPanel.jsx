@@ -176,7 +176,7 @@ export default function CareTaskSuggestionPanel({
         Kura: <strong>{tortoiseCode || tortoiseName}</strong> · Severity: {severity}
       </p>
 
-      <div className="bg-white/50 rounded-lg p-2 mb-2 border border-border">
+      <div className="bg-white/50 dark:bg-card/60 rounded-lg p-2 mb-2 border border-border">
         <p className="text-[11px] font-semibold text-[#1B4332] mb-0.5">
           {result
             ? `${result.created} tugas dibuat${result.skipped ? `, ${result.skipped} dilewati karena sudah ada` : ""} (@${CARE_TASK_POINTS} poin per tugas)`
@@ -194,7 +194,7 @@ export default function CareTaskSuggestionPanel({
           return (
             <div
               key={it.key}
-              className="flex items-start gap-2.5 rounded-lg p-2 border border-transparent bg-white/30"
+              className="flex items-start gap-2.5 rounded-lg p-2 border border-transparent bg-white/30 dark:bg-card/50"
             >
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1B4332]/10 text-[#1B4332] flex items-center justify-center text-xs font-bold">
                 {idx + 1}

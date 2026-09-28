@@ -65,10 +65,10 @@ export default function LabaRugiWidget() {
   const untung = k.laba >= 0;
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-green-50/50 to-white border-green-200">
+    <Card className="p-4 bg-gradient-to-br from-green-50/50 to-white dark:from-accent/[0.04] dark:to-card border-green-200 dark:border-border">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Wallet className="w-4 h-4 text-green-700 flex-shrink-0" />
+          <Wallet className="w-4 h-4 text-green-700 dark:text-green-400 flex-shrink-0" />
           <p className="font-semibold text-sm truncate">Keuangan {tahun}</p>
         </div>
         <Link
@@ -81,10 +81,10 @@ export default function LabaRugiWidget() {
 
       {/* ── Omzet setahun: angka utama ── */}
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wide text-green-700">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-green-700 dark:text-green-400">
           Omzet tahun {tahun}
         </p>
-        <p className="text-3xl font-extrabold text-green-900 leading-tight mt-0.5 tabular-nums break-words">
+        <p className="text-3xl font-extrabold text-green-900 dark:text-green-300 leading-tight mt-0.5 tabular-nums break-words">
           {fmt(k.omzet)}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
@@ -114,7 +114,7 @@ export default function LabaRugiWidget() {
         tidak ada rentetannya, baris ini tidak muncul sama sekali.
       */}
       {rugiBeruntun.length > 0 && (
-        <p className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <p className="mt-2 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-destructive/15 border border-red-200 dark:border-destructive/40 rounded-lg px-3 py-2">
           {rugiBeruntun.length === 1 ? (
             <>
               <span className="font-semibold">{rugiBeruntun[0].label}</span> rugi{" "}
@@ -133,28 +133,36 @@ export default function LabaRugiWidget() {
 
       {/* ── Pengeluaran & laba setahun, satu tingkat di bawah omzet ── */}
       <div className="grid grid-cols-2 gap-2 mt-3">
-        <div className="rounded-lg bg-white/70 border border-border px-3 py-2">
+        <div className="rounded-lg bg-white/70 dark:bg-card/70 border border-border px-3 py-2">
           <p className="text-[11px] text-muted-foreground">Pengeluaran {tahun}</p>
-          <p className="text-base font-bold text-red-600 tabular-nums break-words leading-tight">
+          <p className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums break-words leading-tight">
             {fmt(k.pengeluaran)}
           </p>
         </div>
         <div
           className={`rounded-lg px-3 py-2 border ${
-            untung ? "bg-green-100/70 border-green-200" : "bg-red-100/70 border-red-200"
+            untung
+              ? "bg-green-100/70 border-green-200 dark:bg-accent/10 dark:border-accent/40"
+              : "bg-red-100/70 border-red-200 dark:bg-destructive/10 dark:border-destructive/40"
           }`}
         >
-          <p className="text-[11px] flex items-center gap-1 text-muted-foreground">
+          {/* `dark:text-foreground/80`: label ini duduk di atas panel berwarna,
+              bukan di atas latar kartu. Abu-abu redup halaman (muted-foreground)
+              hanya dirancang untuk kontras terhadap latar polos; di atas panel
+              hijau mode gelap ia turun ke rasio 4,0 — di bawah ambang WCAG 4,5.
+              Menipiskan warna panelnya bisa juga, tapi itu mengorbankan
+              pembeda untung/rugi yang justru berguna di mode terang. */}
+          <p className="text-[11px] flex items-center gap-1 text-muted-foreground dark:text-foreground/80">
             {untung ? (
-              <TrendingUp className="w-3 h-3 text-green-600" />
+              <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />
             ) : (
-              <TrendingDown className="w-3 h-3 text-red-600" />
+              <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
             )}
             {untung ? "Laba" : "Rugi"} {tahun}
           </p>
           <p
             className={`text-base font-bold tabular-nums break-words leading-tight ${
-              untung ? "text-green-700" : "text-red-700"
+              untung ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
             }`}
           >
             {fmt(Math.abs(k.laba))}

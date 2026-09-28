@@ -39,7 +39,12 @@ function StockCard({ item, estimatedDays }) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-sm truncate">{item.name}</h3>
+            {/* `line-clamp-2`, bukan `truncate`. "Obat Cacing Kura-kura
+                Dewasa" butuh 241px dan cuma dapat 219px di layar 390px, jadi
+                satu baris memotongnya tepat di bagian yang membedakannya dari
+                obat cacing lain. Nama barang adalah cara orang mengenalinya;
+                dua baris masih rapi, setengah nama tidak berguna. */}
+            <h3 className="font-semibold text-sm line-clamp-2 break-words">{item.name}</h3>
             {item.category && (
               <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5 capitalize flex-shrink-0">
                 {item.category}

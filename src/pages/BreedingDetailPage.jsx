@@ -71,7 +71,14 @@ export default function BreedingDetailPage() {
         <Button asChild variant="outline" size="sm">
           <Link to="/breeding"><ArrowLeft className="w-4 h-4 mr-1" /> Kembali</Link>
         </Button>
-        <h1 className="text-xl font-heading font-bold flex-1 truncate">Rincian Pembiakan</h1>
+        {/* Tanpa `truncate`. Di lebar 390px baris ini menyisakan 115px untuk
+            judul yang butuh 211px, jadi "Rincian Pembiakan" terbaca "Rincian
+            Pem…" di antara dua tombol. Judul halaman yang terpotong lebih
+            buruk daripada judul yang turun dua baris — aturan yang sama sudah
+            tertulis di components/common/PageHeader.jsx. */}
+        <h1 className="text-lg sm:text-xl font-heading font-bold flex-1 min-w-0 leading-tight">
+          Rincian Pembiakan
+        </h1>
         <Button size="sm" variant="outline" onClick={() => setShowLabel(true)}>
           <Printer className="w-4 h-4 mr-1" /> Cetak Label
         </Button>

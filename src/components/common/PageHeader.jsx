@@ -79,7 +79,31 @@ export default function PageHeader({
           berjejer ke bawah satu per baris alih-alih mengalir. Itu sebabnya
           kepala ini nyaris tak dipakai halaman mana pun. */}
       <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="min-w-0 flex-1">
+        {/*
+          `min-w-[13rem]`, bukan `min-w-0`.
+
+          Tambalan di atas menyelesaikan ponsel: di bawah sm kepala ini
+          menumpuk, jadi judulnya dapat lebar penuh. Tablet tidak ikut
+          tertambal, dan di sanalah bencana yang sama terulang dalam bentuk
+          yang lebih parah.
+
+          Di lebar sekitar 760px kepala ini kembali berdampingan. Kolom
+          tombol memakai flex-shrink-0 — menolak mengecil — dan pada halaman
+          Laporan Keuangan isinya tiga: pemilih bulan selebar 160px, "Export
+          Laporan PDF", dan "Tambah Transaksi". Ketiganya menuntut sekitar
+          620px dan mendapatkannya. Sisa untuk judul: kira-kira 76px, dikurangi
+          46px untuk ikonnya, tinggal 30px.
+
+          Tiga puluh piksel lebih sempit daripada satu suku kata, jadi
+          `break-words` melakukan satu-satunya hal yang bisa ia lakukan: ia
+          memutus di mana saja. "Laporan Keuangan" turun satu HURUF per baris,
+          setinggi seribu piksel ke bawah.
+
+          Lebar minimum ini membuat judul tidak bisa lagi dijepit sampai tak
+          terbaca. Kalau ruangnya kurang, yang mengalah kolom tombol — dan ia
+          memang bisa mengalah, karena tombolnya sudah flex-wrap.
+        */}
+        <div className="min-w-0 sm:min-w-[13rem] flex-1">
           <div className="flex items-center gap-2.5">
             {Icon && (
               <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/12 text-primary flex-shrink-0">
@@ -123,7 +147,13 @@ export default function PageHeader({
             menggulir — hasilnya tombol "Buat Tugas" melayang di atas nama
             halaman, dan orang membaca perintah sebelum tahu sedang di mana.
             Kepala ini sudah muat satu layar; tombolnya tetap terlihat. */}
-        <div className="flex flex-col items-stretch sm:items-end gap-3 sm:flex-shrink-0">
+        {/* `sm:flex-shrink-0` DIHAPUS dari sini. Itu yang membuat kolom tombol
+            menolak mengalah sementara judul di sebelahnya bersedia mengecil
+            sampai tak terbaca. Tombolnya sudah flex-wrap, jadi saat ruangnya
+            kurang ia turun ke baris berikutnya — yang benar, karena tombol
+            yang melipat masih bisa dipakai sedangkan judul selebar satu huruf
+            tidak bisa dibaca. */}
+        <div className="flex flex-col items-stretch sm:items-end gap-3">
           {actions && (
             <div className="flex items-center gap-2 flex-wrap sm:justify-end">
               {actions}

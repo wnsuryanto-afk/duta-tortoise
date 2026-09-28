@@ -52,7 +52,7 @@ export default function AlasanPotongPoin({
             className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
               kode === s.kode
                 ? "bg-green-700 text-white border-green-700"
-                : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100"
+                : "bg-white dark:bg-card text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30"
             }`}
           >
             {s.label}
@@ -65,7 +65,7 @@ export default function AlasanPotongPoin({
         onChange={(e) => onTeks(e.target.value)}
         rows={2}
         placeholder="Mis. foto kandang W3 tidak terlihat, yang terfoto hanya pintunya"
-        className="resize-none bg-white text-sm"
+        className="resize-none bg-white dark:bg-input text-sm"
       />
 
       <p className={`text-xs ${sah ? "text-green-700" : "text-amber-800"}`}>

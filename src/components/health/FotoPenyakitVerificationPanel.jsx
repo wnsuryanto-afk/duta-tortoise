@@ -115,7 +115,7 @@ export default function FotoPenyakitVerificationPanel({ protocol }) {
         {doneTasks.map((task) => {
           const status = getTaskStatus(task);
           return (
-            <div key={task.id} className="bg-white/70 rounded-lg p-3 border border-border">
+            <div key={task.id} className="bg-white/70 dark:bg-card/70 rounded-lg p-3 border border-border">
               <div className="flex gap-3">
                 <img
                   src={task.done_photo_url}

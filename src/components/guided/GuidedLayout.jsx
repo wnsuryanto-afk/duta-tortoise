@@ -145,7 +145,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
       <SakitFormDialog open={sakitOpen} onClose={() => setSakitOpen(false)} user={user} />
 
       {/* ── Bottom navigation ── */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-border z-40 shadow-[0_-2px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-border z-40 shadow-[0_-2px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
         <div className="flex">
           {NAV_ITEMS.map(item => {
             const Icon = item.icon;
@@ -158,7 +158,11 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all active:scale-90",
-                  isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-muted-foreground hover:text-muted-foreground"
+                  isSakit
+                    ? "text-red-600 dark:text-red-400"
+                    : isActive
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-muted-foreground"
                 )}
               >
                 {/* Garis di atas ikon menandai halaman aktif — di layar sentuh,
@@ -168,8 +172,8 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
                 )}
                 <span className={cn(
                   "flex items-center justify-center rounded-xl transition-all",
-                  isActive && !isSakit ? "bg-green-50 px-3 py-1 -my-0.5" : "px-3 py-1 -my-0.5",
-                  isSakit && "bg-red-50 px-3 py-1 -my-0.5"
+                  isActive && !isSakit ? "bg-green-50 dark:bg-accent/20 px-3 py-1 -my-0.5" : "px-3 py-1 -my-0.5",
+                  isSakit && "bg-red-50 dark:bg-destructive/20 px-3 py-1 -my-0.5"
                 )}>
                   <Icon className={cn(
                     "w-[18px] h-[18px] transition-transform",
@@ -179,7 +183,7 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
                 </span>
                 <span className={cn(
                   "text-[9px] font-semibold leading-none",
-                  isSakit ? "text-red-600" : isActive ? "text-green-700" : "text-muted-foreground"
+                  isSakit ? "text-red-600 dark:text-red-400" : isActive ? "text-green-700 dark:text-green-400" : "text-muted-foreground"
                 )}>
                   {item.label}
                 </span>
