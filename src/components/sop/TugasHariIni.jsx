@@ -345,6 +345,23 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     const tugasUbin = sopTasks.filter(t => t.is_active && t.di_ubin_kandang === true);
     const kebersihanAnchor = tugasUbin[0] || null;
     const kebersihanPoints = tugasUbin.reduce((n, t) => n + (Number(t.points) || 0), 0);
+    // Judul baris pengantar disusun DARI tugas yang sungguh ada di ubin.
+    //
+    // Sebelumnya judulnya ditulis mati: "Kunjungan kandang — dikerjakan di
+    // layar Kandang". Kalimat itu tidak menyebut satu pun pekerjaannya, dan
+    // akibatnya kiper melaporkan bahwa di aplikasi pemberian makan cuma SATU
+    // kali sedangkan di lapangan dua kali. Pakan paginya memang ada —
+    // "Pemberian pakan + cek kesehatan (all kandang)", 15 poin, batas 09:10 —
+    // tapi ia tersembunyi di balik kata "kunjungan", sementara pakan siang
+    // tampil sebagai baris tersendiri dengan namanya sendiri.
+    //
+    // Pekerjaan yang tidak disebut namanya adalah pekerjaan yang dikira tidak
+    // ada. Judulnya sekarang mengikuti isinya, jadi menambah atau melepas
+    // tugas dari ubin langsung mengubah apa yang tertulis di sini.
+    const ringkasUbin = tugasUbin
+      .map((t) => pisahJudulTugas(t.title || "").pokok)
+      .filter(Boolean)
+      .join(" + ");
 
     sopTasks
       .filter(t => t.is_active)
@@ -366,7 +383,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             // yang mewajibkan foto + jeda 60 dtk. Di daftar SOP tampilkan satu baris pengantar.
             items.push({
               id: `kebersihan_kandang_intro`,
-              label: `Kunjungan kandang — dikerjakan di layar Kandang`,
+              label: ringkasUbin
+                ? `${ringkasUbin} — tiap kandang, di layar Kandang`
+                : "Kunjungan kandang — dikerjakan di layar Kandang",
               waktu: t.deadline_time ? `sebelum ${t.deadline_time}` : "Saat ada waktu",
               batasJam: t.deadline_time || null,
               icon: "🏠",

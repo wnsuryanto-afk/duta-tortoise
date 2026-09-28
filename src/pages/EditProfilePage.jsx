@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import UbahPassword from "@/components/profil/UbahPassword";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { upsertUserProfile } from "@/lib/userProfileUpsert";
@@ -322,6 +323,12 @@ export default function EditProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Ubah kata sandi ditaruh DI BAWAH tombol simpan profil, bukan di
+          tengah-tengahnya: keduanya formulir yang berdiri sendiri, dan
+          "Simpan Perubahan" tidak menyimpan kata sandi. Menaruhnya berdekatan
+          tanpa pemisah membuat orang menekan tombol yang salah. */}
+      <UbahPassword />
 
       <div className="flex justify-end gap-3 sticky bottom-4 bg-background/80 backdrop-blur-sm p-4 rounded-xl border">
         <Button variant="outline" onClick={handleCancel} className="gap-2">
