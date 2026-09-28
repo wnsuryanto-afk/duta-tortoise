@@ -127,6 +127,7 @@ export default function RumputBelumDicatat({ email, milikSendiri = false, batas 
         <RempesanRecordForm
           tanggalAwal={isi.tanggal}
           fotoAwal={isi.fotoUrl}
+          beratAwal={isi.beratKg}
           catatanAwal={isi.catatan}
           onClose={() => setIsi(null)}
           onSaved={() => {

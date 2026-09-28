@@ -22,11 +22,15 @@ import { sudahAdaRempesan, tarifTrip } from "@/lib/rempesan";
  * untuk alasan kenapa barisnya tidak dibuat otomatis saja.
  */
 export default function RempesanRecordForm({
-  onClose, onSaved, tanggalAwal, fotoAwal, catatanAwal, konfigTarif,
+  onClose, onSaved, tanggalAwal, fotoAwal, catatanAwal, beratAwal, konfigTarif,
 }) {
   const { user } = useCurrentUser();
   const [date, setDate] = useState(tanggalAwal || format(new Date(), "yyyy-MM-dd"));
-  const [weight, setWeight] = useState("");
+  // Berat dari catatan Pakan Harian hari itu, bila ada. Rumputnya sudah
+  // ditimbang sekali; menimbangnya lagi sesudah masuk kandang tidak mungkin.
+  const [weight, setWeight] = useState(
+    Number(beratAwal) > 0 ? String(beratAwal) : "",
+  );
   const [notes, setNotes] = useState(catatanAwal || "");
   const [photoUrl, setPhotoUrl] = useState(fotoAwal || "");
   const [uploading, setUploading] = useState(false);

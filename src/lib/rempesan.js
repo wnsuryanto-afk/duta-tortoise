@@ -232,7 +232,19 @@ export function hariPakanBelumDicatat(pakanHarian = [], logs = [], { email } = {
       nama: p.recorded_by_name || p.recorded_by_email,
       tanggal: p.log_date,
       jamMasuk: "",
-      fotoUrl: "",
+      // Foto dan berat DIBAWA, tidak dibuang.
+      //
+      // Baris Pakan Harian sudah mewajibkan foto, dan sejak 27-09-2026 ia juga
+      // menyimpan `weight_kg`. RempesanLog mewajibkan kedua-duanya juga. Selama
+      // keduanya tidak dibawa ke sini, kiper yang ditagih harus mengunggah foto
+      // yang sama untuk kedua kalinya dan menimbang ulang rumput yang sudah
+      // terlanjur ditumpahkan ke kandang — pekerjaan yang mustahil, dan itulah
+      // sebabnya tagihannya diabaikan dan RempesanLog tetap nol catatan.
+      //
+      // Yang dibawa adalah USULAN, bukan keputusan: formulirnya tetap bisa
+      // diubah sebelum disimpan.
+      fotoUrl: p.photo_url || "",
+      beratKg: Number(p.weight_kg) > 0 ? Number(p.weight_kg) : null,
       catatan: p.notes || "dari catatan Pakan Harian",
       dariPakan: true,
     }))
