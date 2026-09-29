@@ -10,6 +10,9 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { ringkasProduksi, adaHasil } from "@/lib/hasilInkubasi";
+import { kepastianAyahClutch } from "@/lib/produksiBetina";
+import { Link } from "react-router-dom";
+import { HelpCircle } from "lucide-react";
 
 const currentYear = new Date().getFullYear();
 
@@ -160,6 +163,19 @@ export default function BreederRankingPage() {
   const { role } = useCurrentUser();
   const [yearFilter, setYearFilter] = useState("semua");
 
+  // Peringkat pasangan bersandar sepenuhnya pada NAMA jantan di catatan
+  // bertelur. Di kebun ini, enam dari enam belas kandang berisi lebih dari
+  // satu jantan — kandang N sendirian menampung sebelas — jadi untuk clutch
+  // dari kandang itu nama ayahnya tidak bisa diperiksa oleh siapa pun.
+  // Halaman ini tidak berhenti memeringkat; ia berhenti diam soal itu.
+  const { data: tortoises = [] } = useQuery({
+    queryKey: ["tortoises-ranking"],
+    queryFn: () => base44.entities.Tortoise.list(),
+  });
+  const { data: enclosures = [] } = useQuery({
+    queryKey: ["enclosures-ranking"],
+    queryFn: () => base44.entities.Enclosure.list(),
+  });
   const { data: breedings = [], isLoading } = useQuery({
     queryKey: ["breedings"],
     queryFn: () => base44.entities.Breeding.list("-egg_laying_date", 500),
@@ -279,6 +295,34 @@ export default function BreederRankingPage() {
           <strong className="text-foreground">Formula Skor:</strong> Hatch Rate × 40% + Total Telur × 30% + Clutch/Tahun × 30% · Skor maks 100
         </span>
       </div>
+
+      {(() => {
+        const ragu = breedings.filter(
+          (b) => b.egg_laying_date && !kepastianAyahClutch(b, tortoises, enclosures).pasti,
+        );
+        if (ragu.length === 0) return null;
+        return (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/8 p-4 mb-4">
+            <div className="flex items-start gap-2.5">
+              <HelpCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="font-semibold text-sm">
+                  {ragu.length} dari {breedings.filter((b) => b.egg_laying_date).length} catatan bertelur tidak bisa diperiksa ayahnya
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Peringkat di bawah memakai nama jantan yang tertulis di catatan. Untuk
+                  clutch dari kandang yang berisi lebih dari satu jantan, nama itu tidak
+                  bisa dipastikan siapa pun — jadi peringkat pasangan dan peringkat jantan
+                  sebagian bersandar pada tebakan.
+                </p>
+                <Link to="/breeding-planner" className="text-xs text-primary hover:underline font-medium mt-1 inline-block">
+                  Lihat kandang mana yang menyebabkannya →
+                </Link>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {isLoading ? (
         <div className="space-y-3">

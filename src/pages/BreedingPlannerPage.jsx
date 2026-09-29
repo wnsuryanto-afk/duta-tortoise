@@ -1,255 +1,463 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, Calendar, AlertTriangle, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
+import PageHeader from "@/components/common/PageHeader";
+import KartuAngka from "@/components/ui/kartu-angka";
+import {
+  Egg, AlertTriangle, HelpCircle, Home, ChevronLeft, ChevronRight,
+  Calendar, Heart, CheckCircle2, Search,
+} from "lucide-react";
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import {
+  produksiBetina, ringkasKandang, ringkasProduksi, umurTermudaBertelur,
+  kepastianAyahClutch,
+} from "@/lib/produksiBetina";
 
-const MONTHS_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+/**
+ * Halaman ini DULU bernama isi "Breeding Planner": kalender, ranking pasangan
+ * terbaik, dan peringatan "betina belum kawin".
+ *
+ * Pemiliknya sendiri yang menyebutkan masalahnya, 29 September 2026: "di setiap
+ * kandang sudah otomatis dipasangkan, fungsi dari breeding planner saya masih
+ * belum mengerti kenapa penting." Itu pengamatan yang benar. Yang menentukan
+ * siapa kawin dengan siapa bukan sebuah rencana, melainkan siapa tinggal di
+ * kandang mana — jadi halaman yang menyuruh memilih pasangan memang tidak punya
+ * pekerjaan.
+ *
+ * Tiga hal yang ditemukan saat memeriksanya:
+ *
+ *   1. Peringatan "belum kawin" membaca `Breeding.mating_date`, yang KOSONG di
+ *      seluruh sepuluh catatan. Akibatnya setiap betina aktif lolos saringan
+ *      dan halaman ini membuka dengan 89 baris peringatan kuning — semuanya
+ *      palsu, setiap hari.
+ *   2. "Ranking Pasangan Terbaik" memeringkat nama ayah sebagai fakta. Tiga
+ *      dari sepuluh catatan menyebut A35, padahal A35 tinggal di kandang N
+ *      bersama sepuluh jantan lain. Satu catatan menyebut pasangan yang bahkan
+ *      tidak sekandang.
+ *   3. Dari 89 betina dewasa aktif, hanya DELAPAN punya catatan bertelur.
+ *
+ * Nomor tiga itulah pertanyaan produksinya, dan tidak ada satu layar pun yang
+ * menanyakannya. Jadi isi halaman ini diganti: yang tinggal adalah kalender
+ * (bagian yang memang berguna), dan sisanya menjawab dua hal yang benar-benar
+ * bisa ditindaklanjuti — betina mana yang tidak berproduksi, dan kandang mana
+ * yang membuat keturunannya tidak bisa ditelusuri.
+ *
+ * Alamatnya tidak diubah supaya tautan dan menu yang ada tetap bekerja.
+ */
 
-function calcGrade(rate) {
-  if (rate >= 0.8) return { label: "Sangat Baik", color: "bg-green-100 text-green-800" };
-  if (rate >= 0.6) return { label: "Baik", color: "bg-blue-100 text-blue-800" };
-  if (rate >= 0.4) return { label: "Cukup", color: "bg-yellow-100 text-yellow-800" };
-  return { label: "Rendah", color: "bg-red-100 text-red-800" };
+const BULAN_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+function tglSingkat(s) {
+  try { return format(parseISO(s), "d MMM yyyy", { locale: idLocale }); } catch { return s; }
+}
+
+/** Lencana kepastian ayah — satu bentuk, dipakai di dua tempat. */
+function LencanaAyah({ ayah }) {
+  if (ayah.jumlah === 0) {
+    return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">tidak ada jantan</span>;
+  }
+  if (ayah.pasti) {
+    return (
+      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/12 text-accent inline-flex items-center gap-0.5">
+        <CheckCircle2 className="w-2.5 h-2.5" /> ayah {ayah.ayah}
+      </span>
+    );
+  }
+  return (
+    <span
+      title={`Kandidat: ${ayah.kandidat.join(", ")}`}
+      className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-400 inline-flex items-center gap-0.5"
+    >
+      <HelpCircle className="w-2.5 h-2.5" /> 1 dari {ayah.jumlah} jantan
+    </span>
+  );
+}
+
+/**
+ * Lencana untuk satu CATATAN BERTELUR — sengaja berbeda dari LencanaAyah.
+ *
+ * LencanaAyah menjawab "siapa ayah anak betina ini nanti", dan untuk itu
+ * susunan kandang HARI INI adalah jawaban yang benar. Sebuah clutch yang sudah
+ * lewat berbeda: ia terjadi di masa lalu, dan kura bisa sudah pindah sejak
+ * saat itu. Menuliskan "ayah C2" pada clutch Maret hanya karena C2 satu-satunya
+ * jantan di kandang induknya HARI INI adalah klaim yang persis sama beraninya
+ * dengan yang sedang diperbaiki halaman ini.
+ *
+ * EnclosureHistory memang ada, tetapi catatan pemindahannya baru dimulai
+ * 27 September 2026 — tidak menjangkau satu pun dari sepuluh clutch yang ada.
+ * Jadi yang dilakukan di sini hanya MEMBANDINGKAN nama yang tercatat dengan
+ * susunan sekarang, dan mengatakan apa adanya kalau keduanya tidak cocok.
+ * Tidak ada ayah pengganti yang diusulkan.
+ */
+function LencanaClutch({ k }) {
+  const dasar = "text-[10px] px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5";
+  if (!k.tercatat || k.jumlah === 0) {
+    return <span className={`${dasar} bg-muted text-muted-foreground`}>tidak bisa dibandingkan</span>;
+  }
+  if (k.asing) {
+    return (
+      <span className={`${dasar} bg-amber-500/12 text-amber-700 dark:text-amber-400`}>
+        <AlertTriangle className="w-2.5 h-2.5" /> tidak cocok dengan kandang sekarang
+      </span>
+    );
+  }
+  if (!k.pasti) {
+    return (
+      <span title={`Kandidat: ${k.kandidat.join(", ")}`} className={`${dasar} bg-amber-500/12 text-amber-700 dark:text-amber-400`}>
+        <HelpCircle className="w-2.5 h-2.5" /> 1 dari {k.jumlah} jantan
+      </span>
+    );
+  }
+  return (
+    <span className={`${dasar} bg-accent/12 text-accent`}>
+      <CheckCircle2 className="w-2.5 h-2.5" /> cocok dengan kandang sekarang
+    </span>
+  );
 }
 
 export default function BreedingPlannerPage() {
-  const today = new Date();
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const hariIni = new Date();
+  const [bulan, setBulan] = useState(hariIni.getMonth());
+  const [tahun, setTahun] = useState(hariIni.getFullYear());
+  const [cari, setCari] = useState("");
+  const [saring, setSaring] = useState("belum");
+  const [semua, setSemua] = useState(false);
 
   const { data: breedings = [] } = useQuery({ queryKey: ["breedings-planner"], queryFn: () => base44.entities.Breeding.list() });
   const { data: tortoises = [] } = useQuery({ queryKey: ["tortoises-planner"], queryFn: () => base44.entities.Tortoise.list() });
+  const { data: enclosures = [] } = useQuery({ queryKey: ["enclosures-planner"], queryFn: () => base44.entities.Enclosure.list() });
+  // Histori kawin punya entitasnya sendiri, tombol "Catat Kawin", dan daftar
+  // pasangan di halaman Breeding & Telur — dan nol catatan. Halaman ini dulu
+  // sama sekali tidak membacanya; sekarang ia menagihnya.
+  const { data: perkawinan = [] } = useQuery({ queryKey: ["perkawinan-planner"], queryFn: () => base44.entities.Perkawinan.list("-mating_date", 500) });
 
-  // === PARTNER RANKINGS ===
-  const partnerStats = useMemo(() => {
-    const map = {};
-    breedings.forEach(b => {
-      const key = `${b.male_name}|${b.female_name}`;
-      if (!map[key]) map[key] = { male: b.male_name, female: b.female_name, clutches: 0, totalEggs: 0, totalHatched: 0 };
-      map[key].clutches++;
-      map[key].totalEggs += b.egg_count || 0;
-      map[key].totalHatched += b.hatched_count || 0;
+  const baris = useMemo(
+    () => produksiBetina(tortoises, breedings, enclosures, { hariIni }),
+    [tortoises, breedings, enclosures, hariIni],
+  );
+  const umurMinimal = useMemo(() => umurTermudaBertelur(tortoises, breedings), [tortoises, breedings]);
+  const ringkas = useMemo(() => ringkasProduksi(baris, { umurMinimal }), [baris, umurMinimal]);
+  const kandang = useMemo(() => ringkasKandang(tortoises, enclosures), [tortoises, enclosures]);
+  const kandangRagu = kandang.filter((k) => k.jumlahJantan > 1);
+
+  const tampil = useMemo(() => {
+    const q = cari.trim().toLowerCase();
+    return baris.filter((r) => {
+      if (q && !r.nama.toLowerCase().includes(q) && !r.kandang.toLowerCase().includes(q)) return false;
+      if (saring === "belum") return r.clutch === 0 && (umurMinimal === null || (r.umur ?? 0) >= umurMinimal);
+      if (saring === "produktif") return r.clutch > 0;
+      if (saring === "muda") return umurMinimal !== null && (r.umur ?? 0) < umurMinimal;
+      return true;
     });
-    return Object.values(map).map(s => ({
-      ...s,
-      hatchRate: s.totalEggs > 0 ? s.totalHatched / s.totalEggs : 0,
-      avgEggsPerClutch: s.clutches > 0 ? s.totalEggs / s.clutches : 0,
-      score: (s.totalEggs > 0 ? (s.totalHatched / s.totalEggs) * 60 : 0) + (s.clutches * 5) + (s.totalEggs / Math.max(s.clutches, 1)) * 1,
-    })).sort((a, b) => b.score - a.score);
-  }, [breedings]);
+  }, [baris, cari, saring, umurMinimal]);
 
-  // === OVERDUE FEMALES (not mated > 90 days) ===
-  const overdueAlerts = useMemo(() => {
-    const femaleMap = {};
-    tortoises.filter(t => t.gender === "betina" && t.status === "aktif").forEach(t => { femaleMap[t.name] = t; });
-    const lastMatings = {};
-    breedings.forEach(b => {
-      if (b.mating_date) {
-        if (!lastMatings[b.female_name] || b.mating_date > lastMatings[b.female_name]) {
-          lastMatings[b.female_name] = b.mating_date;
-        }
-      }
-    });
-    return Object.keys(femaleMap).filter(name => {
-      const last = lastMatings[name];
-      if (!last) return true;
-      return differenceInDays(today, parseISO(last)) > 90;
-    }).map(name => ({ name, lastMating: lastMatings[name] || null }));
-  }, [tortoises, breedings]);
-
-  // === CALENDAR EVENTS ===
-  const calendarEvents = useMemo(() => {
-    const events = {};
-    const addEvent = (dateStr, ev) => {
-      if (!dateStr) return;
-      const key = dateStr.substring(0, 10);
-      if (!events[key]) events[key] = [];
-      events[key].push(ev);
+  // ── Kalender: bagian lama yang dipertahankan ──────────────────────────────
+  const acara = useMemo(() => {
+    const peta = {};
+    const tambah = (tgl, ev) => {
+      if (!tgl) return;
+      const k = String(tgl).substring(0, 10);
+      (peta[k] ||= []).push(ev);
     };
-    breedings.forEach(b => {
-      if (b.mating_date) addEvent(b.mating_date, { type: "kawin", label: `${b.male_name} × ${b.female_name}`, color: "bg-pink-400" });
-      if (b.egg_laying_date) addEvent(b.egg_laying_date, { type: "telur", label: `Telur: ${b.female_name}`, color: "bg-yellow-400" });
-      if (b.estimated_hatch_date) addEvent(b.estimated_hatch_date, { type: "hatch_est", label: `Est. Menetas: ${b.female_name}`, color: "bg-orange-300" });
-      if (b.hatch_date) addEvent(b.hatch_date, { type: "hatch", label: `Menetas: ${b.female_name}`, color: "bg-green-400" });
+    breedings.forEach((b) => {
+      const pasangan = `${b.male_name} × ${b.female_name}`;
+      tambah(b.mating_date, { label: `💕 ${pasangan}`, color: "bg-pink-400" });
+      tambah(b.egg_laying_date, { label: `🥚 ${b.female_name}`, color: "bg-amber-400" });
+      tambah(b.estimated_hatch_date, { label: `🐣 ${b.female_name}`, color: "bg-orange-300" });
+      tambah(b.hatch_date, { label: `🐢 ${b.female_name}`, color: "bg-green-500" });
     });
-    return events;
-  }, [breedings]);
+    perkawinan.forEach((p) => tambah(p.mating_date, { label: `💕 ${p.male_name} × ${p.female_name}`, color: "bg-pink-400" }));
+    return peta;
+  }, [breedings, perkawinan]);
 
-  const firstDay = startOfMonth(new Date(viewYear, viewMonth, 1));
-  const lastDay = endOfMonth(firstDay);
-  const days = eachDayOfInterval({ start: firstDay, end: lastDay });
-  const startPad = getDay(firstDay);
-
-  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
-  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
-
-  const years = Array.from({ length: 5 }, (_, i) => today.getFullYear() - 2 + i);
+  const awal = startOfMonth(new Date(tahun, bulan, 1));
+  const hariBulan = eachDayOfInterval({ start: awal, end: endOfMonth(awal) });
+  const pad = getDay(awal);
+  const daftarTahun = [hariIni.getFullYear() - 1, hariIni.getFullYear(), hariIni.getFullYear() + 1];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-pink-100 rounded-xl"><Heart className="w-6 h-6 text-pink-600" /></div>
-        <div>
-          <h1 className="text-2xl font-bold">Breeding Planner</h1>
-          <p className="text-sm text-muted-foreground">Kalender jadwal kawin & rekomendasi pasangan terbaik</p>
-        </div>
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
+      <PageHeader
+        title="Produksi Indukan"
+        subtitle="Betina mana yang berproduksi, dan kandang mana yang membuat keturunannya bisa ditelusuri"
+        icon={Egg}
+        description={
+          umurMinimal === null
+            ? "Belum ada catatan bertelur yang bisa dihitung umurnya, jadi batas umur dewasa belum bisa ditentukan dari data kebun ini."
+            : `Batas umur dewasa dihitung dari catatan kebun ini sendiri: yang termuda pernah bertelur pada umur ${umurMinimal.toFixed(1)} tahun. Batas ini memperbaiki dirinya sendiri setiap ada catatan baru.`
+        }
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <KartuAngka
+          label="Betina cukup umur"
+          nilai={ringkas.cukupUmur}
+          sub={`${ringkas.belumCukupUmur} belum cukup umur`}
+          ikon={Heart}
+          nada="netral"
+        />
+        <KartuAngka
+          label="Bertelur tahun ini"
+          nilai={ringkas.bertelurTahunIni}
+          sub={`dari ${ringkas.cukupUmur} yang cukup umur`}
+          ikon={Egg}
+          nada={ringkas.bertelurTahunIni > 0 ? "baik" : "awas"}
+        />
+        <KartuAngka
+          label="Belum ada catatan bertelur"
+          nilai={ringkas.belumPernah}
+          sub="tidak bertelur, atau tidak tercatat"
+          ikon={AlertTriangle}
+          nada={ringkas.belumPernah > 0 ? "bahaya" : "baik"}
+          onKlik={() => setSaring("belum")}
+        />
+        <KartuAngka
+          label="Ayah tidak bisa dipastikan"
+          nilai={ringkas.ayahTidakPasti}
+          sub={`${kandangRagu.length} kandang berisi >1 jantan`}
+          ikon={HelpCircle}
+          nada={ringkas.ayahTidakPasti > 0 ? "awas" : "baik"}
+        />
       </div>
 
-      {/* Overdue Alerts */}
-      {overdueAlerts.length > 0 && (
-        <div className="space-y-2">
-          {overdueAlerts.map(a => (
-            <div key={a.name} className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span><strong>{a.name}</strong> belum kawin sejak {a.lastMating ? `${differenceInDays(today, parseISO(a.lastMating))} hari lalu` : "belum pernah"} — musim kawin mungkin terlewat.</span>
+      {/* Penagih: histori kawin sudah punya alat, belum punya isi */}
+      {perkawinan.length === 0 && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/8 p-4 mb-5">
+          <div className="flex items-start gap-2.5">
+            <Heart className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">Histori kawin belum pernah diisi</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Pencatat kawin sudah ada — tombol <b>Catat Kawin</b> dan daftar pasangan di
+                halaman Breeding &amp; Telur — tetapi isinya nol catatan, dan seluruh
+                {" "}{breedings.length} catatan bertelur juga tidak menyimpan tanggal kawin.
+                Selama itu kosong, tidak ada satu pun angka di aplikasi ini yang bisa
+                menjawab &quot;sudah berapa lama betina ini tidak kawin&quot;.
+              </p>
+              <Link to="/breeding" className="text-xs text-primary hover:underline font-medium mt-1 inline-block">
+                Buka Breeding &amp; Telur untuk mencatat →
+              </Link>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
-                <div className="flex items-center gap-2">
-                  <Select value={String(viewMonth)} onValueChange={v => setViewMonth(Number(v))}>
-                    <SelectTrigger className="w-32 h-8 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>{MONTHS_ID.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={String(viewYear)} onValueChange={v => setViewYear(Number(v))}>
-                    <SelectTrigger className="w-24 h-8 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {["Min","Sen","Sel","Rab","Kam","Jum","Sab"].map(d => (
-                  <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {Array(startPad).fill(null).map((_, i) => <div key={`pad-${i}`} />)}
-                {days.map(day => {
-                  const key = format(day, "yyyy-MM-dd");
-                  const evs = calendarEvents[key] || [];
-                  const isToday = format(today, "yyyy-MM-dd") === key;
-                  return (
-                    <div key={key} className={`min-h-[60px] p-1 rounded-lg border text-xs ${isToday ? "border-primary bg-primary/5" : "border-transparent hover:border-muted-foreground/20"}`}>
-                      <div className={`font-semibold mb-1 ${isToday ? "text-primary" : "text-foreground"}`}>{format(day, "d")}</div>
-                      <div className="space-y-0.5">
-                        {evs.slice(0, 2).map((ev, i) => (
-                          <div key={i} className={`${ev.color} text-white rounded px-1 py-0.5 truncate text-[10px]`}>{ev.label}</div>
-                        ))}
-                        {evs.length > 2 && <div className="text-muted-foreground text-[10px]">+{evs.length - 2} lagi</div>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Legend */}
-              <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {[{ color: "bg-pink-400", label: "Kawin" }, { color: "bg-yellow-400", label: "Bertelur" }, { color: "bg-orange-300", label: "Est. Menetas" }, { color: "bg-green-400", label: "Menetas" }].map(l => (
-                  <div key={l.label} className="flex items-center gap-1"><div className={`w-3 h-3 rounded ${l.color}`} />{l.label}</div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      {/* ── Produksi per betina ─────────────────────────────────────────── */}
+      <Card className="p-4 mb-5">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <h2 className="font-semibold text-sm">Produksi per betina</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={cari}
+                onChange={(e) => { setCari(e.target.value); setSemua(false); }}
+                placeholder="Cari nama / kandang"
+                className="h-8 w-44 text-xs rounded-lg border border-border bg-background pl-8 pr-2 outline-none focus:border-primary"
+              />
+            </div>
+            <Select value={saring} onValueChange={(v) => { setSaring(v); setSemua(false); }}>
+              <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="belum">Belum ada catatan</SelectItem>
+                <SelectItem value="produktif">Pernah bertelur</SelectItem>
+                <SelectItem value="muda">Belum cukup umur</SelectItem>
+                <SelectItem value="semua">Semua betina</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Partner Rankings */}
-        <div>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-500" /> Ranking Pasangan Terbaik</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {partnerStats.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Belum ada data breeding</p>}
-              {partnerStats.slice(0, 8).map((p, i) => {
-                const grade = calcGrade(p.hatchRate);
+        {tampil.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Tidak ada yang cocok.</p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {/* Dipotong 12 baris: dengan 74 betina tanpa catatan, daftar penuh
+                mendorong bagian "susunan kandang" sejauh dua layar penuh ke
+                bawah dan praktis tidak pernah terlihat. */}
+            {(semua ? tampil : tampil.slice(0, 12)).map((r) => (
+              <div key={r.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold">{r.nama}</span>
+                    <span className="text-[11px] text-muted-foreground inline-flex items-center gap-0.5">
+                      <Home className="w-3 h-3" /> {r.kandang || "—"}
+                    </span>
+                    <LencanaAyah ayah={r.ayah} />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 break-words">
+                    {[
+                      r.umur === null ? "umur tidak diketahui" : `${Math.floor(r.umur)} th`,
+                      r.clutch === 0
+                        ? "belum ada catatan bertelur"
+                        : `terakhir ${tglSingkat(r.terakhirBertelur)} · ${r.hariDiam} hari lalu`,
+                      r.clutch > 0 ? `${r.clutch} clutch · ${r.totalTelur} telur` : null,
+                      r.hatchRate !== null ? `${Math.round(r.hatchRate * 100)}% menetas` : null,
+                    ].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                {/* Untuk yang belum pernah tercatat, "0" tebal diulang puluhan
+                    kali hanya menarik mata ke ketiadaan. Tanda hubung redup
+                    menyampaikan hal yang sama tanpa berteriak. */}
+                <div className="flex-shrink-0 text-right">
+                  {r.clutchTahunIni > 0 ? (
+                    <>
+                      <p className="text-base font-bold tabular-nums leading-none text-accent">{r.clutchTahunIni}</p>
+                      <p className="text-[10px] text-muted-foreground">clutch {hariIni.getFullYear()}</p>
+                    </>
+                  ) : (
+                    <span className="text-sm text-muted-foreground/50">—</span>
+                  )}
+                </div>
+              </div>
+            ))}
+            {tampil.length > 12 && (
+              <button
+                type="button"
+                onClick={() => setSemua((v) => !v)}
+                className="text-xs text-primary hover:underline py-2"
+              >
+                {semua ? "Tampilkan 12 teratas saja" : `Tampilkan semua ${tampil.length} betina →`}
+              </button>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* ── Susunan jantan per kandang ──────────────────────────────────── */}
+      <Card className="p-4 mb-5">
+        <h2 className="font-semibold text-sm mb-1">Susunan jantan per kandang</h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          Di sistem kandang, inilah satu-satunya keputusan perkawinan yang benar-benar
+          diambil manusia. Kandang dengan satu jantan membuat setiap keturunannya bisa
+          ditelusuri; kandang dengan lebih dari satu tidak.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {kandang.map((k) => (
+            <div
+              key={k.kandang}
+              className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
+                k.terlacak ? "border-border bg-card" : "border-amber-500/30 bg-amber-500/8"
+              }`}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{k.kandang}</p>
+                <p className="text-[11px] text-muted-foreground break-words">
+                  {k.jumlahJantan} jantan · {k.jumlahBetina} betina
+                  {k.terlacak ? ` · ayah selalu ${k.ayah}` : k.jumlahJantan === 0 ? " · tidak ada jantan" : ""}
+                </p>
+              </div>
+              {!k.terlacak && k.jumlahJantan > 1 && (
+                <span
+                  title={k.jantan.join(", ")}
+                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 flex-shrink-0"
+                >
+                  tidak terlacak
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* ── Catatan bertelur yang ayahnya tebakan ───────────────────────── */}
+      {breedings.length > 0 && (
+        <Card className="p-4 mb-5">
+          <h2 className="font-semibold text-sm mb-1">Catatan bertelur &amp; kepastian ayahnya</h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Nama jantan pada catatan bertelur dibaca apa adanya, lalu dibandingkan dengan
+            siapa yang ada di kandang induknya <b>sekarang</b>. Riwayat pemindahan baru
+            tercatat sejak 27 September 2026, jadi susunan pada saat bertelur tidak bisa
+            direkonstruksi — halaman ini tidak menebak ayah pengganti, hanya mengatakan
+            kapan namanya tidak bisa diperiksa.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {[...breedings]
+              .filter((b) => b.egg_laying_date)
+              .sort((a, b) => String(b.egg_laying_date).localeCompare(String(a.egg_laying_date)))
+              .map((b) => {
+                const k = kepastianAyahClutch(b, tortoises, enclosures);
                 return (
-                  <div key={i} className="p-3 bg-muted/40 rounded-lg">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-semibold flex items-center gap-1">
-                          {i < 3 && <span>{["🥇","🥈","🥉"][i]}</span>}
-                          {p.male} × {p.female}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {p.clutches} clutch · {p.totalEggs} telur · {p.totalHatched} menetas
-                        </div>
+                  <div key={b.id || `${b.female_name}-${b.egg_laying_date}`} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold">{b.female_name}</span>
+                        <span className="text-[11px] text-muted-foreground">{tglSingkat(b.egg_laying_date)}</span>
+                        <LencanaClutch k={k} />
                       </div>
-                      <Badge className={`${grade.color} text-[10px] px-1.5 py-0.5 border-0 shrink-0`}>{grade.label}</Badge>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 break-words">
+                        tercatat sebagai ayah: <b>{b.male_name || "—"}</b>
+                        {k.asing && ` · ${b.male_name} tidak ada di kandang ${k.kandang} — kandangnya berubah, atau catatannya keliru`}
+                        {!k.pasti && !k.asing && k.jumlah > 1 && ` · kandang ${k.kandang} berisi ${k.jumlah} jantan`}
+                        {` · ${b.egg_count || 0} telur`}
+                        {b.hatched_count !== null && b.hatched_count !== undefined ? ` · ${b.hatched_count} menetas` : ""}
+                      </p>
                     </div>
-                    <div className="mt-2">
-                      <div className="flex justify-between text-xs mb-1"><span>Hatch rate</span><span>{(p.hatchRate * 100).toFixed(0)}%</span></div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${p.hatchRate * 100}%` }} />
-                      </div>
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">Rata-rata {p.avgEggsPerClutch.toFixed(1)} telur/clutch</div>
+                    <Link to={`/breeding/${b.id}`} className="text-xs text-primary hover:underline flex-shrink-0">
+                      Buka
+                    </Link>
                   </div>
                 );
               })}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          </div>
+        </Card>
+      )}
 
-      {/* Upcoming Events Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2"><Calendar className="w-4 h-4" /> Jadwal Mendatang (30 hari ke depan)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {(() => {
-            const upcoming = [];
-            breedings.forEach(b => {
-              [
-                { date: b.mating_date, type: "Kawin", icon: "💕", color: "text-pink-600" },
-                { date: b.egg_laying_date, type: "Bertelur", icon: "🥚", color: "text-yellow-600" },
-                { date: b.estimated_hatch_date, type: "Est. Menetas", icon: "🐣", color: "text-orange-600" },
-                { date: b.hatch_date, type: "Menetas", icon: "🐢", color: "text-green-600" },
-              ].forEach(ev => {
-                if (!ev.date) return;
-                const d = parseISO(ev.date);
-                const diff = differenceInDays(d, today);
-                if (diff >= 0 && diff <= 30) {
-                  upcoming.push({ ...ev, diff, pair: `${b.male_name} × ${b.female_name}`, dateStr: ev.date });
-                }
-              });
-            });
-            upcoming.sort((a, b) => a.diff - b.diff);
-            if (upcoming.length === 0) return <p className="text-sm text-muted-foreground text-center py-4">Tidak ada jadwal dalam 30 hari ke depan</p>;
+      {/* ── Kalender: bagian lama yang dipertahankan ────────────────────── */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <Button variant="ghost" size="icon" onClick={() => {
+            if (bulan === 0) { setBulan(11); setTahun((y) => y - 1); } else setBulan((m) => m - 1);
+          }}><ChevronLeft className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <Select value={String(bulan)} onValueChange={(v) => setBulan(Number(v))}>
+              <SelectTrigger className="w-32 h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>{BULAN_ID.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={String(tahun)} onValueChange={(v) => setTahun(Number(v))}>
+              <SelectTrigger className="w-24 h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>{daftarTahun.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => {
+            if (bulan === 11) { setBulan(0); setTahun((y) => y + 1); } else setBulan((m) => m + 1);
+          }}><ChevronRight className="w-4 h-4" /></Button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {["Min","Sen","Sel","Rab","Kam","Jum","Sab"].map((d) => (
+            <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array(pad).fill(null).map((_, i) => <div key={`pad-${i}`} />)}
+          {hariBulan.map((hari) => {
+            const kunci = format(hari, "yyyy-MM-dd");
+            const evs = acara[kunci] || [];
+            const ini = format(hariIni, "yyyy-MM-dd") === kunci;
             return (
-              <div className="divide-y">
-                {upcoming.map((ev, i) => (
-                  <div key={i} className="flex items-center gap-3 py-2.5">
-                    <span className="text-xl">{ev.icon}</span>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{ev.pair}</div>
-                      <div className={`text-xs ${ev.color}`}>{ev.type}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">{format(parseISO(ev.dateStr), "dd MMM yyyy")}</div>
-                      <div className="text-xs text-muted-foreground">{ev.diff === 0 ? "Hari ini" : `${ev.diff} hari lagi`}</div>
-                    </div>
-                  </div>
-                ))}
+              <div key={kunci} className={`min-h-[60px] p-1 rounded-lg border text-xs min-w-0 ${ini ? "border-primary bg-primary/5" : "border-transparent hover:border-muted-foreground/20"}`}>
+                <div className={`font-semibold mb-1 ${ini ? "text-primary" : "text-foreground"}`}>{format(hari, "d")}</div>
+                <div className="space-y-0.5">
+                  {evs.slice(0, 2).map((ev, i) => (
+                    <div key={i} className={`${ev.color} text-white rounded px-1 py-0.5 truncate text-[10px]`}>{ev.label}</div>
+                  ))}
+                  {evs.length > 2 && <div className="text-muted-foreground text-[10px]">+{evs.length - 2} lagi</div>}
+                </div>
               </div>
             );
-          })()}
-        </CardContent>
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+          {[{ c: "bg-pink-400", l: "Kawin" }, { c: "bg-amber-400", l: "Bertelur" }, { c: "bg-orange-300", l: "Est. menetas" }, { c: "bg-green-500", l: "Menetas" }].map((x) => (
+            <div key={x.l} className="flex items-center gap-1"><div className={`w-3 h-3 rounded ${x.c}`} />{x.l}</div>
+          ))}
+        </div>
       </Card>
     </div>
   );

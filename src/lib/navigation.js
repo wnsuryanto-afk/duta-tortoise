@@ -35,7 +35,7 @@ export const NAV_SECTIONS = [
       { path: "/panduan-penyakit",  section: "panduan-penyakit",  label: "Panduan Penyakit",  icon: BookOpen,     desc: "Rujukan gejala & penanganan" },
       { path: "/breeding",          section: "breeding",          label: "Breeding & Telur",  icon: Baby,         desc: "Pasangan, telur, penetasan" },
       { path: "/breeding-calendar", section: "breeding-calendar", label: "Kalender Breeding", icon: CalendarRange,desc: "Jadwal per pasangan" },
-      { path: "/breeding-planner",  section: "breeding-planner",  label: "Perencana Breeding",icon: Egg,          desc: "Rencana perkawinan" },
+      { path: "/breeding-planner",  section: "breeding-planner",  label: "Produksi Indukan", icon: Egg,          desc: "Betina mana yang berproduksi, dan kandang mana yang membuat keturunannya bisa ditelusuri" },
       { path: "/incubator-readings",section: "breeding",          label: "Inkubator",         icon: Thermometer,  desc: "Suhu & kelembapan" },
       { path: "/family-tree",       section: "family-tree",       label: "Silsilah",          icon: GitBranch,    desc: "Garis keturunan" },
       { path: "/label-kura",        section: "tortoise",          label: "Cetak Label QR",    icon: QrCode,       desc: "Label 50×30mm per kandang, dipindai buka paspor" },
