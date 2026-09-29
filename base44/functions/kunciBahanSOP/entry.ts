@@ -146,19 +146,37 @@ Deno.serve(async (req) => {
           `\n\nBuka kuncinya bila pekerjaannya sudah bisa dikerjakan lagi.`;
       }
 
+      /*
+       * Tujuan tautannya mengikuti JENIS kuncinya.
+       *
+       * Sebelum ini semua notifikasi dikirim ke /warehouse dengan label "Lihat
+       * Gudang", termasuk ketika yang dilaporkan hanya kunci manual. Untuk
+       * kunci manual itu arah yang salah: fungsi ini sengaja tidak pernah
+       * membukanya, dan tidak ada apa pun di Gudang yang bisa membukanya.
+       *
+       * Contoh yang sedang berjalan: "Panen azolla untuk pakan" dikunci manual
+       * 18-09-2026 dengan catatan "BUKA KEMBALI begitu kolam siap panen".
+       * Azolla ditumbuhkan, bukan dibeli. Mengirim pemiliknya ke Gudang untuk
+       * itu hanya membuang perjalanannya.
+       */
+      const hanyaManual = terkunci.length === 0 && kunciManualLama.length > 0;
       const penerima = await emailPerRole(base44, ["owner", "manajer", "admin"]);
       for (const email of penerima) {
         await notifSekali(base44, {
           recipient_email: email,
-          title: terkunci.length > 0
-            ? `${terkunci.length} SOP terhenti karena bahan habis`
-            : `${kunciManualLama.length} SOP masih dikunci manual`,
+          title: hanyaManual
+            ? `${kunciManualLama.length} SOP masih dikunci manual`
+            : `${terkunci.length} SOP terhenti karena bahan habis`,
           message: potongRapi(isi, 900),
           type: "alert",
           priority: "tinggi",
-          category: "stok",
-          action_label: "Lihat Gudang",
-          action_url: "/warehouse",
+          // "sop" BUKAN nilai yang sah — enum Notification.category cuma
+          // memuat stok, kesehatan, breeding, keuangan, absensi, sistem,
+          // penjualan, lainnya. Kunci manual yang perlu ditinjau adalah urusan
+          // setelan, jadi "sistem".
+          category: hanyaManual ? "sistem" : "stok",
+          action_label: hanyaManual ? "Tinjau di SOP" : "Lihat Gudang",
+          action_url: hanyaManual ? "/sop" : "/warehouse",
           related_entity_id: `kunci_sop_${hariIni}`,
           related_entity_type: "SOPTask",
         });
@@ -168,7 +186,11 @@ Deno.serve(async (req) => {
       if (nomor.length > 0) {
         await sendWhatsAppNotification(base44, {
           targets: nomor,
-          message: `🔒 *SOP terhenti karena bahan habis*\n\n${isi}`.slice(0, 1500),
+          // Judulnya dulu selalu "terhenti karena bahan habis" — termasuk saat
+          // tidak ada satu pun bahan yang habis dan semuanya kunci manual.
+          message: (hanyaManual
+            ? `🔒 *SOP masih dikunci manual*\n\n${isi}`
+            : `🔒 *SOP terhenti karena bahan habis*\n\n${isi}`).slice(0, 1500),
           notificationType: "kunci_sop",
           relatedEntityId: `kunci_sop_${hariIni}`,
         });
