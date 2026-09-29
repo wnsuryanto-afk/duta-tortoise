@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { bandingkanKandang, kunciUrutKandang, URUTAN_KELOMPOK } from "@/lib/kandang";
+import { bandingkanKandang, kunciUrutKandang, URUTAN_KELOMPOK, hitungIsiKandang, kuraDiKandang } from "@/lib/kandang";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,10 +30,28 @@ import { diPeternakan } from "@/lib/populasiKura";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 
-function getEnclosureStatus(enc) {
-  if (!enc.max_capacity) return "normal";
-  if (enc.current_count > enc.max_capacity) return "overcrowded";
-  if (enc.current_count >= enc.max_capacity * 0.8) return "warning";
+/**
+ * Status kepenuhan kandang, dihitung dari ISI NYATA.
+ *
+ * ── Kenapa `enc.current_count` tidak dipakai lagi ──────────────────────────
+ *
+ * Di kartu kandang yang sama, dua angka datang dari dua sumber berbeda:
+ * lencana statusnya ("Normal" / "Hampir Penuh" / "Kapasitas melebihi batas!")
+ * dibaca dari kolom tersimpan `current_count`, sementara angka "28 / 36" tepat
+ * di bawahnya dihitung langsung dari daftar kura. Selama keduanya kebetulan
+ * sinkron tidak ada yang terasa; begitu melenceng, satu kartu menampilkan
+ * "Normal" di atas angka yang jelas melebihi kapasitas.
+ *
+ * `current_count` hanya berubah saat seseorang menekan "Sinkronkan" di halaman
+ * Kandang — jadi ia SELALU tertinggal sampai ada yang mengingatnya.
+ *
+ * Sekarang keduanya memakai angka yang sama: isi yang dihitung saat itu juga.
+ */
+function getEnclosureStatus(enc, isi) {
+  const kapasitas = Number(enc?.max_capacity) || 0;
+  if (!kapasitas) return "normal";
+  if (isi > kapasitas) return "overcrowded";
+  if (isi >= kapasitas * 0.8) return "warning";
   return "normal";
 }
 
@@ -258,9 +276,10 @@ export default function TortoiseList() {
     warning: <Badge className="bg-amber-100 text-amber-700 border-amber-300">Hampir Penuh</Badge>,
     normal: <Badge className="bg-green-100 text-green-700 border-green-300">Normal</Badge>,
   };
-  const encTortoises = selectedEnclosureDetail
-    ? tortoises.filter(t => t.enclosure === selectedEnclosureDetail.name && t.status !== "terjual" && t.status !== "mati")
-    : [];
+  // Lewat pustaka bersama: aturan penghuninya sama dengan angka di kartu, jadi
+  // "28 / 36" dan panjang daftar yang terbuka saat kartunya ditekan tidak
+  // pernah berbeda — termasuk sesudah kandangnya diganti nama.
+  const encTortoises = kuraDiKandang(selectedEnclosureDetail, tortoises, enclosures);
 
   // Karantina tortoises
   const quarantinedTortoises = tortoises.filter(t => t.in_quarantine === true);
@@ -720,9 +739,14 @@ export default function TortoiseList() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Total Kandang", val: enclosures.filter(e=>e.is_active).length, color: "text-green-700" },
-              { label: "Overcrowding", val: enclosures.filter(e=>getEnclosureStatus(e)==="overcrowded").length, color: "text-red-600" },
-              { label: "Hampir Penuh", val: enclosures.filter(e=>getEnclosureStatus(e)==="warning").length, color: "text-amber-600" },
+              /* `is_active !== false`, bukan `is_active === true`: kolom itu
+                 tidak pernah ditulis oleh layar mana pun, jadi kandang lama
+                 bernilai undefined dan diam-diam hilang dari hitungan ini —
+                 padahal baris "N kandang terdaftar" tepat di atasnya
+                 menghitungnya. Dua angka, satu daftar. */
+              { label: "Total Kandang", val: enclosures.filter(e=>e.is_active !== false).length, color: "text-green-700" },
+              { label: "Overcrowding", val: enclosures.filter(e=>getEnclosureStatus(e, hitungIsiKandang(e, tortoises, enclosures))==="overcrowded").length, color: "text-red-600" },
+              { label: "Hampir Penuh", val: enclosures.filter(e=>getEnclosureStatus(e, hitungIsiKandang(e, tortoises, enclosures))==="warning").length, color: "text-amber-600" },
               { label: "Total Kapasitas", val: enclosures.reduce((s,e)=>s+(e.max_capacity||0),0), color: "text-green-700" },
             ].map(item => (
               <Card key={item.label}>
@@ -742,9 +766,22 @@ export default function TortoiseList() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {enclosures.map(enc => {
-              const status = getEnclosureStatus(enc);
+              /*
+                Isi kandang dicocokkan lewat NOMOR kandang, bukan namanya.
+
+                Bentuk lama: `t.enclosure === enc.name`. Nama lepas begitu
+                kandang diganti nama — kuranya masih menyimpan nama lama,
+                kandangnya sudah bernama baru, dan isinya jatuh ke nol tanpa
+                satu pun peringatan. Itu persis yang terjadi saat N1, N2 dan N3
+                digabung jadi N.
+
+                Halaman Kandang (pages/EnclosurePage.jsx) sudah memakai nomor
+                sejak lama, dengan alasan yang ditulis di sana. Layar ini tidak
+                ikut. Sekarang keduanya memakai hitungIsiKandang() yang sama.
+              */
+              const encCount = hitungIsiKandang(enc, tortoises, enclosures);
+              const status = getEnclosureStatus(enc, encCount);
               const Icon = typeIcon[enc.type] || Home;
-              const encCount = tortoises.filter(t => t.enclosure === enc.name && t.status !== "terjual" && t.status !== "mati").length;
               return (
                 <Card key={enc.id} className={`cursor-pointer hover:shadow-md transition-shadow border-2 ${statusStyle[status]}`} onClick={() => setSelectedEnclosureDetail(enc)}>
                   {enc.photo_url && <div className="h-32 overflow-hidden rounded-t-xl"><img src={enc.photo_url} alt={enc.name} className="w-full h-full object-cover" /></div>}

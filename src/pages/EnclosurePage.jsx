@@ -10,7 +10,7 @@ import { Plus, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, Shell, A
 import EnclosureForm from "@/components/enclosure/EnclosureForm";
 import { toast } from "sonner";
 import { diPeternakan } from "@/lib/populasiKura";
-import { cariKandang } from "@/lib/kandang";
+import { cariKandang, kuraDiKandang } from "@/lib/kandang";
 import PageHeader from "@/components/common/PageHeader";
 import { TortoiseArt } from "@/components/common/Illustration";
 
@@ -115,9 +115,9 @@ export default function EnclosurePage() {
     normal: <Badge className="bg-green-100 text-green-700 border-green-300">Normal</Badge>,
   };
 
-  const encTortoises = selectedEnclosure
-    ? tortoises.filter(t => t.enclosure === selectedEnclosure.name && t.status !== "terjual" && t.status !== "mati")
-    : [];
+  // Lewat pustaka bersama — lihat catatan di lib/kandang.js. Halaman ini sudah
+  // memakai nomor kandang untuk ANGKANYA sejak lama; daftar rinciannya belum.
+  const encTortoises = kuraDiKandang(selectedEnclosure, tortoises, enclosures);
 
   return (
     <div className="p-4 md:p-6 space-y-6">

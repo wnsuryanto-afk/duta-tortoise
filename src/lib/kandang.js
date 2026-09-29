@@ -195,6 +195,25 @@ export function hitungIsiKandang(kandang, tortoises = [], enclosures = [], kecua
 // jaminan, dan tiga di antaranya tidak terlihat oleh scripts/cek-kembar.mjs.
 const masihDiPeternakan = diPeternakan;
 
+/**
+ * Daftar kura yang MENEMPATI kandang ini.
+ *
+ * Kembaran dari hitungIsiKandang yang mengembalikan barisnya, bukan
+ * jumlahnya — dipakai panel rincian kandang di dua layar. Sebelum ini keduanya
+ * menyaring sendiri dengan `t.enclosure === kandang.name`, yang berhenti
+ * menemukan siapa pun begitu kandangnya diganti nama.
+ *
+ * Aturan penghuninya sama persis dengan hitungIsiKandang, supaya jumlah yang
+ * tertulis di kartu dan panjang daftar yang terbuka saat kartu itu ditekan
+ * tidak pernah berbeda.
+ */
+export function kuraDiKandang(kandang, tortoises = [], enclosures = []) {
+  if (!kandang?.id) return [];
+  return (tortoises || []).filter(
+    (t) => masihDiPeternakan(t) && cariKandang(t, enclosures).kandang?.id === kandang.id
+  );
+}
+
 /** Apakah kandang ini sudah penuh menurut hitungan langsung? */
 export function kandangPenuh(kandang, tortoises = [], enclosures = [], kecualikanId) {
   const kapasitas = Number(kandang?.max_capacity) || 0;
