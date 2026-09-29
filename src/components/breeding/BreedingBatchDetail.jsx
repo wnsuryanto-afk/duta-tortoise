@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import UbinAngka from "@/components/ui/ubin-angka";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { getBreedingMilestones } from "@/lib/breedingCalendarUtils";
@@ -26,15 +27,6 @@ function DateRow({ label, date, estimated, range }) {
       <span className={`text-xs font-medium text-right ${estimated ? "text-amber-600" : "text-foreground"}`}>
         {estimated && date ? "± " : ""}{value}
       </span>
-    </div>
-  );
-}
-
-function StatBox({ label, value, color }) {
-  return (
-    <div className={`rounded-lg p-2.5 text-center ${color || "bg-muted text-muted-foreground"}`}>
-      <p className="text-lg font-bold leading-none">{value}</p>
-      <p className="text-[10px] mt-1 leading-tight">{label}</p>
     </div>
   );
 }
@@ -109,10 +101,10 @@ export default function BreedingBatchDetail({ batch, onClose }) {
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Hasil Telur</p>
               <div className="grid grid-cols-4 gap-2">
-                <StatBox label="Total Telur" value={batch.egg_count} color="bg-amber-50 text-amber-700" />
-                <StatBox label="Fertile" value={batch.fertile_count || 0} color="bg-blue-50 text-blue-700" />
-                <StatBox label="Menetas" value={batch.hatched_count || 0} color="bg-green-50 text-green-700" />
-                <StatBox label="Gagal" value={batch.failed_count || 0} color="bg-red-50 text-red-600" />
+                <UbinAngka label="Total Telur" nilai={batch.egg_count} nada="netral" />
+                <UbinAngka label="Fertile" nilai={batch.fertile_count || 0} nada="utama" />
+                <UbinAngka label="Menetas" nilai={batch.hatched_count || 0} nada="baik" />
+                <UbinAngka label="Gagal" nilai={batch.failed_count || 0} nada="bahaya" />
               </div>
               <div className="flex items-center justify-between mt-2 px-1">
                 <span className="text-xs text-muted-foreground">Hatch rate</span>

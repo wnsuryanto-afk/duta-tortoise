@@ -8,12 +8,11 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
 import { AlertTriangle, Package, ArrowUpDown, HandCoins, FlaskConical, TrendingDown, LayoutDashboard } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import { formatRp } from "@/lib/skuUtils";
+import KartuAngka from "@/components/ui/kartu-angka";
 import StokInventoryTab from "@/components/stok/StokInventoryTab";
 import StokPergerakanTab from "@/components/stok/StokPergerakanTab";
 import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
@@ -25,21 +24,6 @@ import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import BatchLabelModal from "@/components/warehouse/BatchLabelModal";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-function StatCard({ label, value, sub, color = "text-foreground", icon: Icon }) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">{label}</p>
-          <p className={`text-2xl font-bold ${color}`}>{value}</p>
-          {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-        </div>
-        {Icon && <Icon className={`w-5 h-5 mt-0.5 opacity-40 ${color}`} />}
-      </div>
-    </Card>
-  );
-}
 
 export default function UnifiedStokPage() {
   const { role } = useCurrentUser();
@@ -141,38 +125,50 @@ export default function UnifiedStokPage() {
         onClose={() => setLabelBatchOpen(false)}
       />
 
-      {/* Summary cards */}
+      {/* ── Empat angka kepala halaman ──
+          Memakai KartuAngka bersama (components/ui/kartu-angka.jsx), bukan
+          StatCard lokal. Yang berubah dan kenapa:
+
+          · Nilai stok diringkas jadi "Rp 9,4 jt" — bentuk lama mencetaknya
+            penuh dengan text-2xl di kolom ±150px dan terpotong tepi kartu.
+            Angka persisnya tetap ada di tooltip.
+          · Warna tidak lagi dikirim sebagai kelas Tailwind mentah oleh
+            pemanggil; yang dikirim NADA, dan kartunya yang tahu warnanya di
+            mode terang maupun gelap.
+          · "Item Wajib Habis" tidak lagi <div onClick> dengan tulisan "Klik
+            untuk lihat" — ia sekarang tombol sungguhan yang bisa dijangkau
+            keyboard, dengan panah dan sedikit angkat saat disentuh. */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
+        <KartuAngka
           label="Total Nilai Stok"
-          value={formatRp(totalNilai)}
+          nilai={totalNilai}
+          format="rupiah"
           sub="Pakan + Gudang"
-          color="text-primary"
-          icon={Package}
+          nada="utama"
+          ikon={Package}
         />
-        <StatCard
+        <KartuAngka
           label="Stok Kritis"
-          value={criticalCount}
+          nilai={criticalCount}
           sub="item di bawah minimum"
-          color={criticalCount > 0 ? "text-red-600" : "text-green-600"}
-          icon={AlertTriangle}
+          nada={criticalCount > 0 ? "bahaya" : "baik"}
+          ikon={AlertTriangle}
         />
-        <StatCard
+        <KartuAngka
           label="Pergerakan Hari Ini"
-          value={`+${todayMasuk} / -${todayKeluar}`}
+          nilai={`+${todayMasuk} / -${todayKeluar}`}
           sub="masuk / keluar (unit)"
-          color="text-blue-600"
-          icon={ArrowUpDown}
+          nada="netral"
+          ikon={ArrowUpDown}
         />
-        <div onClick={() => { if (mandatoryEmptyCount > 0) setTab("inventory"); }} className={mandatoryEmptyCount > 0 ? "cursor-pointer" : ""}>
-          <StatCard
-            label="Item Wajib Habis"
-            value={mandatoryEmptyCount}
-            sub={mandatoryEmptyCount > 0 ? "⚠️ Klik untuk lihat" : "Semua aman"}
-            color={mandatoryEmptyCount > 0 ? "text-red-600" : "text-green-600"}
-            icon={TrendingDown}
-          />
-        </div>
+        <KartuAngka
+          label="Item Wajib Habis"
+          nilai={mandatoryEmptyCount}
+          sub={mandatoryEmptyCount > 0 ? "lihat daftarnya" : "semua aman"}
+          nada={mandatoryEmptyCount > 0 ? "bahaya" : "baik"}
+          ikon={TrendingDown}
+          onKlik={mandatoryEmptyCount > 0 ? () => setTab("inventory") : undefined}
+        />
       </div>
 
       {/* Main tabs */}

@@ -13,7 +13,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
 import ModalCetakLabel from "@/components/label/ModalCetakLabel";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { statusStok, URUTAN_STATUS, stokHabis } from "@/lib/stokMenipis";
+import { statusStok, URUTAN_STATUS, stokHabis, dilacak } from "@/lib/stokMenipis";
 // Dibawa dari halaman /warehouse dan /feed-stock yang digabungkan ke sini,
 // supaya penggabungan tidak menghilangkan kemampuan: saringan kelengkapan data,
 // generate SKU massal, dan pemindai QR untuk menemukan barang dari label cetak.
@@ -708,8 +708,28 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
       });
   }, [allItems, search, catFilter, stockFilter, lengkapFilter]);
 
-  const criticalMandatory = allItems.filter(i => i.is_mandatory && ["habis", "menipis"].includes(stockStatus(i))).length;
-  const mandatoryEmpty    = allItems.filter(stokHabis).length;
+  /*
+    ── KENAPA `dilacak` DIPAKAI DI SINI ───────────────────────────────────
+    `allItems` di tab ini sengaja memuat SEMUA barang termasuk yang sudah
+    dinonaktifkan, karena daftarnya memang harus bisa menampilkan barang lama
+    saat difilter. Tapi HITUNGAN peringatan tidak boleh ikut memuatnya.
+
+    Akibatnya nyata dan terlihat di layar: kartu "Item Wajib Habis" di
+    UnifiedStokPage menyebut 19 — ia menyaring dengan dilacak — sementara
+    spanduk di tab ini menyebut 22. Dua angka untuk label yang sama, sepuluh
+    sentimeter berjauhan.
+
+    Ketiga selisihnya barang pakan yang DINONAKTIFKAN: "Labu" (min 1),
+    "Kaktus / Opuntia" (min 20, wajib), dan "Rumput Gajah / Sudan" (min 100).
+    Stoknya nol karena memang tidak dicatat lagi, bukan karena habis — dan
+    spanduknya menyuruh "segera restok" ketiganya.
+
+    Aturannya sama dengan yang sudah tertulis di UnifiedStokPage: barang yang
+    tidak dilacak tidak ikut hitungan kritis maupun nilai persediaan.
+  */
+  const itemDilacak = useMemo(() => allItems.filter(dilacak), [allItems]);
+  const criticalMandatory = itemDilacak.filter(i => i.is_mandatory && ["habis", "menipis"].includes(stockStatus(i))).length;
+  const mandatoryEmpty    = itemDilacak.filter(stokHabis).length;
 
   const handleDelete = async (item) => {
     if (!confirm(`Hapus "${item.name}"?`)) return;

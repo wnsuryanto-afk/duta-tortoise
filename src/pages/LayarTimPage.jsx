@@ -13,6 +13,7 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import UbinAngka from "@/components/ui/ubin-angka";
 import { base44 } from "@/api/base44Client";
 import { poinDisetujui, poinDiklaim } from "@/lib/poinChecklist";
 import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
@@ -34,23 +35,6 @@ const toMin = (hhmm) => {
 
 const isKandangTask = (t) =>
   typeof t?.task_id === "string" && t.task_id.includes("kebersihan_kandang");
-
-function Stat({ icon: Icon, label, value, tone = "normal" }) {
-  const tones = {
-    normal: "bg-muted/50 text-foreground",
-    good: "bg-green-50 text-green-700 border-green-200",
-    warn: "bg-amber-50 text-amber-800 border-amber-200",
-    bad: "bg-red-50 text-red-700 border-red-200",
-  };
-  return (
-    <div className={`rounded-lg border border-transparent p-2.5 ${tones[tone]}`}>
-      <div className="flex items-center gap-1.5 text-[11px] opacity-70">
-        <Icon className="w-3 h-3" /> {label}
-      </div>
-      <p className="text-sm font-bold mt-0.5 leading-tight">{value}</p>
-    </div>
-  );
-}
 
 function Flag({ tone, children }) {
   const map = {
@@ -140,25 +124,25 @@ function KeeperCard({ checklist, attendance }) {
 
       {/* Statistik ringkas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3">
-        <Stat
-          icon={Clock}
+        <UbinAngka
+          ikon={Clock}
           label="Absensi"
-          value={attendance?.check_in ? `${attendance.check_in}${attendance.check_out ? `–${attendance.check_out}` : " · belum pulang"}` : "Tidak absen"}
-          tone={attendance?.check_in ? "normal" : "warn"}
+          nilai={attendance?.check_in ? `${attendance.check_in}${attendance.check_out ? `–${attendance.check_out}` : " · belum pulang"}` : "Tidak absen"}
+          nada={attendance?.check_in ? "netral" : "awas"}
         />
-        <Stat
-          icon={Timer}
+        <UbinAngka
+          ikon={Timer}
           label="Jeda antar kandang"
-          value={avgGap === null ? `${kandang.length} kandang` : `${avgGap.toFixed(1)} mnt · ${kandang.length} kandang`}
-          tone={avgGap !== null && avgGap < 3 ? "bad" : avgGap !== null && avgGap < 6 ? "warn" : "normal"}
+          nilai={avgGap === null ? `${kandang.length} kandang` : `${avgGap.toFixed(1)} mnt · ${kandang.length} kandang`}
+          nada={avgGap !== null && avgGap < 3 ? "bahaya" : avgGap !== null && avgGap < 6 ? "awas" : "netral"}
         />
-        <Stat
-          icon={withPhoto > 0 ? Camera : CameraOff}
+        <UbinAngka
+          ikon={withPhoto > 0 ? Camera : CameraOff}
           label="Tugas berfoto"
-          value={`${withPhoto} dari ${tasks.length}`}
-          tone={withPhoto === 0 && tasks.length > 0 ? "bad" : "normal"}
+          nilai={`${withPhoto} dari ${tasks.length}`}
+          nada={withPhoto === 0 && tasks.length > 0 ? "bahaya" : "netral"}
         />
-        <Stat icon={CheckCircle2} label="Poin hari ini" value={totalPoin} tone="normal" />
+        <UbinAngka ikon={CheckCircle2} label="Poin hari ini" nilai={totalPoin} nada="netral" />
       </div>
 
       {/* Bendera merah */}

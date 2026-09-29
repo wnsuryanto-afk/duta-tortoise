@@ -1,4 +1,5 @@
 import { profilUntuk } from "@/lib/profilUser";
+import UbinAngka from "@/components/ui/ubin-angka";
 import { useState } from "react";
 import { sisaKasbon, selisihPencatatan } from "@/lib/potonganKasbon";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -194,16 +195,6 @@ function InfoRow({ label, value, href, clickable }) {
 }
 
 // ── Stat Card ─────────────────────────────────────────────────────────
-function StatCard({ label, value, icon: Icon, color = "text-primary", bg = "bg-primary/5" }) {
-  return (
-    <div className={`${bg} rounded-xl p-3 text-center`}>
-      {Icon && <Icon className={`w-4 h-4 mx-auto mb-1 ${color}`} />}
-      <p className={`text-lg font-bold ${color}`}>{value}</p>
-      <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
-    </div>
-  );
-}
-
 // ── Skeleton ─────────────────────────────────────────────────────────
 function Skeleton({ className }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -489,12 +480,12 @@ export default function UserDetailPage({ userId, onBack }) {
       {/* ── SECTION 4: STATISTIK ── */}
       <Section title="📊 Statistik Kinerja Bulan Ini" icon={null} defaultOpen>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          <StatCard label="Hadir" value={`${hadirDays}h`} icon={ClipboardCheck} color="text-green-700" bg="bg-green-50" />
-          <StatCard label="Lembur" value={`${totalOTHours}j`} icon={Clock} color="text-blue-700" bg="bg-blue-50" />
-          <StatCard label="Trip Sayur" value={totalVegTrips} icon={Leaf} color="text-lime-700" bg="bg-lime-50" />
-          <StatCard label="Task Done" value={`${completionRate}%`} icon={Star} color="text-amber-700" bg="bg-amber-50" />
-          <StatCard label="KPI Poin" value={totalKpiPoints} icon={TrendingUp} color="text-purple-700" bg="bg-purple-50" />
-          <StatCard label="Kasbon" value={activeKasbon ? fmt(activeKasbon.amount - (activeKasbon.total_paid || 0)) : "—"} icon={CreditCard} color="text-rose-700" bg="bg-rose-50" />
+          <UbinAngka label="Hadir" nilai={`${hadirDays}h`} ikon={ClipboardCheck} nada="netral" />
+          <UbinAngka label="Lembur" nilai={`${totalOTHours}j`} ikon={Clock} nada="netral" />
+          <UbinAngka label="Trip Sayur" nilai={totalVegTrips} ikon={Leaf} nada="netral" />
+          <UbinAngka label="Task Done" nilai={`${completionRate}%`} ikon={Star} nada={completionRate >= 80 ? "baik" : completionRate > 0 ? "awas" : "netral"} />
+          <UbinAngka label="KPI Poin" nilai={totalKpiPoints} ikon={TrendingUp} nada="netral" />
+          <UbinAngka label="Kasbon" nilai={activeKasbon ? fmt(activeKasbon.amount - (activeKasbon.total_paid || 0)) : "—"} ikon={CreditCard} nada={activeKasbon ? "awas" : "netral"} />
         </div>
       </Section>
 
