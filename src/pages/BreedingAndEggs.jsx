@@ -18,6 +18,7 @@ import EggLabelGenerator, { isCandlingLate } from "@/components/breeding/EggLabe
 import EggQRPreview from "@/components/breeding/EggQRPreview";
 import CatatKawinDialog from "@/components/breeding/CatatKawinDialog";
 import DaftarPasangan from "@/components/breeding/DaftarPasangan";
+import InkubatorBelumDipantau from "@/components/breeding/InkubatorBelumDipantau";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
@@ -297,6 +298,11 @@ export default function BreedingAndEggs() {
           </>
         }
       />
+
+      {/* Penagih: telur dierami tanpa satu pun catatan suhu. Di atas tab,
+          karena ia berlaku untuk seluruh halaman — bukan untuk satu tab.
+          Lihat lib/pantauInkubator.js untuk angka yang melatarinya. */}
+      <InkubatorBelumDipantau breedings={breedings} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Dua baris di ponsel, satu baris di layar lebar. Enam tab dalam satu
