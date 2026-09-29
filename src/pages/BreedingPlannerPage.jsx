@@ -59,7 +59,19 @@ function tglSingkat(s) {
 /** Lencana kepastian ayah — satu bentuk, dipakai di dua tempat. */
 function LencanaAyah({ ayah }) {
   if (ayah.jumlah === 0) {
-    return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">tidak ada jantan</span>;
+    // "Jantannya belum cukup umur" dan "tidak ada jantan" menuntut tindakan
+    // yang berbeda: yang satu perlu jantan dipindahkan ke sini, yang satu
+    // cuma perlu waktu. Keduanya tidak boleh berbunyi sama.
+    return ayah.hanyaMuda ? (
+      <span
+        title={`Di kandang ini: ${ayah.muda.join(", ")} — belum cukup umur`}
+        className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-400"
+      >
+        jantan belum cukup umur
+      </span>
+    ) : (
+      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">tidak ada jantan</span>
+    );
   }
   if (ayah.pasti) {
     return (
@@ -348,16 +360,24 @@ export default function BreedingPlannerPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{k.kandang}</p>
                 <p className="text-[11px] text-muted-foreground break-words">
-                  {k.jumlahJantan} jantan · {k.jumlahBetina} betina
-                  {k.terlacak ? ` · ayah selalu ${k.ayah}` : k.jumlahJantan === 0 ? " · tidak ada jantan" : ""}
+                  {k.jumlahJantan} jantan
+                  {k.jumlahJantanMuda > 0 ? ` (+${k.jumlahJantanMuda} belum cukup umur)` : ""}
+                  {" · "}{k.jumlahBetina} betina
+                  {k.terlacak
+                    ? ` · ayah selalu ${k.ayah}`
+                    : k.hanyaMuda
+                      ? ` · ${k.jantanMuda.join(", ")} belum cukup umur — belum ada yang bisa jadi ayah`
+                      : k.jumlahJantan === 0
+                        ? " · tidak ada jantan"
+                        : ""}
                 </p>
               </div>
-              {!k.terlacak && k.jumlahJantan > 1 && (
+              {!k.terlacak && (k.jumlahJantan > 1 || k.hanyaMuda) && (
                 <span
-                  title={k.jantan.join(", ")}
+                  title={[...k.jantan, ...k.jantanMuda].join(", ")}
                   className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 flex-shrink-0"
                 >
-                  tidak terlacak
+                  {k.hanyaMuda ? "belum berproduksi" : "tidak terlacak"}
                 </span>
               )}
             </div>

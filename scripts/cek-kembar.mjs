@@ -21,7 +21,26 @@ const PASANGAN = [
   ["src/lib/laporan.js",       "base44/shared/laporan.ts",       ["masukLaporan"]],
   ["src/lib/populasiKura.js",  "base44/shared/kura.ts",          ["diPeternakan"]],
   ["src/lib/breedingUtils.js", "base44/shared/kura.ts",          ["clutchAktif"]],
-  ["src/lib/jadwalTimbang.js",  "base44/shared/timbang.ts",       ["selisihHari", "golonganRutin", "alasanTimbang", "laporanTerbukaPerKura", "perluDitimbang"]],
+  // `selisihHari` sengaja TIDAK diperiksa di sini, dan itu bukan kelalaian.
+  //
+  // Di frontend ia tidak tinggal di jadwalTimbang.js — ia diimpor dari
+  // lib/safeDate.js dan diekspor ulang. Jadi penjaga ini melaporkannya
+  // "HILANG" setiap kali dijalankan: satu kegagalan tetap, selamanya. Penjaga
+  // yang selalu merah sama saja dengan penjaga yang mati — dan memang sempat
+  // begitu: sebuah pergeseran NYATA pada golonganRutin lolos satu commit
+  // karena barisan merahnya sudah biasa dilihat.
+  //
+  // Memaksa kedua badan fungsinya identik juga salah. Versi frontend memakai
+  // tengah malam SETEMPAT (browser di Jakarta); versi backend memakai
+  // Date.parse (Deno berjalan di UTC). Perbedaan itu disengaja dan benar.
+  //
+  // Yang harus dijaga bukan bentuknya, melainkan JANJINYA: untuk masukan
+  // "YYYY-MM-DD" di kedua sisi — satu-satunya bentuk yang dilempar pemanggil
+  // mana pun — keduanya harus menjawab angka yang sama. Diuji 29-09-2026 pada
+  // 1681 pasangan tanggal: nol beda. Keduanya baru berbeda bila salah satu
+  // sisinya berupa waktu berjam ("...T23:00:00"), dan tidak ada pemanggil
+  // yang menghasilkannya.
+  ["src/lib/jadwalTimbang.js",  "base44/shared/timbang.ts",       ["golonganRutin", "alasanTimbang", "laporanTerbukaPerKura", "perluDitimbang"]],
   ["src/lib/daftarBelanja.js", "base44/shared/daftarBelanja.ts", ["penandaBaris", "penandaBarang", "penandaMenunggu", "sudahDidaftar", "barisDariBarang", "prioritasDariBarang"]],
   ["src/lib/kepatuhanSOP.js",  "base44/shared/kepatuhan.ts",     ["tugasWajib", "idSelesaiPada", "tugasBelum", "kepatuhanHari"]],
 ];

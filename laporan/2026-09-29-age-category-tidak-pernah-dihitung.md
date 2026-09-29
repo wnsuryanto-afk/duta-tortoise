@@ -115,15 +115,106 @@ masuk jadwal.
 
 ---
 
-## Sisa yang perlu diputuskan pemilik
+## Keputusan pemilik, 29 September 2026: juvenile sampai 6 tahun
 
-**Apakah batas "dewasa >3 tahun" masuk akal untuk sulcata?** Aturan itu datang
-dari skema dan sekarang dijalankan dengan konsisten. Tetapi sulcata berumur
-tiga tahun masih jauh dari dewasa — betina pertama yang bertelur di kebun ini
-berumur 6,4 tahun. Dengan batas sekarang, kura umur 3–6 tahun tidak masuk
-jadwal timbang pertumbuhan dan juga belum berproduksi: tidak terlihat di
-kedua sisi.
+Pertanyaannya: apakah batas "dewasa >3 tahun" masuk akal untuk sulcata?
 
-Kalau batasnya digeser (misalnya juvenile sampai 6 tahun), Yuwono dan
-Red Foot - 02 langsung masuk jadwal pertumbuhan. Itu keputusan pemeliharaan,
-dan saya tidak mengambilnya sendiri.
+**Jawaban pemilik: tidak — juvenile sampai 6 tahun.**
+
+Enam cocok dengan bukti kebun ini sendiri: betina pertama yang pernah bertelur
+di sini berumur **6,4 tahun**, jadi di bawah enam tahun belum ada satu pun yang
+terbukti dewasa. Batasnya kini tetapan bernama (`BATAS_JUVENILE`) supaya
+pergeseran berikutnya cukup satu baris dan alasannya tetap menempel.
+
+### Beban tim: 6 kura tambahan, semuanya tanpa panjang tempurung
+
+| | Batas 3 th | Batas 6 th |
+|---|---|---|
+| Masuk jadwal timbang | 18 | **24** |
+| Per hari | 1,3 | **1,7** |
+
+Yang bertambah — dan ini menyambung ke masalah 53 panjang tempurung yang hilang:
+
+| Kura | Umur | Panjang tempurung |
+|---|---|---|
+| HF6, HF1, F23, RD besar | 5 th 8 bln | **belum diisi** |
+| Yuwono, Red Foot - 02 | 3 th 4 bln | **belum diisi** |
+
+Keenamnya tidak punya panjang tempurung. Jadi menimbang mereka sekaligus
+mengisi kolom yang selama ini membuat mereka tidak terlihat.
+
+### Akibat yang tidak terduga, dan justru berguna
+
+Yuwono adalah **satu-satunya jantan di kandang E1** (14 betina). Pada umur
+3 tahun 4 bulan ia kini juvenile — jadi ia berhenti dihitung sebagai calon
+ayah, dan tujuh betina dewasa di E1 pindah dari "ayah pasti Yuwono" ke "ayah
+tidak bisa dipastikan".
+
+Itu lebih benar: sulcata jantan seumur itu belum matang. Tetapi kalimatnya
+harus jujur. Halaman sempat akan berbunyi **"tidak ada jantan"** padahal
+Yuwono ada dan terlihat setiap hari. Dua keadaan itu menuntut tindakan yang
+berbeda — yang satu perlu jantan dipindahkan ke sana, yang satu cuma perlu
+waktu — jadi keduanya dibedakan: **"jantan belum cukup umur"**.
+
+### Angka halaman Produksi Indukan yang berubah
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Betina dewasa | 89 | **82** |
+| Belum ada catatan bertelur | 81 | **74** |
+| Ayah tidak bisa dipastikan | 47 | **54** |
+| Kandang terlacak | 10 | **9** |
+
+Dua gerbang umur di halaman itu — golongan umur, dan umur termuda yang pernah
+bertelur — kini **sepakat**: "belum cukup umur" turun dari 7 menjadi 0, karena
+yang belum cukup umur sudah tersaring lebih dulu.
+
+---
+
+## Kesalahan saya, dan penjaga yang saya lewatkan
+
+Repo ini punya `scripts/cek-kembar.mjs`: penjaga terhadap pergeseran diam-diam
+antara pustaka frontend dan kembarannya di backend, yang ditulis dua kali
+karena Deno tidak bisa mengimpor dari `src/`.
+
+**Commit saya sebelumnya melenceng, dan saya tidak menjalankan penjaga itu.**
+Saya mengubah `golonganRutin` di `src/lib/jadwalTimbang.js` tanpa menyentuh
+`base44/shared/timbang.ts`. Selama satu commit, layar dan otomatisasi malam
+menjawab berbeda untuk pertanyaan yang sama. Penjaganya bekerja; yang tidak
+bekerja adalah kebiasaan menjalankannya.
+
+### Dan penjaga itu sendiri sudah lumpuh
+
+Memeriksanya menemukan hal yang lebih buruk: `cek-kembar` **selalu merah**,
+karena ia mencari `selisihHari` di `jadwalTimbang.js` — padahal di sana fungsi
+itu hanya diimpor ulang dari `lib/safeDate.js`. Satu kegagalan tetap,
+selamanya. Dan penjaga yang selalu merah sama saja dengan penjaga yang mati:
+justru itulah sebabnya pergeseran nyata saya lolos — barisan merahnya sudah
+biasa dilihat.
+
+Memaksa kedua badan fungsinya identik juga salah: versi frontend memakai
+tengah malam **setempat** (browser di Jakarta), versi backend memakai
+`Date.parse` (Deno berjalan di UTC). Perbedaan itu disengaja dan benar.
+
+Yang dijaga sekarang bukan bentuknya melainkan **janjinya**: untuk masukan
+`"YYYY-MM-DD"` di kedua sisi — satu-satunya bentuk yang dilempar pemanggil mana
+pun — keduanya harus menjawab angka yang sama. **Diuji pada 1681 pasangan
+tanggal: nol beda.** Keduanya baru berbeda bila salah satu sisinya berupa waktu
+berjam (`...T23:00:00`), dan tidak ada pemanggil yang menghasilkannya.
+
+`cek-kembar` sekarang keluar dengan kode 0. Kemerahannya berarti sesuatu lagi.
+
+### Keadaan penjaga lainnya
+
+Dijalankan berpasangan, dengan dan tanpa perubahan hari ini:
+
+| | Penjaga gagal |
+|---|---|
+| Tanpa perubahan hari ini | **6** |
+| Dengan perubahan hari ini | **5** |
+
+Lima yang tersisa sudah ada sebelumnya dan tidak tersentuh: `cek-impor`
+(2 pemakaian tanpa import), `cek-kolom-hantu`, `cek-batch`, `cek-batas`
+(satu `.filter()` tanpa limit di `autoAttendance`), dan `cek-laporan`
+(`lib/kueriUang.js` membaca Sale/FinanceTransaction tanpa penyaring laporan).
+Dicatat di sini supaya tidak hilang lagi.

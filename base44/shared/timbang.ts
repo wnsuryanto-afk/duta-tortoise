@@ -8,6 +8,12 @@
  * Alasan lengkap kenapa rotasi timbang diganti pemicu ada di berkas
  * frontend-nya — ringkasnya: rotasi 2 ekor/hari tidak pernah menyelesaikan
  * satu putaran, 44 kura dewasa masih memakai berat Juli 2025.
+ *
+ * CATATAN 29-09-2026: aturan umur di berkas ini sempat MELENCENG dari
+ * kembarannya selama satu commit. Saya mengubah `golonganRutin` di sisi
+ * frontend tanpa menjalankan scripts/cek-kembar.mjs lebih dulu; penjaga itu
+ * menangkapnya, tetapi sesudah commitnya terkirim. Penjaganya bekerja; yang
+ * tidak bekerja adalah kebiasaan menjalankannya.
  */
 
 /** Hari antara dua tanggal "YYYY-MM-DD"; null bila tidak terbaca. */
@@ -21,9 +27,56 @@ export function selisihHari(dari: string, sampai: string): number | null {
 /** Jeda rutin untuk baby & juvenile, dalam hari. */
 export const JEDA_BABY_HARI = 14;
 
+/**
+ * Batas umur golongan, dalam tahun. Kembaran dari lib/umurKura.js.
+ *
+ * Pemilik menggeser batas juvenile dari 3 ke 6 tahun pada 29 September 2026:
+ * kura umur 3–6 tahun tidak masuk jadwal timbang pertumbuhan (karena sudah
+ * "dewasa") dan juga belum berproduksi — tidak terlihat di kedua sisi.
+ */
+export const BATAS_BABY = 1;
+export const BATAS_JUVENILE = 6;
+
+/** Golongan umur dari tanggal lahir saja. Null bila tanggalnya tidak ada. */
+export function calcAgeCategory(birthDate: any, pada: any = new Date()): string | null {
+  if (!birthDate) return null;
+  const lahir = new Date(birthDate);
+  const acuan = pada instanceof Date ? pada : new Date(pada);
+  if (Number.isNaN(lahir.getTime()) || Number.isNaN(acuan.getTime())) return null;
+  const tahun = (Number(acuan) - Number(lahir)) / (365.25 * 24 * 3600 * 1000);
+  if (tahun < 0) return null;
+  if (tahun < BATAS_BABY) return "baby";
+  if (tahun < BATAS_JUVENILE) return "juvenile";
+  return "dewasa";
+}
+
+/**
+ * Golongan umur kura: tanggal lahir DULU, kolom tersimpan belakangan.
+ *
+ * Urutannya sengaja dibalik dari yang biasanya benar — alasannya lengkap di
+ * src/lib/umurKura.js. Ringkasnya: golongan umur adalah fungsi dari umur,
+ * bukan keputusan manusia, dan nilai yang tersimpan hari ini adalah snapshot
+ * saat menetas yang tidak pernah diperbarui.
+ */
+export function golonganUmur(kura: any, pada: any = new Date()): string | null {
+  const dihitung = calcAgeCategory(kura?.birth_date, pada);
+  if (dihitung) return dihitung;
+  const tersimpan = kura?.age_category;
+  if (tersimpan === "baby" || tersimpan === "juvenile" || tersimpan === "dewasa") {
+    return tersimpan;
+  }
+  return null;
+}
+
+/** Apakah kura ini masih tumbuh — baby atau juvenile. */
+export function masihTumbuh(kura: any, pada: any = new Date()): boolean {
+  const g = golonganUmur(kura, pada);
+  return g === "baby" || g === "juvenile";
+}
+
 /** Apakah kura ini masih dalam golongan yang ditimbang rutin? */
 export function golonganRutin(kura: any): boolean {
-  if (kura?.age_category === "baby" || kura?.age_category === "juvenile") return true;
+  if (masihTumbuh(kura)) return true;
   const p = Number(kura?.shell_length_cm);
   return Number.isFinite(p) && p > 0 && p < 20;
 }

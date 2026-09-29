@@ -5,8 +5,10 @@
  *
  * Skema `Tortoise.age_category` menuliskan aturannya sendiri dengan jelas:
  *
- *   "Kategori umur: baby (0-12 bln), juvenile (1-3 thn), dewasa (>3 thn).
+ *   "Kategori umur: baby (0-12 bln), juvenile (1-6 thn), dewasa (>6 thn).
  *    Auto-calculated dari birth_date."
+ *
+ * (Batasnya 1-3 tahun sampai 29 September 2026; lihat BATAS_JUVENILE.)
  *
  * Kalimat terakhir itu tidak benar. Diperiksa 29 September 2026: dari 136 kura
  * AKTIF, kolom itu terisi pada 16 — semuanya baby hasil penetasan, yang
@@ -63,6 +65,22 @@
  * tanggal lahirnya tidak ada, karena di situ ia satu-satunya yang tahu.
  */
 
+/**
+ * Batas umur golongan, dalam tahun.
+ *
+ * `BATAS_JUVENILE` semula 3 tahun, mengikuti keterangan skema. Pemilik
+ * menggesernya ke 6 pada 29 September 2026, setelah melihat akibat batas lama:
+ * kura umur 3–6 tahun tidak masuk jadwal timbang pertumbuhan (karena sudah
+ * "dewasa") dan juga belum berproduksi — tidak terlihat di kedua sisi.
+ * Enam dipilih karena betina pertama yang bertelur di kebun ini berumur 6,4
+ * tahun, jadi di bawah enam tahun belum ada satu pun yang terbukti dewasa.
+ *
+ * Angka ini ditulis sebagai tetapan, bukan disebar di dalam rumus, supaya
+ * pergeseran berikutnya cukup satu baris dan alasannya tetap menempel.
+ */
+export const BATAS_BABY = 1;
+export const BATAS_JUVENILE = 6;
+
 /** Golongan umur dari tanggal lahir saja. Null bila tanggalnya tidak ada. */
 export function calcAgeCategory(birthDate, pada = new Date()) {
   if (!birthDate) return null;
@@ -71,8 +89,8 @@ export function calcAgeCategory(birthDate, pada = new Date()) {
   if (Number.isNaN(lahir.getTime()) || Number.isNaN(acuan.getTime())) return null;
   const tahun = (acuan - lahir) / (365.25 * 24 * 3600 * 1000);
   if (tahun < 0) return null;
-  if (tahun < 1) return "baby";
-  if (tahun < 3) return "juvenile";
+  if (tahun < BATAS_BABY) return "baby";
+  if (tahun < BATAS_JUVENILE) return "juvenile";
   return "dewasa";
 }
 

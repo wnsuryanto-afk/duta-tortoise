@@ -109,16 +109,26 @@ export function cocokkanBetina(breeding, tortoises = []) {
   return (tortoises || []).find((t) => String(t?.name || "").trim().toLowerCase() === nama) || null;
 }
 
-/** Peta nama kandang -> daftar jantan dewasa aktif yang ada di dalamnya. */
+/**
+ * Peta nama kandang -> jantan di dalamnya, dipisah menurut kematangan.
+ *
+ * Jantan yang belum cukup umur TIDAK bisa jadi ayah, jadi ia tidak boleh ikut
+ * menentukan kepastian ayah. Tetapi ia juga tidak boleh hilang dari tampilan:
+ * setelah batas juvenile digeser ke 6 tahun (29-09-2026), Yuwono — satu-satunya
+ * jantan di kandang E1, umur 3 tahun 4 bulan — berhenti terhitung. Tanpa
+ * pemisahan ini, E1 akan berbunyi "tidak ada jantan" padahal jantannya ada dan
+ * terlihat setiap hari. Yang benar: "jantannya belum cukup umur".
+ */
 export function jantanPerKandang(tortoises = [], enclosures = []) {
   const peta = new Map();
   for (const t of tortoises || []) {
     if (t?.gender !== "jantan" || t?.status !== "aktif") continue;
-    if (golonganUmur(t) !== "dewasa") continue;
+    const golongan = golonganUmur(t);
+    if (golongan !== "dewasa" && golongan !== "juvenile") continue;
     const nama = namaKandang(t, enclosures) || "";
     if (!nama) continue;
-    if (!peta.has(nama)) peta.set(nama, []);
-    peta.get(nama).push(t);
+    if (!peta.has(nama)) peta.set(nama, { dewasa: [], muda: [] });
+    peta.get(nama)[golongan === "dewasa" ? "dewasa" : "muda"].push(t);
   }
   return peta;
 }
@@ -134,12 +144,19 @@ export function jantanPerKandang(tortoises = [], enclosures = []) {
  * Tidak ada    -> tidak ada ayah di kandang itu sama sekali.
  */
 export function kepastianAyah(namaKdg, petaJantan) {
-  const daftar = petaJantan.get(namaKdg) || [];
+  const isi = petaJantan.get(namaKdg) || { dewasa: [], muda: [] };
+  const daftar = isi.dewasa || [];
+  const muda = isi.muda || [];
   return {
     pasti: daftar.length === 1,
     jumlah: daftar.length,
     kandidat: daftar.map((t) => t.name),
     ayah: daftar.length === 1 ? daftar[0].name : null,
+    // Dibedakan dari "tidak ada jantan sama sekali": jantannya ada, hanya
+    // belum cukup umur. Dua keadaan itu menuntut tindakan yang berbeda —
+    // yang satu perlu jantan dipindahkan ke sini, yang satu cuma perlu waktu.
+    muda: muda.map((t) => t.name),
+    hanyaMuda: daftar.length === 0 && muda.length > 0,
   };
 }
 
@@ -219,18 +236,23 @@ export function ringkasKandang(tortoises = [], enclosures = []) {
   const peta = new Map();
   for (const t of tortoises || []) {
     if (t?.status !== "aktif") continue;
-    if (golonganUmur(t) !== "dewasa") continue;
+    const golongan = golonganUmur(t);
+    if (golongan !== "dewasa" && golongan !== "juvenile") continue;
     if (t?.gender !== "jantan" && t?.gender !== "betina") continue;
     const nama = namaKandang(t, enclosures) || "(tanpa kandang)";
-    if (!peta.has(nama)) peta.set(nama, { kandang: nama, jantan: [], betina: [] });
-    peta.get(nama)[t.gender].push(t.name);
+    if (!peta.has(nama)) peta.set(nama, { kandang: nama, jantan: [], jantanMuda: [], betina: [] });
+    const isi = peta.get(nama);
+    if (t.gender === "betina") { if (golongan === "dewasa") isi.betina.push(t.name); }
+    else isi[golongan === "dewasa" ? "jantan" : "jantanMuda"].push(t.name);
   }
   return [...peta.values()]
     .map((k) => ({
       ...k,
       jumlahJantan: k.jantan.length,
+      jumlahJantanMuda: k.jantanMuda.length,
       jumlahBetina: k.betina.length,
       terlacak: k.jantan.length === 1,
+      hanyaMuda: k.jantan.length === 0 && k.jantanMuda.length > 0,
       ayah: k.jantan.length === 1 ? k.jantan[0] : null,
     }))
     // Yang paling merusak ketelusuran di atas: banyak jantan, banyak betina.
