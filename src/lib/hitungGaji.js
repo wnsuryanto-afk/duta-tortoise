@@ -45,11 +45,14 @@ import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
   2. Poin dibayar Rp 75 per poin (CompanySettings "main", sudah menyala).
   3. Lembur Rp 10.000 per jam, dari catatan lembur manual.
   4. Kasbon dibatasi gaji yang sudah dijalani — lihat batasKasbon() di bawah.
-  5. Trip ambil sayur di pasar Rp 30.000 sekali jalan. Sumbernya catatan Pakan
-     Harian bersumber "sayur_pasar" atau "campur" — lihat hooks/useVegTrips.js.
-     PERINGATAN: sampai 03-09-2026 seluruh aplikasi cuma punya SATU catatan
-     pakan (27 Juli, sumber rumput), jadi aturan ini hidup tetapi belum pernah
-     membayar sepeser pun. Bukan kode yang salah — formulirnya tidak diisi.
+  5. Trip ambil sayur/rumput Rp 30.000 sekali jalan. Sejak 19-09-2026 sumbernya
+     HANYA RempesanLog yang sudah disetujui, lewat tripPerPeriode() — bukan
+     lagi catatan Pakan Harian. Baris ini sempat menyebut PakanHarian dan
+     hooks/useVegTrips.js lama sesudah sumbernya pindah; hook itu kini sudah
+     tidak ada.
+     PERINGATAN: RempesanLog masih NOL catatan per 29-09-2026, jadi aturan ini
+     hidup tetapi belum pernah membayar sepeser pun. Bukan kode yang salah —
+     formulirnya tidak diisi.
   6. Pekan Senin–Minggu yang tujuh harinya hadir penuh dibayar tambahan satu
      hari kerja — lihat pekanPenuhHadir() di bawah. Definisi tujuh hari dipilih
      Iwan 03-09-2026 setelah diberi tahu konsekuensinya: memakai jatah libur

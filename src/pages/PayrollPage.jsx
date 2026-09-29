@@ -20,10 +20,9 @@ import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AlurGaji from "@/components/salary/AlurGaji";
-import { sudahAdaRempesan } from "@/lib/rempesan";
+import { sudahAdaRempesan, tripSah } from "@/lib/rempesan";
 import AccessDenied from "@/components/common/AccessDenied";
 import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
-import { useVegTrips } from "@/hooks/useVegTrips";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
 
@@ -624,7 +623,6 @@ export default function PayrollPage() {
   );
 
   const settings = useCompanySettings();
-  const { data: vegTripsMap = {} } = useVegTrips(selectedMonth);
   const { data: dailyChecklists = [] } = useQuery({
     queryKey: ["payroll-daily-checklists", selectedMonth],
     queryFn: () => base44.entities.DailyChecklist.list("-date", 1000),
@@ -673,6 +671,44 @@ export default function PayrollPage() {
   const monthOvertime = overtimeLogs.filter(o => o.date >= monthStart && o.date <= monthEnd);
   const monthRempesan = rempesanLogs.filter(r => r.date >= monthStart && r.date <= monthEnd);
 
+  /**
+   * Ringkasan trip per orang untuk tab "Log Sayur".
+   *
+   * Tab itu dulu menerima PETA `{email: {trips, dates}}` dari `useVegTrips`.
+   * Saat sumbernya dipindah ke RempesanLog, yang berganti hanya NAMA
+   * variabelnya — `rempesanLogs` adalah DAFTAR catatan, bukan peta. JSX-nya
+   * tetap memanggil `Object.entries(...)` dan membaca `data.trips`/`data.dates`
+   * yang tidak ada pada sebuah catatan.
+   *
+   * Hari ini RempesanLog kosong, jadi `Object.keys([])` bernilai nol dan
+   * halaman itu menampilkan "Belum ada trip" — jawaban yang benar karena
+   * kebetulan. Begitu ada SATU catatan, tiap baris akan bernama "0", "1", "2"
+   * (indeks arraynya), tanggalnya "–", dan jumlah tripnya kosong.
+   *
+   * Yang ditampilkan adalah yang DIBAYAR: `tripSah` menyaring ke yang
+   * disetujui dan membuang tanggal kembar, aturan yang sama dengan slipnya.
+   * Yang masih menunggu persetujuan ikut disebut terpisah — pemilik membuka
+   * halaman ini justru pada saat ia peduli bahwa ada yang perlu disetujui.
+   */
+  const ringkasTrip = useMemo(() => {
+    const peta = new Map();
+    const ambil = (email) => {
+      if (!peta.has(email)) peta.set(email, { trips: 0, dates: [], menunggu: 0 });
+      return peta.get(email);
+    };
+    for (const l of tripSah(monthRempesan)) {
+      const b = ambil(l.employee_email);
+      b.trips += 1;
+      b.dates.push(l.date);
+    }
+    for (const l of monthRempesan) {
+      if (l?.status === "pending" && l.employee_email) ambil(l.employee_email).menunggu += 1;
+    }
+    return [...peta.entries()]
+      .map(([email, d]) => ({ email, ...d, dates: d.dates.sort() }))
+      .sort((x, y) => y.trips - x.trips);
+  }, [monthRempesan]);
+
 
   /**
    * SATU rumus gaji — lib/hitungGaji.js.
@@ -685,7 +721,7 @@ export default function PayrollPage() {
    *      2026 itu berarti Rp 515.625 tidak muncul (3.722 + 3.153 poin x Rp 75),
    *      sementara BonusReward bulan itu kosong.
    *   2. Uang sayur dibaca dari VegetablePickup, yang tidak berisi satu catatan
-   *      pun. Sumber sebenarnya adalah PakanHarian lewat useVegTrips.
+   *      pun. Sumber sebenarnya sekarang RempesanLog yang sudah disetujui.
    *   3. Kasbon dijumlahkan tanpa memeriksa sisa maupun apakah sudah dipotong
    *      untuk periode ini, sehingga kasbon lunas tetap ikut memotong.
    *
@@ -945,38 +981,43 @@ export default function PayrollPage() {
         {/* TAB: Log Sayur */}
         <TabsContent value="vegetable" className="mt-4 space-y-3">
           {/*
-            Trip sayur dibaca dari PakanHarian (useVegTrips) — sumber yang sama
-            dengan yang membayar uang sayur di slip.
+            Sumbernya RempesanLog — sama dengan yang membayar di slip mingguan
+            maupun bulanan. Bentuk datanya DAFTAR catatan, bukan peta per orang;
+            ringkasannya dibuat di `ringkasTrip` di atas. Lihat komentar di sana
+            untuk apa yang dulu salah.
 
             Sebelumnya tab ini punya formnya sendiri yang menulis ke entitas
-            VegetablePickup, dan penghitung gaji tidak pernah membacanya. Entitas
-            itu kosong, jadi belum ada trip yang hilang; tapi siapa pun yang
-            memakai formnya akan mencatat trip yang tidak pernah dibayar. Form
-            itu dihapus: trip tercatat sendiri saat kiper mencatat pakan dengan
-            sumber "sayur_pasar" atau "campur", satu trip per orang per hari.
+            VegetablePickup, dan penghitung gaji tidak pernah membacanya. Form
+            itu dihapus; pencatatan atas nama karyawan kini lewat dialog "Catat
+            Sayur" di halaman ini, yang menulis RempesanLog langsung disetujui.
           */}
           <p className="text-sm text-muted-foreground">
-            Trip ambil sayur {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })} — dihitung otomatis dari catatan pakan harian
+            Trip rempesan {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })} — dari catatan rempesan yang sudah disetujui, satu trip per orang per hari
           </p>
-          {Object.keys(rempesanLogs).length === 0 ? (
+          {ringkasTrip.length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground">
-              Belum ada trip ambil sayur bulan ini
+              Belum ada trip rempesan bulan ini
             </Card>
           ) : (
             <div className="space-y-2">
-              {Object.entries(rempesanLogs).map(([email, data]) => {
-                const emp = users.find((u) => u.email === email);
+              {ringkasTrip.map((r) => {
+                const emp = users.find((u) => u.email === r.email);
                 return (
-                  <Card key={email} className="px-4 py-3 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{emp?.full_name || email}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {(data.dates || []).map((d) => format(new Date(d), "d MMM", { locale: id })).join(" · ") || "–"}
+                  <Card key={r.email} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{emp?.full_name || r.email}</p>
+                      <p className="text-xs text-muted-foreground break-words">
+                        {r.dates.map((d) => format(new Date(d), "d MMM", { locale: id })).join(" · ") || "–"}
                       </p>
+                      {r.menunggu > 0 && (
+                        <Link to="/rempesan" className="text-xs text-amber-600 hover:underline">
+                          {r.menunggu} lagi menunggu persetujuan — belum dibayar
+                        </Link>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <Leaf className="w-4 h-4 text-lime-600" />
-                      <span className="font-semibold text-lime-700">{data.trips} trip</span>
+                      <span className="font-semibold text-lime-700 tabular-nums">{r.trips} trip</span>
                     </div>
                   </Card>
                 );

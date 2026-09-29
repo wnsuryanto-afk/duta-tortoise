@@ -12,8 +12,7 @@
  * Pada 01–03 September 2026 tombol "Hari ini saya libur" dan "Ambil sayur di
  * pasar" dipasang HANYA di layar pertama. Akibatnya, kiper yang berpindah ke
  * mode normal kehilangan keduanya — hari liburnya kembali menjadi hari tanpa
- * catatan (memotong Rp 70.000 diam-diam), dan trip sayurnya tidak terbayar
- * Rp 30.000.
+ * catatan (memotong Rp 70.000 diam-diam), dan trip sayurnya tidak tercatat.
  *
  * Menyalin kodenya ke layar kedua akan menyelesaikan hari ini dan gagal lagi
  * di perubahan berikutnya — persis pola yang sudah dua kali menggigit aplikasi
@@ -27,6 +26,7 @@
  */
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 
@@ -103,10 +103,19 @@ export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesa
   /*
     Mencatat trip ambil sayur di pasar — sekali tekan.
 
-    Menulis satu baris PakanHarian bersumber "sayur_pasar", sumber yang sama
-    yang dibaca hooks/useVegTrips.js untuk membayar Rp 30.000 per trip.
-    Jumlah keranjang tidak ikut tercatat; untuk upah trip itu tidak
-    berpengaruh, karena yang dibayar perjalanannya, bukan isinya.
+    Menulis satu baris PakanHarian bersumber "sayur_pasar". Jumlah keranjang
+    tidak ikut tercatat; yang penting di sini adalah TANGGALNYA.
+
+    Tombol ini SEBELUMNYA membayar sendiri: sampai 19 September 2026 upah trip
+    dihitung dari baris PakanHarian ini, jadi sekali tekan memang berarti
+    Rp 30.000. Sejak hari itu upah trip HANYA dibayar dari RempesanLog yang
+    sudah disetujui — dan tombol ini tetap mengumumkan "Upah Rp 30.000 masuk
+    hitungan gaji bulan ini" kepada orang yang tidak akan menerimanya.
+
+    Janji itu bukan sekadar keliru; ia MEMBATALKAN obatnya sendiri. Kartu
+    "belum dicatat rempesannya" di dasbor memang menagih hari ini, tetapi
+    orang yang sudah diberi tahu uangnya masuk tidak punya alasan menanggapi
+    tagihan itu. Jadi yang diperbaiki kalimatnya, bukan hanya komentarnya.
   */
   const catatTripSayur = async () => {
     if (tripSayurHariIni || sibuk) return;
@@ -123,8 +132,10 @@ export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesa
           "Dicatat sekali tekan dari layar harian. Jumlah keranjang tidak diisi — buka Pakan Harian bila perlu mencatat volumenya.",
       });
       qc.invalidateQueries({ queryKey: ["trip-sayur-today"] });
-      qc.invalidateQueries({ queryKey: ["veg-trips"] });
-      kabari("ok", "Trip sayur tercatat. Upah Rp 30.000 masuk hitungan gaji bulan ini.");
+      // Kunci yang dibaca penagih "belum dicatat rempesannya" di dasbor, supaya
+      // tagihannya muncul seketika di layar yang sama — bukan besok.
+      qc.invalidateQueries({ queryKey: ["pakan-harian-trip"] });
+      kabari("ok", "Trip sayur tercatat. Upahnya baru dihitung setelah rempesannya dicatat (berat + foto) dan disetujui — buka menu Rempesan.");
     } catch (e) {
       kabari("warn", "Gagal mencatat trip sayur: " + (e?.message || ""));
     }
@@ -158,9 +169,12 @@ export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesa
       {hasCheckedIn && (
         <div className="mt-3 pt-3 border-t border-border">
           {tripSayurHariIni ? (
-            <p className="text-sm text-green-700 font-medium">
-              ✓ Trip sayur pasar tercatat hari ini — Rp 30.000
-            </p>
+            <div className="text-sm">
+              <p className="text-green-700 font-medium">✓ Trip sayur pasar tercatat hari ini</p>
+              <Link to="/rempesan" className="text-xs text-amber-700 hover:underline">
+                Upahnya menunggu catatan rempesan — catat beratnya di sini
+              </Link>
+            </div>
           ) : (
             <>
               <button
@@ -171,7 +185,8 @@ export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesa
                 🥬 Hari ini saya ambil sayur di pasar
               </button>
               <p className="text-[11px] text-center text-muted-foreground mt-1">
-                Tambahan Rp 30.000. Tekan sekali saja, pada hari Anda benar-benar ke pasar.
+                Tekan sekali saja, pada hari Anda benar-benar ke pasar. Upah trip
+                dibayar setelah rempesannya dicatat dan disetujui.
               </p>
             </>
           )}

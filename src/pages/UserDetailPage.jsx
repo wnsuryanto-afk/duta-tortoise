@@ -24,7 +24,7 @@ import {
 import { format, differenceInMonths, differenceInYears, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { suratAktif, suratTertinggi, suratMasihBerlaku } from "@/lib/suratPeringatan";
-import { useVegTrips } from "@/hooks/useVegTrips";
+import { tripPerPeriode } from "@/lib/rempesan";
 
 // ── helpers ──────────────────────────────────────────────────────────
 const ROLE_EMOJIS = { owner: "👑", manajer: "👔", admin: "🛡️", kepala_feeder: "🧑‍🌾", keeper: "🐢", investor: "👁️", viewer: "👁️", kicked: "🚫" };
@@ -240,11 +240,25 @@ export default function UserDetailPage({ userId, onBack }) {
     queryFn: () => base44.entities.OvertimeLog.list("-date", 50),
     enabled: !!userId && canView,
   });
-  // Trip sayur dibaca dari PakanHarian (useVegTrips) — sumber yang sama dengan
-  // yang membayar uang sayur di slip. Sebelumnya kartu ini membaca
-  // VegetablePickup, entitas yang tidak berisi satu catatan pun, sehingga
-  // "Trip Sayur" selalu 0 untuk semua orang.
-  const { data: vegTripsMap = {} } = useVegTrips(currentPeriod, !!userId && canView);
+  // Trip dibaca dari RempesanLog yang DISETUJUI — sumber yang sama dengan yang
+  // membayar, lewat penolong yang sama (`tripPerPeriode`).
+  //
+  // Kartu ini sempat salah dua kali berturut-turut, dan cara salahnya berbeda:
+  // mula-mula ia membaca `VegetablePickup`, entitas tanpa satu pun catatan,
+  // jadi angkanya selalu nol; lalu ia dipindah ke `PakanHarian` lewat
+  // `useVegTrips` — benar pada saat itu, karena di situlah upah sayur dibayar.
+  // Sejak 19 September upah trip HANYA dibayar dari RempesanLog, dan pemindahan
+  // itu mengubah para PEMBAYAR tanpa mengubah pembaca ini. Angka di profil
+  // karyawan berhenti sama dengan angka di slipnya, dan komentar di atasnya
+  // tetap menyatakan keduanya sumber yang sama.
+  //
+  // Hari ini keduanya nol, jadi selisihnya belum terlihat siapa pun — persis
+  // keadaan yang membuat cacat semacam ini bertahan sampai ada yang dirugikan.
+  const { data: rempesanLogs = [] } = useQuery({
+    queryKey: ["rempesan-logs"],
+    queryFn: () => base44.entities.RempesanLog.list("-date", 300),
+    enabled: !!userId && canView,
+  });
   const { data: activityLogs = [] } = useQuery({
     queryKey: ["activity-user", userId],
     queryFn: () => base44.entities.ActivityLog.list("-timestamp", 20),
@@ -292,7 +306,9 @@ export default function UserDetailPage({ userId, onBack }) {
   const monthOT = userOvertimes.filter(o => o.date >= monthStart && o.date <= monthEnd);
   const totalOTHours = monthOT.reduce((s, o) => s + (o.hours || 0), 0);
 
-  const totalVegTrips = vegTripsMap[userEmail]?.trips || 0;
+  // Batas atas INKLUSIF: monthEnd adalah tanggal terakhir bulan ini, dan trip
+  // di hari itu tetap dibayar.
+  const totalVegTrips = tripPerPeriode(rempesanLogs, userEmail, monthStart, monthEnd).trips;
 
   const monthChecklists = userChecklists.filter(c => c.date?.startsWith(currentPeriod));
   const approvedChecklists = monthChecklists.filter(c => c.status === "approved");
@@ -482,7 +498,7 @@ export default function UserDetailPage({ userId, onBack }) {
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           <UbinAngka label="Hadir" nilai={`${hadirDays}h`} ikon={ClipboardCheck} nada="netral" />
           <UbinAngka label="Lembur" nilai={`${totalOTHours}j`} ikon={Clock} nada="netral" />
-          <UbinAngka label="Trip Sayur" nilai={totalVegTrips} ikon={Leaf} nada="netral" />
+          <UbinAngka label="Trip Rempesan" nilai={totalVegTrips} ikon={Leaf} nada="netral" />
           <UbinAngka label="Task Done" nilai={`${completionRate}%`} ikon={Star} nada={completionRate >= 80 ? "baik" : completionRate > 0 ? "awas" : "netral"} />
           <UbinAngka label="KPI Poin" nilai={totalKpiPoints} ikon={TrendingUp} nada="netral" />
           <UbinAngka label="Kasbon" nilai={activeKasbon ? fmt(activeKasbon.amount - (activeKasbon.total_paid || 0)) : "—"} ikon={CreditCard} nada={activeKasbon ? "awas" : "netral"} />
