@@ -1,4 +1,5 @@
 import { namaKandang } from "@/lib/kandang";
+import { golonganUmur } from "@/lib/umurKura";
 
 /**
  * produksiBetina.js — pertanyaan yang sebenarnya perlu dijawab kebun ini.
@@ -64,12 +65,11 @@ export function umurTahun(birthDate, pada = new Date()) {
 
 /** Betina yang layak dinilai produksinya: hidup, betina, bukan baby/juvenile. */
 export function betinaDewasa(tortoises = []) {
+  // `golonganUmur` dan bukan `age_category` mentah: kolom itu null pada 120
+  // dari 136 kura aktif, jadi membacanya langsung berarti menganggap setiap
+  // kura dewasa sampai ada yang mengetiknya. Lihat lib/umurKura.js.
   return (tortoises || []).filter(
-    (t) =>
-      t?.gender === "betina" &&
-      t?.status === "aktif" &&
-      t?.age_category !== "baby" &&
-      t?.age_category !== "juvenile",
+    (t) => t?.gender === "betina" && t?.status === "aktif" && golonganUmur(t) === "dewasa",
   );
 }
 
@@ -114,7 +114,7 @@ export function jantanPerKandang(tortoises = [], enclosures = []) {
   const peta = new Map();
   for (const t of tortoises || []) {
     if (t?.gender !== "jantan" || t?.status !== "aktif") continue;
-    if (t?.age_category === "baby" || t?.age_category === "juvenile") continue;
+    if (golonganUmur(t) !== "dewasa") continue;
     const nama = namaKandang(t, enclosures) || "";
     if (!nama) continue;
     if (!peta.has(nama)) peta.set(nama, []);
@@ -219,7 +219,7 @@ export function ringkasKandang(tortoises = [], enclosures = []) {
   const peta = new Map();
   for (const t of tortoises || []) {
     if (t?.status !== "aktif") continue;
-    if (t?.age_category === "baby" || t?.age_category === "juvenile") continue;
+    if (golonganUmur(t) !== "dewasa") continue;
     if (t?.gender !== "jantan" && t?.gender !== "betina") continue;
     const nama = namaKandang(t, enclosures) || "(tanpa kandang)";
     if (!peta.has(nama)) peta.set(nama, { kandang: nama, jantan: [], betina: [] });

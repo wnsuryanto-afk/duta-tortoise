@@ -53,6 +53,7 @@
  * mengikat namanya di berkas ini, dan tiga pemakaian di bawah akan patah.
  */
 import { selisihHari } from "@/lib/safeDate";
+import { masihTumbuh } from "@/lib/umurKura";
 export { selisihHari };
 
 /** Jeda rutin untuk baby & juvenile, dalam hari. */
@@ -61,12 +62,29 @@ export const JEDA_BABY_HARI = 14;
 /**
  * Apakah kura ini masih dalam golongan yang ditimbang rutin?
  *
- * Bukan hanya `age_category`: sebagian kura lama tidak punya kolom itu
- * terisi. Panjang tempurung di bawah 20 cm dipakai sebagai cadangan —
- * sulcata sebesar itu masih hatchling atau juvenile muda.
+ * TIGA jalan, dan urutannya disengaja:
+ *
+ *   1. Umur dari `birth_date`, atau `age_category` tersimpan bila tanggal
+ *      lahirnya tidak ada — lihat lib/umurKura.js.
+ *   2. Panjang tempurung di bawah 20 cm — sulcata sebesar itu masih hatchling
+ *      atau juvenile muda.
+ *
+ * Nomor satu dulu hanya membaca `age_category` mentah, dan itu punya akibat.
+ * Kolom itu ternyata TIDAK PERNAH dihitung dari tanggal lahir oleh siapa pun,
+ * walaupun skemanya menyebut "auto-calculated": pada 29 September 2026 ia null
+ * di 120 dari 136 kura aktif. Jadi seluruh beban jatuh ke cadangan nomor dua —
+ * dan justru panjang tempurung itulah yang kosong pada 53 kura.
+ *
+ * Kura muda yang gagal keduanya tidak sekadar salah golongan: ia hilang dari
+ * daftar timbang SAMA SEKALI, karena kura dewasa sehat memang tidak pernah
+ * masuk daftar. Pada data hari ini yang pulih tepat satu: H3, umur 2 tahun
+ * 9 bulan. Yuwono dan Red Foot - 02 tetap di luar jadwal, tetapi bukan karena
+ * cacat ini — pada umur 3 tahun 4 bulan mereka memang "dewasa" menurut aturan
+ * skemanya sendiri. Apakah batas tiga tahun itu masuk akal untuk sulcata
+ * adalah pertanyaan pemeliharaan, dan dibiarkan terbuka.
  */
 export function golonganRutin(kura) {
-  if (kura?.age_category === "baby" || kura?.age_category === "juvenile") return true;
+  if (masihTumbuh(kura)) return true;
   const p = Number(kura?.shell_length_cm);
   return Number.isFinite(p) && p > 0 && p < 20;
 }

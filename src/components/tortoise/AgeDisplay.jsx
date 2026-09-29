@@ -1,31 +1,15 @@
+import { calcAgeCategory, formatAge } from "@/lib/umurKura";
+
 /**
- * Helper: hitung age_category dan label umur dari birth_date
+ * Lencana umur di kartu kura.
+ *
+ * Rumus umurnya sendiri pindah ke lib/umurKura.js. Sebelumnya ia tinggal di
+ * berkas komponen ini, dan itulah sebabnya ia hanya pernah dipakai untuk
+ * MEWARNAI: yang mengambil keputusan — jadwal timbang, misalnya — tidak akan
+ * pernah mengimpor berkas komponen hanya untuk bertanya berapa umur seekor
+ * kura. Sekarang keduanya memakai rumus yang sama.
  */
-export function calcAgeCategory(birthDate) {
-  if (!birthDate) return null;
-  const birth = new Date(birthDate);
-  const now = new Date();
-  const diffMs = now - birth;
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  const diffMonths = diffDays / 30.44;
-  const diffYears = diffDays / 365.25;
-
-  if (diffYears < 1) return "baby";
-  if (diffYears < 3) return "juvenile";
-  return "dewasa";
-}
-
-export function formatAge(birthDate) {
-  if (!birthDate) return null;
-  const birth = new Date(birthDate);
-  const now = new Date();
-  let years = now.getFullYear() - birth.getFullYear();
-  let months = now.getMonth() - birth.getMonth();
-  if (months < 0) { years--; months += 12; }
-  if (years === 0) return `${months} bulan`;
-  if (months === 0) return `${years} tahun`;
-  return `${years} tahun ${months} bulan`;
-}
+export { calcAgeCategory, formatAge };
 
 export function AgeBadge({ birthDate, className = "" }) {
   if (!birthDate) {
