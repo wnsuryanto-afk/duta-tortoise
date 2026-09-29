@@ -1348,7 +1348,36 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
     noticeTimer.current = setTimeout(() => setNotice(null), 6000);
   };
 
+  /**
+   * Buka kamera untuk tugas wajib foto.
+   *
+   * ── KENAPA PEMERIKSAAN PAKAN ADA DI SINI, BUKAN DI handleClick SAJA ──
+   *
+   * Pencatatan pakan ditempelkan ke tugas "Cuci rumput / sayuran rempesan
+   * (pagi)" pada 27-09-2026, dan penjaganya dipasang di handleClick: ketuk
+   * kartunya, form pakan yang terbuka, bukan kamera.
+   *
+   * Dua hari berikutnya tugas itu dikerjakan dua kali — 28 Sep 08:14 dan
+   * 29 Sep 08:04 — dan PakanHarian tetap berhenti di tiga baris. Catatan
+   * keduanya punya photo_url, yang hanya bisa datang dari jalur kamera.
+   *
+   * Sebabnya: kartu ini punya TIGA pintu menuju kamera, dan hanya satu yang
+   * lewat handleClick.
+   *
+   *   1. ketuk badan kartu      → handleClick   → diperiksa
+   *   2. tombol kamera di kanan → langsung ke sini, dengan stopPropagation
+   *   3. tombol "Coba Lagi"     → langsung ke sini
+   *
+   * Tugas ini bertanda "📷 wajib foto" dan tombol kameranya menyala merah di
+   * sebelah kanan. Wajar kalau itu yang ditekan — pintu paling jelas justru
+   * pintu yang tidak dijaga.
+   *
+   * Penjaganya dipindah ke sini, tempat yang dilewati KETIGA pintu. Pola
+   * yang sama dipakai automation onMeasurementSaved di sisi server: jaminan
+   * ditaruh di titik yang tidak bisa dihindari, bukan di tiap pemanggil.
+   */
   const openCameraForTask = () => {
+    if (isCatatPakan && !isChecked) { onCatatPakanCheck(); return; }
     photoReceivedRef.current = false;
     const onWinFocus = () => {
       window.removeEventListener('focus', onWinFocus);

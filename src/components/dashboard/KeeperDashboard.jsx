@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { buatAbsenSekali } from "@/lib/checkInSekali";
+import { catatCheckIn } from "@/lib/absensi";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { terjadwalPada, tugasJatuhTempo, lamanya } from "@/lib/kepatuhanSOP";
@@ -151,22 +151,50 @@ export default function KeeperDashboard() {
       setGpsError(err.message);
     }
 
-    // Lewat penjaga bersama — layar ini dulu tidak memeriksa apa pun sebelum
-    // menulis, jadi ketukan kedua selama GPS diambil membuat baris kedua.
-    const { dibuat } = await buatAbsenSekali({
-      employee_id: user.id,
-      employee_name: user.full_name || user.email,
-      employee_email: user.email,
-      date: today,
-      check_in: nowStr(),
-      status: "hadir",
-      check_in_lat: lat,
-      check_in_lng: lng,
-      location_verified: verified,
-      shift_start: salaryConfig?.shift_start || "08:00",
-      shift_end: salaryConfig?.shift_end || "16:00",
-    });
-    if (!dibuat) setLocationWarning("Kamu sudah check in hari ini — catatannya tidak dibuat dua kali.");
+    /*
+      ── KENAPA LEWAT catatCheckIn, BUKAN PAYLOAD SENDIRI ──────────────────
+
+      Layar ini dulu merakit payload Attendance-nya sendiri. Tiga hal ikut
+      hilang di situ, dan ketiganya diam:
+
+      1. `isianAlasan` DITERIMA sebagai parameter lalu TIDAK PERNAH DIPAKAI.
+         Dialog alasan terlambat muncul, kiper mengisinya, menekan simpan —
+         dan jawabannya dibuang. Tidak ada error, tidak ada tanda.
+
+      2. `late_minutes` tidak pernah ditulis, jadi tetap 0. Angsolo masuk
+         08:13 pada 28-09-2026 dengan shift mulai 07:00 — tujuh puluh tiga
+         menit — dan barisnya menyimpan `late_minutes: 0`, `late_reason:
+         null`. Itu baris yang membuat saya menemukan ini.
+
+      3. `check_in: nowStr()` memanggil jam LAGI, bukan memakai `jam` yang
+         sudah dikunci saat dialog dibuka. Yang tersimpan bisa berbeda dari
+         yang ditanyakan ke orangnya — persis yang dihindari layar terpandu.
+
+      Ditambah satu selisih senyap: cadangan `shift_start` di sini "08:00",
+      sementara SHIFT_BAWAAN di seluruh aplikasi "07:00". Satu jam beda
+      dalam menghitung siapa terlambat.
+
+      catatCheckIn di lib/absensi.js sudah mengurus keempatnya, dan ia juga
+      menolak menulis baris telat tanpa keterangan. Layar terpandu sudah
+      memakainya sejak awal; layar ini tidak. Sekarang keduanya satu pintu.
+    */
+    let sudahAda = false;
+    try {
+      ({ sudahAda } = await catatCheckIn({
+        user, tanggal: today, jam,
+        lat, lng, verified,
+        shiftStart: salaryConfig?.shift_start,
+        shiftEnd: salaryConfig?.shift_end,
+        alasan: isianAlasan?.alasan,
+        catatanAlasan: isianAlasan?.catatan,
+        fotoAlasan: isianAlasan?.fotoUrl,
+      }));
+    } catch (err) {
+      setLocationWarning(`Check in gagal tersimpan: ${err.message}. Coba lagi.`);
+      setCheckLoading(false);
+      return;
+    }
+    if (sudahAda) setLocationWarning("Kamu sudah check in hari ini — catatannya tidak dibuat dua kali.");
     queryClient.invalidateQueries({ queryKey: ["attendance-today"] });
     setCheckLoading(false);
   };
