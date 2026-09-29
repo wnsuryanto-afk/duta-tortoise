@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { bandingkanKandang, kunciUrutKandang, URUTAN_KELOMPOK, hitungIsiKandang, kuraDiKandang } from "@/lib/kandang";
@@ -10,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag, HeartPulse } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag, HeartPulse, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import PageHeader from "@/components/common/PageHeader";
 import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
 import { TortoiseArt } from "@/components/common/Illustration";
@@ -28,7 +30,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms, canDelete as canDeleteGlobal, isManagerLevel } from "@/lib/permissions";
 import { diPeternakan } from "@/lib/populasiKura";
 import { getMissingFields } from "@/lib/incompleteChecks";
-import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
+import { recalcEnclosureCountsAman, recalcEnclosureCounts } from "@/lib/enclosureCount";
 
 /**
  * Status kepenuhan kandang, dihitung dari ISI NYATA.
@@ -62,13 +64,35 @@ export default function TortoiseList() {
   const canEditEnclosure = isManagerLevel(role);
   // Hapus permanen hanya untuk owner
   const ownerCanDelete = canDeleteGlobal(role);
-  const [mainTab, setMainTab] = useState("kura");
+  /*
+    ── TAB DISIMPAN DI URL ────────────────────────────────────────────────
+    Halaman Kandang yang berdiri sendiri (/enclosure) dihapus pada 29-09-2026
+    dan digabung ke tab "Kandang" di sini. Supaya tautan lama — dua dari
+    beranda pemilik, satu dari checklist awal, satu dari Data Belum Lengkap —
+    tetap mendarat di tempat yang benar, tabnya harus bisa disebut di alamat.
+
+    Manfaat keduanya: tombol kembali peramban bekerja antar tab, dan alamat
+    tabnya bisa dikirim ke orang lain.
+  */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const TAB_SAH = ["kura", "kandang", "karantina", "kematian", "terjual"];
+  const tabDariUrl = searchParams.get("tab");
+  const mainTab = TAB_SAH.includes(tabDariUrl) ? tabDariUrl : "kura";
+  const setMainTab = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai === "kura") next.delete("tab");
+    else next.set("tab", nilai);
+    // `replace`: berpindah tab bukan langkah riwayat yang layak ditumpuk
+    // setiap kali, tapi alamatnya tetap benar bila disalin.
+    setSearchParams(next, { replace: true });
+  };
 
   // Tortoise state
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [moveTarget, setMoveTarget] = useState(null);
   const [renameEnclosure, setRenameEnclosure] = useState(null);
+  const [syncingKandang, setSyncingKandang] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua");
   const [genderFilter, setGenderFilter] = useState("semua");
@@ -299,6 +323,32 @@ export default function TortoiseList() {
   })();
 
   const handleSaveEnclosure = () => { setShowEnclosureForm(false); queryClient.invalidateQueries({ queryKey: ["enclosures"] }); };
+
+  /*
+    ── `?edit=<id>` MEMBUKA FORMULIR KANDANG ──────────────────────────────
+
+    Halaman Data Belum Lengkap sudah lama menautkan `/enclosure?edit=<id>`
+    untuk tiap kandang yang datanya kurang. Halaman Kandang yang lama TIDAK
+    PERNAH membaca parameter itu — tidak ada useSearchParams di sana sama
+    sekali — jadi menekannya hanya membuka daftar kandang biasa dan
+    formulirnya tidak pernah muncul. Tautan yang tampak bekerja, dan tidak.
+
+    Sekarang dibaca di sini. Parameternya langsung dibuang dari alamat supaya
+    menutup formulir lalu memuat ulang halaman tidak membukanya lagi.
+  */
+  useEffect(() => {
+    const id = searchParams.get("edit");
+    if (!id || enclosures.length === 0) return;
+    const enc = enclosures.find((e) => e.id === id);
+    const next = new URLSearchParams(searchParams);
+    next.delete("edit");
+    next.set("tab", "kandang");
+    setSearchParams(next, { replace: true });
+    if (enc && canEditEnclosure) {
+      setEditingEnclosure(enc);
+      setShowEnclosureForm(true);
+    }
+  }, [searchParams, enclosures, canEditEnclosure, setSearchParams]);
 
   return (
     <div className="space-y-5">
@@ -731,9 +781,35 @@ export default function TortoiseList() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <p className="text-sm text-muted-foreground">{enclosures.length} kandang terdaftar</p>
             {canEditEnclosure && (
-              <Button onClick={() => { setEditingEnclosure(null); setShowEnclosureForm(true); }} className="gap-2 bg-primary">
-                <Plus className="w-4 h-4" /> Tambah Kandang
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Dipindahkan dari halaman /enclosure yang dihapus 29-09-2026.
+                    Ini satu-satunya hal yang hanya ada di sana.
+
+                    Angka di layar ini TIDAK lagi bergantung pada current_count —
+                    semuanya dihitung langsung dari daftar kura. Tombol ini
+                    menyegarkan kolom tersimpannya, yang masih dibaca tempat
+                    lain; lib/enclosureCount.js memakai aturan hitung yang sama
+                    persis dengan yang ditampilkan di sini. */}
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    setSyncingKandang(true);
+                    const { updated } = await recalcEnclosureCounts();
+                    queryClient.invalidateQueries({ queryKey: ["enclosures"] });
+                    setSyncingKandang(false);
+                    toast.success(updated > 0
+                      ? `${updated} kandang disegarkan`
+                      : "Semua kandang sudah sinkron");
+                  }}
+                  disabled={syncingKandang}
+                  className="gap-1.5"
+                >
+                  <RefreshCw className={`w-4 h-4 ${syncingKandang ? "animate-spin" : ""}`} /> Sinkronkan
+                </Button>
+                <Button onClick={() => { setEditingEnclosure(null); setShowEnclosureForm(true); }} className="gap-2 bg-primary">
+                  <Plus className="w-4 h-4" /> Tambah Kandang
+                </Button>
+              </div>
             )}
           </div>
 
@@ -775,9 +851,11 @@ export default function TortoiseList() {
                 satu pun peringatan. Itu persis yang terjadi saat N1, N2 dan N3
                 digabung jadi N.
 
-                Halaman Kandang (pages/EnclosurePage.jsx) sudah memakai nomor
-                sejak lama, dengan alasan yang ditulis di sana. Layar ini tidak
-                ikut. Sekarang keduanya memakai hitungIsiKandang() yang sama.
+                Halaman Kandang yang dulu berdiri sendiri sudah memakai nomor
+                sejak lama; layar ini tidak ikut. Sejak 29-09-2026 halaman itu
+                dihapus dan digabung ke tab ini, dan aturannya satu:
+                hitungIsiKandang() di lib/kandang.js, yang juga dipakai
+                lib/enclosureCount.js untuk menulis current_count.
               */
               const encCount = hitungIsiKandang(enc, tortoises, enclosures);
               const status = getEnclosureStatus(enc, encCount);

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { hitungIsiKandang } from "@/lib/kandang";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, AlertCircle, Egg, Package, Home, FileWarning } from "lucide-react";
@@ -71,15 +72,31 @@ export default function UrgentAlerts() {
   // Kandang overcrowding
   const { data: enclosures = [] } = useQuery({
     queryKey: ["enclosures-alerts"],
-    queryFn: () => base44.entities.Enclosure.filter({ is_active: true }),
+    // `is_active !== false`, bukan filter server `{ is_active: true }`: kolom
+    // itu tidak pernah ditulis oleh layar mana pun, jadi kandang lama bernilai
+    // undefined dan diam-diam hilang dari peringatan ini.
+    queryFn: () => base44.entities.Enclosure.list(),
   });
-  const overcrowded = enclosures.filter(e => e.current_count > e.max_capacity);
 
   // Data tidak lengkap
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-incomplete"],
     queryFn: () => base44.entities.Tortoise.list(),
   });
+
+  /*
+    Kepadatan dihitung dari ISI NYATA, bukan dari kolom `current_count`.
+
+    `current_count` hanya berubah saat seseorang menekan "Sinkronkan" atau saat
+    salah satu jalur di lib/enclosureCount.js berjalan — jadi peringatan
+    kepadatan yang membacanya bisa menyala untuk kandang yang sudah lega, atau
+    diam untuk kandang yang sudah penuh. Aturannya kini sama persis dengan yang
+    ditampilkan di tab Kandang.
+  */
+  const overcrowded = enclosures
+    .filter((e) => e?.is_active !== false && Number(e?.max_capacity) > 0)
+    .map((e) => ({ ...e, isi: hitungIsiKandang(e, tortoises, enclosures) }))
+    .filter((e) => e.isi > e.max_capacity);
   const incomplete = tortoises.filter(t => {
     return !t.birth_date || !t.weight_grams || !t.shell_length_cm || !t.gender;
   });
@@ -174,7 +191,7 @@ export default function UrgentAlerts() {
               <p className="text-xs text-red-700">{overcrowded.length} kandang kelebihan</p>
               {overcrowded.slice(0, 2).map((e, i) => (
                 <p key={i} className="text-xs text-red-600 mt-1">
-                  {e.name}: {e.current_count}/{e.max_capacity}
+                  {e.name}: {e.isi}/{e.max_capacity}
                 </p>
               ))}
             </div>

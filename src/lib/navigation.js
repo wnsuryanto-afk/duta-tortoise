@@ -54,7 +54,7 @@ export const NAV_SECTIONS = [
     blurb: "Kandang, pakan, SOP, dan jadwal harian",
     items: [
       { path: "/sop",                  section: "sop",           label: "SOP Harian & KPI",     icon: ClipboardCheck, desc: "Checklist tugas harian tim" },
-      { path: "/enclosure",            section: "enclosure",     label: "Daftar Kandang",       icon: Home,           desc: "Kandang & isinya" },
+      { path: "/enclosure",            section: "enclosure",     label: "Daftar Kandang",       icon: Home,           desc: "Kandang & isinya — membuka tab Kandang di Daftar Kura" },
       { path: "/pakan-harian",         section: "pakan-harian",  label: "Pakan Harian",         icon: Salad,          desc: "Catatan pemberian pakan" },
       { path: "/panduan-pakan",        section: "panduan-pakan", label: "Panduan Pakan",        icon: Leaf,           desc: "Acuan pakan sulcata" },
       { path: "/pellet-recipe",        section: "pellet-recipe", label: "Resep Pelet",          icon: ChefHat,        desc: "Formula & takaran" },

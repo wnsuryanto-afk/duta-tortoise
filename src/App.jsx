@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -47,7 +47,6 @@ import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
 import FamilyTreePage from '@/pages/FamilyTreePage';
 import MonthlySalaryPage from '@/pages/MonthlySalaryPage';
-import EnclosurePage from '@/pages/EnclosurePage';
 import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
@@ -133,7 +132,14 @@ const AuthenticatedApp = () => {
         <Route path="/payroll-gaji" element={<PayrollPage />} />
         <Route path="/family-tree" element={<FamilyTreePage />} />
         <Route path="/salary" element={<MonthlySalaryPage />} />
-        <Route path="/enclosure" element={<EnclosurePage />} />
+        {/* Halaman Kandang berdiri sendiri DIHAPUS 29-09-2026 dan digabung ke
+            tab "Kandang" di Daftar Kura. Keduanya mengerjakan pekerjaan yang
+            sama; satu cacat hitung yang sama sempat harus diperbaiki dua kali.
+
+            Alamatnya dipertahankan sebagai pengalihan: menu masih menautkannya,
+            begitu juga beranda pemilik (dua tempat), checklist awal, dan Data
+            Belum Lengkap — dan penanda di peramban orang tidak boleh mati. */}
+        <Route path="/enclosure" element={<AlihkanKandang />} />
         <Route path="/sales-report" element={<SalesReportPage />} />
         <Route path="/hr" element={<HRPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
@@ -211,6 +217,22 @@ const AuthenticatedApp = () => {
     </Routes>
   );
 };
+
+/**
+ * Pengalihan /enclosure → tab Kandang, dengan `?edit=<id>` ikut dibawa.
+ *
+ * Halaman Data Belum Lengkap menautkan `/enclosure?edit=<id>`. Pengalihan
+ * datar akan membuang parameter itu dan formulirnya tidak pernah terbuka —
+ * persis keadaan sebelum ini, hanya dengan sebab yang berbeda.
+ */
+function AlihkanKandang() {
+  const { search } = useLocation();
+  const id = new URLSearchParams(search).get("edit");
+  const tujuan = id
+    ? `/tortoise?tab=kandang&edit=${encodeURIComponent(id)}`
+    : "/tortoise?tab=kandang";
+  return <Navigate to={tujuan} replace />;
+}
 
 function App() {
   return (
