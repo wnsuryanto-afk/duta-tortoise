@@ -23,9 +23,15 @@ import {
  * orang yang mengambil rumput dulu sebelum ke kandang. Pertanyaannya "sedang
  * apa tadi", bukan "kenapa kamu telat".
  *
- * Tidak ada rupiah yang berubah di sini. Mencari rumput tidak menambah upah,
- * dan terlambat tidak memotongnya — gaji harian tetap dihitung per hari hadir.
- * Yang dikerjakan layar ini hanya membuat jam 08:07 itu bisa dibaca.
+ * Tidak ada rupiah yang berubah di sini. Terlambat tidak memotong upah — gaji
+ * harian tetap dihitung per hari hadir. Yang dikerjakan layar ini hanya
+ * membuat jam 08:07 itu bisa dibaca.
+ *
+ * SATU pilihan punya akibat uang, dan itu TIDAK terjadi di layar ini: memilih
+ * "Ambil sayur di pasar" membuat harinya ditagih sebagai trip rempesan, yang
+ * bila dicatat dan disetujui bernilai satu tarif trip. "Cari rumput" tidak —
+ * pemilik memutuskan 29 September 2026 bahwa mengambil rumput bukan trip.
+ * Karena bedanya uang, bedanya disebut di kartunya, bukan disimpan di kode.
  */
 export default function AlasanTerlambatDialog({
   open,
@@ -47,7 +53,7 @@ export default function AlasanTerlambatDialog({
   const pilih = (nilai) => {
     setAlasan(nilai);
     setGalatFoto("");
-    // Foto hanya berlaku untuk alasan yang memintanya. Membawa foto rumput ke
+    // Foto hanya berlaku untuk alasan yang memintanya. Membawa foto pakan ke
     // alasan "ban bocor" hanya akan menyimpan bukti untuk hal yang salah.
     if (!cariAlasan(nilai)?.butuhFoto) setFotoUrl("");
   };
@@ -122,6 +128,13 @@ export default function AlasanTerlambatDialog({
                     {aktif && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={4} />}
                   </span>
                   <span className="font-semibold text-sm">{a.label}</span>
+                  {/* Sejak rumput dan sayur dipisah, pilihan ini menentukan
+                      uang. Yang menentukan uang harus kelihatan. */}
+                  {a.trip && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-accent">
+                      Trip berbayar
+                    </span>
+                  )}
                   {a.butuhFoto && (
                     <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-500">
                       Foto wajib
@@ -140,7 +153,7 @@ export default function AlasanTerlambatDialog({
               <div className="flex items-start gap-3">
                 <img
                   src={fotoUrl}
-                  alt="Bukti rumput"
+                  alt="Bukti pengambilan pakan"
                   className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
@@ -173,7 +186,7 @@ export default function AlasanTerlambatDialog({
                   <Camera className="w-6 h-6 text-primary" />
                 )}
                 <span className="text-sm font-medium">
-                  {mengunggah ? "Mengunggah…" : "Foto hasil rumput / sayur"}
+                  {mengunggah ? "Mengunggah…" : "Foto hasil yang dibawa"}
                 </span>
                 <span className="text-xs text-muted-foreground">Wajib, supaya tidak perlu ditanya lagi nanti</span>
               </label>

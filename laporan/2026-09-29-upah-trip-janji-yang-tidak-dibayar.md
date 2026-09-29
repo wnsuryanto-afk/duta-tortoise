@@ -117,25 +117,75 @@ Enam uji pada logika ringkasan, memakai pustaka aslinya:
 
 ---
 
-## Sisa yang perlu diputuskan pemilik
+## Keputusan pemilik, 29 September 2026: rumput BUKAN trip
 
-**Apakah hari mengambil RUMPUT dihitung trip?** Saat ini jawabannya berbeda
-tergantung jejaknya, dan itu tidak disengaja:
+Pertanyaannya: hari mengambil rumput dibayar trip atau tidak?
 
-- jejak di **absensi** (`late_reason: "cari_rumput"`, labelnya "Cari rumput /
-  sayur") → **ditagih**, jadi dibayar
-- jejak di **Pakan Harian** (`feed_source: "rumput"`) → **tidak ditagih**
+**Jawaban pemilik: tidak.** Yang dibayar hanya perjalanan mengambil sayur.
 
-`SUMBER_PAKAN_TRIP` hanya memuat `sayur_pasar` dan `campur`. Alasannya bisa
-dibela — rumput mungkin dipotong di lokasi, jadi mencatat "hari ini memberi
-rumput" belum tentu berarti ada perjalanan — tetapi komentar di atas fungsinya
-sendiri berbunyi "mengambil sayur/**rumput**", jadi setidaknya salah satunya
-keliru. Saya tidak mengubah daftarnya: ini keputusan upah, bukan keputusan
-kode.
+`SUMBER_PAKAN_TRIP` ternyata sudah sesuai — ia memang hanya memuat
+`sayur_pasar` dan `campur`. Yang bertentangan dengan keputusan itu justru
+**sisi absensi**, dan cara bertentangannya halus:
 
-Satu-satunya baris Pakan Harian bersumber `rumput` di data adalah **27 Juli
-2026, Angsolo, "Rumput susah"** — dan dua baris 8 September bersumber
-`lainnya` (Mentimun, Waloh) juga tidak ditagih.
+Pilihan alasan check-in cuma SATU, berbunyi **"Cari rumput / sayur"** — satu
+pilihan untuk dua hal yang kini berbeda upahnya. Dan penagih rempesan mengubah
+**setiap** baris beralasan itu menjadi trip berbayar. Artinya, seorang kiper
+yang terlambat karena memotong rumput akan ditagih mencatat rempesan, lalu
+dibayar Rp 30.000 untuk sesuatu yang pemiliknya putuskan tidak dibayar.
 
-**Pertanyaannya:** hari mengambil rumput dibayar trip atau tidak? Dan apakah
-`lainnya` (mentimun, waloh) termasuk perjalanan?
+Selama alasan itu hanya menerangkan jam masuk, menggabungkan rumput dan sayur
+tidak apa-apa. Begitu salah satunya berarti uang, penggabungan itu jadi cacat.
+
+### Yang diperbaiki
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Pilihan alasan | "Cari rumput / sayur" (satu) | "Ambil sayur di pasar" **dan** "Cari rumput" (dua) |
+| Yang ditagih jadi trip | setiap baris `cari_rumput` | hanya `ambil_sayur` |
+| Tanda di layar | tidak ada | lencana **"Trip berbayar"** pada pilihan yang berarti uang |
+| Nama komponen | `RumputBelumDicatat` | `TripBelumDicatat` |
+
+`cari_rumput` **dipertahankan** di dalam enum dan tetap sah: ia menerangkan jam
+masuk dengan benar, hanya tidak lagi menghasilkan trip. Wajib fotonya juga
+tetap, untuk kedua alasan pengambilan pakan.
+
+Skema `Attendance` diubah dengan seluruh 25 field lama disertakan — dihitung
+sebelum dan sesudah: 25 dan 25.
+
+**Tidak ada catatan yang berubah.** Diperiksa sebelum mengubah: nol baris
+absensi memiliki `late_reason` sama sekali, karena dialog alasannya baru mulai
+menyimpan jawabannya hari ini. Jadi pemisahan ini tidak memindahkan satu pun
+hari dari "dibayar" ke "tidak dibayar" — ia hanya menentukan apa yang terjadi
+mulai besok.
+
+### Yang diuji
+
+Enam belas uji memakai pustaka aslinya, semuanya lulus:
+
+| Uji | Hasil |
+|---|---|
+| hari "ambil sayur" ditagih | lulus |
+| hari "cari rumput" TIDAK ditagih | lulus |
+| "tugas luar" tidak ditagih | lulus |
+| campuran tiga hari → hanya yang sayur tersaring | lulus |
+| hari yang sudah ada rempesannya tidak ditagih dua kali | lulus |
+| Pakan Harian sumber `rumput` / `lainnya` tidak ditagih | lulus |
+| Pakan Harian sumber `sayur_pasar` / `campur` ditagih | lulus |
+| kedua sisi sepakat rumput bukan uang | lulus |
+| tepat satu pilihan bertanda trip, dan itu yang ditagih | lulus |
+| kedua alasan pakan tetap wajib foto | lulus |
+| nilai lama `cari_rumput` masih dikenal | lulus |
+
+### Satu hal kecil yang ikut
+
+Contoh pada "Tugas luar lain" dulu berbunyi *"Beli obat, **ke pasar**, antar
+kura"*. Sejak ada pilihan "Ambil sayur di pasar", menyebut pasar di dua tempat
+membuat pilihan yang berbayar bisa terlewat. Contohnya diganti jadi *"Beli
+obat, antar kura, urusan lain di luar kandang"*.
+
+### Masih terbuka
+
+Dua baris Pakan Harian 8 September bersumber `lainnya` (Mentimun, Waloh) juga
+tidak ditagih. Kalau keduanya sebenarnya dibeli di pasar, sumbernya yang perlu
+dibetulkan saat mencatat — bukan daftarnya yang dilebarkan, karena `lainnya`
+adalah keranjang sisa yang isinya tidak bisa ditebak.

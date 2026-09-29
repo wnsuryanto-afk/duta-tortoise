@@ -63,10 +63,11 @@
       "type": "string",
       "enum": [
         "cari_rumput",
+        "ambil_sayur",
         "tugas_luar",
         "terlambat"
       ],
-      "description": "Alasan jam masuk melewati ambang (satu jam). cari_rumput dan tugas_luar adalah PEKERJAAN, bukan kelalaian; keduanya tidak menambah maupun mengurangi upah \u2014 hanya menerangkan jam masuknya. Kosong pada baris lama, karena aplikasi memang belum pernah menanyakannya."
+      "description": "Alasan jam masuk melewati ambang (satu jam). cari_rumput, ambil_sayur dan tugas_luar adalah PEKERJAAN, bukan kelalaian; ketiganya tidak menambah maupun mengurangi upah harian \u2014 hanya menerangkan jam masuknya. Kosong pada baris lama, karena aplikasi memang belum pernah menanyakannya. PEMISAHAN 29-09-2026: dulu hanya ada cari_rumput, berlabel 'Cari rumput / sayur', dan penagih rempesan mengubah SETIAP baris itu menjadi trip berbayar. Pemilik memutuskan 29-09-2026 bahwa mengambil RUMPUT bukan trip \u2014 yang dibayar hanya perjalanan mengambil sayur. Karena satu pilihan tidak bisa menjawab dua hal yang berbeda upahnya, ambil_sayur dipisahkan. cari_rumput DIPERTAHANKAN dan tetap sah; ia tidak lagi ditagih sebagai trip."
     },
     "late_note": {
       "type": "string",
@@ -74,7 +75,7 @@
     },
     "late_photo_url": {
       "type": "string",
-      "description": "Foto bukti, wajib untuk cari_rumput. Rumput adalah barang yang bisa difoto; ban bocor tidak, karena itu alasan lain hanya menuntut keterangan tertulis."
+      "description": "Foto bukti, wajib untuk cari_rumput dan ambil_sayur. Rumput dan sayur adalah barang yang bisa difoto; ban bocor tidak, karena itu alasan lain hanya menuntut keterangan tertulis."
     },
     "overtime_hours": {
       "type": "number",

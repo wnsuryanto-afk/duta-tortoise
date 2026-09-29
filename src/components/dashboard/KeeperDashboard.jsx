@@ -19,7 +19,7 @@ import { barisAbsensiSah, catatCheckOut } from "@/lib/absensi";
 import { menitTerlambat, perluAlasan } from "@/lib/keterlambatan";
 import AlasanTerlambatDialog from "@/components/attendance/AlasanTerlambatDialog";
 import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
-import RumputBelumDicatat from "@/components/rempesan/RumputBelumDicatat";
+import TripBelumDicatat from "@/components/rempesan/TripBelumDicatat";
 import HariTanpaChecklist from "@/components/sop/HariTanpaChecklist";
 import { useTestMode } from "@/lib/useTestMode";
 import KeeperIncubatorWidget from "@/components/dashboard/KeeperIncubatorWidget";
@@ -408,7 +408,7 @@ export default function KeeperDashboard() {
             Ditaruh di layar yang dibuka tiap hari, bukan cuma di halaman
             Rempesan yang jarang dibuka — itulah sebabnya RempesanLog selama ini
             nol isinya meski halaman, formulir, dan tarifnya sudah lengkap. */}
-        <RumputBelumDicatat email={user?.email} milikSendiri batas={4} />
+        <TripBelumDicatat email={user?.email} milikSendiri batas={4} />
 
         {/* Hari sendiri yang absensinya hadir tapi checklistnya kosong.
             Ditagih besoknya, selagi orangnya masih ingat kerja apa saja. */}

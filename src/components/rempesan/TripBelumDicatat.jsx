@@ -5,16 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Leaf, Image as ImageIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { hariRumputBelumDicatat, hariPakanBelumDicatat } from "@/lib/rempesan";
+import { hariTripBelumDicatat, hariPakanBelumDicatat } from "@/lib/rempesan";
 import RempesanRecordForm from "@/components/rempesan/RempesanRecordForm";
 
 /**
- * RumputBelumDicatat — jembatan antara jejak absensi dan catatan rempesan.
+ * TripBelumDicatat — jembatan antara jejak absensi dan catatan rempesan.
  *
- * Sejak check-in menanyakan alasan, hari yang dipakai mengambil rumput
- * meninggalkan baris absensi ber-`late_reason: "cari_rumput"` lengkap dengan
+ * Sejak check-in menanyakan alasan, hari yang dipakai mengambil sayur di pasar
+ * meninggalkan baris absensi ber-`late_reason: "ambil_sayur"` lengkap dengan
  * fotonya. Komponen ini menagih hari-hari itu: yang fotonya ada tetapi
  * rempesannya belum pernah dicatat.
+ *
+ * Berkas ini bernama RumputBelumDicatat sampai 29 September 2026. Pemilik
+ * memutuskan hari itu bahwa mengambil RUMPUT bukan trip berbayar, dan sejak
+ * itu namanya justru menyebut satu-satunya hal yang TIDAK ditagihnya.
  *
  * Tanpa penagih ini, jejaknya hanya tersimpan. `RempesanLog` sudah punya
  * halaman, formulir, alur persetujuan, dan tarif per trip sejak lama — dan
@@ -28,12 +32,12 @@ import RempesanRecordForm from "@/components/rempesan/RempesanRecordForm";
  * bisa langsung mencatat; pemilik melihat seluruh tim dan hanya membacanya,
  * karena rempesan dicatat oleh yang mengerjakannya.
  */
-export default function RumputBelumDicatat({ email, milikSendiri = false, batas = 7 }) {
+export default function TripBelumDicatat({ email, milikSendiri = false, batas = 7 }) {
   const qc = useQueryClient();
   const [isi, setIsi] = useState(null);
 
   const { data: absensi = [] } = useQuery({
-    queryKey: ["absensi-rumput", email || "semua"],
+    queryKey: ["absensi-trip", email || "semua"],
     queryFn: () =>
       email
         ? base44.entities.Attendance.filter({ employee_email: email }, "-date", 120)
@@ -53,7 +57,7 @@ export default function RumputBelumDicatat({ email, milikSendiri = false, batas 
   });
 
   const hari = [
-    ...hariRumputBelumDicatat(absensi, logs, { email }),
+    ...hariTripBelumDicatat(absensi, logs, { email }),
     ...hariPakanBelumDicatat(pakan, logs, { email }),
   ]
     // Satu hari cukup ditagih sekali meski jejaknya ada di absensi DAN di pakan.
@@ -69,11 +73,11 @@ export default function RumputBelumDicatat({ email, milikSendiri = false, batas 
         <Leaf className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-sm">
-            {hari.length} hari ambil rumput, belum dicatat rempesannya
+            {hari.length} hari ambil sayur, belum dicatat rempesannya
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {milikSendiri
-              ? "Absensimu mencatat kamu ambil rumput di hari-hari ini. Catat beratnya supaya tripnya bisa disetujui."
+              ? "Catatanmu menunjukkan kamu ambil sayur di hari-hari ini. Catat beratnya supaya tripnya bisa disetujui."
               : "Fotonya ada di absensi, tapi belum ada catatan rempesan — jadi tripnya belum bisa disetujui."}
           </p>
         </div>
@@ -132,7 +136,7 @@ export default function RumputBelumDicatat({ email, milikSendiri = false, batas 
           onClose={() => setIsi(null)}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["rempesan-logs"] });
-            qc.invalidateQueries({ queryKey: ["absensi-rumput"] });
+            qc.invalidateQueries({ queryKey: ["absensi-trip"] });
           }}
         />
       )}

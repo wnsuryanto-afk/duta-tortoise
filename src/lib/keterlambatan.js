@@ -61,24 +61,51 @@ export const AMBANG_ALASAN_MENIT = 60;
  * tidak menyentuh rupiah mana pun — ia hanya menentukan bagaimana barisnya
  * dibaca manusia di layar tim dan laporan HR.
  *
- * `butuhFoto` mewajibkan bukti. Hanya "cari rumput" yang memakainya: itu
- * permintaan pemilik, dan masuk akal — rumput adalah barang yang bisa
- * difoto, sementara "ban bocor" tidak.
+ * `butuhFoto` mewajibkan bukti. Dipakai dua alasan pengambilan pakan: itu
+ * permintaan pemilik, dan masuk akal — rumput dan sayur adalah barang yang
+ * bisa difoto, sementara "ban bocor" tidak.
+ *
+ * ── Kenapa rumput dan sayur DIPISAH (29 September 2026) ────────────────────
+ *
+ * Dulu keduanya satu pilihan, berlabel "Cari rumput / sayur". Itu tidak
+ * masalah selama alasannya hanya menerangkan jam masuk. Tetapi sejak penagih
+ * rempesan dibuat, SETIAP baris beralasan itu ditagih menjadi satu trip
+ * berbayar Rp 30.000.
+ *
+ * Pada 29 September 2026 pemilik memutuskan: mengambil RUMPUT bukan trip;
+ * yang dibayar hanya perjalanan mengambil sayur. Sejak keputusan itu, satu
+ * pilihan tidak lagi bisa menjawab dua hal yang berbeda upahnya — jadi
+ * pilihannya dua. `trip: true` menandai yang mana yang berarti uang, dan
+ * lib/rempesan.js hanya menagih yang itu.
+ *
+ * `cari_rumput` tetap ada dan tetap sah: ia menerangkan jam masuk dengan
+ * benar, hanya tidak lagi menghasilkan trip.
  */
 export const ALASAN_TERLAMBAT = [
   {
-    nilai: "cari_rumput",
-    label: "Cari rumput / sayur",
-    keterangan: "Mengambil pakan dulu sebelum ke kandang",
+    nilai: "ambil_sayur",
+    label: "Ambil sayur di pasar",
+    keterangan: "Ke pasar dulu sebelum ke kandang — dihitung trip rempesan",
     kerja: true,
+    trip: true,
+    butuhFoto: true,
+    butuhCatatan: false,
+  },
+  {
+    nilai: "cari_rumput",
+    label: "Cari rumput",
+    keterangan: "Mengambil rumput dulu sebelum ke kandang — bukan trip berbayar",
+    kerja: true,
+    trip: false,
     butuhFoto: true,
     butuhCatatan: false,
   },
   {
     nilai: "tugas_luar",
     label: "Tugas luar lain",
-    keterangan: "Beli obat, ke pasar, antar kura, urusan di luar kandang",
+    keterangan: "Beli obat, antar kura, urusan lain di luar kandang",
     kerja: true,
+    trip: false,
     butuhFoto: false,
     butuhCatatan: true,
   },
@@ -87,6 +114,7 @@ export const ALASAN_TERLAMBAT = [
     label: "Terlambat",
     keterangan: "Tulis sendiri apa sebabnya",
     kerja: false,
+    trip: false,
     butuhFoto: false,
     butuhCatatan: true,
   },

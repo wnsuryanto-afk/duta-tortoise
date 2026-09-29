@@ -13,7 +13,7 @@ import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import RempesanRecordForm from "@/components/rempesan/RempesanRecordForm";
 import PageHeader from "@/components/common/PageHeader";
-import RumputBelumDicatat from "@/components/rempesan/RumputBelumDicatat";
+import TripBelumDicatat from "@/components/rempesan/TripBelumDicatat";
 import { tripKembar, tarifTrip } from "@/lib/rempesan";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
@@ -136,7 +136,7 @@ export default function RempesanPage() {
       {/* Sambungan ke absensi: hari yang alasan check-in-nya "cari rumput"
           tetapi rempesannya belum pernah dicatat. Inilah yang membuat jejak
           foto di absensi menagih sesuatu, bukan cuma tersimpan. */}
-      <RumputBelumDicatat
+      <TripBelumDicatat
         email={isManager ? undefined : user?.email}
         milikSendiri={!isManager}
       />

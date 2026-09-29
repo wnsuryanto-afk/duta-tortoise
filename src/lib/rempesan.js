@@ -14,7 +14,7 @@
  * 08:01–08:14 sebanyak sebelas hari. Pekerjaannya dikerjakan; yang tidak ada
  * adalah catatannya. Sejak tombol check-in menanyakan alasan (lihat
  * lib/keterlambatan.js), hari-hari itu meninggalkan jejak yang bisa dipegang:
- * satu baris absensi dengan `late_reason: "cari_rumput"` dan fotonya.
+ * satu baris absensi dengan `late_reason: "ambil_sayur"` dan fotonya.
  *
  * Berkas ini memakai jejak itu untuk menutup jaraknya.
  *
@@ -44,8 +44,23 @@
  * keduanya tidak boleh diperlakukan sama.
  */
 
-/** Alasan absensi yang berarti "orang ini sedang mengambil pakan". */
-export const ALASAN_RUMPUT = "cari_rumput";
+/**
+ * Alasan absensi yang berarti "orang ini sedang melakukan perjalanan berbayar".
+ *
+ * Nilainya dulu `cari_rumput`, dan pilihannya berlabel "Cari rumput / sayur" —
+ * satu pilihan untuk dua hal. Pada 29 September 2026 pemilik memutuskan bahwa
+ * mengambil RUMPUT bukan trip; yang dibayar hanya perjalanan mengambil sayur.
+ *
+ * Sejak keputusan itu, menagih setiap baris `cari_rumput` berarti membayar
+ * sesuatu yang diputuskan tidak dibayar. Jadi yang ditagih `ambil_sayur` saja,
+ * dan `cari_rumput` tetap ada sebagai keterangan jam masuk yang sah — ia hanya
+ * tidak lagi berarti uang.
+ *
+ * Ini sengaja sejalan dengan `SUMBER_PAKAN_TRIP` di bawah, yang juga tidak
+ * memuat "rumput". Sebelum hari ini keduanya bertentangan tanpa ada yang
+ * menyadarinya: sisi absensi menagih rumput, sisi pakan tidak.
+ */
+export const ALASAN_TRIP = "ambil_sayur";
 
 /** Tarif cadangan bila SalaryConfig belum menyimpan tarifnya. */
 export const TARIF_TRIP_BAWAAN = 30000;
@@ -98,19 +113,22 @@ export function sudahAdaRempesan(logs = [], email, tanggal) {
 }
 
 /**
- * Hari-hari yang absensinya menyebut "cari rumput" tetapi rempesannya belum
- * pernah dicatat.
+ * Hari-hari yang absensinya menyebut "ambil sayur di pasar" tetapi rempesannya
+ * belum pernah dicatat.
  *
- * Inilah sambungannya: satu daftar yang bisa ditunjukkan ke orangnya ("kamu
- * ambil rumput Senin, belum dicatat") dan ke pemilik ("tiga hari ada fotonya,
- * belum ada catatannya"). Tanpa daftar ini, jejak di absensi hanya tersimpan
- * dan tidak pernah menagih apa pun.
+ * Inilah sambungannya: satu daftar yang bisa ditunjukkan ke orangnya ("kamu ke
+ * pasar Senin, belum dicatat") dan ke pemilik ("tiga hari ada fotonya, belum
+ * ada catatannya"). Tanpa daftar ini, jejak di absensi hanya tersimpan dan
+ * tidak pernah menagih apa pun.
+ *
+ * Hari "cari rumput" TIDAK ikut — keputusan pemilik 29 September 2026. Lihat
+ * ALASAN_TRIP di atas.
  *
  * Diurutkan dari yang terbaru — yang paling mungkin masih diingat beratnya.
  */
-export function hariRumputBelumDicatat(attendances = [], logs = [], { email } = {}) {
+export function hariTripBelumDicatat(attendances = [], logs = [], { email } = {}) {
   return (attendances || [])
-    .filter((a) => a?.late_reason === ALASAN_RUMPUT)
+    .filter((a) => a?.late_reason === ALASAN_TRIP)
     .filter((a) => !a.excluded_from_reports && !a.is_test_data)
     .filter((a) => (email ? a.employee_email === email : true))
     .filter((a) => !sudahAdaRempesan(logs, a.employee_email, a.date))
@@ -205,7 +223,7 @@ export function tripPerPeriode(logs = [], email, awal, akhir, { akhirInklusif = 
  * Hari yang menurut catatan PAKAN dipakai mengambil sayur/rumput, tetapi
  * rempesannya belum pernah dicatat.
  *
- * Dipakai bersama `hariRumputBelumDicatat`. Sejak upah trip hanya dibayar dari
+ * Dipakai bersama `hariTripBelumDicatat`. Sejak upah trip hanya dibayar dari
  * `RempesanLog`, hari yang cuma tercatat di `PakanHarian` tidak lagi
  * menghasilkan uang — jadi ia harus DITAGIH, bukan dibiarkan hilang diam-diam.
  * Itu bedanya merapikan dengan memotong.
