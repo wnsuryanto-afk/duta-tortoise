@@ -1,72 +1,106 @@
 {
   "name": "Tortoise",
-  "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "description": "Nama tortoise"
+    "age_category": {
+      "description": "Kategori umur: baby (0-12 bln), juvenile (1-6 thn), dewasa (>6 thn). BATAS DIUBAH 29-09-2026 oleh pemilik, dari juvenile 1-3 thn: dengan batas lama, kura umur 3-6 tahun tidak masuk jadwal timbang pertumbuhan (sudah dianggap dewasa) dan juga belum berproduksi \u2014 tidak terlihat di kedua sisi. Enam dipilih karena betina pertama yang bertelur di kebun ini berumur 6,4 tahun. CATATAN: kolom ini TIDAK pernah benar-benar auto-calculated. Per 29-09-2026 ia terisi pada 16 dari 136 kura aktif, semuanya 'baby' yang ditulis EggGrid saat menetas, dan null pada 120 sisanya. Yang menghitungnya sekarang adalah src/lib/umurKura.js di sisi baca (tanggal lahir didahulukan, kolom ini dipakai hanya bila tanggal lahirnya kosong) \u2014 datanya sendiri tidak diubah.",
+      "enum": [
+        "baby",
+        "juvenile",
+        "dewasa"
+      ],
+      "type": "string"
+    },
+    "birth_date": {
+      "format": "date",
+      "type": "string"
     },
     "code": {
-      "type": "string",
-      "description": "Kode identifikasi unik"
+      "description": "Kode identifikasi unik",
+      "type": "string"
+    },
+    "death_cause": {
+      "description": "Penyebab kematian",
+      "enum": [
+        "sakit",
+        "umur_tua",
+        "kecelakaan",
+        "predator",
+        "stress",
+        "egg_binding",
+        "tidak_diketahui",
+        "lainnya"
+      ],
+      "type": "string"
+    },
+    "death_date": {
+      "description": "Tanggal kematian",
+      "format": "date",
+      "type": "string"
+    },
+    "death_notes": {
+      "description": "Catatan kematian",
+      "type": "string"
+    },
+    "death_photos": {
+      "description": "Foto bukti kematian",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "death_video_url": {
+      "type": "string"
+    },
+    "enclosure": {
+      "type": "string"
+    },
+    "enclosure_id": {
+      "description": "Nomor kandang. Tautan yang sebenarnya \u2014 tidak berubah saat kandang diganti nama. Field enclosure di bawah tetap diisi sebagai keterangan yang terbaca manusia.",
+      "type": "string"
     },
     "gender": {
-      "type": "string",
+      "default": "belum_diketahui",
       "enum": [
         "jantan",
         "betina",
         "belum_diketahui"
       ],
-      "default": "belum_diketahui"
+      "type": "string"
     },
-    "species": {
-      "type": "string",
-      "enum": [
-        "sulcata",
-        "red_foot",
-        "leopard",
-        "aldabra",
-        "russian",
-        "hermann",
-        "greek",
-        "indian_star",
-        "lainnya"
-      ],
-      "default": "sulcata",
-      "description": "Spesies kura-kura"
+    "in_quarantine": {
+      "default": false,
+      "type": "boolean"
     },
-    "species_params": {
-      "type": "object",
-      "description": "Parameter ideal berdasarkan spesies (auto-fill)",
-      "properties": {
-        "basking_temp_min": {
-          "type": "number"
-        },
-        "basking_temp_max": {
-          "type": "number"
-        },
-        "ambient_temp_min": {
-          "type": "number"
-        },
-        "ambient_temp_max": {
-          "type": "number"
-        },
-        "humidity_min": {
-          "type": "number"
-        },
-        "humidity_max": {
-          "type": "number"
-        },
-        "adult_size_cm": {
-          "type": "number"
-        },
-        "weighing_interval_adult_days": {
-          "type": "number"
-        }
-      }
+    "is_archived": {
+      "default": false,
+      "type": "boolean"
+    },
+    "is_currently_sick": {
+      "default": false,
+      "type": "boolean"
+    },
+    "is_proven": {
+      "default": false,
+      "type": "boolean"
+    },
+    "last_breeding_id": {
+      "description": "ID Breeding terakhir",
+      "type": "string"
+    },
+    "last_status_change": {
+      "format": "date",
+      "type": "string"
+    },
+    "last_weighed_date": {
+      "description": "Tanggal terakhir ditimbang",
+      "format": "date",
+      "type": "string"
+    },
+    "microchip_id": {
+      "type": "string"
     },
     "morph": {
-      "type": "string",
+      "default": "normal",
       "enum": [
         "normal",
         "het_albino",
@@ -90,10 +124,110 @@
         "mix",
         "unknown"
       ],
-      "default": "normal"
+      "type": "string"
+    },
+    "name": {
+      "description": "Nama tortoise",
+      "type": "string"
+    },
+    "necropsy_done": {
+      "default": false,
+      "description": "Apakah otopsi dilakukan",
+      "type": "boolean"
+    },
+    "necropsy_findings": {
+      "description": "Temuan otopsi",
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "parent_female": {
+      "type": "string"
+    },
+    "parent_male": {
+      "type": "string"
+    },
+    "photos": {
+      "items": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "is_primary": {
+            "default": false,
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "shell_length_cm": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string"
+          },
+          "weight_grams": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "previous_status": {
+      "type": "string"
+    },
+    "proven_year": {
+      "type": "number"
+    },
+    "purchase_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "purchase_price": {
+      "type": "number"
+    },
+    "qr_code_url": {
+      "type": "string"
+    },
+    "quarantine_notes": {
+      "type": "string"
+    },
+    "quarantine_reason": {
+      "enum": [
+        "pendatang_baru",
+        "sakit",
+        "cedera",
+        "observasi",
+        "sebelum_dijual",
+        "lainnya"
+      ],
+      "type": "string"
+    },
+    "quarantine_start_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "sale_channel": {
+      "enum": [
+        "Instagram",
+        "Tokopedia",
+        "Shopee",
+        "WhatsApp",
+        "Facebook",
+        "Referral",
+        "Langsung",
+        "Lainnya"
+      ],
+      "type": "string"
+    },
+    "shell_length_cm": {
+      "type": "number"
     },
     "shell_type": {
-      "type": "string",
+      "default": "normal",
       "enum": [
         "normal",
         "less_scute",
@@ -103,10 +237,10 @@
         "wavy",
         "irregular"
       ],
-      "default": "normal"
+      "type": "string"
     },
     "source": {
-      "type": "string",
+      "default": "tidak_diketahui",
       "enum": [
         "cb",
         "wc",
@@ -118,59 +252,56 @@
         "import",
         "tidak_diketahui"
       ],
-      "default": "tidak_diketahui"
-    },
-    "is_proven": {
-      "type": "boolean",
-      "default": false
-    },
-    "proven_year": {
-      "type": "number"
-    },
-    "last_breeding_id": {
-      "type": "string",
-      "description": "ID Breeding terakhir"
-    },
-    "birth_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "purchase_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "purchase_price": {
-      "type": "number"
-    },
-    "microchip_id": {
       "type": "string"
     },
-    "weight_grams": {
-      "type": "number"
-    },
-    "shell_length_cm": {
-      "type": "number"
-    },
-    "age_category": {
-      "type": "string",
+    "species": {
+      "default": "sulcata",
+      "description": "Spesies kura-kura",
       "enum": [
-        "baby",
-        "juvenile",
-        "dewasa"
+        "sulcata",
+        "red_foot",
+        "leopard",
+        "aldabra",
+        "russian",
+        "hermann",
+        "greek",
+        "indian_star",
+        "lainnya"
       ],
-      "description": "Kategori umur: baby (0-12 bln), juvenile (1-3 thn), dewasa (>3 thn). Auto-calculated dari birth_date."
+      "type": "string"
     },
-    "last_weighed_date": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir ditimbang"
-    },
-    "weighing_interval_days": {
-      "type": "number",
-      "description": "Interval timbang: baby=14, juvenile=30, dewasa=90"
+    "species_params": {
+      "description": "Parameter ideal berdasarkan spesies (auto-fill)",
+      "properties": {
+        "adult_size_cm": {
+          "type": "number"
+        },
+        "ambient_temp_max": {
+          "type": "number"
+        },
+        "ambient_temp_min": {
+          "type": "number"
+        },
+        "basking_temp_max": {
+          "type": "number"
+        },
+        "basking_temp_min": {
+          "type": "number"
+        },
+        "humidity_max": {
+          "type": "number"
+        },
+        "humidity_min": {
+          "type": "number"
+        },
+        "weighing_interval_adult_days": {
+          "type": "number"
+        }
+      },
+      "type": "object"
     },
     "status": {
-      "type": "string",
+      "default": "aktif",
       "enum": [
         "aktif",
         "baby",
@@ -180,152 +311,20 @@
         "terjual",
         "diarsipkan"
       ],
-      "default": "aktif"
-    },
-    "previous_status": {
-      "type": "string"
-    },
-    "is_currently_sick": {
-      "type": "boolean",
-      "default": false
-    },
-    "last_status_change": {
-      "type": "string",
-      "format": "date"
-    },
-    "enclosure_id": {
-      "type": "string",
-      "description": "Nomor kandang. Tautan yang sebenarnya — tidak berubah saat kandang diganti nama. Field enclosure di bawah tetap diisi sebagai keterangan yang terbaca manusia."
-    },
-    "enclosure": {
-      "type": "string"
-    },
-    "in_quarantine": {
-      "type": "boolean",
-      "default": false
-    },
-    "quarantine_start_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "quarantine_reason": {
-      "type": "string",
-      "enum": [
-        "pendatang_baru",
-        "sakit",
-        "cedera",
-        "observasi",
-        "sebelum_dijual",
-        "lainnya"
-      ]
-    },
-    "quarantine_notes": {
-      "type": "string"
-    },
-    "photos": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
-          },
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "weight_grams": {
-            "type": "number"
-          },
-          "shell_length_cm": {
-            "type": "number"
-          },
-          "notes": {
-            "type": "string"
-          },
-          "is_primary": {
-            "type": "boolean",
-            "default": false
-          }
-        }
-      }
-    },
-    "death_date": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal kematian"
-    },
-    "death_cause": {
-      "type": "string",
-      "enum": [
-        "sakit",
-        "umur_tua",
-        "kecelakaan",
-        "predator",
-        "stress",
-        "egg_binding",
-        "tidak_diketahui",
-        "lainnya"
-      ],
-      "description": "Penyebab kematian"
-    },
-    "death_photos": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Foto bukti kematian"
-    },
-    "death_notes": {
-      "type": "string",
-      "description": "Catatan kematian"
-    },
-    "necropsy_done": {
-      "type": "boolean",
-      "default": false,
-      "description": "Apakah otopsi dilakukan"
-    },
-    "necropsy_findings": {
-      "type": "string",
-      "description": "Temuan otopsi"
-    },
-    "death_video_url": {
       "type": "string"
     },
     "tags": {
-      "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "type": "array"
     },
-    "qr_code_url": {
-      "type": "string"
+    "weighing_interval_days": {
+      "description": "Interval timbang: baby=14, juvenile=30, dewasa=90. CATATAN: kolom ini tidak pernah dibaca oleh kode mana pun \u2014 hanya ditulis EggGrid (=14) saat menetas. Jadwal yang sebenarnya berjalan ada di lib/jadwalTimbang.js, dan sejak 17-09-2026 ia memakai 14 hari untuk baby DAN juvenile, bukan 30 untuk juvenile.",
+      "type": "number"
     },
-    "sale_channel": {
-      "type": "string",
-      "enum": [
-        "Instagram",
-        "Tokopedia",
-        "Shopee",
-        "WhatsApp",
-        "Facebook",
-        "Referral",
-        "Langsung",
-        "Lainnya"
-      ]
-    },
-    "notes": {
-      "type": "string"
-    },
-    "parent_male": {
-      "type": "string"
-    },
-    "parent_female": {
-      "type": "string"
-    },
-    "is_archived": {
-      "type": "boolean",
-      "default": false
+    "weight_grams": {
+      "type": "number"
     }
   },
   "required": [
@@ -334,5 +333,6 @@
     "morph",
     "source",
     "status"
-  ]
+  ],
+  "type": "object"
 }
