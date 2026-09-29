@@ -25,6 +25,32 @@
  *    Jawaban di sini: baca ulang dari server TEPAT sebelum membuat, dan tunggu
  *    kuerinya segar sebelum tombolnya dilepas kembali.
  *
+ *    ── SATU PINTU, SEJAK 29-09-2026 ──
+ *
+ *    Jawaban itu tidak cukup selama masih ada jalan lain menuju
+ *    `Attendance.create()`. Dan ada: EMPAT layar pernah membuat baris absensi
+ *    dengan penjagaan yang berbeda-beda —
+ *
+ *        AksiHarianKiper   memeriksa hasCheckedIn, attendance, dan sibuk
+ *        GuidedHariIni     memakai catatCheckIn (benar)
+ *        CheckInWidget     tidak memeriksa apa pun
+ *        KeeperDashboard   merakit payload sendiri
+ *
+ *    Yang terakhir itu yang paling mahal, dan diamnya paling rapi: ia menerima
+ *    `isianAlasan` sebagai parameter lalu tidak pernah memakainya. Dialog alasan
+ *    terlambat muncul, kiper mengisinya, menekan simpan — dan jawabannya
+ *    dibuang. Ia juga tidak pernah menulis `late_minutes`, sehingga Angsolo yang
+ *    masuk 08:13 pada 28-09-2026 dengan shift mulai 07:00 tersimpan sebagai
+ *    terlambat NOL menit.
+ *
+ *    CheckInWidget sudah dihapus, KeeperDashboard dipindahkan ke sini, dan
+ *    lib/checkInSekali.js ikut dibuang karena tidak ada lagi yang memanggilnya.
+ *    Sekarang `check_in` hanya ditulis di satu tempat: berkas ini.
+ *
+ *    Pelajarannya, yang dua kali terbukti dalam satu hari: jaminan yang dipasang
+ *    di satu PEMANGGIL akan dilewati pemanggil lain. Yang bertahan adalah
+ *    jaminan yang dipasang di titik yang tidak bisa dihindari.
+ *
  * 2. **Lembur ditulis di dua tempat dan hanya satu yang dibayar.**
  *    `Attendance.overtime_hours` ditulis oleh empat jalur berbeda, tetapi TIDAK
  *    SATU PUN layar gaji membacanya. Yang dibayar adalah `OvertimeLog.hours`
