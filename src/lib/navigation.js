@@ -13,10 +13,10 @@
  */
 import {
   Home, Shell, ClipboardCheck, Package, Wallet, Users,
-  Heart, BookOpen, Baby, CalendarRange, GitBranch, Skull, Clock, Thermometer,
+  Heart, BookOpen, Baby, GitBranch, Skull, Clock, Thermometer,
   Leaf, Salad, Stethoscope, Calendar, Library, ListTodo, Zap,
   LayoutGrid, ShoppingCart, Wrench, Truck, ChefHat,
-  TrendingUp, DollarSign, PieChart, BarChart2,
+  TrendingUp, DollarSign, PieChart,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy, Star,
   Activity, MessageSquare, UserCog, Egg, Send, QrCode,
 } from "lucide-react";
@@ -34,15 +34,13 @@ export const NAV_SECTIONS = [
       { path: "/health",            section: "health",            label: "Catatan Sakit",     icon: Heart,        desc: "Riwayat sakit & pengobatan" },
       { path: "/panduan-penyakit",  section: "panduan-penyakit",  label: "Panduan Penyakit",  icon: BookOpen,     desc: "Rujukan gejala & penanganan" },
       { path: "/breeding",          section: "breeding",          label: "Breeding & Telur",  icon: Baby,         desc: "Pasangan, telur, penetasan" },
-      { path: "/breeding-calendar", section: "breeding-calendar", label: "Kalender Breeding", icon: CalendarRange,desc: "Jadwal per pasangan" },
       { path: "/breeding-planner",  section: "breeding-planner",  label: "Produksi Indukan", icon: Egg,          desc: "Betina mana yang berproduksi, dan kandang mana yang membuat keturunannya bisa ditelusuri" },
       { path: "/incubator-readings",section: "breeding",          label: "Inkubator",         icon: Thermometer,  desc: "Suhu & kelembapan" },
       { path: "/family-tree",       section: "family-tree",       label: "Silsilah",          icon: GitBranch,    desc: "Garis keturunan" },
       { path: "/label-kura",        section: "tortoise",          label: "Cetak Label QR",    icon: QrCode,       desc: "Label 50×30mm per kandang, dipindai buka paspor" },
       { path: "/death-records",     section: "death-records",     label: "Catatan Kematian",  icon: Skull,        desc: "Riwayat & penyebab" },
       { path: "/kura-diam",         section: "kura-diam",         label: "Deteksi Kura Diam", icon: Clock,        desc: "Kura tanpa aktivitas" },
-      { path: "/breeder-ranking",   section: "breeding",          label: "Ranking Indukan",   icon: Trophy,       desc: "Peringkat produksi telur per indukan" },
-      { path: "/breeding-report",   section: "breeding-report",   label: "Laporan Breeding",  icon: BarChart2,    desc: "Rekap penetasan" },
+      { path: "/breeder-ranking",   section: "breeding",          label: "Ranking Indukan",   icon: Trophy,       desc: "Peringkat indukan, ringkasan telur & penetasan setahun — dulu terpisah sebagai Laporan Breeding" },
     ],
   },
   {

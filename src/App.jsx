@@ -38,7 +38,6 @@ import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
 import SOPPage from '@/pages/SOPPage';
 import PayrollReport from '@/pages/PayrollReport';
-import BreedingReport from '@/pages/BreedingReport';
 import DailyPayrollReport from '@/pages/DailyPayrollReport';
 import FinancePage from '@/pages/FinancePage';
 import InfoPage from '@/pages/InfoPage';
@@ -74,7 +73,6 @@ import PanduanPakanPage from '@/pages/PanduanPakanPage';
 import PanduanPenyakitPage from '@/pages/PanduanPenyakitPage';
 import PanduanPenyakitDetailPage from '@/pages/PanduanPenyakitDetailPage';
 import KuraDiamPage from '@/pages/KuraDiamPage';
-import BreedingCalendarPage from '@/pages/BreedingCalendarPage';
 import PakanHarianPage from '@/pages/PakanHarianPage';
 import TortoisePassport from '@/pages/TortoisePassport';
 import RiwayatKlusterPage from '@/pages/RiwayatKlusterPage';
@@ -105,7 +103,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/tortoise" element={<TortoiseList />} />
+        <Route path="/tortoise" element={<PilihTortoiseAtauKematian />} />
         <Route path="/breeding" element={<BreedingAndEggs />} />
         <Route path="/breeding/:id" element={<BreedingDetailPage />} />
         <Route path="/health" element={<HealthList />} />
@@ -113,7 +111,10 @@ const AuthenticatedApp = () => {
         <Route path="/users" element={<UserManagement />} />
         <Route path="/sop" element={<SOPPage />} />
         <Route path="/payroll" element={<PayrollReport />} />
-        <Route path="/breeding-report" element={<BreedingReport />} />
+        {/* Laporan Breeding menyatu ke Ranking Indukan 30-09-2026:
+            keduanya membaca sepuluh catatan yang sama dan menjawab
+            pertanyaan yang sama. Tautan lama tetap bekerja. */}
+        <Route path="/breeding-report" element={<Navigate to="/breeder-ranking" replace />} />
         <Route path="/feed-stock" element={<Navigate to="/stok-unified" replace />} />
         <Route path="/daily-payroll" element={<DailyPayrollReport />} />
         {/*
@@ -203,7 +204,10 @@ const AuthenticatedApp = () => {
         <Route path="/panduan-penyakit" element={<PanduanPenyakitPage />} />
         <Route path="/panduan-penyakit/:id" element={<PanduanPenyakitDetailPage />} />
         <Route path="/kura-diam" element={<KuraDiamPage />} />
-        <Route path="/breeding-calendar" element={<BreedingCalendarPage />} />
+        {/* Kalender Breeding menyatu jadi tab "Timeline" di Breeding & Telur
+            pada 30-09-2026. Isinya tidak tumpang tindih dengan tab lain —
+            yang dihapus hanya pintunya yang terpisah di menu. */}
+        <Route path="/breeding-calendar" element={<Navigate to="/breeding?tab=timeline" replace />} />
         <Route path="/riwayat-kluster" element={<RiwayatKlusterPage />} />
         <Route path="/pengaturan-poin" element={<PengaturanPoinPage />} />
         <Route path="/rempesan" element={<RempesanPage />} />
@@ -225,6 +229,30 @@ const AuthenticatedApp = () => {
  * datar akan membuang parameter itu dan formulirnya tidak pernah terbuka —
  * persis keadaan sebelum ini, hanya dengan sebab yang berbeda.
  */
+/**
+ * `/tortoise?tab=kematian` -> `/death-records`.
+ *
+ * Tab "Kematian" di Daftar Kura dan halaman Catatan Kematian menampilkan hal
+ * yang sama dari sumber yang sama, dan tabnya versi tipis: nama, kandang
+ * terakhir, tanggal, penyebab. Halamannya menambahkan spesies, jenis kelamin,
+ * tanggal lahir, berat terakhir, riwayat kesehatan, saringan tahun/penyebab,
+ * dan satu-satunya formulir untuk MENCATAT kematian.
+ *
+ * Lebih buruk lagi: tab itu membaca entity `DeathRecord` yang berisi NOL
+ * catatan, jadi petanya selalu kosong dan ia selalu jatuh ke kolom di
+ * `Tortoise` — kueri yang tidak pernah menghasilkan apa pun, di halaman yang
+ * paling sering dibuka.
+ *
+ * Tabnya dibuang, alamatnya tetap bekerja.
+ */
+function PilihTortoiseAtauKematian() {
+  const { search } = useLocation();
+  if (new URLSearchParams(search).get("tab") === "kematian") {
+    return <Navigate to="/death-records" replace />;
+  }
+  return <TortoiseList />;
+}
+
 function AlihkanKandang() {
   const { search } = useLocation();
   const id = new URLSearchParams(search).get("edit");

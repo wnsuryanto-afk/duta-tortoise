@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, Skull, ShoppingBag, HeartPulse, RefreshCw } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, ShoppingBag, HeartPulse, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/common/PageHeader";
 import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
@@ -75,7 +75,9 @@ export default function TortoiseList() {
     tabnya bisa dikirim ke orang lain.
   */
   const [searchParams, setSearchParams] = useSearchParams();
-  const TAB_SAH = ["kura", "kandang", "karantina", "kematian", "terjual"];
+  // "kematian" TIDAK ada di sini lagi — ia mengalihkan ke /death-records.
+  // Lihat AlihkanKeKematian di bawah untuk sebabnya.
+  const TAB_SAH = ["kura", "kandang", "karantina", "terjual"];
   const tabDariUrl = searchParams.get("tab");
   const mainTab = TAB_SAH.includes(tabDariUrl) ? tabDariUrl : "kura";
   const setMainTab = (nilai) => {
@@ -134,10 +136,6 @@ export default function TortoiseList() {
   const { data: enclosures = [] } = useQuery({
     queryKey: ["enclosures"],
     queryFn: () => base44.entities.Enclosure.list("-created_date", 200),
-  });
-  const { data: deathRecords = [] } = useQuery({
-    queryKey: ["death-records"],
-    queryFn: () => base44.entities.DeathRecord.list("-death_date", 200),
   });
 
   const deleteMutation = useMutation({
@@ -381,10 +379,6 @@ export default function TortoiseList() {
           <TabsTrigger value="karantina" className="flex-1 sm:flex-none gap-1.5">
             <CalendarX className="w-4 h-4" /> Karantina
             <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.in_quarantine === true).length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="kematian" className="flex-1 sm:flex-none gap-1.5">
-            <Skull className="w-4 h-4" /> Kematian
-            <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "mati" || t.is_archived).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="terjual" className="flex-1 sm:flex-none gap-1.5">
             <ShoppingBag className="w-4 h-4" /> Terjual
@@ -945,63 +939,6 @@ export default function TortoiseList() {
         </TabsContent>
 
         {/* ══════════ TAB KEMATIAN ══════════ */}
-        <TabsContent value="kematian" className="mt-5 space-y-4">
-          {(() => {
-            const deadTortoises = tortoises.filter(t => t.status === "mati");
-            // Gabungkan data deathRecord ke tortoise berdasarkan tortoise_id
-            const deathMap = {};
-            deathRecords.forEach(r => { if (r.tortoise_id) deathMap[r.tortoise_id] = r; });
-
-            return (
-              <>
-                <p className="text-sm text-muted-foreground">{deadTortoises.length} catatan kematian</p>
-                {deadTortoises.length === 0 ? (
-                  <EmptyState
-                    type="sop"
-                    customTitle="Belum Ada Catatan Kematian"
-                    customDescription="Belum ada catatan kematian tortoise"
-                  />
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {deadTortoises.map(t => {
-                      const dr = deathMap[t.id];
-                      const deathDate = dr?.death_date || t.death_date;
-                      const deathCause = dr?.cause_of_death || t.death_cause;
-                      const recordedBy = dr?.recorded_by;
-                      return (
-                        <Card key={t.id} className="border-red-200 bg-red-50/30">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center justify-between">
-                              <span>{t.name}</span>
-                              <Badge variant="destructive" className="text-xs">Mati</Badge>
-                            </CardTitle>
-                            {t.code && <p className="text-xs text-muted-foreground font-mono">{t.code}</p>}
-                          </CardHeader>
-                          <CardContent className="space-y-1.5">
-                            <p className="text-sm text-muted-foreground">
-                              Kandang terakhir: <span className="text-foreground">{t.enclosure || "—"}</span>
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Tanggal kematian: <span className="text-foreground">
-                                {deathDate ? new Date(deathDate).toLocaleDateString("id-ID") : "Tidak dicatat"}
-                              </span>
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Penyebab: <span className="text-foreground">{deathCause || "—"}</span>
-                            </p>
-                            {recordedBy && (
-                              <p className="text-xs text-muted-foreground">Dicatat oleh: {recordedBy}</p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </TabsContent>
 
         {/* ══════════ TAB TERJUAL ══════════ */}
         <TabsContent value="terjual" className="mt-5">

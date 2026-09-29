@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import EggQRPreview from "@/components/breeding/EggQRPreview";
 import CatatKawinDialog from "@/components/breeding/CatatKawinDialog";
 import DaftarPasangan from "@/components/breeding/DaftarPasangan";
 import InkubatorBelumDipantau from "@/components/breeding/InkubatorBelumDipantau";
+import TimelineBatch from "@/components/breeding/TimelineBatch";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
@@ -134,7 +136,25 @@ export default function BreedingAndEggs() {
   const [labelBreedings, setLabelBreedings] = useState([]);
   const [editIncubator, setEditIncubator] = useState(null);
   const [showIncubatorForm, setShowIncubatorForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("pembiakan");
+  /*
+    Tab disimpan di ALAMAT, bukan hanya di useState.
+
+    Dibutuhkan sejak Kalender Breeding menyatu jadi tab di sini (30-09-2026):
+    tanpa ini, `/breeding-calendar` tidak punya tempat untuk mendarat dan
+    tautan lama akan membuka tab bawaan, bukan timeline yang dicari orang.
+    Manfaat sampingannya sama dengan di Daftar Kura: tombol kembali peramban
+    bekerja antar tab, dan alamat tabnya bisa dikirim ke orang lain.
+  */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const TAB_SAH = ["pasangan", "pembiakan", "telur", "inkubator", "riwayat", "timeline", "statistik"];
+  const tabDariUrl = searchParams.get("tab");
+  const activeTab = TAB_SAH.includes(tabDariUrl) ? tabDariUrl : "pembiakan";
+  const setActiveTab = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai === "pembiakan") next.delete("tab");
+    else next.set("tab", nilai);
+    setSearchParams(next, { replace: true });
+  };
   // Pemindai label telur (QR "BREED:<id>") langsung dari modul Breeding,
   // sebelumnya hanya tersedia di halaman Gudang / Stok Pakan.
   const [showScanner, setShowScanner] = useState(false);
@@ -310,12 +330,13 @@ export default function BreedingAndEggs() {
             terbaca — "Pasangan" dan "Pembiakan" tercetak di atas satu sama
             lain. `h-auto` diperlukan karena tinggi bawaan TabsList dipatok
             untuk satu baris. */}
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 h-auto gap-1">
           <TabsTrigger value="pasangan">Pasangan</TabsTrigger>
           <TabsTrigger value="pembiakan">Pembiakan</TabsTrigger>
           <TabsTrigger value="telur">Telur & Inkubasi</TabsTrigger>
           <TabsTrigger value="inkubator">Inkubator</TabsTrigger>
           <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="statistik">Statistik</TabsTrigger>
         </TabsList>
 
@@ -820,6 +841,13 @@ export default function BreedingAndEggs() {
         </TabsContent>
 
         {/* TAB 5: STATISTIK */}
+        {/* Timeline per batch — dulu halaman /breeding-calendar. `batches`
+            dilempar dari sini supaya sepuluh catatan yang sama tidak ditarik
+            dua kali dalam satu halaman. */}
+        <TabsContent value="timeline" className="mt-4">
+          <TimelineBatch batches={breedings} />
+        </TabsContent>
+
         <TabsContent value="statistik" className="space-y-4">
           <BreedingStatsSection breedings={breedings} />
         </TabsContent>

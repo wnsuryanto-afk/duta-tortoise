@@ -159,14 +159,84 @@ ditandai "tidak cocok dengan kandang sekarang" di halaman Produksi Indukan.
 
 ---
 
-## Ringkasan usul
+## Ringkasan usul — SEMUANYA SUDAH DIKERJAKAN
 
-| Prioritas | Tindakan | Hasil |
-|---|---|---|
-| **1** | Penagih pemantauan inkubator | **sudah dikerjakan** |
-| 2 | Laporan Breeding → Ranking Indukan | −245 baris, −1 menu |
-| 3 | Tab Kematian → alihkan ke halaman | −1 tampilan kembar, −1 pembacaan entity kosong |
-| 4 | Kalender Breeding jadi tab di Breeding & Telur | −1 menu, timeline tetap utuh |
+Pemilik memutuskan 30 September 2026: kerjakan semuanya.
 
-Nomor 2–4 keputusan pemilik: ketiganya mengubah jalan masuk yang sudah dihafal
-orang. Nomor 1 tidak, karena ia hanya menambah, tidak memindahkan apa pun.
+| Tindakan | Hasil |
+|---|---|
+| Penagih pemantauan inkubator | ditambahkan di halaman Breeding & Telur |
+| Laporan Breeding → Ranking Indukan | **−245 baris, −1 menu** |
+| Tab Kematian → alihkan ke halamannya | **−1 tampilan kembar, −1 kueri entity kosong** |
+| Kalender Breeding → tab "Timeline" | **−1 menu**, timeline tetap utuh |
+
+**Area Kura: 13 halaman → 10.**
+
+---
+
+## Yang dipindahkan, bukan dibuang
+
+### Laporan Breeding → Ranking Indukan
+
+| Dari Laporan Breeding | Ke mana |
+|---|---|
+| Sesi bertelur, total telur, berhasil menetas, tingkat penetasan | **kartu ringkasan** di atas Ranking Indukan |
+| Kolom "Induk Sakit (90 hari)" | baris kartu pasangan: *"⚕️ N clutch saat induk sakit"* |
+| Kolom "Tgl Bertelur Terakhir" | baris kartu pasangan: *"🗓️ terakhir 26 Sep 2026"* |
+| Grafik telur vs menetas per bulan | **tidak disalin** — bentuk yang sama sudah hidup sebagai `BreedingStatsSection` di tab "Statistik". Menyalinnya berarti membuat salinan ketiga dari gambar yang sama; kartu "Tingkat penetasan" menautkannya. |
+
+### Tab Kematian → halaman Catatan Kematian
+
+Tabnya versi tipis (nama, kandang, tanggal, penyebab); halamannya menambah
+spesies, jenis kelamin, tanggal lahir, berat terakhir, riwayat kesehatan,
+saringan tahun/penyebab, dan satu-satunya formulir untuk **mencatat** kematian.
+Tidak ada yang hilang — yang hilang hanya versi tipisnya.
+
+Ikut terbuang: kueri `DeathRecord.list()` di Daftar Kura. Entity itu berisi
+**nol catatan** dan satu-satunya pembacanya tab yang kini tidak ada — 200 baris
+ditarik setiap kali halaman paling sering dibuka itu dimuat, untuk peta yang
+selalu kosong.
+
+### Kalender Breeding → tab "Timeline"
+
+Isinya **tidak** tumpang tindih dengan tab lain: timeline per batch (kawin →
+bertelur → perkiraan menetas → menetas) benar-benar berbeda dari kisi telur di
+tab "Riwayat". Yang dihapus hanya pintunya yang terpisah.
+
+Sebagai tab ia menerima `batches` dari induknya, jadi sepuluh catatan yang sama
+tidak ditarik dua kali dalam satu halaman. Penjaga aksesnya (`isManagerLevel`)
+dibiarkan utuh supaya tetap ikut kalau kelak dipakai di tempat lain.
+
+---
+
+## Yang diperiksa sebelum menghapus
+
+**Izin.** Setiap peran yang punya bagian `breeding-report` juga punya
+`breeding` (owner, admin, manajer, investor); setiap peran yang punya
+`breeding-calendar` adalah manajer dan punya `breeding` (owner, admin,
+manajer). **Tidak ada satu orang pun yang kehilangan akses.**
+
+**Tautan lama.** `RingkasanPagi` menunjuk `/breeding-calendar`; diarahkan
+langsung ke `/breeding?tab=timeline` supaya tidak perlu lompat dua kali.
+
+**Sepuluh pengalihan diuji di browser sungguhan, semuanya lulus:**
+
+| Alamat | Mendarat di |
+|---|---|
+| `/breeding-report` | `/breeder-ranking` |
+| `/tortoise?tab=kematian` | `/death-records` |
+| `/tortoise?tab=kandang` | tetap Daftar Kura, tab Kandang |
+| `/tortoise` | tetap Daftar Kura |
+| `/enclosure` | `/tortoise?tab=kandang` (pengalihan 29 Sep masih utuh) |
+| `/enclosure?edit=enc-N` | `/tortoise?tab=kandang&edit=enc-N` |
+| `/breeding-calendar` | `/breeding?tab=timeline` |
+| `/breeding` | tab bawaan "pembiakan" |
+| `/breeding?tab=statistik` | tab Statistik |
+| `/breeding?tab=ngawur` | jatuh ke tab bawaan, **bukan layar kosong** |
+
+Dua yang terakhir sengaja: tab yang disimpan di alamat harus punya daftar sah,
+kalau tidak satu salah ketik menghasilkan halaman kosong tanpa pesan.
+
+**Penjaga repo.** Lima penjaga gagal sebelum dan sesudah perubahan ini —
+persis yang sama (`cek-impor`, `cek-kolom-hantu`, `cek-batch`, `cek-batas`,
+`cek-laporan`), semuanya sudah ada lebih dulu. `cek-kembar` tetap hijau.

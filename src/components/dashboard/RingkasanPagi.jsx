@@ -283,7 +283,7 @@ export default function RingkasanPagi({ bagian = "semua" }) {
       {/* 1.6 BATCH BREEDING SEGERA — perkiraan dua minggu ke depan, bukan
           pekerjaan hari ini */}
       {adaTelaah && segeraBatches.length > 0 && (
-        <Link to="/breeding-calendar" className="block bg-amber-50 border border-amber-300 rounded-xl p-3 hover:bg-amber-100 transition-colors">
+        <Link to="/breeding?tab=timeline" className="block bg-amber-50 border border-amber-300 rounded-xl p-3 hover:bg-amber-100 transition-colors">
           <p className="text-sm font-bold text-amber-800">
             🥚 Perkiraan menetas/bertelur dalam 2 minggu: {segeraBatches.length} batch
           </p>

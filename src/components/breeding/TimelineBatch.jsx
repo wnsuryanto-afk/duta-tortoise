@@ -1,7 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { Loader2, CalendarRange, AlertCircle, ChevronRight } from "lucide-react";
+import { Loader2, AlertCircle, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -160,15 +158,24 @@ function SegeraRow({ batch, now, onClick }) {
   );
 }
 
-export default function BreedingCalendarPage() {
+/**
+ * Timeline perkembangan batch breeding — dulu halaman `/breeding-calendar`.
+ *
+ * Disatukan sebagai tab di halaman Breeding & Telur pada 30 September 2026.
+ * Isinya sendiri TIDAK tumpang tindih dengan tab lain — timeline per batch
+ * (kawin → bertelur → perkiraan menetas → menetas) benar-benar berbeda dari
+ * kisi telur di tab "Riwayat". Yang dihapus hanya jalan masuknya yang
+ * terpisah: sepuluh catatan yang sama tidak butuh empat pintu di menu.
+ *
+ * Halaman aslinya membaca `Breeding` sendiri. Sebagai tab ia menerima
+ * `batches` dari induknya, supaya sepuluh baris itu tidak ditarik dua kali
+ * dalam satu halaman.
+ */
+export default function TimelineBatch({ batches }) {
   const { role, isLoading: userLoading } = useCurrentUser();
   const [selectedBatch, setSelectedBatch] = useState(null);
-
-  const { data: breedings = [], isLoading } = useQuery({
-    queryKey: ["owner-breedings"],
-    queryFn: () => base44.entities.Breeding.list("-created_date", 200),
-    staleTime: 5 * 60 * 1000,
-  });
+  // Data datang dari induknya — lihat komentar di atas.
+  const breedings = batches || [];
 
   const now = new Date();
 
@@ -179,7 +186,7 @@ export default function BreedingCalendarPage() {
     return { activeBatches: active, historyBatches: history, segeraBatches: segera };
   }, [breedings]);
 
-  if (userLoading || isLoading) {
+  if (userLoading) {
     return (
       <div className="flex items-center justify-center py-32">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -187,21 +194,19 @@ export default function BreedingCalendarPage() {
     );
   }
 
+  // Penjaga akses dibiarkan: tab ini ikut halaman Breeding & Telur, tetapi
+  // isinya tetap milik manajemen. Kalau kelak tab ini dipakai di tempat lain,
+  // penjaganya sudah ikut.
   if (!isManagerLevel(role)) {
-    return <AccessDenied message="Kalender Breeding hanya untuk Owner, Manajer, dan Admin." />;
+    return <AccessDenied message="Timeline batch hanya untuk Owner, Manajer, dan Admin." />;
   }
 
+
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-5xl mx-auto">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold font-heading flex items-center gap-2">
-          <CalendarRange className="w-6 h-6 text-primary" /> Kalender Breeding
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Timeline perkembangan batch breeding dari kawin hingga menetas. Tanggal perkiraan ditandai ±.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">
+        Timeline perkembangan batch dari kawin hingga menetas. Tanggal perkiraan ditandai ±.
+      </p>
 
       {/* SEGERA */}
       {segeraBatches.length > 0 && (

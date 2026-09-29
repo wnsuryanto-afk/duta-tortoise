@@ -11,10 +11,21 @@ import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { ringkasProduksi, adaHasil } from "@/lib/hasilInkubasi";
 import { kepastianAyahClutch } from "@/lib/produksiBetina";
+import { parentHasSickHistory } from "@/lib/parentHealthUtils";
+import KartuAngka from "@/components/ui/kartu-angka";
+import { Egg as EggIcon, Percent, Baby, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { HelpCircle } from "lucide-react";
 
 const currentYear = new Date().getFullYear();
+
+/** Tanggal pendek terbaca; teks apa adanya bila tidak terbaca. */
+function tglSingkat(s) {
+  try {
+    return new Date(s).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return s;
+  }
+}
 
 function HatchRateBadge({ rate }) {
   if (rate >= 80) return <span className="text-xs font-bold text-green-700 bg-green-100 border border-green-200 rounded-full px-2 py-0.5">{rate.toFixed(1)}%</span>;
@@ -142,6 +153,12 @@ function RankingList({ pairs, breedings, label }) {
                 <span>🐢 {p.totalHatched} menetas</span>
                 <span>📦 {p.totalClutch} clutch</span>
                 <span>📅 {p.clutchesThisYear} clutch tahun ini</span>
+                {p.terakhirBertelur && <span>🗓️ terakhir {tglSingkat(p.terakhirBertelur)}</span>}
+                {p.clutchIndukSakit > 0 && (
+                  <span className="text-amber-700 dark:text-amber-400">
+                    ⚕️ {p.clutchIndukSakit} clutch saat induk sakit
+                  </span>
+                )}
               </div>
               <div className="mt-2 flex items-center gap-3">
                 <HatchRateBadge rate={p.hatchRate} />
@@ -168,6 +185,14 @@ export default function BreederRankingPage() {
   // satu jantan — kandang N sendirian menampung sebelas — jadi untuk clutch
   // dari kandang itu nama ayahnya tidak bisa diperiksa oleh siapa pun.
   // Halaman ini tidak berhenti memeringkat; ia berhenti diam soal itu.
+  // Riwayat kesehatan dibaca untuk kolom "induk sakit" — satu-satunya hal
+  // yang dulu hanya ada di halaman Laporan Breeding, yang kini menyatu ke
+  // sini. Lihat komentar di atas berkas ini.
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ["breeding-ranking-health"],
+    queryFn: () => base44.entities.HealthRecord.list("-date", 1000),
+    staleTime: 10 * 60 * 1000,
+  });
   const { data: tortoises = [] } = useQuery({
     queryKey: ["tortoises-ranking"],
     queryFn: () => base44.entities.Tortoise.list(),
@@ -218,6 +243,18 @@ export default function BreederRankingPage() {
 
       const score = (hatchRate * 0.4) + (normalizedEggs * 0.3) + (normalizedClutch * 0.3);
 
+      // Dua hal yang dibawa dari halaman Laporan Breeding saat keduanya
+      // disatukan: berapa clutch yang induknya sedang sakit pada saat
+      // bertelur, dan kapan pasangan ini terakhir bertelur.
+      const clutchIndukSakit = p.clutches.filter(
+        (c) => parentHasSickHistory(c.male_id, c.female_id, healthRecords, c.egg_laying_date).affected,
+      ).length;
+      const terakhirBertelur = p.clutches
+        .map((c) => c.egg_laying_date)
+        .filter(Boolean)
+        .sort()
+        .slice(-1)[0] || null;
+
       return {
         maleName: p.maleName,
         femaleName: p.femaleName,
@@ -226,6 +263,8 @@ export default function BreederRankingPage() {
         totalHatched,
         hatchRate,
         clutchesThisYear,
+        clutchIndukSakit,
+        terakhirBertelur,
         score,
       };
     }).sort((a, b) => b.score - a.score);
@@ -287,6 +326,31 @@ export default function BreederRankingPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Ringkasan tahun — dibawa dari halaman Laporan Breeding saat keduanya
+          disatukan. Grafik bulanannya TIDAK ikut disalin: bentuk yang sama
+          sudah hidup sebagai BreedingStatsSection di tab "Statistik" halaman
+          Breeding & Telur, dan menyalinnya berarti membuat salinan ketiga
+          dari gambar yang sama. Tautannya ada di bawah. */}
+      {(() => {
+        const telur = filtered.reduce((n, b) => n + (Number(b.egg_count) || 0), 0);
+        const menetas = filtered.reduce((n, b) => n + (Number(b.hatched_count) || 0), 0);
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <KartuAngka label="Sesi bertelur" nilai={filtered.length} ikon={Baby} nada="netral" />
+            <KartuAngka label="Total telur" nilai={telur} ikon={EggIcon} nada="netral" />
+            <KartuAngka label="Berhasil menetas" nilai={menetas} ikon={Baby} nada={menetas > 0 ? "baik" : "netral"} />
+            <KartuAngka
+              label="Tingkat penetasan"
+              nilai={telur > 0 ? `${((menetas / telur) * 100).toFixed(1)}%` : "—"}
+              sub="grafik bulanan di tab Statistik"
+              ikon={Percent}
+              nada="utama"
+              ke="/breeding"
+            />
+          </div>
+        );
+      })()}
 
       {/* Formula info */}
       <div className="bg-muted/50 border border-border rounded-xl p-3 text-xs text-muted-foreground flex items-start gap-2">
