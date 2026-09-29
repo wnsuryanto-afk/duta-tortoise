@@ -268,27 +268,30 @@ export default function MonthlySalaryPage() {
         <Card className="p-4 bg-green-50 border-green-200">
           <div className="flex items-center gap-3">
             <Wallet className="w-7 h-7 text-green-600 opacity-70" />
-            <div>
+            {/* `min-w-0` di kolomnya + `break-words` di angkanya: diukur di
+                browser, kartu-kartu ini meluber di lebar 640px begitu totalnya
+                mencapai ratusan juta. Dua kelas ini yang menahannya. */}
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total Gaji Bersih</p>
-              <p className="text-base font-bold text-green-700">{fmtRp(totalNet)}</p>
+              <p className="text-base font-bold text-green-700 break-words tabular-nums">{fmtRp(totalNet)}</p>
             </div>
           </div>
         </Card>
         <Card className="p-4 bg-amber-50 border-amber-200">
           <div className="flex items-center gap-3">
             <Star className="w-7 h-7 text-amber-500 opacity-70" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total KPI</p>
-              <p className="text-xl font-bold text-amber-700">{fmtRp(salaryData.reduce((s,e)=>s+e.kpiValue,0))}</p>
+              <p className="text-xl font-bold text-amber-700 break-words tabular-nums">{fmtRp(salaryData.reduce((s,e)=>s+e.kpiValue,0))}</p>
             </div>
           </div>
         </Card>
         <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="flex items-center gap-3">
             <Clock className="w-7 h-7 text-blue-600 opacity-70" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total Lembur</p>
-              <p className="text-xl font-bold text-blue-700">{fmtRp(salaryData.reduce((s,e)=>s+e.overtimePay,0))}</p>
+              <p className="text-xl font-bold text-blue-700 break-words tabular-nums">{fmtRp(salaryData.reduce((s,e)=>s+e.overtimePay,0))}</p>
             </div>
           </div>
         </Card>

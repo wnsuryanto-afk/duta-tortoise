@@ -233,18 +233,22 @@ export default function PayrollReport() {
         <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
           <div className="flex items-center gap-3">
             <Star className="w-8 h-8 text-amber-500 fill-current opacity-70" />
-            <div>
+            {/* Diukur di browser: di lebar 640px kisi ini jadi tiga kolom
+                ~197px, dan angka ratusan juta meluber keluar kartunya.
+                `min-w-0` membolehkan kolomnya menyusut, `break-words`
+                membolehkan angkanya melipat. */}
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total Poin</p>
-              <p className="text-2xl font-heading font-bold text-amber-700">{totalPoints.toLocaleString()}</p>
+              <p className="text-2xl font-heading font-bold text-amber-700 break-words tabular-nums">{totalPoints.toLocaleString()}</p>
             </div>
           </div>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-100 border-green-200">
           <div className="flex items-center gap-3">
             <Gift className="w-8 h-8 text-green-600 opacity-70" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total Bonus</p>
-              <p className="text-xl font-heading font-bold text-green-700">Rp {totalBonus.toLocaleString("id-ID")}</p>
+              <p className="text-xl font-heading font-bold text-green-700 break-words tabular-nums">Rp {totalBonus.toLocaleString("id-ID")}</p>
             </div>
           </div>
         </Card>
