@@ -1,116 +1,116 @@
 {
   "name": "Attendance",
-  "type": "object",
   "properties": {
+    "check_in": {
+      "type": "string"
+    },
+    "check_in_lat": {
+      "description": "Latitude saat check in",
+      "type": "number"
+    },
+    "check_in_lng": {
+      "description": "Longitude saat check in",
+      "type": "number"
+    },
+    "check_out": {
+      "type": "string"
+    },
+    "check_out_lat": {
+      "description": "Latitude saat check out",
+      "type": "number"
+    },
+    "check_out_lng": {
+      "description": "Longitude saat check out",
+      "type": "number"
+    },
+    "checkout_location_verified": {
+      "description": "Apakah lokasi saat pulang ada di dalam area. Pasangan dari location_verified yang mencatat lokasi saat datang; sudah ditulis dua layar tetapi field-nya belum pernah ada.",
+      "type": "boolean"
+    },
+    "date": {
+      "format": "date",
+      "type": "string"
+    },
+    "employee_email": {
+      "type": "string"
+    },
     "employee_id": {
       "type": "string"
     },
     "employee_name": {
       "type": "string"
     },
-    "employee_email": {
-      "type": "string"
-    },
-    "date": {
-      "type": "string",
-      "format": "date"
-    },
-    "check_in": {
-      "type": "string"
-    },
-    "check_out": {
-      "type": "string"
-    },
-    "check_in_lat": {
-      "type": "number",
-      "description": "Latitude saat check in"
-    },
-    "check_in_lng": {
-      "type": "number",
-      "description": "Longitude saat check in"
-    },
-    "check_out_lat": {
-      "type": "number",
-      "description": "Latitude saat check out"
-    },
-    "check_out_lng": {
-      "type": "number",
-      "description": "Longitude saat check out"
-    },
-    "selfie_checkin_url": {
-      "type": "string",
-      "description": "URL foto selfie saat check in"
-    },
-    "selfie_checkout_url": {
-      "type": "string",
-      "description": "URL foto selfie saat check out"
-    },
-    "checkout_location_verified": {
-      "type": "boolean",
-      "description": "Apakah lokasi saat pulang ada di dalam area. Pasangan dari location_verified yang mencatat lokasi saat datang; sudah ditulis dua layar tetapi field-nya belum pernah ada."
-    },
-    "location_verified": {
-      "type": "boolean",
+    "excluded_from_reports": {
       "default": false,
-      "description": "Apakah lokasi terverifikasi dalam radius kandang"
+      "description": "Dikecualikan dari laporan (owner only)",
+      "type": "boolean"
+    },
+    "is_test_data": {
+      "default": false,
+      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan",
+      "type": "boolean"
     },
     "late_minutes": {
-      "type": "number",
       "default": 0,
-      "description": "Menit setelah jam mulai shift. Sudah ada sejak awal tetapi bernilai 0 di seluruh 117 baris yang pernah tercatat \u2014 satu-satunya yang pernah mengisinya adalah fungsi server autoAttendance, dan fungsi itu belum pernah membuat satu baris pun. Sejak sekarang diisi juga oleh tombol check-in."
+      "description": "Menit setelah jam mulai shift. Sudah ada sejak awal tetapi bernilai 0 di seluruh 117 baris yang pernah tercatat \u2014 satu-satunya yang pernah mengisinya adalah fungsi server autoAttendance, dan fungsi itu belum pernah membuat satu baris pun. Sejak sekarang diisi juga oleh tombol check-in.",
+      "type": "number"
+    },
+    "late_note": {
+      "description": "Keterangan yang ditulis sendiri oleh yang bersangkutan. Wajib untuk tugas_luar dan terlambat.",
+      "type": "string"
+    },
+    "late_photo_url": {
+      "description": "Foto bukti, wajib untuk cari_rumput dan ambil_sayur. Rumput dan sayur adalah barang yang bisa difoto; ban bocor tidak, karena itu alasan lain hanya menuntut keterangan tertulis.",
+      "type": "string"
     },
     "late_reason": {
-      "type": "string",
+      "description": "Alasan jam masuk melewati ambang (satu jam). cari_rumput, ambil_sayur dan tugas_luar adalah PEKERJAAN, bukan kelalaian; ketiganya tidak menambah maupun mengurangi upah harian \u2014 hanya menerangkan jam masuknya. Kosong pada baris lama, karena aplikasi memang belum pernah menanyakannya. PEMISAHAN 29-09-2026: dulu hanya ada cari_rumput, berlabel 'Cari rumput / sayur', dan penagih rempesan mengubah SETIAP baris itu menjadi trip berbayar. Pemilik memutuskan 29-09-2026 bahwa mengambil RUMPUT bukan trip \u2014 yang dibayar hanya perjalanan mengambil sayur. Karena satu pilihan tidak bisa menjawab dua hal yang berbeda upahnya, ambil_sayur dipisahkan. cari_rumput DIPERTAHANKAN dan tetap sah; ia tidak lagi ditagih sebagai trip.",
       "enum": [
         "cari_rumput",
+        "ambil_sayur",
         "tugas_luar",
         "terlambat"
       ],
-      "description": "Alasan jam masuk melewati ambang (satu jam). cari_rumput dan tugas_luar adalah PEKERJAAN, bukan kelalaian; keduanya tidak menambah maupun mengurangi upah \u2014 hanya menerangkan jam masuknya. Kosong pada baris lama, karena aplikasi memang belum pernah menanyakannya."
+      "type": "string"
     },
-    "late_note": {
-      "type": "string",
-      "description": "Keterangan yang ditulis sendiri oleh yang bersangkutan. Wajib untuk tugas_luar dan terlambat."
+    "location_verified": {
+      "default": false,
+      "description": "Apakah lokasi terverifikasi dalam radius kandang",
+      "type": "boolean"
     },
-    "late_photo_url": {
-      "type": "string",
-      "description": "Foto bukti, wajib untuk cari_rumput. Rumput adalah barang yang bisa difoto; ban bocor tidak, karena itu alasan lain hanya menuntut keterangan tertulis."
+    "notes": {
+      "type": "string"
     },
     "overtime_hours": {
-      "type": "number",
-      "default": 0
+      "default": 0,
+      "type": "number"
     },
-    "shift_start": {
-      "type": "string",
-      "description": "Jam mulai shift (HH:mm)"
+    "selfie_checkin_url": {
+      "description": "URL foto selfie saat check in",
+      "type": "string"
+    },
+    "selfie_checkout_url": {
+      "description": "URL foto selfie saat check out",
+      "type": "string"
     },
     "shift_end": {
-      "type": "string",
-      "description": "Jam selesai shift (HH:mm)"
+      "description": "Jam selesai shift (HH:mm)",
+      "type": "string"
+    },
+    "shift_start": {
+      "description": "Jam mulai shift (HH:mm)",
+      "type": "string"
     },
     "status": {
-      "type": "string",
+      "default": "hadir",
+      "description": "libur = jatah libur yang diambil sendiri oleh karyawan. Dibedakan dari HARI TANPA CATATAN: yang pertama berarti orangnya memang tidak masuk, yang kedua berarti absensinya belum diisi. Sampai 01-09-2026 keduanya terlihat sama, dan 6 hari Angsolo pada Agustus hilang senilai Rp 420.000 tanpa ada yang pernah memutuskan itu libur.",
       "enum": [
         "hadir",
         "izin",
         "sakit",
         "libur"
       ],
-      "description": "libur = jatah libur yang diambil sendiri oleh karyawan. Dibedakan dari HARI TANPA CATATAN: yang pertama berarti orangnya memang tidak masuk, yang kedua berarti absensinya belum diisi. Sampai 01-09-2026 keduanya terlihat sama, dan 6 hari Angsolo pada Agustus hilang senilai Rp 420.000 tanpa ada yang pernah memutuskan itu libur.",
-      "default": "hadir"
-    },
-    "notes": {
       "type": "string"
-    },
-    "excluded_from_reports": {
-      "type": "boolean",
-      "default": false,
-      "description": "Dikecualikan dari laporan (owner only)"
-    },
-    "is_test_data": {
-      "type": "boolean",
-      "default": false,
-      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan"
     }
   },
   "required": [
@@ -119,5 +119,6 @@
     "date",
     "check_in",
     "status"
-  ]
+  ],
+  "type": "object"
 }
