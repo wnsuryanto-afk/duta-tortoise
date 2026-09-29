@@ -125,8 +125,13 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
         ) : (
           <span className="w-4 mt-2 inline-block" />
         )}
-        <div
-          className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
+        {/* Simpul yang tidak dikenal memang tidak bisa ditekan — `disabled`
+            menyampaikan itu ke keyboard dan pembaca layar sekaligus,
+            sesuatu yang `cursor-pointer` yang dihilangkan tidak lakukan. */}
+        <button
+          type="button"
+          disabled={isUnknown || !onSelect}
+          className={`text-left flex items-center gap-2 p-2 rounded-lg border transition-all ${
             isUnknown
               ? "bg-muted border-border opacity-60"
               : isFocus
@@ -155,7 +160,7 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
             </div>
             {tortoise.code && <p className="text-xs text-muted-foreground">{tortoise.code}</p>}
           </div>
-        </div>
+        </button>
       </div>
 
       {expanded && hasParents && depth < maxDepth && (

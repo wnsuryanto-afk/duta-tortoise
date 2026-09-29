@@ -250,9 +250,10 @@ export default function UserManagement() {
               const joinDate = u.created_date ? format(new Date(u.created_date), "d MMM yyyy", { locale: id }) : "—";
 
               return (
-                <div
+                <button
+                  type="button"
                   key={u.id}
-                  className={`flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer ${isKicked ? "opacity-60" : ""}`}
+                  className={`w-full text-left flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer ${isKicked ? "opacity-60" : ""}`}
                   onClick={() => setSelectedUserId(u.id)}
                 >
                   {/* Avatar */}
@@ -282,7 +283,7 @@ export default function UserManagement() {
                     </Badge>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

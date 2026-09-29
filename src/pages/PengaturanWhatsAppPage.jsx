@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/components/ui/use-toast";
 import AccessDenied from "@/components/common/AccessDenied";
+import { propsTekan } from "@/lib/a11y";
 import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
   AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy, Sunrise,
@@ -1056,14 +1057,18 @@ export default function PengaturanWhatsAppPage() {
             <div className="space-y-1.5">
               <p className="text-xs font-semibold text-muted-foreground">Pilih Grup Tujuan:</p>
               {groupList.map((g, i) => (
+                // Tombol "salin ID" ada di dalam baris ini, jadi barisnya tidak
+                // boleh jadi <button>. `aria-pressed` menyampaikan grup mana
+                // yang sedang terpilih — yang selama ini hanya berupa warna.
                 <div
                   key={g.id || i}
+                  aria-pressed={groupId === g.id}
                   className={`flex items-center justify-between gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
                     groupId === g.id
                       ? "bg-green-50 border-green-400"
                       : "bg-background border-border hover:bg-muted/50"
                   }`}
-                  onClick={() => handleSelectGroup(g)}
+                  {...propsTekan(() => handleSelectGroup(g))}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{g.name || "(tanpa nama)"}</p>

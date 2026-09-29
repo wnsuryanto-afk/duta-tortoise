@@ -32,8 +32,9 @@ function BatchTimeline({ batch, now, onClick }) {
 
   if (!m.hasTimeline) {
     return (
-      <div
-        className="bg-card rounded-xl border border-border p-3 cursor-pointer hover:shadow-md transition-shadow"
+      <button
+        type="button"
+        className="w-full text-left bg-card rounded-xl border border-border p-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
         onClick={onClick}
       >
         <div className="flex items-center justify-between gap-2">
@@ -43,7 +44,7 @@ function BatchTimeline({ batch, now, onClick }) {
           </div>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${cfg.color}`}>{cfg.label}</span>
         </div>
-      </div>
+      </button>
     );
   }
 
@@ -54,8 +55,9 @@ function BatchTimeline({ batch, now, onClick }) {
   ];
 
   return (
-    <div
-      className={`bg-card rounded-xl border p-3 cursor-pointer hover:shadow-md transition-shadow ${isSegera ? "border-amber-300 ring-1 ring-amber-200" : "border-border"}`}
+    <button
+      type="button"
+      className={`w-full text-left bg-card rounded-xl border p-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all ${isSegera ? "border-amber-300 ring-1 ring-amber-200" : "border-border"}`}
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -102,7 +104,7 @@ function BatchTimeline({ batch, now, onClick }) {
           </div>
         ))}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -110,12 +112,13 @@ function HistoryCard({ batch, onClick }) {
   const cfg = STATUS_CONFIG[batch.status] || STATUS_CONFIG.selesai;
   const m = getBreedingMilestones(batch);
   return (
-    <div
-      className="bg-card rounded-xl border border-border p-3 cursor-pointer hover:shadow-md transition-shadow"
+    <button
+      type="button"
+      className="w-full text-left bg-card rounded-xl border border-border p-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <p className="text-sm font-semibold truncate">♀ {batch.female_name} × ♂ {batch.male_name}</p>
+        <p className="min-w-0 text-sm font-semibold truncate">♀ {batch.female_name} × ♂ {batch.male_name}</p>
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${cfg.color}`}>{cfg.label}</span>
       </div>
       <div className="grid grid-cols-3 gap-2 text-center">
@@ -135,7 +138,7 @@ function HistoryCard({ batch, onClick }) {
       <p className="text-[10px] text-muted-foreground mt-1.5">
         {m.hatch ? `Menetas ${fmtShort(m.hatch)}` : m.completed ? `Selesai ${fmtShort(m.completed)}` : ""}
       </p>
-    </div>
+    </button>
   );
 }
 

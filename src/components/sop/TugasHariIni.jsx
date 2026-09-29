@@ -38,6 +38,7 @@ import { pisahJudulTugas } from "@/lib/judulTugas";
 import { opsiPoin, hitungPemberian, poinTerpakaiHari, maksHarian } from "@/lib/poinInisiatif";
 import { peranPenyetuju, labelSebab } from "@/lib/persetujuanPoin";
 import InfoHint from "@/components/ui/info-hint";
+import { propsTekan } from "@/lib/a11y";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
@@ -1446,7 +1447,17 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
       : lewatHariIni ? "border-amber-300 bg-amber-50/60"
       : "border-gray-100 bg-card"
     } shadow-sm`}>
-      <div className={`flex items-start gap-3 p-3.5 ${!isIstirahat && !isAbsensi && !isLocked ? "cursor-pointer active:scale-[0.99]" : ""}`} onClick={handleClick}>
+      {/* Baris ini TIDAK bisa jadi <button>: di dalamnya sudah ada tombol foto,
+          tombol coba-lagi, kotak catatan, dan <label> pemilih berkas — tombol
+          di dalam tombol dilarang HTML. Jadi peran tombolnya dipasang tangan.
+          `aria-pressed` menyampaikan sesuatu yang selama ini hanya terlihat
+          mata: apakah tugas ini sudah dicentang. */}
+      <div
+        className={`flex items-start gap-3 p-3.5 rounded-2xl ${!isIstirahat && !isAbsensi && !isLocked ? "cursor-pointer active:scale-[0.99]" : ""}`}
+        aria-pressed={isChecked || isLocked}
+        aria-label={task.label}
+        {...propsTekan(handleClick)}
+      >
         <span className="text-xs font-bold text-muted-foreground w-5 text-center pt-0.5 flex-shrink-0">{idx + 1}</span>
         <span className="text-lg flex-shrink-0 leading-none">{task.icon}</span>
         <div className="flex-1 min-w-0">
@@ -1605,7 +1616,12 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
               : isAbsensi ? "border-border bg-muted"
               : requirePhoto ? "border-red-300 hover:border-red-400"
               : "border-border hover:border-green-400"
-            } ${(isSaving || isLocked) ? "opacity-60" : ""}`} onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving && !isLocked) handleClick(); }}>
+            } ${(isSaving || isLocked) ? "opacity-60" : ""}`}
+              // Kotak centang ini menjalankan aksi yang SAMA dengan barisnya.
+              // Disembunyikan dari pembaca layar supaya tidak diumumkan dua
+              // kali; statusnya sudah ada di `aria-pressed` baris di atas.
+              aria-hidden="true"
+              onClick={e => { e.stopPropagation(); if (!isIstirahat && !isAbsensi && !isSaving && !isLocked) handleClick(); }}>
               {(isChecked || isLocked) ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
             </div>
           )}

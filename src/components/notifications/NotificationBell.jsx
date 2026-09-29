@@ -9,6 +9,7 @@ import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
+import { propsTekan } from "@/lib/a11y";
 
 /**
  * NotificationBell — lonceng notifikasi.
@@ -337,9 +338,11 @@ export default function NotificationBell() {
                 const Icon = cfg.icon;
                 const borderColor = priorityBorder[notif.priority] || priorityBorder.rendah;
                 return (
+                  // Tidak bisa jadi <button>: tombol "singkirkan" ada di
+                  // dalamnya. Peran tombolnya dipasang tangan.
                   <div
                     key={notif.id}
-                    onClick={() => markRead(notif)}
+                    {...propsTekan(() => markRead(notif))}
                     className={cn(
                       "flex gap-3 px-4 py-3 border-b border-border/50 cursor-pointer hover:bg-muted/30 transition-colors border-l-4",
                       borderColor,

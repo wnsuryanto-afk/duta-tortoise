@@ -108,9 +108,10 @@ function RankingList({ pairs, breedings, label }) {
         </div>
       )}
       {pairs.map((p, i) => (
-        <div
+        <button
+          type="button"
           key={`${p.maleName}-${p.femaleName}`}
-          className="bg-card border border-border rounded-xl p-4 hover:shadow-card-hover transition-all cursor-pointer"
+          className="w-full text-left bg-card border border-border rounded-xl p-4 hover:shadow-card-hover hover:-translate-y-0.5 transition-all cursor-pointer"
           onClick={() => setSelected(p)}
         >
           <div className="flex items-start gap-3">
@@ -147,7 +148,7 @@ function RankingList({ pairs, breedings, label }) {
               </div>
             </div>
           </div>
-        </div>
+        </button>
       ))}
 
       <PairDetailModal pair={selected} history={breedings} onClose={() => setSelected(null)} />

@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import PageHeader from "@/components/common/PageHeader";
+import { propsTekan } from "@/lib/a11y";
 
 const typeConfig = {
   info: { color: "bg-blue-50 border-blue-200 text-blue-800", dot: "bg-blue-500", icon: Info, iconColor: "text-blue-500" },
@@ -275,9 +276,11 @@ export default function NotificationsPage() {
             const pCfg = priorityConfig[notif.priority] || priorityConfig.sedang;
             const Icon = cfg.icon;
             return (
+              // Tombol "singkirkan" ada di dalam baris ini, jadi barisnya
+              // tidak boleh jadi <button>. Peran tombolnya dipasang tangan.
               <div
                 key={notif.id}
-                onClick={() => markRead(notif)}
+                {...propsTekan(() => markRead(notif))}
                 className={`flex gap-3 p-4 rounded-xl border-l-4 border border-border cursor-pointer transition-all hover:shadow-sm ${pCfg.className} ${notif.is_read ? "bg-card opacity-75" : cfg.color}`}
               >
                 <div className="mt-0.5 flex-shrink-0">

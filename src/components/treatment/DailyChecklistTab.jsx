@@ -143,7 +143,14 @@ function TreatmentItemCard({ treat, tortoises, logs, onCheck, user, timeLabel })
 
   return (
     <Card className={`overflow-hidden ${allDone ? "border-green-400 bg-green-50/20" : ""}`}>
-      <div className="p-3 cursor-pointer" onClick={() => setExpanded(v => !v)}>
+      {/* `aria-expanded` ikut terbawa saat ini jadi tombol sungguhan: pembaca
+          layar akhirnya menyebutkan apakah bagian ini sedang terbuka. */}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        className="w-full text-left p-3 cursor-pointer"
+        onClick={() => setExpanded(v => !v)}
+      >
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             <span className="text-lg flex-shrink-0">{treat.emoji}</span>
@@ -168,7 +175,7 @@ function TreatmentItemCard({ treat, tortoises, logs, onCheck, user, timeLabel })
         <div className="h-1 bg-muted rounded-full overflow-hidden mt-2">
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${total > 0 ? (doneCount / total) * 100 : 0}%` }} />
         </div>
-      </div>
+      </button>
 
       {expanded && total > 0 && (
         <div className="px-3 pb-3 border-t">

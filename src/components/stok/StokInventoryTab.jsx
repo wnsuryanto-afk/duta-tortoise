@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode } from "lucide-react";
+import { Search, Plus, PlusCircle, MinusCircle, Pencil, Trash2, PackageOpen, AlertTriangle, Camera, X, Clock, CheckCircle2, Eye, Printer, QrCode, ChevronRight } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { canPerformAction } from "@/lib/permissions";
 import ModalCetakLabel from "@/components/label/ModalCetakLabel";
@@ -147,12 +147,20 @@ function PhotoUploadDialog({ item, onClose }) {
 
   return (
     <div className="space-y-4">
-      <div onClick={() => fileRef.current?.click()} className="cursor-pointer border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center h-40 gap-2 hover:bg-muted/40 transition-colors relative overflow-hidden">
+      {/* Kotak pilih-foto ini dulunya div ber-onClick: tidak bisa dijangkau
+          Tab, dan pembaca layar menyebutnya "grup". Sekarang tombol sungguhan.
+          Input berkasnya pindah KELUAR tombol — HTML melarang kendali formulir
+          di dalam tombol, walaupun kendalinya disembunyikan. */}
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        className="w-full cursor-pointer border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center h-40 gap-2 hover:bg-muted/40 transition-colors relative overflow-hidden"
+      >
         {preview ? <img src={preview} alt="" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : (
           <><Camera className="w-8 h-8 text-muted-foreground" /><p className="text-sm text-muted-foreground">Klik untuk pilih foto</p><p className="text-xs text-muted-foreground">JPG/PNG/WebP maks. 2MB</p></>
         )}
-        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
-      </div>
+      </button>
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
@@ -398,9 +406,14 @@ function ItemForm({ item, onClose }) {
       <div>
         <Label className="text-xs">Foto Item (opsional, maks. 2MB)</Label>
         <div className="flex items-center gap-3 mt-1">
-          <div onClick={() => fileRef.current?.click()} className="cursor-pointer w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted/50 flex items-center justify-center overflow-hidden hover:bg-muted/80 transition-colors flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            aria-label={photoPreview ? "Ganti foto item" : "Pilih foto item"}
+            className="cursor-pointer w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted/50 flex items-center justify-center overflow-hidden hover:bg-muted/80 transition-colors flex-shrink-0"
+          >
             {photoPreview ? <img src={photoPreview} alt="" className="w-full h-full object-cover" /> : <Camera className="w-6 h-6 text-muted-foreground" />}
-          </div>
+          </button>
           <div>
             <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} className="gap-1.5 text-xs">
               <Camera className="w-3.5 h-3.5" /> {photoPreview ? "Ganti Foto" : "Pilih Foto"}
@@ -749,16 +762,18 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
     <div className="space-y-4">
       {/* Alert: item wajib habis */}
       {showMandatoryAlert && (
-        <div
+        <button
+          type="button"
           onClick={() => { setStockFilter("habis"); setCatFilter("semua"); setSearch(""); }}
-          className="cursor-pointer flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-300 rounded-xl text-red-700 hover:bg-red-100 transition-colors"
+          className="w-full text-left cursor-pointer flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/60 transition-colors"
         >
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <div>
-            <p className="font-semibold text-sm">⚠️ {mandatoryEmpty} Item Wajib Stok Habis!</p>
-            <p className="text-xs opacity-80">Klik untuk filter item kritis — segera restok</p>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm break-words">{mandatoryEmpty} item wajib stok habis</p>
+            <p className="text-xs opacity-80">Tekan untuk menyaring item kritis — segera restok</p>
           </div>
-        </div>
+          <ChevronRight className="w-4 h-4 flex-shrink-0 ml-auto opacity-70" />
+        </button>
       )}
 
       {/* Filters + action bar */}
