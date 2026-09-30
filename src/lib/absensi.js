@@ -170,8 +170,26 @@ export async function catatCheckOut({ absensi, jam, lat, lng, adaLokasi, selfieU
   // Checklist boleh dititipkan pemanggil bila layarnya sudah memuatnya; kalau
   // tidak, dibaca sendiri di sini. Pemeriksaan bukti tidak boleh bergantung
   // pada layar mana yang kebetulan sudah memuat data yang tepat.
+  //
+  // Syaratnya `!harian`, BUKAN `harian === undefined`. Bedanya membayar
+  // uang sungguhan:
+  //
+  //   KeeperDashboard memuat checklist-nya dengan `all[0] || null`. Jadi
+  //   saat barisnya belum termuat, yang dititipkan ke sini `null` —
+  //   bukan `undefined`. Dengan syarat lama, pembacaan ulang DILEWATI,
+  //   `adaBuktiKerjaLembur(null)` menjawab "tidak tahu", dan lemburnya
+  //   dibayar tanpa satu pun bukti kerja.
+  //
+  //   Itu bukan dugaan. 23-09-2026 Angsolo pulang 18:52 dan tercatat
+  //   lembur 3 jam (Rp 30.000). Checklist hari itu ADA dan berisi 12
+  //   tugas, yang terakhir pukul 15:28 — tidak satu pun setelah jam
+  //   shift 16:00. Dijalankan dengan checklist aslinya, aturan ini
+  //   menjawab 0 jam. Yang tersimpan 3 jam.
+  //
+  // Aturannya sendiri tidak berubah sedikit pun; yang berubah, ia
+  // sekarang benar-benar dijalankan.
   let harian = checklist;
-  if (lemburKasar > 0 && harian === undefined) {
+  if (lemburKasar > 0 && !harian) {
     try {
       const cl = await base44.entities.DailyChecklist.filter({
         employee_email: absensi.employee_email,

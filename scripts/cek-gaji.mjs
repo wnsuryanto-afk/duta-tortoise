@@ -234,6 +234,68 @@ for (const [nama, dapat, harap] of janji) {
   }
 }
 
+/* ── 6. Aturan lembur: dua salinan, satu jawaban ───────────────────── */
+
+/*
+ * `jamLemburBerbukti` ada DUA KALI — src/lib/weeklySalaryUtils.js dan
+ * base44/shared/otomatis.ts — karena frontend dan backend berjalan di
+ * runtime berbeda dan tidak bisa saling mengimpor. Keduanya menulis
+ * OvertimeLog, dan OvertimeLog-lah yang dibayar.
+ *
+ * Bentuk kodenya SENGAJA berbeda (TypeScript, dan backend memakai
+ * jamDari() untuk mengurai waktunya), jadi cek-kembar yang membandingkan
+ * badan fungsi tidak bisa dipakai di sini. Yang harus sama bukan
+ * bentuknya melainkan JAWABANNYA — jadi keduanya dijalankan betulan atas
+ * kasus yang sama.
+ */
+const bandingLembur = [
+  ["pulang sebelum shift selesai",        { check_out: "15:30", shift_end: "16:00" }, ["15:00"], false],
+  ["lembur 1 jam, ada bukti kerja",       { check_out: "17:00", shift_end: "16:00" }, ["16:30"], false],
+  ["lembur 1 jam, TANPA bukti kerja",     { check_out: "17:00", shift_end: "16:00" }, ["15:00"], false],
+  ["dibulatkan ke 0,5 jam",               { check_out: "17:20", shift_end: "16:00" }, ["17:10"], false],
+  ["hanya centang absensi setelah shift", { check_out: "17:00", shift_end: "16:00" }, ["16:30"], true],
+  ["23-09-2026 Angsolo, tugas sampai 15:28",
+   { check_out: "18:52", shift_end: "16:00" },
+   ["09:12", "11:42", "13:38", "14:50", "15:28"], false],
+];
+
+bundel("base44/shared/otomatis.ts", "otomatis.cjs");
+bundel("src/lib/weeklySalaryUtils.js", "upah.cjs");
+const be = await import("file://" + join(dir, "otomatis.cjs")).then((m) => m.default || m);
+const fe = await import("file://" + join(dir, "upah.cjs")).then((m) => m.default || m);
+
+for (const [nama, att, jam, absensiSaja] of bandingLembur) {
+  const cl = { completed_tasks: jam.map((j) => ({
+    task_title: absensiSaja ? "Absensi jam pulang" : "Kebersihan E1",
+    recorded_at: j,
+  })) };
+  const a = fe.jamLemburBerbukti(att, cl);
+  const b = be.jamLemburBerbukti(att, cl);
+  if (a !== b) {
+    temuan.push(`jamLemburBerbukti berselisih pada "${nama}": depan ${a} jam, belakang ${b} jam`);
+  }
+}
+
+/*
+ * Dan satu janji yang bukan soal kembaran: catatCheckOut WAJIB membaca
+ * ulang checklist-nya saat pemanggil tidak membawanya — apa pun bentuk
+ * "tidak membawa" itu. Syarat `=== undefined` pernah melewatkan `null`,
+ * dan `null` persis yang dikirim KeeperDashboard (`all[0] || null`).
+ * Akibatnya lembur dibayar tanpa bukti; lihat 23-09-2026 di atas.
+ */
+// Komentar dibuang lebih dulu: penjelasan cacat ini di absensi.js memuat
+// contoh kodenya sendiri, dan tanpa ini penjaga menangkap penjelasannya.
+const absensiSrc = readFileSync(join(AKAR, "src/lib/absensi.js"), "utf8")
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .split("\n").filter((b) => !b.trim().startsWith("//")).join("\n");
+if (/harian\s*===\s*undefined/.test(absensiSrc)) {
+  temuan.push(
+    'src/lib/absensi.js  catatCheckOut membaca ulang checklist hanya saat `harian === undefined`. ' +
+    'Pemanggil yang mengirim `null` melewati pembacaan itu, dan lembur dibayar tanpa bukti kerja. ' +
+    'Pakai `!harian`.',
+  );
+}
+
 /* ── hasil ─────────────────────────────────────────────────────────── */
 
 if (temuan.length) {
@@ -246,7 +308,7 @@ if (temuan.length) {
 console.log(
   `Gaji: satu periode (${payloadDiperiksa} payload period_type, semuanya bulanan), ` +
   `potongan kasbon bawaan Rp ${depan.toLocaleString("id-ID")} sama di frontend & backend, ` +
-  `${janji.length} janji potongan kasbon diuji, ` +
+  `${janji.length} janji potongan kasbon + ${bandingLembur.length} kasus lembur diuji, ` +
   `${gaji.PERAN_BERGAJI.length} peran bergaji punya pintu ke slipnya sendiri.`,
 );
 process.exit(0);
