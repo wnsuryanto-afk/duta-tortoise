@@ -183,7 +183,22 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
   );
 }
 
-export default function FamilyTreePage() {
+/**
+ * Silsilah — dulu halaman `/family-tree`.
+ *
+ * Disatukan sebagai tab di Daftar Kura pada 30 September 2026. Ia menjelajah
+ * daftar kura yang sama dengan tab di sebelahnya; yang berbeda hanya caranya
+ * — menurut garis keturunan, bukan menurut kandang atau status.
+ *
+ * Bagian `family-tree` dimiliki semua peran KECUALI kiper, sementara
+ * `tortoise` dimiliki semua. Karena itu pemicu tabnya disembunyikan dari
+ * kiper — tanpa itu, penyatuan ini diam-diam melebarkan akses.
+ *
+ * Catatan tentang isinya, bukan tentang kodenya: dari 178 kura, hanya 49
+ * yang punya catatan induk, semuanya bayi dari DUA pasangan, dan nol kura
+ * dewasa. Jadi pohonnya memang hanya bisa dua tingkat.
+ */
+export default function SilsilahTab() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
 
@@ -240,15 +255,10 @@ export default function FamilyTreePage() {
   }, [selected, selectedTortoise, tortoises]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <GitBranch className="w-6 h-6 text-primary" /> Silsilah Kura-Kura
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Menampilkan kura hasil penangkaran Duta Tortoise dengan data silsilah lengkap
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">
+        Kura hasil penangkaran Duta Tortoise beserta garis keturunannya.
+      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Daftar kiri */}

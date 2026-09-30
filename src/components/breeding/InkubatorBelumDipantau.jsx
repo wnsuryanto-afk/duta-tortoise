@@ -21,8 +21,11 @@ import { pantauInkubator } from "@/lib/pantauInkubator";
  * selalu ada berhenti dibaca.
  */
 export default function InkubatorBelumDipantau({ breedings = [] }) {
+  // Kunci SAMA dengan pencatat di tab Inkubator. Sejak keduanya berada di
+  // halaman yang sama, sekali menyimpan harus langsung memadamkan kartu ini;
+  // dengan kunci sendiri, ia tetap menyala sampai halaman dimuat ulang.
   const { data: readings = [] } = useQuery({
-    queryKey: ["incubator-readings-pantau"],
+    queryKey: ["incubator-readings"],
     queryFn: () => base44.entities.IncubatorReading.list("-date_time", 100),
   });
 
@@ -66,7 +69,7 @@ export default function InkubatorBelumDipantau({ breedings = [] }) {
             )}
           </p>
           <Link
-            to="/incubator-readings"
+            to="/breeding?tab=inkubator"
             className="text-xs text-primary hover:underline font-medium mt-1 inline-block"
           >
             Catat suhu &amp; kelembapan sekarang →

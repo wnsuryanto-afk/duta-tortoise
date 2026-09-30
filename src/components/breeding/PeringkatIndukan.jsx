@@ -176,7 +176,18 @@ function RankingList({ pairs, breedings, label }) {
   );
 }
 
-export default function BreederRankingPage() {
+/**
+ * Peringkat indukan — dulu halaman `/breeder-ranking`.
+ *
+ * Disatukan sebagai tab di halaman Produksi Indukan pada 30 September 2026.
+ * Keduanya menjawab pertanyaan yang sama dari sepuluh catatan yang sama —
+ * "indukan mana yang berproduksi" — hanya dari sudut yang berbeda: Produksi
+ * Indukan per BETINA, halaman ini per PASANGAN. Dua sudut dari satu
+ * pertanyaan tidak butuh dua pintu di menu.
+ *
+ * Halaman ini sendiri sudah menyerap Laporan Breeding sehari sebelumnya.
+ */
+export default function PeringkatIndukan() {
   const { role } = useCurrentUser();
   const [yearFilter, setYearFilter] = useState("semua");
 
@@ -303,17 +314,16 @@ export default function BreederRankingPage() {
     }).sort((a,b)=>b.score-a.score);
   }, [filtered]);
 
+  // Penjaga akses dibiarkan: tab ini ikut halaman Produksi Indukan, tetapi
+  // kalau kelak dipakai di tempat lain penjaganya sudah ikut.
   if (!canAccess(role, "breeding")) return <AccessDenied />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-amber-500" /> Ranking Indukan
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Performa produktivitas pasangan induk breeding</p>
-        </div>
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Peringkat produktivitas per pasangan, per jantan, dan per betina.
+        </p>
         <Select value={yearFilter} onValueChange={setYearFilter}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Filter Tahun" />
@@ -380,7 +390,7 @@ export default function BreederRankingPage() {
                   sebagian bersandar pada tebakan.
                 </p>
                 <Link to="/breeding-planner" className="text-xs text-primary hover:underline font-medium mt-1 inline-block">
-                  Lihat kandang mana yang menyebabkannya →
+                  Lihat kandang mana yang menyebabkannya — tab Produksi per betina →
                 </Link>
               </div>
             </div>

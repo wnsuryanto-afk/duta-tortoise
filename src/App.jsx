@@ -8,13 +8,11 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { ViewAsProvider } from '@/lib/ViewAsContext';
 import { TourProvider } from '@/lib/tourContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
-import BreederRankingPage from '@/pages/BreederRankingPage';
 import StockPredictionPage from '@/pages/StockPredictionPage';
 import PettyCashPage from '@/pages/PettyCashPage';
 import SupplierPage from '@/pages/SupplierPage';
 import OperationalCostsPage from '@/pages/OperationalCostsPage';
 import SalarySlipPage from '@/pages/SalarySlipPage';
-import IncubatorReadingPage from '@/pages/IncubatorReadingPage';
 import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
 import IncidentalTaskPage from '@/pages/IncidentalTaskPage';
 import DaftarBelanjaPage from '@/pages/DaftarBelanjaPage';
@@ -44,7 +42,6 @@ import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
 import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
-import FamilyTreePage from '@/pages/FamilyTreePage';
 import MonthlySalaryPage from '@/pages/MonthlySalaryPage';
 import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
@@ -70,9 +67,7 @@ import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
 import DashboardStokPage from '@/pages/DashboardStokPage';
 import UnifiedStokPage from '@/pages/UnifiedStokPage';
 import PanduanPakanPage from '@/pages/PanduanPakanPage';
-import PanduanPenyakitPage from '@/pages/PanduanPenyakitPage';
 import PanduanPenyakitDetailPage from '@/pages/PanduanPenyakitDetailPage';
-import KuraDiamPage from '@/pages/KuraDiamPage';
 import PakanHarianPage from '@/pages/PakanHarianPage';
 import TortoisePassport from '@/pages/TortoisePassport';
 import RiwayatKlusterPage from '@/pages/RiwayatKlusterPage';
@@ -131,7 +126,9 @@ const AuthenticatedApp = () => {
         <Route path="/feedback" element={<Navigate to="/kritik-saran" replace />} />
         <Route path="/kasbon" element={<KasbonPage />} />
         <Route path="/payroll-gaji" element={<PayrollPage />} />
-        <Route path="/family-tree" element={<FamilyTreePage />} />
+        {/* Silsilah menyatu jadi tab di Daftar Kura 30-09-2026. Tabnya
+            dijaga izin `family-tree` — tidak dimiliki kiper. */}
+        <Route path="/family-tree" element={<Navigate to="/tortoise?tab=silsilah" replace />} />
         <Route path="/salary" element={<MonthlySalaryPage />} />
         {/* Halaman Kandang berdiri sendiri DIHAPUS 29-09-2026 dan digabung ke
             tab "Kandang" di Daftar Kura. Keduanya mengerjakan pekerjaan yang
@@ -155,7 +152,10 @@ const AuthenticatedApp = () => {
         <Route path="/vet-contacts" element={<VetContactPage />} />
         <Route path="/maintenance-schedule" element={<MaintenanceSchedulePage />} />
         <Route path="/printer-config" element={<PrinterConfigPage />} />
-        <Route path="/breeder-ranking" element={<BreederRankingPage />} />
+        {/* Ranking Indukan menyatu jadi tab di Produksi Indukan 30-09-2026:
+            per-pasangan dan per-betina adalah dua sudut dari satu
+            pertanyaan, dari sepuluh catatan yang sama. */}
+        <Route path="/breeder-ranking" element={<Navigate to="/breeding-planner?tab=peringkat" replace />} />
         <Route path="/stock-prediction" element={<Navigate to="/pembelian" replace />} />
         <Route path="/petty-cash" element={<PettyCashPage />} />
         <Route path="/supplier" element={<SupplierPage />} />
@@ -191,7 +191,11 @@ const AuthenticatedApp = () => {
         <Route path="/alat-kerja" element={<AlatKerjaPage />} />
         <Route path="/pengaturan-whatsapp" element={<PengaturanWhatsAppPage />} />
         <Route path="/log-whatsapp" element={<WhatsAppLogPage />} />
-        <Route path="/incubator-readings" element={<IncubatorReadingPage />} />
+        {/* Monitor Inkubator menyatu ke tab "Inkubator" di Breeding & Telur
+            pada 30-09-2026. Setelan dan pembacaan adalah dua paruh dari satu
+            hal; memisahkannya membuat pintu yang lebih mudah ditemukan justru
+            tidak bisa mencatat apa pun. */}
+        <Route path="/incubator-readings" element={<Navigate to="/breeding?tab=inkubator" replace />} />
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
         <Route path="/catatan-saran" element={<CatatanSaranPage />} />
         <Route path="/temuan-foto" element={<TemuanFotoPage />} />
@@ -201,9 +205,16 @@ const AuthenticatedApp = () => {
         <Route path="/stok-unified" element={<UnifiedStokPage />} />
         <Route path="/panduan-pakan" element={<PanduanPakanPage />} />
         <Route path="/pakan-harian" element={<PakanHarianPage />} />
-        <Route path="/panduan-penyakit" element={<PanduanPenyakitPage />} />
+        {/* Panduan Penyakit menyatu jadi tab di Catatan Sakit 30-09-2026.
+            Halaman RINCIAN per penyakit di bawah TIDAK ikut: ia ditautkan dari
+            dalam formulir kesehatan dan panel diagnosis, dan tautan itu harus
+            membuka halaman penuh, bukan melompat ke tab. */}
+        <Route path="/panduan-penyakit" element={<Navigate to="/health?tab=panduan" replace />} />
         <Route path="/panduan-penyakit/:id" element={<PanduanPenyakitDetailPage />} />
-        <Route path="/kura-diam" element={<KuraDiamPage />} />
+        {/* Deteksi Kura Diam menyatu jadi tab di Daftar Kura 30-09-2026.
+            Tabnya dijaga izin `kura-diam` — hanya owner/admin/manajer —
+            karena `tortoise` dimiliki semua peran. */}
+        <Route path="/kura-diam" element={<Navigate to="/tortoise?tab=diam" replace />} />
         {/* Kalender Breeding menyatu jadi tab "Timeline" di Breeding & Telur
             pada 30-09-2026. Isinya tidak tumpang tindih dengan tab lain —
             yang dihapus hanya pintunya yang terpisah di menu. */}

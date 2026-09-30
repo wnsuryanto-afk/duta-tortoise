@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, ShoppingBag, HeartPulse, RefreshCw } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronRight, Shell, PenLine, Home, Trees, Thermometer, Droplets, Users, Edit, Trash2, AlertTriangle, CalendarX, ShoppingBag, HeartPulse, RefreshCw, GitBranch, Clock } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/common/PageHeader";
 import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
@@ -27,7 +27,9 @@ import EnclosureForm from "@/components/enclosure/EnclosureForm";
 import EmptyState from "@/components/common/EmptyState";
 import CardSkeleton from "@/components/common/Skeleton";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { getPerms, canDelete as canDeleteGlobal, isManagerLevel } from "@/lib/permissions";
+import { getPerms, canDelete as canDeleteGlobal, isManagerLevel, canAccess } from "@/lib/permissions";
+import KuraDiamTab from "@/components/tortoise/KuraDiamTab";
+import SilsilahTab from "@/components/tortoise/SilsilahTab";
 import { diPeternakan } from "@/lib/populasiKura";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { recalcEnclosureCountsAman, recalcEnclosureCounts } from "@/lib/enclosureCount";
@@ -76,10 +78,21 @@ export default function TortoiseList() {
   */
   const [searchParams, setSearchParams] = useSearchParams();
   // "kematian" TIDAK ada di sini lagi — ia mengalihkan ke /death-records.
-  // Lihat AlihkanKeKematian di bawah untuk sebabnya.
-  const TAB_SAH = ["kura", "kandang", "karantina", "terjual"];
+  //
+  // "silsilah" dan "diam" masuk 30-09-2026 dari halamannya masing-masing.
+  // Keduanya DIJAGA IZIN: `family-tree` tidak dimiliki kiper dan `kura-diam`
+  // hanya dimiliki owner/admin/manajer, sedangkan `tortoise` dimiliki semua
+  // peran. Tanpa penjaga, menyatukannya ke sini akan diam-diam melebarkan
+  // akses — penyederhanaan yang membuka pintu bukan penyederhanaan.
+  const TAB_SAH = ["kura", "kandang", "karantina", "terjual", "silsilah", "diam"];
   const tabDariUrl = searchParams.get("tab");
-  const mainTab = TAB_SAH.includes(tabDariUrl) ? tabDariUrl : "kura";
+  const bolehSilsilah = canAccess(role, "family-tree");
+  const bolehDiam = canAccess(role, "kura-diam");
+  const tabBoleh = (t) =>
+    TAB_SAH.includes(t) &&
+    (t !== "silsilah" || bolehSilsilah) &&
+    (t !== "diam" || bolehDiam);
+  const mainTab = tabBoleh(tabDariUrl) ? tabDariUrl : "kura";
   const setMainTab = (nilai) => {
     const next = new URLSearchParams(searchParams);
     if (nilai === "kura") next.delete("tab");
@@ -384,6 +397,19 @@ export default function TortoiseList() {
             <ShoppingBag className="w-4 h-4" /> Terjual
             <Badge variant="secondary" className="text-xs ml-1">{tortoises.filter(t => t.status === "terjual").length}</Badge>
           </TabsTrigger>
+          {/* Pemicu disembunyikan untuk yang tidak berhak — bukan sekadar
+              ditolak sesudah ditekan. Tab yang terlihat tapi selalu menolak
+              hanya mengajari orang bahwa aplikasinya rusak. */}
+          {bolehSilsilah && (
+            <TabsTrigger value="silsilah" className="flex-1 sm:flex-none gap-1.5">
+              <GitBranch className="w-4 h-4" /> Silsilah
+            </TabsTrigger>
+          )}
+          {bolehDiam && (
+            <TabsTrigger value="diam" className="flex-1 sm:flex-none gap-1.5">
+              <Clock className="w-4 h-4" /> Diam
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ══════════ TAB KURA-KURA ══════════ */}
@@ -944,6 +970,24 @@ export default function TortoiseList() {
         <TabsContent value="terjual" className="mt-5">
           <TortoiseTerjualTab tortoises={tortoises} isOwner={ownerCanDelete} />
         </TabsContent>
+
+        {/* ══════════ TAB SILSILAH ══════════ */}
+        {/* Dulu halaman /family-tree. Menjelajah daftar kura yang sama,
+            menurut garis keturunan alih-alih kandang atau status. */}
+        {bolehSilsilah && (
+          <TabsContent value="silsilah" className="mt-5">
+            <SilsilahTab />
+          </TabsContent>
+        )}
+
+        {/* ══════════ TAB DIAM ══════════ */}
+        {/* Dulu halaman /kura-diam. "Kura mana yang lama tidak tersentuh
+            pencatatan" adalah pertanyaan tentang daftar ini juga. */}
+        {bolehDiam && (
+          <TabsContent value="diam" className="mt-5">
+            <KuraDiamTab />
+          </TabsContent>
+        )}
 
       </Tabs>
 

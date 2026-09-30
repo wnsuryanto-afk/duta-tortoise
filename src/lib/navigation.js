@@ -13,7 +13,7 @@
  */
 import {
   Home, Shell, ClipboardCheck, Package, Wallet, Users,
-  Heart, BookOpen, Baby, GitBranch, Skull, Clock, Thermometer,
+  Heart, Baby, Skull,
   Leaf, Salad, Stethoscope, Calendar, Library, ListTodo, Zap,
   LayoutGrid, ShoppingCart, Wrench, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart,
@@ -30,17 +30,12 @@ export const NAV_SECTIONS = [
     color: "text-teal-500",
     blurb: "Populasi, kesehatan, dan pembiakan",
     items: [
-      { path: "/tortoise",          section: "tortoise",          label: "Daftar Kura",       icon: Shell,        desc: "Semua kura dan datanya" },
-      { path: "/health",            section: "health",            label: "Catatan Sakit",     icon: Heart,        desc: "Riwayat sakit & pengobatan" },
-      { path: "/panduan-penyakit",  section: "panduan-penyakit",  label: "Panduan Penyakit",  icon: BookOpen,     desc: "Rujukan gejala & penanganan" },
+      { path: "/tortoise",          section: "tortoise",          label: "Daftar Kura",       icon: Shell,        desc: "Semua kura, kandang, karantina, terjual, silsilah, dan deteksi kura diam" },
+      { path: "/health",            section: "health",            label: "Catatan Sakit",     icon: Heart,        desc: "Riwayat sakit & pengobatan, plus panduan penanganan penyakit" },
       { path: "/breeding",          section: "breeding",          label: "Breeding & Telur",  icon: Baby,         desc: "Pasangan, telur, penetasan" },
-      { path: "/breeding-planner",  section: "breeding-planner",  label: "Produksi Indukan", icon: Egg,          desc: "Betina mana yang berproduksi, dan kandang mana yang membuat keturunannya bisa ditelusuri" },
-      { path: "/incubator-readings",section: "breeding",          label: "Inkubator",         icon: Thermometer,  desc: "Suhu & kelembapan" },
-      { path: "/family-tree",       section: "family-tree",       label: "Silsilah",          icon: GitBranch,    desc: "Garis keturunan" },
+      { path: "/breeding-planner",  section: "breeding-planner",  label: "Produksi Indukan", icon: Egg,          desc: "Betina mana yang berproduksi, peringkat indukan, dan kandang mana yang membuat keturunannya bisa ditelusuri" },
       { path: "/label-kura",        section: "tortoise",          label: "Cetak Label QR",    icon: QrCode,       desc: "Label 50×30mm per kandang, dipindai buka paspor" },
       { path: "/death-records",     section: "death-records",     label: "Catatan Kematian",  icon: Skull,        desc: "Riwayat & penyebab" },
-      { path: "/kura-diam",         section: "kura-diam",         label: "Deteksi Kura Diam", icon: Clock,        desc: "Kura tanpa aktivitas" },
-      { path: "/breeder-ranking",   section: "breeding",          label: "Ranking Indukan",   icon: Trophy,       desc: "Peringkat indukan, ringkasan telur & penetasan setahun — dulu terpisah sebagai Laporan Breeding" },
     ],
   },
   {

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, MapPin, CalendarClock, Shell } from "lucide-react";
+import { Loader2, MapPin, CalendarClock, Shell } from "lucide-react";
 import AccessDenied from "@/components/common/AccessDenied";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { isManagerLevel } from "@/lib/permissions";
@@ -27,7 +27,22 @@ function fmtDate(d) {
   try { return format(parseISO(d), "d MMM yyyy", { locale: idLocale }); } catch { return d; }
 }
 
-export default function KuraDiamPage() {
+/**
+ * Deteksi kura diam — dulu halaman `/kura-diam`.
+ *
+ * Disatukan sebagai tab di Daftar Kura pada 30 September 2026. Pertanyaannya
+ * — "kura mana yang lama tidak tersentuh pencatatan" — adalah pertanyaan
+ * tentang DAFTAR KURA, bukan tentang halaman lain; ia hanya menyaringnya
+ * dengan cara yang tidak bisa dilakukan saringan biasa.
+ *
+ * Penjaga `isManagerLevel` di bawah TETAP: bagian `kura-diam` hanya dimiliki
+ * owner, admin, dan manajer, sementara `tortoise` dimiliki SEMUA peran. Tanpa
+ * penjaga ini, memindahkannya ke Daftar Kura akan membukanya untuk kiper dan
+ * investor — penyatuan yang diam-diam melebarkan akses. Pemicu tabnya pun
+ * disembunyikan untuk yang tidak berhak, supaya tidak ada yang menekan tab
+ * hanya untuk ditolak.
+ */
+export default function KuraDiamTab() {
   const { role, isLoading: userLoading } = useCurrentUser();
   const [enclosureFilter, setEnclosureFilter] = useState("semua");
 
@@ -66,7 +81,7 @@ export default function KuraDiamPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 space-y-4 max-w-5xl mx-auto">
+      <div className="space-y-4">
         <div className="h-7 w-64 bg-muted rounded animate-pulse" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[0, 1, 2, 3].map(i => <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />)}
@@ -87,17 +102,11 @@ export default function KuraDiamPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-5xl mx-auto">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold font-heading flex items-center gap-2">
-          <Search className="w-6 h-6 text-primary" /> Deteksi Kura Diam
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Kura aktif yang lama tidak tersentuh pencatatan — pencegahan dini kura sakit/menurun tanpa ketahuan.
-          Total {report?.total || 0} kura aktif dianalisis.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">
+        Kura aktif yang lama tidak tersentuh pencatatan — pencegahan dini kura
+        sakit atau menurun tanpa ketahuan. Total {report?.total || 0} kura aktif dianalisis.
+      </p>
 
       {/* KARTU RINGKAS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

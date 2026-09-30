@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, Trash2, X, Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "@/pages/PanduanPenyakitPage";
+import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "@/lib/golonganPenyakit";
 import { compressImage } from "@/lib/useImageCompression";
 
 export default function DiagnosisProtocolForm({ open, onClose, editData, onSaved }) {

@@ -21,6 +21,7 @@ import CatatKawinDialog from "@/components/breeding/CatatKawinDialog";
 import DaftarPasangan from "@/components/breeding/DaftarPasangan";
 import InkubatorBelumDipantau from "@/components/breeding/InkubatorBelumDipantau";
 import TimelineBatch from "@/components/breeding/TimelineBatch";
+import MonitorInkubator from "@/components/breeding/MonitorInkubator";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
@@ -737,6 +738,14 @@ export default function BreedingAndEggs() {
               })}
             </div>
           )}
+
+          {/* Pencatat pembacaan — dulu halaman /incubator-readings sendiri.
+              Diletakkan tepat di bawah kartu setelan karena keduanya paruh
+              dari satu hal: yang di atas suhu yang DIMINTA, yang di bawah
+              suhu yang SEBENARNYA. Lihat komentar di MonitorInkubator.jsx. */}
+          <div className="mt-5 pt-5 border-t border-border">
+            <MonitorInkubator />
+          </div>
         </TabsContent>
 
         {/* TAB 4: RIWAYAT PENETASAN */}

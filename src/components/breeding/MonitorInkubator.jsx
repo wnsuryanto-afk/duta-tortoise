@@ -155,7 +155,23 @@ function ReadingForm({ incubators, user, onClose }) {
   );
 }
 
-export default function IncubatorReadingPage() {
+/**
+ * Monitor inkubator — dulu halaman `/incubator-readings`.
+ *
+ * Disatukan ke tab "Inkubator" halaman Breeding & Telur pada 30 September 2026,
+ * dan penyatuan ini bukan sekadar merapikan menu.
+ *
+ * Tab "Inkubator" yang sudah ada menampilkan SETELAN: suhu target, kelembapan
+ * target, kapasitas telur, clutch aktif. Halaman ini yang MENCATAT pembacaan
+ * nyatanya. Dua paruh dari satu hal, di balik dua pintu yang berbeda — dan
+ * pintu yang lebih mudah ditemukan justru yang tidak bisa mencatat apa pun.
+ *
+ * Akibatnya terukur: 145 telur sedang dierami, dan pembacaan terakhir
+ * 1 Juni 2026. Orang yang membuka "Inkubator" melihat angka setelan, mengira
+ * itulah halamannya, lalu pergi. Sekarang tombol "Catat Pembacaan" ada tepat
+ * di bawah angka setelan itu.
+ */
+export default function MonitorInkubator() {
   const { user } = useCurrentUser();
   const [showForm, setShowForm] = useState(false);
   const [filterIncubator, setFilterIncubator] = useState("all");
@@ -189,13 +205,13 @@ export default function IncubatorReadingPage() {
   const alarmCount = readings.filter(r => r.alarm_triggered).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-heading font-bold">Monitor Inkubator</h1>
-          <p className="text-muted-foreground mt-1">Catat & pantau suhu dan kelembapan inkubator</p>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-sm">Pembacaan suhu &amp; kelembapan</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Angka nyata di dalam inkubator, bukan setelannya.</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => setShowForm(true)} size="sm" className="flex-shrink-0">
           <Plus className="w-4 h-4 mr-1.5" /> Catat Pembacaan
         </Button>
       </div>

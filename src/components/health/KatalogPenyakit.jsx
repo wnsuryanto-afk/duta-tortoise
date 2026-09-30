@@ -7,30 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, BookOpen, AlertCircle } from "lucide-react";
+import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "@/lib/golonganPenyakit";
 
-export const CATEGORY_CONFIG = {
-  infeksi_bakteri: { label: "Infeksi Bakteri", color: "bg-red-100 text-red-700 border-red-200" },
-  infeksi_jamur:  { label: "Infeksi Jamur",   color: "bg-purple-100 text-purple-700 border-purple-200" },
-  parasit:        { label: "Parasit",          color: "bg-orange-100 text-orange-700 border-orange-200" },
-  nutrisi:        { label: "Nutrisi",          color: "bg-green-100 text-green-700 border-green-200" },
-  reproduksi:     { label: "Reproduksi",       color: "bg-pink-100 text-pink-700 border-pink-200" },
-  trauma:         { label: "Trauma",           color: "bg-amber-100 text-amber-700 border-amber-200" },
-  organ:          { label: "Organ",            color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
-  pernapasan:     { label: "Pernapasan",       color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
-  pencernaan:     { label: "Pencernaan",       color: "bg-lime-100 text-lime-700 border-lime-200" },
-  mata:           { label: "Mata",             color: "bg-blue-100 text-blue-700 border-blue-200" },
-  kulit:          { label: "Kulit",            color: "bg-teal-100 text-teal-700 border-teal-200" },
-  lainnya:        { label: "Lainnya",          color: "bg-muted text-foreground border-border" },
-};
 
-export const SEVERITY_CONFIG = {
-  ringan:  { label: "Ringan",  color: "bg-green-100 text-green-700 border-green-300" },
-  sedang:  { label: "Sedang",  color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-  berat:   { label: "Berat",   color: "bg-orange-100 text-orange-700 border-orange-300" },
-  kritis:  { label: "Kritis",  color: "bg-red-100 text-red-700 border-red-300" },
-};
-
-export default function PanduanPenyakitPage() {
+/**
+ * Katalog panduan penyakit — dulu halaman `/panduan-penyakit`.
+ *
+ * Disatukan sebagai tab di halaman Catatan Sakit pada 30 September 2026.
+ * Keduanya satu pekerjaan yang terbelah: catatan sakit adalah kejadiannya,
+ * panduan adalah rujukan untuk menanganinya. Orang yang membuka catatan sakit
+ * justru orang yang paling butuh panduannya, dan sebaliknya.
+ *
+ * Halaman RINCIAN per penyakit (`/panduan-penyakit/:id`) TIDAK ikut
+ * disatukan: ia ditautkan dari dalam formulir kesehatan dan dari panel
+ * diagnosis, dan tautan-tautan itu harus tetap membuka halaman penuh, bukan
+ * melompat ke tab lalu menyuruh orang mencari sendiri.
+ */
+export default function KatalogPenyakit() {
   const navigate = useNavigate();
   const { role } = useCurrentUser();
   const canEdit = role === "owner";
@@ -57,16 +50,11 @@ export default function PanduanPenyakitPage() {
   }, [protocols, search, catFilter]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-primary" /> Panduan Penyakit
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Katalog {protocols.length} penyakit kura-kura & panduan penanganan
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Katalog {protocols.length} penyakit kura-kura &amp; panduan penanganan.
+        </p>
         {canEdit && (
           <Button onClick={() => navigate("/panduan-penyakit/new")} className="gap-2 bg-primary">
             <Plus className="w-4 h-4" /> Tambah Penyakit

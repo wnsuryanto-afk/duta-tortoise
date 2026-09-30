@@ -6,7 +6,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Pencil, Package } from "lucide-react";
-import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "./PanduanPenyakitPage";
+import { CATEGORY_CONFIG, SEVERITY_CONFIG } from "@/lib/golonganPenyakit";
 import DiagnosisProtocolForm from "@/components/health/DiagnosisProtocolForm";
 import DiseaseImageGallery from "@/components/health/DiseaseImageGallery";
 import FotoPenyakitRequestButton from "@/components/health/FotoPenyakitRequestButton";

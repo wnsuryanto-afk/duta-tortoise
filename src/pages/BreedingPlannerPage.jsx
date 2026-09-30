@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/common/PageHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PeringkatIndukan from "@/components/breeding/PeringkatIndukan";
 import KartuAngka from "@/components/ui/kartu-angka";
 import {
   Egg, AlertTriangle, HelpCircle, Home, ChevronLeft, ChevronRight,
@@ -136,6 +138,17 @@ export default function BreedingPlannerPage() {
   const hariIni = new Date();
   const [bulan, setBulan] = useState(hariIni.getMonth());
   const [tahun, setTahun] = useState(hariIni.getFullYear());
+  /* Tab disimpan di ALAMAT supaya `/breeder-ranking` punya tempat mendarat
+     dan tautan lama tetap membuka isi yang dicari orang. */
+  const [tabParams, setTabParams] = useSearchParams();
+  const TAB_SAH = ["produksi", "peringkat"];
+  const t = tabParams.get("tab");
+  const tab = TAB_SAH.includes(t) ? t : "produksi";
+  const setTab = (nilai) => {
+    const next = new URLSearchParams(tabParams);
+    if (nilai === "produksi") next.delete("tab"); else next.set("tab", nilai);
+    setTabParams(next, { replace: true });
+  };
   const [cari, setCari] = useState("");
   const [saring, setSaring] = useState("belum");
   const [semua, setSemua] = useState(false);
@@ -205,6 +218,19 @@ export default function BreedingPlannerPage() {
         }
       />
 
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-auto gap-1 mb-4">
+          <TabsTrigger value="produksi">Produksi per betina</TabsTrigger>
+          <TabsTrigger value="peringkat">Peringkat indukan</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="peringkat" className="mt-0">
+          {/* Dulu halaman /breeder-ranking. Sudut pandang berbeda atas
+              pertanyaan yang sama — lihat komentar di PeringkatIndukan.jsx. */}
+          <PeringkatIndukan />
+        </TabsContent>
+
+        <TabsContent value="produksi" className="mt-0 space-y-0">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <KartuAngka
           label="Betina cukup umur"
@@ -479,6 +505,8 @@ export default function BreedingPlannerPage() {
           ))}
         </div>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

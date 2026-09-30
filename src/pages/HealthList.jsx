@@ -18,6 +18,9 @@ import SickTortoiseClosePanel from "@/components/health/SickTortoiseClosePanel";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { getPerms } from "@/lib/permissions";
 import PageHeader from "@/components/common/PageHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "react-router-dom";
+import KatalogPenyakit from "@/components/health/KatalogPenyakit";
 import { HealthArt } from "@/components/common/Illustration";
 
 const TYPE_CONFIG = {
@@ -31,6 +34,16 @@ const TYPE_CONFIG = {
 };
 
 export default function HealthList() {
+  /* Tab disimpan di ALAMAT supaya `/panduan-penyakit` punya tempat mendarat
+     dan tautan lama membuka panduannya, bukan daftar catatan sakit. */
+  const [tabParams, setTabParams] = useSearchParams();
+  const TAB_SAH = ["catatan", "panduan"];
+  const tabAktif = TAB_SAH.includes(tabParams.get("tab")) ? tabParams.get("tab") : "catatan";
+  const gantiTab = (nilai) => {
+    const next = new URLSearchParams(tabParams);
+    if (nilai === "catatan") next.delete("tab"); else next.set("tab", nilai);
+    setTabParams(next, { replace: true });
+  };
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
   const perms = getPerms(role, "health");
@@ -177,6 +190,21 @@ export default function HealthList() {
           </Button>
         )}
       />
+
+      <Tabs value={tabAktif} onValueChange={gantiTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-auto gap-1">
+          <TabsTrigger value="catatan">Catatan sakit</TabsTrigger>
+          <TabsTrigger value="panduan">Panduan penyakit</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="panduan" className="mt-4">
+          {/* Dulu halaman /panduan-penyakit. Catatan adalah kejadiannya,
+              panduan adalah rujukan untuk menanganinya — satu pekerjaan yang
+              terbelah. Halaman rincian per penyakit tetap halaman penuh. */}
+          <KatalogPenyakit />
+        </TabsContent>
+
+        <TabsContent value="catatan" className="mt-4 space-y-5">
 
       {showSickPanel && (
         <SickTortoiseClosePanel user={user} />
@@ -338,6 +366,12 @@ export default function HealthList() {
         </div>
       )}
 
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialog sengaja DI LUAR Tabs: modal yang hidup di dalam satu tab akan
+          hilang begitu orang berpindah tab, dan itu perilaku yang
+          mengejutkan. */}
       {showForm && (
         <HealthForm
           open={showForm}
