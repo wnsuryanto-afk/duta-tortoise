@@ -181,6 +181,59 @@ for (const peran of gaji.PERAN_BERGAJI) {
 
 rmSync(dir, { recursive: true, force: true });
 
+/* ── 5. Tiga janji potongan kasbon, diuji betulan ──────────────────── */
+
+/*
+ * Bagian 1–4 memeriksa BENTUK kodenya. Bagian ini menjalankan
+ * hitungKasbon() dan memeriksa JAWABANNYA — karena tiga janji berikut
+ * adalah yang menentukan apakah seseorang dipotong dua kali, atau
+ * dipotong melebihi utangnya.
+ *
+ * Bentuk datanya disalin dari kasbon Ali yang sungguhan (11 Agu 2026,
+ * Rp 1.000.000, tiga entri riwayat) supaya yang diuji bukan kasus
+ * karangan yang kebetulan lolos.
+ */
+const kasbonUji = {
+  id: "uji",
+  employee_email: "uji@duta-tortoise.test",
+  status: "approved",
+  amount: 1000000,
+  total_paid: 400000,
+  weekly_deduction: 400000,
+  deduction_log: [
+    { date: "2026-08-15", amount: 100000, salary_period: null, salary_slip_id: null },
+    { date: "2026-08-27", amount: 100000, salary_period: "2026-08", salary_slip_id: "a" },
+    { date: "2026-09-30", amount: 100000, salary_period: "2026-09", salary_slip_id: "b" },
+  ],
+};
+const hit = (periode, k = kasbonUji) =>
+  gaji.hitungKasbon({ kasbons: [k], email: kasbonUji.employee_email, periode });
+
+const janji = [
+  ["periode yang sudah ada di riwayat tidak dipotong lagi", hit("2026-09").potongan, 0],
+  ["sisanya tetap terbawa utuh saat tidak dipotong", hit("2026-09").sisa, 600000],
+  ["periode baru dipotong sebesar tarifnya", hit("2026-10").potongan, 400000],
+  ["sisa berkurang tepat sebesar potongannya", hit("2026-10").sisa, 200000],
+];
+
+// Sisa lebih kecil daripada tarif: tidak boleh memotong melebihi utang.
+const hampirLunas = {
+  ...kasbonUji,
+  total_paid: 800000,
+  deduction_log: [...kasbonUji.deduction_log,
+    { date: "2026-10-31", amount: 400000, salary_period: "2026-10", salary_slip_id: "c" }],
+};
+janji.push(
+  ["potongan tidak melebihi sisa utang", hit("2026-11", hampirLunas).potongan, 200000],
+  ["sisa nol saat lunas", hit("2026-11", hampirLunas).sisa, 0],
+);
+
+for (const [nama, dapat, harap] of janji) {
+  if (dapat !== harap) {
+    temuan.push(`hitungKasbon()  ${nama}: dapat ${dapat}, seharusnya ${harap}`);
+  }
+}
+
 /* ── hasil ─────────────────────────────────────────────────────────── */
 
 if (temuan.length) {
@@ -193,6 +246,7 @@ if (temuan.length) {
 console.log(
   `Gaji: satu periode (${payloadDiperiksa} payload period_type, semuanya bulanan), ` +
   `potongan kasbon bawaan Rp ${depan.toLocaleString("id-ID")} sama di frontend & backend, ` +
+  `${janji.length} janji potongan kasbon diuji, ` +
   `${gaji.PERAN_BERGAJI.length} peran bergaji punya pintu ke slipnya sendiri.`,
 );
 process.exit(0);
