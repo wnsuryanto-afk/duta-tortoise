@@ -280,7 +280,7 @@ export default function IncompleteDataPage() {
               <DataTable 
                 items={buyers} 
                 entityType="buyerProfile" 
-                editPath="/crm" 
+                editPath="/sales?tab=pembeli" 
                 nameField="name" 
                 filterIncomplete={filterIncomplete}
                 getEditUrl={(item) => `/crm?edit=${item.id}`}

@@ -50,6 +50,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useTestMode } from "@/lib/useTestMode";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { logActivity } from "@/lib/logActivity";
@@ -60,7 +61,28 @@ const rupiah = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID")
 // seberapa sering dipakai, bukan abjad - yang paling sering ada di jempol.
 const KATEGORI = [
   { value: "pakan", label: "Pakan", icon: Leaf },
-  { value: "kas_kecil", label: "Kas Kecil", icon: Wallet },
+  /*
+   * "Kas Kecil" TIDAK lagi menyimpan di halaman ini — ia menautkan ke
+   * halaman Kas Kecil (`ke`), bukan memasang kategori (`value`).
+   *
+   * Sebabnya: pemakaian kas kecil punya DUA sisi. PemakaianForm menulis
+   * PettyCashLedger DAN FinanceTransaction, lalu menyambungkan keduanya
+   * (`finance_tx_id`) dan memanggil recalculatePettyCashBalance untuk
+   * merantai saldonya. Halaman ini hanya bisa menulis satu sisi.
+   *
+   * Akibatnya, kalau tombol ini menyimpan sendiri: pengeluarannya muncul di
+   * Laporan Keuangan, tetapi saldo kas kecil tidak berkurang sepeser pun —
+   * dan saldo itulah yang dipakai memutuskan kapan kas perlu diisi ulang.
+   * Tidak ada layar yang menunjukkan selisihnya, karena kedua angka memang
+   * dibaca dari tabel yang berbeda.
+   *
+   * Diperiksa di basis data (30-09-2026): 58 baris PettyCashLedger, dan
+   * SETIAP baris pemakaian punya finance_tx_id-nya (yang null hanyalah
+   * pengisian saldo, yang memang tidak membuat pengeluaran). Jadi rantainya
+   * masih utuh — tombol ini belum pernah dipakai. Ditutup sebelum dipakai,
+   * bukan sesudah.
+   */
+  { value: null, ke: "/petty-cash", label: "Kas Kecil", icon: Wallet },
   { value: "obat_perawatan", label: "Obat & Perawatan", icon: Pill },
   { value: "solar_bbm", label: "Solar / BBM", icon: Fuel },
   { value: "listrik", label: "Listrik", icon: Zap },
@@ -71,6 +93,7 @@ const KATEGORI = [
 
 export default function CatatBiayaPage() {
   const { user, role } = useCurrentUser();
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const hariIni = format(new Date(), "yyyy-MM-dd");
 
@@ -116,12 +139,32 @@ export default function CatatBiayaPage() {
   if (!canAccess(role, "finance")) return <AccessDenied />;
 
   const nominalAngka = Number(String(nominal).replace(/[^\d]/g, "")) || 0;
-  const kategoriTerpilih = KATEGORI.find((k) => k.value === kategori);
+  // `kategori &&` diperlukan: satu entri KATEGORI kini bernilai value null
+  // (tombol tautan ke Kas Kecil), jadi tanpa penjaga ini `find` mencocokkan
+  // entri itu selama belum ada kategori dipilih.
+  const kategoriTerpilih = kategori ? KATEGORI.find((k) => k.value === kategori) : null;
 
   const simpan = async () => {
     if (!kategori || nominalAngka <= 0 || menyimpan) return;
     setMenyimpan(true);
     try {
+      /*
+       * `testModeTag` DITAMBAHKAN di sini pada 30-09-2026.
+       *
+       * Tiga halaman menulis ke FinanceTransaction: Laporan Keuangan,
+       * Biaya Operasional, dan halaman ini. Dua yang pertama menyertakan
+       * `...testModeTag`; halaman ini tidak — sejak dibuat.
+       *
+       * Akibatnya, pengeluaran yang dicatat pemilik saat "Mode Uji" menyala
+       * tersimpan TANPA penanda is_test_data, dan `hanyaLaporan()` tidak
+       * punya apa pun untuk disaring: baris itu tidak bisa dibedakan dari
+       * pengeluaran sungguhan oleh laporan mana pun, selamanya. Bukan angka
+       * yang salah dihitung — penandanya memang tidak pernah ada.
+       *
+       * Justru di halaman inilah kelalaian itu paling mungkin terjadi:
+       * halaman ini dibuat supaya mencatat cukup tiga ketukan, jadi ia yang
+       * paling sering ditekan saat pemilik sedang mencoba-coba aplikasi.
+       */
       const isi = {
         type: "pengeluaran",
         category: kategori,
@@ -129,6 +172,7 @@ export default function CatatBiayaPage() {
         date: tanggal,
         description: keterangan.trim() || kategoriTerpilih?.label || "Pengeluaran",
         created_by_name: user?.full_name || user?.email || "",
+        ...testModeTag,
       };
       const dibuat = await base44.entities.FinanceTransaction.create(isi);
       await logActivity({
@@ -169,12 +213,25 @@ export default function CatatBiayaPage() {
           <div className="grid grid-cols-2 gap-2.5">
             {KATEGORI.map((k) => {
               const Icon = k.icon;
+              const kelas = "flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-5 text-center transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+              // Satu kategori menautkan alih-alih menyimpan; lihat catatan di
+              // daftar KATEGORI. Bentuknya dibuat sama supaya letaknya tidak
+              // berubah bagi orang yang sudah hafal posisinya.
+              if (k.ke) {
+                return (
+                  <Link key={k.ke} to={k.ke} className={kelas}>
+                    <Icon className="w-6 h-6 text-primary" />
+                    <span className="text-sm font-medium text-foreground leading-tight">{k.label}</span>
+                    <span className="text-[11px] text-muted-foreground leading-tight">Dicatat di halaman Kas Kecil</span>
+                  </Link>
+                );
+              }
               return (
                 <button
                   key={k.value}
                   type="button"
                   onClick={() => setKategori(k.value)}
-                  className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-5 text-center transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className={kelas}
                 >
                   <Icon className="w-6 h-6 text-primary" />
                   <span className="text-sm font-medium text-foreground leading-tight">{k.label}</span>

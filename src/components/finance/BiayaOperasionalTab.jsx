@@ -101,7 +101,7 @@ const EMPTY_FORM = {
   description: "",
 };
 
-export default function OperationalCostsPage() {
+export default function BiayaOperasionalTab() {
   const { testModeTag } = useTestMode();
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
@@ -172,12 +172,13 @@ export default function OperationalCostsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Judulnya dibuang — halaman induknya sudah punya satu. */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <TrendingDown className="w-6 h-6 text-primary" /> Biaya Operasional
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Gaji, Obat & Perawatan, Vitamin, Pakan</p>
+          <p className="text-muted-foreground text-sm flex items-center gap-2">
+            <TrendingDown className="w-4 h-4 text-primary" />
+            Gaji, Obat &amp; Perawatan, Vitamin, Pakan
+          </p>
         </div>
         {canManage && (
           <Button onClick={() => setShowForm(true)} className="gap-2">

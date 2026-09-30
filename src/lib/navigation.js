@@ -13,9 +13,9 @@
  */
 import { Shell, ClipboardCheck, Package, Wallet, Users,
   Heart, Baby, Skull,
-  Leaf, Salad, Stethoscope, Calendar, Zap,
+  Leaf, Salad, Stethoscope, Calendar,
   LayoutGrid, ShoppingCart, Wrench, Truck,
-  TrendingUp, DollarSign, PieChart,
+  TrendingUp, DollarSign,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Star,
   Activity, MessageSquare, UserCog, Egg, QrCode,
 } from "lucide-react";
@@ -79,10 +79,7 @@ export const NAV_SECTIONS = [
       { path: "/finance",           section: "finance",           label: "Laporan Keuangan",   icon: TrendingUp, desc: "Pemasukan & pengeluaran" },
       { path: "/catat-biaya",    section: "finance",       label: "Catat Pengeluaran", icon: Wallet,        desc: "Catat biaya rutin dalam tiga ketukan" },
       { path: "/sales",             section: "sales",             label: "Penjualan Kura",     icon: DollarSign, desc: "Catatan penjualan" },
-      { path: "/crm",               section: "crm",               label: "Data Pembeli",       icon: Users,      desc: "Pembeli & piutang" },
       { path: "/petty-cash",        section: "petty-cash",        label: "Kas Kecil",          icon: Wallet,     desc: "Pengeluaran harian" },
-      { path: "/operational-costs", section: "operational-costs", label: "Biaya Operasional",  icon: Zap,        desc: "Listrik, air, dll" },
-      { path: "/sales-report",      section: "sales-report",      label: "Laporan Penjualan",  icon: PieChart,   desc: "Rekap & tren" },
     ],
   },
   {

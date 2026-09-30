@@ -19,6 +19,9 @@ import LaporanGajiHarian from "@/components/salary/LaporanGajiHarian";
 import LaporanBonusReward from "@/components/salary/LaporanBonusReward";
 import TugasInsidentilTab from "@/components/sop/TugasInsidentilTab";
 import PerpustakaanSOPTab from "@/components/sop/PerpustakaanSOPTab";
+import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
+import LaporanPenjualanTab from "@/components/sales/LaporanPenjualanTab";
+import PembeliTab from "@/components/sales/PembeliTab";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
 import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
@@ -90,6 +93,12 @@ export default [
      ketiga laporan gaji di atas: Radix Tabs hanya memasang tab yang aktif. */
   ["TugasInsidentilTab tanpa data", <TugasInsidentilTab />],
   ["PerpustakaanSOPTab tanpa data", <PerpustakaanSOPTab />],
+
+  /* Tiga halaman UANG yang jadi tab pada 30-09-2026. Semuanya menggambar
+     angka uang dan grafik dari data yang bisa kosong. */
+  ["BiayaOperasionalTab tanpa data", <BiayaOperasionalTab />],
+  ["LaporanPenjualanTab tanpa data", <LaporanPenjualanTab />],
+  ["PembeliTab tanpa data", <PembeliTab />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
 
   /*

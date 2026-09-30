@@ -1160,7 +1160,7 @@ export default function OwnerDashboard({ user }) {
       <div className="bg-card rounded-xl border border-border p-4">
         <div className="flex items-center justify-between mb-3">
           <SectionTitle icon={DollarSign}>Piutang Belum Lunas</SectionTitle>
-          <Link to="/crm" className="text-xs text-primary hover:underline flex items-center gap-1">
+          <Link to="/sales?tab=pembeli" className="text-xs text-primary hover:underline flex items-center gap-1">
             Lihat Semua <ChevronRight className="w-3 h-3" />
           </Link>
         </div>

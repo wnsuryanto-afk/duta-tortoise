@@ -17,7 +17,7 @@ import SaleWizard from "@/components/sales/SaleWizard";
 const formatRp = n => `Rp ${(n || 0).toLocaleString("id-ID")}`;
 const formatDate = d => d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-";
 
-export default function CRMPage() {
+export default function PembeliTab() {
   const { role } = useCurrentUser();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -81,14 +81,12 @@ export default function CRMPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Judulnya dibuang — halaman induknya sudah punya satu. Jumlah
+          pembeli tetap: itu angka yang dicari orang begitu tab ini dibuka. */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-yellow-100 rounded-xl"><Users className="w-6 h-6 text-yellow-700" /></div>
-          <div>
-            <h1 className="text-2xl font-bold">CRM — Daftar Pembeli</h1>
-            <p className="text-sm text-muted-foreground">{totalPembeli} pembeli terdaftar</p>
-          </div>
+          <div className="p-2 bg-yellow-100 rounded-xl"><Users className="w-5 h-5 text-yellow-700" /></div>
+          <p className="text-sm text-muted-foreground">{totalPembeli} pembeli terdaftar</p>
         </div>
         {canEdit && (
           <Button onClick={() => setShowForm(true)}>

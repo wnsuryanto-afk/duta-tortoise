@@ -1,4 +1,7 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import LaporanPenjualanTab from "@/components/sales/LaporanPenjualanTab";
+import PembeliTab from "@/components/sales/PembeliTab";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -42,7 +45,32 @@ export default function SalesList() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [printSale, setPrintSale] = useState(null);
   const [proofSale, setProofSale] = useState(null);
-  const [activeTab, setActiveTab] = useState("semua");
+  /*
+   * Tab pindah ke URL supaya pengalihan dari /sales-report dan /crm mendarat
+   * di tab yang benar.
+   *
+   * Penjaga "pembeli" TIDAK boleh dilewatkan: peran `investor` punya "sales"
+   * dan "sales-report" tapi TIDAK punya "crm" (lib/permissions.js). Tanpa
+   * penjaga ini, menyatukan CRM ke halaman ini akan memberi investor nama
+   * pembeli dan piutangnya — data yang selama ini memang tidak bisa mereka
+   * buka.
+   */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const bolehPembeli = canAccess(role, "crm");
+  const bolehLaporan = canAccess(role, "sales-report");
+  const TAB_SAH = ["semua", "aktif", "riwayat", "laporan", "pembeli"];
+  const tabBoleh = (t) =>
+    TAB_SAH.includes(t) &&
+    (t !== "pembeli" || bolehPembeli) &&
+    (t !== "laporan" || bolehLaporan);
+  const tabDariUrl = searchParams.get("tab");
+  const activeTab = tabBoleh(tabDariUrl) ? tabDariUrl : "semua";
+  const setActiveTab = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai === "semua") next.delete("tab");
+    else next.set("tab", nilai);
+    setSearchParams(next, { replace: true });
+  };
   const [cancelSale, setCancelSale] = useState(null);
   const [cancelEnclosure, setCancelEnclosure] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -320,6 +348,8 @@ export default function SalesList() {
             <ShoppingBag className="w-4 h-4" /> Lunas
             <Badge variant="secondary" className="text-[10px] ml-1">{salesRiwayat.length}</Badge>
           </TabsTrigger>
+          {bolehLaporan && <TabsTrigger value="laporan">Laporan</TabsTrigger>}
+          {bolehPembeli && <TabsTrigger value="pembeli">Pembeli</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="semua" className="mt-4 space-y-4">
@@ -354,6 +384,18 @@ export default function SalesList() {
             <SaleListSection list={filteredRiwayat} showCancel={isOwner} />
           )}
         </TabsContent>
+
+        {bolehLaporan && (
+          <TabsContent value="laporan" className="mt-4">
+            <LaporanPenjualanTab />
+          </TabsContent>
+        )}
+
+        {bolehPembeli && (
+          <TabsContent value="pembeli" className="mt-4">
+            <PembeliTab />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Modals */}

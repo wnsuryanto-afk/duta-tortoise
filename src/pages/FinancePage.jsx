@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
 import LabaRugiEnhanced from "@/components/finance/LabaRugiEnhanced";
 import EditTransactionDialog from "@/components/finance/EditTransactionDialog";
@@ -290,7 +291,27 @@ export default function FinancePage() {
   const [period, setPeriod] = useState(currentPeriod);
   const [showForm, setShowForm] = useState(false);
   const [editTx, setEditTx] = useState(null);
-  const [tab, setTab] = useState("ringkasan");
+  /*
+   * Tab pindah dari useState ke URL supaya pengalihan dari
+   * /operational-costs mendarat di tab yang benar, dan supaya tab mana pun
+   * bisa ditautkan langsung. "biaya-ops" dibatasi peran yang sama dengan
+   * pintu lamanya (section "operational-costs" = owner/admin/manajer, sama
+   * dengan canManage di halaman ini).
+   */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const TAB_SAH = ["ringkasan", "laba-rugi", "pemasukan", "pengeluaran", "semua", "biaya-ops", "pengaturan"];
+  const tabDariUrl = searchParams.get("tab");
+  const tabBoleh = (t) =>
+    TAB_SAH.includes(t) &&
+    (t !== "pengaturan" || canManage) &&
+    (t !== "biaya-ops" || canManage);
+  const tab = tabBoleh(tabDariUrl) ? tabDariUrl : "ringkasan";
+  const setTab = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai === "ringkasan") next.delete("tab");
+    else next.set("tab", nilai);
+    setSearchParams(next, { replace: true });
+  };
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["finance-transactions"],
@@ -449,6 +470,7 @@ export default function FinancePage() {
           <TabsTrigger value="pemasukan">Pemasukan</TabsTrigger>
           <TabsTrigger value="pengeluaran">Pengeluaran</TabsTrigger>
           <TabsTrigger value="semua">Semua Transaksi</TabsTrigger>
+          {canManage && <TabsTrigger value="biaya-ops">Biaya Operasional</TabsTrigger>}
           {canManage && <TabsTrigger value="pengaturan">Pengaturan</TabsTrigger>}
         </TabsList>
 
@@ -496,6 +518,12 @@ export default function FinancePage() {
             ? <KeadaanKosong gambar="grafik" judul="Belum ada transaksi bulan ini" />
             : periodTxAll.map(t => <TxRow key={t.id} tx={t} />)}
         </TabsContent>
+
+        {canManage && (
+          <TabsContent value="biaya-ops" className="mt-4">
+            <BiayaOperasionalTab />
+          </TabsContent>
+        )}
 
         {canManage && (
           <TabsContent value="pengaturan" className="mt-4">

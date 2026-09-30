@@ -11,7 +11,6 @@ import { ThemeProvider } from '@/lib/ThemeContext';
 import StockPredictionPage from '@/pages/StockPredictionPage';
 import PettyCashPage from '@/pages/PettyCashPage';
 import SupplierPage from '@/pages/SupplierPage';
-import OperationalCostsPage from '@/pages/OperationalCostsPage';
 import SalarySlipPage from '@/pages/SalarySlipPage';
 import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
 import DaftarBelanjaPage from '@/pages/DaftarBelanjaPage';
@@ -39,13 +38,11 @@ import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
 import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
-import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
 import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
 import TermConditionSOPPage from '@/pages/TermConditionSOPPage';
-import CRMPage from '@/pages/CRMPage';
 import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
 import EditProfilePage from '@/pages/EditProfilePage.jsx';
 import IncompleteDataPage from '@/pages/IncompleteDataPage';
@@ -133,14 +130,14 @@ const AuthenticatedApp = () => {
             begitu juga beranda pemilik (dua tempat), checklist awal, dan Data
             Belum Lengkap — dan penanda di peramban orang tidak boleh mati. */}
         <Route path="/enclosure" element={<AlihkanKandang />} />
-        <Route path="/sales-report" element={<SalesReportPage />} />
+        <Route path="/sales-report" element={<Navigate to="/sales?tab=laporan" replace />} />
         <Route path="/hr" element={<HRPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/breeding-planner" element={<BreedingPlannerPage />} />
         <Route path="/sop-library" element={<Navigate to="/sop?tab=perpustakaan" replace />} />
         <Route path="/task-template" element={<DailyTaskTemplatePage />} />
         <Route path="/sop-term-condition" element={<TermConditionSOPPage />} />
-        <Route path="/crm" element={<CRMPage />} />
+        <Route path="/crm" element={<Navigate to="/sales?tab=pembeli" replace />} />
         <Route path="/death-records" element={<DeathRecordsPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/system-maintenance" element={<SystemMaintenancePage />} />
@@ -171,7 +168,7 @@ const AuthenticatedApp = () => {
           * produksi pelet pernah tercatat.
           */}
         <Route path="/pellet-recipe" element={<Navigate to="/stok-unified" replace />} />
-        <Route path="/operational-costs" element={<OperationalCostsPage />} />
+        <Route path="/operational-costs" element={<Navigate to="/finance?tab=biaya-ops" replace />} />
         <Route path="/salary-slip" element={<SalarySlipPage />} />
         <Route path="/approval-poin" element={<ApprovalPoinPage />} />
         <Route path="/layar-tim" element={<LayarTimPage />} />

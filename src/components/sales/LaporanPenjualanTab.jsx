@@ -15,7 +15,7 @@ const COLORS = ["#2d6a4f","#74c69d","#d4a017","#e07b39","#6b7280","#7c3aed","#08
 
 const fmt = (n) => n >= 1000000 ? `${(n/1000000).toFixed(1)}jt` : n >= 1000 ? `${(n/1000).toFixed(0)}rb` : String(n);
 
-export default function SalesReportPage() {
+export default function LaporanPenjualanTab() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(String(currentYear));
   const [month, setMonth] = useState("all");
@@ -83,11 +83,10 @@ export default function SalesReportPage() {
   const years = Array.from({length:5},(_,i)=>String(currentYear-i));
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Laporan Penjualan</h1>
-          <p className="text-sm text-muted-foreground">Analitik & statistik penjualan</p>
+          <p className="text-sm text-muted-foreground">Analitik &amp; statistik penjualan</p>
         </div>
         <div className="flex gap-2">
           <Select value={year} onValueChange={setYear}>
