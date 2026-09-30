@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,7 +52,18 @@ export default function BahanTerpakaiEditor({ nilai, onChange, stokPakan = [], b
 
   const daftar = Array.isArray(nilai) ? nilai : [];
 
-  const sumberItems = sumber === "gudang" ? barangGudang : stokPakan;
+  /*
+   * Bahan NONAKTIF tidak ditawarkan.
+   *
+   * Dari 12 baris FeedStock pada 30-09-2026, sembilan nonaktif dengan stok
+   * nol — sisa daftar awal yang tidak pernah dipakai. Menawarkannya berarti
+   * sembilan pilihan mati di antara tiga yang hidup, dan yang dipilih orang
+   * dari daftar panjang biasanya yang paling atas.
+   */
+  const sumberItems = useMemo(
+    () => (sumber === "gudang" ? barangGudang : stokPakan).filter((i) => i?.is_active !== false),
+    [sumber, barangGudang, stokPakan],
+  );
   const berSku = useMemo(
     () => sumberItems.filter((i) => (i.sku || "").trim()),
     [sumberItems],
@@ -142,11 +154,17 @@ export default function BahanTerpakaiEditor({ nilai, onChange, stokPakan = [], b
         </Button>
       </div>
 
+      {/* Peringatan yang menyebut jalan keluarnya. Tanpa kalimat terakhir ini
+          ia cuma memberi tahu ada pintu terkunci, tanpa menyebut kuncinya —
+          dan tombolnya ada di layar lain. */}
       {tanpaSku > 0 && (
         <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
           <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-          {tanpaSku} bahan di {sumber === "gudang" ? "gudang" : "stok pakan"} belum punya SKU dan tidak bisa dipilih —
-          pemotongan stok mencocokkan lewat SKU.
+          <span>
+            {tanpaSku} bahan aktif di {sumber === "gudang" ? "gudang" : "stok pakan"} belum punya SKU, jadi
+            belum bisa dipilih — pemotongan stok mencocokkan lewat SKU. Buatkan sekaligus lewat{" "}
+            <Link to="/stok-unified" className="font-semibold underline">Stok &amp; Gudang → Generate SKU Massal</Link>.
+          </span>
         </p>
       )}
 

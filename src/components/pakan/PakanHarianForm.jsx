@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { skuPakanBaru } from "@/lib/skuBarang";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,9 +176,25 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
               kunci(s.name) === kunci(namaStok) && s.unit === form.satuan
             );
             if (!feedItem) {
+              /*
+               * SKU diberikan SEKARANG, bukan nanti lewat "Generate SKU
+               * Massal".
+               *
+               * potongStokPakan mencocokkan bahan lewat SKU, jadi baris tanpa
+               * SKU tidak bisa dipilih sebagai bahan terpakai dan tidak akan
+               * pernah memotong stok. Per 30-09-2026 dua pakan yang
+               * benar-benar ada isinya — Melon BS 400 kg dan Rumput 65 kg —
+               * keduanya lahir di sini tanpa SKU, sementara sembilan baris
+               * ber-SKU di daftar yang sama semuanya nonaktif bersisa nol.
+               *
+               * Tombol backfill-nya ada dan berfungsi, tapi selama sisi
+               * pembuat ini tidak ikut diperbaiki, hal yang sama lahir lagi
+               * tiap kali jenis pakan baru dicatat.
+               */
               feedItem = await base44.entities.FeedStock.create({
                 name: namaStok,
                 category: mapping.category,
+                sku: skuPakanBaru(mapping.category, allFeed.map((f) => f.sku)),
                 unit: form.satuan,
                 current_stock: 0,
                 minimum_stock: 1,

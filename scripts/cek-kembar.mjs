@@ -43,6 +43,11 @@ const PASANGAN = [
   ["src/lib/jadwalTimbang.js",  "base44/shared/timbang.ts",       ["golonganRutin", "alasanTimbang", "laporanTerbukaPerKura", "perluDitimbang"]],
   ["src/lib/daftarBelanja.js", "base44/shared/daftarBelanja.ts", ["penandaBaris", "penandaBarang", "penandaMenunggu", "sudahDidaftar", "barisDariBarang", "prioritasDariBarang"]],
   ["src/lib/kepatuhanSOP.js",  "base44/shared/kepatuhan.ts",     ["tugasWajib", "idSelesaiPada", "tugasBelum", "kepatuhanHari"]],
+  // SKU dibuat di DUA tempat: saat pakan baru dicatat (sisi src) dan saat
+  // tombol backfill ditekan (sisi backend). Dua penomoran yang boleh
+  // berbeda menghasilkan SKU kembar, dan SKU kembar membuat pemotongan
+  // stok mengenai barang yang keliru.
+  ["src/lib/skuBarang.js",     "base44/shared/sku.ts",           ["skuBerikutnya", "skuPakanBaru", "skuGudangBaru"]],
 ];
 
 // Perbandingan sengaja "buta" terhadap hal yang memang boleh beda antara

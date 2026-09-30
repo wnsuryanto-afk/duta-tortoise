@@ -1,22 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const FEED_PREFIX = {
-  sayuran: "SYR", buah: "BUH", rumput: "RPT", pelet: "PLT",
-  suplemen: "SPM", hay: "HAY", lainnya: "LNN",
-};
-const WH_PREFIX = {
-  obat: "OBT", vitamin: "VIT", suplemen: "SPM", peralatan: "ALT",
-  habis_pakai: "ALT", alat_kerja: "ALT", pakan: "PKN", lainnya: "LNN",
-};
-
-function getNextSKU(prefix, existingSkus) {
-  const nums = existingSkus
-    .filter(s => s && s.startsWith(prefix + "-"))
-    .map(s => parseInt(s.replace(prefix + "-", ""), 10))
-    .filter(n => !isNaN(n));
-  const max = nums.length > 0 ? Math.max(...nums) : 0;
-  return `${prefix}-${String(max + 1).padStart(4, "0")}`;
-}
+/*
+ * Awalan dan penomorannya dipindah ke ../../shared/sku.ts pada 30-09-2026.
+ *
+ * Sebelumnya salinan ini berdiri sendiri, dan sisi pencatatan pakan tidak
+ * membuat SKU sama sekali. Begitu sisi itu ikut membuat SKU, dua salinan
+ * yang boleh berbeda berarti SKU dari pencatatan bisa berbenturan dengan
+ * SKU dari backfill — dua barang ber-SKU sama membuat pemotongan stok
+ * mengenai barang yang keliru. scripts/cek-kembar.mjs menjaga keduanya.
+ */
+import { skuPakanBaru, skuGudangBaru } from "../../shared/sku.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -38,8 +31,7 @@ Deno.serve(async (req) => {
     // Backfill FeedStock
     for (const item of feedstocks) {
       if (item.sku) continue;
-      const prefix = FEED_PREFIX[item.category] || "LNN";
-      const sku = getNextSKU(prefix, feedSkus);
+      const sku = skuPakanBaru(item.category, feedSkus);
       feedSkus.push(sku);
       await base44.asServiceRole.entities.FeedStock.update(item.id, { sku });
       feedCount++;
@@ -48,8 +40,7 @@ Deno.serve(async (req) => {
     // Backfill WarehouseItem
     for (const item of warehouses) {
       if (item.sku) continue;
-      const prefix = WH_PREFIX[item.category] || "LNN";
-      const sku = getNextSKU(prefix, whSkus);
+      const sku = skuGudangBaru(item.category, whSkus);
       whSkus.push(sku);
       await base44.asServiceRole.entities.WarehouseItem.update(item.id, { sku });
       whCount++;
