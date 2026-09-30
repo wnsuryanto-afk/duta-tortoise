@@ -86,7 +86,65 @@ if (existsSync(join(AKAR, "base44/functions/siapkanSlipMingguan"))) {
   temuan.push('base44/functions/siapkanSlipMingguan/  penerbit slip mingguan hidup lagi');
 }
 
-/* ── 2. Setiap peran bergaji punya pintu ke layar gajinya ──────────── */
+/* ── 2. Potongan kasbon ditulis di SATU tempat ─────────────────────── */
+
+/*
+ * Nilai ini adalah SATUAN yang pernah berubah arti.
+ *
+ * "Rp 100.000 per periode" berarti per MINGGU selama gaji mingguan, dan
+ * per BULAN sejak 30-09-2026 — pelunasan melambat empat kali lipat tanpa
+ * satu pun error. Saat itu angkanya ditulis ulang di SEMBILAN tempat
+ * dengan literal telanjang `100000`; mengubah artinya berarti menemukan
+ * kesembilannya, dan yang terlewat akan diam saja.
+ *
+ * Sekarang satu-satunya tempatnya POTONGAN_KASBON_BAWAAN di hitungGaji.js.
+ */
+const SUMBER_POTONGAN = "src/lib/hitungGaji.js";
+let literalDiperiksa = 0;
+
+for (const p of sumber) {
+  const rel = relative(AKAR, p);
+  if (rel === SUMBER_POTONGAN) continue;
+  const s = readFileSync(p, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n").filter((b) => !b.trim().startsWith("//") && !b.trim().startsWith("*")).join("\n");
+
+  for (const m of s.matchAll(/weekly_deduction[^;\n]*?\|\|\s*(\d{5,})/g)) {
+    literalDiperiksa++;
+    const baris = s.slice(0, m.index).split("\n").length;
+    temuan.push(`${rel}:${baris}  potongan kasbon bawaan ditulis sebagai angka (${m[1]}) — pakai POTONGAN_KASBON_BAWAAN dari ${SUMBER_POTONGAN}`);
+  }
+}
+
+/*
+ * Kedua sisi kembarannya harus bernilai SAMA PERSIS.
+ *
+ * Frontend dan backend berjalan di runtime berbeda dan tidak bisa saling
+ * mengimpor, jadi angkanya memang ada dua kali. Yang tidak boleh adalah
+ * keduanya berselisih: layar menjanjikan Rp 400.000 sementara otomatisasi
+ * onSalarySlipPaid memotong Rp 100.000 — dan tidak ada satu pun error,
+ * karena keduanya angka yang sah.
+ */
+const KEMBAR = "base44/shared/gaji.ts";
+const angkaDari = (isi) => {
+  const m = isi.match(/export const POTONGAN_KASBON_BAWAAN\s*=\s*(\d+)/);
+  return m ? Number(m[1]) : null;
+};
+const depan = angkaDari(readFileSync(join(AKAR, SUMBER_POTONGAN), "utf8"));
+const belakang = existsSync(join(AKAR, KEMBAR))
+  ? angkaDari(readFileSync(join(AKAR, KEMBAR), "utf8"))
+  : null;
+
+if (belakang === null) {
+  temuan.push(`${KEMBAR}  kembaran backend hilang — otomatisasi onSalarySlipPaid tidak punya sumber angkanya`);
+} else if (depan !== belakang) {
+  temuan.push(
+    `POTONGAN_KASBON_BAWAAN berselisih: ${SUMBER_POTONGAN} = ${depan}, ${KEMBAR} = ${belakang}. ` +
+    `Layar dan otomatisasi yang memotong akan memakai angka berbeda, tanpa error.`,
+  );
+}
+
+/* ── 4. Setiap peran bergaji punya pintu ke layar gajinya ──────────── */
 
 const dir = mkdtempSync(join(tmpdir(), "cek-gaji-"));
 const bundel = (masuk, keluar) =>
@@ -133,7 +191,8 @@ if (temuan.length) {
   process.exit(1);
 }
 console.log(
-  `Gaji: satu periode (${payloadDiperiksa} payload period_type diperiksa, semuanya bulanan), ` +
+  `Gaji: satu periode (${payloadDiperiksa} payload period_type, semuanya bulanan), ` +
+  `potongan kasbon bawaan Rp ${depan.toLocaleString("id-ID")} sama di frontend & backend, ` +
   `${gaji.PERAN_BERGAJI.length} peran bergaji punya pintu ke slipnya sendiri.`,
 );
 process.exit(0);

@@ -1,4 +1,4 @@
-import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
+import { hitungGajiKaryawan, karyawanBergaji, POTONGAN_KASBON_BAWAAN } from "@/lib/hitungGaji";
 import { patchPotongan } from "@/lib/potonganKasbon";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -286,7 +286,7 @@ export default function RekapPoinGajiPage() {
       // slip bulan yang sama memotong kasbonnya lagi. Sekarang benar-benar
       // diperiksa, di dalam patchPotongan().
       const patch = patchPotongan(k, {
-        jumlah: k.weekly_deduction || 100000,
+        jumlah: k.weekly_deduction || POTONGAN_KASBON_BAWAAN,
         metode: "salary_slip",
         salarySlipId: slipId,
         periode: selectedMonth,
@@ -322,7 +322,7 @@ export default function RekapPoinGajiPage() {
         const k = kasbons.find(kk => kk.id === kasbonId);
         if (!k) continue;
         const patch = patchPotongan(k, {
-          jumlah: k.weekly_deduction || 100000,
+          jumlah: k.weekly_deduction || POTONGAN_KASBON_BAWAAN,
           metode: "salary_slip",
           salarySlipId: slipId,
           periode: selectedMonth,

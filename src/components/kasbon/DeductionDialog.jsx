@@ -10,12 +10,13 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { rupiah } from "@/lib/rupiah";
+import { POTONGAN_KASBON_BAWAAN } from "@/lib/hitungGaji";
 
 
 export default function DeductionDialog({ kasbon, mode, onClose }) {
   const { user } = useCurrentUser();
   const sisa = (kasbon.amount || 0) - (kasbon.total_paid || 0);
-  const defaultAmt = mode === "cash" ? sisa : Math.min(kasbon.weekly_deduction || 100000, sisa);
+  const defaultAmt = mode === "cash" ? sisa : Math.min(kasbon.weekly_deduction || POTONGAN_KASBON_BAWAAN, sisa);
 
   const [amount, setAmount] = useState(String(defaultAmt));
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -99,7 +100,7 @@ export default function DeductionDialog({ kasbon, mode, onClose }) {
             />
             {!isCash && (
               <p className="text-xs text-muted-foreground">
-                Maks: {rupiah(sisa)} · Default potongan per periode: {rupiah(kasbon.weekly_deduction)}
+                Maks: {rupiah(sisa)} · Default potongan per bulan: {rupiah(kasbon.weekly_deduction)}
               </p>
             )}
           </div>

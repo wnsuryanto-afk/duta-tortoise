@@ -20,9 +20,10 @@ import DeductionDialog from "@/components/kasbon/DeductionDialog";
 import PageHeader from "@/components/common/PageHeader";
 import { WalletArt } from "@/components/common/Illustration";
 import { rupiah } from "@/lib/rupiah";
+import { POTONGAN_KASBON_BAWAAN } from "@/lib/hitungGaji";
 
 const MAX_KASBON = 1000000;
-const WEEKLY_DEDUCTION = 100000;
+const WEEKLY_DEDUCTION = POTONGAN_KASBON_BAWAAN;
 
 
 /**
@@ -293,7 +294,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
             <div className="flex items-center gap-3">
               <TrendingDown className="w-8 h-8 text-amber-500 opacity-70" />
               <div>
-                <p className="text-xs text-muted-foreground">Potongan/Periode</p>
+                <p className="text-xs text-muted-foreground">Potongan/Bulan</p>
                 <p className="text-xl font-heading font-bold text-amber-700">
                   {activeKasbon ? rupiah(activeKasbon.weekly_deduction) : "—"}
                 </p>

@@ -56,8 +56,21 @@ export default function KasbonCard({ kasbon, isAdmin, isOwner, onApprove, onReje
               <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
               </div>
+              {/*
+                Sisa BULAN ikut ditulis, bukan cuma sisa rupiah.
+                Rp 600.000 dengan potongan Rp 100.000 sebulan terbaca
+                ringan sampai disebut "6 bulan lagi". Angka itu berubah
+                empat kali lipat saat gaji pindah dari mingguan ke
+                bulanan pada 30-09-2026, dan tidak satu pun layar
+                menyebutnya.
+              */}
               <p className="text-[11px] text-muted-foreground mt-1">
-                Potongan/periode: {rupiah(kasbon.weekly_deduction)}
+                Potongan/bulan: {rupiah(kasbon.weekly_deduction)}
+                {kasbon.status === "approved" && sisa > 0 && kasbon.weekly_deduction > 0 && (
+                  <span className={Math.ceil(sisa / kasbon.weekly_deduction) > 6 ? "text-amber-700 font-medium" : ""}>
+                    {" · ~"}{Math.ceil(sisa / kasbon.weekly_deduction)} bulan lagi
+                  </span>
+                )}
               </p>
             </div>
           )}

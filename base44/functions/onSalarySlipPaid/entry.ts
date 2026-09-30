@@ -7,6 +7,7 @@ import {
 import { notifSekali, emailPerRole } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { POTONGAN_KASBON_BAWAAN } from "../../shared/gaji.ts";
 
 // Dipanggil via entity automation saat SalarySlip dibuat atau status berubah
 Deno.serve(async (req) => {
@@ -126,7 +127,7 @@ Deno.serve(async (req) => {
               if (alreadyLogged) continue;
               const sisaK = (kasbon.amount || 0) - (kasbon.total_paid || 0);
               if (sisaK <= 0) continue;
-              const ded = Math.min(kasbon.weekly_deduction || 100000, sisaK);
+              const ded = Math.min(kasbon.weekly_deduction || POTONGAN_KASBON_BAWAAN, sisaK);
               const newPaid = (kasbon.total_paid || 0) + ded;
               const newStatus = newPaid >= (kasbon.amount || 0) ? "lunas" : kasbon.status;
               const newLog = [...(kasbon.deduction_log || []), {

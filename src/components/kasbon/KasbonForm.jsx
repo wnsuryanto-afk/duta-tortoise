@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { formatRole } from "@/lib/permissions";
 import { useTestMode } from "@/lib/useTestMode";
 import { batasKasbon } from "@/lib/hitungGaji";
+import { POTONGAN_KASBON_BAWAAN } from "@/lib/hitungGaji";
 
 export default function KasbonForm({ users, usersLoading, onClose }) {
   const { testModeTag } = useTestMode();
@@ -23,7 +24,7 @@ export default function KasbonForm({ users, usersLoading, onClose }) {
     employee_email: "",
     amount: "",
     reason: "",
-    weekly_deduction: "100000",
+    weekly_deduction: String(POTONGAN_KASBON_BAWAAN),
     record_expense: true,
   });
   const [saving, setSaving] = useState(false);
@@ -92,8 +93,8 @@ export default function KasbonForm({ users, usersLoading, onClose }) {
       );
       return;
     }
-    const weekly = Number(form.weekly_deduction) || 100000;
-    if (weekly <= 0) { setError("Potongan per minggu tidak valid."); return; }
+    const weekly = Number(form.weekly_deduction) || POTONGAN_KASBON_BAWAAN;
+    if (weekly <= 0) { setError("Potongan per bulan tidak valid."); return; }
 
     setSaving(true);
     try {
@@ -202,18 +203,33 @@ export default function KasbonForm({ users, usersLoading, onClose }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Potongan per Periode (Rp)</Label>
+            <Label>Potongan per Bulan (Rp)</Label>
             <Input
               type="number"
               value={form.weekly_deduction}
               onChange={(e) => setForm(p => ({ ...p, weekly_deduction: e.target.value }))}
-              placeholder="100000"
+              placeholder={String(POTONGAN_KASBON_BAWAAN)}
             />
-            {form.amount && Number(form.amount) > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Lunas dalam ~{Math.ceil(Number(form.amount) / (Number(form.weekly_deduction) || 100000))} periode
-              </p>
-            )}
+            {/*
+              "periode" diganti "bulan", dan itu bukan sekadar kata.
+              Gaji dibayar MINGGUAN sampai September 2026, jadi Rp 100.000
+              per periode berarti Rp 100.000 per minggu — sekitar
+              Rp 400.000 sebulan. Sejak gaji jadi bulanan, angka yang sama
+              berarti Rp 100.000 SEBULAN: pelunasannya empat kali lebih
+              lama, tanpa satu pun layar yang menyebutnya.
+
+              Lamanya sekarang ditulis dalam bulan, apa adanya, supaya
+              yang memutuskan melihat akibatnya sebelum menyetujui.
+            */}
+            {form.amount && Number(form.amount) > 0 && (() => {
+              const bulan = Math.ceil(Number(form.amount) / (Number(form.weekly_deduction) || POTONGAN_KASBON_BAWAAN));
+              return (
+                <p className={`text-xs ${bulan > 6 ? "text-amber-700 font-medium" : "text-muted-foreground"}`}>
+                  Lunas dalam ~{bulan} bulan
+                  {bulan > 6 && " — lebih dari setengah tahun"}
+                </p>
+              );
+            })()}
           </div>
 
           <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">

@@ -118,8 +118,29 @@ export function karyawanBergaji(users = []) {
 /** Nilai poin bawaan untuk peran harian bila konfigurasi belum diisi. */
 export const NILAI_POIN_BAWAAN = 200;
 
-/** Potongan kasbon bawaan per periode bila kasbon tidak menentukan sendiri. */
-export const POTONGAN_KASBON_BAWAAN = 100000;
+/**
+ * Potongan kasbon bawaan per BULAN bila kasbon tidak menentukan sendiri.
+ *
+ * Rp 400.000 sejak 30-09-2026, naik dari Rp 100.000 — dan itu bukan
+ * kenaikan beban, melainkan koreksi satuan.
+ *
+ * Gaji dibayar MINGGUAN sampai September 2026, jadi "Rp 100.000 per
+ * periode" berarti Rp 100.000 per minggu: sekitar Rp 400.000 sebulan,
+ * dan itulah yang benar-benar dipotong. Spreadsheet September memotong
+ * 3 x Rp 100.000. Begitu periodenya jadi bulanan, angka yang sama
+ * diam-diam berarti Rp 100.000 SEBULAN — pelunasan melambat empat kali
+ * lipat tanpa ada satu pun layar yang menyebutnya, dan tanpa satu pun
+ * error. Kasbon Ali yang sisa Rp 600.000 akan lunas dalam 6 bulan,
+ * bukan 2.
+ *
+ * Angkanya disetel Iwan 30-09-2026 sesudah diberi tahu ketiga pilihannya
+ * beserta akibatnya pada gaji 1 Oktober.
+ *
+ * Nilai ini dulu ditulis ulang di DELAPAN tempat lain dengan angka
+ * telanjang 100000. Sekarang semuanya mengimpor dari sini — sebuah
+ * satuan yang berubah artinya tidak boleh punya sembilan salinan.
+ */
+export const POTONGAN_KASBON_BAWAAN = 400000;
 
 export function adalahPeranHarian(role) {
   return PERAN_HARIAN.includes(role);
