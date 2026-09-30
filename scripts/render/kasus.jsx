@@ -24,6 +24,7 @@ import LaporanPenjualanTab from "@/components/sales/LaporanPenjualanTab";
 import PembeliTab from "@/components/sales/PembeliTab";
 import CatatanUntukSayaTab from "@/components/sop/CatatanUntukSayaTab";
 import BahanTerpakaiEditor from "@/components/sop/BahanTerpakaiEditor";
+import PembaruanTersedia from "@/components/common/PembaruanTersedia";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
 import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
@@ -110,6 +111,9 @@ export default [
   /* Editor bahan terpakai — dirender dengan nilai kosong DAN dengan nilai
      yang sudah terisi, karena daftarnya punya dua bentuk tampilan. */
   ["BahanTerpakaiEditor kosong", <BahanTerpakaiEditor nilai={[]} onChange={() => {}} />],
+  /* Dipasang di AppLayout, jadi ia ikut dirender di SETIAP layar. Kalau ia
+     melempar saat dimuat, seluruh aplikasi ikut mati. */
+  ["PembaruanTersedia tanpa DOM", <PembaruanTersedia />],
   ["BahanTerpakaiEditor terisi", <BahanTerpakaiEditor
     nilai={[{ sku: "PKN-001", nama: "Rumput", jumlah: 3, sumber: "pakan" }]}
     onChange={() => {}}

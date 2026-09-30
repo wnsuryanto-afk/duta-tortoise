@@ -14,6 +14,7 @@ import { SETTINGS_ITEMS, findParentArea } from "@/lib/navigation";
 import { useDailyCareTasks } from "@/lib/useDailyCareTasks";
 import { canAccess } from "@/lib/permissions";
 import CommandPalette from "@/components/common/CommandPalette";
+import PembaruanTersedia from "@/components/common/PembaruanTersedia";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -432,6 +433,9 @@ export default function AppLayout() {
       </main>
 
       <TourController />
+      {/* Muncul hanya bila berkas aplikasi yang sedang jalan sudah tertinggal
+          dari yang terbit — lihat lib/versiAplikasi.js. */}
+      <PembaruanTersedia />
       <CommandPalette
         open={showPalette}
         onOpenChange={setShowPalette}
