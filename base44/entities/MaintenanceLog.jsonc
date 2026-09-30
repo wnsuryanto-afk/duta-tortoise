@@ -1,8 +1,130 @@
-// Cerminan skema HIDUP di Base44, diambil 27 September 2026.
-// Kedua sisi penggabungan sudah basi; yang benar adalah yang hidup.
 {
   "name": "MaintenanceLog",
-  "type": "object",
+  "properties": {
+    "approval_status": {
+      "description": "Status penilaian tugas Inisiatif. 'pending' berarti MENUNGGU PENILAIAN, bukan nol poin: sampai 20 September 2026 seluruh 234 catatan Inisiatif berstatus pending dengan poin_earned 0, karena tidak ada satu pun yang pernah dinilai.",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "type": "string"
+    },
+    "approved_at": {
+      "description": "Waktu penilaian",
+      "type": "string"
+    },
+    "approved_by": {
+      "description": "Nama yang menilai",
+      "type": "string"
+    },
+    "check_key": {
+      "description": "Unique key: enclosure_id__freq__item_id__period_key",
+      "type": "string"
+    },
+    "done_at": {
+      "description": "Jam selesai (HH:mm)",
+      "type": "string"
+    },
+    "done_by": {
+      "description": "Nama keeper yang mencentang",
+      "type": "string"
+    },
+    "done_by_email": {
+      "description": "Email keeper",
+      "type": "string"
+    },
+    "enclosure_id": {
+      "description": "ID kandang",
+      "type": "string"
+    },
+    "enclosure_name": {
+      "description": "Nama kandang",
+      "type": "string"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)",
+      "type": "boolean"
+    },
+    "extra_description": {
+      "description": "Deskripsi tugas Inisiatif",
+      "type": "string"
+    },
+    "freq": {
+      "description": "Frekuensi checklist",
+      "enum": [
+        "harian",
+        "mingguan",
+        "bulanan"
+      ],
+      "type": "string"
+    },
+    "is_done": {
+      "default": false,
+      "type": "boolean"
+    },
+    "is_extra": {
+      "default": false,
+      "description": "Tugas Inisiatif di luar SOP \u2014 dikerjakan atas kemauan sendiri",
+      "type": "boolean"
+    },
+    "is_test_data": {
+      "default": false,
+      "description": "Ditandai sebagai data test (Mode Uji owner) \u2014 tidak masuk laporan/poin asli",
+      "type": "boolean"
+    },
+    "is_verified": {
+      "default": false,
+      "type": "boolean"
+    },
+    "item_id": {
+      "description": "ID item checklist",
+      "type": "string"
+    },
+    "item_label": {
+      "description": "Label item checklist",
+      "type": "string"
+    },
+    "kandang_wajib_hari_itu": {
+      "description": "Berapa kandang yang WAJIB dironda pada hari baris ini dibuat. Dicap saat pencatatan karena daftar ronda berubah (kandang digabung, ditambah, dikosongkan) dan daftar hari ini bukan daftar bulan lalu. Tanpa ini, kepatuhan hari-hari lampau dihitung memakai penyebut hari ini: 21-26 September 2026 kiper menyelesaikan seluruh 14 kandang yang waktu itu diwajibkan, tetapi kartu Kepatuhan SOP membaginya dengan 16 (angka setelah 4 kandang Bonsai masuk ronda) dan menampilkan 88% untuk enam hari yang sebenarnya 100%.",
+      "type": "number"
+    },
+    "menunggu_penilaian": {
+      "default": true,
+      "description": "Tugas Inisiatif yang dikirim keeper menunggu dinilai. Dipisahkan dari approval_status supaya layar bisa membedakan 'belum dinilai' dari 'sudah dinilai nol' \u2014 keduanya dulu terlihat sama persis.",
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "penilaian_note": {
+      "description": "Catatan penilai untuk yang mengerjakan \u2014 opsional, tetapi inilah satu-satunya cara orangnya tahu kenapa poinnya sekian.",
+      "type": "string"
+    },
+    "period_key": {
+      "description": "Kunci periode (YYYY-MM-DD)",
+      "type": "string"
+    },
+    "photo_url": {
+      "description": "URL foto dokumentasi kegiatan",
+      "type": "string"
+    },
+    "poin_dinilai_oleh": {
+      "description": "Email penilai. Dipisah dari approved_by yang berisi nama, supaya bisa dicocokkan dengan User tanpa menebak dari nama.",
+      "type": "string"
+    },
+    "poin_earned": {
+      "default": 0,
+      "type": "number"
+    },
+    "verified_at": {
+      "type": "string"
+    },
+    "verified_by": {
+      "type": "string"
+    }
+  },
   "required": [
     "check_key",
     "enclosure_id",
@@ -11,125 +133,5 @@
     "item_id",
     "period_key"
   ],
-  "properties": {
-    "check_key": {
-      "type": "string",
-      "description": "Unique key: enclosure_id__freq__item_id__period_key"
-    },
-    "enclosure_id": {
-      "type": "string",
-      "description": "ID kandang"
-    },
-    "enclosure_name": {
-      "type": "string",
-      "description": "Nama kandang"
-    },
-    "freq": {
-      "type": "string",
-      "enum": [
-        "harian",
-        "mingguan",
-        "bulanan"
-      ],
-      "description": "Frekuensi checklist"
-    },
-    "item_id": {
-      "type": "string",
-      "description": "ID item checklist"
-    },
-    "item_label": {
-      "type": "string",
-      "description": "Label item checklist"
-    },
-    "period_key": {
-      "type": "string",
-      "description": "Kunci periode (YYYY-MM-DD)"
-    },
-    "is_done": {
-      "type": "boolean",
-      "default": false
-    },
-    "done_at": {
-      "type": "string",
-      "description": "Jam selesai (HH:mm)"
-    },
-    "done_by": {
-      "type": "string",
-      "description": "Nama keeper yang mencentang"
-    },
-    "done_by_email": {
-      "type": "string",
-      "description": "Email keeper"
-    },
-    "is_verified": {
-      "type": "boolean",
-      "default": false
-    },
-    "verified_at": {
-      "type": "string"
-    },
-    "verified_by": {
-      "type": "string"
-    },
-    "notes": {
-      "type": "string"
-    },
-    "photo_url": {
-      "type": "string",
-      "description": "URL foto dokumentasi kegiatan"
-    },
-    "is_extra": {
-      "type": "boolean",
-      "default": false,
-      "description": "Tugas Inisiatif di luar SOP — dikerjakan atas kemauan sendiri"
-    },
-    "extra_description": {
-      "type": "string",
-      "description": "Deskripsi tugas Inisiatif"
-    },
-    "poin_earned": {
-      "type": "number",
-      "default": 0
-    },
-    "approval_status": {
-      "type": "string",
-      "enum": [
-        "pending",
-        "approved",
-        "rejected"
-      ],
-      "description": "Status penilaian tugas Inisiatif. 'pending' berarti MENUNGGU PENILAIAN, bukan nol poin: sampai 20 September 2026 seluruh 234 catatan Inisiatif berstatus pending dengan poin_earned 0, karena tidak ada satu pun yang pernah dinilai."
-    },
-    "approved_at": {
-      "type": "string",
-      "description": "Waktu penilaian"
-    },
-    "approved_by": {
-      "type": "string",
-      "description": "Nama yang menilai"
-    },
-    "poin_dinilai_oleh": {
-      "type": "string",
-      "description": "Email penilai. Dipisah dari approved_by yang berisi nama, supaya bisa dicocokkan dengan User tanpa menebak dari nama."
-    },
-    "menunggu_penilaian": {
-      "type": "boolean",
-      "default": true,
-      "description": "Tugas Inisiatif yang dikirim keeper menunggu dinilai. Dipisahkan dari approval_status supaya layar bisa membedakan 'belum dinilai' dari 'sudah dinilai nol' — keduanya dulu terlihat sama persis."
-    },
-    "penilaian_note": {
-      "type": "string",
-      "description": "Catatan penilai untuk yang mengerjakan — opsional, tetapi inilah satu-satunya cara orangnya tahu kenapa poinnya sekian."
-    },
-    "is_test_data": {
-      "type": "boolean",
-      "default": false,
-      "description": "Ditandai sebagai data test (Mode Uji owner) — tidak masuk laporan/poin asli"
-    },
-    "excluded_from_reports": {
-      "type": "boolean",
-      "default": false,
-      "description": "Dikecualikan dari laporan (owner only)"
-    }
-  }
+  "type": "object"
 }
