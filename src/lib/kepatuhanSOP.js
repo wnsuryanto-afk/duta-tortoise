@@ -118,12 +118,40 @@ export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang =
   const idSelesai = idSelesaiPada(logs, tanggal);
   const selesai = wajib.filter((t) => idSelesai.has(String(t.id))).length;
 
-  const kandangSelesai = new Set(
-    (logs || [])
-      .filter((l) => l?.period_key === tanggal && masukLaporan(l))
-      .map((l) => String(l?.item_id || ""))
-      .filter((id) => id.startsWith("kebersihan_kandang_")),
-  ).size;
+  const barisKandang = (logs || []).filter(
+    (l) =>
+      l?.period_key === tanggal &&
+      masukLaporan(l) &&
+      String(l?.item_id || "").startsWith("kebersihan_kandang_"),
+  );
+  const kandangSelesai = new Set(barisKandang.map((l) => String(l.item_id))).size;
+
+  /*
+   * Penyebutnya diambil dari HARI ITU, bukan dari hari ini.
+   *
+   * `jumlahKandang` yang dioper pemanggil adalah daftar ronda SEKARANG.
+   * Memakainya untuk hari-hari lampau menghukum kiper atas kandang yang
+   * waktu itu belum masuk ronda: pada 21-26 September 2026 mereka
+   * menyelesaikan seluruh 14 kandang yang diwajibkan, lalu kartunya
+   * menampilkan 88% karena dibagi 16 — jumlah setelah empat kandang Bonsai
+   * bergabung pada 29 September.
+   *
+   * Sejak 30-09-2026 tiap baris kandang membawa cap `kandang_wajib_hari_itu`.
+   * Bila capnya ada, itulah penyebut yang benar untuk hari itu.
+   *
+   * Baris yang lebih tua tidak punya cap, dan tidak ada tempat mana pun yang
+   * menyimpan daftar ronda hari itu — jadi tidak ada yang bisa dipulihkan
+   * tanpa menebak. Untuk hari-hari itu penyebut hari ini tetap dipakai, apa
+   * adanya. Jendela kartunya 14 hari, jadi ia sembuh sendiri dalam dua
+   * minggu tanpa satu baris data pun disentuh.
+   */
+  const capHariItu = barisKandang
+    .map((l) => Number(l?.kandang_wajib_hari_itu))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  // Terbesar, bukan yang pertama: bila dua perangkat mencatat di hari yang
+  // sama dan salah satunya masih memegang daftar lama, yang lebih panjanglah
+  // yang mencerminkan ronda sesungguhnya.
+  const penyebutKandang = capHariItu.length > 0 ? Math.max(...capHariItu) : jumlahKandang;
 
   // Kandang dituntut bila ADA tugas ubin yang terjadwal hari itu. Sejak D12
   // satu ubin mencakup beberapa tugas dengan jadwal berbeda: kebersihan
@@ -139,7 +167,7 @@ export function kepatuhanHari(tanggal, sopTasks = [], logs = [], jumlahKandang =
     terjadwal: wajib.length,
     persen: wajib.length > 0 ? Math.round((selesai / wajib.length) * 100) : null,
     kandangSelesai,
-    kandangTotal: adaTugasUbin ? jumlahKandang : 0,
+    kandangTotal: adaTugasUbin ? penyebutKandang : 0,
   };
 }
 

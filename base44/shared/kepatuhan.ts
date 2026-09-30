@@ -119,12 +119,30 @@ export function kepatuhanHari(
   const idSelesai = idSelesaiPada(logs, tanggal);
   const selesai = wajib.filter((t) => idSelesai.has(String(t.id))).length;
 
-  const kandangSelesai = new Set(
-    (logs || [])
-      .filter((l: any) => l?.period_key === tanggal && masukLaporan(l))
-      .map((l: any) => String(l?.item_id || ""))
-      .filter((id: string) => id.startsWith("kebersihan_kandang_")),
-  ).size;
+  const barisKandang = (logs || []).filter(
+    (l: any) =>
+      l?.period_key === tanggal &&
+      masukLaporan(l) &&
+      String(l?.item_id || "").startsWith("kebersihan_kandang_"),
+  );
+  const kandangSelesai = new Set(barisKandang.map((l: any) => String(l.item_id))).size;
+
+  /*
+   * Penyebutnya diambil dari HARI ITU, bukan dari hari ini. Penjelasan
+   * lengkapnya di kembarannya, src/lib/kepatuhanSOP.js. Ringkasnya:
+   * `jumlahKandang` yang dioper pemanggil adalah daftar ronda SEKARANG, dan
+   * memakainya untuk hari lampau menghukum kiper atas kandang yang waktu itu
+   * belum masuk ronda — 21-26 September 2026 terbaca 88% padahal 100%.
+   *
+   * Kedua sisi HARUS menjawab sama untuk baris yang sama: yang ini memberi
+   * angka ke ringkasan WhatsApp, yang di src memberi angka ke layar. Beda
+   * sedikit saja berarti dua laporan yang bertengkar soal hari yang sama.
+   */
+  const capHariItu = barisKandang
+    .map((l: any) => Number(l?.kandang_wajib_hari_itu))
+    .filter((n: number) => Number.isFinite(n) && n > 0);
+  const penyebutKandang =
+    capHariItu.length > 0 ? Math.max(...capHariItu) : jumlahKandang;
 
   // Kandang dituntut bila ADA tugas ubin yang terjadwal hari itu. Sejak D12
   // satu ubin mencakup beberapa tugas dengan jadwal berbeda: kebersihan
@@ -140,7 +158,7 @@ export function kepatuhanHari(
     terjadwal: wajib.length,
     persen: wajib.length > 0 ? Math.round((selesai / wajib.length) * 100) : null,
     kandangSelesai,
-    kandangTotal: adaTugasUbin ? jumlahKandang : 0,
+    kandangTotal: adaTugasUbin ? penyebutKandang : 0,
   };
 }
 

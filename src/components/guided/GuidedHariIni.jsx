@@ -680,6 +680,22 @@ export default function GuidedHariIni({ user }) {
         // Angka inilah yang mengalir ke gaji: onMaintenanceDone menjumlahkannya
         // ke total_points_claimed pada DailyChecklist hari itu.
         poin_earned: poinUbin(k),
+        /*
+         * Penyebut kepatuhan, DICAP HARI INI.
+         *
+         * Daftar ronda berubah: kandang digabung, ditambah, dikosongkan.
+         * Kartu Kepatuhan SOP dulu memakai jumlah kandang HARI INI sebagai
+         * penyebut untuk keempat belas hari yang ditampilkannya — termasuk
+         * hari-hari ketika daftarnya masih lain.
+         *
+         * Akibatnya terukur: 21-26 September 2026 kiper menyelesaikan
+         * SELURUH 14 kandang yang waktu itu diwajibkan, dan kartunya
+         * menampilkan 88% untuk keenam hari itu, karena dibagi 16 — jumlah
+         * setelah empat kandang Bonsai masuk ronda pada 29 September.
+         *
+         * Angka yang dicap di sini tidak bisa basi: ia ikut barisnya.
+         */
+        kandang_wajib_hari_itu: daftarKandang.length,
       };
       if (photoUrl) logData.photo_url = photoUrl;
       await catatLogSekali(logData);
