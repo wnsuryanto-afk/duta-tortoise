@@ -3,6 +3,7 @@ import PanelKasbon from "@/components/kasbon/PanelKasbon";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,6 +182,7 @@ function SalaryConfigDialog({ open, onClose, editData }) {
 }
 
 function OvertimeDialog({ open, onClose, employees }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const [form, setForm] = useState({ employee_email: "", date: format(new Date(), "yyyy-MM-dd"), hours: "", notes: "" });
   const [saving, setSaving] = useState(false);
@@ -194,6 +196,7 @@ function OvertimeDialog({ open, onClose, employees }) {
       hours: Number(form.hours),
       employee_id: emp?.id || "",
       employee_name: emp?.full_name || emp?.email || "",
+      ...testModeTag,
     });
     qc.invalidateQueries({ queryKey: ["overtime-logs"] });
     setSaving(false);

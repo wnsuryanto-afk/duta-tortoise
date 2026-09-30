@@ -42,13 +42,14 @@ export async function petaLaporanTerbuka() {
  *
  * @returns {{dibuat: boolean, laporan: object}}
  */
-export async function catatTidakMakan(kura, { sumber = "lainnya", catatan = "", user } = {}) {
+export async function catatTidakMakan(kura, { sumber = "lainnya", catatan = "", user, tandaUji } = {}) {
   if (!kura?.id) throw new Error("Laporan tidak makan butuh kura.");
   const terbuka = await petaLaporanTerbuka();
   const ada = terbuka.get(kura.id);
   if (ada) return { dibuat: false, laporan: ada };
 
   const laporan = await base44.entities.LaporanMakan.create({
+    ...(tandaUji || {}),
     tortoise_id: kura.id,
     tortoise_code: kura.code || kura.name || "",
     enclosure_name: kura.enclosure || "",
@@ -70,9 +71,10 @@ export async function catatTidakMakan(kura, { sumber = "lainnya", catatan = "", 
  * kura tidak makan adalah keterangan yang paling berguna di sini, dan
  * keterangan itu hilang kalau baris pembukanya ditimpa.
  */
-export async function catatMakanLagi(kura, { catatan = "", user } = {}) {
+export async function catatMakanLagi(kura, { catatan = "", user, tandaUji } = {}) {
   if (!kura?.id) throw new Error("Penutupan laporan butuh kura.");
   return await base44.entities.LaporanMakan.create({
+    ...(tandaUji || {}),
     tortoise_id: kura.id,
     tortoise_code: kura.code || kura.name || "",
     enclosure_name: kura.enclosure || "",

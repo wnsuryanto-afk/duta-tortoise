@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ function StatusBadge({ status }) {
 
 // ── Movement Form ───────────────────────────────────────────────────────
 function MovementForm({ feedstocks, warehouseItems, onClose, threshold }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   const [form, setForm] = useState({ type: "masuk", item_id: "", item_type: "feedstock", quantity: "", unit_price: "", notes: "", date: format(new Date(), "yyyy-MM-dd") });
@@ -70,6 +72,7 @@ function MovementForm({ feedstocks, warehouseItems, onClose, threshold }) {
       by_name: user?.full_name || user?.email || "",
       notes: form.notes,
       status,
+      ...testModeTag,
     });
 
     // Update actual stock if selesai

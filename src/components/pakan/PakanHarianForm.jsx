@@ -135,6 +135,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
         trip_cost_solar: solar,
         trip_cost_rokok: rokok,
         trip_finance_tx_id,
+        ...testModeTag,
       });
 
       // ── INTEGRASI STOK PAKAN (anti-dobel via linked_pakan_harian_id) ──
@@ -225,6 +226,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
               status: "selesai",
               photo_urls: photo_url ? [photo_url] : [],
               linked_pakan_harian_id: pakanHarian.id,
+              ...testModeTag,
             });
 
             await base44.entities.FeedStock.update(feedItem.id, {

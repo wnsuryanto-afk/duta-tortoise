@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -553,6 +554,7 @@ function ItemForm({ item, onClose }) {
 
 // ── Adjust Dialog ─────────────────────────────────────────────────────
 function AdjustDialog({ item, onClose }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   const [amount, setAmount] = useState("");
@@ -600,6 +602,7 @@ function AdjustDialog({ item, onClose }) {
       quantity: delta, unit: item.unit,
       date: format(new Date(), "yyyy-MM-dd"),
       by_email: user?.email || "", by_name: user?.full_name || user?.email || "", status: "selesai",
+      ...testModeTag,
     });
     qc.invalidateQueries({ queryKey: ["feedstocks"] });
     qc.invalidateQueries({ queryKey: ["warehouse-items"] });

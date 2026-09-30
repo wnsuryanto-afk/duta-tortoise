@@ -184,6 +184,7 @@ export default function PembelianPage() {
         is_talangan: true,
         status_utang: "belum_dibayar",
         items,
+        ...testModeTag,
       });
 
       for (const it of items) {
@@ -347,6 +348,7 @@ export default function PembelianPage() {
           label_per_butir: !!f.per_butir,
           label_dicetak: false,
           status: "aktif",
+          ...testModeTag,
         });
 
         // Tanggal kedaluwarsa barang gudang = yang PALING AWAL di antara batch

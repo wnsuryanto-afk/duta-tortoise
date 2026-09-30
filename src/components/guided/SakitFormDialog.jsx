@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { perubahanSakit } from "@/lib/statusKura";
 import { format } from "date-fns";
 import { X, Loader2, CheckCircle2, Mic, Square, Sparkles } from "lucide-react";
@@ -26,6 +27,7 @@ const TRIGGER_SEVERITIES = ["sedang", "berat", "kritis"];
 
 export default function SakitFormDialog({ open, onClose, user }) {
   const qc = useQueryClient();
+  const { testModeTag } = useTestMode();
   const [kura, setKura] = useState("");
   const [diagnosis, setDiagnosis] = useState([]);
   const [severity, setSeverity] = useState("");
@@ -177,6 +179,26 @@ export default function SakitFormDialog({ open, onClose, user }) {
       .map(c => protocols.find(p => p.diagnosis_code === c)?.diagnosis_name || c)
       .join(", ");
 
+      /*
+       * `testModeTag` ditambahkan 30-09-2026.
+       *
+       * Ada TIGA jalur yang membuat catatan sakit — layar kiper ini,
+       * dialog dari temuan foto, dan formulir lengkap di Catatan Sakit.
+       * Hanya yang ketiga menyertakan penanda Mode Uji.
+       *
+       * `is_test_data` punya default `false` di skemanya, jadi catatan
+       * yang dibuat saat Mode Uji menyala tidak sekadar kehilangan
+       * penandanya — ia tersimpan bertanda "BUKAN data uji", dan tidak ada
+       * cara membedakannya kelak.
+       *
+       * Jalur inilah yang paling mungkin kena: Mode Uji dipakai pemilik
+       * justru untuk mencoba aplikasi SEBAGAI KIPER, dan ini layar kiper.
+       *
+       * Diperiksa di basis data: 18 catatan kesehatan, satu di antaranya
+       * bertanda is_test_data true (B106, 19 Agustus, dibuat pemilik lewat
+       * formulir lengkap). Jadi Mode Uji memang dipakai di sini —
+       * penandanya yang belum lengkap, bukan fiturnya yang menganggur.
+       */
     await base44.entities.HealthRecord.create({
       tortoise_id: kura,
       tortoise_name: t?.name || kura,
@@ -187,6 +209,7 @@ export default function SakitFormDialog({ open, onClose, user }) {
       treatment: treatment.trim(),
       description: `Dilaporkan oleh ${user?.full_name || user?.email}. Diagnosis: ${diagNames}${notes ? `. Catatan: ${notes}` : ""}`,
       diagnosis_notes: diagNames,
+      ...testModeTag,
     });
 
     // Tandai kuranya sakit pada kedua penandanya sekaligus. Menulis status dan

@@ -188,6 +188,11 @@ export default function KeeperDashboard() {
         alasan: isianAlasan?.alasan,
         catatanAlasan: isianAlasan?.catatan,
         fotoAlasan: isianAlasan?.fotoUrl,
+        // Tombol check-out di layar yang sama sudah mengirim penanda ini;
+        // check-in tidak. Satu sesi Mode Uji karenanya meninggalkan baris
+        // absensi yang separuhnya bertanda uji dan separuhnya tidak —
+        // dan yang tidak bertanda ikut terhitung sebagai kehadiran nyata.
+        tandaUji: testModeTag,
       }));
     } catch (err) {
       setLocationWarning(`Check in gagal tersimpan: ${err.message}. Coba lagi.`);

@@ -11,12 +11,16 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { tandaiSembuh } from "@/lib/kesehatanKura";
+import { useTestMode } from "@/lib/useTestMode";
 import { ambilKuraSakitBerketerangan } from "@/lib/daftarKuraSakit";
 import { format } from "date-fns";
 import { Heart, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function SickTortoiseClosePanel({ user }) {
   const qc = useQueryClient();
+  // Catatan "sembuh" yang ditulis dari sini saat Mode Uji menyala ikut
+  // ditandai data uji, sama seperti catatan sakitnya.
+  const { testModeTag } = useTestMode();
   const today = format(new Date(), "yyyy-MM-dd");
   const [sembuhLoading, setSembuhLoading] = useState(null);
 
@@ -38,6 +42,7 @@ export default function SickTortoiseClosePanel({ user }) {
         user,
         tanggal: today,
         asal: "halaman Rekam Kesehatan",
+        tandaUji: testModeTag,
       });
       qc.invalidateQueries({ queryKey: ["sick-tortoises-close-panel"] });
       qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });

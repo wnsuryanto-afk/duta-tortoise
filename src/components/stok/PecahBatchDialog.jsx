@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,7 @@ import { BATAS_AMBIL } from "@/api/base44Client";
  * selisihnya nol — bukan peringatan yang bisa dilewati.
  */
 export default function PecahBatchDialog({ item, onClose }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const stok = Number(item?.current_stock) || 0;
   const [baris, setBaris] = useState([
@@ -94,6 +96,7 @@ export default function PecahBatchDialog({ item, onClose }) {
             "Tanggal terima adalah tanggal pendataan, bukan tanggal barang datang." +
             (b.catatan ? ` ${b.catatan}` : ""),
           label_dicetak: false,
+          ...testModeTag,
         });
       }
 

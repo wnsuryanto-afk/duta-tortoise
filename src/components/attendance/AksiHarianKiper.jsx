@@ -29,6 +29,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 
 // Dipakai oleh: guided/GuidedHariIni.jsx dan dashboard/KeeperDashboard.jsx.
 // Kalau kelak ada layar kiper ketiga, ia memakai komponen ini juga — jangan
@@ -36,6 +37,7 @@ import { base44 } from "@/api/base44Client";
 const hariIniStr = () => new Date().toISOString().split("T")[0];
 
 export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesan }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const [sibuk, setSibuk] = useState("");
   const today = hariIniStr();
@@ -91,6 +93,7 @@ export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesa
         employee_email: user.email,
         date: today,
         status: "libur",
+        ...testModeTag,
       });
       qc.invalidateQueries({ queryKey: ["attendance-today"] });
       kabari("ok", "Hari ini ditandai libur. Tidak dihitung sebagai hari kerja.");
@@ -130,6 +133,7 @@ export default function AksiHarianKiper({ user, attendance, hasCheckedIn, onPesa
         recorded_by_email: user.email,
         notes:
           "Dicatat sekali tekan dari layar harian. Jumlah keranjang tidak diisi — buka Pakan Harian bila perlu mencatat volumenya.",
+        ...testModeTag,
       });
       qc.invalidateQueries({ queryKey: ["trip-sayur-today"] });
       // Kunci yang dibaca penagih "belum dicatat rempesannya" di dasbor, supaya

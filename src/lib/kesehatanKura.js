@@ -74,8 +74,10 @@ export function sedangSakitLengkap(kura, idKasusTerbuka) {
  * @param {object} user      pengguna yang menandai
  * @param {string} tanggal   YYYY-MM-DD
  * @param {string} asal      keterangan singkat dari layar mana tindakan ini datang
+ * @param {object} tandaUji  penanda Mode Uji dari layar pemanggil, disebar apa adanya
+ *                           ke catatan baru. Kosong pada pemakaian biasa.
  */
-export async function tandaiSembuh({ kura, catatan = [], user, tanggal, asal = "aplikasi" }) {
+export async function tandaiSembuh({ kura, catatan = [], user, tanggal, asal = "aplikasi", tandaUji }) {
   const tortoiseId = kura.tortoise_id || kura.id;
   const nama = kura.tortoise_name || kura.name || tortoiseId;
   const olehNama = user?.full_name || user?.email || "pengelola";
@@ -103,6 +105,7 @@ export async function tandaiSembuh({ kura, catatan = [], user, tanggal, asal = "
 
   // 2. Catat kejadian sembuhnya sebagai riwayat tersendiri.
   await base44.entities.HealthRecord.create({
+    ...(tandaUji || {}),
     tortoise_id: tortoiseId,
     tortoise_name: nama,
     date: tanggal,

@@ -277,6 +277,7 @@ export default function GuidedHariIni({ user }) {
         user,
         tanggal: today,
         asal: "layar keeper",
+        tandaUji: testModeTag,
       });
       qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
       qc.invalidateQueries({ queryKey: ["health-records"] });
@@ -318,6 +319,7 @@ export default function GuidedHariIni({ user }) {
         tanggal: today,
         catatanKesehatan: catatanKura,
         tugasInsidentil: tugasTertunda,
+        tandaUji: testModeTag,
       });
 
       refetchML();
@@ -764,6 +766,7 @@ export default function GuidedHariIni({ user }) {
         sumber: "tugas_pakan",
         catatan: makanCatatan.trim(),
         user,
+        tandaUji: testModeTag,
       });
       qc.invalidateQueries({ queryKey: ["laporan-makan"] });
       qc.invalidateQueries({ queryKey: ["rotasi-ukur"] });
@@ -805,6 +808,7 @@ export default function GuidedHariIni({ user }) {
       treatment: sakitForm.treatment.trim(),
       description: `Dilaporkan oleh ${user.full_name || user.email}. Diagnosis: ${diagNames}${sakitForm.description ? `. Catatan: ${sakitForm.description}` : ""}`,
       diagnosis_notes: diagNames,
+      ...testModeTag,
     });
     // Set is_currently_sick=true pada Tortoise
     try {
@@ -844,6 +848,7 @@ export default function GuidedHariIni({ user }) {
         completed_tasks: [],
         status: "draft",
         notes: note,
+        ...testModeTag,
       });
     }
     setCatatan("");

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, UtensilsCrossed, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useTestMode } from "@/lib/useTestMode";
 import {
   ambilLaporanMakan, catatTidakMakan, catatMakanLagi,
 } from "@/lib/laporMakan";
@@ -26,6 +27,9 @@ import { hariIniWIB } from "@/lib/laporMakan";
 export default function LaporMakanPanel({ tortoise }) {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
+  // Laporan yang dibuat pemilik saat Mode Uji menyala harus ikut tertandai,
+  // supaya percobaan di halaman kura tidak masuk hitungan laporan sungguhan.
+  const { testModeTag } = useTestMode();
   const [catatan, setCatatan] = useState("");
   const [sibuk, setSibuk] = useState(false);
 
@@ -45,7 +49,7 @@ export default function LaporMakanPanel({ tortoise }) {
     setSibuk(true);
     try {
       const { dibuat } = await catatTidakMakan(tortoise, {
-        sumber: "halaman_kura", catatan, user,
+        sumber: "halaman_kura", catatan, user, tandaUji: testModeTag,
       });
       setCatatan("");
       segarkan();
@@ -63,7 +67,7 @@ export default function LaporMakanPanel({ tortoise }) {
   const tutup = async () => {
     setSibuk(true);
     try {
-      await catatMakanLagi(tortoise, { catatan, user });
+      await catatMakanLagi(tortoise, { catatan, user, tandaUji: testModeTag });
       setCatatan("");
       segarkan();
       toast.success("Dicatat sudah makan lagi.");

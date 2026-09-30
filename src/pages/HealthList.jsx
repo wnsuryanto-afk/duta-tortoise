@@ -157,6 +157,12 @@ export default function HealthList() {
     if (jumlahObat > 0) {
       const { gagal } = await kembalikanPemakaianObat({
         record: r,
+        // Penandanya diambil dari catatan yang sedang dihapus, BUKAN dari
+        // Mode Uji yang sedang menyala. Pergerakan stok ini membatalkan
+        // pemakaian yang dulu dicatat; ia harus berpasangan dengan baris
+        // aslinya, kalau tidak salah satunya masuk laporan sendirian dan
+        // stok gudang di laporan bergeser tanpa sebab yang terlihat.
+        tandaUji: r.is_test_data ? { is_test_data: true } : {},
         user: await base44.auth.me().catch(() => null),
       });
       if (gagal.length > 0) {

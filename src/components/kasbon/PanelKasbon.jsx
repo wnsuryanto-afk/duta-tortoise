@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
   const canApply = !["owner", "investor", "kicked"].includes(role);
 
   const [showAdminForm, setShowAdminForm] = useState(false);
+  const { testModeTag } = useTestMode();
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [deductTarget, setDeductTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
@@ -178,6 +180,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
         total_paid: 0,
         status: "pending",
         deduction_log: [],
+        ...testModeTag,
       });
       await logActivity({
         action: "create",

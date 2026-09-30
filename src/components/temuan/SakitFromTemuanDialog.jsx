@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ const SEVERITIES = [
  * Pre-isi catatan dari teks temuan, foto bukti dari temuan.
  */
 export default function SakitFromTemuanDialog({ finding, user, onClose, onResolved }) {
+  const { testModeTag } = useTestMode();
   const [tortoiseId, setTortoiseId] = useState("");
   const [diagnosis, setDiagnosis] = useState([]);
   const [severity, setSeverity] = useState("");
@@ -54,6 +56,26 @@ export default function SakitFromTemuanDialog({ finding, user, onClose, onResolv
     setSubmitting(true);
     const hariIni = format(new Date(), "yyyy-MM-dd");
     try {
+      /*
+       * `testModeTag` ditambahkan 30-09-2026.
+       *
+       * Ada TIGA jalur yang membuat catatan sakit — layar kiper ini,
+       * dialog dari temuan foto, dan formulir lengkap di Catatan Sakit.
+       * Hanya yang ketiga menyertakan penanda Mode Uji.
+       *
+       * `is_test_data` punya default `false` di skemanya, jadi catatan
+       * yang dibuat saat Mode Uji menyala tidak sekadar kehilangan
+       * penandanya — ia tersimpan bertanda "BUKAN data uji", dan tidak ada
+       * cara membedakannya kelak.
+       *
+       * Jalur inilah yang paling mungkin kena: Mode Uji dipakai pemilik
+       * justru untuk mencoba aplikasi SEBAGAI KIPER, dan ini layar kiper.
+       *
+       * Diperiksa di basis data: 18 catatan kesehatan, satu di antaranya
+       * bertanda is_test_data true (B106, 19 Agustus, dibuat pemilik lewat
+       * formulir lengkap). Jadi Mode Uji memang dipakai di sini —
+       * penandanya yang belum lengkap, bukan fiturnya yang menganggur.
+       */
       await base44.entities.HealthRecord.create({
         tortoise_id: tortoiseId,
         tortoise_name: selectedTortoise?.name || "",
@@ -64,6 +86,7 @@ export default function SakitFromTemuanDialog({ finding, user, onClose, onResolv
         severity,
         description: `Dari temuan foto task "${finding.task_title}": ${finding.finding_text}`,
         photo_urls: finding.photo_url ? [finding.photo_url] : [],
+        ...testModeTag,
       });
 
       // Catatan kesehatan saja tidak membuat kuranya tampak sakit di mana pun:

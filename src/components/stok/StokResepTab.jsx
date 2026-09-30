@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,6 +104,7 @@ function RecipeForm({ recipe, feedItems, warehouseItems, onClose, onSaved }) {
 }
 
 function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved, userName, userEmail }) {
+  const { testModeTag } = useTestMode();
   const { data: batchAktif = [] } = useQuery({
     queryKey: ["batch-barang", "aktif", 500],
     queryFn: () => base44.entities.BatchBarang.filter({ status: "aktif" }, "-tanggal_terima", 500),
@@ -165,6 +167,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           by_email: userEmail || "",
           by_name: userName || userEmail || "",
           notes: `Bahan racikan ${recipe.name} — batch ${batchNo}.`,
+          ...testModeTag,
         });
       }
 
@@ -214,6 +217,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           label_per_butir: false,
           label_dicetak: false,
           status: "aktif",
+          ...testModeTag,
         });
       } else {
         await base44.entities.FeedStock.update(hasil.id, {
@@ -238,6 +242,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
         by_email: userEmail || "",
         by_name: userName || userEmail || "",
         notes: `Hasil racikan ${recipe.name} — batch ${batchNo}. Biaya bahan ${Math.round(biaya).toLocaleString("id-ID")} rupiah.`,
+        ...testModeTag,
       });
 
       onSaved();

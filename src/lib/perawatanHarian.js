@@ -101,6 +101,7 @@ export function cariTugasPerawatan(tugas, namaKura, tortoiseId) {
  * @param {Array}  [opsi.tugasInsidentil] daftar tugas untuk dicarikan pasangannya
  * @param {Array}  [opsi.catatanKesehatan] untuk memeriksa catatan ganda
  * @param {string} [opsi.tanggal]
+ * @param {object} [opsi.tandaUji] penanda Mode Uji dari layar pemanggil
  *
  * @returns {Promise<{dicatat: boolean, tugasDitutup: boolean, peringatan: string|null}>}
  *   `dicatat: false` berarti hari ini memang sudah pernah dicatat — bukan gagal.
@@ -112,6 +113,7 @@ export async function catatPerawatanHarian(kura, user, opsi = {}) {
     tugasInsidentil = [],
     catatanKesehatan = [],
     tanggal = format(new Date(), "yyyy-MM-dd"),
+    tandaUji,
   } = opsi;
 
   const tortoiseId = kura.tortoise_id;
@@ -126,6 +128,7 @@ export async function catatPerawatanHarian(kura, user, opsi = {}) {
 
   // ── 1. Rekam medis — inti dari pencatatan ini, harus berhasil ──
   await base44.entities.HealthRecord.create({
+    ...(tandaUji || {}),
     tortoise_id: tortoiseId,
     tortoise_name: namaKura,
     date: tanggal,

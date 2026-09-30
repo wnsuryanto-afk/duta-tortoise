@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { simpanUkuranSekali } from "@/lib/ukurSekali";
 import { kandangDariNama, kandangBisaDipilih } from "@/lib/kandang";
 import { perubahanSakit, perubahanSembuh, STATUS_TUTUP } from "@/lib/statusKura";
@@ -128,6 +129,7 @@ function checkBioWarnings(form) {
 }
 
 export default function TortoiseForm({ open, onClose, editData }) {
+  const { testModeTag } = useTestMode();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -367,6 +369,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
             type: "sakit",
             source: "manual",
             ...form._pendingHealthData,
+            ...testModeTag,
           });
           queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
         }
@@ -387,6 +390,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
           type: "sembuh",
           source: "auto_recovery",
           description: "Pulih dari sakit",
+          ...testModeTag,
         });
         queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
       } catch (e) { console.warn("Auto recovery health record gagal:", e); }

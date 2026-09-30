@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ function StatusBadge({ status }) {
 const EMPTY_FORM = { title: "", content: "", type: "saran" };
 
 export default function KritikSaranPage() {
+  const { testModeTag } = useTestMode();
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const [form, setForm] = useState(EMPTY_FORM);
@@ -162,6 +164,7 @@ export default function KritikSaranPage() {
               period,
               total_points: POIN_MASUKAN,
               notes: "Poin masukan ditindaklanjuti",
+              ...testModeTag,
             });
           }
           poinDiberi = POIN_MASUKAN;

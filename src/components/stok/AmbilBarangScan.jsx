@@ -26,6 +26,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ const rp = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 const hariIni = () => new Date().toISOString().split("T")[0];
 
 export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -149,6 +151,7 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
           (batch ? `Dari batch ${batch.batch_code}. ` : "") +
           (catatan || "") ||
           (batch ? `Dari batch ${batch.batch_code}.` : ""),
+        ...testModeTag,
       });
 
       await base44.entities.WarehouseItem.update(item.id, {

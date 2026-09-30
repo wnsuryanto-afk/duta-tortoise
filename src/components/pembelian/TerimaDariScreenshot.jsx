@@ -39,6 +39,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTestMode } from "@/lib/useTestMode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,7 @@ const LABEL_YAKIN = {
 };
 
 export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
+  const { testModeTag } = useTestMode();
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   const [open, setOpen] = useState(false);
@@ -240,6 +242,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
             item_sku: r.sku || "",
             warehouse_item_id: (r.sku && warehouse.find((w) => w.sku === r.sku)?.id) || "",
           })),
+          ...testModeTag,
         });
         pesananDibuat++;
         barangDicatat += rows.length;
