@@ -1406,7 +1406,17 @@ export default function OwnerDashboard({ user }) {
         )}
       </div>
 
-      {/* ── ROW 12: SUPPLIER ── */}
+      {/* ── ROW 12: SUPPLIER ──
+          Tampil hanya bila ADA pemasok terdaftar.
+
+          Tanpa penjaga ini kartunya muncul tiap hari dengan judul
+          "Pembelian dari Pemasok", angka Rp 0, daftar kosong, dan tautan
+          "Lihat Daftar" ke halaman yang juga kosong — tabel Supplier nol
+          baris sejak aplikasi ini berdiri. Ruang di beranda pemilik terlalu
+          mahal untuk kartu yang tidak pernah punya isi.
+
+          Ia muncul dengan sendirinya begitu pemasok pertama didaftarkan. */}
+      {suppliers.length > 0 && (
       <div className="bg-card rounded-xl border border-border p-4">
         <div className="flex items-center justify-between mb-3">
           <SectionTitle>Pembelian dari Pemasok</SectionTitle>
@@ -1426,6 +1436,7 @@ export default function OwnerDashboard({ user }) {
           })}
         </div>
       </div>
+      )}
 
         </div>
       )}

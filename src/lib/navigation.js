@@ -65,7 +65,6 @@ export const NAV_SECTIONS = [
       { path: "/stok-unified",     section: "stock-gudang",   label: "Stok & Gudang",           icon: LayoutGrid,    desc: "Barang gudang & pakan jadi satu daftar, plus pergerakan, peminjaman, resep, dan ringkasan nilai" },
       { path: "/daftar-belanja",   section: "daftar-belanja", label: "Tugas Menunggu Barang",   icon: ShoppingCart,  desc: "Tugas tim yang tertahan karena barangnya belum ada" },
       { path: "/alat-kerja",       section: "alat-kerja",     label: "Alat Kerja",              icon: Wrench,        desc: "Peminjaman & kondisi alat" },
-      { path: "/supplier",         section: "supplier",       label: "Pemasok",                 icon: Truck,         desc: "Daftar & riwayat pembelian" },
     ],
   },
   {
@@ -143,6 +142,15 @@ export const EXTRA_DESTINATIONS = [
   { path: "/sop-library",    section: "sop-library",   label: "Perpustakaan SOP",      group: "Operasional" },
   { path: "/tugas-insidentil", section: "tugas-insidentil", label: "Tugas Insidentil", group: "Operasional" },
   { path: "/task-template",  section: "task-template", label: "Template Tugas Harian (tidak dipakai)", group: "Operasional" },
+  /*
+   * Pemasok dikeluarkan dari menu 30-09-2026: tabel Supplier dan
+   * SupplierItem sama-sama NOL BARIS sejak aplikasi ini berdiri. Pembelian
+   * berjalan lewat /pembelian tanpa pernah menyentuhnya.
+   *
+   * Halamannya tidak dihapus dan datanya tidak disentuh — kalau pemasok mulai
+   * didaftarkan, pintunya tinggal dikembalikan ke daftar di atas.
+   */
+  { path: "/supplier",       section: "supplier",      label: "Pemasok (belum dipakai)", group: "Stok" },
   { path: "/passport",           section: "tortoise",  label: "Paspor Kura (cetak)",  group: "Kura" },
   { path: "/incomplete-data",    section: "dashboard", label: "Data Belum Lengkap",   group: "Laporan" },
   { path: "/info",               section: "info",      label: "Info & Pengumuman",    group: "Laporan" },
