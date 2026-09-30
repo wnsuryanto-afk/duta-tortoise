@@ -35,14 +35,11 @@ import HealthList from '@/pages/HealthList.jsx';
 import SalesList from '@/pages/SalesList';
 import UserManagement from '@/pages/UserManagement';
 import SOPPage from '@/pages/SOPPage';
-import PayrollReport from '@/pages/PayrollReport';
-import DailyPayrollReport from '@/pages/DailyPayrollReport';
 import FinancePage from '@/pages/FinancePage';
 import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
 import KasbonPage from '@/pages/KasbonPage';
 import PayrollPage from '@/pages/PayrollPage';
-import MonthlySalaryPage from '@/pages/MonthlySalaryPage';
 import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
@@ -105,13 +102,13 @@ const AuthenticatedApp = () => {
         <Route path="/sales" element={<SalesList />} />
         <Route path="/users" element={<UserManagement />} />
         <Route path="/sop" element={<SOPPage />} />
-        <Route path="/payroll" element={<PayrollReport />} />
+        <Route path="/payroll" element={<Navigate to="/rekap-poin-gaji?tab=bonus" replace />} />
         {/* Laporan Breeding menyatu ke Ranking Indukan 30-09-2026:
             keduanya membaca sepuluh catatan yang sama dan menjawab
             pertanyaan yang sama. Tautan lama tetap bekerja. */}
         <Route path="/breeding-report" element={<Navigate to="/breeder-ranking" replace />} />
         <Route path="/feed-stock" element={<Navigate to="/stok-unified" replace />} />
-        <Route path="/daily-payroll" element={<DailyPayrollReport />} />
+        <Route path="/daily-payroll" element={<Navigate to="/rekap-poin-gaji?tab=harian" replace />} />
         {/*
           Enam rute di bawah diarahkan, bukan dihapus. Tautan lama dari
           pesan WhatsApp, bookmark, dan halaman lain tetap sampai ke tempat
@@ -129,7 +126,7 @@ const AuthenticatedApp = () => {
         {/* Silsilah menyatu jadi tab di Daftar Kura 30-09-2026. Tabnya
             dijaga izin `family-tree` — tidak dimiliki kiper. */}
         <Route path="/family-tree" element={<Navigate to="/tortoise?tab=silsilah" replace />} />
-        <Route path="/salary" element={<MonthlySalaryPage />} />
+        <Route path="/salary" element={<Navigate to="/rekap-poin-gaji?tab=bulanan" replace />} />
         {/* Halaman Kandang berdiri sendiri DIHAPUS 29-09-2026 dan digabung ke
             tab "Kandang" di Daftar Kura. Keduanya mengerjakan pekerjaan yang
             sama; satu cacat hitung yang sama sempat harus diperbaiki dua kali.

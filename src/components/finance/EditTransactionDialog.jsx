@@ -31,7 +31,7 @@ function detectSource(tx) {
   if (!tx.reference_id) return null;
   if (tx.category === "penjualan_tortoise") return { label: "Penjualan", path: "/sales" };
   if (tx.category === "kas_kecil") return { label: "Kas Kecil", path: "/petty-cash" };
-  if (tx.category === "gaji_karyawan") return { label: "Gaji", path: "/salary" };
+  if (tx.category === "gaji_karyawan") return { label: "Gaji", path: "/rekap-poin-gaji?tab=bulanan" };
   return { label: "Transaksi Terkait", path: null };
 }
 

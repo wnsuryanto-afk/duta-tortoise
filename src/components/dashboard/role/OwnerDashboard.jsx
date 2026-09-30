@@ -1260,7 +1260,7 @@ export default function OwnerDashboard({ user }) {
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold">Kinerja Karyawan — {format(now, "MMMM", { locale: idLocale })}</p>
-            <Link to="/salary" className="text-xs text-primary hover:underline">Lihat Semua →</Link>
+            <Link to="/rekap-poin-gaji?tab=bulanan" className="text-xs text-primary hover:underline">Lihat Semua →</Link>
           </div>
           {employeeRanking.length === 0 ? (
             <p className="text-sm text-muted-foreground">Belum ada data poin bulan ini</p>

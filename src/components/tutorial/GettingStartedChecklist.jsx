@@ -42,7 +42,7 @@ const CHECKLIST_ITEMS = [
     icon: Wallet, 
     color: "text-amber-600", 
     bg: "bg-amber-100",
-    link: "/salary",
+    link: "/rekap-poin-gaji?tab=bulanan",
     check: (data) => data.salaryConfigs && data.salaryConfigs.length > 0,
   },
   { 

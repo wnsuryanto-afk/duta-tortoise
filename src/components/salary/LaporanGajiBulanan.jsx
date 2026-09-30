@@ -13,7 +13,6 @@ import { hitungGajiKaryawan, PERAN_BERGAJI } from "@/lib/hitungGaji";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
-import AlurGaji from "@/components/salary/AlurGaji";
 import jsPDF from "jspdf";
 
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
@@ -25,7 +24,23 @@ function fmtRp(val) {
   return `Rp ${(val || 0).toLocaleString("id-ID")}`;
 }
 
-export default function MonthlySalaryPage() {
+/**
+ * LaporanGajiBulanan — dulu halaman `/salary`.
+ *
+ * Disatukan sebagai tab di halaman "Rekap Poin & Gaji" pada 30 September 2026.
+ *
+ * Tiga laporan gaji hidup sebagai tiga halaman terpisah, dan ketiganya
+ * membaca sumber yang sama dengan halaman penerbit slip. Yang menentukan
+ * keputusan ini: ketiganya **nol tulis** — tidak satu pun pernah membuat atau
+ * mengubah satu baris data. Memindahkan laporan baca-saja ke samping
+ * penerbitnya karena itu tidak menyentuh logika uang sama sekali.
+ *
+ * Penerbit slipnya sendiri TIDAK diubah. Komentar di AlurGaji.jsx sudah
+ * menuliskan sebabnya sejak lama: "penerbitan slip menyentuh uang orang, dan
+ * menulis ulang logikanya demi kerapian tampilan bukan pertukaran yang
+ * sepadan." Itu masih berlaku, dan tidak dilanggar di sini.
+ */
+export default function LaporanGajiBulanan() {
   const { role } = useCurrentUser();
   const companySettings = useCompanySettings();
   const [period, setPeriod] = useState(MONTH_OPTIONS[0].value);
@@ -229,13 +244,12 @@ export default function MonthlySalaryPage() {
 
   return (
     <div className="space-y-6">
-      <AlurGaji aktif="hitung" periode={period} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-primary" /> Laporan Gaji Bulanan
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Kalkulasi otomatis: gaji pokok + KPI + lembur + sayur - absen - kasbon</p>
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-primary" />
+            Kalkulasi otomatis: gaji pokok + KPI + lembur + sayur - absen - kasbon
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Select value={period} onValueChange={setPeriod}>

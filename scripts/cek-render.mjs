@@ -45,6 +45,11 @@ globalThis.window = {
   addEventListener() {}, removeEventListener() {},
   localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
   matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+  // jspdf mengambil atob/btoa dari objek window saat dimuat (r2.atob.bind(r2)).
+  // Tanpa keduanya, panggung ini melempar TypeError sebelum satu komponen pun
+  // dirender — bukan karena komponennya rusak, tapi karena window tiruan ini
+  // kurang lengkap dibanding window sungguhan. Node sudah punya keduanya.
+  atob: globalThis.atob, btoa: globalThis.btoa,
 };
 globalThis.document = { title: "uji", cookie: "", addEventListener() {}, removeEventListener() {},
   head: elemen(), body: elemen(), documentElement: elemen(),

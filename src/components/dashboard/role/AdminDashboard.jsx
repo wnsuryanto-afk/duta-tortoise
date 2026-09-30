@@ -295,7 +295,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
       <div>
         <h2 className="font-semibold text-sm mb-3 text-foreground">Status Hari Ini</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <MiniCard icon={Users} label="Absensi" value={`${hadirCount}/${totalStaff} hadir`} href="/daily-payroll" />
+          <MiniCard icon={Users} label="Absensi" value={`${hadirCount}/${totalStaff} hadir`} href="/rekap-poin-gaji?tab=harian" />
           <MiniCard icon={CheckCircle} label="Checklist"
             value={`${submittedCount} submit`}
             urgent={pendingChecklists.length > 0}

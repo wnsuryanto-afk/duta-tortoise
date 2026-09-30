@@ -23,7 +23,23 @@ function getWeekLabel(weekStart) {
   return `${format(weekStart, "d", { locale: id })} – ${format(weekEnd, "d MMM yyyy", { locale: id })}`;
 }
 
-export default function DailyPayrollReport() {
+/**
+ * LaporanGajiHarian — dulu halaman `/daily-payroll`.
+ *
+ * Disatukan sebagai tab di halaman "Rekap Poin & Gaji" pada 30 September 2026.
+ *
+ * Tiga laporan gaji hidup sebagai tiga halaman terpisah, dan ketiganya
+ * membaca sumber yang sama dengan halaman penerbit slip. Yang menentukan
+ * keputusan ini: ketiganya **nol tulis** — tidak satu pun pernah membuat atau
+ * mengubah satu baris data. Memindahkan laporan baca-saja ke samping
+ * penerbitnya karena itu tidak menyentuh logika uang sama sekali.
+ *
+ * Penerbit slipnya sendiri TIDAK diubah. Komentar di AlurGaji.jsx sudah
+ * menuliskan sebabnya sejak lama: "penerbitan slip menyentuh uang orang, dan
+ * menulis ulang logikanya demi kerapian tampilan bukan pertukaran yang
+ * sepadan." Itu masih berlaku, dan tidak dilanggar di sini.
+ */
+export default function LaporanGajiHarian() {
   const { role } = useCurrentUser();
   const isAdmin = role === "owner" || role === "admin" || role === "manajer";
 
@@ -219,12 +235,10 @@ export default function DailyPayrollReport() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Laporan Gaji Harian</h1>
-          <p className="text-sm text-muted-foreground mt-1">Rekap kehadiran & upah harian keeper per minggu</p>
+          <p className="text-sm text-muted-foreground">Rekap kehadiran &amp; upah harian keeper per minggu</p>
         </div>
         <Button onClick={handleExportPDF} disabled={isLoading || employeeData.length === 0} className="gap-2">
           <FileDown className="w-4 h-4" />

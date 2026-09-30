@@ -17,8 +17,8 @@ import {
   Leaf, Salad, Stethoscope, Calendar, Library, ListTodo, Zap,
   LayoutGrid, ShoppingCart, Wrench, Truck, ChefHat,
   TrendingUp, DollarSign, PieChart,
-  ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Trophy, Star,
-  Activity, MessageSquare, UserCog, Egg, Send, QrCode,
+  ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Star,
+  Activity, MessageSquare, UserCog, Egg, QrCode,
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -104,19 +104,14 @@ export const NAV_SECTIONS = [
       { path: "/approval-poin",   section: "approval-poin", label: "Approval Poin",    icon: ShieldAlert,   desc: "Setujui checklist & poin" },
       { path: "/temuan-foto",     section: "temuan-foto",   label: "Temuan dari Foto", icon: ScanSearch,    desc: "Hasil pemeriksaan AI" },
       { path: "/catatan-saran",   section: "catatan-saran", label: "Catatan dari Checklist", icon: MessageCircle, desc: "Pesan keeper & balasan owner" },
-      { path: "/salary",          section: "salary",        label: "Hitung Gaji",      icon: Calculator,    desc: "Gaji pokok + poin + lembur + sayur − absen − kasbon" },
       { path: "/salary-slip",     section: "salary-slip",   label: "Slip Gaji",        icon: FileText,      desc: "Cetak slip" },
-      { path: "/rekap-poin-gaji", section: "salary",        label: "Rekap Poin & Gaji",icon: Calculator,    desc: "Poin per karyawan" },
+      { path: "/rekap-poin-gaji", section: "salary",        label: "Gaji",             icon: Calculator,    desc: "Hitung, terbitkan slip, laporan bulanan/harian, bonus" },
       { path: "/pengaturan-poin", section: "pengaturan-poin", label: "Pengaturan Poin",  icon: Star,          desc: "Nilai per poin, simulasi dampak biaya, riwayat" },
       { path: "/kasbon",          section: "kasbon",        label: "Kasbon",           icon: Wallet,        desc: "Pinjaman karyawan" },
       { path: "/payroll-gaji",    section: "payroll-gaji",  label: "Penggajian Karyawan", icon: Wallet,     desc: "Proses gaji, lembur, sayur, kasbon" },
-      { path: "/payroll",         section: "payroll",       label: "Bonus & Reward",   icon: Trophy,        desc: "Bonus khusus di luar gaji rutin" },
-      { path: "/daily-payroll",   section: "payroll",       label: "Gaji Harian",      icon: FileText,      desc: "Rekap upah harian dari absensi" },
       { path: "/users",           section: "users",         label: "Manajemen User",   icon: UserCog,       desc: "Akun & hak akses" },
       { path: "/kritik-saran",    section: "kritik-saran",  label: "Kotak Masukan",    icon: MessageSquare, desc: "Kritik & saran tim — yang ditindaklanjuti dapat 10 poin bonus" },
       { path: "/activity-log",    section: "activity-log",  label: "Activity Log",     icon: Activity,      desc: "Jejak perubahan data" },
-      { path: "/pengaturan-whatsapp", section: "pengaturan-whatsapp", label: "Pengaturan WhatsApp", icon: Send,     desc: "Nomor tujuan & pesan otomatis (Fonnte)" },
-      { path: "/log-whatsapp",        section: "log-whatsapp",        label: "Log WhatsApp",        icon: MessageSquare, desc: "Riwayat pesan terkirim & gagal" },
     ],
   },
 ];

@@ -29,7 +29,23 @@ const statusColors = {
 };
 const statusLabels = { pending: "Belum Dibayar", paid: "Sudah Dibayar", cancelled: "Dibatalkan" };
 
-export default function PayrollReport() {
+/**
+ * LaporanBonusReward — dulu halaman `/payroll`.
+ *
+ * Disatukan sebagai tab di halaman "Rekap Poin & Gaji" pada 30 September 2026.
+ *
+ * Tiga laporan gaji hidup sebagai tiga halaman terpisah, dan ketiganya
+ * membaca sumber yang sama dengan halaman penerbit slip. Yang menentukan
+ * keputusan ini: ketiganya **nol tulis** — tidak satu pun pernah membuat atau
+ * mengubah satu baris data. Memindahkan laporan baca-saja ke samping
+ * penerbitnya karena itu tidak menyentuh logika uang sama sekali.
+ *
+ * Penerbit slipnya sendiri TIDAK diubah. Komentar di AlurGaji.jsx sudah
+ * menuliskan sebabnya sejak lama: "penerbitan slip menyentuh uang orang, dan
+ * menulis ulang logikanya demi kerapian tampilan bukan pertukaran yang
+ * sepadan." Itu masih berlaku, dan tidak dilanggar di sini.
+ */
+export default function LaporanBonusReward() {
   const { role } = useCurrentUser();
   const [selectedPeriod, setSelectedPeriod] = useState(MONTH_OPTIONS[0].value);
   const printRef = useRef(null);
@@ -190,15 +206,13 @@ export default function PayrollReport() {
   const loading = isLoading || loadingCL;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Bonus & Reward Khusus <span className="text-base font-normal text-muted-foreground">(di luar gaji rutin)</span></h1>
-          <p className="text-sm text-muted-foreground mt-1">Rekapitulasi poin dan bonus non-rutin per bulan</p>
+          <p className="text-sm text-muted-foreground">Rekapitulasi poin dan bonus non-rutin per bulan</p>
           <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-            <span className="font-semibold">ℹ️ Halaman ini</span> mencatat bonus <span className="font-semibold">non-rutin</span>: hadiah, insentif event, reward pencapaian khusus.
-            Untuk gaji rutin bulanan (termasuk bonus poin KPI), gunakan menu <span className="font-semibold">Slip Gaji Rutin</span>.
+            <span className="font-semibold">ℹ️ Tab ini</span> mencatat bonus <span className="font-semibold">non-rutin</span>: hadiah, insentif event, reward pencapaian khusus.
+            Untuk gaji rutin bulanan (termasuk bonus poin KPI), lihat tab <span className="font-semibold">Terbitkan Slip</span>.
           </div>
         </div>
         <div className="flex items-center gap-3">

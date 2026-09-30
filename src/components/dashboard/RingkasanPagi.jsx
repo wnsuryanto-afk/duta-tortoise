@@ -313,7 +313,7 @@ export default function RingkasanPagi({ bagian = "semua" }) {
             <p className="text-xl font-bold text-amber-600 leading-none">{pendingApproval.length}</p>
             <p className="text-[10px] text-muted-foreground leading-tight mt-1">✅ Approval</p>
           </Link>
-          <Link to="/daily-payroll" className="bg-card border border-border rounded-xl p-2.5 text-center hover:shadow-md transition-shadow">
+          <Link to="/rekap-poin-gaji?tab=harian" className="bg-card border border-border rounded-xl p-2.5 text-center hover:shadow-md transition-shadow">
             <p className="text-xl font-bold text-blue-600 leading-none">
               {checkedIn.length}{staff.length > 0 ? `/${staff.length}` : ""}
             </p>

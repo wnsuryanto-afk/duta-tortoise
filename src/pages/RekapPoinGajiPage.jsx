@@ -20,6 +20,11 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import AlurGaji from "@/components/salary/AlurGaji";
 import { hanyaLaporan } from "@/lib/laporan";
 import { rupaStatusSlip } from "@/lib/slipGaji";
+import { useSearchParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import LaporanGajiBulanan from "@/components/salary/LaporanGajiBulanan";
+import LaporanGajiHarian from "@/components/salary/LaporanGajiHarian";
+import LaporanBonusReward from "@/components/salary/LaporanBonusReward";
 
 const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
@@ -29,6 +34,16 @@ export default function RekapPoinGajiPage() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
   const [generating, setGenerating] = useState(null);
   const [viewSlip, setViewSlip] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const TAB_SAH = ["terbitkan", "bulanan", "harian", "bonus"];
+  const tabDariUrl = searchParams.get("tab");
+  const activeTab = TAB_SAH.includes(tabDariUrl) ? tabDariUrl : "terbitkan";
+  const setActiveTab = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai === "terbitkan") next.delete("tab");
+    else next.set("tab", nilai);
+    setSearchParams(next, { replace: true });
+  };
 
   const settings = useCompanySettings();
   const TARGET_POIN_SETTING = settings.min_poin_bulanan || 0;
@@ -299,10 +314,25 @@ export default function RekapPoinGajiPage() {
   return (
     <div className="space-y-6">
       <AlurGaji aktif="hitung" periode={selectedMonth} />
+      <div>
+        <h1 className="text-2xl font-heading font-bold">Gaji</h1>
+        <p className="text-muted-foreground text-sm">Hitung gaji rutin, terbitkan slip, dan lihat laporannya &mdash; satu tempat</p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* `h-auto` diperlukan karena tinggi bawaan TabsList memotong label
+            yang membungkus ke dua baris di layar ponsel. */}
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1">
+          <TabsTrigger value="terbitkan">Terbitkan Slip</TabsTrigger>
+          <TabsTrigger value="bulanan">Laporan Bulanan</TabsTrigger>
+          <TabsTrigger value="harian">Gaji Harian</TabsTrigger>
+          <TabsTrigger value="bonus">Bonus &amp; Reward</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="terbitkan" className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Rekap Poin & Generate Slip Gaji Rutin</h1>
-          <p className="text-muted-foreground text-sm">Kalkulasi KPI, poin, dan gaji rutin per karyawan · Generate slip untuk dicetak</p>
+          <p className="text-muted-foreground text-sm">Kalkulasi KPI, poin, dan gaji rutin per karyawan &middot; Generate slip untuk dicetak</p>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
           <Input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-40" />
@@ -511,6 +541,20 @@ export default function RekapPoinGajiPage() {
           ))}
         </div>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="bulanan" className="mt-4">
+          <LaporanGajiBulanan />
+        </TabsContent>
+
+        <TabsContent value="harian" className="mt-4">
+          <LaporanGajiHarian />
+        </TabsContent>
+
+        <TabsContent value="bonus" className="mt-4">
+          <LaporanBonusReward />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -14,6 +14,9 @@ import InvestorDashboard from "@/components/dashboard/role/InvestorDashboard";
 import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
+import LaporanGajiBulanan from "@/components/salary/LaporanGajiBulanan";
+import LaporanGajiHarian from "@/components/salary/LaporanGajiHarian";
+import LaporanBonusReward from "@/components/salary/LaporanBonusReward";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
 import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
@@ -70,6 +73,16 @@ export default [
   ["KeeperDashboard tanpa data", <KeeperDashboard />],
   ["OwnerDashboard tanpa data", <OwnerDashboard />],
   ["RekapPoinGajiPage tanpa data", <RekapPoinGajiPage />],
+
+  /*
+   * Tiga laporan gaji yang pada 30-09-2026 berubah dari halaman sendiri
+   * menjadi tab di dalam RekapPoinGajiPage. Radix Tabs hanya memasang tab
+   * yang aktif, jadi merender halaman induknya saja TIDAK membuktikan ketiga
+   * tab ini bisa tampil — masing-masing harus dirender sendiri di sini.
+   */
+  ["LaporanGajiBulanan tanpa data", <LaporanGajiBulanan />],
+  ["LaporanGajiHarian tanpa data", <LaporanGajiHarian />],
+  ["LaporanBonusReward tanpa data", <LaporanBonusReward />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
 
   /*
