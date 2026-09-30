@@ -44,10 +44,18 @@ async function simpanLembur(
   jamPulang: string,
 ) {
   try {
+    // Batas eksplisit. Filternya sudah sempit — satu orang, satu hari — jadi
+    // hasilnya semestinya satu baris; BATAS_AMBIL di sini bukan untuk menahan
+    // volume melainkan supaya pengambilan ini tidak pernah terpotong diam-diam.
+    // `asServiceRole` tidak lewat pembungkus di api/base44Client.js, jadi tidak
+    // ada yang memasang batas bawaan maupun memperingatkan saat hasilnya pas
+    // di batas. Lembur yang terpotong di sini berarti baris lama tidak ketemu,
+    // dan simpanLembur() menambah baris KEDUA untuk hari yang sama — lembur
+    // yang sama terbayar dua kali.
     const lama = await base44.asServiceRole.entities.OvertimeLog.filter({
       employee_email: cl.employee_email,
       date: tanggal,
-    });
+    }, null, BATAS_AMBIL);
     const catatan = `Lembur otomatis dari checklist, tugas terakhir ${jamPulang}`;
 
     if (lama && lama.length > 0) {

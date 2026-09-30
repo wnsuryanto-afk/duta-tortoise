@@ -73,12 +73,39 @@ for (const p of berkas("src")) {
   const lokal = new Set(
     [...s.matchAll(/(?:^|\s)(?:function|const|let|var|class)\s+(\w+)/g)].map((m) => m[1]),
   );
-  for (const m of s.matchAll(/\{([^{}]*)\}\s*(?:=|=>|\)|,)/g)) {
-    for (const bagian of m[1].split(",")) {
-      const nama = bagian.trim().split(/[:=]/)[0].trim();
+
+  /*
+   * Nama yang lahir dari destructuring. Dua bentuk, dan KEDUANYA pernah
+   * membuat penjaga ini melapor temuan palsu sepanjang hari:
+   *
+   *   const { menunggu: poinMenunggu } = ringkasPoin(...)
+   *     Nama lokalnya `poinMenunggu` — sisi KANAN titik dua. Versi lama
+   *     mengambil sisi kiri, jadi `poinMenunggu` tidak pernah tercatat
+   *     sebagai lokal dan dilaporkan "memakai poinMenunggu() tanpa import".
+   *
+   *   const [sudahDibayar, setSudahDibayar] = useState(true)
+   *     Destructuring larik tidak diperiksa sama sekali. Setiap useState
+   *     yang namanya kebetulan sama dengan ekspor pustaka jadi temuan palsu.
+   *
+   * Penjaga yang selalu merah lebih buruk daripada tidak ada penjaga: ia
+   * melatih orang mengabaikan seluruh rangkaiannya. Itu yang terjadi di
+   * sini — tiga penjaga lain yang benar-benar menemukan masalah ikut
+   * tidak terbaca.
+   */
+  const catatLokal = (daftar) => {
+    for (const bagian of daftar.split(",")) {
+      let nama = bagian.trim().replace(/^\.\.\./, "");
+      if (!nama) continue;
+      // Buang nilai bawaan lebih dulu: `{ a = 1 }`, `{ a: b = 1 }`.
+      nama = nama.split("=")[0].trim();
+      // Lalu ambil sisi KANAN titik dua bila ada — itulah nama lokalnya.
+      const titikDua = nama.lastIndexOf(":");
+      if (titikDua !== -1) nama = nama.slice(titikDua + 1).trim();
       if (/^\w+$/.test(nama)) lokal.add(nama);
     }
-  }
+  };
+  for (const m of s.matchAll(/\{([^{}]*)\}\s*(?:=|=>|\)|,)/g)) catatLokal(m[1]);
+  for (const m of s.matchAll(/(?:const|let|var)\s*\[([^\]]*)\]\s*=/g)) catatLokal(m[1]);
 
   // Buang komentar dan string sebelum mencari pemakaian — inilah yang dulu
   // membuat skrip lama tertipu oleh path di dalam komentar.

@@ -72,7 +72,27 @@ let diperiksa = 0;
 for (const p of berkas(".")) {
   const s = fs.readFileSync(p, "utf8");
   if (!/entities\.WarehouseItem\.update/.test(s)) continue;
-  if (!/current_stock/.test(s)) continue;
+  /*
+   * `current_stock:` sebagai KUNCI objek, bukan sekadar disebut.
+   *
+   * Versi lama hanya mencari teks "current_stock" di mana pun. Itu membuat
+   * IsiTanggalKedaluwarsa.jsx dilaporkan sepanjang hari: layar itu memang
+   * memanggil WarehouseItem.update — untuk mengisi tanggal kedaluwarsa —
+   * dan menyebut current_stock dua kali, keduanya cuma membaca:
+   *
+   *     .list("-current_stock", 500)        untuk mengurutkan
+   *     stok {item.current_stock} {item.unit}   untuk ditampilkan
+   *
+   * Komentar di kepala berkas itu bahkan sudah menyatakannya: "Layar ini
+   * hanya mengisi. Ia tidak menghitung, tidak menghapus, dan tidak mengubah
+   * stok."
+   *
+   * Penjaga yang selalu merah melatih orang mengabaikan seluruh
+   * rangkaiannya — dan di repo ini itu sudah terjadi: lima penjaga merah
+   * sekaligus, sebagian temuan palsu, sehingga yang sungguhan ikut tidak
+   * dibaca.
+   */
+  if (!/current_stock\s*:/.test(s)) continue;
   diperiksa++;
   const rapi = p.replace(/^\.\//, "");
   if (DIKECUALIKAN[rapi]) continue;

@@ -45,6 +45,7 @@
  */
 
 import { base44 } from "@/api/base44Client";
+import { potongBatchGudang } from "@/lib/pemakaianBarang";
 
 export const KEPERLUAN = "pengobatan_kura";
 
@@ -118,12 +119,13 @@ export function menjadiPengeluaran(record) {
  * ditelan: stok yang meleset diam-diam adalah persis cacat yang sedang
  * diperbaiki di sini.
  */
-export async function terapkanPemakaianObat({ record, itemsLama, itemsBaru, user, tandaUji }) {
+export async function terapkanPemakaianObat({ record, itemsLama, itemsBaru, user, tandaUji, batchAktif = [] }) {
   const selisih = selisihPemakaian(itemsLama, itemsBaru);
-  if (selisih.length === 0) return { diterapkan: 0, gagal: [] };
+  if (selisih.length === 0) return { diterapkan: 0, gagal: [], kurangBatch: [] };
 
   let diterapkan = 0;
   const gagal = [];
+  const kurangBatch = [];
   const tanggal = record?.date || new Date().toISOString().slice(0, 10);
 
   for (const s of selisih) {
@@ -165,22 +167,48 @@ export async function terapkanPemakaianObat({ record, itemsLama, itemsBaru, user
       });
 
       await base44.entities.WarehouseItem.update(s.item_id, { current_stock: stokBaru });
+
+      /*
+       * Sisa batch ikut turun, FEFO — ditambahkan 30-09-2026.
+       *
+       * Tanpa ini, total gudang dan jumlah sisa batch berpisah diam-diam:
+       * angka stok turun, tapi layar kedaluwarsa tetap menampilkan botol
+       * yang sebenarnya sudah dipakai, dan urutan FEFO menunjuk batch yang
+       * sudah habis. Penjaga scripts/cek-batch.mjs menandai berkas ini
+       * justru karena itu.
+       *
+       * Hanya untuk delta positif. Obat yang DIKEMBALIKAN ke gudang tidak
+       * menambah batch mana pun — menebak batch mana yang bertambah lebih
+       * buruk daripada tidak mencatatnya, alasan yang sama dengan
+       * StokInventoryTab.
+       */
+      if (s.delta > 0 && batchAktif.length > 0) {
+        const { kurang } = await potongBatchGudang(base44, batchAktif, s.item_id, s.delta);
+        if (kurang > 0) {
+          kurangBatch.push({
+            nama: s.item_name || barang.name,
+            satuan: s.unit || barang.unit || "",
+            kurang,
+          });
+        }
+      }
       diterapkan++;
     } catch (e) {
       gagal.push(`${s.item_name || s.item_id}: ${e?.message || "gagal"}`);
     }
   }
 
-  return { diterapkan, gagal };
+  return { diterapkan, gagal, kurangBatch };
 }
 
 /** Kembalikan seluruh obat sebuah catatan ke gudang — dipakai saat catatan dihapus. */
-export async function kembalikanPemakaianObat({ record, user, tandaUji }) {
+export async function kembalikanPemakaianObat({ record, user, tandaUji, batchAktif = [] }) {
   return terapkanPemakaianObat({
     record,
     itemsLama: record?.treatment_items || [],
     itemsBaru: [],
     user,
     tandaUji,
+    batchAktif,
   });
 }

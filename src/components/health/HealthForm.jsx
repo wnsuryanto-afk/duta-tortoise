@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import { barisPengambilan, potongBatchGudang } from "@/lib/pemakaianBarang";
 import { perubahanSembuh, perubahanSakit } from "@/lib/statusKura";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, X, Upload, Pencil, BookOpen } from "lucide-react";
@@ -154,17 +153,26 @@ export default function HealthForm({ open, onClose, editData }) {
     // Dihitung sebagai SELISIH terhadap catatan lama, supaya menyimpan ulang
     // catatan yang sudah ada tidak memotong stok untuk kedua kalinya.
     if (cleanItems.length > 0 || (editData?.treatment_items || []).length > 0) {
-      const { gagal } = await terapkanPemakaianObat({
+      const { gagal, kurangBatch = [] } = await terapkanPemakaianObat({
         record: { ...data, id: savedRecord?.id || editData?.id },
         itemsLama: editData?.treatment_items || [],
         itemsBaru: cleanItems,
         user: await base44.auth.me().catch(() => null),
         tandaUji: testModeTag,
+        batchAktif,
       });
       // Stok yang meleset diam-diam adalah persis cacat yang sedang diperbaiki
       // di sini, jadi kegagalannya disebutkan.
       if (gagal.length > 0) {
         toast.error(`Stok ${gagal.length} obat gagal disesuaikan — ${gagal[0]}`);
+      }
+      // Barangnya nyata-nyata sudah dipakai, jadi catatan kesehatannya tetap
+      // disimpan — yang kurang adalah batch yang tercatat, bukan barangnya.
+      for (const b of kurangBatch) {
+        toast.warning(
+          `${b.nama}: ${b.kurang} ${b.satuan} tidak tertutup batch mana pun. ` +
+          "Stok gudang sudah dikurangi, tapi ada barang terpakai yang tidak punya catatan batch."
+        );
       }
     }
     // ── Sambungkan catatan kesehatan ke status kura ──
@@ -191,55 +199,42 @@ export default function HealthForm({ open, onClose, editData }) {
     // pemilih obat lengkap dengan pemeriksa stok, tapi menyimpannya tidak
     // pernah memotong stok apa pun dan tidak pernah menulis pergerakan barang.
     // Obat dipakai, stok gudang tidak bergerak, dan kura yang diobati tidak
-    // menanggung biayanya.
-    //
-    // Penanda stok_dipotong yang menjaga agar pemotongan tidak berulang saat
-    // catatan yang sama disimpan ulang atau disunting.
-    const idCatatan = savedRecord?.id || editData?.id;
-    const perluPotong =
-      (cleanItems.length > 0) && !editData?.stok_dipotong && !!idCatatan;
-
-    if (perluPotong) {
-      const kura = tortoises.find((t) => t.id === data.tortoise_id);
-      const pemakai = await base44.auth.me().catch(() => null);
-      for (const it of cleanItems) {
-        const gudang = warehouseItems.find((w) => w.id === it.item_id);
-        if (!gudang || !(Number(it.quantity) > 0)) continue;
-        const stokSetelah = Math.max(0, (Number(gudang.current_stock) || 0) - Number(it.quantity));
-        try {
-          await base44.entities.WarehouseItem.update(gudang.id, { current_stock: stokSetelah });
-          // Payload disusun dulu ke variabel, baru dikirim. Bila objeknya
-          // ditulis langsung di dalam create(), penjaga kolom hantu membaca
-          // nama argumen barisPengambilan sebagai kolom StockMovement dan
-          // melaporkannya sebagai kolom yang tidak ada di skema.
-          const baris = barisPengambilan({
-            item: gudang,
-            jumlah: it.quantity,
-            hargaSatuan: Number(it.unit_price) || Number(gudang.purchase_price) || 0,
-            nilai: Math.round(Number(it.subtotal) || 0),
-            kodeKura: kura?.code || data.tortoise_name || "",
-            tanggal: data.date,
-            user: pemakai,
-            stokSetelah,
-            catatan: `Pengobatan ${data.tortoise_name}${(data.diagnoses || []).length ? " — " + (data.diagnoses || []).slice(0, 2).join(", ") : ""}.`,
-          });
-          await base44.entities.StockMovement.create(baris);
-
-          // Sisa batch ikut turun, FEFO. Tanpa ini total gudang dan jumlah
-          // sisa batch berpisah diam-diam, dan layar kedaluwarsa menampilkan
-          // barang yang sebenarnya sudah dipakai.
-          const { kurang } = await potongBatchGudang(base44, batchAktif, gudang.id, Number(it.quantity));
-          if (kurang > 0) {
-            // Barangnya nyata-nyata sudah dipakai, jadi catatan kesehatan tetap
-            // disimpan — yang kurang adalah batch yang tercatat, bukan barangnya.
-            toast.warning(
-              `${gudang.name}: ${kurang} ${gudang.unit || ""} tidak tertutup batch mana pun. ` +
-              "Stok gudang sudah dikurangi, tapi ada barang terpakai yang tidak punya catatan batch."
-            );
-          }
-        } catch { /* satu bahan gagal tidak boleh membatalkan catatan kesehatannya */ }
-      }
-    }
+    /*
+     * Blok pemotongan stok KEDUA dihapus di sini pada 30-09-2026.
+     *
+     * Sampai hari ini berkas ini memotong stok DUA KALI untuk satu catatan
+     * pengobatan baru:
+     *
+     *   · `terapkanPemakaianObat()` di atas — menghitung SELISIH terhadap
+     *     catatan lama, lalu mengurangi current_stock dan menulis
+     *     StockMovement;
+     *   · lalu sebuah gelung tersendiri yang mengurangi current_stock lagi
+     *     dan menulis StockMovement kedua untuk barang yang sama.
+     *
+     * Penjaganya tidak menahan apa pun: syaratnya `!editData?.stok_dipotong`,
+     * dan pada catatan BARU `editData` memang undefined — jadi selalu benar.
+     * Gelung itu peninggalan 31-08-2026; penggantinya ditambahkan belakangan
+     * dan yang lama lupa dibuang.
+     *
+     * Dua hal lagi yang ikut salah tempat, dan itulah yang membuat cacat ini
+     * tidak terlihat sebagai satu cacat:
+     *
+     *   · penanda `stok_dipotong` ditulis di DALAM cabang
+     *     `if (menjadiPengeluaran(data))`. Obat yang diambil dari gudang
+     *     bukan pengeluaran baru, jadi penandanya tidak pernah tersimpan —
+     *     dan menyimpan ulang catatan yang sama memotong stok sekali lagi;
+     *   · ketiga invalidateQueries stok juga di dalam cabang yang sama, jadi
+     *     layar gudang tidak menyegar untuk obat dari stok sendiri.
+     *
+     * Sekarang satu penulis mengerjakan ketiganya — current_stock,
+     * StockMovement, dan sisa batch — di lib/pemakaianObat.js, dan ia
+     * idempoten karena bekerja atas selisih, bukan atas penanda.
+     *
+     * Diperiksa di basis data 30-09-2026: ke-18 HealthRecord punya
+     * `treatment_items` kosong dan tidak ada satu pun StockMovement
+     * berkeperluan "pengobatan_kura". Pemilih obatnya belum pernah dipakai,
+     * jadi pemotongan ganda ini belum pernah benar-benar terjadi.
+     */
 
     // Catatan keuangan HANYA untuk obat yang dibeli dadakan di luar stok.
     //
@@ -272,9 +267,23 @@ export default function HealthForm({ open, onClose, editData }) {
           await base44.entities.HealthRecord.update(savedRecord.id, { finance_tx_id: tx.id });
         }
       }
-      try {
-        await base44.entities.HealthRecord.update(idCatatan, { stok_dipotong: true });
-      } catch { /* penandaan gagal; pemotongan berikutnya dicegah manual */ }
+    }
+
+    /*
+     * Penyegaran cache stok dikeluarkan dari cabang `menjadiPengeluaran`.
+     *
+     * Ketiganya dulu di dalam cabang itu, jadi obat yang diambil dari gudang
+     * — yang justru BUKAN pengeluaran baru — memotong stok tanpa pernah
+     * menyegarkan layar gudang, daftar pergerakan, maupun batch. Angkanya
+     * sudah berubah di basis data; yang di layar belum.
+     *
+     * Penanda `stok_dipotong` ikut dibuang bersama gelung lama di atas:
+     * `terapkanPemakaianObat` bekerja atas SELISIH itemsLama vs itemsBaru,
+     * jadi menyimpan ulang catatan yang sama menghasilkan selisih nol dan
+     * tidak memotong apa pun. Itu jaminan yang berasal dari cara kerjanya,
+     * bukan dari sebuah penanda yang bisa gagal tersimpan.
+     */
+    if (cleanItems.length > 0 || (editData?.treatment_items || []).length > 0) {
       queryClient.invalidateQueries({ queryKey: ["warehouse-items"] });
       queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
       queryClient.invalidateQueries({ queryKey: ["batch-barang"] });

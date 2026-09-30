@@ -105,6 +105,40 @@ function blokArgumen(s, i) {
 }
 
 /** Ambil isi objek literal yang seimbang mulai dari '{' di indeks i. */
+/**
+ * Kosongkan isi sisipan template literal — `${ ... }` — dari sepotong kode.
+ *
+ * Apa pun di dalam `${}` adalah EKSPRESI, bukan kolom yang dikirim. Tanpa
+ * ini, pemindai kunci di bawah membaca opsi date-fns sebagai kolom:
+ *
+ *   title: `Poin ${format(new Date(c.date), "d MMM", { locale: id })} dipotong`
+ *
+ * `locale` dilaporkan sebagai kolom hantu Notification — padahal yang
+ * dikirim cuma `title`. Satu temuan palsu, dan penjaga ini jadi merah
+ * terus. Penjaga yang selalu merah melatih orang mengabaikan seluruh
+ * rangkaiannya; komentar di objekVariabel() di bawah sudah menuliskan
+ * pelajaran yang sama.
+ *
+ * Kurung kurawal dihitung supaya sisipan bersarang ikut terbuang, dan
+ * panjang teksnya dijaga tetap sama supaya posisi apa pun tidak bergeser.
+ */
+function tanpaSisipan(kode) {
+  const keluar = kode.split("");
+  for (let i = 0; i < kode.length - 1; i++) {
+    if (kode[i] !== "$" || kode[i + 1] !== "{") continue;
+    let dalam = 0;
+    for (let j = i + 1; j < kode.length; j++) {
+      if (kode[j] === "{") dalam++;
+      else if (kode[j] === "}") {
+        dalam--;
+        if (dalam === 0) { i = j; break; }
+      }
+      if (j > i + 1) keluar[j] = " ";
+    }
+  }
+  return keluar.join("");
+}
+
 function objekDari(s, i) {
   let dalam = 0;
   for (let j = i; j < Math.min(i + 4000, s.length); j++) {
@@ -175,7 +209,7 @@ for (const p of berkas(".")) {
     }
     if (!blok) continue;
 
-    for (const km of blok.matchAll(/(?:^|[{,])\s*(\w+)\s*:/g)) {
+    for (const km of tanpaSisipan(blok).matchAll(/(?:^|[{,])\s*(\w+)\s*:/g)) {
       const k = km[1];
       const kunci = `${ent}.${k}`;
       if (skema[ent].has(k) || k === k.toUpperCase() || DIMAAFKAN.has(kunci)) continue;
@@ -205,7 +239,7 @@ for (const p of berkas(".")) {
   for (const m of s.matchAll(/setOtomatis\s*\([^,]+,[^,]+,\s*\{/g)) {
     const blok = objekDari(s, s.indexOf("{", m.index + m[0].length - 1));
     if (!blok) continue;
-    for (const km of blok.matchAll(/(?:^|[{,])\s*(\w+)\s*:/g)) {
+    for (const km of tanpaSisipan(blok).matchAll(/(?:^|[{,])\s*(\w+)\s*:/g)) {
       const k = km[1];
       const kunci = `AutomationSettings.${k}`;
       if (skema.AutomationSettings?.has(k)) continue;

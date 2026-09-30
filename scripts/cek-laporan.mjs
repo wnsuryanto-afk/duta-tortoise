@@ -28,7 +28,6 @@ import path from "path";
  */
 const DIKECUALIKAN = new Map([
   ["src/lib/transaksiPenjualan.js", "menghapus & menyamakan penanda; justru baris dikecualikan yang dicarinya"],
-  ["src/components/common/DeleteConfirmDialog.jsx", "menghitung baris terkait sebelum menghapus; harus melihat semuanya"],
   ["src/components/owner/TransaksiKembar.jsx", "pencari transaksi kembar; menyaring akan menyembunyikan kembarannya"],
   ["src/components/sales/SaleWizard.jsx", "membuat penjualan baru & mencari pembeli; bukan permukaan laporan"],
   ["src/pages/IncompleteDataPage.jsx", "memeriksa kelengkapan data, termasuk baris yang dikecualikan"],
