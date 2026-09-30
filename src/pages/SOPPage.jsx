@@ -11,6 +11,9 @@ import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
 import PageHeader from "@/components/common/PageHeader";
 import { ClipboardList } from "lucide-react";
 import { TeamArt } from "@/components/common/Illustration";
+import { useSearchParams } from "react-router-dom";
+import TugasInsidentilTab from "@/components/sop/TugasInsidentilTab";
+import PerpustakaanSOPTab from "@/components/sop/PerpustakaanSOPTab";
 
 export default function SOPPage() {
   const { user, role } = useCurrentUser();
@@ -18,24 +21,62 @@ export default function SOPPage() {
   const canManageSOP = ["owner", "admin", "manajer"].includes(role);
   const isKepalaFeeder = role === "kepala_feeder";
 
+  /*
+   * Tab disimpan di URL, bukan di useState.
+   *
+   * Sebelumnya `defaultValue="tugas"` saja. Begitu tiga halaman lain
+   * menyatu ke sini, tab tanpa URL berarti pengalihan dari /tugas-insidentil
+   * mendarat di tab yang salah, dan tidak ada cara menautkan "buka tugas
+   * insidentil" dari mana pun.
+   */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const TAB_SAH = ["tugas", "approval", "kpi", "tasks", "audit", "insidentil", "perpustakaan"];
+  // Tab yang dibatasi peran tidak boleh bisa dibuka lewat URL oleh peran yang
+  // tidak berhak — kalau tidak, ?tab=tasks memberi kiper layar Kelola SOP.
+  const tabBoleh = (t) =>
+    TAB_SAH.includes(t) &&
+    (t !== "approval" || isAdmin) &&
+    (t !== "tasks" || canManageSOP) &&
+    (t !== "audit" || role === "owner") &&
+    (t !== "insidentil" || isAdmin) &&
+    (t !== "perpustakaan" || canManageSOP);
+  const tabDariUrl = searchParams.get("tab");
+  const activeTab = tabBoleh(tabDariUrl) ? tabDariUrl : "tugas";
+  const setActiveTab = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai === "tugas") next.delete("tab");
+    else next.set("tab", nilai);
+    setSearchParams(next, { replace: true });
+  };
+
   return (
     <div className="space-y-6">
       {/* Layar yang paling sering dibuka di aplikasi ini. Judul `text-3xl`
           dengan anak kalimat dua baris memakan 100px pertama tiap kali
           dibuka — padahal yang dicari orang ada di tab pertama. */}
       <PageHeader
-        title="SOP Harian & KPI"
-        subtitle="Tugas harian, poin, dan bonus"
+        title="SOP & Tugas"
+        subtitle="Tugas harian, tugas dadakan, poin, dan dokumen prosedur"
         icon={ClipboardList}
         art={<TeamArt size="md" />}
       />
 
-      <Tabs defaultValue="tugas">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="tugas">Tugas Hari Ini</TabsTrigger>
+          {/* `isAdmin` dan `canManageSOP`, bukan tanpa penjaga: hak akses tidak
+              boleh melebar hanya karena halamannya pindah jadi tab.
+              "tugas-insidentil" dimiliki owner/admin/manajer/kepala_feeder —
+              tepat isi `isAdmin`. "sop-library" hanya owner/admin/manajer —
+              tepat isi `canManageSOP`, dan kepala_feeder TIDAK termasuk.
+              Catatan: TugasInsidentilTab punya jalur khusus kiper ("Usulkan
+              Tugas"), jadi memberi kiper akses ke tab ini kelak cukup
+              menambah "tugas-insidentil" di lib/permissions.js. */}
+          {isAdmin && <TabsTrigger value="insidentil">Tugas Insidentil</TabsTrigger>}
           {isAdmin && <TabsTrigger value="approval">Verifikasi</TabsTrigger>}
-          <TabsTrigger value="kpi">KPI & Poin</TabsTrigger>
+          <TabsTrigger value="kpi">KPI &amp; Poin</TabsTrigger>
           {canManageSOP && <TabsTrigger value="tasks">Kelola SOP</TabsTrigger>}
+          {canManageSOP && <TabsTrigger value="perpustakaan">Dokumen SOP</TabsTrigger>}
           {role === "owner" && <TabsTrigger value="audit">Audit Mingguan</TabsTrigger>}
         </TabsList>
 
@@ -45,6 +86,18 @@ export default function SOPPage() {
           <PengingatPersetujuan />
           <TugasHariIni user={user} showTeamView={isAdmin} />
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="insidentil" className="mt-6">
+            <TugasInsidentilTab />
+          </TabsContent>
+        )}
+
+        {canManageSOP && (
+          <TabsContent value="perpustakaan" className="mt-6">
+            <PerpustakaanSOPTab />
+          </TabsContent>
+        )}
 
         {isAdmin && (
           <TabsContent value="approval" className="mt-6">

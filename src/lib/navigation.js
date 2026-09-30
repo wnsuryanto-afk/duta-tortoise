@@ -11,11 +11,10 @@
  *
  * `section` dipakai untuk penyaringan hak akses lewat canAccess(role, section).
  */
-import {
-  Home, Shell, ClipboardCheck, Package, Wallet, Users,
+import { Shell, ClipboardCheck, Package, Wallet, Users,
   Heart, Baby, Skull,
-  Leaf, Salad, Stethoscope, Calendar, Library, ListTodo, Zap,
-  LayoutGrid, ShoppingCart, Wrench, Truck, ChefHat,
+  Leaf, Salad, Stethoscope, Calendar, Zap,
+  LayoutGrid, ShoppingCart, Wrench, Truck,
   TrendingUp, DollarSign, PieChart,
   ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Star,
   Activity, MessageSquare, UserCog, Egg, QrCode,
@@ -47,15 +46,10 @@ export const NAV_SECTIONS = [
     blurb: "Kandang, pakan, SOP, dan jadwal harian",
     items: [
       { path: "/sop",                  section: "sop",           label: "SOP Harian & KPI",     icon: ClipboardCheck, desc: "Checklist tugas harian tim" },
-      { path: "/enclosure",            section: "enclosure",     label: "Daftar Kandang",       icon: Home,           desc: "Kandang & isinya — membuka tab Kandang di Daftar Kura" },
       { path: "/pakan-harian",         section: "pakan-harian",  label: "Pakan Harian",         icon: Salad,          desc: "Catatan pemberian pakan" },
       { path: "/panduan-pakan",        section: "panduan-pakan", label: "Panduan Pakan",        icon: Leaf,           desc: "Acuan pakan sulcata" },
-      { path: "/pellet-recipe",        section: "pellet-recipe", label: "Resep Pelet",          icon: ChefHat,        desc: "Formula & takaran" },
       { path: "/treatment",            section: "treatment",     label: "Jadwal Treatment",     icon: Stethoscope,    desc: "Pengobatan terjadwal" },
       { path: "/maintenance-schedule", section: "maintenance",   label: "Kebersihan Kandang",   icon: Calendar,       desc: "Jadwal & riwayat pembersihan" },
-      { path: "/sop-library",          section: "sop-library",   label: "Perpustakaan SOP",     icon: Library,        desc: "Dokumen prosedur" },
-      { path: "/task-template",        section: "task-template", label: "Template Tugas Harian",icon: ListTodo,       desc: "Susun tugas yang muncul tiap hari" },
-      { path: "/tugas-insidentil",     section: "tugas-insidentil", label: "Tugas Insidentil",  icon: Zap,            desc: "Tugas di luar rutinitas" },
       { path: "/rempesan",          section: "pakan-harian",   label: "Rempesan",          icon: Truck,          desc: "Catat ambil sayur/rumput (dihitung ke gaji)" },
     ],
   },
@@ -129,6 +123,26 @@ export const SETTINGS_ITEMS = [
 
 // Halaman yang tidak layak masuk menu, tapi harus tetap terjangkau lewat Ctrl+K.
 export const EXTRA_DESTINATIONS = [
+  /*
+   * Lima pintu yang dikeluarkan dari sidebar pada 30-09-2026. Tidak satu pun
+   * dihapus — semuanya masih dibuka dengan namanya lewat Ctrl+K.
+   *
+   *  · "Daftar Kandang" dan "Resep Pelet" bukan halaman: keduanya hanya
+   *    <Navigate> ke tab yang SUDAH punya pintu sendiri di menu (tab Kandang
+   *    di Daftar Kura, dan Stok & Gudang). Dua pintu ke satu layar.
+   *  · "Perpustakaan SOP" dan "Tugas Insidentil" kini tab di SOP & Tugas.
+   *  · "Template Tugas Harian" adalah sistem template KEDUA yang bersaing
+   *    dengan SOPTask. Tabel DailyTaskTemplate berisi 0 baris sejak aplikasi
+   *    ini berdiri, sementara SOPTask berisi 52 baris (33 aktif) dan itulah
+   *    yang dipakai tim tiap hari lewat tab "Kelola SOP". Pintunya dikeluarkan
+   *    supaya tidak ada yang menuang data ke tabel yang tidak dibaca siapa
+   *    pun; halamannya sendiri tidak disentuh.
+   */
+  { path: "/enclosure",      section: "enclosure",     label: "Daftar Kandang",        group: "Operasional" },
+  { path: "/pellet-recipe",  section: "pellet-recipe", label: "Resep Pelet",           group: "Stok" },
+  { path: "/sop-library",    section: "sop-library",   label: "Perpustakaan SOP",      group: "Operasional" },
+  { path: "/tugas-insidentil", section: "tugas-insidentil", label: "Tugas Insidentil", group: "Operasional" },
+  { path: "/task-template",  section: "task-template", label: "Template Tugas Harian (tidak dipakai)", group: "Operasional" },
   { path: "/passport",           section: "tortoise",  label: "Paspor Kura (cetak)",  group: "Kura" },
   { path: "/incomplete-data",    section: "dashboard", label: "Data Belum Lengkap",   group: "Laporan" },
   { path: "/info",               section: "info",      label: "Info & Pengumuman",    group: "Laporan" },

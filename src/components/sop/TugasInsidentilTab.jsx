@@ -12,18 +12,17 @@ import AccessDenied from "@/components/common/AccessDenied";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Plus, Pin, Loader2, Ban } from "lucide-react";
+import { Plus, Loader2, Ban } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import IncidentalTaskForm from "@/components/incidental/IncidentalTaskForm";
 import IncidentalTaskUsulanForm from "@/components/incidental/IncidentalTaskUsulanForm";
 import IncidentalTaskUsulanSection from "@/components/incidental/IncidentalTaskUsulanSection";
-import PageHeader from "@/components/common/PageHeader";
+import { HeaderChip } from "@/components/common/PageHeader";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
-import { TeamArt } from "@/components/common/Illustration";
 
-export default function IncidentalTaskPage() {
+export default function TugasInsidentilTab() {
   const { user, role } = useCurrentUser();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -109,30 +108,28 @@ export default function IncidentalTaskPage() {
 
   return (
     <div className="space-y-6">
-      {/* Judul `text-3xl` + kalimat 108 huruf + empat kartu angka memakan 195px
-          pertama di ponsel — tugasnya sendiri baru muncul di bawah itu. Angkanya
-          pindah jadi chip, kalimat panjangnya diringkas jadi anak judul, dan
-          keterangan lengkapnya tetap ada sebagai `description`. */}
-      <PageHeader
-        title="Tugas Insidentil"
-        subtitle="Tugas dadakan di luar checklist harian"
-        icon={Pin}
-        art={<TeamArt size="md" />}
-        description={
-          isManagerLevel(role)
-            ? "Tugas yang dibuat di sini langsung muncul di \"Tugas Hari Ini\" karyawan dan ikut alur approval poin."
-            : "Usulan yang kamu kirim menunggu persetujuan manajer sebelum jadi tugas."
-        }
-        chips={[
-          { key: "belum", label: "Belum", value: stats.pending, tone: stats.pending > 0 ? "warn" : "default" },
-          { key: "dikerjakan", label: "Dikerjakan", value: stats.done },
-          { key: "batal", label: "Dibatalkan", value: stats.cancelled },
-          ...(isManagerLevel(role)
-            ? [{ key: "usulan", label: "Menunggu persetujuan", value: stats.usulan, tone: stats.usulan > 0 ? "warn" : "default" }]
-            : []),
-        ]}
-        actions={
-          isManagerLevel(role) ? (
+      {/* Dulu halaman sendiri dengan PageHeader-nya. Sebagai tab, judul dan
+          ilustrasinya dibuang — halaman induknya sudah punya satu — tapi
+          angkanya TIDAK: chip "Belum" adalah satu-satunya tempat di aplikasi
+          yang menunjukkan ada tugas dadakan yang menggantung. */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] text-muted-foreground max-w-2xl leading-relaxed">
+            {isManagerLevel(role)
+              ? "Tugas yang dibuat di sini langsung muncul di \"Tugas Hari Ini\" karyawan dan ikut alur approval poin."
+              : "Usulan yang kamu kirim menunggu persetujuan manajer sebelum jadi tugas."}
+          </p>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <HeaderChip label="Belum" value={stats.pending} tone={stats.pending > 0 ? "warn" : "default"} />
+            <HeaderChip label="Dikerjakan" value={stats.done} />
+            <HeaderChip label="Dibatalkan" value={stats.cancelled} />
+            {isManagerLevel(role) && (
+              <HeaderChip label="Menunggu persetujuan" value={stats.usulan} tone={stats.usulan > 0 ? "warn" : "default"} />
+            )}
+          </div>
+        </div>
+        <div className="flex items-stretch sm:items-end">
+          {isManagerLevel(role) ? (
             <Button onClick={() => setShowForm(true)} className="gap-1.5">
               <Plus className="w-4 h-4" /> Buat Tugas
             </Button>
@@ -140,9 +137,9 @@ export default function IncidentalTaskPage() {
             <Button onClick={() => setShowUsulanForm(true)} className="gap-1.5">
               <Plus className="w-4 h-4" /> Usulkan Tugas
             </Button>
-          )
-        }
-      />
+          )}
+        </div>
+      </div>
 
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">

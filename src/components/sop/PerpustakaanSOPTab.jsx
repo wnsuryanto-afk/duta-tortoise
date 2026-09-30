@@ -24,7 +24,7 @@ const CATEGORIES = [
 
 const getCat = v => CATEGORIES.find(c => c.value === v) || CATEGORIES[6];
 
-export default function SOPLibraryPage() {
+export default function PerpustakaanSOPTab() {
   const { role, user } = useCurrentUser();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -60,12 +60,14 @@ export default function SOPLibraryPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
+        {/* Judulnya dibuang — halaman induknya sudah punya satu. Jumlah
+            dokumen aktif tetap: itu angka yang menjawab "apakah SOP-nya
+            sudah ditulis atau belum". */}
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-green-100 rounded-xl"><BookOpen className="w-6 h-6 text-green-700" /></div>
-          <div>
-            <h1 className="text-2xl font-bold">Perpustakaan SOP</h1>
-            <p className="text-sm text-muted-foreground">{docs.filter(d => d.is_active !== false).length} dokumen SOP aktif</p>
-          </div>
+          <div className="p-2 bg-green-100 rounded-xl"><BookOpen className="w-5 h-5 text-green-700" /></div>
+          <p className="text-sm text-muted-foreground">
+            {docs.filter(d => d.is_active !== false).length} dokumen SOP aktif
+          </p>
         </div>
         {canEdit && (
           <Button onClick={() => { setEditDoc(null); setShowForm(true); }}>

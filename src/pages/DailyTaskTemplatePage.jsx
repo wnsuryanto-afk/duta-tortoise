@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -102,6 +103,34 @@ export default function DailyTaskTemplatePage() {
 
   return (
     <div className="space-y-6">
+      {/*
+       * Peringatan ini muncul HANYA saat tabelnya benar-benar kosong, jadi ia
+       * hilang sendiri begitu halaman ini mulai dipakai.
+       *
+       * Kenapa perlu. Aplikasi ini punya DUA sistem template tugas harian:
+       * DailyTaskTemplate (halaman ini) dan SOPTask (tab "Kelola SOP" di SOP
+       * & Tugas). Per 30-09-2026 DailyTaskTemplate berisi 0 baris sejak
+       * aplikasi berdiri, sementara SOPTask berisi 52 baris (33 aktif) dan
+       * itulah yang benar-benar muncul di checklist tim tiap pagi.
+       *
+       * Tanpa peringatan ini, halaman ini menjanjikan sesuatu yang tidak
+       * terjadi: template yang dimasukkan di sini tidak akan terlihat oleh
+       * siapa pun yang membuka "Tugas Hari Ini", karena yang dibaca layar itu
+       * SOPTask. Pintunya sudah dikeluarkan dari menu; ini untuk orang yang
+       * tetap sampai ke sini lewat Ctrl+K atau tautan lama.
+       */}
+      {templates.length === 0 && (
+        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <p className="font-semibold">Halaman ini belum pernah dipakai.</p>
+          <p className="mt-1 text-[13px] leading-relaxed">
+            Tugas harian yang benar-benar muncul di checklist tim diatur di{" "}
+            <Link to="/sop?tab=tasks" className="font-semibold underline">SOP &amp; Tugas → Kelola SOP</Link>,
+            bukan di sini. Template yang dimasukkan di halaman ini tidak akan
+            terlihat di &quot;Tugas Hari Ini&quot;.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-purple-100 rounded-xl"><ListTodo className="w-6 h-6 text-purple-700" /></div>

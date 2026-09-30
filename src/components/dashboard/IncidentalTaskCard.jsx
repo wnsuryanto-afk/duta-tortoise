@@ -34,7 +34,7 @@ export default function IncidentalTaskCard() {
     <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4">
       <div className="flex items-start justify-between gap-3">
         <button
-          onClick={() => navigate("/tugas-insidentil")}
+          onClick={() => navigate("/sop?tab=insidentil")}
           className="flex items-start gap-3 flex-1 min-w-0 text-left"
         >
           <span className="p-2 rounded-lg bg-orange-100 text-orange-700 flex-shrink-0">

@@ -54,7 +54,7 @@ export default function IncidentalTaskUsulanReview({ task, open, onClose, onReso
         priority: "sedang",
         category: "sistem",
         action_label: "Lihat Tugas",
-        action_url: "/tugas-insidentil",
+        action_url: "/sop?tab=insidentil",
         related_entity_id: t.id,
         related_entity_type: "IncidentalTask",
         is_read: false,

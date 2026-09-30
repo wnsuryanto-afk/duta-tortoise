@@ -17,6 +17,8 @@ import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
 import LaporanGajiBulanan from "@/components/salary/LaporanGajiBulanan";
 import LaporanGajiHarian from "@/components/salary/LaporanGajiHarian";
 import LaporanBonusReward from "@/components/salary/LaporanBonusReward";
+import TugasInsidentilTab from "@/components/sop/TugasInsidentilTab";
+import PerpustakaanSOPTab from "@/components/sop/PerpustakaanSOPTab";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
 import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
@@ -83,6 +85,11 @@ export default [
   ["LaporanGajiBulanan tanpa data", <LaporanGajiBulanan />],
   ["LaporanGajiHarian tanpa data", <LaporanGajiHarian />],
   ["LaporanBonusReward tanpa data", <LaporanBonusReward />],
+
+  /* Dua halaman yang pada 30-09-2026 jadi tab di SOP & Tugas. Sama seperti
+     ketiga laporan gaji di atas: Radix Tabs hanya memasang tab yang aktif. */
+  ["TugasInsidentilTab tanpa data", <TugasInsidentilTab />],
+  ["PerpustakaanSOPTab tanpa data", <PerpustakaanSOPTab />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
 
   /*

@@ -14,7 +14,6 @@ import SupplierPage from '@/pages/SupplierPage';
 import OperationalCostsPage from '@/pages/OperationalCostsPage';
 import SalarySlipPage from '@/pages/SalarySlipPage';
 import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
-import IncidentalTaskPage from '@/pages/IncidentalTaskPage';
 import DaftarBelanjaPage from '@/pages/DaftarBelanjaPage';
 import AlatKerjaPage from '@/pages/AlatKerjaPage';
 import PengaturanWhatsAppPage from '@/pages/PengaturanWhatsAppPage';
@@ -44,7 +43,6 @@ import SalesReportPage from '@/pages/SalesReportPage';
 import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
-import SOPLibraryPage from '@/pages/SOPLibraryPage';
 import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
 import TermConditionSOPPage from '@/pages/TermConditionSOPPage';
 import CRMPage from '@/pages/CRMPage';
@@ -139,7 +137,7 @@ const AuthenticatedApp = () => {
         <Route path="/hr" element={<HRPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/breeding-planner" element={<BreedingPlannerPage />} />
-        <Route path="/sop-library" element={<SOPLibraryPage />} />
+        <Route path="/sop-library" element={<Navigate to="/sop?tab=perpustakaan" replace />} />
         <Route path="/task-template" element={<DailyTaskTemplatePage />} />
         <Route path="/sop-term-condition" element={<TermConditionSOPPage />} />
         <Route path="/crm" element={<CRMPage />} />
@@ -182,7 +180,7 @@ const AuthenticatedApp = () => {
         <Route path="/otomatisasi" element={<OtomatisasiPage />} />
         <Route path="/catat-biaya" element={<CatatBiayaPage />} />
         <Route path="/pembelian" element={<PembelianPage />} />
-        <Route path="/tugas-insidentil" element={<IncidentalTaskPage />} />
+        <Route path="/tugas-insidentil" element={<Navigate to="/sop?tab=insidentil" replace />} />
         <Route path="/daftar-belanja" element={<DaftarBelanjaPage />} />
         <Route path="/harus-dibeli" element={<Navigate to="/pembelian" replace />} />
         <Route path="/alat-kerja" element={<AlatKerjaPage />} />
