@@ -14,6 +14,7 @@ import { TeamArt } from "@/components/common/Illustration";
 import { useSearchParams } from "react-router-dom";
 import TugasInsidentilTab from "@/components/sop/TugasInsidentilTab";
 import PerpustakaanSOPTab from "@/components/sop/PerpustakaanSOPTab";
+import CatatanUntukSayaTab from "@/components/sop/CatatanUntukSayaTab";
 
 export default function SOPPage() {
   const { user, role } = useCurrentUser();
@@ -30,7 +31,7 @@ export default function SOPPage() {
    * insidentil" dari mana pun.
    */
   const [searchParams, setSearchParams] = useSearchParams();
-  const TAB_SAH = ["tugas", "approval", "kpi", "tasks", "audit", "insidentil", "perpustakaan"];
+  const TAB_SAH = ["tugas", "catatan", "approval", "kpi", "tasks", "audit", "insidentil", "perpustakaan"];
   // Tab yang dibatasi peran tidak boleh bisa dibuka lewat URL oleh peran yang
   // tidak berhak — kalau tidak, ?tab=tasks memberi kiper layar Kelola SOP.
   const tabBoleh = (t) =>
@@ -64,6 +65,11 @@ export default function SOPPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="tugas">Tugas Hari Ini</TabsTrigger>
+          {/* Tanpa penjaga peran, dan itu disengaja: isinya disaring
+              `employee_email: user.email` — tiap orang hanya melihat catatan
+              atas tugasnya sendiri. Ditaruh di sebelah "Tugas Hari Ini"
+              karena di situlah kiper mendarat tiap pagi. */}
+          <TabsTrigger value="catatan">Catatan untuk Saya</TabsTrigger>
           {/* `isAdmin` dan `canManageSOP`, bukan tanpa penjaga: hak akses tidak
               boleh melebar hanya karena halamannya pindah jadi tab.
               "tugas-insidentil" dimiliki owner/admin/manajer/kepala_feeder —
@@ -85,6 +91,10 @@ export default function SOPPage() {
               sehari. Ditaruh di tab yang memang dibuka tiap hari. */}
           <PengingatPersetujuan />
           <TugasHariIni user={user} showTeamView={isAdmin} />
+        </TabsContent>
+
+        <TabsContent value="catatan" className="mt-6">
+          <CatatanUntukSayaTab />
         </TabsContent>
 
         {isAdmin && (

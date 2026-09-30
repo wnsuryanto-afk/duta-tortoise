@@ -9,6 +9,7 @@
  * sudah dikerjakan orang lain pada tanggal yang sama. Jika ya → tolak simpan.
  */
 import { catatLogSekali } from "@/lib/logSekali";
+import { layakTampil } from "@/lib/keyakinanAI";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -761,7 +762,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         timeWarning: timeWarning || "",
         onSuggestionReady: (result) => {
           if (!aiSaranEnabled) return;
-          if (result.keyakinan >= 60 && (result.apresiasi || result.saran)) {
+          // `layakTampil`: `result.keyakinan` datang langsung dari AI dan
+          // bisa berskala pecahan, sehingga `>= 60` tidak pernah benar dan
+          // toast catatan baru tidak pernah muncul.
+          if (layakTampil(result.keyakinan) && (result.apresiasi || result.saran)) {
             toast("💬 Catatan baru untuk kamu", {
               description: result.apresiasi || result.saran,
             });

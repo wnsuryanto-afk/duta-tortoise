@@ -53,7 +53,6 @@ import VetContactPage from '@/pages/VetContactPage.jsx';
 import MaintenanceSchedulePage from '@/pages/MaintenanceSchedulePage.jsx';
 import PrinterConfigPage from '@/pages/PrinterConfigPage';
 import KritikSaranPage from '@/pages/KritikSaranPage';
-import CatatanSaranPage from '@/pages/CatatanSaranPage';
 import TemuanFotoPage from '@/pages/TemuanFotoPage';
 import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
 import DashboardStokPage from '@/pages/DashboardStokPage';
@@ -189,7 +188,7 @@ const AuthenticatedApp = () => {
             tidak bisa mencatat apa pun. */}
         <Route path="/incubator-readings" element={<Navigate to="/breeding?tab=inkubator" replace />} />
         <Route path="/kritik-saran" element={<KritikSaranPage />} />
-        <Route path="/catatan-saran" element={<CatatanSaranPage />} />
+        <Route path="/catatan-saran" element={<Navigate to="/sop?tab=catatan" replace />} />
         <Route path="/temuan-foto" element={<TemuanFotoPage />} />
         <Route path="/stock-gudang" element={<Navigate to="/stok-unified" replace />} />
         <Route path="/rekap-poin-gaji" element={<RekapPoinGajiPage />} />

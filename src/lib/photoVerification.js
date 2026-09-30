@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { persenKeyakinan } from "@/lib/keyakinanAI";
 
 const PH_ENC = new Set(["", "tugas harian", "suplemen", "tugas_harian"]);
 const normEnc = (e) => {
@@ -95,13 +96,15 @@ Gaya bahasa: Bahasa Indonesia sehari-hari yang HANGAT dan SOPAN, seperti rekan k
 
 DILARANG: menuduh, menyindir, kata kasar, membandingkan antar karyawan, menyebut soal poin atau gaji. Jika pekerjaan sudah bagus: cukup apresiasi, saran dikosongkan.
 
+Isi "keyakinan" dengan BILANGAN BULAT 0 sampai 100 (contoh: 95 untuk sangat yakin, 40 untuk ragu). JANGAN memakai pecahan 0–1.
+
 Jawab HANYA dengan JSON.`,
         file_urls: [photoUrl],
         response_json_schema: {
           type: "object",
           properties: {
             sesuai: { type: "boolean" },
-            keyakinan: { type: "number" },
+            keyakinan: { type: "number", description: "Persen keyakinan, bilangan bulat 0-100 (bukan pecahan 0-1)" },
             apresiasi: { type: "string" },
             saran: { type: "string" },
             temuan_penting: { type: "string" },
@@ -138,7 +141,11 @@ export async function syncAIVerification({ employeeEmail, date, taskTitle, enclo
     const updated = { ...tasks[idx] };
     if (aiResult) {
       updated.ai_verified = aiResult.sesuai;
-      updated.ai_confidence = aiResult.keyakinan;
+      // Dinormalkan sebelum disimpan supaya baris BARU tidak lagi campur
+      // skala. Baris lama tetap apa adanya — `persenKeyakinan` di sisi baca
+      // yang menanganinya. Promptnya sudah diminta menjawab 0-100, tapi
+      // permintaan pada model bukan jaminan, jadi penjaganya tetap di sini.
+      updated.ai_confidence = persenKeyakinan(aiResult.keyakinan);
       updated.ai_apresiasi = aiResult.apresiasi;
       updated.ai_saran = aiResult.saran;
       updated.ai_temuan_penting = aiResult.temuan_penting;

@@ -1,3 +1,4 @@
+import { persenKeyakinan } from "@/lib/keyakinanAI";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -86,7 +87,11 @@ export default function SOPApproval() {
 
   const taskNeedsReview = (t) => {
     if (t.ai_verified === false) return true;
-    if (t.ai_confidence != null && t.ai_confidence < 70) return true;
+    // `persenKeyakinan`, bukan `t.ai_confidence` langsung: nilai tersimpan
+    // bisa berupa pecahan (0.95) maupun persen (95). Tanpa normalisasi ini,
+    // `< 70` SELALU benar untuk pecahan — setiap tugas tampak meragukan.
+    const keyakinan = persenKeyakinan(t.ai_confidence);
+    if (keyakinan != null && keyakinan < 70) return true;
     if (t.photo_age_warning) return true;
     if (t.photo_time_warning) return true;
     return false;
@@ -95,10 +100,11 @@ export default function SOPApproval() {
   const getAIBadge = (t) => {
     if (t.ai_verified === undefined || t.ai_verified === null) return null;
     if (t.ai_verified === true) {
-      return { icon: "✅", text: `Sesuai (keyakinan ${t.ai_confidence || 0}%)`, color: "bg-green-100 text-green-700 border-green-200" };
+      return { icon: "✅", text: `Sesuai (keyakinan ${Math.round(persenKeyakinan(t.ai_confidence) ?? 0)}%)`, color: "bg-green-100 text-green-700 border-green-200" };
     }
     const reasonText = t.ai_temuan_penting || t.ai_reason || "";
-    if (t.ai_confidence != null && t.ai_confidence >= 50) {
+    const keyakinanBadge = persenKeyakinan(t.ai_confidence);
+    if (keyakinanBadge != null && keyakinanBadge >= 50) {
       return { icon: "⚠️", text: `Meragukan — ${reasonText}`, color: "bg-yellow-100 text-yellow-700 border-yellow-200" };
     }
     return { icon: "❌", text: `Tidak sesuai — ${reasonText}`, color: "bg-red-100 text-red-700 border-red-200" };
@@ -675,12 +681,12 @@ export default function SOPApproval() {
                                     </button>
                                     <div className="flex flex-wrap gap-1">
                                       {t.ai_verified === true && (
-                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-green-100 text-green-700 border-green-200">✅ Sesuai (keyakinan {t.ai_confidence || 0}%)</span>
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-green-100 text-green-700 border-green-200">✅ Sesuai (keyakinan {Math.round(persenKeyakinan(t.ai_confidence) ?? 0)}%)</span>
                                       )}
-                                      {t.ai_verified === false && t.ai_confidence != null && t.ai_confidence >= 50 && (
+                                      {t.ai_verified === false && persenKeyakinan(t.ai_confidence) != null && persenKeyakinan(t.ai_confidence) >= 50 && (
                                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200">⚠️ Meragukan — {t.ai_temuan_penting || t.ai_reason || ""}</span>
                                       )}
-                                      {t.ai_verified === false && (t.ai_confidence == null || t.ai_confidence < 50) && (
+                                      {t.ai_verified === false && (persenKeyakinan(t.ai_confidence) == null || persenKeyakinan(t.ai_confidence) < 50) && (
                                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200">❌ Tidak sesuai — {t.ai_temuan_penting || t.ai_reason || ""}</span>
                                       )}
                                       {(() => {

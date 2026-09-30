@@ -22,6 +22,7 @@ import PerpustakaanSOPTab from "@/components/sop/PerpustakaanSOPTab";
 import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
 import LaporanPenjualanTab from "@/components/sales/LaporanPenjualanTab";
 import PembeliTab from "@/components/sales/PembeliTab";
+import CatatanUntukSayaTab from "@/components/sop/CatatanUntukSayaTab";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
 import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
@@ -99,6 +100,11 @@ export default [
   ["BiayaOperasionalTab tanpa data", <BiayaOperasionalTab />],
   ["LaporanPenjualanTab tanpa data", <LaporanPenjualanTab />],
   ["PembeliTab tanpa data", <PembeliTab />],
+
+  /* Tab yang mengembalikan 330 pesan yang selama ini tak terbaca ke layar
+     kiper. Dirender tanpa user (kueri tidak jalan) — keadaan paling umum
+     saat aplikasi baru dibuka. */
+  ["CatatanUntukSayaTab tanpa data", <CatatanUntukSayaTab />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
 
   /*

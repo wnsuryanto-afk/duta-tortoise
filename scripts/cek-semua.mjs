@@ -7,6 +7,9 @@
  *   cek-impor       fungsi pustaka dipakai tanpa di-import → komponen crash
  *                   saat dirender, build tetap hijau
  *   cek-kolom-hantu kolom ditulis tapi tidak ada di skema → datanya dibuang
+ *   cek-keyakinan   ai_confidence dibandingkan mentah-mentah → skala
+ *                   pecahan vs persen tertukar, dan pesan untuk kiper
+ *                   tersaring habis tanpa satu pun error
  *   cek-timbang     aturan "siapa perlu ditimbang" menjawab salah → kura
  *                   sakit terlewat, atau rotasi yang tak selesai kembali
  *   cek-batch       stok gudang berkurang tanpa menurunkan sisa batch →
@@ -39,7 +42,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

@@ -16,7 +16,7 @@ import { Shell, ClipboardCheck, Package, Wallet, Users,
   Leaf, Salad, Stethoscope, Calendar,
   LayoutGrid, ShoppingCart, Wrench, Truck,
   TrendingUp, DollarSign,
-  ShieldAlert, ScanSearch, MessageCircle, Calculator, FileText, Star,
+  ShieldAlert, ScanSearch, Calculator, FileText,
   Activity, MessageSquare, UserCog, Egg, QrCode,
 } from "lucide-react";
 
@@ -94,10 +94,8 @@ export const NAV_SECTIONS = [
       { path: "/hr",              section: "hr",            label: "Absensi & SDM",    icon: Users,         desc: "Kehadiran & data karyawan" },
       { path: "/approval-poin",   section: "approval-poin", label: "Approval Poin",    icon: ShieldAlert,   desc: "Setujui checklist & poin" },
       { path: "/temuan-foto",     section: "temuan-foto",   label: "Temuan dari Foto", icon: ScanSearch,    desc: "Hasil pemeriksaan AI" },
-      { path: "/catatan-saran",   section: "catatan-saran", label: "Catatan dari Checklist", icon: MessageCircle, desc: "Pesan keeper & balasan owner" },
       { path: "/salary-slip",     section: "salary-slip",   label: "Slip Gaji",        icon: FileText,      desc: "Cetak slip" },
       { path: "/rekap-poin-gaji", section: "salary",        label: "Gaji",             icon: Calculator,    desc: "Hitung, terbitkan slip, laporan bulanan/harian, bonus" },
-      { path: "/pengaturan-poin", section: "pengaturan-poin", label: "Pengaturan Poin",  icon: Star,          desc: "Nilai per poin, simulasi dampak biaya, riwayat" },
       { path: "/kasbon",          section: "kasbon",        label: "Kasbon",           icon: Wallet,        desc: "Pinjaman karyawan" },
       { path: "/payroll-gaji",    section: "payroll-gaji",  label: "Penggajian Karyawan", icon: Wallet,     desc: "Proses gaji, lembur, sayur, kasbon" },
       { path: "/users",           section: "users",         label: "Manajemen User",   icon: UserCog,       desc: "Akun & hak akses" },
@@ -113,6 +111,11 @@ export const SETTINGS_ITEMS = [
   { path: "/notifications",       section: "notifications",       label: "Notifikasi" },
   { path: "/vet-contacts",        section: "health",              label: "Kontak Dokter Hewan" },
   { path: "/printer-config",      section: "printer-config",      label: "Printer & Label" },
+  /* Pengaturan Poin pindah ke sini dari area ORANG pada 30-09-2026: ia
+     mengatur nilai per poin, bukan mengerjakan sesuatu. Hak aksesnya tetap
+     section "pengaturan-poin" (owner/admin/manajer), dan menu ini disaring
+     canAccess yang sama dengan sidebar. */
+  { path: "/pengaturan-poin",     section: "pengaturan-poin",     label: "Pengaturan Poin" },
   { path: "/pengaturan-whatsapp", section: "pengaturan-whatsapp", label: "Pengaturan WhatsApp" },
   { path: "/log-whatsapp",        section: "log-whatsapp",        label: "Log WhatsApp" },
   { path: "/system-maintenance",  section: "system-maintenance",  label: "Pemeliharaan Sistem" },
