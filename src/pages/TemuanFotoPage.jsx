@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format, subDays } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { CATEGORIES, categorizeFinding, detectRecurring } from "@/lib/temuanCategorize";
+import { CATEGORIES, categorizeFinding, detectRecurring, tidakAdaTemuan } from "@/lib/temuanCategorize";
 import AccessDenied from "@/components/common/AccessDenied";
 import TemuanKategoriSection from "@/components/temuan/TemuanKategoriSection";
 import TemuanRingkasanMingguan from "@/components/temuan/TemuanRingkasanMingguan";
@@ -62,6 +62,23 @@ export default function TemuanFotoPage() {
       (cl.completed_tasks || []).forEach((t, idx) => {
         if (!t.ai_temuan_penting || !t.ai_temuan_penting.trim()) return;
 
+        /*
+         * Laporan aman TIDAK jadi kartu temuan.
+         *
+         * Prompt-nya sudah meminta "kosongkan jika tidak ada", tapi
+         * modelnya menulis kalimat yang berbunyi "tidak ada temuan"
+         * alih-alih mengosongkannya. Diukur atas 156 temuan nyata pada
+         * 30-09-2026: 66 di antaranya berbunyi begitu — 42% kartu di
+         * layar ini berisi kabar baik, dan temuan sungguhan seperti
+         * "posisi kura masih di luar area rendaman" tenggelam di
+         * antaranya.
+         *
+         * Tidak dibuang diam-diam: jumlahnya dihitung di `amanCount` dan
+         * ditampilkan di bilah ringkasan, supaya jelas bahwa fotonya
+         * memang diperiksa dan hasilnya bersih.
+         */
+        if (tidakAdaTemuan(t.ai_temuan_penting)) return;
+
         const normTitle = (t.task_title || "").trim().toLowerCase();
         const key = `${cl.employee_email || ""}|${cl.date}|${normTitle}`;
         const category = categorizeFinding(t.ai_temuan_penting);
@@ -89,6 +106,22 @@ export default function TemuanFotoPage() {
     });
     return result;
   }, [checklists, findingStatusMap, weekAgo, today]);
+
+  // Dihitung terpisah, dengan jendela tanggal yang SAMA seperti di atas.
+  // Angka ini hanya untuk bilah ringkasan: ia memberi tahu pemilik berapa
+  // foto yang diperiksa dan hasilnya bersih, supaya berkurangnya kartu
+  // tidak terbaca sebagai fotonya tidak diperiksa.
+  const amanCount = useMemo(() => {
+    let n = 0;
+    (checklists || []).forEach((cl) => {
+      if (!cl.date || cl.date < weekAgo || cl.date > today) return;
+      (cl.completed_tasks || []).forEach((t) => {
+        const teks = (t.ai_temuan_penting || "").trim();
+        if (teks && tidakAdaTemuan(teks)) n++;
+      });
+    });
+    return n;
+  }, [checklists, weekAgo, today]);
 
   // ── Detect recurring ──
   const recurringKeys = useMemo(() => detectRecurring(allFindings), [allFindings]);
@@ -233,6 +266,17 @@ export default function TemuanFotoPage() {
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-green-500" />
               <span className="text-xs text-muted-foreground">{resolvedCount} ditangani</span>
+            </div>
+          )}
+          {amanCount > 0 && (
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-muted-foreground/60" />
+              <span
+                className="text-xs text-muted-foreground"
+                title="Foto yang diperiksa AI dan hasilnya tidak ada temuan. Tidak ditampilkan sebagai kartu supaya temuan sungguhan tidak tenggelam."
+              >
+                {amanCount} foto bersih
+              </span>
             </div>
           )}
           <label className="flex items-center gap-1.5 ml-auto text-xs text-muted-foreground cursor-pointer">
