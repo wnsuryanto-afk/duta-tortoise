@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
-import { toast } from "sonner";
-import { patchPotongan, sisaKasbon } from "@/lib/potonganKasbon";
+import PanelKasbon from "@/components/kasbon/PanelKasbon";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
@@ -13,310 +12,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings, Plus, Calculator, Users, Clock, Leaf, Pencil, CreditCard, CheckCircle2, XCircle, Minus, BarChart3 } from "lucide-react";
+import { Settings, Plus, Calculator, Users, Clock, Leaf, Pencil, CreditCard, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
-import AlurGaji from "@/components/salary/AlurGaji";
 import { sudahAdaRempesan, tripSah } from "@/lib/rempesan";
 import AccessDenied from "@/components/common/AccessDenied";
 import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
 import { useCompanySettings } from "@/lib/useCompanySettings";
-import KeadaanKosong from "@/components/common/KeadaanKosong";
 
 const MAX_KASBON = 1000000;
 
-function KasbonTab({ user, role, isOwnerOrManajer }) {
-  const qc = useQueryClient();
-  // Bagian 2: semua role kecuali owner & investor bisa ajukan kasbon
-  const canApply = !["owner", "investor", "kicked"].includes(role);
-  const isOwner = role === "owner";
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ amount: "", reason_category: "kebutuhan_mendesak", reason: "", installment_plan: "1x" });
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
-
-  const { data: kasbons = [], isLoading } = useQuery({
-    queryKey: ["kasbons"],
-    queryFn: () => base44.entities.Kasbon.list("-request_date", 200),
-  });
-
-  const myKasbons = useMemo(() => {
-    if (isOwnerOrManajer) return kasbons;
-    return kasbons.filter(k => k.employee_email === user?.email);
-  }, [kasbons, user, isOwnerOrManajer]);
-
-  const activeKasbon = myKasbons.find(k => k.employee_email === user?.email && k.status === "approved");
-
-  // Hitung total kasbon aktif (pending + approved)
-  const totalAktif = myKasbons
-    .filter(k => k.employee_email === user?.email && ["approved", "pending"].includes(k.status))
-    .reduce((s, k) => s + ((k.amount || 0) - (k.total_paid || 0)), 0);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    const amt = Number(form.amount);
-    if (!amt || amt <= 0) { setFormError("Nominal kasbon harus diisi."); return; }
-    if (amt > MAX_KASBON) { setFormError(`Maksimal kasbon Rp ${MAX_KASBON.toLocaleString("id-ID")}`); return; }
-    if (totalAktif + amt > MAX_KASBON) {
-      setFormError(`Sisa kasbon aktif Rp ${totalAktif.toLocaleString("id-ID")}. Total akan melebihi maksimal Rp ${MAX_KASBON.toLocaleString("id-ID")}.`);
-      return;
-    }
-    const planMap = { "1x": 1, "2x": 2, "4x": 4 };
-    const totalCicilan = planMap[form.installment_plan] || 1;
-    const perCicilan = Math.ceil(amt / totalCicilan);
-    setSaving(true);
-    await base44.entities.Kasbon.create({
-      employee_name: user.full_name || user.email,
-      employee_email: user.email,
-      amount: amt,
-      reason_category: form.reason_category,
-      reason: form.reason,
-      installment_plan: form.installment_plan,
-      installments_total: totalCicilan,
-      installments_paid: 0,
-      request_date: format(new Date(), "yyyy-MM-dd"),
-      // Satu field untuk satu hal. `installment_amount` dulu ditulis di sini
-      // dengan nilai yang persis sama dengan `weekly_deduction` — dan tidak ada
-      // di skema, jadi nilainya dibuang dan setiap pembacaannya jatuh ke
-      // `weekly_deduction` juga. Pembacaannya sengaja dibiarkan berjenjang
-      // untuk berjaga-jaga bila ada data lama yang sempat menyimpannya.
-      weekly_deduction: perCicilan,
-      total_paid: 0,
-      status: "pending",
-    });
-    qc.invalidateQueries({ queryKey: ["kasbons"] });
-    setSaving(false);
-    setShowForm(false);
-    setForm({ amount: "", reason_category: "kebutuhan_mendesak", reason: "", installment_plan: "1x" });
-  };
-
-  const handleApprove = async (kasbon) => {
-    await base44.entities.Kasbon.update(kasbon.id, {
-      status: "approved",
-      approved_by: user.full_name || user.email,
-      approved_date: format(new Date(), "yyyy-MM-dd"),
-    });
-    qc.invalidateQueries({ queryKey: ["kasbons"] });
-  };
-
-  const handleReject = async (kasbon) => {
-    const alasan = prompt("Alasan penolakan kasbon:");
-    if (alasan === null) return;
-    // `rejection_reason`, bukan `reject_reason` — yang kedua tidak ada di skema
-    // sehingga alasannya hilang. Halaman Kasbon menulis nama yang benar dan
-    // KasbonCard menampilkannya, jadi penolakan dari layar ini saja yang
-    // alasannya tidak pernah muncul.
-    await base44.entities.Kasbon.update(kasbon.id, { status: "rejected", rejection_reason: alasan });
-    qc.invalidateQueries({ queryKey: ["kasbons"] });
-  };
-
-  /*
-   * Potongan manual dari halaman ini dulu hanya menaikkan `total_paid` dan
-   * tidak menulis apa pun ke `deduction_log`. Akibatnya sudah ada di data:
-   * kasbon Ahmad Ali 11 Agustus tercatat terbayar Rp 300.000 sementara seluruh
-   * riwayatnya hanya Rp 200.000 — Rp 100.000 utang karyawan yang tidak bisa
-   * dipastikan sudah dipotong atau belum, karena tidak ada barisnya.
-   *
-   * Sekarang lewat pintu yang sama dengan pembuatan slip gaji.
-   */
-  const handlePotong = async (kasbon) => {
-    const patch = patchPotongan(kasbon, {
-      jumlah: kasbon.installment_amount || kasbon.weekly_deduction || 100000,
-      metode: "manual",
-      tanggal: new Date().toISOString().split("T")[0],
-      olehNama: user?.full_name || user?.email || "",
-      catatan: "Potongan manual dari halaman Payroll",
-    });
-    if (!patch) {
-      toast.info("Tidak ada yang perlu dipotong — kasbon ini sudah lunas.");
-      return;
-    }
-    await base44.entities.Kasbon.update(kasbon.id, {
-      ...patch,
-      installments_paid: (kasbon.installments_paid || 0) + 1,
-    });
-    qc.invalidateQueries({ queryKey: ["kasbons"] });
-    const sisa = sisaKasbon({ ...kasbon, ...patch });
-    toast.success(`Potongan tercatat — sisa Rp ${sisa.toLocaleString("id-ID")}`);
-  };
-
-  const statusConfig = {
-    pending:  { label: "Menunggu",  color: "bg-amber-100 text-amber-700" },
-    approved: { label: "Disetujui", color: "bg-green-100 text-green-700" },
-    rejected: { label: "Ditolak",   color: "bg-red-100 text-red-700" },
-    lunas:    { label: "Lunas",     color: "bg-muted text-muted-foreground" },
-  };
-
-  const REASON_LABELS = {
-    kebutuhan_mendesak: "Kebutuhan Mendesak",
-    biaya_kesehatan: "Biaya Kesehatan",
-    kebutuhan_keluarga: "Kebutuhan Keluarga",
-    transportasi: "Transportasi",
-    lainnya: "Lainnya",
-  };
-
-  return (
-    <div className="space-y-4">
-      <AlurGaji aktif="masukan" />
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Maksimal Rp {MAX_KASBON.toLocaleString("id-ID")} · Dipotong sesuai rencana cicilan
-        </p>
-        {canApply && (
-          <Button size="sm" onClick={() => setShowForm(true)}>
-            <Plus className="w-4 h-4 mr-1.5" /> Ajukan Kasbon
-          </Button>
-        )}
-      </div>
-
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b bg-muted/30">
-          <h2 className="font-semibold text-sm flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-primary" />
-            {isOwnerOrManajer ? "Semua Pengajuan Kasbon" : "Riwayat Kasbon Saya"}
-          </h2>
-        </div>
-        {isLoading ? (
-          <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>
-        ) : myKasbons.length === 0 ? (
-          <KeadaanKosong gambar="tim" judul="Belum ada pengajuan kasbon" keterangan="Pengajuan dari karyawan akan muncul di sini untuk Anda setujui." />
-        ) : (
-          <div className="divide-y">
-            {myKasbons.map(k => {
-              const sisa = (k.amount || 0) - (k.total_paid || 0);
-              const pct = k.amount ? Math.round(((k.total_paid || 0) / k.amount) * 100) : 0;
-              const conf = statusConfig[k.status] || statusConfig.pending;
-              return (
-                <div key={k.id} className="p-4 hover:bg-muted/20 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-semibold text-sm">{k.employee_name}</span>
-                        <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
-                        {k.installment_plan && (
-                          <Badge variant="outline" className="text-[11px]">
-                            Cicil {k.installment_plan} ({k.installments_paid || 0}/{k.installments_total || 1}x)
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-lg font-bold text-primary">Rp {(k.amount || 0).toLocaleString("id-ID")}</p>
-                      {k.reason_category && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {REASON_LABELS[k.reason_category] || k.reason_category}{k.reason ? ` — "${k.reason}"` : ""}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Diajukan: {k.request_date ? format(new Date(k.request_date), "d MMM yyyy", { locale: id }) : "—"}
-                        {k.approved_date && ` · Disetujui: ${format(new Date(k.approved_date), "d MMM yyyy", { locale: id })}`}
-                      </p>
-                      {k.installment_plan && <p className="text-xs text-muted-foreground">Cicilan: {k.installment_plan} · Rp {(k.installment_amount || k.weekly_deduction || 0).toLocaleString("id-ID")}/periode</p>}
-                      {k.status === "approved" && (
-                        <div className="mt-2">
-                          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                            <span>Terbayar: Rp {(k.total_paid || 0).toLocaleString("id-ID")}</span>
-                            <span>Sisa: Rp {sisa.toLocaleString("id-ID")} ({pct}%)</span>
-                          </div>
-                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {isOwnerOrManajer && (
-                      <div className="flex gap-2 flex-shrink-0 flex-col">
-                        {k.status === "pending" && (
-                          <>
-                            <Button size="sm" onClick={() => handleApprove(k)} className="gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> ✅ Setujui</Button>
-                            <Button size="sm" variant="outline" onClick={() => handleReject(k)} className="gap-1 text-destructive border-destructive hover:bg-destructive/10"><XCircle className="w-3.5 h-3.5" /> ❌ Tolak</Button>
-                          </>
-                        )}
-                        {k.status === "approved" && sisa > 0 && (
-                          <Button size="sm" variant="outline" onClick={() => handlePotong(k)} className="gap-1">
-                            <Minus className="w-3.5 h-3.5" /> Potong Cicilan
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="font-heading">Ajukan Kasbon</DialogTitle></DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-              <p>• Maksimal kasbon: <strong>Rp {MAX_KASBON.toLocaleString("id-ID")}</strong></p>
-              <p>• Disetujui oleh Owner dan akan dipotong dari gaji</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Nominal Kasbon (Rp) *</Label>
-              <Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="500000" max={MAX_KASBON} required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Alasan Pengajuan *</Label>
-              <Select value={form.reason_category} onValueChange={v => setForm(p => ({ ...p, reason_category: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="kebutuhan_mendesak">Kebutuhan Mendesak</SelectItem>
-                  <SelectItem value="biaya_kesehatan">Biaya Kesehatan</SelectItem>
-                  <SelectItem value="kebutuhan_keluarga">Kebutuhan Keluarga</SelectItem>
-                  <SelectItem value="transportasi">Transportasi</SelectItem>
-                  <SelectItem value="lainnya">Lainnya</SelectItem>
-                </SelectContent>
-              </Select>
-              {form.reason_category === "lainnya" && (
-                <Textarea value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))} placeholder="Jelaskan keperluan..." rows={2} />
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Rencana Cicilan *</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { val: "1x", label: "Potong 1x", desc: "Gaji berikutnya" },
-                  { val: "2x", label: "Cicil 2x", desc: "2 periode" },
-                  { val: "4x", label: "Cicil 4x", desc: "4 periode" },
-                ].map(opt => (
-                  <button
-                    key={opt.val}
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, installment_plan: opt.val }))}
-                    className={`py-2 px-2 rounded-lg border-2 text-xs text-center transition-all ${
-                      form.installment_plan === opt.val
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-muted bg-muted/30 text-muted-foreground"
-                    }`}
-                  >
-                    <div className="font-semibold">{opt.label}</div>
-                    <div className="text-[10px] opacity-70">{opt.desc}</div>
-                    {form.amount && (
-                      <div className="font-bold mt-1">
-                        Rp {Math.ceil(Number(form.amount) / parseInt(opt.val)).toLocaleString("id-ID")}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {formError && <p className="text-xs text-destructive font-medium">{formError}</p>}
-            <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
-              <Button type="submit" disabled={saving}>{saving ? "Mengajukan..." : "Ajukan Kasbon"}</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+/*
+ * KasbonTab yang dulu ditulis lengkap di sini DIBUANG pada 30-09-2026.
+ *
+ * Ia implementasi KEDUA dari layar kasbon, dan aturannya berbeda dari
+ * halaman /kasbon: pinjaman kedua boleh asal total <= Rp 1.000.000
+ * (halaman itu melarangnya sama sekali), dan potongan mingguannya
+ * amount/(1|2|4) alih-alih tetap Rp 100.000 — sehingga rencana "1x"
+ * memotong seluruh pinjaman dari gaji satu minggu.
+ *
+ * Orang yang sama mengajukan lewat pintu berbeda mendapat jawaban
+ * berbeda. Sekarang keduanya memakai components/kasbon/PanelKasbon.jsx;
+ * catatan lengkapnya ada di sana.
+ */
 
 // Bagian 4: Exclude owner & investor dari konfigurasi gaji
 const ROLE_OPTIONS = [
@@ -897,7 +618,7 @@ export default function PayrollPage() {
 
         {/* TAB: Kasbon */}
         <TabsContent value="kasbon" className="mt-4">
-          <KasbonTab user={user} role={role} isOwnerOrManajer={isOwnerOrManajer} />
+          <PanelKasbon tanpaKepala />
         </TabsContent>
 
         {/* TAB: Konfigurasi Gaji */}
