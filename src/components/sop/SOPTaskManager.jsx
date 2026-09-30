@@ -1,4 +1,5 @@
 import { useState } from "react";
+import BahanTerpakaiEditor from "@/components/sop/BahanTerpakaiEditor";
 import { kandangDariKura } from "@/lib/kandang";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
@@ -49,6 +50,7 @@ const DEFAULT_FORM = {
   ai_check_points: "",
   assigned_to_email: "", assigned_to_name: "",
   catat_pakan: false,
+  pakan_terpakai: [],
 };
 
 function ToggleChip({ label, selected, onClick }) {
@@ -164,6 +166,16 @@ export default function SOPTaskManager() {
     queryFn: () => base44.entities.WarehouseItem.list("-name", 500),
     staleTime: 10 * 60 * 1000,
   });
+  /*
+   * Stok pakan untuk BahanTerpakaiEditor. Gudang sudah diambil di atas.
+   * Kedua daftar ini yang dicocokkan potongStokPakan lewat SKU.
+   */
+  const { data: stokPakan = [] } = useQuery({
+    queryKey: ["sop-feed-stocks"],
+    queryFn: () => base44.entities.FeedStock.list("name", 200),
+    staleTime: 10 * 60 * 1000,
+  });
+
   const barangDipilih = form.required_skus || [];
   const toggleSku = (sku) => setForm(p => ({
     ...p,
@@ -191,6 +203,7 @@ export default function SOPTaskManager() {
       jenis_carryover: t.jenis_carryover || "1hari",
       butuh_bahan_gudang: t.butuh_bahan_gudang ?? false,
       required_skus: t.required_skus || [],
+      pakan_terpakai: t.pakan_terpakai || [],
       wajib_untuk_role: t.wajib_untuk_role || "semua",
     });
     setEditData(t);
@@ -527,6 +540,32 @@ export default function SOPTaskManager() {
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/*
+                Bahan yang HABIS setiap kali tugas ini dikerjakan.
+                Berbeda dari "Butuh bahan gudang" di atas: yang itu menandai
+                bahan yang harus ADA (kalau habis, tugasnya dikunci); yang ini
+                menyatakan berapa yang BERKURANG tiap kali tugasnya dicentang.
+
+                Sampai 30-09-2026 kolom ini tidak punya satu pun tempat untuk
+                diisi, padahal dua otomatisasi membacanya. Lihat catatan
+                lengkapnya di BahanTerpakaiEditor.jsx.
+              */}
+              <div className="p-3 rounded-lg border border-border bg-muted/30">
+                <label className="text-xs font-medium mb-1 block">
+                  Bahan yang terpakai sekali kerja
+                </label>
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  Diisi sekali, lalu stoknya berkurang sendiri tiap tugas ini dicentang dan disetujui —
+                  tanpa pencatatan pakan manual. Perlu otomatisasi &quot;Stok berkurang saat task dicentang&quot; dinyalakan.
+                </p>
+                <BahanTerpakaiEditor
+                  nilai={form.pakan_terpakai}
+                  onChange={(v) => setForm((p) => ({ ...p, pakan_terpakai: v }))}
+                  stokPakan={stokPakan}
+                  barangGudang={warehouseItems}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

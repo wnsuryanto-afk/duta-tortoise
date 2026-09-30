@@ -23,6 +23,7 @@ import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
 import LaporanPenjualanTab from "@/components/sales/LaporanPenjualanTab";
 import PembeliTab from "@/components/sales/PembeliTab";
 import CatatanUntukSayaTab from "@/components/sop/CatatanUntukSayaTab";
+import BahanTerpakaiEditor from "@/components/sop/BahanTerpakaiEditor";
 import GuidedHariIni from "@/components/guided/GuidedHariIni";
 import LaporMakanPanel from "@/components/tortoise/LaporMakanPanel";
 import GrafikKepatuhan from "@/components/dashboard/GrafikKepatuhan";
@@ -105,6 +106,16 @@ export default [
      kiper. Dirender tanpa user (kueri tidak jalan) — keadaan paling umum
      saat aplikasi baru dibuka. */
   ["CatatanUntukSayaTab tanpa data", <CatatanUntukSayaTab />],
+
+  /* Editor bahan terpakai — dirender dengan nilai kosong DAN dengan nilai
+     yang sudah terisi, karena daftarnya punya dua bentuk tampilan. */
+  ["BahanTerpakaiEditor kosong", <BahanTerpakaiEditor nilai={[]} onChange={() => {}} />],
+  ["BahanTerpakaiEditor terisi", <BahanTerpakaiEditor
+    nilai={[{ sku: "PKN-001", nama: "Rumput", jumlah: 3, sumber: "pakan" }]}
+    onChange={() => {}}
+    stokPakan={[{ sku: "PKN-001", name: "Rumput", current_stock: 10, unit: "kg" }, { name: "Tanpa SKU" }]}
+    barangGudang={[]}
+  />],
   ["GuidedHariIni tanpa user", <GuidedHariIni user={undefined} />],
 
   /*

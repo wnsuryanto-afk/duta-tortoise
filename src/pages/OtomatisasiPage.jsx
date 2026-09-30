@@ -125,7 +125,8 @@ const GRUP = [
         isi: "Menghapus pencatatan pakan manual yang tidak pernah diisi. Hanya checklist yang sudah disetujui yang memotong stok.",
         jadwal: "tiap jam",
         jejak: null,
-        prasyarat: "Isi \"pakan_terpakai\" di tiap SOP task (SKU + jumlah sekali kerja). Selama kosong, fungsi ini tidak memotong apa pun.",
+        prasyarat: "Isi bahan terpakai di tiap SOP task (bahan + jumlah sekali kerja). Selama kosong, fungsi ini tidak memotong apa pun.",
+        cekBahan: true,
       },
       {
         kode: "A9", fn: "kunciBahanSOP", saklar: "kunci_sop_stok_enabled",
@@ -306,6 +307,27 @@ export default function OtomatisasiPage() {
   const [ujiId, setUjiId] = useState(null);
   const [hasilUji, setHasilUji] = useState({});
 
+  /*
+   * Kesiapan prasyarat A6, dihitung dari data — bukan sekadar dituliskan
+   * sebagai kalimat.
+   *
+   * A6 membaca `SOPTask.pakan_terpakai`, dan per 30-09-2026 kolom itu
+   * terisi di SATU tugas dari 52 — yang satu itu pun nonaktif. Sakelarnya
+   * bisa dinyalakan dan tampak menyala, lalu tidak memotong apa pun, tanpa
+   * satu pun layar yang menjelaskan kenapa. Angka di bawah ini membuat
+   * keadaan itu terbaca sebelum sakelarnya disentuh.
+   */
+  const { data: sopTasks = [] } = useQuery({
+    queryKey: ["otomatisasi-sop-tasks"],
+    queryFn: () => base44.entities.SOPTask.list(null, 500),
+    staleTime: 5 * 60 * 1000,
+  });
+  const siapBahan = (() => {
+    const aktif = sopTasks.filter((t) => t.is_active !== false);
+    const terisi = aktif.filter((t) => Array.isArray(t.pakan_terpakai) && t.pakan_terpakai.length > 0);
+    return { aktif: aktif.length, terisi: terisi.length };
+  })();
+
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["automation-settings"],
     queryFn: () => base44.entities.AutomationSettings.filter({ setting_key: "main" }),
@@ -465,6 +487,18 @@ export default function OtomatisasiPage() {
                       {item.prasyarat && (
                         <div className="mt-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 text-[12px] text-blue-800 dark:text-blue-300">
                           <strong>Perlu diisi dulu:</strong> {item.prasyarat}
+                          {/* Kalimat prasyarat saja tidak cukup: ia tidak
+                              memberi tahu apakah prasyaratnya SUDAH dipenuhi.
+                              Di sinilah sakelar yang tampak menyala tapi tidak
+                              mengerjakan apa pun jadi terbaca. */}
+                          {item.cekBahan && siapBahan.aktif > 0 && (
+                            <p className={`mt-1.5 font-semibold ${siapBahan.terisi === 0 ? "text-amber-800 dark:text-amber-400" : ""}`}>
+                              {siapBahan.terisi === 0
+                                ? `Sekarang: 0 dari ${siapBahan.aktif} tugas aktif punya daftar bahan — menyalakan sakelar ini belum akan memotong apa pun.`
+                                : `Sekarang: ${siapBahan.terisi} dari ${siapBahan.aktif} tugas aktif sudah punya daftar bahan.`}
+                              {" "}Diisi di SOP &amp; Tugas → Kelola SOP.
+                            </p>
+                          )}
                         </div>
                       )}
                       {item.catatan && (
