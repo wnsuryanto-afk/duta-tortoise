@@ -22,7 +22,6 @@ import { TeamArt } from "@/components/common/Illustration";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 function greeting(name) {
   const h = new Date().getHours();

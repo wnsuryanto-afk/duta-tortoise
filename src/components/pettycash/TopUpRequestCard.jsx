@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { rupiah } from "@/lib/rupiah";
 
 const STATUS_CONFIG = {
   pending:  { label: "Menunggu",  color: "bg-amber-100 text-amber-700" },
@@ -9,9 +10,6 @@ const STATUS_CONFIG = {
   rejected: { label: "Ditolak",   color: "bg-red-100 text-red-700" },
 };
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 export default function TopUpRequestCard({ req, isOwner, onApprove, onReject }) {
   const sc = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending;
@@ -23,7 +21,7 @@ export default function TopUpRequestCard({ req, isOwner, onApprove, onReject }) 
             <span className="font-semibold text-sm">{req.requester_name}</span>
             <Badge className={sc.color}>{sc.label}</Badge>
           </div>
-          <p className="text-lg font-bold text-primary">{formatRp(req.amount_requested)}</p>
+          <p className="text-lg font-bold text-primary">{rupiah(req.amount_requested)}</p>
           <p className="text-sm text-muted-foreground mt-1">{req.reason}</p>
           {req.status === "approved" && req.transfer_proof_url && (
             <div className="mt-2">

@@ -6,10 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ImagePlus, X, CheckCircle2 } from "lucide-react";
 import { compressImage } from "@/lib/useImageCompression";
 import { toast } from "sonner";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 export default function ApproveTopUpDialog({ request, onClose, onSaved }) {
   const [transferDate, setTransferDate] = useState(new Date().toISOString().split("T")[0]);
@@ -56,7 +54,7 @@ export default function ApproveTopUpDialog({ request, onClose, onSaved }) {
       <div className="bg-muted/50 rounded-lg p-3 text-sm">
         <p className="text-xs text-muted-foreground">Request dari</p>
         <p className="font-semibold">{request.requester_name}</p>
-        <p className="text-lg font-bold text-primary mt-1">{formatRp(request.amount_requested)}</p>
+        <p className="text-lg font-bold text-primary mt-1">{rupiah(request.amount_requested)}</p>
         <p className="text-xs text-muted-foreground mt-1">{request.reason}</p>
       </div>
       <div>

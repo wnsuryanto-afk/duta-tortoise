@@ -27,6 +27,7 @@ import DisburseProofDialog from "@/components/pettycash/DisburseProofDialog";
 import { saldoTerkini } from "@/lib/kasKecil";
 import PageHeader from "@/components/common/PageHeader";
 import { WalletArt } from "@/components/common/Illustration";
+import { rupiah } from "@/lib/rupiah";
 
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
@@ -37,9 +38,6 @@ const STATUS_CONFIG = {
   ditolak:   { label: "Ditolak",   color: "bg-red-100 text-red-700" },
 };
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 function RequestForm({ user, role, users, onClose, onSaved }) {
   const isKepalaFeeder = role === "kepala_feeder";
@@ -197,7 +195,7 @@ export default function PettyCashPage() {
               <Badge className={sc.color}>{sc.label}</Badge>
               {req.category && <Badge variant="outline" className="text-xs">{req.category}</Badge>}
             </div>
-            <p className="text-lg font-bold text-primary">{formatRp(req.amount_requested)}</p>
+            <p className="text-lg font-bold text-primary">{rupiah(req.amount_requested)}</p>
             <p className="text-sm text-muted-foreground mt-1">{req.reason}</p>
           </div>
           {canApproveRequest && (
@@ -259,7 +257,7 @@ export default function PettyCashPage() {
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Saldo Kas Kecil Saat Ini</p>
               <p className={`text-4xl font-bold mt-1 ${isNeg ? "text-red-600" : "text-green-700"}`}>
-                {formatRp(currentSaldo)}
+                {rupiah(currentSaldo)}
               </p>
               {isNeg && <p className="text-xs text-red-500 mt-0.5">⚠️ Saldo minus — perlu top up</p>}
             </div>

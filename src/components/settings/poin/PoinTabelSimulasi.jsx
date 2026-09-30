@@ -3,8 +3,8 @@
  * Biaya bonus bulanan pada beberapa nilai sekaligus, per karyawan + total.
  */
 import { Card } from "@/components/ui/card";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const OPSI_NILAI = [25, 50, 75, 100, 150, 200];
 
 export default function PoinTabelSimulasi({ rows }) {
@@ -31,7 +31,7 @@ export default function PoinTabelSimulasi({ rows }) {
                 <td className="py-2 pr-3 font-medium">{r.name}</td>
                 <td className="text-right py-2 px-2 text-muted-foreground">{r.poin30}</td>
                 {OPSI_NILAI.map((v) => (
-                  <td key={v} className="text-right py-2 px-2">{fmt(r.poin30 * v)}</td>
+                  <td key={v} className="text-right py-2 px-2">{rupiah(r.poin30 * v)}</td>
                 ))}
               </tr>
             ))}
@@ -39,7 +39,7 @@ export default function PoinTabelSimulasi({ rows }) {
               <td className="py-2 pr-3">Total</td>
               <td className="text-right py-2 px-2">{totalPoin}</td>
               {OPSI_NILAI.map((v) => (
-                <td key={v} className="text-right py-2 px-2 text-primary">{fmt(totalPoin * v)}</td>
+                <td key={v} className="text-right py-2 px-2 text-primary">{rupiah(totalPoin * v)}</td>
               ))}
             </tr>
           </tbody>

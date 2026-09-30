@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScanLine, Loader2, Trash2, Plus, AlertTriangle, CheckCircle2 } from "lucide-react";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
+import { rupiah } from "@/lib/rupiah";
 
 const EMPTY = { toko: "", tanggal: "", total: "", ongkir: "", diskon: "", items: [{ nama: "", qty: 1, satuan: "", harga_satuan: "", subtotal: "" }] };
 
@@ -34,7 +35,6 @@ const INVOICE_SCHEMA = {
   },
 };
 
-const rp = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 
 /**
  * Selisih antara jumlah item dan total yang tertulis di invoice.
@@ -237,11 +237,11 @@ export default function InvoiceVisionUpload({ onApplied, buttonLabel = "Scan Inv
                     <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
                       <p className="font-medium">
-                        Angka belum cocok — selisih {rp(Math.abs(selisih.selisih))}{" "}
+                        Angka belum cocok — selisih {rupiah(Math.abs(selisih.selisih))}{" "}
                         {selisih.selisih < 0 ? "lebih murah dari jumlah item" : "lebih mahal dari jumlah item"}.
                       </p>
                       <p>
-                        Jumlah item {rp(selisih.jumlahItem)} + ongkir − diskon = {rp(selisih.diharapkan)}, tapi total tertulis {rp(selisih.total)}.
+                        Jumlah item {rupiah(selisih.jumlahItem)} + ongkir − diskon = {rupiah(selisih.diharapkan)}, tapi total tertulis {rupiah(selisih.total)}.
                       </p>
                       <p className="text-amber-700">
                         {selisih.selisih < 0

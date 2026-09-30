@@ -8,10 +8,8 @@ import { id } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { normalizePhone } from "@/lib/normalizePhone";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(v) {
-  return "Rp " + (v || 0).toLocaleString("id-ID");
-}
 
 function genSertifNo(sale) {
   if (!sale?.sale_date) return "DT/—/—/001";
@@ -222,7 +220,7 @@ function InvoicePrint({ sale }) {
             <tbody>
               <tr><td>Item</td><td>Kura-kura {sale?.tortoise_name}</td></tr>
               <tr><td>Qty</td><td>1 ekor</td></tr>
-              <tr><td>Harga</td><td>{formatRp(price)}</td></tr>
+              <tr><td>Harga</td><td>{rupiah(price)}</td></tr>
             </tbody>
           </table>
 
@@ -231,13 +229,13 @@ function InvoicePrint({ sale }) {
             <tbody>
               {dp > 0 && (
                 <>
-                  <tr><td>DP Diterima</td><td>{formatRp(dp)}</td></tr>
-                  <tr><td style={{ color: "#c0392b" }}>Sisa Pembayaran</td><td style={{ color: "#c0392b", fontWeight: 800 }}>{formatRp(remaining)}</td></tr>
+                  <tr><td>DP Diterima</td><td>{rupiah(dp)}</td></tr>
+                  <tr><td style={{ color: "#c0392b" }}>Sisa Pembayaran</td><td style={{ color: "#c0392b", fontWeight: 800 }}>{rupiah(remaining)}</td></tr>
                 </>
               )}
               <tr className="total-row">
                 <td style={{ fontSize: 14, fontWeight: 800, color: "#2D5016", borderTop: "2px solid #2D5016", paddingTop: 8 }}>TOTAL</td>
-                <td style={{ fontSize: 14, fontWeight: 800, color: "#2D5016", borderTop: "2px solid #2D5016", paddingTop: 8, textAlign: "right" }}>{formatRp(price)}</td>
+                <td style={{ fontSize: 14, fontWeight: 800, color: "#2D5016", borderTop: "2px solid #2D5016", paddingTop: 8, textAlign: "right" }}>{rupiah(price)}</td>
               </tr>
             </tbody>
           </table>
@@ -267,7 +265,6 @@ function InvoicePrint({ sale }) {
 function WASection({ sale }) {
   const invNo = genInvoiceNo(sale);
   const saleDate = sale?.sale_date ? format(new Date(sale.sale_date), "d MMMM yyyy", { locale: id }) : "—";
-  const formatRpLocal = (v) => "Rp " + (v || 0).toLocaleString("id-ID");
 
   // FIX: Fallback BuyerProfile.hp_whatsapp jika Sale.hp_whatsapp kosong
   const { data: buyerProfile } = useQuery({
@@ -284,8 +281,8 @@ Terima kasih sudah mempercayai *Duta Tortoise* 🐢
 *Detail Pembelian:*
 📋 No Invoice: ${invNo}
 🐢 Kura-kura: ${sale?.tortoise_name}
-💰 Harga: ${formatRpLocal(sale?.price)}
-${sale?.dp_amount > 0 ? `✅ DP: ${formatRpLocal(sale.dp_amount)}\n⏳ Sisa: ${formatRpLocal((sale?.price || 0) - (sale?.dp_amount || 0))}\n` : ""}📅 Tanggal: ${saleDate}
+💰 Harga: ${rupiah(sale?.price)}
+${sale?.dp_amount > 0 ? `✅ DP: ${rupiah(sale.dp_amount)}\n⏳ Sisa: ${rupiah((sale?.price || 0) - (sale?.dp_amount || 0))}\n` : ""}📅 Tanggal: ${saleDate}
 
 Semoga kura-kura barunya sehat dan tumbuh subur! 🌱
 Jika ada pertanyaan, jangan ragu menghubungi kami ya.

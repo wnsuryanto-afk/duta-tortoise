@@ -13,8 +13,8 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import BuyerForm from "@/components/crm/BuyerForm";
 import AccessDenied from "@/components/common/AccessDenied";
 import SaleWizard from "@/components/sales/SaleWizard";
+import { rupiah } from "@/lib/rupiah";
 
-const formatRp = n => `Rp ${(n || 0).toLocaleString("id-ID")}`;
 const formatDate = d => d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-";
 
 export default function PembeliTab() {
@@ -101,7 +101,7 @@ export default function PembeliTab() {
           { label: "Total Pembeli", value: totalPembeli, icon: "👥" },
           { label: "Baru (30 Hari)", value: new30Days.length, icon: "🌱" },
           { label: "Repeat Buyer", value: repeatBuyers.length, icon: "🔄" },
-          { label: "Total Belanja", value: formatRp(buyers.reduce((s, b) => s + (b.total_spent || 0), 0)), icon: "💰", isString: true },
+          { label: "Total Belanja", value: rupiah(buyers.reduce((s, b) => s + (b.total_spent || 0), 0)), icon: "💰", isString: true },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-4 text-center">
@@ -171,7 +171,7 @@ export default function PembeliTab() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Total belanja:</span>
-                      <span className="font-semibold ml-1">{formatRp(totalBelanja)}</span>
+                      <span className="font-semibold ml-1">{rupiah(totalBelanja)}</span>
                     </div>
                     {b.last_purchase_date && (
                       <div className="col-span-2">
@@ -256,7 +256,7 @@ export default function PembeliTab() {
               {/* Summary */}
               <div className="p-3 bg-muted/40 rounded-xl flex gap-4 text-sm">
                 <div><span className="text-muted-foreground">Total:</span> <strong>{buyerSales.length} transaksi</strong></div>
-                <div><span className="text-muted-foreground">Nilai:</span> <strong>{formatRp(totalRiwayat)}</strong></div>
+                <div><span className="text-muted-foreground">Nilai:</span> <strong>{rupiah(totalRiwayat)}</strong></div>
               </div>
 
               {buyerSales.length === 0 ? (
@@ -270,7 +270,7 @@ export default function PembeliTab() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{s.tortoise_name || "-"} {s.tortoise_code && <span className="font-mono text-xs text-muted-foreground">({s.tortoise_code})</span>}</p>
-                        <p className="text-xs text-muted-foreground">{s.sale_date} · {formatRp(s.price)}</p>
+                        <p className="text-xs text-muted-foreground">{s.sale_date} · {rupiah(s.price)}</p>
                       </div>
                       <Badge variant="outline" className={`text-xs shrink-0 ${s.payment_status === "lunas" ? "bg-green-50 text-green-700 border-green-200" : s.payment_status === "dp" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-red-50 text-red-700 border-red-200"}`}>
                         {{ lunas: "Lunas", dp: "DP", belum_bayar: "Belum" }[s.payment_status] || s.payment_status}

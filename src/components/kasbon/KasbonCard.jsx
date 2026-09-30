@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Minus, Banknote, ChevronDown, ChevronRight, History } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { rupiah } from "@/lib/rupiah";
 
 const statusConfig = {
   pending:  { label: "Menunggu",  color: "bg-amber-100 text-amber-700" },
@@ -18,7 +19,6 @@ const methodLabel = {
   cash: "Tunai",
 };
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function KasbonCard({ kasbon, isAdmin, isOwner, onApprove, onReject, onDeduct, onPayoff }) {
   const [expanded, setExpanded] = useState(false);
@@ -35,7 +35,7 @@ export default function KasbonCard({ kasbon, isAdmin, isOwner, onApprove, onReje
             <span className="font-semibold text-sm">{kasbon.employee_name}</span>
             <Badge className={`text-[11px] ${conf.color}`}>{conf.label}</Badge>
           </div>
-          <p className="text-lg font-bold text-primary">{fmt(kasbon.amount)}</p>
+          <p className="text-lg font-bold text-primary">{rupiah(kasbon.amount)}</p>
           {kasbon.reason && kasbon.reason !== "-" && (
             <p className="text-xs text-muted-foreground mt-0.5">"{kasbon.reason}"</p>
           )}
@@ -50,14 +50,14 @@ export default function KasbonCard({ kasbon, isAdmin, isOwner, onApprove, onReje
           {(kasbon.status === "approved" || kasbon.status === "lunas") && (
             <div className="mt-2">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Terbayar: {fmt(kasbon.total_paid)}</span>
-                <span>Sisa: {fmt(sisa)} ({pct}%)</span>
+                <span>Terbayar: {rupiah(kasbon.total_paid)}</span>
+                <span>Sisa: {rupiah(sisa)} ({pct}%)</span>
               </div>
               <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                Potongan/periode: {fmt(kasbon.weekly_deduction)}
+                Potongan/periode: {rupiah(kasbon.weekly_deduction)}
               </p>
             </div>
           )}
@@ -78,7 +78,7 @@ export default function KasbonCard({ kasbon, isAdmin, isOwner, onApprove, onReje
                   {log.map((d, i) => (
                     <div key={i} className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded">
                       <div>
-                        <span className="font-medium">{fmt(d.amount)}</span>
+                        <span className="font-medium">{rupiah(d.amount)}</span>
                         <Badge variant="outline" className="ml-2 text-[10px]">{methodLabel[d.method] || d.method}</Badge>
                         {d.salary_period && <span className="text-muted-foreground ml-2">· {d.salary_period}</span>}
                       </div>

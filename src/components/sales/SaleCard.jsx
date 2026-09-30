@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Shell, MessageCircle, Eye, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { angkaRibuan } from "@/lib/rupiah";
 
 const paymentColors = {
   lunas: "bg-green-100 text-green-800 border-green-300",
@@ -19,7 +20,6 @@ const platformColors = {
   Facebook: "bg-blue-100 text-blue-800",
 };
 
-function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
 export default function SaleCard({ sale, onDetail, onPrint }) {
   const laba = (sale.price || 0) - (sale.hpp || 0);
@@ -75,13 +75,13 @@ export default function SaleCard({ sale, onDetail, onPrint }) {
 
             {/* Price & profit */}
             <div className="text-right flex-shrink-0">
-              <p className="font-bold text-primary text-sm">Rp {fmt(sale.price)}</p>
+              <p className="font-bold text-primary text-sm">Rp {angkaRibuan(sale.price)}</p>
               {sale.hpp > 0 && (
-                <p className="text-xs text-muted-foreground">HPP: Rp {fmt(sale.hpp)}</p>
+                <p className="text-xs text-muted-foreground">HPP: Rp {angkaRibuan(sale.hpp)}</p>
               )}
               {sale.hpp > 0 && (
                 <p className={`text-xs font-semibold ${laba >= 0 ? "text-green-600" : "text-red-600"}`}>
-                  {laba >= 0 ? "+" : ""}Rp {fmt(laba)}
+                  {laba >= 0 ? "+" : ""}Rp {angkaRibuan(laba)}
                   {margin !== null && <span className="ml-1 opacity-75">({margin}%)</span>}
                 </p>
               )}
@@ -97,7 +97,7 @@ export default function SaleCard({ sale, onDetail, onPrint }) {
                 return (
                   <div>
                     <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-                      <span>{pct}% lunas (Rp {fmt(paid)} / Rp {fmt(sale.price)})</span>
+                      <span>{pct}% lunas (Rp {angkaRibuan(paid)} / Rp {angkaRibuan(sale.price)})</span>
                     </div>
                     <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                       <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />

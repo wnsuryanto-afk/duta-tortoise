@@ -51,8 +51,8 @@ import MultiImagePicker from "@/components/ai/MultiImagePicker";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { KATEGORI_PEMBELIAN } from "@/lib/kategoriBarang";
 import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
+import { rupiah } from "@/lib/rupiah";
 
-const rp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const hariIni = () => new Date().toISOString().split("T")[0];
 
 // Daftar kategori dan aturan aset/biaya ada di src/lib/kategoriBarang.js.
@@ -318,8 +318,8 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                     <div className="flex items-baseline justify-between gap-2 flex-wrap">
                       <p className="text-sm font-semibold">{p.toko || "(toko tidak terbaca)"}</p>
                       <p className="text-xs text-muted-foreground">
-                        Total tertulis: <span className="font-mono">{rp(p.total_pesanan)}</span>
-                        {p.ongkir ? ` · ongkir ${rp(p.ongkir)}` : ""}
+                        Total tertulis: <span className="font-mono">{rupiah(p.total_pesanan)}</span>
+                        {p.ongkir ? ` · ongkir ${rupiah(p.ongkir)}` : ""}
                       </p>
                     </div>
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
@@ -344,7 +344,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                     )}
                     {meleset && (
                       <p className="text-[11px] text-amber-700 mt-1">
-                        Hitungan barang tidak pas dengan total pesanan (selisih {rp(h.selisih_terkecil)}).
+                        Hitungan barang tidak pas dengan total pesanan (selisih {rupiah(h.selisih_terkecil)}).
                         Bisa karena voucher atau ongkir, bisa juga karena angka di struk sebenarnya
                         subtotal. Periksa kolom harga di bawah.
                       </p>
@@ -416,7 +416,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                         </div>
                         <div>
                           <p className="text-[10px] font-medium text-muted-foreground mb-0.5">
-                            {rp(r.hargaTertera)} itu…
+                            {rupiah(r.hargaTertera)} itu…
                           </p>
                           <Select value={r.tafsir} onValueChange={(v) => ubah(r.kunci, { tafsir: v })}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -462,7 +462,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
 
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-[11px] text-muted-foreground font-mono flex-1">
-                        {jumlahGudang(r).toLocaleString("id-ID")} {r.satuan} × {rp(hargaGudang(r))} = <strong>{rp(subtotal(r))}</strong>
+                        {jumlahGudang(r).toLocaleString("id-ID")} {r.satuan} × {rupiah(hargaGudang(r))} = <strong>{rupiah(subtotal(r))}</strong>
                       </p>
                       {/* Kategori menentukan alat kerja dicatat sebagai aset, bukan biaya. */}
                       <select
@@ -513,9 +513,9 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
               <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
                 <p className="text-sm">
                   <span className="text-muted-foreground">{dipilih.length} barang · </span>
-                  <span className="font-semibold font-mono">{rp(totalNilai)}</span>
+                  <span className="font-semibold font-mono">{rupiah(totalNilai)}</span>
                   {ongkirTotal > 0 && (
-                    <span className="text-muted-foreground"> + ongkir {rp(ongkirTotal)} = <span className="font-mono">{rp(totalNilai + ongkirTotal)}</span></span>
+                    <span className="text-muted-foreground"> + ongkir {rupiah(ongkirTotal)} = <span className="font-mono">{rupiah(totalNilai + ongkirTotal)}</span></span>
                   )}
                 </p>
                 <div className="flex gap-2">

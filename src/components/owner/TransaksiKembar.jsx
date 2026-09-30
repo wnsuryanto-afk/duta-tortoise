@@ -8,8 +8,8 @@ import InfoHint from "@/components/ui/info-hint";
 import { periksaTransaksiKembar } from "@/lib/transaksiKembar";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
+import { rupiah } from "@/lib/rupiah";
 
-const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 /** Sebanyak ini catatan yang ditarik sekali jalan. */
 const BATAS = 2000;
@@ -140,13 +140,13 @@ export default function TransaksiKembar() {
               <p className="text-[11px] mt-0.5 leading-snug">
                 {laporan.nilaiPemasukan > 0 && (
                   <span className="text-muted-foreground">
-                    pemasukan turun <strong className="text-foreground tabular">{rp(laporan.nilaiPemasukan)}</strong>
+                    pemasukan turun <strong className="text-foreground tabular">{rupiah(laporan.nilaiPemasukan)}</strong>
                   </span>
                 )}
                 {laporan.nilaiPemasukan > 0 && laporan.nilaiPengeluaran > 0 && " · "}
                 {laporan.nilaiPengeluaran > 0 && (
                   <span className="text-muted-foreground">
-                    pengeluaran turun <strong className="text-foreground tabular">{rp(laporan.nilaiPengeluaran)}</strong>
+                    pengeluaran turun <strong className="text-foreground tabular">{rupiah(laporan.nilaiPengeluaran)}</strong>
                   </span>
                 )}
               </p>
@@ -261,7 +261,7 @@ export default function TransaksiKembar() {
                 {k.simpan.description || k.simpan.category || k.reference_id}
               </p>
               <p className="text-muted-foreground">
-                {k.simpan.date} · {k.simpan.type} · <span className="tabular">{rp(k.simpan.amount)}</span>
+                {k.simpan.date} · {k.simpan.type} · <span className="tabular">{rupiah(k.simpan.amount)}</span>
               </p>
               <p className="text-amber-700 dark:text-amber-400">
                 {k.hapus.length} salinan dihapus, 1 disimpan

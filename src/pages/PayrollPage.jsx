@@ -23,6 +23,7 @@ import { sudahAdaRempesan, tripSah } from "@/lib/rempesan";
 import AccessDenied from "@/components/common/AccessDenied";
 import { hitungGajiKaryawan, karyawanBergaji } from "@/lib/hitungGaji";
 import { useCompanySettings } from "@/lib/useCompanySettings";
+import { rupiah } from "@/lib/rupiah";
 
 const MAX_KASBON = 1000000;
 
@@ -492,7 +493,6 @@ export default function PayrollPage() {
     });
   }, [employees, salaryConfigs, dailyChecklists, monthAttendances, monthOvertime, rempesanLogs, bonusRewards, kasbons, selectedMonth, monthStart, monthEndExclusive, settings]);
 
-  const fmt = (n) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
   // Keeper hanya bisa akses tab kasbon
   const isKeeper = role === "keeper";
@@ -564,7 +564,7 @@ export default function PayrollPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Total Bersih</p>
-                      <p className="text-xl font-bold text-primary">{fmt(totalSalary)}</p>
+                      <p className="text-xl font-bold text-primary">{rupiah(totalSalary)}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
@@ -572,15 +572,15 @@ export default function PayrollPage() {
                       <>
                         <div className="p-3 rounded-xl bg-green-50 col-span-2 sm:col-span-1">
                           <p className="text-xs text-muted-foreground">Hari Masuk</p>
-                          <p className="font-semibold text-green-700">{hadirDays} hari × {fmt(baseSalary)}</p>
-                          <p className="font-bold text-green-800">{fmt(effectiveBaseSalary)}</p>
+                          <p className="font-semibold text-green-700">{hadirDays} hari × {rupiah(baseSalary)}</p>
+                          <p className="font-bold text-green-800">{rupiah(effectiveBaseSalary)}</p>
                         </div>
                       </>
                     ) : (
                       <>
                         <div className="p-3 rounded-xl bg-muted/40">
                           <p className="text-xs text-muted-foreground">Gaji Pokok</p>
-                          <p className="font-semibold">{fmt(baseSalary)}</p>
+                          <p className="font-semibold">{rupiah(baseSalary)}</p>
                         </div>
                         <div className="p-3 rounded-xl bg-green-50">
                           <p className="text-xs text-muted-foreground">Hadir</p>
@@ -590,26 +590,26 @@ export default function PayrollPage() {
                     )}
                     <div className="p-3 rounded-xl bg-blue-50">
                       <p className="text-xs text-muted-foreground">Lembur</p>
-                      <p className="font-semibold text-blue-700">{totalOvertimeHours}j → {fmt(overtimePay)}</p>
+                      <p className="font-semibold text-blue-700">{totalOvertimeHours}j → {rupiah(overtimePay)}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-lime-50">
                       <p className="text-xs text-muted-foreground">Sayur</p>
-                      <p className="font-semibold text-lime-700">{totalVegTrips} trip → {fmt(vegPay)}</p>
+                      <p className="font-semibold text-lime-700">{totalVegTrips} trip → {rupiah(vegPay)}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-amber-50">
                       <p className="text-xs text-muted-foreground">Poin KPI</p>
-                      <p className="font-semibold text-amber-700">{totalPoints} poin → {fmt(pointPay)}</p>
+                      <p className="font-semibold text-amber-700">{totalPoints} poin → {rupiah(pointPay)}</p>
                     </div>
                     {deduction > 0 && (
                       <div className="p-3 rounded-xl bg-red-50">
                         <p className="text-xs text-muted-foreground">Potongan Absen</p>
-                        <p className="font-semibold text-red-600">-{fmt(deduction)} ({absenDays}h)</p>
+                        <p className="font-semibold text-red-600">-{rupiah(deduction)} ({absenDays}h)</p>
                       </div>
                     )}
                     {kasbonDeduction > 0 && (
                       <div className="p-3 rounded-xl bg-orange-50">
                         <p className="text-xs text-muted-foreground">Potongan Kasbon</p>
-                        <p className="font-semibold text-orange-600">-{fmt(kasbonDeduction)}</p>
+                        <p className="font-semibold text-orange-600">-{rupiah(kasbonDeduction)}</p>
                       </div>
                     )}
                   </div>
@@ -654,13 +654,13 @@ export default function PayrollPage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Gaji {cfg.salary_type === "harian" ? "Harian" : "Pokok"}</span>
-                        <span className="font-medium">{fmt(cfg.base_salary)}/{cfg.salary_type === "harian" ? "hari" : "bln"}</span>
+                        <span className="font-medium">{rupiah(cfg.base_salary)}/{cfg.salary_type === "harian" ? "hari" : "bln"}</span>
                       </div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Tarif Lembur</span><span className="font-medium">{fmt(cfg.overtime_rate_per_hour)}/jam</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Tunjangan Sayur</span><span className="font-medium">{fmt(cfg.vegetable_rate_per_trip)}/trip</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Nilai Poin KPI</span><span className="font-medium">{fmt(cfg.point_value)}/poin</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Tarif Lembur</span><span className="font-medium">{rupiah(cfg.overtime_rate_per_hour)}/jam</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Tunjangan Sayur</span><span className="font-medium">{rupiah(cfg.vegetable_rate_per_trip)}/trip</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Nilai Poin KPI</span><span className="font-medium">{rupiah(cfg.point_value)}/poin</span></div>
                       {cfg.salary_type !== "harian" && (
-                        <div className="flex justify-between"><span className="text-muted-foreground">Potongan Absen</span><span className="font-medium text-red-600">-{fmt(cfg.absent_deduction)}/hari</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Potongan Absen</span><span className="font-medium text-red-600">-{rupiah(cfg.absent_deduction)}/hari</span></div>
                       )}
                     </div>
                   </Card>

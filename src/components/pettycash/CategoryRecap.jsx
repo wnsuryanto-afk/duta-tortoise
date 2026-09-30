@@ -5,10 +5,8 @@ import { id } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 export default function CategoryRecap({ ledger }) {
   const [open, setOpen] = useState(true);
@@ -85,7 +83,7 @@ export default function CategoryRecap({ ledger }) {
                 <div key={d.cat} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium">{d.label}</span>
-                    <span className="font-bold">{formatRp(d.total)}</span>
+                    <span className="font-bold">{rupiah(d.total)}</span>
                   </div>
                   <div className="h-5 bg-muted rounded-full overflow-hidden">
                     <div
@@ -97,7 +95,7 @@ export default function CategoryRecap({ ledger }) {
               ))}
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <span className="text-xs font-semibold text-muted-foreground">Total Pemakaian</span>
-                <span className="text-sm font-bold text-primary">{formatRp(grandTotal)}</span>
+                <span className="text-sm font-bold text-primary">{rupiah(grandTotal)}</span>
               </div>
             </>
           )}

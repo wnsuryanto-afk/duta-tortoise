@@ -12,8 +12,8 @@ import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { diPeternakan } from "@/lib/populasiKura";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const GREEN_DARK = [27, 67, 50];
 const GREEN_MED = [34, 85, 34];
 const GREEN_LIGHT = [220, 240, 220];
@@ -257,9 +257,9 @@ export default function MonthlyReportExport({ role }) {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...TEXT);
-      doc.text(`Pemasukan: ${fmt(totalPemasukan)}`, 108, y + 14);
-      doc.text(`Pengeluaran: ${fmt(totalPengeluaran)}`, 108, y + 20);
-      doc.text(`Laba Bersih: ${fmt(laba)}`, 108, y + 26);
+      doc.text(`Pemasukan: ${rupiah(totalPemasukan)}`, 108, y + 14);
+      doc.text(`Pengeluaran: ${rupiah(totalPengeluaran)}`, 108, y + 20);
+      doc.text(`Laba Bersih: ${rupiah(laba)}`, 108, y + 26);
       doc.text(`Margin: ${margin}%`, 108, y + 32);
       y += 40;
 
@@ -294,8 +294,8 @@ export default function MonthlyReportExport({ role }) {
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...TEXT);
       doc.text(`Transaksi: ${periodSales.length} penjualan`, 108, y + 14);
-      doc.text(`Revenue: ${fmt(totalSalesRev)}`, 108, y + 20);
-      doc.text(`Laba Penjualan: ${fmt(totalSalesLaba)}`, 108, y + 26);
+      doc.text(`Revenue: ${rupiah(totalSalesRev)}`, 108, y + 20);
+      doc.text(`Laba Penjualan: ${rupiah(totalSalesLaba)}`, 108, y + 26);
       y += 38;
 
       // Bar chart pemasukan vs pengeluaran (sederhana)
@@ -313,19 +313,19 @@ export default function MonthlyReportExport({ role }) {
       doc.rect(30, y + barMaxH - hIn, barWidth, hIn, "F");
       doc.setFontSize(7);
       doc.setTextColor(...TEXT);
-      doc.text(fmt(totalPemasukan), 30 + barWidth / 2, y + barMaxH + 6, { align: "center" });
+      doc.text(rupiah(totalPemasukan), 30 + barWidth / 2, y + barMaxH + 6, { align: "center" });
       doc.text("Pemasukan", 30 + barWidth / 2, y + barMaxH + 11, { align: "center" });
       // Pengeluaran bar
       const hOut = Math.round((totalPengeluaran / maxVal) * barMaxH);
       doc.setFillColor(180, 50, 50);
       doc.rect(100, y + barMaxH - hOut, barWidth, hOut, "F");
-      doc.text(fmt(totalPengeluaran), 100 + barWidth / 2, y + barMaxH + 6, { align: "center" });
+      doc.text(rupiah(totalPengeluaran), 100 + barWidth / 2, y + barMaxH + 6, { align: "center" });
       doc.text("Pengeluaran", 100 + barWidth / 2, y + barMaxH + 11, { align: "center" });
       // Laba bar
       const hProfit = Math.round((Math.abs(laba) / maxVal) * barMaxH);
       doc.setFillColor(laba >= 0 ? 0 : 180, laba >= 0 ? 100 : 0, 0);
       doc.rect(170, y + barMaxH - hProfit, barWidth, hProfit, "F");
-      doc.text(fmt(laba), 170 + barWidth / 2, y + barMaxH + 6, { align: "center" });
+      doc.text(rupiah(laba), 170 + barWidth / 2, y + barMaxH + 6, { align: "center" });
       doc.text("Laba Bersih", 170 + barWidth / 2, y + barMaxH + 11, { align: "center" });
 
       drawFooter(doc, settings, 1, TOTAL_PAGES);
@@ -357,9 +357,9 @@ export default function MonthlyReportExport({ role }) {
           // Kota pembeli tersimpan di BuyerProfile.city; alamatnya ada di
           // Sale.buyer_address sebagai cadangan.
           (buyerById.get(s.buyer_profile_id)?.city || s.buyer_address || "—"),
-          fmt(s.price),
-          fmt(s.hpp || 0),
-          fmt((s.price || 0) - (s.hpp || 0)),
+          rupiah(s.price),
+          rupiah(s.hpp || 0),
+          rupiah((s.price || 0) - (s.hpp || 0)),
           `${s.price > 0 ? (((s.price - (s.hpp || 0)) / s.price) * 100).toFixed(0) : 0}%`,
         ]);
         y = drawTable(doc, ["No", "Kura (Kode/Species)", "Pembeli", "Kota", "Harga Jual", "HPP", "Laba", "Margin"], salesRows, y, [8, 40, 35, 22, 28, 22, 18, 13]);
@@ -375,9 +375,9 @@ export default function MonthlyReportExport({ role }) {
         const totalRev = periodSales.reduce((s, x) => s + (x.price || 0), 0);
         const totalHpp = periodSales.reduce((s, x) => s + (x.hpp || 0), 0);
         const totalLabaS = totalRev - totalHpp;
-        doc.text(fmt(totalRev), 14 + 8 + 40 + 35 + 22 + 2, y + 5.5);
-        doc.text(fmt(totalHpp), 14 + 8 + 40 + 35 + 22 + 28 + 2, y + 5.5);
-        doc.text(fmt(totalLabaS), 14 + 8 + 40 + 35 + 22 + 28 + 22 + 2, y + 5.5);
+        doc.text(rupiah(totalRev), 14 + 8 + 40 + 35 + 22 + 2, y + 5.5);
+        doc.text(rupiah(totalHpp), 14 + 8 + 40 + 35 + 22 + 28 + 2, y + 5.5);
+        doc.text(rupiah(totalLabaS), 14 + 8 + 40 + 35 + 22 + 28 + 22 + 2, y + 5.5);
       }
 
       drawFooter(doc, settings, 2, TOTAL_PAGES);
@@ -410,10 +410,10 @@ export default function MonthlyReportExport({ role }) {
         });
         const catRows = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => [
           cat.replace(/_/g, " ").toUpperCase(),
-          fmt(amt),
+          rupiah(amt),
           `${totalPengeluaran > 0 ? ((amt / totalPengeluaran) * 100).toFixed(1) : 0}%`,
         ]);
-        catRows.push(["GRAND TOTAL", fmt(totalPengeluaran), "100%"]);
+        catRows.push(["GRAND TOTAL", rupiah(totalPengeluaran), "100%"]);
         y = drawTable(doc, ["Kategori", "Jumlah", "Persentase"], catRows, y, [100, 60, 22]);
         y += 6;
 
@@ -422,7 +422,7 @@ export default function MonthlyReportExport({ role }) {
           t.date || "—",
           (t.description || "").slice(0, 40),
           (t.category || "lainnya").replace(/_/g, " "),
-          fmt(t.amount),
+          rupiah(t.amount),
         ]);
         if (y < 200) {
           doc.setFontSize(11);
@@ -568,8 +568,8 @@ export default function MonthlyReportExport({ role }) {
       const slipRows = salarySlips.map(s => [
         s.employee_name || "—",
         s.employee_role || "—",
-        fmt(s.base_salary || 0),
-        fmt(s.net_total || 0),
+        rupiah(s.base_salary || 0),
+        rupiah(s.net_total || 0),
         s.status || "—",
       ]);
       if (slipRows.length > 0) {
@@ -585,7 +585,7 @@ export default function MonthlyReportExport({ role }) {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
-        doc.text(`TOTAL GAJI DIBAYARKAN: ${fmt(totalGaji)}`, 16, y + 5);
+        doc.text(`TOTAL GAJI DIBAYARKAN: ${rupiah(totalGaji)}`, 16, y + 5);
         y += 12;
       }
 
@@ -597,7 +597,7 @@ export default function MonthlyReportExport({ role }) {
         doc.setTextColor(...RED);
         doc.text("Kasbon Aktif", 14, y + 6);
         y += 10;
-        const kRows = activeKasbons.slice(0, 5).map(k => [k.employee_name, fmt(k.amount), k.status]);
+        const kRows = activeKasbons.slice(0, 5).map(k => [k.employee_name, rupiah(k.amount), k.status]);
         y = drawTable(doc, ["Nama", "Jumlah", "Status"], kRows, y, [80, 70, 32]);
       }
 

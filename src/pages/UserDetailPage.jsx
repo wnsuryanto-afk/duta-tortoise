@@ -25,6 +25,7 @@ import { format, differenceInMonths, differenceInYears, parseISO, startOfMonth, 
 import { id as idLocale } from "date-fns/locale";
 import { suratAktif, suratTertinggi, suratMasihBerlaku } from "@/lib/suratPeringatan";
 import { tripPerPeriode } from "@/lib/rempesan";
+import { rupiah } from "@/lib/rupiah";
 
 // ── helpers ──────────────────────────────────────────────────────────
 const ROLE_EMOJIS = { owner: "👑", manajer: "👔", admin: "🛡️", kepala_feeder: "🧑‍🌾", keeper: "🐢", investor: "👁️", viewer: "👁️", kicked: "🚫" };
@@ -43,7 +44,6 @@ function workDuration(joinDate) {
   return `${months} bulan`;
 }
 
-function fmt(n) { return `Rp ${Number(n || 0).toLocaleString("id-ID")}`; }
 
 // ── Edit Profile Dialog (owner only) ─────────────────────────────────
 function EditProfileDialog({ open, onClose, profile, targetUser, onSaved }) {
@@ -474,9 +474,9 @@ export default function UserDetailPage({ userId, onBack }) {
           <InfoRow label="Lama Kerja" value={joinDate ? workDuration(joinDate) : "—"} />
           {salaryConfig && (
             <>
-              <InfoRow label="Gaji Pokok" value={fmt(salaryConfig.base_salary)} />
-              <InfoRow label="Tarif Lembur" value={`${fmt(salaryConfig.overtime_rate_per_hour)}/jam`} />
-              <InfoRow label="Tunjangan Sayur" value={`${fmt(salaryConfig.vegetable_rate_per_trip)}/trip`} />
+              <InfoRow label="Gaji Pokok" value={rupiah(salaryConfig.base_salary)} />
+              <InfoRow label="Tarif Lembur" value={`${rupiah(salaryConfig.overtime_rate_per_hour)}/jam`} />
+              <InfoRow label="Tunjangan Sayur" value={`${rupiah(salaryConfig.vegetable_rate_per_trip)}/trip`} />
             </>
           )}
         </div>
@@ -501,7 +501,7 @@ export default function UserDetailPage({ userId, onBack }) {
           <UbinAngka label="Trip Rempesan" nilai={totalVegTrips} ikon={Leaf} nada="netral" />
           <UbinAngka label="Task Done" nilai={`${completionRate}%`} ikon={Star} nada={completionRate >= 80 ? "baik" : completionRate > 0 ? "awas" : "netral"} />
           <UbinAngka label="KPI Poin" nilai={totalKpiPoints} ikon={TrendingUp} nada="netral" />
-          <UbinAngka label="Kasbon" nilai={activeKasbon ? fmt(activeKasbon.amount - (activeKasbon.total_paid || 0)) : "—"} ikon={CreditCard} nada={activeKasbon ? "awas" : "netral"} />
+          <UbinAngka label="Kasbon" nilai={activeKasbon ? rupiah(activeKasbon.amount - (activeKasbon.total_paid || 0)) : "—"} ikon={CreditCard} nada={activeKasbon ? "awas" : "netral"} />
         </div>
       </Section>
 
@@ -540,7 +540,7 @@ export default function UserDetailPage({ userId, onBack }) {
                 return (
                   <div key={k.id} className="px-3 py-2.5 rounded-lg bg-muted/40 text-sm space-y-1">
                     <div className="flex justify-between">
-                      <span className="font-semibold">{fmt(k.amount)}</span>
+                      <span className="font-semibold">{rupiah(k.amount)}</span>
                       <Badge variant="outline" className={`text-xs ${k.status === "approved" ? "bg-green-100 text-green-700" : k.status === "lunas" ? "bg-muted text-muted-foreground" : k.status === "rejected" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
                         {k.status}
                       </Badge>
@@ -548,7 +548,7 @@ export default function UserDetailPage({ userId, onBack }) {
                     {k.status === "approved" && (
                       <div className="space-y-0.5">
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Terbayar: {fmt(k.total_paid)}</span><span>Sisa: {fmt(sisa)} ({pct}%)</span>
+                          <span>Terbayar: {rupiah(k.total_paid)}</span><span>Sisa: {rupiah(sisa)} ({pct}%)</span>
                         </div>
                         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
@@ -557,8 +557,8 @@ export default function UserDetailPage({ userId, onBack }) {
                     )}
                     {selisih !== 0 && (
                       <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-                        Pencatatan belum cocok: angka terbayar {fmt(k.total_paid)} tapi jumlah seluruh
-                        riwayat potongan {fmt(k.total_paid - selisih)} — selisih {fmt(Math.abs(selisih))}
+                        Pencatatan belum cocok: angka terbayar {rupiah(k.total_paid)} tapi jumlah seluruh
+                        riwayat potongan {rupiah(k.total_paid - selisih)} — selisih {rupiah(Math.abs(selisih))}
                         {selisih > 0 ? " tanpa baris riwayat." : " lebih banyak di riwayat."}{" "}
                         Sisa utang dihitung dari angka yang lebih besar supaya tidak ada yang ditagih dua kali.
                       </p>

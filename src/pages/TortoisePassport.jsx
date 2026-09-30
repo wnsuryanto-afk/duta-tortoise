@@ -8,7 +8,6 @@ import { Shell, Share2, Copy, CheckCircle, ChevronLeft, ChevronRight } from "luc
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { petaKura, keteranganInduk } from "@/lib/silsilah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 function getAge(birthDate) {
   if (!birthDate) return "Tidak diketahui";

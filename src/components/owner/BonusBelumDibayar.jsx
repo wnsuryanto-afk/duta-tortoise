@@ -4,8 +4,8 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { Wallet, ChevronRight } from "lucide-react";
 import { bonusTertunda, ringkasBonusTertunda } from "@/lib/bonusTertunda";
+import { rupiah } from "@/lib/rupiah";
 
-const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 /**
  * BonusBelumDibayar — bonus yang sudah dijanjikan tetapi belum keluar.

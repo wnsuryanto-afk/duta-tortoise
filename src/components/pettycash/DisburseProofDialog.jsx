@@ -4,10 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 /**
  * Dialog untuk upload bukti transfer saat mencairkan request, atau menambah bukti menyusul.
@@ -88,9 +86,9 @@ export default function DisburseProofDialog({ request, mode = "disburse", user, 
     <div className="space-y-3">
       <div className="text-sm text-muted-foreground">
         {isAddProofMode ? (
-          <>Tambahkan bukti transfer untuk request <strong>{request.requester_name}</strong> — {formatRp(request.amount_requested)}</>
+          <>Tambahkan bukti transfer untuk request <strong>{request.requester_name}</strong> — {rupiah(request.amount_requested)}</>
         ) : (
-          <>Cairkan dana <strong>{formatRp(request.amount_requested)}</strong> ke <strong>{request.requester_name}</strong>. Lampirkan bukti transfer (screenshot m-banking) atau lewati untuk tunai.</>
+          <>Cairkan dana <strong>{rupiah(request.amount_requested)}</strong> ke <strong>{request.requester_name}</strong>. Lampirkan bukti transfer (screenshot m-banking) atau lewati untuk tunai.</>
         )}
       </div>
 

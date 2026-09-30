@@ -31,8 +31,8 @@ import { Star, Trophy, Clock, TrendingUp, Flame, Users } from "lucide-react";
 import { statusBonus } from "@/lib/bonus";
 import { tugasJatuhTempo } from "@/lib/kepatuhanSOP";
 import { masukLaporan } from "@/lib/laporan";
+import { rupiah } from "@/lib/rupiah";
 
-const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 
 /**
  * `rinciTugas` menentukan apakah tugas yang lewat tenggat didaftar satu per

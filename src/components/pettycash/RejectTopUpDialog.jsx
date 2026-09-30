@@ -5,10 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 export default function RejectTopUpDialog({ request, onClose, onSaved }) {
   const [reason, setReason] = useState("");
@@ -37,7 +35,7 @@ export default function RejectTopUpDialog({ request, onClose, onSaved }) {
       <div className="bg-muted/50 rounded-lg p-3 text-sm">
         <p className="text-xs text-muted-foreground">Request dari</p>
         <p className="font-semibold">{request.requester_name}</p>
-        <p className="text-lg font-bold text-primary mt-1">{formatRp(request.amount_requested)}</p>
+        <p className="text-lg font-bold text-primary mt-1">{rupiah(request.amount_requested)}</p>
       </div>
       <div>
         <Label className="text-xs">Alasan Penolakan *</Label>

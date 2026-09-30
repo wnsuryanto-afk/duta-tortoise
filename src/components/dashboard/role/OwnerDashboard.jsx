@@ -43,9 +43,9 @@ import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
 import { periksaStok } from "@/lib/stokMenipis";
 import { clutchAktif } from "@/lib/breedingUtils";
+import { rupiah } from "@/lib/rupiah";
 
 // ─── Helpers ───────────────────────────────────────
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const pct = (a, b) => (b ? ((a / b) * 100).toFixed(1) : "0.0");
 
 function greeting(name) {
@@ -100,7 +100,7 @@ function TrendBadge({ value, suffix = "", naikItuBaik = true }) {
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${up ? "bg-accent/12 text-accent" : "bg-destructive/12 text-destructive"}`}>
         {/* Ikon mengikuti ARAH angkanya; warna mengikuti BAIK-BURUKNYA. */}
         {naik ? <TrendingUp className="w-3 h-3 flex-shrink-0" /> : <TrendingDown className="w-3 h-3 flex-shrink-0" />}
-        {naik ? "+" : "−"}{fmt(Math.abs(value))}{suffix}
+        {naik ? "+" : "−"}{rupiah(Math.abs(value))}{suffix}
       </span>
       <span className="text-[10px] text-muted-foreground">vs bulan lalu</span>
     </span>
@@ -625,7 +625,7 @@ export default function OwnerDashboard({ user }) {
   debtors.filter(b => b.terlamaHari >= 30).slice(0, 3)
     .forEach(b => criticalAlerts.push({
       type: "yellow",
-      msg: `Piutang ${b.terlamaHari} hari: ${b.nama} — ${fmt(b.sisa)}`,
+      msg: `Piutang ${b.terlamaHari} hari: ${b.nama} — ${rupiah(b.sisa)}`,
     }));
   // Checklist yang menunggu persetujuan SENGAJA tidak ditambahkan ke daftar
   // peringatan di sini. Kartu "Checklist menunggu approval" tepat di bawahnya
@@ -692,13 +692,13 @@ export default function OwnerDashboard({ user }) {
     catatan.push({
       tone: "warning",
       title: `Margin bulan ini tipis — ${margin}%`,
-      body: `Dari pemasukan ${fmt(incomeThis)}, laba bersih tinggal ${fmt(profit)}. Periksa pengeluaran terbesar bulan ini sebelum menambah pembelian baru.`,
+      body: `Dari pemasukan ${rupiah(incomeThis)}, laba bersih tinggal ${rupiah(profit)}. Periksa pengeluaran terbesar bulan ini sebelum menambah pembelian baru.`,
     });
   } else if (incomeThis > 0 && Number(margin) >= 30) {
     catatan.push({
       tone: "success",
       title: `Margin sehat — ${margin}%`,
-      body: `Laba bersih ${fmt(profit)} dari pemasukan ${fmt(incomeThis)}. Pola bulan ini layak dipertahankan.`,
+      body: `Laba bersih ${rupiah(profit)} dari pemasukan ${rupiah(incomeThis)}. Pola bulan ini layak dipertahankan.`,
     });
   }
 
@@ -706,7 +706,7 @@ export default function OwnerDashboard({ user }) {
     catatan.push({
       tone: "warning",
       title: "Pengeluaran naik tajam",
-      body: `Bulan ini ${fmt(expenseThis)}, naik ${Math.round(((expenseThis - expenseLast) / expenseLast) * 100)}% dari ${fmt(expenseLast)} bulan lalu. Buka rincian kategori untuk melihat penyebabnya.`,
+      body: `Bulan ini ${rupiah(expenseThis)}, naik ${Math.round(((expenseThis - expenseLast) / expenseLast) * 100)}% dari ${rupiah(expenseLast)} bulan lalu. Buka rincian kategori untuk melihat penyebabnya.`,
     });
   }
 
@@ -727,7 +727,7 @@ export default function OwnerDashboard({ user }) {
   if (totalDebt > 0) {
     catatan.push({
       tone: "info",
-      title: `Piutang belum tertagih ${fmt(totalDebt)}`,
+      title: `Piutang belum tertagih ${rupiah(totalDebt)}`,
       body: `Tersebar di ${debtors.length} pembeli. Uang ini sudah dihitung sebagai penjualan tapi belum masuk kas.`,
     });
   }
@@ -743,8 +743,8 @@ export default function OwnerDashboard({ user }) {
   if (costPerTortoise > 0) {
     catatan.push({
       tone: "note",
-      title: `Biaya ${fmt(costPerTortoise)} per ekor bulan ini`,
-      body: `Total pengeluaran ${fmt(expenseThis)} dibagi ${kuraDiPeternakan.length} kura yang ada di peternakan — termasuk yang sakit, breeding, dan karantina, karena semuanya tetap makan dan menempati kandang. Pakai angka ini sebagai dasar HPP saat menentukan harga jual.`,
+      title: `Biaya ${rupiah(costPerTortoise)} per ekor bulan ini`,
+      body: `Total pengeluaran ${rupiah(expenseThis)} dibagi ${kuraDiPeternakan.length} kura yang ada di peternakan — termasuk yang sakit, breeding, dan karantina, karena semuanya tetap makan dan menempati kandang. Pakai angka ini sebagai dasar HPP saat menentukan harga jual.`,
     });
   }
 
@@ -768,7 +768,7 @@ export default function OwnerDashboard({ user }) {
           { key: "sakit", icon: Heart, label: "Sakit", value: sickTortoises.length,
             tone: sickTortoises.length > 0 ? "warn" : "good" },
           { key: "telur", icon: Egg, label: "Telur aktif", value: totalEggs },
-          { key: "laba", icon: DollarSign, label: `Laba ${tahunIni}`, value: fmt(setahun.laba),
+          { key: "laba", icon: DollarSign, label: `Laba ${tahunIni}`, value: rupiah(setahun.laba),
             tone: setahun.laba >= 0 ? "good" : "bad" },
           { key: "alert", icon: AlertTriangle, label: "Perlu perhatian", value: criticalAlerts.length,
             tone: criticalAlerts.length > 0 ? "warn" : "good" },
@@ -942,18 +942,18 @@ export default function OwnerDashboard({ user }) {
             bentuk dan bobotnya sama dengan empat kartu di atasnya. */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <KpiCard icon={TrendingUp} label="Pemasukan" color="bg-green-100 text-green-700" href="/finance"
-            value={fmt(incomeThis)}
+            value={rupiah(incomeThis)}
             sub={<TrendBadge value={incomeThis - incomeLast} />}
             spark={<Sparkline data={deret7Hari.masuk} positiveIsGood />}
           />
           <KpiCard icon={TrendingDown} label="Pengeluaran" color="bg-red-100 text-red-600" href="/finance"
-            value={fmt(expenseThis)}
+            value={rupiah(expenseThis)}
             sub={<TrendBadge value={expenseThis - expenseLast} naikItuBaik={false} />}
             spark={<Sparkline data={deret7Hari.keluar} positiveIsGood={false} />}
           />
           <KpiCard icon={DollarSign} label="Laba/Rugi Bersih" href="/finance"
             color={profit >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}
-            value={<span className={profit >= 0 ? "text-green-700" : "text-red-600"}>{fmt(profit)}</span>}
+            value={<span className={profit >= 0 ? "text-green-700" : "text-red-600"}>{rupiah(profit)}</span>}
             sub={<span className="text-xs text-muted-foreground">7 hari terakhir</span>}
             spark={<Sparkline data={deret7Hari.laba} positiveIsGood />}
           />
@@ -1030,17 +1030,17 @@ export default function OwnerDashboard({ user }) {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <KpiCard icon={Package} label="Nilai Stok Total" href="/stok-unified"
             color="bg-amber-100 text-amber-700"
-            value={fmt(totalStockValue)}
-            sub={<span className="text-xs text-muted-foreground">Pakan {fmt(feedValue)} + Gudang {fmt(warehouseValue)}</span>}
+            value={rupiah(totalStockValue)}
+            sub={<span className="text-xs text-muted-foreground">Pakan {rupiah(feedValue)} + Gudang {rupiah(warehouseValue)}</span>}
           />
           <KpiCard icon={Shell} label="Biaya per Ekor/Bulan" href="/tortoise"
             color="bg-primary/10 text-primary"
-            value={fmt(costPerTortoise)}
+            value={rupiah(costPerTortoise)}
             sub={<span className="text-xs text-muted-foreground">dari {kuraDiPeternakan.length} kura di peternakan</span>}
           />
           <KpiCard icon={Package} label="Nilai Stok Gudang" href="/stok-unified"
             color="bg-violet-100 text-violet-700"
-            value={fmt(warehouseValue)}
+            value={rupiah(warehouseValue)}
             sub={<span className="text-xs text-muted-foreground">obat, vitamin, alat</span>}
           />
         </div>
@@ -1069,11 +1069,11 @@ export default function OwnerDashboard({ user }) {
                 </div>
                 <div className="bg-green-50 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Total Pemasukan</p>
-                  <p className="text-base font-bold text-green-700">{fmt(revenueThisMonth)}</p>
+                  <p className="text-base font-bold text-green-700">{rupiah(revenueThisMonth)}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Total Laba</p>
-                  <p className={`text-base font-bold ${labaThisMonth >= 0 ? "text-green-700" : "text-red-600"}`}>{fmt(labaThisMonth)}</p>
+                  <p className={`text-base font-bold ${labaThisMonth >= 0 ? "text-green-700" : "text-red-600"}`}>{rupiah(labaThisMonth)}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Margin Rata-rata</p>
@@ -1168,7 +1168,7 @@ export default function OwnerDashboard({ user }) {
           <p className="text-sm text-green-600 font-medium">✓ Tidak ada piutang</p>
         ) : (
           <>
-            <p className="text-sm font-semibold mb-3">{fmt(totalDebt)} dari {debtors.length} pembeli</p>
+            <p className="text-sm font-semibold mb-3">{rupiah(totalDebt)} dari {debtors.length} pembeli</p>
             <div className="space-y-2">
               {debtors.slice(0, 5).map(b => {
                 const lama = b.terlamaHari >= 30;
@@ -1180,7 +1180,7 @@ export default function OwnerDashboard({ user }) {
                         {b.jumlahNota} nota · tertua {b.terlamaHari} hari
                       </p>
                     </div>
-                    <p className={`text-sm font-semibold flex-shrink-0 ${lama ? "text-red-600" : ""}`}>{fmt(b.sisa)}</p>
+                    <p className={`text-sm font-semibold flex-shrink-0 ${lama ? "text-red-600" : ""}`}>{rupiah(b.sisa)}</p>
                   </div>
                 );
               })}
@@ -1210,7 +1210,7 @@ export default function OwnerDashboard({ user }) {
               <BarChart data={last6Months}>
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000000).toFixed(0)}jt`} />
-                <Tooltip formatter={(v) => fmt(v)} />
+                <Tooltip formatter={(v) => rupiah(v)} />
                 <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -1226,7 +1226,7 @@ export default function OwnerDashboard({ user }) {
                 <Pie data={expenseByCategory} dataKey="value" cx="50%" cy="50%" outerRadius={65} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
                   {expenseByCategory.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(v) => fmt(v)} />
+                <Tooltip formatter={(v) => rupiah(v)} />
               </PieChart>
             </ResponsiveContainer>
           ) : (
@@ -1241,11 +1241,11 @@ export default function OwnerDashboard({ user }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">Biaya pakan bulan ini</p>
-            <p className="text-lg font-bold">{fmt(feedExpenseThis)}</p>
+            <p className="text-lg font-bold">{rupiah(feedExpenseThis)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Per ekor per bulan</p>
-            <p className="text-lg font-bold">{fmt(feedPerTortoise)}</p>
+            <p className="text-lg font-bold">{rupiah(feedPerTortoise)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Trend vs bln lalu</p>
@@ -1292,12 +1292,12 @@ export default function OwnerDashboard({ user }) {
               <p className="text-sm text-green-600">✓ Tidak ada kasbon aktif</p>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground mb-2">Total: {fmt(totalKasbonDebt)} dari {activeKasbons.length} karyawan</p>
+                <p className="text-sm text-muted-foreground mb-2">Total: {rupiah(totalKasbonDebt)} dari {activeKasbons.length} karyawan</p>
                 <div className="space-y-1.5">
                   {activeKasbons.slice(0, 3).map(k => (
                     <div key={k.id} className="flex justify-between text-xs">
                       <span>{k.employee_name}</span>
-                      <span className="font-medium">{fmt(sisaKasbon(k))}</span>
+                      <span className="font-medium">{rupiah(sisaKasbon(k))}</span>
                     </div>
                   ))}
                 </div>
@@ -1306,7 +1306,7 @@ export default function OwnerDashboard({ user }) {
           </div>
           <div className="bg-card rounded-xl border border-border p-4">
             <p className="text-sm font-semibold mb-1">Lembur Bulan Ini</p>
-            <p className="text-lg font-bold">{totalOtHoursThis} jam — {fmt(totalOtPayThis)}</p>
+            <p className="text-lg font-bold">{totalOtHoursThis} jam — {rupiah(totalOtPayThis)}</p>
             <TrendBadge value={totalOtHoursThis - totalOtHoursLast} suffix=" jam" naikItuBaik={false} />
           </div>
         </div>
@@ -1422,7 +1422,7 @@ export default function OwnerDashboard({ user }) {
           <SectionTitle>Pembelian dari Pemasok</SectionTitle>
           <Link to="/supplier" className="text-xs text-primary hover:underline flex items-center gap-1">Lihat Daftar <ChevronRight className="w-3 h-3" /></Link>
         </div>
-        <p className="text-sm font-semibold mb-2">Total pembelian bulan ini: {fmt(totalPurchaseThis)}</p>
+        <p className="text-sm font-semibold mb-2">Total pembelian bulan ini: {rupiah(totalPurchaseThis)}</p>
         <div className="space-y-1.5">
           {suppliers.slice(0, 3).map(s => {
             const lastTx = finances.filter(f => f.description?.includes(s.name) || f.reference_id === s.id).sort((a, b) => b.date?.localeCompare(a.date)).shift();

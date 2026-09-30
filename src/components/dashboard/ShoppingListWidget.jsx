@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingCart, Plus, Package } from "lucide-react";
 import { Link } from "react-router-dom";
+import { rupiah } from "@/lib/rupiah";
 
 
 /**
@@ -51,10 +52,6 @@ const STATUS_BADGE = {
 const SATUAN_OPTIONS = ["pcs", "botol", "sachet", "kg", "gram", "liter", "ml", "ikat", "box", "strip", "buah"];
 const PLATFORM_OPTIONS = ["Tokopedia", "Shopee", "Apotek", "Toko Hewan", "Langsung", "Lainnya"];
 
-function formatRp(val) {
-  if (!val) return "-";
-  return "Rp " + Number(val).toLocaleString("id-ID");
-}
 
 function AddItemDialog({ open, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -163,13 +160,13 @@ function ShoppingItem({ item, onUpdate }) {
             <Badge className={`text-[10px] px-1.5 py-0 border ${badge.className}`}>{badge.label}</Badge>
             <span className="text-xs text-muted-foreground">{item.jumlah} {item.satuan}</span>
             {item.total_est > 0 && (
-              <span className="text-xs font-semibold text-foreground">{formatRp(item.total_est)}</span>
+              <span className="text-xs font-semibold text-foreground">{rupiah(item.total_est)}</span>
             )}
             {item.platform_beli && (
               <span className="text-xs text-muted-foreground">📦 {item.platform_beli}</span>
             )}
             {item.status === "sudah_dibeli" && item.harga_aktual > 0 && (
-              <span className="text-xs text-green-600">Aktual: {formatRp(item.harga_aktual)}</span>
+              <span className="text-xs text-green-600">Aktual: {rupiah(item.harga_aktual)}</span>
             )}
           </div>
           {item.notes && <p className="text-xs text-muted-foreground mt-0.5 italic">{item.notes}</p>}
@@ -248,7 +245,7 @@ export default function ShoppingListWidget() {
             <p className="text-xs text-red-600">Belum Dibeli</p>
           </div>
           <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-center">
-            <p className="text-sm font-bold text-blue-700 leading-tight">{formatRp(totalEst)}</p>
+            <p className="text-sm font-bold text-blue-700 leading-tight">{rupiah(totalEst)}</p>
             <p className="text-xs text-blue-600">Est. Biaya</p>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-center">

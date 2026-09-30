@@ -17,6 +17,7 @@ import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
 import { hitungHppKura, marginPersen } from "@/lib/hppKura";
 import { biayaBarangKura } from "@/lib/pemakaianBarang";
 import { differenceInMonths } from "date-fns";
+import { angkaRibuan } from "@/lib/rupiah";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
 
@@ -35,7 +36,6 @@ function calcAgeMonths(birthDate) {
 // layar review DAN oleh handleSave, supaya angka yang dilihat pemilik sama
 // dengan angka yang tersimpan. Sebelumnya keduanya memakai tarif yang berbeda.
 
-function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
 // ── STEP 1: Pilih Kura ──
 function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
@@ -99,7 +99,7 @@ function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
                 {selected.birth_date && (
                   <span><span className="text-muted-foreground">Umur:</span> {calcAgeMonths(selected.birth_date)} bulan</span>
                 )}
-                <span><span className="text-muted-foreground">Harga Beli:</span> {selected.purchase_price ? `Rp ${fmt(selected.purchase_price)}` : "Tidak tercatat"}</span>
+                <span><span className="text-muted-foreground">Harga Beli:</span> {selected.purchase_price ? `Rp ${angkaRibuan(selected.purchase_price)}` : "Tidak tercatat"}</span>
               </div>
             </div>
           </div>
@@ -435,7 +435,7 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
 
         {/* Purchase price row */}
         {isHasilSendiri ? (
-          <Row label="Biaya Induk" value={`Rp ${fmt(purchasePrice)}`}
+          <Row label="Biaya Induk" value={`Rp ${angkaRibuan(purchasePrice)}`}
             sub={hppRinci.indukTakKetemu
               ? "⚠️ Hasil tetasan sendiri, tapi clutch asalnya tidak ketemu — biaya induk tidak bisa dihitung dan HPP ini terlalu murah"
               : `🐣 Hasil tetasan sendiri — perawatan induk selama ${induk?.hari || 0} hari pengeraman, dibagi ${induk?.menetas || 0} telur yang menetas`} />
@@ -443,7 +443,7 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
           <Row label="Harga Beli / Kulakan" value="Rp 0"
             sub="ℹ️ Harga beli tidak diisi — HPP hanya dari biaya perawatan + ongkir" />
         ) : (
-          <Row label="Harga Beli / Kulakan" value={`Rp ${fmt(purchasePrice)}`} />
+          <Row label="Harga Beli / Kulakan" value={`Rp ${angkaRibuan(purchasePrice)}`} />
         )}
 
         <Row
@@ -453,13 +453,13 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
               <button type="button" onClick={() => setShowTooltip(!showTooltip)} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 text-[10px] font-bold text-muted-foreground leading-none">?</button>
             </span>
           }
-          value={`Rp ${fmt(estimasiPerawatan)}`}
-          sub={<>{farmMonths.toFixed(1)} bulan × Rp {fmt(biayaPerBulan)}/bln · {entryLabel}: {entryDisplay || "tidak diketahui"} · <span className={isDataAktual ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>{isDataAktual ? "Data aktual" : "Estimasi default"}</span></>}
+          value={`Rp ${angkaRibuan(estimasiPerawatan)}`}
+          sub={<>{farmMonths.toFixed(1)} bulan × Rp {angkaRibuan(biayaPerBulan)}/bln · {entryLabel}: {entryDisplay || "tidak diketahui"} · <span className={isDataAktual ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>{isDataAktual ? "Data aktual" : "Estimasi default"}</span></>}
         />
 
         {showTooltip && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-800 space-y-0.5">
-            <p className="font-semibold">Rp {fmt(biayaPerBulan)}/ekor/bulan</p>
+            <p className="font-semibold">Rp {angkaRibuan(biayaPerBulan)}/ekor/bulan</p>
             <p>
               {isDataAktual
                 ? "Dihitung dari seluruh pengeluaran yang tercatat, dibagi jumlah kura yang ada di peternakan. Rata-rata beberapa bulan, bukan bulan berjalan — bulan berjalan bisa terlihat sangat murah hanya karena pencatatannya belum lengkap."
@@ -477,7 +477,7 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
         {rincianObat.total > 0 && (
           <Row
             label="Obat & Barang Gudang"
-            value={`Rp ${fmt(hppRinci.obat)}`}
+            value={`Rp ${angkaRibuan(hppRinci.obat)}`}
             sub={
               <>
                 {rincianObat.baris.length} kali pengambilan:{" "}
@@ -491,9 +491,9 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
           />
         )}
 
-        <Row label="Ongkos Kirim" value={`Rp ${fmt(shippingCost)}`} />
+        <Row label="Ongkos Kirim" value={`Rp ${angkaRibuan(shippingCost)}`} />
         <div className="border-t mt-2 pt-2">
-          <Row label="TOTAL HPP" value={`Rp ${fmt(totalHpp)}`} bold />
+          <Row label="TOTAL HPP" value={`Rp ${angkaRibuan(totalHpp)}`} bold />
         </div>
         {farmMonths <= 0 && !isHasilSendiri && (
           <p className="text-[11px] text-amber-600 mt-1">⚠️ Tanggal masuk farm tidak diketahui, estimasi perawatan = Rp 0</p>
@@ -507,13 +507,13 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Laba Penjualan</p>
         </div>
         <div className="space-y-1">
-          <Row label="Harga Jual" value={`Rp ${fmt(price)}`} />
-          <Row label="HPP" value={`-Rp ${fmt(totalHpp)}`} />
+          <Row label="Harga Jual" value={`Rp ${angkaRibuan(price)}`} />
+          <Row label="HPP" value={`-Rp ${angkaRibuan(totalHpp)}`} />
           <div className="border-t mt-2 pt-2">
             <div className="flex justify-between items-center">
               <span className="font-bold">💰 LABA BERSIH</span>
               <span className={`text-xl font-bold ${laba >= 0 ? "text-green-700" : "text-red-700"}`}>
-                Rp {fmt(laba)}
+                Rp {angkaRibuan(laba)}
               </span>
             </div>
             <div className="flex justify-between items-center mt-1">
@@ -720,7 +720,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         category: "penjualan_tortoise",
         amount: price,
         date: form.sale_date,
-        description: `Penjualan ${selectedTortoise?.code || selectedTortoise?.name} ke ${form.buyer_name} — Laba Rp ${fmt(laba)}`,
+        description: `Penjualan ${selectedTortoise?.code || selectedTortoise?.name} ke ${form.buyer_name} — Laba Rp ${angkaRibuan(laba)}`,
         ...(testModeTag || {}),
       });
       // Modal: harga beli untuk kura yang dibeli, biaya induk selama pengeraman
@@ -802,7 +802,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         await base44.integrations.Core.SendEmail({
           to: "dutatortoise@gmail.com",
           subject: `🎉 Penjualan: ${selectedTortoise?.code || selectedTortoise?.name}`,
-          body: `Kura ${selectedTortoise?.code || selectedTortoise?.name} terjual Rp ${fmt(price)} ke ${form.buyer_name}. Laba: Rp ${fmt(laba)}.`,
+          body: `Kura ${selectedTortoise?.code || selectedTortoise?.name} terjual Rp ${angkaRibuan(price)} ke ${form.buyer_name}. Laba: Rp ${angkaRibuan(laba)}.`,
         });
       } catch (_) { /* non-critical */ }
 
@@ -891,7 +891,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
                       min="0"
                       value={currentVal}
                       onChange={e => onChange("purchase_price_input", e.target.value)}
-                      placeholder={selectedTortoise.purchase_price ? `Rp ${fmt(selectedTortoise.purchase_price)} (dari data kura)` : "Isi harga beli..."}
+                      placeholder={selectedTortoise.purchase_price ? `Rp ${angkaRibuan(selectedTortoise.purchase_price)} (dari data kura)` : "Isi harga beli..."}
                       className={`max-w-xs ${!currentVal && isMissingPrice ? "border-yellow-400 bg-yellow-50" : ""}`}
                     />
                     {!currentVal && isMissingPrice && (
@@ -900,7 +900,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
                       </p>
                     )}
                     {currentVal && Number(currentVal) > 0 && (
-                      <p className="text-[11px] text-green-700 mt-1">✓ Harga beli diisi manual: Rp {fmt(Number(currentVal))}</p>
+                      <p className="text-[11px] text-green-700 mt-1">✓ Harga beli diisi manual: Rp {angkaRibuan(Number(currentVal))}</p>
                     )}
                     <p className="text-[10px] text-muted-foreground mt-1">
                       Tidak wajib — jika kosong, HPP dihitung tanpa harga beli

@@ -19,12 +19,12 @@ import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 import { ringkasUangSlip, rupaStatusSlip } from "@/lib/slipGaji";
 import PageHeader from "@/components/common/PageHeader";
 import { WalletArt } from "@/components/common/Illustration";
+import { rupiah } from "@/lib/rupiah";
 
 // Rupa status pindah ke lib/slipGaji.js. Peta lama di sini tidak memuat
 // "dibatalkan", dan pemanggilnya jatuh ke `|| statusConfig.draft` — slip yang
 // sudah dibatalkan tampil persis seperti slip yang menunggu diproses.
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function SalarySlipPage() {
   const { user, role } = useCurrentUser();
@@ -114,13 +114,13 @@ export default function SalarySlipPage() {
         icon={Receipt}
         art={<WalletArt size="md" />}
         chips={[
-          { key: "belum", label: "Belum dibayar", value: fmt(totalPending), tone: totalPending > 0 ? "warn" : "good" },
-          { key: "lunas", label: "Sudah dibayar", value: fmt(totalPaid) },
+          { key: "belum", label: "Belum dibayar", value: rupiah(totalPending), tone: totalPending > 0 ? "warn" : "good" },
+          { key: "lunas", label: "Sudah dibayar", value: rupiah(totalPaid) },
           // Slip batal disebut, bukan dihilangkan: lima slip yang lenyap dari
           // hitungan tanpa keterangan lebih membingungkan daripada lima slip
           // yang tertulis batal.
           ...(jumlahBatal > 0
-            ? [{ key: "batal", label: `${jumlahBatal} slip dibatalkan`, value: fmt(totalBatal) }]
+            ? [{ key: "batal", label: `${jumlahBatal} slip dibatalkan`, value: rupiah(totalBatal) }]
             : []),
         ]}
       />
@@ -133,7 +133,7 @@ export default function SalarySlipPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Sudah Dibayar</p>
-                <p className="font-bold text-green-700">{fmt(totalPaid)}</p>
+                <p className="font-bold text-green-700">{rupiah(totalPaid)}</p>
               </div>
             </Card>
             <Card className="p-4 flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function SalarySlipPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Belum Dibayar</p>
-                <p className="font-bold text-amber-700">{fmt(totalPending)}</p>
+                <p className="font-bold text-amber-700">{rupiah(totalPending)}</p>
               </div>
             </Card>
             <Card className="p-4 flex items-center gap-3">
@@ -168,7 +168,7 @@ export default function SalarySlipPage() {
                     <span className="text-muted-foreground">
                       {isMonthPeriod(per) ? safeFormatDate(per + "-01", "MMMM yyyy", per) : per}
                     </span>
-                    <span className="font-semibold">{fmt(total)}</span>
+                    <span className="font-semibold">{rupiah(total)}</span>
                   </div>
                 ))}
               </div>
@@ -233,21 +233,21 @@ export default function SalarySlipPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 text-xs">
                           <div>
                             <span className="text-muted-foreground">Gaji Pokok:</span>
-                            <p className="font-medium">{fmt(slip.base_salary)}</p>
+                            <p className="font-medium">{rupiah(slip.base_salary)}</p>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Bonus KPI:</span>
                             <p className={`font-medium ${(slip.kpi_bonus || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
-                              {(slip.kpi_bonus || 0) >= 0 ? "+" : ""}{fmt(slip.kpi_bonus)}
+                              {(slip.kpi_bonus || 0) >= 0 ? "+" : ""}{rupiah(slip.kpi_bonus)}
                             </p>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Potongan:</span>
-                            <p className="font-medium text-red-600">-{fmt((slip.absent_deduction || 0) + (slip.kasbon_deduction || 0))}</p>
+                            <p className="font-medium text-red-600">-{rupiah((slip.absent_deduction || 0) + (slip.kasbon_deduction || 0))}</p>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Take Home:</span>
-                            <p className="font-bold text-primary">{fmt(slip.net_total)}</p>
+                            <p className="font-bold text-primary">{rupiah(slip.net_total)}</p>
                           </div>
                         </div>
                         {!isKeeperView && (slip.total_poin !== undefined || slip.total_points !== undefined) && (

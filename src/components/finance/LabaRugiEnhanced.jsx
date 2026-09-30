@@ -11,8 +11,8 @@ import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
 import { format as formatDate } from "date-fns";
 import { id } from "date-fns/locale";
 import { masukLaporan } from "@/lib/laporan";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = n => `Rp ${(n || 0).toLocaleString("id-ID")}`;
 const PIE_COLORS = ["#4ade80", "#f87171", "#60a5fa", "#fbbf24", "#a78bfa", "#fb923c", "#34d399"];
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({
   value: `2026-${String(i + 1).padStart(2, "0")}`,
@@ -138,7 +138,7 @@ export default function LabaRugiEnhanced({ period }) {
         {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
         <span className={`font-semibold text-sm ${color}`}>{label}</span>
       </div>
-      <span className={`font-bold text-sm ${color}`}>{fmt(amount)}</span>
+      <span className={`font-bold text-sm ${color}`}>{rupiah(amount)}</span>
     </button>
   );
 
@@ -168,18 +168,18 @@ export default function LabaRugiEnhanced({ period }) {
         <div className="space-y-2">
           <div className="flex justify-between items-center py-2 border-b border-green-200">
             <span className="text-sm font-medium text-green-700">TOTAL PEMASUKAN</span>
-            <span className="font-bold text-green-700">{fmt(totalPemasukan)}</span>
+            <span className="font-bold text-green-700">{rupiah(totalPemasukan)}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b border-red-200">
             <span className="text-sm font-medium text-red-600">TOTAL PENGELUARAN</span>
-            <span className="font-bold text-red-600">-{fmt(totalPengeluaran)}</span>
+            <span className="font-bold text-red-600">-{rupiah(totalPengeluaran)}</span>
           </div>
           <div className={`flex justify-between items-center py-3 px-4 rounded-xl mt-2 ${labaRugi >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
             <span className={`text-base font-bold ${labaRugi >= 0 ? "text-green-800" : "text-red-800"}`}>
               {labaRugi >= 0 ? "💰 LABA BERSIH" : "📉 RUGI BERSIH"}
             </span>
             <span className={`text-xl font-bold ${labaRugi >= 0 ? "text-green-700" : "text-red-700"}`}>
-              {fmt(Math.abs(labaRugi))}
+              {rupiah(Math.abs(labaRugi))}
             </span>
           </div>
           <p className="text-xs text-muted-foreground text-right">Margin operasional: {marginPct}%</p>
@@ -200,7 +200,7 @@ export default function LabaRugiEnhanced({ period }) {
             <BarChart data={barData}>
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000000).toFixed(0)}jt`} />
-              <Tooltip formatter={v => fmt(v)} />
+              <Tooltip formatter={v => rupiah(v)} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {barData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
               </Bar>
@@ -215,7 +215,7 @@ export default function LabaRugiEnhanced({ period }) {
                 <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={65} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
                   {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={v => fmt(v)} />
+                <Tooltip formatter={v => rupiah(v)} />
               </PieChart>
             </ResponsiveContainer>
           ) : (
@@ -241,7 +241,7 @@ export default function LabaRugiEnhanced({ period }) {
                   <span className="truncate">{t.description || "-"}</span>
                   {t.category === "penjualan_tortoise" && <Badge variant="outline" className="text-[10px] bg-green-50">Jual</Badge>}
                 </div>
-                <span className="font-semibold text-green-600 ml-2 shrink-0">+{fmt(t.amount)}</span>
+                <span className="font-semibold text-green-600 ml-2 shrink-0">+{rupiah(t.amount)}</span>
               </div>
             ))}
           </div>
@@ -262,7 +262,7 @@ export default function LabaRugiEnhanced({ period }) {
               <div key={cat} className="space-y-1">
                 <div className="flex justify-between items-center py-1 px-2 bg-muted/20 rounded">
                   <span className="text-sm font-medium">{categoryLabels[cat] || cat.replace(/_/g, " ")}</span>
-                  <span className="text-sm font-semibold text-red-600">-{fmt(amount)}</span>
+                  <span className="text-sm font-semibold text-red-600">-{rupiah(amount)}</span>
                 </div>
                 {/* Salary detail (hidden for investor) */}
                 {cat === "gaji_karyawan" && canViewSalary && monthSlips.length > 0 && (
@@ -270,7 +270,7 @@ export default function LabaRugiEnhanced({ period }) {
                     {monthSlips.map(sl => (
                       <div key={sl.id} className="flex justify-between text-xs text-muted-foreground">
                         <span>{sl.employee_name}</span>
-                        <span>{fmt(sl.net_total)}</span>
+                        <span>{rupiah(sl.net_total)}</span>
                       </div>
                     ))}
                   </div>
@@ -305,9 +305,9 @@ export default function LabaRugiEnhanced({ period }) {
                     <tr key={s.id}>
                       <td className="py-2">{s.tortoise_name || "-"}</td>
                       <td className="py-2 text-muted-foreground">{s.buyer_name || "-"}</td>
-                      <td className="py-2 text-right font-semibold">{fmt(s.price)}</td>
-                      <td className="py-2 text-right text-muted-foreground">{fmt(s.hpp)}</td>
-                      <td className={`py-2 text-right font-semibold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>{fmt(profit)}</td>
+                      <td className="py-2 text-right font-semibold">{rupiah(s.price)}</td>
+                      <td className="py-2 text-right text-muted-foreground">{rupiah(s.hpp)}</td>
+                      <td className={`py-2 text-right font-semibold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>{rupiah(profit)}</td>
                       <td className={`py-2 text-right ${margin >= 0 ? "text-green-600" : "text-red-600"}`}>{margin}%</td>
                     </tr>
                   );
@@ -316,10 +316,10 @@ export default function LabaRugiEnhanced({ period }) {
               <tfoot>
                 <tr className="border-t font-bold">
                   <td colSpan={2} className="py-2">Total</td>
-                  <td className="py-2 text-right">{fmt(periodSales.reduce((s, x) => s + (x.price || 0), 0))}</td>
-                  <td className="py-2 text-right">{fmt(periodSales.reduce((s, x) => s + (x.hpp || 0), 0))}</td>
+                  <td className="py-2 text-right">{rupiah(periodSales.reduce((s, x) => s + (x.price || 0), 0))}</td>
+                  <td className="py-2 text-right">{rupiah(periodSales.reduce((s, x) => s + (x.hpp || 0), 0))}</td>
                   <td className={`py-2 text-right ${periodSales.reduce((s, x) => s + ((x.price || 0) - (x.hpp || 0)), 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {fmt(periodSales.reduce((s, x) => s + ((x.price || 0) - (x.hpp || 0)), 0))}
+                    {rupiah(periodSales.reduce((s, x) => s + ((x.price || 0) - (x.hpp || 0)), 0))}
                   </td>
                   <td></td>
                 </tr>
@@ -339,12 +339,12 @@ export default function LabaRugiEnhanced({ period }) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total Pengeluaran</p>
-            <p className="text-lg font-bold">{fmt(costData?.totalPengeluaran || 0)}</p>
+            <p className="text-lg font-bold">{rupiah(costData?.totalPengeluaran || 0)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Biaya per Ekor/Bulan</p>
             <p className="text-lg font-bold text-primary">
-              {fmt(costData?.biayaPerEkor || 0)}
+              {rupiah(costData?.biayaPerEkor || 0)}
               {!costData?.isDataAktual && <Badge className="ml-1 bg-amber-100 text-amber-700 text-[10px]">Estimasi</Badge>}
             </p>
           </div>

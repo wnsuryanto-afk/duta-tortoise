@@ -30,8 +30,8 @@ import StatCard from "@/components/dashboard/StatCard";
 import { WalletArt } from "@/components/common/Illustration";
 import { masukLaporan } from "@/lib/laporan";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
+import { angkaRibuan } from "@/lib/rupiah";
 
-function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
 export default function SalesList() {
   const queryClient = useQueryClient();
@@ -284,7 +284,7 @@ export default function SalesList() {
       {/* Header */}
       <PageHeader
         title="Penjualan"
-        subtitle={`${enrichedSales.length} transaksi · Total Rp ${fmt(totalRevenue)}`}
+        subtitle={`${enrichedSales.length} transaksi · Total Rp ${angkaRibuan(totalRevenue)}`}
         icon={DollarSign}
         art={<WalletArt size="md" />}
         /* Tanpa chip angka. Keempat StatCard tepat di bawah kepala ini sudah
@@ -319,8 +319,8 @@ export default function SalesList() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
         <StatCard label="Bulan Ini" value={`${salesThisMonth.length} ekor`}
           icon={ShoppingBag} color="bg-primary/15 text-primary"
-          sub={`Rp ${fmt(revenueThisMonth)}`} />
-        <StatCard label="Laba Bulan Ini" value={`Rp ${fmt(labaThisMonth)}`}
+          sub={`Rp ${angkaRibuan(revenueThisMonth)}`} />
+        <StatCard label="Laba Bulan Ini" value={`Rp ${angkaRibuan(labaThisMonth)}`}
           icon={TrendingUp}
           color={labaThisMonth >= 0 ? "bg-accent/15 text-accent" : "bg-red-100 text-red-600"}
           sub={`Margin rata-rata ${avgMargin}%`}
@@ -330,7 +330,7 @@ export default function SalesList() {
           sub="DP / belum bayar" />
         <StatCard label="Total Terjual" value={enrichedSales.length}
           icon={DollarSign} color="bg-primary/15 text-primary"
-          sub={`Rp ${fmt(totalRevenue)}`} />
+          sub={`Rp ${angkaRibuan(totalRevenue)}`} />
       </div>
 
       {/* Tabs */}

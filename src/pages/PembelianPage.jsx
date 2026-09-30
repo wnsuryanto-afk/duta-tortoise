@@ -45,8 +45,8 @@ import { KATEGORI_PEMBELIAN, KATEGORI_FINANCE, masukBiaya } from "@/lib/kategori
 import { generateSKU, getPrefix } from "@/lib/skuUtils";
 import { kodeBatch } from "@/lib/pemakaianBarang";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
+import { rupiah } from "@/lib/rupiah";
 
-const rp = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const today = () => format(new Date(), "yyyy-MM-dd");
 
 // Aturan aset vs biaya tinggal di src/lib/kategoriBarang.js — lihat catatan di
@@ -199,7 +199,7 @@ export default function PembelianPage() {
       qc.invalidateQueries({ queryKey: ["pembelian-list"] });
       setSelected(new Set());
       setPesanOpen(false);
-      toast.success(`${items.length} barang ditandai dipesan — ${rp(totalBayar)}`);
+      toast.success(`${items.length} barang ditandai dipesan — ${rupiah(totalBayar)}`);
     } catch (e) {
       toast.error("Gagal menyimpan pesanan: " + (e?.message || ""));
     }
@@ -669,7 +669,7 @@ export default function PembelianPage() {
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
           <Wallet className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>
-            <strong>Talangan belum dilunasi: {rp(totalUtang)}</strong> dari {utang.length} pesanan.
+            <strong>Talangan belum dilunasi: {rupiah(totalUtang)}</strong> dari {utang.length} pesanan.
             Lihat tab Riwayat untuk menandai lunas.
           </span>
         </div>
@@ -736,7 +736,7 @@ export default function PembelianPage() {
                       )}
                       <span className="text-xs text-muted-foreground">{jml(s)} {sat(s)}</span>
                       {s.total_est > 0 && (
-                        <span className="text-xs font-semibold">{rp(s.total_est)}</span>
+                        <span className="text-xs font-semibold">{rupiah(s.total_est)}</span>
                       )}
                     </div>
                   </button>
@@ -756,7 +756,7 @@ export default function PembelianPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold">
-                        {(p.items || []).length} barang · {rp(p.total_bayar)}
+                        {(p.items || []).length} barang · {rupiah(p.total_bayar)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {p.tanggal_pesan}{p.platform ? ` · ${p.platform}` : ""} · dibayar {p.dibayar_oleh_nama}
@@ -812,7 +812,7 @@ export default function PembelianPage() {
               {riwayat.map((p) => (
                 <div key={p.id} className="rounded-lg border border-border p-3 flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold">{rp(p.total_bayar)}</p>
+                    <p className="text-sm font-semibold">{rupiah(p.total_bayar)}</p>
                     <p className="text-xs text-muted-foreground">
                       {p.tanggal_terima || p.tanggal_pesan} · {(p.items || []).length} barang · {p.dibayar_oleh_nama}
                     </p>
@@ -901,7 +901,7 @@ export default function PembelianPage() {
                       <div className="col-span-4">
                         <p className="text-[10px] text-muted-foreground mb-0.5">Jumlah baris</p>
                         <p className="h-8 flex items-center text-xs font-mono">
-                          {rp((Number(it.harga_satuan) || 0) * (Number(it.jumlah_pesan) || 0))}
+                          {rupiah((Number(it.harga_satuan) || 0) * (Number(it.jumlah_pesan) || 0))}
                         </p>
                       </div>
                     </div>
@@ -932,17 +932,17 @@ export default function PembelianPage() {
               </div>
 
               <div className="rounded-lg bg-muted/40 p-2 text-sm space-y-0.5">
-                <div className="flex justify-between text-xs"><span>Barang</span><span className="font-mono">{rp(perbaikiBarang)}</span></div>
-                <div className="flex justify-between text-xs text-muted-foreground"><span>Ongkir + admin</span><span className="font-mono">{rp(Number(perbaikiForm.ongkir || 0) + Number(perbaikiForm.biaya_admin || 0))}</span></div>
-                <div className="flex justify-between text-xs border-t border-border pt-0.5"><span>Hitungan</span><span className="font-mono">{rp(perbaikiHitung)}</span></div>
-                <div className="flex justify-between font-bold"><span>Total di struk</span><span className="font-mono">{rp(Number(perbaikiForm.total_struk || 0))}</span></div>
+                <div className="flex justify-between text-xs"><span>Barang</span><span className="font-mono">{rupiah(perbaikiBarang)}</span></div>
+                <div className="flex justify-between text-xs text-muted-foreground"><span>Ongkir + admin</span><span className="font-mono">{rupiah(Number(perbaikiForm.ongkir || 0) + Number(perbaikiForm.biaya_admin || 0))}</span></div>
+                <div className="flex justify-between text-xs border-t border-border pt-0.5"><span>Hitungan</span><span className="font-mono">{rupiah(perbaikiHitung)}</span></div>
+                <div className="flex justify-between font-bold"><span>Total di struk</span><span className="font-mono">{rupiah(Number(perbaikiForm.total_struk || 0))}</span></div>
               </div>
 
               {Math.abs(perbaikiSelisih) > 1000 && (
                 <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span>
-                    Hitungan dan struk selisih <span className="font-mono">{rp(Math.abs(perbaikiSelisih))}</span>
+                    Hitungan dan struk selisih <span className="font-mono">{rupiah(Math.abs(perbaikiSelisih))}</span>
                     {perbaikiSelisih < 0
                       ? " — struk lebih murah. Biasanya ada promo atau kupon; turunkan harga satuan atau ongkir sampai cocok."
                       : " — struk lebih mahal. Biasanya ada biaya yang belum dimasukkan, atau ada barang yang tidak terbaca AI."}
@@ -1080,9 +1080,9 @@ export default function PembelianPage() {
             </div>
 
             <div className="rounded-lg bg-muted/40 p-2 text-sm">
-              <div className="flex justify-between"><span>Barang</span><span>{rp(totalBarang)}</span></div>
-              <div className="flex justify-between text-muted-foreground text-xs"><span>Ongkir + admin</span><span>{rp(Number(form.ongkir || 0) + Number(form.biaya_admin || 0))}</span></div>
-              <div className="flex justify-between font-bold border-t border-border mt-1 pt-1"><span>Total dibayar</span><span>{rp(totalBayar)}</span></div>
+              <div className="flex justify-between"><span>Barang</span><span>{rupiah(totalBarang)}</span></div>
+              <div className="flex justify-between text-muted-foreground text-xs"><span>Ongkir + admin</span><span>{rupiah(Number(form.ongkir || 0) + Number(form.biaya_admin || 0))}</span></div>
+              <div className="flex justify-between font-bold border-t border-border mt-1 pt-1"><span>Total dibayar</span><span>{rupiah(totalBayar)}</span></div>
             </div>
           </div>
           <DialogFooter>
@@ -1112,7 +1112,7 @@ export default function PembelianPage() {
                   if (!l) return null;
                   return (
                     <p key={idx} className="font-mono text-[11px]">
-                      {it.nama_barang}: {rp(l.lama)} → {rp(l.baru)} per {l.satuan}
+                      {it.nama_barang}: {rupiah(l.lama)} → {rupiah(l.baru)} per {l.satuan}
                       {" "}({l.kali.toFixed(1)}× lebih {l.naik ? "mahal" : "murah"})
                     </p>
                   );
@@ -1141,7 +1141,7 @@ export default function PembelianPage() {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                {(terimaTarget?.items || []).length} barang · {rp(terimaTarget?.total_bayar)} termasuk ongkir.
+                {(terimaTarget?.items || []).length} barang · {rupiah(terimaTarget?.total_bayar)} termasuk ongkir.
                 Ongkirnya dibagi ke harga per satuan, jadi harga pokoknya sama dengan uang yang keluar.
               </p>
 

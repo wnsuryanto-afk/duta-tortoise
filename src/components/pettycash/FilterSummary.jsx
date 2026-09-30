@@ -1,9 +1,7 @@
 import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 export default function FilterSummary({ filtered, filterCat }) {
   const { cats: pettyCats } = usePettyCashCategories();
@@ -21,13 +19,13 @@ export default function FilterSummary({ filtered, filterCat }) {
     <div className="flex gap-2 flex-wrap">
       <div className="flex-1 min-w-[140px] p-3 bg-red-50 border border-red-200 rounded-lg">
         <p className="text-xs text-red-600 font-medium">Total {pemakaianLabel}</p>
-        <p className="text-lg font-bold text-red-700">{formatRp(totalPemakaian)}</p>
+        <p className="text-lg font-bold text-red-700">{rupiah(totalPemakaian)}</p>
         <p className="text-xs text-red-500">{pemakaians.length} transaksi</p>
       </div>
       {topUps.length > 0 && (
         <div className="flex-1 min-w-[140px] p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs text-green-600 font-medium">Total Top Up</p>
-          <p className="text-lg font-bold text-green-700">{formatRp(totalTopUp)}</p>
+          <p className="text-lg font-bold text-green-700">{rupiah(totalTopUp)}</p>
           <p className="text-xs text-green-500">{topUps.length} transaksi</p>
         </div>
       )}

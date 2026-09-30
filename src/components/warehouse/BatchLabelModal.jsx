@@ -38,8 +38,8 @@ import { downloadDataUrl, dataUrlToBytes, downloadZip } from "@/lib/zipDownload"
 import PemilihUkuranLabel, { useUkuranLabel } from "@/components/label/PemilihUkuranLabel";
 import { rencanaLabel } from "@/lib/ukuranLabel";
 import { gambarLabel, namaBerkasLabel } from "@/lib/gambarLabel";
+import { rupiah } from "@/lib/rupiah";
 
-const rp = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 
 /**
  * Batch diterjemahkan jadi isi label, bukan jadi penggambar kedua.
@@ -55,7 +55,7 @@ function isiLabel(batch, exp) {
     label_qr: batch.batch_code || "",
     label_jenisKode: "KODE",
     label_exp: exp || "",
-    notes: `${batch.jumlah_awal ?? batch.jumlah_sisa ?? 0} ${batch.satuan || ""} · ${rp(batch.harga_satuan)}`,
+    notes: `${batch.jumlah_awal ?? batch.jumlah_sisa ?? 0} ${batch.satuan || ""} · ${rupiah(batch.harga_satuan)}`,
   };
 }
 

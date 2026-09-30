@@ -9,11 +9,14 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { TrendingUp, DollarSign, Package } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { rupiahSingkat } from "@/lib/rupiah";
+
+/** Bentuk ringkas yang sama dengan kartu stok dan sumbu grafik uang. */
+const ringkas = (n) => rupiahSingkat(n, { denganRp: false });
 
 const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
 const COLORS = ["#2d6a4f","#74c69d","#d4a017","#e07b39","#6b7280","#7c3aed","#0891b2","#be185d"];
 
-const fmt = (n) => n >= 1000000 ? `${(n/1000000).toFixed(1)}jt` : n >= 1000 ? `${(n/1000).toFixed(0)}rb` : String(n);
 
 export default function LaporanPenjualanTab() {
   const currentYear = new Date().getFullYear();
@@ -107,10 +110,10 @@ export default function LaporanPenjualanTab() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Total Penjualan", val: filtered.length, icon: Package, color: "text-primary", sub: "transaksi" },
-          { label: "Total Omzet", val: `Rp ${fmt(totalOmzet)}`, icon: DollarSign, color: "text-primary" },
-          { label: "Total HPP+Ongkir", val: `Rp ${fmt(totalHPP)}`, icon: TrendingUp, color: "text-amber-600" },
-          { label: "Ongkir", val: `Rp ${fmt(totalOngkir)}`, icon: TrendingUp, color: "text-blue-600" },
-          { label: "Margin Bersih", val: `Rp ${fmt(totalProfit)}`, icon: TrendingUp, color: totalProfit>=0?"text-green-600":"text-red-600" },
+          { label: "Total Omzet", val: `Rp ${ringkas(totalOmzet)}`, icon: DollarSign, color: "text-primary" },
+          { label: "Total HPP+Ongkir", val: `Rp ${ringkas(totalHPP)}`, icon: TrendingUp, color: "text-amber-600" },
+          { label: "Ongkir", val: `Rp ${ringkas(totalOngkir)}`, icon: TrendingUp, color: "text-blue-600" },
+          { label: "Margin Bersih", val: `Rp ${ringkas(totalProfit)}`, icon: TrendingUp, color: totalProfit>=0?"text-green-600":"text-red-600" },
         ].map(item => (
           <Card key={item.label}>
             <CardContent className="p-4">
@@ -131,7 +134,7 @@ export default function LaporanPenjualanTab() {
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={monthlyData}>
               <XAxis dataKey="name" tick={{fontSize:11}} />
-              <YAxis tick={{fontSize:11}} tickFormatter={v=>fmt(v)} />
+              <YAxis tick={{fontSize:11}} tickFormatter={v=>ringkas(v)} />
               <Tooltip formatter={(v)=>`Rp ${v.toLocaleString("id-ID")}`} />
               <Bar dataKey="omzet" name="Omzet" fill="#2d6a4f" radius={[4,4,0,0]} />
               <Bar dataKey="profit" name="Profit" fill="#74c69d" radius={[4,4,0,0]} />
@@ -161,7 +164,7 @@ export default function LaporanPenjualanTab() {
                         <div className="h-1.5 rounded-full" style={{backgroundColor:COLORS[i%COLORS.length],width:`${(p.total/totalOmzet*100)||0}%`}} />
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-primary whitespace-nowrap">Rp {fmt(p.total)}</span>
+                    <span className="text-sm font-semibold text-primary whitespace-nowrap">Rp {ringkas(p.total)}</span>
                   </div>
                 ))}
               </div>

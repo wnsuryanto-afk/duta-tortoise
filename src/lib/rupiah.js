@@ -23,7 +23,31 @@
 
 /** Rupiah penuh, dengan pemisah ribuan Indonesia. */
 export function rupiah(n) {
-  return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
+  return "Rp " + angkaRibuan(n);
+}
+
+/**
+ * Angkanya saja, tanpa awalan "Rp".
+ *
+ * Untuk tempat yang sudah menulis "Rp" sendiri di markup — biasanya karena
+ * "Rp" dan angkanya diberi ukuran huruf berbeda, atau karena awalannya
+ * "-Rp" / "+Rp". Memaksa tempat-tempat itu memakai `rupiah()` lalu memotong
+ * tiga huruf pertama jauh lebih rapuh daripada menyediakan bentuk ini.
+ */
+export function angkaRibuan(n) {
+  return Math.round(Number(n) || 0).toLocaleString("id-ID");
+}
+
+/**
+ * Rupiah penuh, tetapi kosong ditulis "—" alih-alih "Rp 0".
+ *
+ * Bedanya penting di tabel harga: sel yang belum diisi dan sel yang benar
+ * -benar berharga nol adalah dua keadaan berbeda, dan "Rp 0" membuat
+ * keduanya terlihat sama. Nol yang sungguhan tetap tampil "Rp 0".
+ */
+export function rupiahAtauStrip(n) {
+  if (n === null || n === undefined || n === "") return "—";
+  return rupiah(n);
 }
 
 /**

@@ -44,8 +44,8 @@ import {
   cariDariPindaian,
 } from "@/lib/pemakaianBarang";
 import { statusKedaluwarsaBatch, alasanKedaluwarsaBatch } from "@/lib/kedaluwarsaBatch";
+import { rupiah } from "@/lib/rupiah";
 
-const rp = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 const hariIni = () => new Date().toISOString().split("T")[0];
 
 export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
@@ -169,7 +169,7 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
       qc.invalidateQueries({ queryKey: ["batch-barang"] });
 
       toast.success(
-        `${jumlahAngka} ${item.unit || "pcs"} ${item.name} keluar${butuhKura ? ` untuk ${kodeKura}` : ""} — ${rp(nilai.total)}`
+        `${jumlahAngka} ${item.unit || "pcs"} ${item.name} keluar${butuhKura ? ` untuk ${kodeKura}` : ""} — ${rupiah(nilai.total)}`
       );
       reset();
       setOpen(false);
@@ -235,7 +235,7 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Stok sekarang <strong className="text-foreground">{stokSekarang} {item.unit}</strong>
-                    {" · "}{rp(item.purchase_price)} per {item.unit}
+                    {" · "}{rupiah(item.purchase_price)} per {item.unit}
                   </p>
                   {batch && (
                     <p className="text-[11px] text-muted-foreground font-mono">
@@ -313,7 +313,7 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
                   <div>
                     <p className="text-xs font-medium mb-1">Nilai</p>
                     <div className="h-10 flex items-center px-3 rounded-lg border border-border bg-muted/30 text-sm font-mono">
-                      {rp(nilai.total)}
+                      {rupiah(nilai.total)}
                     </div>
                   </div>
                 </div>
@@ -368,7 +368,7 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Biaya {rp(nilai.total)} ini akan menempel ke harga pokok kura tersebut.
+                      Biaya {rupiah(nilai.total)} ini akan menempel ke harga pokok kura tersebut.
                     </p>
                   </div>
                 )}

@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { diPeternakan } from "@/lib/populasiKura";
 import { Info, Save, Loader2, Settings } from "lucide-react";
 import { masukLaporan } from "@/lib/laporan";
+import { angkaRibuan } from "@/lib/rupiah";
 
-function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
 export default function PengaturanHPP() {
   const qc = useQueryClient();
@@ -152,9 +152,9 @@ export default function PengaturanHPP() {
                 {monthlyHistory.map(m => (
                   <tr key={m.month}>
                     <td className="py-2 font-medium">{m.label}</td>
-                    <td className="py-2 text-right">Rp {fmt(m.total_pengeluaran)}</td>
+                    <td className="py-2 text-right">Rp {angkaRibuan(m.total_pengeluaran)}</td>
                     <td className="py-2 text-right">{m.active_count} ekor</td>
-                    <td className="py-2 text-right font-semibold">{m.cost_per_tortoise ? `Rp ${fmt(m.cost_per_tortoise)}` : "-"}</td>
+                    <td className="py-2 text-right font-semibold">{m.cost_per_tortoise ? `Rp ${angkaRibuan(m.cost_per_tortoise)}` : "-"}</td>
                     <td className="py-2 text-center">
                       <Badge className="bg-green-100 text-green-700 text-[10px] border-0">Data aktual</Badge>
                     </td>

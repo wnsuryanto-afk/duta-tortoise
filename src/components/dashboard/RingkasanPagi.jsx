@@ -22,8 +22,8 @@ import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
 import { saldoTerkini } from "@/lib/kasKecil";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { diPeternakan, sedangSakit } from "@/lib/populasiKura";
+import { rupiah } from "@/lib/rupiah";
 
-const fmtRp = (n) => `Rp ${Math.round(Number(n || 0)).toLocaleString("id-ID")}`;
 
 /**
  * @param {"semua"|"harian"|"telaah"} bagian  Lapis mana yang dirender.
@@ -365,11 +365,11 @@ export default function RingkasanPagi({ bagian = "semua" }) {
           <div className="grid grid-cols-2 divide-x divide-border/60">
             <Link to="/sales" className="px-3 py-2 hover:bg-muted/40 transition-colors">
               <p className="text-[10px] text-muted-foreground">Masuk 7 hari</p>
-              <p className="text-base font-bold leading-tight tabular text-[hsl(var(--seri-masuk))]">{fmtRp(sales7)}</p>
+              <p className="text-base font-bold leading-tight tabular text-[hsl(var(--seri-masuk))]">{rupiah(sales7)}</p>
             </Link>
             <Link to="/finance" className="px-3 py-2 hover:bg-muted/40 transition-colors">
               <p className="text-[10px] text-muted-foreground">Keluar 7 hari</p>
-              <p className="text-base font-bold leading-tight tabular text-[hsl(var(--seri-keluar))]">{fmtRp(exp7)}</p>
+              <p className="text-base font-bold leading-tight tabular text-[hsl(var(--seri-keluar))]">{rupiah(exp7)}</p>
             </Link>
           </div>
 
@@ -389,7 +389,7 @@ export default function RingkasanPagi({ bagian = "semua" }) {
                     </div>
                     <p className="text-[10px] text-muted-foreground">
                       {selisih >= 0 ? "Lebih banyak masuk " : "Lebih banyak keluar "}
-                      <span className="tabular font-semibold text-foreground">{fmtRp(Math.abs(selisih))}</span>
+                      <span className="tabular font-semibold text-foreground">{rupiah(Math.abs(selisih))}</span>
                       {" "}minggu ini
                     </p>
                   </>
@@ -401,11 +401,11 @@ export default function RingkasanPagi({ bagian = "semua" }) {
           <div className="grid grid-cols-2 divide-x divide-border/60">
             <Link to="/petty-cash" className="px-3 py-1.5 hover:bg-muted/40 transition-colors flex items-baseline gap-2">
               <span className="text-[10px] text-muted-foreground">Kas kecil</span>
-              <span className={`text-xs font-semibold tabular ml-auto ${saldoKas < 0 ? "text-destructive" : "text-foreground"}`}>{fmtRp(saldoKas)}</span>
+              <span className={`text-xs font-semibold tabular ml-auto ${saldoKas < 0 ? "text-destructive" : "text-foreground"}`}>{rupiah(saldoKas)}</span>
             </Link>
             <Link to="/sales" className="px-3 py-1.5 hover:bg-muted/40 transition-colors flex items-baseline gap-2">
               <span className="text-[10px] text-muted-foreground">Jual kemarin</span>
-              <span className="text-xs font-semibold tabular ml-auto text-foreground">{fmtRp(salesYesterday)}</span>
+              <span className="text-xs font-semibold tabular ml-auto text-foreground">{rupiah(salesYesterday)}</span>
             </Link>
           </div>
         </div>

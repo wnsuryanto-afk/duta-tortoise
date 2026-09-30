@@ -19,6 +19,7 @@ import { useFinanceCategories } from "@/hooks/useEntityCategories";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useTestMode } from "@/lib/useTestMode";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
+import { rupiah } from "@/lib/rupiah";
 
 const CATEGORIES = {
   gaji_karyawan: {
@@ -86,7 +87,6 @@ const CATEGORIES = {
   },
 };
 
-function formatRp(v) { return "Rp " + (v || 0).toLocaleString("id-ID"); }
 
 const LAST_12 = Array.from({ length: 12 }, (_, i) => {
   const d = subMonths(new Date(), 11 - i);
@@ -193,7 +193,7 @@ export default function BiayaOperasionalTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Total Pengeluaran Bulan Ini</p>
-              <p className="text-2xl font-bold">{formatRp(totalThisMonth)}</p>
+              <p className="text-2xl font-bold">{rupiah(totalThisMonth)}</p>
               <p className="text-xs text-muted-foreground">{format(new Date(), "MMMM yyyy", { locale: id })}</p>
             </div>
             <div className="text-right">
@@ -238,7 +238,7 @@ export default function BiayaOperasionalTab() {
                 {trend === "up" && <TrendingUp className="w-3.5 h-3.5 text-red-500" />}
                 {trend === "down" && <TrendingDown className="w-3.5 h-3.5 text-green-600" />}
               </div>
-              <p className="text-lg font-bold">{formatRp(total)}</p>
+              <p className="text-lg font-bold">{rupiah(total)}</p>
               <p className="text-[10px] text-muted-foreground">{pct}% dari total</p>
             </Card>
           );
@@ -265,7 +265,7 @@ export default function BiayaOperasionalTab() {
                       {tx.sub_category && <Badge variant="outline" className="text-[10px]">{tx.sub_category}</Badge>}
                     </div>
                   </div>
-                  <p className="text-sm font-bold text-red-600 flex-shrink-0">-{formatRp(tx.amount)}</p>
+                  <p className="text-sm font-bold text-red-600 flex-shrink-0">-{rupiah(tx.amount)}</p>
                 </div>
               ))
             )}
@@ -286,7 +286,7 @@ export default function BiayaOperasionalTab() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E1D8" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
               <YAxis tickFormatter={v => v > 0 ? `${Math.round(v / 1000)}K` : "0"} tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v, name) => [formatRp(v), CATEGORIES[name]?.label || name]} />
+              <Tooltip formatter={(v, name) => [rupiah(v), CATEGORIES[name]?.label || name]} />
               {Object.entries(CATEGORIES).map(([key, conf], i) => (
                 <Bar key={key} dataKey={key} stackId="a" fill={conf.chartColor}
                   radius={i === Object.keys(CATEGORIES).length - 1 ? [4, 4, 0, 0] : undefined} />
@@ -315,7 +315,7 @@ export default function BiayaOperasionalTab() {
                     {tx.sub_category && <span>· {tx.sub_category}</span>}
                   </div>
                 </div>
-                <p className="text-sm font-bold text-red-600 flex-shrink-0">-{formatRp(tx.amount)}</p>
+                <p className="text-sm font-bold text-red-600 flex-shrink-0">-{rupiah(tx.amount)}</p>
               </div>
             );
           })}

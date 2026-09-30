@@ -7,8 +7,8 @@
 import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend, CartesianGrid } from "recharts";
 import { Star, TrendingUp, ArrowDown, CalendarDays } from "lucide-react";
+import { rupiah } from "@/lib/rupiah";
 
-const fmtRp = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const COLORS = ["#2D5016", "#6B9B37", "#8B5E3C", "#3b82f6", "#a855f7", "#ef4444", "#C19A6B"];
 
 export default function PoinGrafik({ barData, empNames, lineData, summary }) {
@@ -67,7 +67,7 @@ export default function PoinGrafik({ barData, empNames, lineData, summary }) {
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}rb`} />
-              <Tooltip formatter={(v) => fmtRp(v)} />
+              <Tooltip formatter={(v) => rupiah(v)} />
               <Line type="monotone" dataKey="bonus" name="Bonus" stroke="#2D5016" strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>

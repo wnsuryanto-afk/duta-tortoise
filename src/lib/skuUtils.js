@@ -1,3 +1,4 @@
+import { rupiahAtauStrip } from "@/lib/rupiah";
 /**
  * SKU utilities: generate & validate SKU codes
  * Prefix mapping:
@@ -46,7 +47,10 @@ export function generateSKU(prefix, existingSkus = []) {
   return `${prefix}-${String(next).padStart(4, "0")}`;
 }
 
+/**
+ * Dipertahankan sebagai nama lama; aturannya sendiri tinggal di lib/rupiah.js.
+ * Bedanya dengan `rupiah()` cuma satu: kosong ditulis "—", bukan "Rp 0".
+ */
 export function formatRp(val) {
-  if (!val && val !== 0) return "—";
-  return "Rp " + Number(val).toLocaleString("id-ID");
+  return rupiahAtauStrip(val);
 }

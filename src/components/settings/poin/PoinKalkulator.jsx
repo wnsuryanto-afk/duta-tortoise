@@ -4,8 +4,8 @@
  */
 import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function PoinKalkulator({ rows, oldNilai, newNilai }) {
   if (!rows || rows.length === 0) {
@@ -41,10 +41,10 @@ export default function PoinKalkulator({ rows, oldNilai, newNilai }) {
                 <tr key={r.name}>
                   <td className="py-2 pr-3 font-medium">{r.name}</td>
                   <td className="text-right py-2 px-2">{r.poin30}</td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">{fmt(bOld)}</td>
-                  <td className="text-right py-2 px-2 font-semibold">{fmt(bNew)}</td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">{rupiah(bOld)}</td>
+                  <td className="text-right py-2 px-2 font-semibold">{rupiah(bNew)}</td>
                   <td className={`text-right py-2 px-2 font-medium ${sel > 0 ? "text-red-600" : sel < 0 ? "text-green-600" : "text-muted-foreground"}`}>
-                    {sel > 0 ? "+" : ""}{fmt(sel)}
+                    {sel > 0 ? "+" : ""}{rupiah(sel)}
                   </td>
                   <td className="text-right py-2 pl-3">
                     {pct === null ? (
@@ -59,10 +59,10 @@ export default function PoinKalkulator({ rows, oldNilai, newNilai }) {
             <tr className="border-t-2 font-bold">
               <td className="py-2 pr-3">Total</td>
               <td className="text-right py-2 px-2">{rows.reduce((s, r) => s + r.poin30, 0)}</td>
-              <td className="text-right py-2 px-2">{fmt(totalOld)}</td>
-              <td className="text-right py-2 px-2">{fmt(totalNew)}</td>
+              <td className="text-right py-2 px-2">{rupiah(totalOld)}</td>
+              <td className="text-right py-2 px-2">{rupiah(totalNew)}</td>
               <td className={`text-right py-2 px-2 ${totalSelisih > 0 ? "text-red-600" : totalSelisih < 0 ? "text-green-600" : ""}`}>
-                {totalSelisih > 0 ? "+" : ""}{fmt(totalSelisih)}
+                {totalSelisih > 0 ? "+" : ""}{rupiah(totalSelisih)}
               </td>
               <td className="text-right py-2 pl-3"></td>
             </tr>

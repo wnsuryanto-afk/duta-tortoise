@@ -6,10 +6,8 @@ import { base44 } from "@/api/base44Client";
 import { Plus, Upload, Loader2, X, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(v) {
-  return "Rp " + (v || 0).toLocaleString("id-ID");
-}
 
 export default function PaymentProofsSection({ sale, onUpdated }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -84,8 +82,8 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
           />
         </div>
         <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-          <span>Sudah Bayar: <strong className="text-foreground">{formatRp(totalPaid)}</strong></span>
-          <span>Sisa: <strong className={remaining > 0 ? "text-destructive" : "text-green-600"}>{formatRp(remaining)}</strong></span>
+          <span>Sudah Bayar: <strong className="text-foreground">{rupiah(totalPaid)}</strong></span>
+          <span>Sisa: <strong className={remaining > 0 ? "text-destructive" : "text-green-600"}>{rupiah(remaining)}</strong></span>
         </div>
         {pct >= 100 && (
           <div className="flex items-center gap-1.5 mt-2 text-green-600 text-xs font-semibold">
@@ -103,7 +101,7 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
                 <img src={p.photo_url} alt="bukti" className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-green-700">{formatRp(p.amount)}</p>
+                <p className="text-sm font-semibold text-green-700">{rupiah(p.amount)}</p>
                 <p className="text-xs text-muted-foreground">
                   {p.date ? format(new Date(p.date), "d MMM yyyy", { locale: id }) : "—"}
                   {p.notes && ` · ${p.notes}`}

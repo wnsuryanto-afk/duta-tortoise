@@ -15,8 +15,8 @@ import { logActivity } from "@/lib/logActivity";
 import PaymentProofDialog from "@/components/salary/PaymentProofDialog";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 import { rupaStatusSlip } from "@/lib/slipGaji";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function SalarySlipDetail({ slip, onClose, companySettings }) {
   const { user, role } = useCurrentUser();
@@ -231,7 +231,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                     <span className="text-xs text-muted-foreground ml-1">({slip.attend_days} hari hadir)</span>
                   )}
                 </td>
-                <td className="p-2 border border-border text-right font-medium">{fmt(slip.base_salary)}</td>
+                <td className="p-2 border border-border text-right font-medium">{rupiah(slip.base_salary)}</td>
               </tr>
               {!isKeeperView && !isWeekly && (
                 <tr className="bg-amber-50/40">
@@ -261,26 +261,26 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                 <td className="p-2 border border-border">
                   {isKeeperView
                     ? "Bonus Poin"
-                    : `Bonus Poin (${slip.total_poin || 0} poin × ${fmt(nilaiPoinDisplay)})`}
+                    : `Bonus Poin (${slip.total_poin || 0} poin × ${rupiah(nilaiPoinDisplay)})`}
                 </td>
-                <td className="p-2 border border-border text-right text-green-600 font-medium">+{fmt(slip.poin_bonus)}</td>
+                <td className="p-2 border border-border text-right text-green-600 font-medium">+{rupiah(slip.poin_bonus)}</td>
               </tr>
               {hasPoinDed && (
                 <tr>
                   <td className="p-2 border border-border text-red-600">Potongan Poin (kurang target)</td>
-                  <td className="p-2 border border-border text-right text-red-600 font-medium">({fmt(slip.poin_deduction)})</td>
+                  <td className="p-2 border border-border text-right text-red-600 font-medium">({rupiah(slip.poin_deduction)})</td>
                 </tr>
               )}
               <tr className="bg-blue-50/30">
                 <td className="p-2 border border-border font-medium">KPI Bersih</td>
                 <td className={`p-2 border border-border text-right font-semibold ${(slip.kpi_bonus || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
-                  {(slip.kpi_bonus || 0) >= 0 ? "+" : ""}{fmt(slip.kpi_bonus)}
+                  {(slip.kpi_bonus || 0) >= 0 ? "+" : ""}{rupiah(slip.kpi_bonus)}
                 </td>
               </tr>
               {hasOvertime && (
                 <tr>
                   <td className="p-2 border border-border">Lembur</td>
-                  <td className="p-2 border border-border text-right text-blue-600 font-medium">+{fmt(slip.overtime_pay)}</td>
+                  <td className="p-2 border border-border text-right text-blue-600 font-medium">+{rupiah(slip.overtime_pay)}</td>
                 </tr>
               )}
               {hasVeg && (
@@ -292,7 +292,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                         Sayur ({slip.vegetable_trips || 0} trip)
                       </span>
                     </td>
-                    <td className="p-2 border border-border text-right text-blue-600 font-medium">+{fmt(slip.vegetable_pay)}</td>
+                    <td className="p-2 border border-border text-right text-blue-600 font-medium">+{rupiah(slip.vegetable_pay)}</td>
                   </tr>
                   {vegExpanded && slip.vegetable_trip_dates?.length > 0 && (
                     <tr>
@@ -320,12 +320,12 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                       </span>
                     )}
                   </td>
-                  <td className="p-2 border border-border text-right text-blue-600 font-medium">+{fmt(slip.rempesan_pay)}</td>
+                  <td className="p-2 border border-border text-right text-blue-600 font-medium">+{rupiah(slip.rempesan_pay)}</td>
                 </tr>
               ) : null}
               <tr className="bg-muted/30 font-semibold">
                 <td className="p-2 border border-border">Total Bruto</td>
-                <td className="p-2 border border-border text-right">{fmt(grossTotal)}</td>
+                <td className="p-2 border border-border text-right">{rupiah(grossTotal)}</td>
               </tr>
               {hasKasbonDed && (
                 <tr>
@@ -333,16 +333,16 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
                     Potongan Kasbon
                     {(slip.kasbon_remaining || 0) > 0 && (
                       <span className="block text-[10px] text-muted-foreground ml-1">
-                        Sisa: {fmt(slip.kasbon_remaining)}
+                        Sisa: {rupiah(slip.kasbon_remaining)}
                       </span>
                     )}
                   </td>
-                  <td className="p-2 border border-border text-right text-red-600 font-medium">({fmt(slip.kasbon_deduction)})</td>
+                  <td className="p-2 border border-border text-right text-red-600 font-medium">({rupiah(slip.kasbon_deduction)})</td>
                 </tr>
               )}
               <tr className="bg-primary/10 font-bold text-base">
                 <td className="p-3 border border-border text-primary">TOTAL GAJI BERSIH</td>
-                <td className="p-3 border border-border text-right text-primary text-lg">{fmt(slip.net_total)}</td>
+                <td className="p-3 border border-border text-right text-primary text-lg">{rupiah(slip.net_total)}</td>
               </tr>
             </tbody>
           </table>

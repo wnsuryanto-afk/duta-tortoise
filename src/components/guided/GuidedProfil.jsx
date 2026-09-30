@@ -3,15 +3,13 @@ import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { LogOut, Calendar, CheckCircle2, XCircle, Clock, ToggleRight } from "lucide-react";
+import { rupiah } from "@/lib/rupiah";
 
 const ROLE_LABELS = {
   keeper: "Keeper",
   kepala_feeder: "Kepala Feeder",
 };
 
-function formatRp(val) {
-  return "Rp " + Number(val || 0).toLocaleString("id-ID");
-}
 
 export default function GuidedProfil({ user, onSwitchToNormal }) {
   const currentPeriod = format(new Date(), "yyyy-MM");
@@ -62,21 +60,21 @@ export default function GuidedProfil({ user, onSwitchToNormal }) {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Gaji Pokok</span>
-              <span className="font-semibold text-foreground">{formatRp(slip.base_salary)}</span>
+              <span className="font-semibold text-foreground">{rupiah(slip.base_salary)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Bonus Poin</span>
-              <span className="font-semibold text-green-700">+{formatRp(slip.poin_bonus)}</span>
+              <span className="font-semibold text-green-700">+{rupiah(slip.poin_bonus)}</span>
             </div>
             {slip.absent_deduction > 0 && (
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Potongan Absen</span>
-                <span className="font-semibold text-red-600">-{formatRp(slip.absent_deduction)}</span>
+                <span className="font-semibold text-red-600">-{rupiah(slip.absent_deduction)}</span>
               </div>
             )}
             <div className="border-t pt-2 flex justify-between">
               <span className="font-bold text-foreground">Take Home Pay</span>
-              <span className="font-bold text-lg text-green-700">{formatRp(slip.net_total)}</span>
+              <span className="font-bold text-lg text-green-700">{rupiah(slip.net_total)}</span>
             </div>
             <div className="flex justify-center mt-1">
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${

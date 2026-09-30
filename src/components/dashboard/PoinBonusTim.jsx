@@ -19,8 +19,8 @@ import { Trophy, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { tingkatanBonus, tingkatTercapai } from "@/lib/bonus";
 import { masukLaporan } from "@/lib/laporan";
+import { rupiah } from "@/lib/rupiah";
 
-const rupiah = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const PERAN = ["keeper", "kepala_feeder"];
 
 export default function PoinBonusTim() {

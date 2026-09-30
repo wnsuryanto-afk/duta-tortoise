@@ -17,6 +17,7 @@ import EditLedgerEntryDialog from "./EditLedgerEntryDialog";
 import FilterSummary from "./FilterSummary";
 import CategoryRecap from "./CategoryRecap";
 import { toast } from "sonner";
+import { rupiah } from "@/lib/rupiah";
 
 const TYPE_CONFIG = {
   top_up:      { label: "Top Up",      color: "bg-green-100 text-green-700 border-green-200", sign: "+" },
@@ -26,9 +27,6 @@ const TYPE_CONFIG = {
 
 const CAT_LABELS = PETTYCASH_CAT_LABELS;
 
-function formatRp(n) {
-  return "Rp " + Math.round(Number(n || 0)).toLocaleString("id-ID");
-}
 
 function safeFormatDate(dateStr, createdDate) {
   const opts = { locale: id };
@@ -243,9 +241,9 @@ export default function LedgerHistory({ ledger, role }) {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className={`text-sm font-bold ${l.entry_type === "top_up" ? "text-green-700" : l.entry_type === "pemakaian" ? "text-red-600" : "text-muted-foreground"}`}>
-                    {tc.sign} {formatRp(l.amount)}
+                    {tc.sign} {rupiah(l.amount)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Saldo: {formatRp(l.balance_after)}</p>
+                  <p className="text-xs text-muted-foreground">Saldo: {rupiah(l.balance_after)}</p>
                 </div>
                 {(canEdit || canDelete) && (
                   <div className="flex flex-col gap-1 flex-shrink-0">
@@ -289,7 +287,7 @@ export default function LedgerHistory({ ledger, role }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Entri Kas Kecil?</AlertDialogTitle>
             <AlertDialogDescription>
-              Entri "{deletingEntry?.description}" sebesar {formatRp(deletingEntry?.amount)} akan dihapus permanen.
+              Entri "{deletingEntry?.description}" sebesar {rupiah(deletingEntry?.amount)} akan dihapus permanen.
               {deletingEntry?.finance_tx_id && " Transaksi keuangan terkait juga akan dihapus."}
               {" "}Saldo berjalan akan dihitung ulang otomatis.
             </AlertDialogDescription>

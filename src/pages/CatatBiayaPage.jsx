@@ -54,8 +54,8 @@ import { useTestMode } from "@/lib/useTestMode";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { logActivity } from "@/lib/logActivity";
+import { rupiah } from "@/lib/rupiah";
 
-const rupiah = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 
 // Kategori yang benar-benar berulang di peternakan ini. Urutannya mengikuti
 // seberapa sering dipakai, bukan abjad - yang paling sering ada di jempol.

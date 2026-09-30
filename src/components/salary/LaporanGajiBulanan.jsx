@@ -14,15 +14,13 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
+import { rupiah } from "@/lib/rupiah";
 
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
   const d = subMonths(new Date(), i);
   return { value: format(d, "yyyy-MM"), label: format(d, "MMMM yyyy", { locale: id }) };
 });
 
-function fmtRp(val) {
-  return `Rp ${(val || 0).toLocaleString("id-ID")}`;
-}
 
 /**
  * LaporanGajiBulanan — dulu halaman `/salary`.
@@ -224,8 +222,8 @@ export default function LaporanGajiBulanan() {
       doc.setFont("helvetica","normal");
       const row = [
         String(idx+1), emp.name, roleLabel(emp.role),
-        fmtRp(emp.baseSalary), fmtRp(emp.kpiValue), fmtRp(emp.overtimePay), fmtRp(emp.vegPay),
-        fmtRp(emp.absentDeduction), fmtRp(emp.kasbonDed), fmtRp(emp.netSalary)
+        rupiah(emp.baseSalary), rupiah(emp.kpiValue), rupiah(emp.overtimePay), rupiah(emp.vegPay),
+        rupiah(emp.absentDeduction), rupiah(emp.kasbonDed), rupiah(emp.netSalary)
       ];
       x = margin;
       row.forEach((cell, i) => {
@@ -287,7 +285,7 @@ export default function LaporanGajiBulanan() {
                 mencapai ratusan juta. Dua kelas ini yang menahannya. */}
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total Gaji Bersih</p>
-              <p className="text-base font-bold text-green-700 break-words tabular-nums">{fmtRp(totalNet)}</p>
+              <p className="text-base font-bold text-green-700 break-words tabular-nums">{rupiah(totalNet)}</p>
             </div>
           </div>
         </Card>
@@ -296,7 +294,7 @@ export default function LaporanGajiBulanan() {
             <Star className="w-7 h-7 text-amber-500 opacity-70" />
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total KPI</p>
-              <p className="text-xl font-bold text-amber-700 break-words tabular-nums">{fmtRp(salaryData.reduce((s,e)=>s+e.kpiValue,0))}</p>
+              <p className="text-xl font-bold text-amber-700 break-words tabular-nums">{rupiah(salaryData.reduce((s,e)=>s+e.kpiValue,0))}</p>
             </div>
           </div>
         </Card>
@@ -305,7 +303,7 @@ export default function LaporanGajiBulanan() {
             <Clock className="w-7 h-7 text-blue-600 opacity-70" />
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total Lembur</p>
-              <p className="text-xl font-bold text-blue-700 break-words tabular-nums">{fmtRp(salaryData.reduce((s,e)=>s+e.overtimePay,0))}</p>
+              <p className="text-xl font-bold text-blue-700 break-words tabular-nums">{rupiah(salaryData.reduce((s,e)=>s+e.overtimePay,0))}</p>
             </div>
           </div>
         </Card>
@@ -350,39 +348,39 @@ export default function LaporanGajiBulanan() {
                   </td>
                   <td className="px-3 py-3 text-center text-sm">
                     <div className="flex flex-col items-center">
-                      <span className="font-semibold">{fmtRp(emp.baseSalary)}</span>
+                      <span className="font-semibold">{rupiah(emp.baseSalary)}</span>
                       <span className="text-[10px] text-muted-foreground">
-                        {emp.daily ? `${emp.attendDays} hari × ${fmtRp(emp.baseRate)}` : "Bulanan"}
+                        {emp.daily ? `${emp.attendDays} hari × ${rupiah(emp.baseRate)}` : "Bulanan"}
                       </span>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center">
-                      <span className="text-sm font-medium text-amber-700">{fmtRp(emp.kpiValue)}</span>
-                      <span className="text-[10px] text-muted-foreground">{emp.kpiPoints} poin × {fmtRp(emp.pointValue || 0)}</span>
+                      <span className="text-sm font-medium text-amber-700">{rupiah(emp.kpiValue)}</span>
+                      <span className="text-[10px] text-muted-foreground">{emp.kpiPoints} poin × {rupiah(emp.pointValue || 0)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center">
-                      <span className="text-sm">{fmtRp(emp.overtimePay)}</span>
+                      <span className="text-sm">{rupiah(emp.overtimePay)}</span>
                       <span className="text-[10px] text-muted-foreground">{emp.overtimeHours} jam</span>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center">
-                      <span className="text-sm">{fmtRp(emp.vegPay)}</span>
+                      <span className="text-sm">{rupiah(emp.vegPay)}</span>
                       <span className="text-[10px] text-muted-foreground">{emp.vegTrips} trip</span>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
-                    <span className="text-sm text-red-600">-{fmtRp(emp.absentDeduction)}</span>
+                    <span className="text-sm text-red-600">-{rupiah(emp.absentDeduction)}</span>
                     {emp.absentDays > 0 && <p className="text-[10px] text-muted-foreground">{emp.absentDays} hari</p>}
                   </td>
                   <td className="px-3 py-3 text-center text-sm text-red-600">
-                    -{fmtRp(emp.kasbonDed)}
+                    -{rupiah(emp.kasbonDed)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <span className="font-bold text-primary text-base">{fmtRp(emp.netSalary)}</span>
+                    <span className="font-bold text-primary text-base">{rupiah(emp.netSalary)}</span>
                     {emp.profile?.bank_name && (
                       <p className="text-[10px] text-muted-foreground">{emp.profile.bank_name} · {emp.profile.bank_account_number}</p>
                     )}
@@ -394,7 +392,7 @@ export default function LaporanGajiBulanan() {
               <tfoot>
                 <tr className="bg-primary/5 font-semibold border-t">
                   <td colSpan={8} className="px-4 py-3 text-right text-sm">Total Gaji Bersih:</td>
-                  <td className="px-4 py-3 text-right text-primary font-bold text-base">{fmtRp(totalNet)}</td>
+                  <td className="px-4 py-3 text-right text-primary font-bold text-base">{rupiah(totalNet)}</td>
                 </tr>
               </tfoot>
             )}

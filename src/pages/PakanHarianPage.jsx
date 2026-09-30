@@ -17,8 +17,8 @@ import AccessDenied from "@/components/common/AccessDenied";
 import PakanHarianForm, { SOURCES, SOURCE_BADGE } from "@/components/pakan/PakanHarianForm";
 import PageHeader from "@/components/common/PageHeader";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
+import { rupiah } from "@/lib/rupiah";
 
-const fmtRp = n => "Rp " + (n || 0).toLocaleString("id-ID");
 
 export default function PakanHarianPage() {
   const { user, role } = useCurrentUser();
@@ -142,7 +142,7 @@ export default function PakanHarianPage() {
                     </p>
                     {tripTotal > 0 && (
                       <p className="text-[11px] text-orange-700 font-medium mt-0.5">
-                        Trip pasar: {fmtRp(tripTotal)} (solar {fmtRp(l.trip_cost_solar || 0)} + rokok {fmtRp(l.trip_cost_rokok || 0)})
+                        Trip pasar: {rupiah(tripTotal)} (solar {rupiah(l.trip_cost_solar || 0)} + rokok {rupiah(l.trip_cost_rokok || 0)})
                       </p>
                     )}
                   </div>

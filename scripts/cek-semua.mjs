@@ -10,6 +10,10 @@
  *   cek-temuan      penyangkalan dibaca sebagai masalah → "tidak ada luka"
  *                   masuk daftar merah, dan 40% kartu temuan berisi
  *                   kabar baik sehingga temuan sungguhan tenggelam
+ *   cek-rupiah      aturan menulis angka rupiah disalin ke berkas lain →
+ *                   satu layar menyebut angka yang sama dengan bentuk
+ *                   berbeda dari layar sebelahnya, dan salinan yang lupa
+ *                   Number() mencetak "Rp 1500000" tanpa titik ribuan
  *   cek-modeuji     baris baru dibuat tanpa penanda Mode Uji → percobaan
  *                   pemilik tersimpan bertanda "BUKAN data uji" (kolomnya
  *                   default false) dan tidak bisa lagi dipisahkan dari
@@ -52,7 +56,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

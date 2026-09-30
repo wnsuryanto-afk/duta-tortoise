@@ -15,8 +15,8 @@ import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { diPeternakan, sedangSakit } from "@/lib/populasiKura";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
 export default function InvestorDashboard({ user }) {
@@ -125,7 +125,7 @@ export default function InvestorDashboard({ user }) {
         subtitle={todayLabel}
         art={<ChartArt size="md" />}
         chips={[
-          { key: "laba", icon: DollarSign, label: "Laba bulan ini", value: fmt(profit),
+          { key: "laba", icon: DollarSign, label: "Laba bulan ini", value: rupiah(profit),
             tone: profit >= 0 ? "good" : "bad" },
           { key: "margin", icon: TrendingUp, label: "Margin", value: `${margin}%`,
             tone: Number(margin) >= 15 ? "good" : "warn" },
@@ -255,7 +255,7 @@ export default function InvestorDashboard({ user }) {
                 axisLine={false} tickLine={false}
                 tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(0)}jt` : v >= 1000 ? `${(v/1000).toFixed(0)}rb` : v} />
               <Tooltip
-                formatter={v => fmt(v)}
+                formatter={v => rupiah(v)}
                 cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
                 contentStyle={{
                   fontSize: 12, borderRadius: 10,
@@ -285,15 +285,15 @@ export default function InvestorDashboard({ user }) {
                 compact
                 title={incomeThis >= incomeLast ? "Pemasukan naik dari bulan lalu" : "Pemasukan turun dari bulan lalu"}
               >
-                {fmt(incomeThis)} bulan ini vs {fmt(incomeLast)} bulan lalu
+                {rupiah(incomeThis)} bulan ini vs {rupiah(incomeLast)} bulan lalu
                 {" "}({Math.abs(Math.round(((incomeThis - incomeLast) / incomeLast) * 100))}%
                 {incomeThis >= incomeLast ? " lebih tinggi" : " lebih rendah"}).
               </NoteCard>
             )}
             {salesThisMonth.length > 0 && (
               <NoteCard tone="info" compact title={`${salesThisMonth.length} ekor terjual bulan ini`}>
-                Omzet {fmt(salesRevenue)}
-                {salesLaba > 0 && <> · laba kotor {fmt(salesLaba)} dari penjualan yang HPP-nya sudah diisi</>}.
+                Omzet {rupiah(salesRevenue)}
+                {salesLaba > 0 && <> · laba kotor {rupiah(salesLaba)} dari penjualan yang HPP-nya sudah diisi</>}.
               </NoteCard>
             )}
           </div>

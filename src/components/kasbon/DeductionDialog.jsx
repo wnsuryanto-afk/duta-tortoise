@@ -9,8 +9,8 @@ import { logActivity } from "@/lib/logActivity";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function DeductionDialog({ kasbon, mode, onClose }) {
   const { user } = useCurrentUser();
@@ -53,7 +53,7 @@ export default function DeductionDialog({ kasbon, mode, onClose }) {
         entity_name: kasbon.employee_name,
         changes_summary: `${isCash ? "Pelunasan tunai" : "Potongan"} Rp ${amt.toLocaleString("id-ID")}${lunas ? " — LUNAS" : ""}`,
       });
-      toast.success(`${isCash ? "Pelunasan" : "Potongan"} ${fmt(amt)} dicatat${lunas ? " — Kasbon lunas" : ""}`);
+      toast.success(`${isCash ? "Pelunasan" : "Potongan"} ${rupiah(amt)} dicatat${lunas ? " — Kasbon lunas" : ""}`);
       onClose();
     } catch (err) {
       toast.error(err.message || "Gagal mencatat potongan");
@@ -75,15 +75,15 @@ export default function DeductionDialog({ kasbon, mode, onClose }) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total Pinjaman</span>
-              <span>{fmt(kasbon.amount)}</span>
+              <span>{rupiah(kasbon.amount)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Sudah Dibayar</span>
-              <span>{fmt(kasbon.total_paid)}</span>
+              <span>{rupiah(kasbon.total_paid)}</span>
             </div>
             <div className="flex justify-between font-semibold">
               <span>Sisa</span>
-              <span className="text-primary">{fmt(sisa)}</span>
+              <span className="text-primary">{rupiah(sisa)}</span>
             </div>
           </div>
 
@@ -99,7 +99,7 @@ export default function DeductionDialog({ kasbon, mode, onClose }) {
             />
             {!isCash && (
               <p className="text-xs text-muted-foreground">
-                Maks: {fmt(sisa)} · Default potongan per periode: {fmt(kasbon.weekly_deduction)}
+                Maks: {rupiah(sisa)} · Default potongan per periode: {rupiah(kasbon.weekly_deduction)}
               </p>
             )}
           </div>

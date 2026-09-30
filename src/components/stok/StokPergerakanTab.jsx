@@ -16,8 +16,8 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canApprove } from "@/lib/permissions";
 import { batalkanPergerakan, pesanKonfirmasi, sudahMenggerakkanStok } from "@/lib/koreksiPergerakan";
 import { toast } from "sonner";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(v) { return "Rp " + Number(v || 0).toLocaleString("id-ID"); }
 
 function StatusBadge({ status }) {
   const map = {
@@ -136,7 +136,7 @@ function MovementForm({ feedstocks, warehouseItems, onClose, threshold }) {
       </div>
       {form.quantity && form.unit_price && (
         <div className={`rounded-lg p-2.5 text-sm ${Number(form.quantity) * Number(form.unit_price) >= threshold && form.type === "keluar" ? "bg-yellow-50 border border-yellow-200 text-yellow-800" : "bg-muted text-muted-foreground"}`}>
-          Total: {formatRp(Number(form.quantity) * Number(form.unit_price))}
+          Total: {rupiah(Number(form.quantity) * Number(form.unit_price))}
           {Number(form.quantity) * Number(form.unit_price) >= threshold && form.type === "keluar" && (
             <span className="ml-2 font-semibold">⚠️ Butuh Approval</span>
           )}
@@ -328,7 +328,7 @@ export default function StokPergerakanTab({ movements, feedstocks, warehouseItem
                       {m.quantity} <span className="text-xs font-normal text-muted-foreground">{m.unit}</span>
                     </td>
                     <td className="px-4 py-2.5 text-right text-xs">
-                      {m.total_value ? formatRp(m.total_value) : "-"}
+                      {m.total_value ? rupiah(m.total_value) : "-"}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{m.by_name || m.by_email || "-"}</td>
                     <td className="px-4 py-2.5"><StatusBadge status={m.status || "selesai"} /></td>

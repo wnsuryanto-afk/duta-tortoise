@@ -19,11 +19,11 @@ import KasbonCard from "@/components/kasbon/KasbonCard";
 import DeductionDialog from "@/components/kasbon/DeductionDialog";
 import PageHeader from "@/components/common/PageHeader";
 import { WalletArt } from "@/components/common/Illustration";
+import { rupiah } from "@/lib/rupiah";
 
 const MAX_KASBON = 1000000;
 const WEEKLY_DEDUCTION = 100000;
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 /**
  * PanelKasbon — isi layar Kasbon, dipakai DUA pintu sekaligus:
@@ -127,7 +127,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
       entity_type: "Kasbon",
       entity_id: kasbon.id,
       entity_name: kasbon.employee_name,
-      changes_summary: `Kasbon ${fmt(kasbon.amount)} disetujui`,
+      changes_summary: `Kasbon ${rupiah(kasbon.amount)} disetujui`,
     });
     qc.invalidateQueries({ queryKey: ["kasbons"] });
     toast.success("Kasbon disetujui");
@@ -166,7 +166,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
     e.preventDefault();
     const amt = Number(applyForm.amount);
     if (!amt || amt <= 0) { toast.error("Nominal kasbon harus diisi."); return; }
-    if (amt > MAX_KASBON) { toast.error(`Maksimal kasbon ${fmt(MAX_KASBON)}`); return; }
+    if (amt > MAX_KASBON) { toast.error(`Maksimal kasbon ${rupiah(MAX_KASBON)}`); return; }
     if (activeKasbon) { toast.error("Anda masih memiliki kasbon aktif yang belum lunas."); return; }
     setSavingApply(true);
     try {
@@ -186,7 +186,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
         action: "create",
         entity_type: "Kasbon",
         entity_name: user.full_name || user.email,
-        changes_summary: `Pengajuan kasbon ${fmt(amt)} (pending)`,
+        changes_summary: `Pengajuan kasbon ${rupiah(amt)} (pending)`,
       });
       qc.invalidateQueries({ queryKey: ["kasbons"] });
       toast.success("Pengajuan kasbon dikirim (menunggu persetujuan)");
@@ -254,7 +254,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Outstanding</p>
-              <p className="font-bold text-red-600">{fmt(stats.totalOutstanding)}</p>
+              <p className="font-bold text-red-600">{rupiah(stats.totalOutstanding)}</p>
             </div>
           </Card>
           <Card className="p-4 flex items-center gap-3">
@@ -263,7 +263,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Terbayar</p>
-              <p className="font-bold text-blue-600">{fmt(stats.totalPaid)}</p>
+              <p className="font-bold text-blue-600">{rupiah(stats.totalPaid)}</p>
             </div>
           </Card>
           <Card className="p-4 flex items-center gap-3">
@@ -284,7 +284,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
               <div>
                 <p className="text-xs text-muted-foreground">Sisa Kasbon Aktif</p>
                 <p className="text-xl font-heading font-bold text-primary">
-                  {activeKasbon ? fmt(mySisa) : "—"}
+                  {activeKasbon ? rupiah(mySisa) : "—"}
                 </p>
               </div>
             </div>
@@ -295,7 +295,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
               <div>
                 <p className="text-xs text-muted-foreground">Potongan/Periode</p>
                 <p className="text-xl font-heading font-bold text-amber-700">
-                  {activeKasbon ? fmt(activeKasbon.weekly_deduction) : "—"}
+                  {activeKasbon ? rupiah(activeKasbon.weekly_deduction) : "—"}
                 </p>
               </div>
             </div>
@@ -379,8 +379,8 @@ export default function PanelKasbon({ tanpaKepala = false }) {
           </DialogHeader>
           <form onSubmit={handleApplySubmit} className="space-y-4 mt-2">
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 space-y-1">
-              <p>• Maksimal kasbon: <strong>{fmt(MAX_KASBON)}</strong></p>
-              <p>• Dipotong: <strong>{fmt(WEEKLY_DEDUCTION)}/periode</strong> dari gaji</p>
+              <p>• Maksimal kasbon: <strong>{rupiah(MAX_KASBON)}</strong></p>
+              <p>• Dipotong: <strong>{rupiah(WEEKLY_DEDUCTION)}/periode</strong> dari gaji</p>
               <p>• Pengajuan Anda akan menunggu persetujuan admin</p>
             </div>
             <div className="space-y-1.5">
@@ -421,7 +421,7 @@ export default function PanelKasbon({ tanpaKepala = false }) {
           </DialogHeader>
           <div className="space-y-3 mt-2">
             <p className="text-sm text-muted-foreground">
-              Tolak pengajuan <strong>{rejectTarget?.employee_name}</strong> ({fmt(rejectTarget?.amount || 0)})?
+              Tolak pengajuan <strong>{rejectTarget?.employee_name}</strong> ({rupiah(rejectTarget?.amount || 0)})?
             </p>
             <div className="space-y-1.5">
               <Label>Alasan penolakan (wajib)</Label>

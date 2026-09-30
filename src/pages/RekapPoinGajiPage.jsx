@@ -25,8 +25,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LaporanGajiBulanan from "@/components/salary/LaporanGajiBulanan";
 import LaporanGajiHarian from "@/components/salary/LaporanGajiHarian";
 import LaporanBonusReward from "@/components/salary/LaporanBonusReward";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function RekapPoinGajiPage() {
   const { user, role } = useCurrentUser();
@@ -373,7 +373,7 @@ export default function RekapPoinGajiPage() {
         </Card>
         <Card className="p-4">
           <TrendingUp className="w-5 h-5 text-primary mb-1.5" />
-          <p className="text-lg font-bold text-primary">{fmt(totalGaji)}</p>
+          <p className="text-lg font-bold text-primary">{rupiah(totalGaji)}</p>
           <p className="text-xs text-muted-foreground">Total Gaji</p>
         </Card>
       </div>
@@ -385,7 +385,7 @@ export default function RekapPoinGajiPage() {
             <FileText className="w-4 h-4 text-primary" />
             Rekap per Karyawan — {format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: id })}
           </h2>
-          <p className="text-xs text-muted-foreground mt-1">Target minimum: {TARGET_POIN_SETTING} poin/bulan · Nilai: {fmt(NILAI_PER_POIN_SETTING)}/poin</p>
+          <p className="text-xs text-muted-foreground mt-1">Target minimum: {TARGET_POIN_SETTING} poin/bulan · Nilai: {rupiah(NILAI_PER_POIN_SETTING)}/poin</p>
         </div>
         <div className="divide-y">
           {rekapData.length === 0 ? (
@@ -412,7 +412,7 @@ export default function RekapPoinGajiPage() {
                 <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-2.5">
                   <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
                     {row.hariTanpaCatatan.length} hari tanpa catatan absensi — berpotensi
-                    kurang bayar {fmt(row.hariTanpaCatatan.length * (row.config?.base_salary || 0))}
+                    kurang bayar {rupiah(row.hariTanpaCatatan.length * (row.config?.base_salary || 0))}
                   </p>
                   <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-0.5 break-words">
                     {row.hariTanpaCatatan.join(", ")}
@@ -464,11 +464,11 @@ export default function RekapPoinGajiPage() {
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground mb-0.5">Bonus KPI</p>
                     <p className={`text-sm font-bold ${row.kpiBonus >= 0 ? "text-green-600" : "text-red-600"}`}>
-                      {row.kpiBonus >= 0 ? "+" : ""}{fmt(row.kpiBonus)}
+                      {row.kpiBonus >= 0 ? "+" : ""}{rupiah(row.kpiBonus)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {row.totalPoin}p × {fmt(row.pointValue)}
-                      {row.potonganPoin > 0 && ` − ${fmt(row.potonganPoin)}`}
+                      {row.totalPoin}p × {rupiah(row.pointValue)}
+                      {row.potonganPoin > 0 && ` − ${rupiah(row.potonganPoin)}`}
                     </p>
                     {row.poinMenungguBulan > 0 && (
                       <p className="text-[10px] text-amber-600">
@@ -480,23 +480,23 @@ export default function RekapPoinGajiPage() {
                   {/* Gaji Pokok */}
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground mb-0.5">Gaji Pokok</p>
-                    <p className="text-sm font-semibold">{fmt(row.effectiveBase)}</p>
-                    {row.overtimePay > 0 && <p className="text-[10px] text-blue-600">+{fmt(row.overtimePay)} lembur</p>}
+                    <p className="text-sm font-semibold">{rupiah(row.effectiveBase)}</p>
+                    {row.overtimePay > 0 && <p className="text-[10px] text-blue-600">+{rupiah(row.overtimePay)} lembur</p>}
                   </div>
 
                   {/* Potongan */}
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground mb-0.5">Potongan</p>
                     <p className="text-sm font-semibold text-red-600">
-                      -{fmt(row.deduction + row.kasbonDeduction)}
+                      -{rupiah(row.deduction + row.kasbonDeduction)}
                     </p>
-                    {row.kasbonDeduction > 0 && <p className="text-[10px] text-orange-600">kasbon: {fmt(row.kasbonDeduction)}</p>}
+                    {row.kasbonDeduction > 0 && <p className="text-[10px] text-orange-600">kasbon: {rupiah(row.kasbonDeduction)}</p>}
                   </div>
 
                   {/* Total Gaji */}
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground mb-0.5">Take Home</p>
-                    <p className="text-base font-bold text-primary">{fmt(row.netTotal)}</p>
+                    <p className="text-base font-bold text-primary">{rupiah(row.netTotal)}</p>
                   </div>
                 </div>
 

@@ -15,8 +15,8 @@ import RempesanRecordForm from "@/components/rempesan/RempesanRecordForm";
 import PageHeader from "@/components/common/PageHeader";
 import TripBelumDicatat from "@/components/rempesan/TripBelumDicatat";
 import { tripKembar, tarifTrip } from "@/lib/rempesan";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 const fmtKg = (n) => `${Number(n || 0).toLocaleString("id-ID")} kg`;
 
 export default function RempesanPage() {
@@ -201,7 +201,7 @@ export default function RempesanPage() {
                         Trip kembar di tanggal ini — tidak menambah upah, yang dibayar satu trip saja.
                       </p>
                     ) : (
-                      <p className="text-xs text-green-700 mt-0.5">Nilai trip: {fmt(log.trip_value || rate)}</p>
+                      <p className="text-xs text-green-700 mt-0.5">Nilai trip: {rupiah(log.trip_value || rate)}</p>
                     )
                   )}
                   {log.status === "rejected" && log.rejection_reason && (

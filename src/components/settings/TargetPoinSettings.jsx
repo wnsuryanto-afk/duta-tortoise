@@ -14,10 +14,8 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { nilaiPoinBentrok } from "@/lib/nilaiPoin";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(val) {
-  return "Rp " + Number(val || 0).toLocaleString("id-ID");
-}
 
 export default function TargetPoinSettings() {
   const settings = useCompanySettings();
@@ -57,7 +55,7 @@ export default function TargetPoinSettings() {
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5 text-green-600" /> Nilai per Poin
             </p>
-            <p className="text-lg font-bold mt-1 text-green-700">{formatRp(nilai)}</p>
+            <p className="text-lg font-bold mt-1 text-green-700">{rupiah(nilai)}</p>
           </div>
         </div>
 
@@ -78,12 +76,12 @@ export default function TargetPoinSettings() {
               Dua nilai poin yang berbeda tersimpan
             </div>
             <p>
-              Pengaturan umum memakai <strong>{formatRp(nilai)}</strong> per poin, tetapi
+              Pengaturan umum memakai <strong>{rupiah(nilai)}</strong> per poin, tetapi
               tarif per peran masih menyebut angka lain:{" "}
-              {bentrok.map((b) => `${b.role} ${formatRp(b.peran)}`).join(", ")}.
+              {bentrok.map((b) => `${b.role} ${rupiah(b.peran)}`).join(", ")}.
             </p>
             <p>
-              Yang dipakai sekarang adalah <strong>{formatRp(nilai)}</strong> — sama dengan yang
+              Yang dipakai sekarang adalah <strong>{rupiah(nilai)}</strong> — sama dengan yang
               dilihat kiper di ponselnya. Samakan tarif per peran di halaman Gaji supaya tidak ada
               angka yang tertinggal.
             </p>

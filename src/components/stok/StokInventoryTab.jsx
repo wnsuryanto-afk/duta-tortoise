@@ -24,8 +24,8 @@ import { potongBatchGudang } from "@/lib/pemakaianBarang";
 import IncompleteBadges, { isItemIncomplete } from "@/components/stock/IncompleteBadges";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import { toast } from "sonner";
+import { rupiah } from "@/lib/rupiah";
 
-function formatRp(v) { return "Rp " + Number(v || 0).toLocaleString("id-ID"); }
 
 // stockStatus lokal dihapus. Ambangnya sendiri (`< minimum * 1.5` untuk
 // "waspada") membuat barang yang sama berlencana Waspada di sini dan Aman di
@@ -245,7 +245,7 @@ function ItemDetailDialog({ item, onClose, onEdit, onUploadPhoto, canEdit }) {
         </div>
         <div className="bg-muted/40 rounded-lg p-3">
           <p className="text-xs text-muted-foreground">Harga</p>
-          <p className="font-semibold">{formatRp(price)}</p>
+          <p className="font-semibold">{rupiah(price)}</p>
         </div>
         <div className="bg-muted/40 rounded-lg p-3">
           <p className="text-xs text-muted-foreground">Lokasi</p>

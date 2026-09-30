@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Shell, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { angkaRibuan } from "@/lib/rupiah";
 
-function fmt(n) { return (n || 0).toLocaleString("id-ID"); }
 
 const speciesLabel = { sulcata:"Sulcata", red_foot:"Red Foot", leopard:"Leopard", aldabra:"Aldabra", russian:"Russian", lainnya:"Lainnya" };
 const morphLabel = { normal:"Normal", het_albino:"Het Albino", albino:"Albino", ivory:"Ivory", hypo:"Hypo", unknown:"Unknown" };
@@ -91,10 +91,10 @@ export default function TortoiseTerjualTab({ tortoises, isOwner }) {
                         👤 {sale.buyer_name}
                         {sale.buyer_city ? ` (${sale.buyer_city})` : ""}
                       </p>
-                      <p className="font-semibold text-primary">Rp {fmt(sale.price)}</p>
+                      <p className="font-semibold text-primary">Rp {angkaRibuan(sale.price)}</p>
                       {laba !== null && (
                         <p className={`font-medium ${laba >= 0 ? "text-green-600" : "text-red-600"}`}>
-                          Laba: Rp {fmt(laba)}{margin !== null ? ` (${margin}%)` : ""}
+                          Laba: Rp {angkaRibuan(laba)}{margin !== null ? ` (${margin}%)` : ""}
                         </p>
                       )}
                     </div>

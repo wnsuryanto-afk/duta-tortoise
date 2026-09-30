@@ -7,8 +7,8 @@ import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function PoinRiwayatPerubahan({ history }) {
   return (
@@ -25,7 +25,7 @@ export default function PoinRiwayatPerubahan({ history }) {
             <div key={h.id} className="flex items-center justify-between gap-3 p-2.5 rounded-lg border">
               <div className="min-w-0">
                 <p className="text-sm font-medium">
-                  {fmt(h.old_value)} → <span className="text-primary font-bold">{fmt(h.new_value)}</span>
+                  {rupiah(h.old_value)} → <span className="text-primary font-bold">{rupiah(h.new_value)}</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {h.changed_at ? format(new Date(h.changed_at), "d MMM yyyy HH:mm", { locale: idLocale }) : "—"} · oleh {h.changed_by_name || h.changed_by_email || "—"}

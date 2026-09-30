@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, LabelList, Cell,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { rupiah, rupiahSingkat } from "@/lib/rupiah";
 
 /**
  * GrafikUang — pemasukan vs pengeluaran per bulan.
@@ -20,14 +21,15 @@ import { cn } from "@/lib/utils";
  * dan bulan terakhir diberi label angkanya langsung.
  */
 
-const rpSingkat = (n) => {
-  const v = Math.abs(n || 0);
-  if (v >= 1e9) return `${(n / 1e9).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`;
-  if (v >= 1e6) return `${(n / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 })} jt`;
-  if (v >= 1e3) return `${Math.round(n / 1e3)} rb`;
-  return String(Math.round(n || 0));
-};
-const rpPenuh = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
+/*
+ * Bentuk angkanya datang dari lib/rupiah.js. Catatan di berkas itu menyebut
+ * salinan lokal di sini sebagai alasan ia dibuat — tetapi salinannya tidak
+ * pernah ikut dicabut, jadi selama ini sumbu grafik dan kartu di atasnya
+ * memang memakai dua aturan berbeda: yang ini menyebut Rp 18.000 sebagai
+ * "18 rb", yang di kartu menyebutnya "18.000".
+ */
+const rpSingkat = (n) => rupiahSingkat(n, { denganRp: false });
+const rpPenuh = rupiah;
 
 function Keterangan({ active, payload, label }) {
   if (!active || !payload?.length) return null;

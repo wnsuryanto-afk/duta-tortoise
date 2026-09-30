@@ -8,8 +8,8 @@ import { useCostPerTortoise } from "@/hooks/useCostPerTortoise";
 import GrafikUang from "@/components/ui/grafik-uang";
 import { hitungOmzet, omzetPerBulan, rentangTahun, bulanRugiBeruntun } from "@/lib/omzet";
 import { kueriUang } from "@/lib/kueriUang";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Math.round(n || 0).toLocaleString("id-ID")}`;
 
 /**
  * LabaRugiWidget — keuangan SETAHUN, dengan omzet sebagai angka utama.
@@ -85,13 +85,13 @@ export default function LabaRugiWidget() {
           Omzet tahun {tahun}
         </p>
         <p className="text-3xl font-extrabold text-green-900 dark:text-green-300 leading-tight mt-0.5 tabular-nums break-words">
-          {fmt(k.omzet)}
+          {rupiah(k.omzet)}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {k.omzet > 0
             ? `dari ${k.jumlahPenjualan} penjualan`
             : `belum ada penjualan sepanjang ${tahun}`}
-          {k.pemasukanLain > 0 && <> · pemasukan lain {fmt(k.pemasukanLain)}</>}
+          {k.pemasukanLain > 0 && <> · pemasukan lain {rupiah(k.pemasukanLain)}</>}
         </p>
       </div>
 
@@ -118,14 +118,14 @@ export default function LabaRugiWidget() {
           {rugiBeruntun.length === 1 ? (
             <>
               <span className="font-semibold">{rugiBeruntun[0].label}</span> rugi{" "}
-              {fmt(Math.abs(rugiBeruntun[0].laba))}
+              {rupiah(Math.abs(rugiBeruntun[0].laba))}
             </>
           ) : (
             <>
               <span className="font-semibold">
                 {rugiBeruntun.length} bulan terakhir rugi
               </span>{" "}
-              — {rugiBeruntun.map((b) => `${b.label} ${fmt(Math.abs(b.laba))}`).join(", ")}
+              — {rugiBeruntun.map((b) => `${b.label} ${rupiah(Math.abs(b.laba))}`).join(", ")}
             </>
           )}
         </p>
@@ -136,7 +136,7 @@ export default function LabaRugiWidget() {
         <div className="rounded-lg bg-white/70 dark:bg-card/70 border border-border px-3 py-2">
           <p className="text-[11px] text-muted-foreground">Pengeluaran {tahun}</p>
           <p className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums break-words leading-tight">
-            {fmt(k.pengeluaran)}
+            {rupiah(k.pengeluaran)}
           </p>
         </div>
         <div
@@ -165,7 +165,7 @@ export default function LabaRugiWidget() {
               untung ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
             }`}
           >
-            {fmt(Math.abs(k.laba))}
+            {rupiah(Math.abs(k.laba))}
           </p>
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function LabaRugiWidget() {
       <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="flex-shrink-0">Biaya per ekor bulan ini</span>
         <span className="font-semibold tabular-nums text-right">
-          {fmt(costData?.biayaPerEkor || 0)}
+          {rupiah(costData?.biayaPerEkor || 0)}
           {!costData?.isDataAktual && <span className="text-amber-500 ml-1">(estimasi)</span>}
         </span>
       </div>

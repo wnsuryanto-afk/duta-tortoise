@@ -29,8 +29,8 @@ import PoinKalkulator from "@/components/settings/poin/PoinKalkulator";
 import PoinGrafik from "@/components/settings/poin/PoinGrafik";
 import PoinTabelSimulasi from "@/components/settings/poin/PoinTabelSimulasi";
 import PoinRiwayatPerubahan from "@/components/settings/poin/PoinRiwayatPerubahan";
+import { rupiah } from "@/lib/rupiah";
 
-const fmt = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
 
 export default function PengaturanPoinPage() {
   const { user, role } = useCurrentUser();
@@ -185,7 +185,7 @@ export default function PengaturanPoinPage() {
       qc.invalidateQueries({ queryKey: ["company-settings-main-all"] });
       qc.invalidateQueries({ queryKey: ["nilai-poin-history"] });
       const jam = format(new Date(), "HH:mm");
-      toast.success(`Tersimpan. Nilai per poin sekarang ${fmt(n)} (${jam})`);
+      toast.success(`Tersimpan. Nilai per poin sekarang ${rupiah(n)} (${jam})`);
     } catch (e) {
       toast.error("Gagal menyimpan: " + (e?.message || "kesalahan"));
     }
