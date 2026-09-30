@@ -14,6 +14,9 @@ import InvestorDashboard from "@/components/dashboard/role/InvestorDashboard";
 import KeeperDashboard from "@/components/dashboard/KeeperDashboard";
 import OwnerDashboard from "@/components/dashboard/role/OwnerDashboard";
 import RekapPoinGajiPage from "@/pages/RekapPoinGajiPage";
+import SalarySlipPage from "@/pages/SalarySlipPage";
+import CatatanUpahTab from "@/components/salary/CatatanUpahTab";
+import KonfigurasiGajiTab from "@/components/salary/KonfigurasiGajiTab";
 import LaporanGajiBulanan from "@/components/salary/LaporanGajiBulanan";
 import LaporanGajiHarian from "@/components/salary/LaporanGajiHarian";
 import LaporanBonusReward from "@/components/salary/LaporanBonusReward";
@@ -91,6 +94,22 @@ export default [
   ["LaporanGajiBulanan tanpa data", <LaporanGajiBulanan />],
   ["LaporanGajiHarian tanpa data", <LaporanGajiHarian />],
   ["LaporanBonusReward tanpa data", <LaporanBonusReward />],
+
+  /*
+   * Dua tab yang pada 30-09-2026 pindah dari /payroll-gaji ke dalam modul
+   * gaji tunggal. Alasannya sama dengan ketiga laporan di atas: Radix Tabs
+   * hanya memasang tab yang aktif, jadi merender halaman induknya tidak
+   * membuktikan apa pun tentang keduanya.
+   *
+   * KonfigurasiGajiTab dirender dua kali dengan sengaja. `bolehUbah` salah
+   * adalah jalur yang dilihat peran tanpa hak — jalur yang paling jarang
+   * dibuka saat menguji dengan tangan, dan justru paling mudah rusak karena
+   * ia mengembalikan pohon JSX yang sama sekali berbeda.
+   */
+  ["CatatanUpahTab kosong", <CatatanUpahTab bulan="2026-09" karyawan={[]} users={[]} bolehCatat />],
+  ["KonfigurasiGajiTab boleh ubah", <KonfigurasiGajiTab bolehUbah />],
+  ["KonfigurasiGajiTab tanpa hak", <KonfigurasiGajiTab bolehUbah={false} />],
+  ["SalarySlipPage (Gaji Saya) tanpa data", <SalarySlipPage />],
 
   /* Dua halaman yang pada 30-09-2026 jadi tab di SOP & Tugas. Sama seperti
      ketiga laporan gaji di atas: Radix Tabs hanya memasang tab yang aktif. */

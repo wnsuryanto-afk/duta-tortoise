@@ -5,7 +5,18 @@ import { MemoryRouter } from "react-router-dom";
 import kasus from "../render/kasus.jsx";
 import "@/index.css";
 
-const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+/*
+ * Query DINYALAKAN di sini, berbeda dari harness renderToString.
+ *
+ * Dengan `enabled: false`, useCurrentUser() tidak pernah memuat siapa pun,
+ * sehingga setiap layar pengelolaan jatuh ke <AccessDenied /> dan yang
+ * terukur cuma kartu itu. Stub base44 tidak menyentuh jaringan dan menjawab
+ * daftar kosong seketika, jadi menyalakannya tidak membuat pengujian lambat
+ * maupun bergantung pada data sungguhan.
+ */
+const qc = new QueryClient({
+  defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 } },
+});
 
 function Satu({ el }) {
   return (

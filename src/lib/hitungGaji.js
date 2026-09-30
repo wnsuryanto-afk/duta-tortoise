@@ -42,7 +42,12 @@ import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
      karena itu bukan aturan gaji — hari libur memang tidak dibayar, hari
      pertama maupun hari kelima. Yang berubah cuma satu: hari libur sekarang
      PUNYA CATATAN, supaya hari tanpa catatan berarti absensi belum diisi.
-  2. Poin dibayar Rp 75 per poin (CompanySettings "main", sudah menyala).
+  2. Poin dibayar menurut CompanySettings "main" (nilai_per_poin). Angkanya
+     SENGAJA tidak ditulis di sini: baris ini pernah menyebut "Rp 75", dan
+     nilainya sudah lama Rp 50 — aturan tertulis dan aturan yang dijalankan
+     berselisih 50% tanpa ada yang tahu. Untuk 5.275 poin sebulan selisihnya
+     Rp 131.875, untuk satu orang. Satu-satunya angka yang benar adalah yang
+     ada di pengaturan; lihat nilaiPoin.js.
   3. Lembur Rp 10.000 per jam, dari catatan lembur manual.
   4. Kasbon dibatasi gaji yang sudah dijalani — lihat batasKasbon() di bawah.
   5. Trip ambil sayur/rumput Rp 30.000 sekali jalan. Sejak 19-09-2026 sumbernya
@@ -58,9 +63,19 @@ import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
      Iwan 03-09-2026 setelah diberi tahu konsekuensinya: memakai jatah libur
      menghanguskan bonus pekan itu.
 
-  Slip MINGGUAN adalah sistem lama dan masih hidup berdampingan
-  (period_type "weekly", otomatisasi A5 siapkanSlipMingguan). Selama keduanya
-  aktif, satu periode bisa dibayar dua kali.
+  Slip MINGGUAN SUDAH TIDAK ADA (30-09-2026). Berkas ini sempat memperingatkan
+  bahwa selama sistem mingguan dan bulanan hidup berdampingan, satu periode
+  bisa dibayar dua kali. Peringatan itu benar dan sekarang tidak berlaku lagi:
+  penerbit mingguannya — fungsi siapkanSlipMingguan beserta alur kerja A5 —
+  dihapus, dan layar penerbit slip sudah berhenti menawarkan mingguan sejak
+  D30. Slip mingguan LAMA tetap bisa dibuka dan dicetak; yang hilang hanya
+  kemampuan membuat yang baru.
+
+  Catatan: saklar `siapkan_slip_enabled` tidak pernah sekali pun menyala
+  (`siapkan_slip_terakhir` null), jadi tidak ada satu pun slip mingguan
+  otomatis yang pernah terbit. Tiga kolomnya sengaja DIBIARKAN di skema
+  AutomationSettings — mencabut kolom berarti menghapus datanya, dan tiga
+  kolom menganggur tidak merugikan siapa pun.
 */
 
 /** Peran yang dibayar harian; sisanya dibayar bulanan flat. */

@@ -95,15 +95,6 @@ const SEVERITIES = [
 
 const TRIGGER_SEVERITIES = ["sedang", "berat", "kritis"];
 
-// ── Poin flash animation ──────────────────────────────────────────────
-function PoinFlash({ poin }) {
-  return (
-    <span className="inline-block animate-bounce text-green-600 font-bold text-sm ml-1">
-      +{poin} poin!
-    </span>
-  );
-}
-
 // ── Widget wrapper ────────────────────────────────────────────────────
 function Widget({ children, done = false, className = "" }) {
   return (

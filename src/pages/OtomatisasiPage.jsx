@@ -193,17 +193,6 @@ const GRUP = [
     blurb: "Angka yang datang sendiri, keputusan tetap milik Anda.",
     items: [
       {
-        kode: "A5", fn: "siapkanSlipMingguan", saklar: "siapkan_slip_enabled",
-        nama: "Siapkan angka slip mingguan",
-        isi: "Hari hadir, poin, lembur, dan rempesan seluruh karyawan dihitung untuk minggu yang baru selesai, lalu dikirim ke WhatsApp Anda sebagai angka BRUTO.",
-        jadwal: "1× per hari",
-        jejak: "siapkan_slip_terakhir",
-        catatan: "Sengaja tidak menerbitkan slip: potongan kasbon adalah keputusan sadar milik Anda. Cocokkan dulu dengan satu periode yang dihitung manual sebelum dipercaya.",
-        params: [
-          { field: "siapkan_slip_hari", label: "Hari kirim (0=Minggu)", tipe: "number" },
-        ],
-      },
-      {
         kode: "A13", fn: "laporanBiayaBulanan", saklar: "laporan_biaya_enabled",
         nama: "Laporan biaya per ekor",
         isi: "Terbit tiap awal bulan lengkap dengan perbandingan bulan lalu — biaya per ekor baru berguna sebagai tren.",

@@ -4,8 +4,10 @@
  * Angka ini disimpan di DUA tempat, dan ketiga jalur yang memakainya sempat
  * mendahulukan tempat yang berbeda:
  *
- *   - hitungGaji.js (slip mingguan manual)  : SalaryConfig.point_value menang
+ *   - hitungGaji.js (penerbit slip)         : SalaryConfig.point_value menang
  *   - siapkanSlipMingguan (A5, otomatis)    : CompanySettings.nilai_per_poin menang
+ *                                             (fungsi ini dihapus 30-09-2026
+ *                                              bersama seluruh sistem mingguan)
  *   - BonusBulanIni (layar kiper)           : CompanySettings.nilai_per_poin saja
  *
  * Pada 30 Agustus 2026 kedua tempat itu berisi angka yang BERBEDA:

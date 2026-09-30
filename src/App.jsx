@@ -36,8 +36,6 @@ import SOPPage from '@/pages/SOPPage';
 import FinancePage from '@/pages/FinancePage';
 import InfoPage from '@/pages/InfoPage';
 import TreatmentPage from '@/pages/TreatmentPage';
-import KasbonPage from '@/pages/KasbonPage';
-import PayrollPage from '@/pages/PayrollPage';
 import HRPage from '@/pages/HRPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
@@ -115,8 +113,16 @@ const AuthenticatedApp = () => {
         <Route path="/info" element={<InfoPage />} />
         <Route path="/treatment" element={<TreatmentPage />} />
         <Route path="/feedback" element={<Navigate to="/kritik-saran" replace />} />
-        <Route path="/kasbon" element={<KasbonPage />} />
-        <Route path="/payroll-gaji" element={<PayrollPage />} />
+        {/*
+          Dua alamat lama dari sebelum modul gaji dilebur (30-09-2026).
+          Dibiarkan hidup sebagai pengalihan, bukan dihapus: keduanya sempat
+          jadi pintu menu berbulan-bulan, jadi ada yang menyimpannya sebagai
+          tautan dan ada yang mengetiknya dari ingatan. Halaman 404 untuk
+          alamat yang kemarin masih benar adalah cara paling cepat membuat
+          orang berhenti percaya pada menu.
+        */}
+        <Route path="/kasbon" element={<Navigate to="/salary-slip" replace />} />
+        <Route path="/payroll-gaji" element={<Navigate to="/rekap-poin-gaji?tab=catatan" replace />} />
         {/* Silsilah menyatu jadi tab di Daftar Kura 30-09-2026. Tabnya
             dijaga izin `family-tree` — tidak dimiliki kiper. */}
         <Route path="/family-tree" element={<Navigate to="/tortoise?tab=silsilah" replace />} />

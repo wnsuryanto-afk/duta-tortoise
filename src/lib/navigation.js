@@ -93,10 +93,21 @@ export const NAV_SECTIONS = [
       { path: "/hr",              section: "hr",            label: "Absensi & SDM",    icon: Users,         desc: "Kehadiran & data karyawan" },
       { path: "/approval-poin",   section: "approval-poin", label: "Approval Poin",    icon: ShieldAlert,   desc: "Setujui checklist & poin" },
       { path: "/temuan-foto",     section: "temuan-foto",   label: "Temuan dari Foto", icon: ScanSearch,    desc: "Hasil pemeriksaan AI" },
-      { path: "/salary-slip",     section: "salary-slip",   label: "Slip Gaji",        icon: FileText,      desc: "Cetak slip" },
-      { path: "/rekap-poin-gaji", section: "salary",        label: "Gaji",             icon: Calculator,    desc: "Hitung, terbitkan slip, laporan bulanan/harian, bonus" },
-      { path: "/kasbon",          section: "kasbon",        label: "Kasbon",           icon: Wallet,        desc: "Pinjaman karyawan" },
-      { path: "/payroll-gaji",    section: "payroll-gaji",  label: "Penggajian Karyawan", icon: Wallet,     desc: "Proses gaji, lembur, sayur, kasbon" },
+      /*
+       * DUA pintu gaji, turun dari empat pada 30-09-2026.
+       *
+       * "Gaji" milik pengelola: menghitung, menerbitkan, menyetujui kasbon,
+       * mencatat lembur & rempesan, membaca laporan, mengatur tarif.
+       * "Gaji Saya" milik semua orang termasuk keeper: slip dan kasbonnya
+       * sendiri.
+       *
+       * Pemisahnya bukan selera melainkan hak akses: section "salary-slip"
+       * dan "kasbon" memang dibuka keeper dan kepala_feeder, sedangkan
+       * "salary" tidak. Melebur keempatnya jadi satu pintu akan mengunci
+       * keeper dari slipnya sendiri.
+       */
+      { path: "/rekap-poin-gaji", section: "salary",        label: "Gaji",             icon: Calculator,    desc: "Terbitkan slip bulanan, kasbon, lembur, rempesan, laporan, tarif" },
+      { path: "/salary-slip",     section: "salary-slip",   label: "Gaji Saya",        icon: FileText,      desc: "Slip gaji & kasbon kamu" },
       { path: "/users",           section: "users",         label: "Manajemen User",   icon: UserCog,       desc: "Akun & hak akses" },
       { path: "/kritik-saran",    section: "kritik-saran",  label: "Kotak Masukan",    icon: MessageSquare, desc: "Kritik & saran tim — yang ditindaklanjuti dapat 10 poin bonus" },
       { path: "/activity-log",    section: "activity-log",  label: "Activity Log",     icon: Activity,      desc: "Jejak perubahan data" },

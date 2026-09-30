@@ -15,6 +15,8 @@ import SalarySlipDetail from "@/components/salary/SalarySlipDetail";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { formatWeekLabel, safeFormatDate, isMonthPeriod } from "@/lib/weeklySalaryUtils";
 import AlurGaji from "@/components/salary/AlurGaji";
+import PanelKasbon from "@/components/kasbon/PanelKasbon";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEmployeeUsers } from "@/hooks/useEmployeeUsers";
 import { ringkasUangSlip, rupaStatusSlip } from "@/lib/slipGaji";
 import PageHeader from "@/components/common/PageHeader";
@@ -106,11 +108,15 @@ export default function SalarySlipPage() {
           yang digaji, siklusnya, dan cara memakai layarnya. Yang ketiga tidak
           perlu ditulis — tombol "Lihat" sudah ada di tiap baris. */}
       <PageHeader
-        title="Slip Gaji Rutin"
+        title={isKeeperView ? "Gaji Saya" : "Slip Gaji"}
         // Layar ini memuat slip mingguan DAN bulanan sekaligus, jadi anak
         // kalimatnya tidak boleh mengaku salah satu. Versi cabang memakai
         // variabel `mode` yang tidak pernah ada di layar ini.
-        subtitle="Slip mingguan dan bulanan, termasuk bonus poin KPI"
+        subtitle={
+          isKeeperView
+            ? "Slip gaji dan kasbon kamu — dibayar tiap tanggal 1"
+            : "Slip bulanan (dan slip mingguan lama), termasuk bonus poin KPI"
+        }
         icon={Receipt}
         art={<WalletArt size="md" />}
         chips={[
@@ -125,6 +131,20 @@ export default function SalarySlipPage() {
         ]}
       />
 
+      {/*
+        Dua tab, bukan dua pintu menu. Sebelum 30-09-2026 slip dan kasbon
+        adalah dua pintu terpisah (/salary-slip dan /kasbon) yang sama-sama
+        dibuka keeper — padahal keduanya menjawab satu pertanyaan yang sama:
+        "bulan ini saya terima berapa". Kasbon mengurangi slip, jadi
+        membacanya di layar lain berarti menghitung sendiri di kepala.
+      */}
+      <Tabs defaultValue="slip" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-auto gap-1">
+          <TabsTrigger value="slip">Slip Gaji</TabsTrigger>
+          <TabsTrigger value="kasbon">Kasbon</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="slip" className="mt-4 space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="p-4 flex items-center gap-3">
@@ -307,6 +327,13 @@ export default function SalarySlipPage() {
               })}
             </div>
           )}
+
+        </TabsContent>
+
+        <TabsContent value="kasbon" className="mt-4">
+          <PanelKasbon tanpaKepala />
+        </TabsContent>
+      </Tabs>
 
       {/* Slip Detail Modal */}
       {selectedSlip && (

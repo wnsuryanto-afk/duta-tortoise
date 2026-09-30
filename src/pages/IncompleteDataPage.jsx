@@ -304,10 +304,10 @@ export default function IncompleteDataPage() {
               <DataTable 
                 items={kasbons} 
                 entityType="kasbon" 
-                editPath="/payroll-gaji" 
+                editPath="/rekap-poin-gaji?tab=kasbon" 
                 nameField="employee_name" 
                 filterIncomplete={filterIncomplete}
-                getEditUrl={(item) => `/payroll-gaji?edit=${item.id}`}
+                getEditUrl={(item) => `/rekap-poin-gaji?tab=kasbon&edit=${item.id}`}
               />
             </CardContent>
           </Card>

@@ -11,7 +11,7 @@
  */
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Home, Salad, HeartPulse, BookOpen, FileText, Wallet, X, Star, User, LogOut, ArrowLeft } from "lucide-react";
+import { Home, Salad, HeartPulse, BookOpen, Wallet, X, Star, User, LogOut, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import GuidedHariIni from "./GuidedHariIni";
@@ -25,8 +25,11 @@ const NAV_ITEMS = [
   { id: "pakan",   label: "Pakan",     icon: Salad,      to: "/pakan-harian" },
   { id: "sakit",   label: "Lapor",     icon: HeartPulse, action: "sakit" },
   { id: "panduan", label: "Panduan",   icon: BookOpen,   to: "/panduan-penyakit" },
-  { id: "slip",    label: "Slip Gaji", icon: FileText,   to: "/salary-slip" },
-  { id: "kasbon",  label: "Kasbon",    icon: Wallet,     to: "/kasbon" },
+  // Slip dan kasbon dulu dua tujuan terpisah di bilah ini. Keduanya
+  // menjawab satu pertanyaan yang sama — "bulan ini saya terima berapa" —
+  // dan kasbon mengurangi slip, jadi membacanya di layar lain berarti
+  // kiper menghitung sendiri di kepala. Sekarang satu tujuan, dua tab.
+  { id: "gaji",    label: "Gaji Saya", icon: Wallet,     to: "/salary-slip" },
 ];
 
 import { useDailyCareTasks } from "@/lib/useDailyCareTasks";

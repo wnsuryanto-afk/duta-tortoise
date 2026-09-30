@@ -248,7 +248,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
               {kasbons.length > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-amber-800">• {kasbons.length} kasbon pending</span>
-                  <Link to="/kasbon" className="text-xs font-medium text-amber-700 underline">Review</Link>
+                  <Link to="/rekap-poin-gaji?tab=kasbon" className="text-xs font-medium text-amber-700 underline">Review</Link>
                 </div>
               )}
             </div>

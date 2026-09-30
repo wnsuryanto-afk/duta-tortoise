@@ -34,10 +34,10 @@ const TAHAP = [
   },
   {
     id: "masukan",
-    path: "/payroll-gaji",
-    label: "Lembur, sayur, kasbon",
+    path: "/rekap-poin-gaji?tab=catatan",
+    label: "Lembur, rempesan, kasbon",
     urut: 2,
-    jelas: "Masukan di luar poin: jam lembur, trip sayur, dan potongan kasbon.",
+    jelas: "Masukan di luar poin: jam lembur, trip rempesan, dan potongan kasbon.",
   },
   {
     id: "hitung",

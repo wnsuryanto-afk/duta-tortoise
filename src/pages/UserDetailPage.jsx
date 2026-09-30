@@ -195,11 +195,6 @@ function InfoRow({ label, value, href, clickable }) {
 }
 
 // ── Stat Card ─────────────────────────────────────────────────────────
-// ── Skeleton ─────────────────────────────────────────────────────────
-function Skeleton({ className }) {
-  return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
-}
-
 // ══════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════

@@ -26,6 +26,9 @@ import LaporanGajiBulanan from "@/components/salary/LaporanGajiBulanan";
 import LaporanGajiHarian from "@/components/salary/LaporanGajiHarian";
 import LaporanBonusReward from "@/components/salary/LaporanBonusReward";
 import { rupiah } from "@/lib/rupiah";
+import PanelKasbon from "@/components/kasbon/PanelKasbon";
+import CatatanUpahTab from "@/components/salary/CatatanUpahTab";
+import KonfigurasiGajiTab from "@/components/salary/KonfigurasiGajiTab";
 
 
 export default function RekapPoinGajiPage() {
@@ -34,8 +37,33 @@ export default function RekapPoinGajiPage() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
   const [generating, setGenerating] = useState(null);
   const [viewSlip, setViewSlip] = useState(null);
+  const [laporan, setLaporan] = useState("bulanan");
+  // Sama dengan syarat lama di /payroll-gaji untuk tab Konfigurasi & Lembur.
+  const bolehKelola = ["owner", "admin", "manajer"].includes(role);
   const [searchParams, setSearchParams] = useSearchParams();
-  const TAB_SAH = ["terbitkan", "bulanan", "harian", "bonus"];
+  /*
+   * Lima tab, urut mengikuti alur kerja sebulan: yang DICATAT sepanjang
+   * bulan dulu, baru yang DITERBITKAN di akhir, lalu yang DIBACA.
+   *
+   * Sebelum 30-09-2026 isinya tersebar di dua halaman dengan sembilan tab:
+   * /payroll-gaji ("Penggajian Karyawan": Rekap Gaji, Kasbon, Konfigurasi,
+   * Log Lembur, Log Sayur) dan /rekap-poin-gaji ("Gaji": Terbitkan, Laporan
+   * Bulanan, Gaji Harian, Bonus). Dua halaman bernama sama-sama "gaji",
+   * dan yang bernama "Penggajian Karyawan" justru tidak pernah menerbitkan
+   * satu slip pun — ia hanya menampilkan, dengan baris untuk admin dan
+   * manajer yang tidak akan pernah menerima slip dari aplikasi ini.
+   *
+   * Tiga laporan dijadikan SATU tab dengan pemilih di dalamnya, bukan tiga
+   * tab sendiri-sendiri: ketiganya dibaca, bukan dikerjakan, dan tujuh tab
+   * di layar 360px tidak terbaca lagi sebagai pilihan.
+   */
+  const LAPORAN = [
+    { kunci: "bulanan", label: "Laporan Bulanan" },
+    { kunci: "harian", label: "Gaji Harian" },
+    { kunci: "bonus", label: "Bonus & Reward" },
+  ];
+
+  const TAB_SAH = ["terbitkan", "kasbon", "catatan", "laporan", "pengaturan"];
   const tabDariUrl = searchParams.get("tab");
   const activeTab = TAB_SAH.includes(tabDariUrl) ? tabDariUrl : "terbitkan";
   const setActiveTab = (nilai) => {
@@ -322,11 +350,12 @@ export default function RekapPoinGajiPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* `h-auto` diperlukan karena tinggi bawaan TabsList memotong label
             yang membungkus ke dua baris di layar ponsel. */}
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1">
-          <TabsTrigger value="terbitkan">Terbitkan Slip</TabsTrigger>
-          <TabsTrigger value="bulanan">Laporan Bulanan</TabsTrigger>
-          <TabsTrigger value="harian">Gaji Harian</TabsTrigger>
-          <TabsTrigger value="bonus">Bonus &amp; Reward</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto gap-1">
+          <TabsTrigger value="terbitkan">Terbitkan</TabsTrigger>
+          <TabsTrigger value="kasbon">Kasbon</TabsTrigger>
+          <TabsTrigger value="catatan">Catatan</TabsTrigger>
+          <TabsTrigger value="laporan">Laporan</TabsTrigger>
+          <TabsTrigger value="pengaturan">Pengaturan</TabsTrigger>
         </TabsList>
 
         <TabsContent value="terbitkan" className="space-y-6">
@@ -543,16 +572,39 @@ export default function RekapPoinGajiPage() {
       </Card>
         </TabsContent>
 
-        <TabsContent value="bulanan" className="mt-4">
-          <LaporanGajiBulanan />
+        <TabsContent value="kasbon" className="mt-4">
+          <PanelKasbon tanpaKepala />
         </TabsContent>
 
-        <TabsContent value="harian" className="mt-4">
-          <LaporanGajiHarian />
+        <TabsContent value="catatan" className="mt-4">
+          <CatatanUpahTab
+            bulan={selectedMonth}
+            karyawan={employees}
+            users={users}
+            bolehCatat={bolehKelola}
+          />
         </TabsContent>
 
-        <TabsContent value="bonus" className="mt-4">
-          <LaporanBonusReward />
+        <TabsContent value="laporan" className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {LAPORAN.map((l) => (
+              <Button
+                key={l.kunci}
+                size="sm"
+                variant={laporan === l.kunci ? "default" : "outline"}
+                onClick={() => setLaporan(l.kunci)}
+              >
+                {l.label}
+              </Button>
+            ))}
+          </div>
+          {laporan === "bulanan" && <LaporanGajiBulanan />}
+          {laporan === "harian" && <LaporanGajiHarian />}
+          {laporan === "bonus" && <LaporanBonusReward />}
+        </TabsContent>
+
+        <TabsContent value="pengaturan" className="mt-4">
+          <KonfigurasiGajiTab bolehUbah={bolehKelola} />
         </TabsContent>
       </Tabs>
     </div>
