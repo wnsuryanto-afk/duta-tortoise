@@ -273,7 +273,7 @@ export default function VetContactPage() {
           <Input placeholder="Cari dokter atau klinik..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         <Select value={areaFilter} onValueChange={setAreaFilter}>
-          <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Semua Wilayah" /></SelectTrigger>
+          <SelectTrigger className="w-auto min-w-[7rem] h-9 text-xs"><SelectValue placeholder="Semua Wilayah" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="semua">Semua Wilayah</SelectItem>
             {Object.entries(AREA_LABELS).map(([k, v]) => (
@@ -282,7 +282,7 @@ export default function VetContactPage() {
           </SelectContent>
         </Select>
         <Select value={specFilter} onValueChange={setSpecFilter}>
-          <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Spesialisasi" /></SelectTrigger>
+          <SelectTrigger className="w-auto min-w-[7rem] h-9 text-xs"><SelectValue placeholder="Spesialisasi" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="semua">Semua Spesialisasi</SelectItem>
             {/* Hanya spesialisasi yang benar-benar ada pada daftar dokter yang

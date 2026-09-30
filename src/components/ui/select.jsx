@@ -16,13 +16,24 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      // `[&>span]:truncate`, BUKAN `line-clamp-1`. Bedanya terlihat di HP:
+      // line-clamp memasang elipsisnya pada BARIS, sedangkan pemicunya di
+      // sini `whitespace-nowrap` — teksnya tidak pernah pindah baris, jadi
+      // elipsisnya tidak pernah muncul dan tulisannya dipotong keras di
+      // tengah huruf. Pada layar 360px "Semua Spesialisasi" (115px) di
+      // dalam kotak 104px terbaca "Semua Spesialisas", tanpa satu pun
+      // tanda bahwa ada yang hilang.
+      //
+      // `min-w-0` diperlukan supaya span boleh menyusut di dalam induk
+      // flex — tanpa itu lebar minimumnya mengikuti isi dan pemotongannya
+      // pindah ke tempat lain. `shrink-0` menjaga panah tidak ikut gepeng.
+      "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate [&>span]:min-w-0",
       className
     )}
     {...props}>
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))

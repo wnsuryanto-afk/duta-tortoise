@@ -112,7 +112,7 @@ export default function BahanTerpakaiEditor({ nilai, onChange, stokPakan = [], b
       )}
 
       <div className="flex flex-wrap items-end gap-2">
-        <div className="w-28">
+        <div className="w-32">
           <label className="text-[11px] text-muted-foreground mb-1 block">Sumber</label>
           <Select value={sumber} onValueChange={(v) => { setSumber(v); setSku(""); }}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>

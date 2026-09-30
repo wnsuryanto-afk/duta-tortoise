@@ -466,7 +466,7 @@ export default function TortoiseList() {
               </SelectContent>
             </Select>
             <Select value={genderFilter} onValueChange={setGenderFilter}>
-              <SelectTrigger className="w-32 h-9 text-xs"><SelectValue placeholder="Gender" /></SelectTrigger>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Gender" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua Gender</SelectItem>
                 <SelectItem value="jantan">♂ Jantan</SelectItem>
@@ -502,7 +502,7 @@ export default function TortoiseList() {
               </SelectContent>
             </Select>
             <Select value={shellTypeFilter} onValueChange={setShellTypeFilter}>
-              <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="Tempurung" /></SelectTrigger>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Tempurung" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="semua">Semua Tempurung</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
