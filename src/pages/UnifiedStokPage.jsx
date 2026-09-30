@@ -8,14 +8,13 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Package, ArrowUpDown, HandCoins, FlaskConical, TrendingDown, LayoutDashboard } from "lucide-react";
+import { AlertTriangle, Package, ArrowUpDown, FlaskConical, TrendingDown, LayoutDashboard } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import KartuAngka from "@/components/ui/kartu-angka";
 import StokInventoryTab from "@/components/stok/StokInventoryTab";
 import StokPergerakanTab from "@/components/stok/StokPergerakanTab";
-import StokPeminjamanTab from "@/components/stok/StokPeminjamanTab";
 import StokResepTab from "@/components/stok/StokResepTab";
 // Sisi "barang keluar" yang selama ini kosong. Ditaruh di kepala halaman,
 // bukan di dalam tab, karena inilah satu-satunya hal yang dilakukan feeder di
@@ -55,14 +54,6 @@ export default function UnifiedStokPage() {
     queryKey: ["stock-movements"],
     queryFn: () => base44.entities.StockMovement.list("-date", 500),
   });
-  // Satu daftar peminjaman untuk seluruh aplikasi (15-09-2026). Sebelumnya tab
-  // ini membaca ItemBorrow sementara halaman Alat Kerja memakai ToolLoan, jadi
-  // barang yang dicatat di sini tidak pernah terlihat di dashboard maupun masuk
-  // Daftar Belanja saat hilang.
-  const { data: borrows = [] } = useQuery({
-    queryKey: ["tool-loans"],
-    queryFn: () => base44.entities.ToolLoan.list("-loan_date", 200),
-  });
 
   if (!canAccess(role, "stock-gudang") && !canAccess(role, "warehouse") && !canAccess(role, "feed-stock")) {
     return <AccessDenied />;
@@ -88,8 +79,6 @@ export default function UnifiedStokPage() {
   const todayMovements = movements.filter(m => m.date === todayStr);
   const todayMasuk = todayMovements.filter(m => m.type === "masuk").reduce((s, m) => s + (m.quantity || 0), 0);
   const todayKeluar = todayMovements.filter(m => m.type === "keluar").reduce((s, m) => s + (m.quantity || 0), 0);
-
-  const lostOrDamaged = borrows.filter(b => b.return_condition === "hilang" || b.return_condition === "rusak").length;
 
   return (
     <div className="space-y-5 p-4 sm:p-6">
@@ -180,9 +169,6 @@ export default function UnifiedStokPage() {
           <TabsTrigger value="pergerakan" className="gap-1.5">
             <ArrowUpDown className="w-3.5 h-3.5" /> Pergerakan Stok
           </TabsTrigger>
-          <TabsTrigger value="peminjaman" className="gap-1.5">
-            <HandCoins className="w-3.5 h-3.5" /> Peminjaman
-          </TabsTrigger>
           <TabsTrigger value="resep" className="gap-1.5">
             <FlaskConical className="w-3.5 h-3.5" /> Resep & Produksi
           </TabsTrigger>
@@ -197,9 +183,20 @@ export default function UnifiedStokPage() {
         <TabsContent value="pergerakan" className="mt-4">
           <StokPergerakanTab movements={movements} feedstocks={feedstocks} warehouseItems={warehouseItems} batches={batchSemua} role={role} />
         </TabsContent>
-        <TabsContent value="peminjaman" className="mt-4">
-          <StokPeminjamanTab borrows={borrows} warehouseItems={warehouseItems} feedstocks={feedstocks} role={role} />
-        </TabsContent>
+        {/*
+          Tab "Peminjaman" DIBUANG pada 30-09-2026.
+
+          Ia layar peminjaman KEDUA di atas tabel ToolLoan yang sama dengan
+          halaman Alat Kerja — dua pintu, satu fungsi, dan keduanya masih
+          nol baris. Yang dipertahankan halaman Alat Kerja, karena kiper
+          punya hak "alat-kerja" tetapi tidak punya "stock-gudang": tab ini
+          tidak pernah bisa mereka buka, halaman itu bisa.
+
+          Sebelum tab ini dibuang, pemilih barang di halaman Alat Kerja
+          dilebarkan dari "hanya kategori alat_kerja" menjadi seluruh barang
+          gudang, supaya tidak ada yang bisa dipinjam lewat tab ini tapi
+          tidak lewat sana.
+        */}
         <TabsContent value="resep" className="mt-4">
           <StokResepTab role={role} />
         </TabsContent>

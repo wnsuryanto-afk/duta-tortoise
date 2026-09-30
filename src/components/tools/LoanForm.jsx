@@ -15,9 +15,24 @@ export default function LoanForm({ user, onClose, onSaved }) {
   const [purpose, setPurpose] = useState("");
   const [saving, setSaving] = useState(false);
 
+  /*
+   * SELURUH barang gudang, bukan hanya yang berkategori "alat_kerja".
+   *
+   * Sampai 30-09-2026 ada DUA layar peminjaman di atas tabel ToolLoan yang
+   * sama: halaman Alat Kerja ini, dan tab "Peminjaman" di Stok & Gudang.
+   * Tab itu menawarkan semua barang gudang; halaman ini hanya kategori
+   * alat_kerja. Jadi menghapus tab yang kembar akan MEMPERSEMPIT apa yang
+   * bisa dipinjam — sebuah penyederhanaan yang diam-diam memakan fungsi.
+   *
+   * Dilebarkan lebih dulu, baru tabnya dibuang. Urutannya penting.
+   *
+   * Yang dipertahankan halaman ini, bukan tabnya, karena hak aksesnya:
+   * kiper punya "alat-kerja" tetapi TIDAK punya "stock-gudang" — bagi
+   * mereka inilah satu-satunya jalan meminjam dan mengembalikan alat.
+   */
   const { data: tools = [] } = useQuery({
-    queryKey: ["warehouse-alat-kerja"],
-    queryFn: () => base44.entities.WarehouseItem.filter({ category: "alat_kerja" }),
+    queryKey: ["warehouse-untuk-pinjam"],
+    queryFn: () => base44.entities.WarehouseItem.list("name", 500),
     staleTime: 2 * 60 * 1000,
   });
 
