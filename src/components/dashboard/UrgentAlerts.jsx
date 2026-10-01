@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { hitungIsiKandang } from "@/lib/kandang";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertTriangle, AlertCircle, Egg, Package, Home, FileWarning } from "lucide-react";
+import { AlertTriangle, AlertCircle, Egg, Package, Home, FileWarning, FlaskConical } from "lucide-react";
 import { formatDateIndonesian } from "@/lib/formatIndonesian";
-import { golonganStok, akanKadaluarsa, sudahKadaluarsa, dilacak } from "@/lib/stokMenipis";
+import { golonganStok, akanKadaluarsa, sudahKadaluarsa, dilacak, idBarangRacikan } from "@/lib/stokMenipis";
 
 export default function UrgentAlerts() {
   // Telur dalam masa penetasan
@@ -66,7 +66,23 @@ export default function UrgentAlerts() {
    * pemeriksaan stok harian di server, supaya beranda dan notifikasi pagi
    * tidak pernah menyebut angka yang berbeda untuk keadaan yang sama.
    */
-  const { habis, menipis, wajibTanpaMinimum } = golonganStok(warehouseItems);
+  /*
+   * Resep diambil untuk tahu barang mana yang DIRACIK, bukan dibeli.
+   *
+   * RACIKAN Duta Repro (VIT-REP00) wajib-ada, minimum 3.000 g, stok 0 — jadi
+   * ia lolos ke `perluDibeli` dan kartu ini menyuruh membeli barang yang tidak
+   * dijual di mana pun. Aturannya sudah ada sejak 01-10-2026 tetapi hanya di
+   * kartu Keputusan Hari Ini; kartu ini melewatinya.
+   */
+  const { data: resepRacikan = [] } = useQuery({
+    queryKey: ["resep-alerts"],
+    queryFn: () => base44.entities.PelletRecipe.list("name", 100),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { habis, menipis, wajibTanpaMinimum, perluDiracik } = golonganStok(
+    warehouseItems,
+    idBarangRacikan(resepRacikan),
+  );
   const perluDibeli = [...habis, ...menipis];
 
   // Kandang overcrowding
@@ -101,7 +117,15 @@ export default function UrgentAlerts() {
     return !t.birth_date || !t.weight_grams || !t.shell_length_cm || !t.gender;
   });
 
-  const hasAlerts = hatchingSoon.length > 0 || expiredMeds.length > 0 || perluDibeli.length > 0 || overcrowded.length > 0 || incomplete.length > 0;
+  /*
+   * `perluDiracik` IKUT dihitung sebagai alert — 02-10-2026.
+   *
+   * Tanpa baris ini, mengeluarkan barang racikan dari `perluDibeli` akan
+   * menukar satu cacat dengan cacat yang lebih buruk: racikan yang kosong
+   * berhenti disebut salah, lalu berhenti disebut sama sekali, dan kartu ini
+   * berkata "Semua dalam kondisi baik" padahal racikan wajib-ada berstok nol.
+   */
+  const hasAlerts = hatchingSoon.length > 0 || expiredMeds.length > 0 || perluDibeli.length > 0 || perluDiracik.length > 0 || overcrowded.length > 0 || incomplete.length > 0;
 
   if (!hasAlerts) {
     return (
@@ -179,6 +203,26 @@ export default function UrgentAlerts() {
                   +{wajibTanpaMinimum.length} wajib-ada tanpa batas minimum
                 </p>
               )}
+            </div>
+          )}
+
+          {perluDiracik.length > 0 && (
+            <div className="bg-sky-50 border border-sky-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <FlaskConical className="w-4 h-4 text-sky-600" />
+                <span className="font-semibold text-sky-800 text-sm">Perlu Diracik</span>
+              </div>
+              <p className="text-xs text-sky-700">
+                {perluDiracik.length} barang hasil resep berstok rendah — tidak bisa dibeli
+              </p>
+              {perluDiracik.slice(0, 2).map((item, i) => (
+                <p key={i} className="text-xs text-sky-600 mt-1">
+                  {item.name}: {item.current_stock ?? 0} {item.unit || ""}
+                </p>
+              ))}
+              <p className="text-xs text-sky-600/80 mt-1 italic">
+                Racik di Stok &amp; Gudang → tab Resep. Yang dibeli adalah bahannya.
+              </p>
             </div>
           )}
 

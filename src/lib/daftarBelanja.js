@@ -239,17 +239,15 @@ export function cocokkanBarisBelanja(daftar = [], itemPesanan = {}, barangGudang
  * @param {Array} resep daftar PelletRecipe
  * @returns {Set<string>} id WarehouseItem yang merupakan hasil racikan
  */
-export function idBarangRacikan(resep = []) {
-  const s = new Set();
-  for (const r of resep || []) {
-    const id = r?.output_item_id;
-    if (id) s.add(String(id));
-  }
-  return s;
-}
-
-/** Benar bila barang ini diracik sendiri, jadi tidak untuk dibeli. */
-export function diracikSendiri(barang, idRacikan) {
-  if (!barang || !idRacikan || idRacikan.size === 0) return false;
-  return idRacikan.has(String(barang.id));
-}
+/*
+ * DIPINDAHKAN 02-10-2026 ke lib/stokMenipis.js, dan diteruskan dari sini.
+ *
+ * Aturan ini dipakai golonganStok() untuk memisahkan golongan `perluDiracik`,
+ * jadi ia harus tinggal serumah dengan golonganStok — kalau tidak, sisi
+ * backend-nya (base44/shared/stok.ts) perlu mengimpor kembaran berkas ini
+ * hanya demi dua fungsi kecil.
+ *
+ * Diteruskan, bukan dihapus: KeputusanHariIni.jsx dan cek-ronda.mjs
+ * mengimpornya dari sini sejak 01-10-2026.
+ */
+export { idBarangRacikan, diracikSendiri } from "./stokMenipis";

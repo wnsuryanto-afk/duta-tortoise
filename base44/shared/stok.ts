@@ -89,6 +89,33 @@ export function stokPerluDiperhatikan(barangGudang: any[] = [], pakan: any[] = [
 }
 
 /**
+ * Barang yang DIRACIK SENDIRI, jadi tidak pernah untuk dibeli.
+ *
+ * Kembaran: src/lib/stokMenipis.js. Lihat keterangan panjang di sana.
+ *
+ * Singkatnya: RACIKAN Duta Repro (VIT-REP00) adalah hasil resep dari lima
+ * bahan, bukan barang yang bisa dipesan. Ia bertanda wajib-ada dengan minimum
+ * 3.000 g dan stoknya nol, jadi setiap saringan "di bawah minimum"
+ * menangkapnya dan menyebutnya perlu dibeli. Pemiliknya sudah membatalkan
+ * baris belanjanya dua kali; keterangan menunggu dibaca, yang memasukkannya
+ * kembali adalah kode.
+ */
+export function idBarangRacikan(resep: any[] = []): Set<string> {
+  const s = new Set<string>();
+  for (const r of resep || []) {
+    const id = r?.output_item_id;
+    if (id) s.add(String(id));
+  }
+  return s;
+}
+
+/** Benar bila barang ini diracik sendiri, jadi tidak untuk dibeli. */
+export function diracikSendiri(barang: any, idRacikan: Set<string> | null): boolean {
+  if (!barang || !idRacikan || idRacikan.size === 0) return false;
+  return idRacikan.has(String(barang.id));
+}
+
+/**
  * Tiga golongan, bukan satu daftar panjang.
  *
  * "Perlu diperhatikan" mencampur dua keadaan yang jawabannya sangat berbeda:
@@ -104,14 +131,29 @@ export function stokPerluDiperhatikan(barangGudang: any[] = [], pakan: any[] = [
  * diperbaiki), angka 23 yang sama muncul di sana dengan label "di bawah
  * minimum" — padahal delapan di antaranya tidak punya minimum sama sekali.
  * Satu definisi, dipakai dua-duanya.
+ *
+ * GOLONGAN KEEMPAT, ditambahkan 02-10-2026: `perluDiracik`.
+ *
+ * Barang hasil resep tidak bisa dibeli, hanya diracik. Sebelum ini aturannya
+ * hanya ada di SATU dari empat tempat yang membaca "di bawah minimum" —
+ * kartu Keputusan Hari Ini di beranda. Tiga sisanya (peringatan gawat di
+ * beranda, pemeriksaan stok harian ini, dan daftar belanja otomatis) tetap
+ * menyebut RACIKAN Duta Repro sebagai barang yang perlu DIBELI.
+ *
+ * Golongan ini didahulukan: barang racikan TIDAK ikut masuk habis/menipis/
+ * wajibTanpaMinimum, supaya angka "perlu dibeli" benar-benar hanya berisi
+ * yang bisa dibeli.
  */
-export function golonganStok(daftar: any[] = []): { habis: any[]; menipis: any[]; wajibTanpaMinimum: any[] } {
+export function golonganStok(daftar: any[] = [], idRacikan: Set<string> | null = null): { habis: any[]; menipis: any[]; wajibTanpaMinimum: any[]; perluDiracik: any[] } {
   const perlu = (daftar || []).filter(perluDiperhatikan);
   const punyaMinimum = (i: any) => angka(i?.minimum_stock) > 0;
+  const diracik = (i: any) => diracikSendiri(i, idRacikan);
+  const dibeli = perlu.filter((i: any) => !diracik(i));
   return {
-    habis: perlu.filter((i: any) => stokHabis(i) && punyaMinimum(i)),
-    menipis: perlu.filter((i: any) => !stokHabis(i)),
-    wajibTanpaMinimum: perlu.filter((i: any) => stokHabis(i) && !punyaMinimum(i)),
+    habis: dibeli.filter((i: any) => stokHabis(i) && punyaMinimum(i)),
+    menipis: dibeli.filter((i: any) => !stokHabis(i)),
+    wajibTanpaMinimum: dibeli.filter((i: any) => stokHabis(i) && !punyaMinimum(i)),
+    perluDiracik: perlu.filter(diracik),
   };
 }
 

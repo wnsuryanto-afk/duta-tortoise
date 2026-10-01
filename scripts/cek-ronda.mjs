@@ -54,11 +54,13 @@ bundel("src/lib/versiAplikasi.js", "versi.cjs");
 bundel("src/lib/jadwalPerawatan.js", "jadwal.cjs");
 bundel("src/lib/daftarBelanja.js", "belanja.cjs");
 bundel("src/lib/resepRacikan.js", "resep.cjs");
+bundel("src/lib/stokMenipis.js", "stok.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
 const R = await import("file://" + join(dir, "resep.cjs")).then((m) => m.default || m);
+const S = await import("file://" + join(dir, "stok.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -278,6 +280,57 @@ if (!(d3Salah > 17 && d3Salah < 19)) {
   temuan.push(`periksaResep: salah ketik D3 10x seharusnya terlihat sebagai ~17,8 mg per dosis, terbaca ${d3Salah.toFixed(2)} mg`);
 }
 
+/* ── 6. Golongan stok: yang diracik tidak pernah "perlu dibeli" ────── */
+
+/*
+ * Empat tempat membaca "di bawah minimum", dan sampai 02-10-2026 hanya SATU
+ * yang tahu bahwa barang hasil resep tidak bisa dibeli: kartu Keputusan Hari
+ * Ini. Tiga sisanya — peringatan gawat di beranda, pemeriksaan stok harian di
+ * server, dan daftar belanja otomatis — menyebut RACIKAN Duta Repro sebagai
+ * barang yang perlu DIBELI. Pemiliknya sudah membatalkan baris belanjanya dua
+ * kali dengan keterangan yang menjelaskan hal itu.
+ *
+ * Aturannya sekarang hidup di golonganStok(), yang dipakai ketiga-tiganya.
+ *
+ * Yang diuji di sini tiga hal, dan yang ketiga yang paling penting:
+ *   1. barang jadi masuk `perluDiracik`, dan TIDAK ikut `habis`;
+ *   2. BAHANNYA tetap masuk `habis` — kalau bahan ikut dikecualikan,
+ *      racikannya tidak akan pernah bisa dibuat lagi;
+ *   3. tanpa daftar resep, barang jadi itu JATUH KEMBALI ke `habis` — bukti
+ *      bahwa yang memindahkannya adalah data resep, bukan pencocokan nama.
+ */
+const RACIKAN_JADI = "6a50c9c9d70aed0d5b585621";
+const stokUji = [
+  { id: RACIKAN_JADI, name: "RACIKAN Duta Repro v5", current_stock: 0, minimum_stock: 3000, is_mandatory: true },
+  { id: "6a50c9c9d70aed0d5b585615", name: "Vitamin E 50% (bahan)", current_stock: 0, minimum_stock: 160, is_mandatory: true },
+  { id: "menipis-1", name: "Barang menipis", current_stock: 5, minimum_stock: 10, is_mandatory: true },
+  { id: "tanpa-min", name: "Wajib tanpa minimum", current_stock: 0, minimum_stock: 0, is_mandatory: true },
+];
+const nama = (d) => d.map((i) => i.name).sort().join(" | ");
+
+const g1 = S.golonganStok(stokUji, idRacikan);
+if (nama(g1.perluDiracik) !== "RACIKAN Duta Repro v5") {
+  temuan.push(`golonganStok: perluDiracik seharusnya hanya barang jadi, terbaca "${nama(g1.perluDiracik)}"`);
+}
+if (nama(g1.habis) !== "Vitamin E 50% (bahan)") {
+  temuan.push(`golonganStok: habis seharusnya hanya BAHANnya, terbaca "${nama(g1.habis)}"`);
+}
+if (nama(g1.menipis) !== "Barang menipis") {
+  temuan.push(`golonganStok: menipis berubah, terbaca "${nama(g1.menipis)}"`);
+}
+if (nama(g1.wajibTanpaMinimum) !== "Wajib tanpa minimum") {
+  temuan.push(`golonganStok: wajibTanpaMinimum berubah, terbaca "${nama(g1.wajibTanpaMinimum)}"`);
+}
+
+// Tanpa resep: barang jadi harus kembali dianggap perlu dibeli.
+const g0 = S.golonganStok(stokUji, null);
+if (g0.perluDiracik.length !== 0) {
+  temuan.push("golonganStok: tanpa daftar resep, masih ada yang dianggap diracik");
+}
+if (!g0.habis.some((i) => i.id === RACIKAN_JADI)) {
+  temuan.push("golonganStok: tanpa daftar resep, barang jadi hilang dari habis — artinya yang memindahkannya bukan data resep");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -286,6 +339,7 @@ if (temuan.length) {
 }
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
-  `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + resep v5 (${RESMI.length} bahan) diuji.`,
+  `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok diuji.`,
 );
 process.exit(0);

@@ -1,6 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, notifSekali, emailPerRole } from "../../shared/otomatis.ts";
-import { dilacak } from "../../shared/stok.ts";
+import { dilacak, idBarangRacikan, diracikSendiri } from "../../shared/stok.ts";
 import { penandaMenunggu, penandaBarang, prioritasDariBarang } from "../../shared/daftarBelanja.ts";
 
 /**
@@ -32,11 +32,14 @@ Deno.serve(async (req) => {
 
     const ambangHari = Number(otomatis.belanja_ambang_hari ?? 7);
 
-    const [pakan, gudang, belanja] = await Promise.all([
+    const [pakan, gudang, belanja, resep] = await Promise.all([
       base44.asServiceRole.entities.FeedStock.list("name", 200),
       base44.asServiceRole.entities.WarehouseItem.list("name", 500),
       base44.asServiceRole.entities.ShoppingList.list("-created_date", 300),
+      // Resep diambil untuk tahu barang mana yang DIRACIK, bukan dibeli.
+      base44.asServiceRole.entities.PelletRecipe.list("name", 100),
     ]);
+    const idRacikan = idBarangRacikan(resep || []);
     // Bahan nonaktif dilewati. Bahan yang tidak dicatat masuk-keluarnya - mis.
     // rumput dan kaktus dari kebun sendiri - angka stoknya tidak pernah benar,
     // jadi bertindak atasnya berarti bertindak atas angka karangan.
@@ -164,6 +167,25 @@ Deno.serve(async (req) => {
       if (nama.toUpperCase().includes("DUPLIKAT")) continue;
       // Barang yang dinonaktifkan pemilik tidak ikut dibelanjakan.
       if (!dilacak(i)) continue;
+      /*
+       * Barang hasil resep tidak pernah dibelanjakan — 02-10-2026.
+       *
+       * RACIKAN Duta Repro (VIT-REP00) wajib-ada, minimum 3.000 g, stok 0,
+       * jadi baris di atas akan selalu meloloskannya. Ia tidak dijual di mana
+       * pun: ia diracik dari lima bahan.
+       *
+       * Dan di sini akibatnya paling parah dari semua jalur. Pemiliknya sudah
+       * membatalkan baris belanja racikan DUA KALI (31 Agu dan 1 Okt 2026),
+       * sementara `penandaMenunggu` di atas sengaja hanya menghitung baris
+       * `belum_dibeli` — baris yang DIBATALKAN tidak menghalangi penambahan
+       * ulang, supaya pemilik tidak terkunci selamanya. Gabungan keduanya:
+       * begitu sakelar belanja otomatis dinyalakan, baris itu kembali untuk
+       * ketiga kalinya, sendirian, tiap hari.
+       *
+       * Yang perlu dibeli adalah bahannya yang kurang — dan bahan yang kurang
+       * lolos sendiri lewat baris-baris di bawah ini.
+       */
+      if (diracikSendiri(i, idRacikan)) continue;
       const stok = Number(i.current_stock || 0);
       const min = Number(i.minimum_stock || 0);
       if (min <= 0 || stok > min) continue;

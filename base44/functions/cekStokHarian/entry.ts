@@ -2,7 +2,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { getOtomatis, setOtomatis, wibTanggal, sudahWaktunya, notifSekali, emailPerRole, potongRapi } from "../../shared/otomatis.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import {
-  stokPerluDiperhatikan, golonganStok, dilacak,
+  stokPerluDiperhatikan, golonganStok, dilacak, idBarangRacikan,
   akanKadaluarsa, sudahKadaluarsa, HARI_PERINGATAN_KADALUARSA,
   sisaHariBatch, kedaluwarsaEfektifBatch,
 } from "../../shared/stok.ts";
@@ -42,11 +42,13 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: "belum_jamnya" });
     }
 
-    const [gudang, pakan, batch] = await Promise.all([
+    const [gudang, pakan, batch, resep] = await Promise.all([
       base44.asServiceRole.entities.WarehouseItem.list("name", BATAS_AMBIL),
       base44.asServiceRole.entities.FeedStock.list("name", BATAS_AMBIL),
       // Tanggal kedaluwarsa sebenarnya hidup di batch, bukan di barangnya.
       base44.asServiceRole.entities.BatchBarang.list("tanggal_expired", BATAS_AMBIL),
+      // Resep diambil untuk tahu barang mana yang DIRACIK, bukan dibeli.
+      base44.asServiceRole.entities.PelletRecipe.list("name", BATAS_AMBIL),
     ]);
 
     const perlu = stokPerluDiperhatikan(gudang || [], pakan || []);
@@ -65,7 +67,21 @@ Deno.serve(async (req) => {
      * sekali. Itu persis cacat yang hari ini ditemukan pada laporan higiene
      * gudang: 23 temuan tiap pekan yang semuanya sudah beres.
      */
-    const { habis, menipis, wajibTanpaMinimum } = golonganStok(perlu);
+    /*
+     * Barang racikan dikeluarkan dari "perlu dibeli" — 02-10-2026.
+     *
+     * RACIKAN Duta Repro (VIT-REP00) wajib-ada, minimum 3.000 g, stok 0. Jadi
+     * setiap pagi fungsi ini menyebutnya di bawah judul "HABIS — perlu
+     * dibeli", padahal ia tidak bisa dibeli dari mana pun: ia diracik dari
+     * lima bahan. Pemiliknya sudah membatalkan baris belanjanya dua kali
+     * dengan keterangan yang menjelaskan itu.
+     *
+     * Aturannya sudah ada sejak 01-10-2026, tetapi hanya di kartu Keputusan
+     * Hari Ini di beranda. Notifikasi pagi ini melewatinya — satu jaminan,
+     * dipegang di satu tempat dan dilewati di tempat lain.
+     */
+    const idRacikan = idBarangRacikan(resep || []);
+    const { habis, menipis, wajibTanpaMinimum, perluDiracik } = golonganStok(perlu, idRacikan);
 
     /*
      * Kedaluwarsa ditambahkan 15-09-2026.
@@ -135,6 +151,15 @@ Deno.serve(async (req) => {
       }
       if (habis.length > 0) bagian.push(`HABIS — perlu dibeli (${habis.length}):\n` + habis.slice(0, 12).map(baris).join("\n"));
       if (menipis.length > 0) bagian.push(`MENIPIS (${menipis.length}):\n` + menipis.slice(0, 12).map(baris).join("\n"));
+      if (perluDiracik.length > 0) {
+        // Sengaja TIDAK berbunyi "perlu dibeli": yang kurang adalah bahannya,
+        // dan bahan yang kurang sudah muncul sendiri di daftar HABIS di atas.
+        bagian.push(
+          `PERLU DIRACIK — bukan dibeli (${perluDiracik.length}):\n` +
+          perluDiracik.slice(0, 6).map(baris).join("\n") +
+          `\nRacik lewat Stok & Gudang -> tab Resep. Yang perlu dibeli adalah bahannya yang kurang, bukan barang jadinya.`,
+        );
+      }
       if (wajibTanpaMinimum.length > 0) {
         bagian.push(
           `Selain itu ${wajibTanpaMinimum.length} barang bertanda wajib-ada berstok nol tapi batas minimumnya belum diisi ` +
@@ -172,6 +197,7 @@ Deno.serve(async (req) => {
       habis: habis.length,
       menipis: menipis.length,
       wajib_tanpa_minimum: wajibTanpaMinimum.length,
+      perlu_diracik: perluDiracik.length,
       lewat_tanggal: lewatTanggal.length,
       segera_kadaluarsa: segeraKadaluarsa.length,
       batch_punya_tanggal: (batch || []).filter((b: any) => b?.tanggal_expired).length,

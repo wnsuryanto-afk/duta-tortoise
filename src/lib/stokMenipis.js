@@ -85,6 +85,40 @@ export function perluDiperhatikan(item) {
 }
 
 /**
+ * Barang yang DIRACIK SENDIRI, jadi tidak pernah untuk dibeli.
+ *
+ * ── Kenapa aturan ini ada di sini ───────────────────────────────────
+ *
+ * RACIKAN Duta Repro (VIT-REP00) adalah hasil resep dari lima bahan, bukan
+ * barang yang bisa dipesan ke mana pun. Ia bertanda wajib-ada dengan minimum
+ * 3.000 g dan stoknya nol, jadi setiap saringan "di bawah minimum" menangkapnya
+ * dan menyebutnya perlu dibeli.
+ *
+ * Pemiliknya sudah membatalkan baris belanjanya DUA KALI dengan keterangan
+ * yang menjelaskan hal ini — 31 Agustus dan 1 Oktober 2026. Keterangan
+ * menunggu dibaca; yang memasukkannya kembali adalah kode. Jadi aturannya
+ * ditulis sebagai kode.
+ *
+ * Yang benar-benar perlu dibeli adalah BAHANNYA yang kurang, dan bahan-bahan
+ * itu muncul sendiri di daftar lewat jalur biasa. Yang keliru hanya barang
+ * jadinya.
+ */
+export function idBarangRacikan(resep = []) {
+  const s = new Set();
+  for (const r of resep || []) {
+    const id = r?.output_item_id;
+    if (id) s.add(String(id));
+  }
+  return s;
+}
+
+/** Benar bila barang ini diracik sendiri, jadi tidak untuk dibeli. */
+export function diracikSendiri(barang, idRacikan) {
+  if (!barang || !idRacikan || idRacikan.size === 0) return false;
+  return idRacikan.has(String(barang.id));
+}
+
+/**
  * Tiga golongan, bukan satu daftar panjang.
  *
  * "Perlu diperhatikan" mencampur dua keadaan yang jawabannya sangat berbeda:
@@ -100,14 +134,30 @@ export function perluDiperhatikan(item) {
  * diperbaiki), angka 23 yang sama muncul di sana dengan label "di bawah
  * minimum" — padahal delapan di antaranya tidak punya minimum sama sekali.
  * Satu definisi, dipakai dua-duanya.
+ *
+ * GOLONGAN KEEMPAT, ditambahkan 02-10-2026: `perluDiracik`.
+ *
+ * Barang hasil resep tidak bisa dibeli, hanya diracik. Sebelum ini aturannya
+ * hanya ada di SATU dari empat tempat yang membaca "di bawah minimum" —
+ * kartu Keputusan Hari Ini di beranda. Tiga sisanya (peringatan gawat di
+ * beranda, pemeriksaan stok harian di server, dan daftar belanja otomatis)
+ * tetap menyebut RACIKAN Duta Repro sebagai barang yang perlu DIBELI. Yang
+ * memegang jaminan satu tempat, yang melewatinya tiga tempat.
+ *
+ * Golongan ini didahulukan: barang racikan TIDAK ikut masuk habis/menipis/
+ * wajibTanpaMinimum, supaya angka "perlu dibeli" benar-benar hanya berisi
+ * yang bisa dibeli.
  */
-export function golonganStok(daftar = []) {
+export function golonganStok(daftar = [], idRacikan = null) {
   const perlu = (daftar || []).filter(perluDiperhatikan);
   const punyaMinimum = (i) => angka(i?.minimum_stock) > 0;
+  const diracik = (i) => diracikSendiri(i, idRacikan);
+  const dibeli = perlu.filter((i) => !diracik(i));
   return {
-    habis: perlu.filter((i) => stokHabis(i) && punyaMinimum(i)),
-    menipis: perlu.filter((i) => !stokHabis(i)),
-    wajibTanpaMinimum: perlu.filter((i) => stokHabis(i) && !punyaMinimum(i)),
+    habis: dibeli.filter((i) => stokHabis(i) && punyaMinimum(i)),
+    menipis: dibeli.filter((i) => !stokHabis(i)),
+    wajibTanpaMinimum: dibeli.filter((i) => stokHabis(i) && !punyaMinimum(i)),
+    perluDiracik: perlu.filter(diracik),
   };
 }
 
