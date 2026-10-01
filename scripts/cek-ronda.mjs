@@ -53,10 +53,12 @@ bundel("src/lib/kandang.js", "kandang.cjs");
 bundel("src/lib/versiAplikasi.js", "versi.cjs");
 bundel("src/lib/jadwalPerawatan.js", "jadwal.cjs");
 bundel("src/lib/daftarBelanja.js", "belanja.cjs");
+bundel("src/lib/resepRacikan.js", "resep.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
+const R = await import("file://" + join(dir, "resep.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -212,6 +214,70 @@ if (B.diracikSendiri({ id: "apa-saja" }, B.idBarangRacikan([])) !== false) {
   temuan.push("diracikSendiri: tanpa resep sama sekali, masih menuduh ada yang diracik");
 }
 
+/* ── 5. Resep racikan: dosis per ekor, dan bahan mikro ─────────────── */
+
+/*
+ * Duta Repro v5 memakai Vitamin D3 2,5 g dalam batch 21.000 g —
+ * 0,0119%. Angka itu menentukan 179 IU per ekor per hari, dan resepnya
+ * sendiri menuliskan batasnya.
+ *
+ * Mengetik 25 g alih-alih 2,5 melipatgandakan dosisnya SEPULUH KALI dan
+ * hanya menggeser jumlah adonan 0,110% — di bawah ambang kewajaran mana
+ * pun. Jadi pemeriksaan "jumlahnya cocok atau tidak" TIDAK menangkapnya,
+ * justru KARENA bahannya mikro.
+ *
+ * Yang diuji di sini: angka per dosis yang dihitung harus cocok dengan
+ * tabel resmi v5, DAN salah ketik sepuluh kali lipat harus terlihat di
+ * angka itu meski jumlahnya masih dianggap seimbang.
+ */
+const V5 = {
+  yield_kg: 21,
+  ingredients: [
+    { item_name: "Tepung hijauan — VIT-REP20", quantity_kg: 11.398 },
+    { item_name: "Kalsium karbonat — VIT-REP07", quantity_kg: 5.25 },
+    { item_name: "Moringa — VIT-REP03", quantity_kg: 4.2 },
+    { item_name: "Vitamin E 50% — VIT-REP01", quantity_kg: 0.15 },
+    { item_name: "Vitamin D3 — VIT-REP02", quantity_kg: 0.0025 },
+  ],
+};
+const hasilV5 = R.periksaResep(V5, 15);
+const dekat = (a, b, toleransi) => Math.abs(a - b) <= toleransi;
+
+// Angka resmi dari dokumen v5 FINAL, tabel bagian 1 dan 2.
+const RESMI = [
+  ["Tepung hijauan", 54.27, 8.14],
+  ["Kalsium karbonat", 25.00, 3.75],
+  ["Moringa", 20.00, 3.00],
+  ["Vitamin E 50%", 0.71, 0.11],
+  ["Vitamin D3", 0.0119, 0.0018],
+];
+if (!hasilV5) {
+  temuan.push("periksaResep: tidak bisa membaca resep v5");
+} else {
+  if (!hasilV5.seimbang) temuan.push(`periksaResep: v5 dianggap tidak seimbang (selisih ${hasilV5.selisihPersen.toFixed(3)}%)`);
+  RESMI.forEach(([nama, persen, perDosis], i) => {
+    const b = hasilV5.bahan[i];
+    if (!dekat(b.persen, persen, 0.01)) {
+      temuan.push(`periksaResep: "${nama}" ${b.persen.toFixed(4)}%, dokumen v5 menulis ${persen}%`);
+    }
+    if (!dekat(b.perDosisGram, perDosis, 0.005)) {
+      temuan.push(`periksaResep: "${nama}" ${b.perDosisGram.toFixed(4)} g per dosis, dokumen v5 menulis ${perDosis} g`);
+    }
+  });
+  const d3 = hasilV5.bahan[4];
+  if (!d3.mikro) temuan.push("periksaResep: Vitamin D3 tidak ditandai bahan mikro — pengenceran bertingkat jadi tidak diingatkan");
+  if (hasilV5.bahan[0].mikro) temuan.push("periksaResep: pembawa utama salah ditandai bahan mikro");
+}
+
+// Salah ketik sepuluh kali lipat pada D3.
+const SALAH = { ...V5, ingredients: V5.ingredients.map((b) =>
+  b.item_name.includes("D3") ? { ...b, quantity_kg: 0.025 } : b) };
+const hasilSalah = R.periksaResep(SALAH, 15);
+const d3Salah = hasilSalah.bahan[4].perDosisGram * 1000;
+if (!(d3Salah > 17 && d3Salah < 19)) {
+  temuan.push(`periksaResep: salah ketik D3 10x seharusnya terlihat sebagai ~17,8 mg per dosis, terbaca ${d3Salah.toFixed(2)} mg`);
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -220,6 +286,6 @@ if (temuan.length) {
 }
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
-  `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja diuji.`,
+  `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + resep v5 (${RESMI.length} bahan) diuji.`,
 );
 process.exit(0);

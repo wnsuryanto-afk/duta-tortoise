@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { potongBatchGudang } from "@/lib/pemakaianBarang";
+import { periksaResep } from "@/lib/resepRacikan";
 import {
   rincianBahan, masalahBahan, bahanTanpaHarga, totalBiaya,
   hppHasil, jumlahHasil, cariBarangHasil,
@@ -414,6 +415,51 @@ export default function StokResepTab({ role }) {
                       )}
                     </div>
                   </div>
+
+                  {/*
+                    Berapa yang benar-benar masuk ke SATU EKOR sehari.
+                    Dipasang karena salah ketik pada bahan mikro tidak
+                    terlihat di daftar bahan maupun di jumlah adonan:
+                    Vitamin D3 Duta Repro v5 hanya 0,0119% dari batch,
+                    jadi mengetik 25 g alih-alih 2,5 hanya menggeser
+                    jumlahnya 0,1% — di bawah ambang kewajaran mana pun.
+                    Yang berubah sepuluh kali lipat adalah DOSISNYA, dan
+                    itu baru terlihat kalau dosisnya ditampilkan.
+                  */}
+                  {(() => {
+                    const h = periksaResep(r, 15);
+                    if (!h) return null;
+                    return (
+                      <div className="mt-3 pt-3 border-t space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">Per 15 g (satu ekor sehari)</span>
+                          {!h.seimbang && (
+                            <span className="text-amber-700 font-medium">
+                              jumlah bahan {h.jumlahKg.toFixed(3)} kg ≠ hasil {h.hasilKg} kg
+                            </span>
+                          )}
+                        </div>
+                        {h.bahan.map((b, i) => {
+                          const mg = (b.perDosisGram || 0) * 1000;
+                          const nilai = mg < 100 ? `${mg.toFixed(2)} mg` : `${b.perDosisGram.toFixed(2)} g`;
+                          return (
+                            <div key={i} className="flex items-center justify-between gap-2 text-[11px]">
+                              <span className="truncate text-muted-foreground">
+                                {b.mikro && <span className="text-amber-700 font-semibold">⚠ </span>}
+                                {b.nama}
+                              </span>
+                              <span className="font-mono tabular-nums flex-shrink-0">{nilai}</span>
+                            </div>
+                          );
+                        })}
+                        {h.bahan.some((b) => b.mikro) && (
+                          <p className="text-[10px] text-amber-700 pt-1">
+                            ⚠ bahan mikro — wajib timbangan 0,01 g dan pengenceran bertingkat
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Card>
               ))}
             </div>
