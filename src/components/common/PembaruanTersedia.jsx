@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { bundelSaatIni, bundelTerbit, adaVersiBaru } from "@/lib/versiAplikasi";
+import { bundelSaatIni, bundelTerbit, adaVersiBaru, bolehMuatUlangOtomatis } from "@/lib/versiAplikasi";
 
 /**
  * PembaruanTersedia — bilah kecil yang muncul ketika aplikasi yang sedang
@@ -11,14 +11,37 @@ import { bundelSaatIni, bundelTerbit, adaVersiBaru } from "@/lib/versiAplikasi";
  * petunjuk di layar, dan yang terbaca oleh pemakainya adalah "datanya
  * hilang".
  *
- * ── Kenapa tidak memuat ulang sendiri ───────────────────────────────
+ * ── Memuat ulang sendiri, TAPI hanya saat aman ──────────────────────
  *
- * Karena yang paling sering membuka aplikasi ini adalah kiper yang sedang
- * berdiri di depan kandang, kadang di tengah mengisi formulir atau
- * menunggu foto terunggah. Memuat ulang tanpa diminta akan membuang
- * pekerjaan yang belum tersimpan — dan justru pada orang yang paling
- * sulit mengulanginya. Jadi: diberitahu, tombolnya disediakan, waktunya
+ * Versi pertama berkas ini menolak memuat ulang sendiri sama sekali,
+ * dengan alasan yang benar: yang paling sering membuka aplikasi ini
+ * adalah kiper yang sedang berdiri di depan kandang, kadang di tengah
+ * mengisi formulir atau menunggu foto terunggah. Memuat ulang tanpa
+ * diminta akan membuang pekerjaan yang belum tersimpan — justru pada
+ * orang yang paling sulit mengulanginya.
+ *
+ * Alasan itu tetap berlaku, tetapi ia hanya berlaku DI TENGAH PEKERJAAN.
+ * Pada detik-detik pertama sesudah aplikasi dibuka belum ada apa pun yang
+ * bisa hilang — dan justru itulah saat ketertinggalan paling mahal,
+ * karena daftar kerja sehari penuh baru saja dibaca dari bundel yang
+ * usang.
+ *
+ * Harga dari menunggu dibuktikan sendiri oleh aplikasi ini: sebuah HP
+ * menampilkan daftar kandang dari sebelum 27-09-2026 selama LIMA HARI.
+ * Selama itu empat kandang Bonsai berisi 36 kura tidak punya satu pun
+ * ubin untuk dicentang — pakan dan kebersihannya tidak punya jalur
+ * pencatatan sama sekali. Bilah yang sopan dan menunggu tidak cukup
+ * untuk hal yang merusak daftar kerja sehari penuh.
+ *
+ * Jadi sekarang: bila versi baru terdeteksi dalam JEDA_AMAN pertama
+ * sesudah aplikasi dibuka, DAN pemakainya belum menyentuh apa pun, muat
+ * ulang sendiri. Lewat dari itu — atau kalau sudah ada yang disentuh —
+ * kembali ke perilaku lama: diberitahu, tombolnya disediakan, waktunya
  * mereka yang pilih.
+ *
+ * Penjaga putaran: sekali per sesi peramban. Kalau bundel barunya
+ * ternyata rusak dan ikut menganggap dirinya usang, aplikasi ini tidak
+ * boleh memuat ulang tanpa henti di tangan orang yang sedang bekerja.
  *
  * ── Kapan diperiksa ─────────────────────────────────────────────────
  *
@@ -29,6 +52,27 @@ import { bundelSaatIni, bundelTerbit, adaVersiBaru } from "@/lib/versiAplikasi";
  * tidak untuk diboroskan.
  */
 const JEDA_MS = 15 * 60 * 1000;
+
+/** Satu kali per sesi peramban — penjaga terhadap putaran muat-ulang. */
+const KUNCI_SESI = "pembaruan-muat-ulang-otomatis";
+
+function sudahPernahOtomatis() {
+  try {
+    return sessionStorage.getItem(KUNCI_SESI) === "1";
+  } catch {
+    // Mode penyamaran / penyimpanan diblokir: anggap sudah pernah, supaya
+    // ketidakpastian jatuh ke sisi yang TIDAK memuat ulang berulang kali.
+    return true;
+  }
+}
+
+function tandaiOtomatis() {
+  try {
+    sessionStorage.setItem(KUNCI_SESI, "1");
+  } catch {
+    /* tidak bisa menandai — bilahnya tetap muncul sebagai cadangan */
+  }
+}
 
 export default function PembaruanTersedia() {
   const [ada, setAda] = useState(false);
@@ -41,15 +85,35 @@ export default function PembaruanTersedia() {
 
     let berhenti = false;
     const ac = new AbortController();
+    const dibuka = Date.now();
+
+    // Apa pun yang menandakan pemakainya sudah mulai bekerja. Sesudah ini
+    // memuat ulang sendiri tidak lagi aman, berapa pun umur halamannya.
+    let tersentuh = false;
+    const tandai = () => { tersentuh = true; };
+    const SENTUHAN = ["pointerdown", "keydown", "input", "submit"];
+    SENTUHAN.forEach((e) => window.addEventListener(e, tandai, { passive: true, capture: true }));
+
+    const masihAman = () =>
+      bolehMuatUlangOtomatis({
+        tersentuh,
+        umurMs: Date.now() - dibuka,
+        sudahPernah: sudahPernahOtomatis(),
+      });
 
     const periksa = async () => {
       if (berhenti) return;
       try {
         const terbit = await bundelTerbit(ac.signal);
         if (!berhenti && adaVersiBaru(sekarang, terbit)) {
-          setAda(true);
           berhenti = true;
           ac.abort();
+          if (masihAman()) {
+            tandaiOtomatis();
+            window.location.reload();
+            return;
+          }
+          setAda(true);
         }
       } catch {
         // Sinyal buruk di kandang adalah keadaan biasa. Diam.
@@ -68,6 +132,7 @@ export default function PembaruanTersedia() {
       ac.abort();
       clearInterval(jam);
       document.removeEventListener("visibilitychange", saatTerlihat);
+      SENTUHAN.forEach((e) => window.removeEventListener(e, tandai, { capture: true }));
     };
   }, []);
 

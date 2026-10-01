@@ -102,3 +102,31 @@ export function adaVersiBaru(sekarang, terbit) {
   if (!sekarang || !terbit) return false;
   return sekarang !== terbit;
 }
+
+/** Selama ini sesudah aplikasi dibuka, memuat ulang masih dianggap aman. */
+export const JEDA_AMAN_MS = 20 * 1000;
+
+/**
+ * Boleh memuat ulang sendiri, atau cukup memberi tahu?
+ *
+ * Tiga syarat, dan ketiganya harus terpenuhi:
+ *
+ *   1. Belum ada yang disentuh. Memuat ulang di tengah formulir membuang
+ *      pekerjaan orang yang paling sulit mengulanginya.
+ *   2. Halamannya baru dibuka. Lewat dari itu, "belum menyentuh apa pun"
+ *      bisa berarti HP-nya tergeletak sementara orangnya mengangkat kura.
+ *   3. Belum pernah dilakukan di sesi ini. Kalau bundel barunya rusak dan
+ *      ikut menganggap dirinya usang, aplikasi tidak boleh memuat ulang
+ *      tanpa henti di tangan orang yang sedang bekerja.
+ *
+ * Fungsi ini MURNI dan jadi satu-satunya tempat aturannya ditulis:
+ * komponennya memanggil ini, penjaganya menguji ini. Menuliskannya dua
+ * kali — sekali di komponen, sekali di pengujian — berarti yang diuji
+ * pemahaman penulisnya, bukan kodenya.
+ */
+export function bolehMuatUlangOtomatis({ tersentuh, umurMs, sudahPernah }) {
+  if (tersentuh) return false;
+  if (!(umurMs < JEDA_AMAN_MS)) return false;
+  if (sudahPernah) return false;
+  return true;
+}

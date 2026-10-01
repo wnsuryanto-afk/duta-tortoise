@@ -10,6 +10,10 @@
  *   cek-temuan      penyangkalan dibaca sebagai masalah → "tidak ada luka"
  *                   masuk daftar merah, dan 40% kartu temuan berisi
  *                   kabar baik sehingga temuan sungguhan tenggelam
+ *   cek-ronda       kandang berisi kura tidak punya ubin → kura di dalamnya
+ *                   tidak punya jalur pencatatan pakan maupun kebersihan;
+ *                   dan aplikasi usang yang tidak memperbaiki dirinya →
+ *                   daftar kerja sehari penuh dibaca dari bundel lama
  *   cek-gaji        slip mingguan diterbitkan lagi di samping bulanan →
  *                   satu periode dibayar dua kali; dan peran yang digaji
  *                   kehilangan pintu ke slipnya sendiri saat modul gaji
@@ -64,7 +68,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-lebar.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {
