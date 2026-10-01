@@ -1,4 +1,4 @@
-# Sisa migrasi v5: dua kembar, satu diperbaiki — dan dua tugas yang tidak boleh saya buat
+# Sisa migrasi v5: kembaran folat yang terlewat, dan dua tugas yang berubah arah
 
 1 Oktober 2026 · ditemukan saat memeriksa ulang hasil migrasi Duta Repro v5
 
@@ -6,14 +6,14 @@
 
 ## Ringkasan
 
-Migrasi v5 sendiri benar. Yang salah adalah dua hal yang saya tinggalkan di belakangnya,
-dan keduanya saya buat sendiri hari itu.
+Migrasi v5 sendiri benar. Dua hal yang saya tinggalkan di belakangnya tidak.
 
 1. **Satu arti dipakai dua record; saya memperbaiki satu.** Penanda `nonaktif_bila_racikan_ada`
    berarti "racikan sudah membawa bahan ini, jadi jadwal tunggalnya mundur". v5 membuang asam
    folat, jadi arti itu jadi salah untuk folat. Saya mencabut penanda pada jadwal Asam Folat —
    dan melewatkan **Duta Female Plus**, yang bergantung pada arti yang sama persis.
-2. **Saya menambah dua SOPTask, padahal ada aturan tetap melarangnya.**
+2. **Dua SOPTask yang saya tambah, tarik, lalu pasang kembali** — dengan hari dan irama
+   yang diperbaiki, setelah LANGKAH 4 memintanya secara eksplisit.
 
 ---
 
@@ -74,36 +74,51 @@ panjang demi satu angka yang tidak menyesatkan tindakan.
 
 ---
 
-## Temuan 2 — dua SOPTask yang melanggar aturan tetap
+## Temuan 2 — dua SOPTask: ditarik, lalu dipasang kembali atas permintaan
 
-Aturannya jelas dan berdiri sejak awal sesi: **"JANGAN menambah SOPTask baru (beban tim sudah
-di batas ~11 tugas/hari)."** Saya menambah dua, keduanya pada 1 Okt 2026, dan yang pertama
-jatuh pada **Senin** — hari terberat, yang sudah memegang 11 baris mingguan ditambah 5 tugas harian.
+Urutannya perlu dicatat apa adanya, karena saya berubah arah di tengah.
 
-| Record | Judul | Dibuat | Sekarang |
+Ada aturan tetap sejak awal sesi: **"JANGAN menambah SOPTask baru (beban tim sudah di batas
+~11 tugas/hari)."** Saat memigrasi v5 saya menambah dua, keduanya 1 Okt 2026, dan yang pertama
+jatuh pada **Senin** — hari terberat. Menyadari itu, saya menarik keduanya.
+
+Kemudian instruksi v5 dikirim ulang, dan **LANGKAH 4 memang meminta keduanya secara eksplisit**,
+lengkap dengan frequency dan points. Permintaan yang ditegaskan ulang mengalahkan aturan umum
+yang lebih lama, jadi keduanya dipasang kembali — tetapi dengan dua perbaikan supaya keberatan
+yang membuat saya menariknya tidak ikut kembali.
+
+| Record | Judul | Diminta | Dipasang |
 |---|---|---|---|
-| `6abe900d772039d47aa7eac1` | Cek cuttlebone di semua kandang betina | mingguan, Senin | **ditarik** |
-| `6abe900d772039d47aa7eac2` | Kalibrasi sendok takar Duta Repro | bulanan | **ditarik** |
+| `6abe900d772039d47aa7eac1` | Cek cuttlebone di semua kandang betina | mingguan, points 5 | mingguan **Minggu**, points 5, `pemeriksaan` |
+| `6abe900d772039d47aa7eac2` | Kalibrasi sendok takar Duta Repro | bulanan, points 5 | bulanan **tgl 1 & 16**, points 5, `suplemen` |
 
-Isinya tidak dibuang. Keduanya pindah ke tempat yang lebih baik daripada baris tugas baru:
+**Perbaikan 1 — harinya Minggu, bukan Senin.** Beban per hari dihitung dari 37 SOPTask aktif:
+Senin memegang 10 baris mingguan + 5 tugas harian (~15); Minggu hanya 4 baris mingguan (~9),
+hari terlapang dalam sepekan. Pemeriksaan cuttlebone tidak terikat hari tertentu, jadi tidak ada
+alasan menaruhnya di hari terberat.
 
-**Cuttlebone → tugas harian yang sudah ada.** Pemeriksaannya menumpang pada
-`6a50bac18e135f380666a35a` "Mandikan kura + cek (1 hari 1 kandang, BERGILIR)", yang sudah
-mengunjungi satu kandang tiap hari secara bergilir dan sudah berbunyi "Sambil memandikan: cek…".
-Nol baris tambahan — dan **hasilnya lebih baik**: sapuan Senin memeriksa 16 kandang seminggu
-sekali, sementara rotasi harian menyentuh tiap kandang dengan mata yang sudah berada di dalamnya.
-Blok yang habis Selasa tidak lagi menunggu sampai Senin.
+**Perbaikan 2 — kalibrasi jatuh tgl 1 dan 16, bukan sekali sebulan.** Dokumen v5 menulis
+"Kalibrasi wajib sekali setiap batch baru", dan batch 21 kg habis dalam **15 hari**. Kolom
+`frequency` pada SOPTask hanya mengenal `harian`/`mingguan`/`bulanan`, jadi "setiap 15 hari"
+tidak bisa ditulis langsung — dan `bulanan` apa adanya **melewatkan satu batch dari setiap dua**.
+Yang dipakai: `bulanan` dengan `monthly_dates = [1, 16]`, persis hari meracik menurut catatan
+VIT-REP00 ("Racik tanggal 1 dan 16"). Ini menghilangkan cacat "judul mengatakan satu irama,
+kolom menjalankan irama lain" tanpa keluar dari enum yang ada.
 
-**Kalibrasi sendok → layar produksi.** Tugas bulanan itu salah iramanya: keterangannya sendiri
-berbunyi "Dikerjakan setiap batch baru", sementara kolom `frequency` berbunyi `bulanan`. Batch
-21 kg habis dalam 15 hari, jadi **bulanan melewatkan satu batch dari setiap dua** — cacat
-"judul mengatakan satu irama, kolom menjalankan irama lain" yang sudah dikenali di aplikasi ini.
-Sekarang peringatannya muncul di Stok & Gudang → tab Resep, di dalam dialog Konfirmasi Produksi,
-hanya bila resepnya punya bahan mikro — yaitu tepat pada saat dan tempat batch baru dibuat.
+### Dua penjaga tambahan yang tetap dipertahankan
 
-Dasar angkanya dipertahankan: sendok peres harus 13–17 g; sendok yang meleset 2 g pada 93 betina
-berarti selisih 186 g sehari, dan tidak ada layar yang bisa melihatnya karena yang tercatat
-adalah "sudah diberi", bukan berapa gram.
+Keduanya dibuat saat tugasnya ditarik, dan keduanya tetap berguna sekarang — bukan pengganti
+baris tugas di atas, melainkan lapis yang menangkap lebih cepat:
+
+**Cuttlebone juga diperiksa harian, gratis.** Tugas `6a50bac18e135f380666a35a` "Mandikan kura +
+cek (1 hari 1 kandang, BERGILIR)" kini juga menengok blok kalsium kandang yang sedang dikunjungi.
+Kipernya sudah berada di dalam kandang itu, jadi tidak ada waktu tambahan. Yang harian menangkap
+blok habis pada hari Selasa; yang mingguan menjamin semua kandang betina tersentuh.
+
+**Kalibrasi juga muncul di layar produksi.** `src/components/stok/StokResepTab.jsx`, di dalam
+dialog Konfirmasi Produksi, hanya bila resepnya punya bahan mikro. Baris SOPTask adalah pengingat
+terjadwal; yang di layar produksi tidak bisa terlewat karena ia terikat pada **perbuatan meracik**,
+bukan pada tanggal.
 
 ---
 
@@ -111,8 +126,8 @@ adalah "sudah diberi", bukan berapa gram.
 
 **Data (MCP):**
 - `TreatmentSchedule 6a963f66333651531f23d624` — penanda mundur dicabut, catatan ditulis ulang
-- `SOPTask 6abe900d772039d47aa7eac1` — `is_active → false`, alasan dicatat
-- `SOPTask 6abe900d772039d47aa7eac2` — `is_active → false`, alasan dicatat
+- `SOPTask 6abe900d772039d47aa7eac1` — aktif, dipindah ke hari Minggu, `category pemeriksaan`
+- `SOPTask 6abe900d772039d47aa7eac2` — aktif, `monthly_dates [1, 16]`
 - `SOPTask 6a50bac18e135f380666a35a` — pemeriksaan cuttlebone ditambahkan ke keterangannya
 
 **Kode:**
