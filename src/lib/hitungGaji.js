@@ -183,8 +183,35 @@ export function hitungPoin({ checklists = [], bonusRewards = [], email, awal, ak
 /**
  * Potongan kasbon untuk satu periode.
  *
- * Kasbon yang potongannya sudah tercatat untuk periode ini dilewati — tanpa
- * pemeriksaan ini, membuka layar gaji dua kali bisa memotong dua kali.
+ * ── Dua kesalahan yang harus dihindari SEKALIGUS ────────────────────
+ *
+ * 1. Memotong DUA KALI. Membuka layar gaji dua kali, atau menekan
+ *    "Update" pada slip yang sudah terbit, tidak boleh menambah potongan
+ *    kedua untuk periode yang sama.
+ *
+ * 2. Memotong NOL. Ini yang luput, dan terjadi sungguhan.
+ *
+ *    Versi sebelumnya menjawab kesalahan nomor 1 dengan MELEWATI kasbon
+ *    yang sudah punya catatan untuk periode ini — `potongan` tetap nol.
+ *    Benar kalau yang sedang dihitung slip BARU. Salah kalau yang sedang
+ *    dihitung ulang slip yang ITU-ITU JUGA.
+ *
+ *    30-09-2026 slip September Ali terbit dengan potongan Rp 100.000, dan
+ *    riwayat kasbonnya mencatat Rp 100.000 atas nama slip itu. Slipnya
+ *    lalu dihitung ulang. Riwayatnya sudah berisi catatan untuk 2026-09,
+ *    jadi kasbonnya dilewati, dan `kasbon_deduction` slip itu berubah
+ *    dari Rp 100.000 menjadi NOL.
+ *
+ *    Hasilnya: riwayat kasbon menyatakan Ali membayar Rp 100.000 lewat
+ *    slip tersebut, sementara slip tersebut tidak memotong apa pun. Yang
+ *    benar-benar menahan uang adalah slipnya. Jadi Rp 100.000 itu
+ *    tercatat lunas tanpa pernah ditahan — dan tidak ada satu pun error.
+ *
+ * Jawaban yang benar untuk keduanya: potongan yang SUDAH TERCATAT untuk
+ * periode ini dikembalikan apa adanya. Slipnya tetap menampilkan angka
+ * yang sama, dan tidak ada catatan kedua yang dibuat — `idDipotong`
+ * sengaja tidak diisi, dan `patchPotongan` menolak mencatat slip yang
+ * sama dua kali.
  */
 export function hitungKasbon({ kasbons = [], email, periode }) {
   let potongan = 0;
@@ -197,10 +224,18 @@ export function hitungKasbon({ kasbons = [], email, periode }) {
       const sisaKasbon = (k.amount || 0) - (k.total_paid || 0);
       if (sisaKasbon <= 0) return;
 
-      const sudahDipotong = (k.deduction_log || []).some(
-        (d) => d.salary_period === periode && d.salary_slip_id
-      );
-      if (sudahDipotong) {
+      // Yang sudah tercatat untuk periode ini — dijumlahkan, bukan
+      // sekadar ditanyakan ada atau tidak, karena angkanyalah yang harus
+      // kembali muncul di slip.
+      const tercatat = (k.deduction_log || [])
+        .filter((d) => d.salary_period === periode && d.salary_slip_id)
+        .reduce((t, d) => t + (Number(d.amount) || 0), 0);
+
+      if (tercatat > 0) {
+        potongan += tercatat;
+        // `sisaKasbon` SUDAH bersih dari potongan itu (ia dihitung dari
+        // total_paid, yang sudah bertambah saat catatannya dibuat), jadi
+        // tidak dikurangi lagi di sini.
         sisa += sisaKasbon;
         return;
       }

@@ -209,10 +209,24 @@ const kasbonUji = {
 const hit = (periode, k = kasbonUji) =>
   gaji.hitungKasbon({ kasbons: [k], email: kasbonUji.employee_email, periode });
 
+/*
+ * Janji pertama dan kedua adalah PASANGAN, dan memisahkannya persis yang
+ * membuat Rp 100.000 hilang pada 30-09-2026.
+ *
+ * Menghitung ulang slip yang sudah terbit harus mengembalikan potongan
+ * yang SUDAH TERCATAT — bukan nol — supaya slipnya tetap menahan uang
+ * yang menurut riwayat kasbon sudah ditahan. Sekaligus `idDipotong`
+ * harus KOSONG, supaya tidak ada catatan kedua yang dibuat.
+ *
+ * Menjawab salah satu saja menghasilkan satu dari dua cacat: memotong
+ * dua kali, atau memotong nol sambil mencatat lunas.
+ */
 const janji = [
-  ["periode yang sudah ada di riwayat tidak dipotong lagi", hit("2026-09").potongan, 0],
-  ["sisanya tetap terbawa utuh saat tidak dipotong", hit("2026-09").sisa, 600000],
+  ["slip yang dihitung ulang tetap memotong yang sudah tercatat", hit("2026-09").potongan, 100000],
+  ["...dan tidak mencatat potongan kedua", hit("2026-09").idDipotong.length, 0],
+  ["sisanya tetap terbawa utuh", hit("2026-09").sisa, 600000],
   ["periode baru dipotong sebesar tarifnya", hit("2026-10").potongan, 400000],
+  ["...dan ditandai untuk dicatat", hit("2026-10").idDipotong.length, 1],
   ["sisa berkurang tepat sebesar potongannya", hit("2026-10").sisa, 200000],
 ];
 
