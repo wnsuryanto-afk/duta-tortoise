@@ -315,6 +315,32 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
         </div>
       )}
 
+      {/*
+        KALIBRASI SENDOK — ditaruh di sini, di layar produksi, dengan sengaja.
+
+        Dokumen Duta Repro v5 menulisnya: "Kalibrasi wajib sekali setiap batch
+        baru." Pernah ada SOPTask bulanan untuk ini; itu salah dua kali. Pertama
+        karena batch 21 kg habis dalam 15 hari, jadi bulanan melewatkan satu
+        batch dari setiap dua. Kedua karena kalibrasi hanya punya arti pada saat
+        batchnya baru jadi — bukan pada tanggal yang dipilih kalender.
+
+        Hanya muncul bila resepnya punya bahan mikro: di situlah sendok yang
+        meleset tidak bisa dilihat siapa pun. Yang tercatat adalah "sudah
+        diberi", bukan berapa gram.
+      */}
+      {(() => {
+        const cek = periksaResep(recipe, 15);
+        if (!cek || !cek.bahan.some((b) => b.mikro)) return null;
+        return (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-800">
+            <strong>Kalibrasi sendok takar setelah batch ini jadi.</strong> Isi sendok peres, timbang:
+            harus 13–17 g. Di luar itu, ganti sendoknya atau tandai garis batas baru — kepadatan
+            campuran berubah bila kehalusan tepung hijauannya berganti. Sendok yang meleset 2 g pada
+            93 betina berarti selisih 186 g sehari.
+          </div>
+        );
+      })()}
+
       {gagal && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs text-red-700">{gagal}</div>
       )}
