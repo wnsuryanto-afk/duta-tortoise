@@ -156,3 +156,56 @@ export function jadwalBerlaku(daftar = [], keadaan = {}) {
     .map((j) => sesuaikanMundurRacikan(j, keadaan.racikanTersedia === true))
     .filter((j) => j && berlakuHariIni(j, keadaan));
 }
+
+/**
+ * Jadwal yang MENGATAKAN satu irama tetapi DIJALANKAN dengan irama lain.
+ *
+ * ── Kenapa fungsi ini ada ───────────────────────────────────────────
+ *
+ * Sebuah jadwal berjudul "Vitamin E IPI Selang-Seling (2 Hari Sekali)",
+ * dengan seluruh takarannya dihitung untuk empat kali pemberian per
+ * minggu, punya `frequency: "harian"` — tampil tujuh kali seminggu, dua
+ * kali lipat dari rancangannya.
+ *
+ * Cacatnya sudah DIKETAHUI dan ditulis di catatan jadwal itu sendiri:
+ * "perbaiki frekuensinya lebih dulu bila kelak dihidupkan lagi tanpa
+ * racikan". Tetapi peringatan itu sebuah KOMENTAR, sedangkan yang
+ * menghidupkannya kembali adalah KODE: jadwal ini MUNDUR selama racikan
+ * Duta Repro ada stoknya, dan "hidup lagi dengan sendirinya" begitu
+ * racikan habis. Pada 01-10-2026 racikan habis, tiga jadwal hidup
+ * kembali sendiri, dan tidak ada satu pun yang memberi tahu siapa pun.
+ *
+ * Catatan yang menunggu dibaca manusia tidak bisa menjaga sesuatu yang
+ * dihidupkan mesin. Jadi ketidakcocokannya sekarang dihitung dari
+ * datanya sendiri dan bisa ditampilkan.
+ *
+ * Yang diperiksa hanya yang benar-benar bisa dibaca dari teksnya, dan
+ * hanya ke arah yang berbahaya: teks menyebut jeda beberapa hari,
+ * sementara kolomnya berbunyi "harian". Sebaliknya — kolom berjeda
+ * sementara teks menyebut harian — TIDAK dilaporkan, karena memberi
+ * lebih jarang daripada tertulis tidak menggandakan dosis siapa pun.
+ *
+ * @param {object} jadwal satu TreatmentSchedule
+ * @returns {{tertulisHari: number} | null} null bila cocok atau tidak terbaca
+ */
+export function iramaTakCocok(jadwal) {
+  if (!jadwal || jadwal.is_active !== true) return null;
+  if (jadwal.frequency !== "harian") return null;
+
+  const teks = [jadwal.title, jadwal.sop_task_title, jadwal.treatment_name, jadwal.notes]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  // "2 hari sekali", "tiap 3 hari", "setiap dua hari sekali"
+  const ANGKA = { dua: 2, tiga: 3, empat: 4 };
+  const m =
+    teks.match(/(?:tiap|setiap)\s+(\d+|dua|tiga|empat)\s+hari/) ||
+    teks.match(/(\d+|dua|tiga|empat)\s+hari\s+sekali/);
+  if (!m) return null;
+
+  const n = ANGKA[m[1]] ?? Number(m[1]);
+  if (!Number.isFinite(n) || n <= 1) return null;
+
+  return { tertulisHari: n };
+}

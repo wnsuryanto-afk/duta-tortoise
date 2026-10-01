@@ -24,6 +24,7 @@ import { sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
 import PageHeader from "@/components/common/PageHeader";
 import { HealthArt } from "@/components/common/Illustration";
+import { iramaTakCocok } from "@/lib/jadwalPerawatan";
 
 const FREQ_LABELS = {
   harian:       "Harian",
@@ -403,6 +404,44 @@ export default function TreatmentPage() {
           )
         }
       />
+
+      {/*
+        Jadwal yang MENGATAKAN satu irama tetapi DIJALANKAN dengan irama
+        lain. Dipasang di sini, bukan di layar kiper: kiper tidak bisa
+        memperbaiki kolom frekuensi, pemilik bisa.
+
+        Kenapa perlu: cacat semacam ini pernah tertulis lengkap di catatan
+        jadwalnya sendiri — "perbaiki frekuensinya lebih dulu bila kelak
+        dihidupkan lagi tanpa racikan" — lalu tetap lolos sebulan. Sebabnya
+        peringatan itu sebuah KOMENTAR, sementara yang menghidupkannya
+        kembali adalah KODE: jadwal suplemen MUNDUR selama racikan ada
+        stoknya dan hidup sendiri begitu racikan habis. Catatan yang
+        menunggu dibaca manusia tidak bisa menjaga sesuatu yang dihidupkan
+        mesin.
+      */}
+      {(() => {
+        const takCocok = (schedules || [])
+          .map((j) => ({ j, m: iramaTakCocok(j) }))
+          .filter((x) => x.m);
+        if (takCocok.length === 0) return null;
+        return (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 space-y-2">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              {takCocok.length} jadwal berjalan lebih sering daripada yang tertulis di judulnya
+            </p>
+            <ul className="space-y-1">
+              {takCocok.map(({ j, m }) => (
+                <li key={j.id} className="text-xs text-amber-700 dark:text-amber-300/80">
+                  <span className="font-medium">{j.title || j.treatment_name}</span>{" "}
+                  — tertulis tiap {m.tertulisHari} hari, tetapi kolom frekuensinya
+                  &ldquo;harian&rdquo; sehingga tampil 7× seminggu.
+                  {canEdit && " Ubah frekuensinya menjadi “dua harian” dengan jeda " + m.tertulisHari + "."}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto gap-1">

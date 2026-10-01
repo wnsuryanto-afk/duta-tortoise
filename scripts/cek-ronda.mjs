@@ -51,8 +51,10 @@ const bundel = (masuk, keluar) =>
 
 bundel("src/lib/kandang.js", "kandang.cjs");
 bundel("src/lib/versiAplikasi.js", "versi.cjs");
+bundel("src/lib/jadwalPerawatan.js", "jadwal.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
+const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -113,6 +115,58 @@ for (const [nama, masuk, harap] of syarat) {
   }
 }
 
+/* ── 3. Jadwal yang berjalan lebih sering daripada tertulis ────────── */
+
+/*
+ * Sebuah jadwal berjudul "Vitamin E IPI Selang-Seling (2 Hari Sekali)",
+ * seluruh takarannya dihitung untuk empat kali pemberian seminggu,
+ * punya `frequency: "harian"` — tampil tujuh kali, dua kali lipat.
+ *
+ * Cacatnya sudah tertulis lengkap di catatan jadwal itu sendiri sejak
+ * 30-08-2026 ("perbaiki frekuensinya lebih dulu bila kelak dihidupkan
+ * lagi tanpa racikan") dan tetap lolos sebulan — karena peringatan itu
+ * sebuah KOMENTAR, sementara yang menghidupkannya kembali adalah KODE.
+ *
+ * Yang diuji di sini: pembacanya menangkap yang benar-benar tak cocok,
+ * DAN tidak menuduh jadwal yang memang harian. Tuduhan palsu pada
+ * kalsium atau folat akan membuat peringatannya ikut diabaikan.
+ */
+const jadwalUji = [
+  ["Vitamin E asli — judul 2 hari, kolom harian", {
+    is_active: true, frequency: "harian",
+    title: "Vitamin E IPI Selang-Seling (2 Hari Sekali)",
+    sop_task_title: "Berikan Vitamin E (J:3 tab / B:2 tab) — setiap 2 hari",
+    notes: "SELANG-SELING - berikan setiap 2 hari sekali, bukan setiap hari.",
+  }, 2],
+  ["Asam folat — memang harian", {
+    is_active: true, frequency: "harian",
+    title: "Folavit (Asam Folat) Harian (Betina)",
+    notes: "Dosis: setara 1 tablet Folavit 400 mcg per ekor per hari.",
+  }, null],
+  ["Kalsium — memang harian", {
+    is_active: true, frequency: "harian",
+    title: "Kalsium Harian",
+    notes: "Dosis: Jantan 10 gram/ekor/hari | Betina 15 gram/ekor/hari.",
+  }, null],
+  ["sudah dimatikan — bukan urusan lagi", {
+    is_active: false, frequency: "harian", title: "Vitamin E (2 Hari Sekali)",
+  }, null],
+  ["kolomnya sudah dibetulkan", {
+    is_active: true, frequency: "dua_harian", frequency_interval_days: 2,
+    title: "Vitamin E (2 Hari Sekali)",
+  }, null],
+  ["ditulis dengan huruf", {
+    is_active: true, frequency: "harian", title: "Suplemen setiap dua hari sekali",
+  }, 2],
+];
+for (const [nama, j, harap] of jadwalUji) {
+  const h = J.iramaTakCocok(j);
+  const dapat = h ? h.tertulisHari : null;
+  if (dapat !== harap) {
+    temuan.push(`iramaTakCocok: "${nama}" menjawab ${dapat}, seharusnya ${harap}`);
+  }
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -121,6 +175,6 @@ if (temuan.length) {
 }
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
-  `${syarat.length} syarat muat ulang otomatis diuji.`,
+  `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal diuji.`,
 );
 process.exit(0);
