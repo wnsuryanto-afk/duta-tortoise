@@ -207,3 +207,49 @@ export function cocokkanBarisBelanja(daftar = [], itemPesanan = {}, barangGudang
   if (!nama) return [];
   return terbuka.filter((b) => kunciNama(b.nama_barang) === nama);
 }
+
+/**
+ * Barang yang DIBUAT SENDIRI, bukan dibeli.
+ *
+ * ── Kenapa fungsi ini ada ───────────────────────────────────────────
+ *
+ * VIT-REP00 "RACIKAN Vitamin Reproduksi Betina" adalah hasil meracik 12
+ * bahan, bukan barang yang bisa dipesan. Stoknya nol dan batas minimumnya
+ * 3.000 gram, jadi penilai stok menandainya gawat, dan tombol "masukkan
+ * barang gawat ke daftar belanja" di beranda memasukkannya seperti barang
+ * lain.
+ *
+ * Itu sudah pernah ketahuan. Pada 31-08-2026 barisnya dibatalkan dengan
+ * keterangan yang menjelaskan persis duduk perkaranya — "yang perlu
+ * dibeli adalah bahannya (Fermipan, Vitamin E, Vitamin D3), lalu
+ * diproduksi lewat Stok & Gudang → tab Resep".
+ *
+ * Tiga minggu kemudian, 20-09-2026, barisnya masuk lagi.
+ *
+ * Keterangan pada satu baris yang dibatalkan tidak menghalangi apa pun:
+ * ia menunggu dibaca, sementara yang memasukkannya kembali adalah tombol.
+ * Jadi aturannya sekarang dihitung dari datanya sendiri — sebuah barang
+ * yang menjadi `output_item_id` sebuah resep tidak pernah ditawarkan
+ * untuk dibeli.
+ *
+ * Bahannya tetap ditawarkan seperti biasa, dan memang itu yang benar:
+ * ketiga bahan pemblokir Duta Repro sudah ada di daftar belanja bertanda
+ * "segera" — yang keliru hanya barang jadinya.
+ *
+ * @param {Array} resep daftar PelletRecipe
+ * @returns {Set<string>} id WarehouseItem yang merupakan hasil racikan
+ */
+export function idBarangRacikan(resep = []) {
+  const s = new Set();
+  for (const r of resep || []) {
+    const id = r?.output_item_id;
+    if (id) s.add(String(id));
+  }
+  return s;
+}
+
+/** Benar bila barang ini diracik sendiri, jadi tidak untuk dibeli. */
+export function diracikSendiri(barang, idRacikan) {
+  if (!barang || !idRacikan || idRacikan.size === 0) return false;
+  return idRacikan.has(String(barang.id));
+}

@@ -13,7 +13,7 @@ import { canAccess } from "@/lib/permissions";
 import { logActivity } from "@/lib/logActivity";
 import { poinDiklaim } from "@/lib/poinChecklist";
 import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
-import { penandaMenunggu, sudahDidaftar, barisDariBarang } from "@/lib/daftarBelanja";
+import { penandaMenunggu, sudahDidaftar, barisDariBarang, idBarangRacikan, diracikSendiri } from "@/lib/daftarBelanja";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +115,13 @@ export default function KeputusanHariIni() {
     queryFn: () => base44.entities.ToolRequest.filter({ status: "disetujui" }, "-request_date", 200),
     staleTime: 60 * 1000,
   });
+  // Resep dibaca HANYA untuk tahu barang mana yang diracik sendiri —
+  // barang jadi tidak pernah ditawarkan untuk dibeli. Lihat lib/daftarBelanja.
+  const { data: resep = [] } = useQuery({
+    queryKey: ["pellet-recipes"],
+    queryFn: () => base44.entities.PelletRecipe.list("-created_date", 100),
+    staleTime: 5 * 60 * 1000,
+  });
 
   // ── Stok ────────────────────────────────────────────────────────────
   const dinilai = nilaiUrgensiStok(warehouse, gabungRiwayatPemakaian(pergerakan), sopTasks);
@@ -130,7 +137,13 @@ export default function KeputusanHariIni() {
   // tombol ini menawarkan menambahkan barang yang sudah terdaftar, dan
   // menekannya membuat baris kembar. Lihat lib/daftarBelanja.
   const penandaSudah = penandaMenunggu(daftarBelanja);
-  const belumDidaftar = gawat.filter((i) => !sudahDidaftar(i, penandaSudah));
+  // Barang jadi hasil racikan dikeluarkan di sini, bukan hanya dari tombolnya:
+  // menawarkan "beli racikan Duta Repro" lalu menolak saat ditekan sama
+  // membingungkannya dengan memasukkannya.
+  const idRacikan = idBarangRacikan(resep);
+  const belumDidaftar = gawat.filter(
+    (i) => !sudahDidaftar(i, penandaSudah) && !diracikSendiri(i, idRacikan),
+  );
 
   // ── Checklist ───────────────────────────────────────────────────────
   // Hanya yang berfoto yang boleh disetujui massal — itu batas yang disepakati.

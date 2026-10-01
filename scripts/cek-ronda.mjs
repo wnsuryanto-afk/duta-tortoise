@@ -52,9 +52,11 @@ const bundel = (masuk, keluar) =>
 bundel("src/lib/kandang.js", "kandang.cjs");
 bundel("src/lib/versiAplikasi.js", "versi.cjs");
 bundel("src/lib/jadwalPerawatan.js", "jadwal.cjs");
+bundel("src/lib/daftarBelanja.js", "belanja.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
+const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -167,6 +169,49 @@ for (const [nama, j, harap] of jadwalUji) {
   }
 }
 
+/* ── 4. Barang yang diracik sendiri tidak ditawarkan untuk dibeli ──── */
+
+/*
+ * VIT-REP00 "RACIKAN Vitamin Reproduksi Betina" dibuat dari 12 bahan,
+ * bukan dipesan. Stoknya nol dan batas minimumnya 3.000 g, jadi penilai
+ * stok menandainya gawat dan tombol beranda memasukkannya ke daftar
+ * belanja seperti barang biasa.
+ *
+ * Itu sudah pernah ketahuan: 31-08-2026 barisnya dibatalkan dengan
+ * keterangan yang menjelaskan persis duduk perkaranya. Tiga minggu
+ * kemudian, 20-09-2026, barisnya masuk lagi — karena keterangan itu
+ * menunggu dibaca, sementara yang memasukkannya kembali adalah tombol.
+ *
+ * Yang diuji di sini dua arah sekaligus. Barang jadi harus dikecualikan,
+ * DAN bahan-bahannya harus TETAP ditawarkan: ketiga bahan pemblokir Duta
+ * Repro memang perlu dibeli, dan mengecualikan mereka ikut-ikutan akan
+ * membuat racikannya tidak pernah bisa dibuat lagi.
+ */
+const RESEP_UJI = [
+  { name: "DUTA REPRO", output_item_id: "6a50c9c9d70aed0d5b585621" },
+  { name: "DUTA FEMALE PLUS", output_item_id: "6a95ec40671f08cfb8de68f0" },
+  { name: "DUTA HERBAL BOOST", output_item_id: "6a95ec40671f08cfb8de68f1" },
+  { name: "DUTA DAILY BOOST", output_item_id: "6a95ec40671f08cfb8de68ef" },
+];
+const idRacikan = B.idBarangRacikan(RESEP_UJI);
+
+const belanjaUji = [
+  ["VIT-REP00 racikan jadi", "6a50c9c9d70aed0d5b585621", true],
+  ["VIT-REP01 Vitamin E (bahan)", "6a50c9c9d70aed0d5b585615", false],
+  ["VIT-REP02 Vitamin D3 (bahan)", "6a50c9c9d70aed0d5b585616", false],
+  ["VIT-REP04 Fermipan (bahan)", "6a50c9c9d70aed0d5b585618", false],
+  ["kapsul Female Plus (jadi)", "6a95ec40671f08cfb8de68f0", true],
+  ["Burnazin (obat biasa)", "6a23a4f796f1eb73e8d6a424", false],
+];
+for (const [nama, id, harap] of belanjaUji) {
+  if (B.diracikSendiri({ id }, idRacikan) !== harap) {
+    temuan.push(`diracikSendiri: "${nama}" menjawab ${!harap}, seharusnya ${harap}`);
+  }
+}
+if (B.diracikSendiri({ id: "apa-saja" }, B.idBarangRacikan([])) !== false) {
+  temuan.push("diracikSendiri: tanpa resep sama sekali, masih menuduh ada yang diracik");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -175,6 +220,6 @@ if (temuan.length) {
 }
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
-  `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal diuji.`,
+  `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja diuji.`,
 );
 process.exit(0);
