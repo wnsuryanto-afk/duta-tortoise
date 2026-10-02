@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { potongBatchGudang } from "@/lib/pemakaianBarang";
-import { periksaResep } from "@/lib/resepRacikan";
+import { periksaResep, bolehDiracik } from "@/lib/resepRacikan";
 import {
   rincianBahan, masalahBahan, bahanTanpaHarga, totalBiaya,
   hppHasil, jumlahHasil, cariBarangHasil,
@@ -419,16 +419,38 @@ export default function StokResepTab({ role }) {
               {recipes.map(r => (
                 <Card key={r.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="font-semibold">{r.name}</h3>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                         <span>⚖️ {r.yield_kg} kg/batch</span>
                         <span>📦 {(r.ingredients || []).length} bahan</span>
                         {r.shelf_life_days && <span>⏱ {r.shelf_life_days} hari</span>}
+                        {!bolehDiracik(r) && (
+                          <span className="text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2 py-0.5 font-medium">
+                            nonaktif — tidak bisa diracik
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5 flex-shrink-0">
-                      {canEdit && (
+                      {/*
+                        Tombol meracik mengikuti `is_active` — 02-10-2026.
+
+                        Sebelum ini kolom itu tidak pernah dibaca di layar mana pun:
+                        keempat resep ditampilkan sama saja, dan ketiga resep yang
+                        SUDAH dinonaktifkan (Duta Female Plus, Herbal Boost, Daily
+                        Boost) tetap punya tombol "Buat Pelet" yang benar-benar
+                        memotong stok.
+
+                        Yang membuatnya mendesak: arsip "DUTA REPRO v4" dibuat hari
+                        ini supaya angka resep lama tidak hilang. Namanya sudah
+                        berbunyi JANGAN DIRACIK — tetapi nama menunggu dibaca,
+                        sedangkan tombol dijalankan. Menekannya akan memotong 7 kg
+                        kalsium, 3,15 kg tepung kedelai, maltodextrin, dextrose dan
+                        Fermipan, lalu menghasilkan batch yang sudah ditinggalkan
+                        v5 — tanpa satu pun peringatan.
+                      */}
+                      {canEdit && bolehDiracik(r) && (
                         <Button size="sm" className="gap-1.5 text-xs h-8" onClick={() => setProduceRecipe(r)}>
                           <FlaskConical className="w-3.5 h-3.5" /> Buat Pelet
                         </Button>

@@ -84,3 +84,28 @@ export function periksaResep(resep, dosisGram = 0) {
     bahan: rinci,
   };
 }
+
+/**
+ * Boleh diracik atau tidak.
+ *
+ * ── Kenapa ini sebuah fungsi, bukan sebuah `if` di dalam layar ─────────
+ *
+ * Sampai 02-10-2026 kolom `is_active` pada PelletRecipe tidak pernah dibaca
+ * oleh satu layar pun. Keempat resep tampil sama saja, dan ketiga yang SUDAH
+ * dinonaktifkan — Duta Female Plus, Herbal Boost, Daily Boost — tetap punya
+ * tombol "Buat Pelet" yang benar-benar memotong stok gudang.
+ *
+ * Yang membuatnya mendesak: arsip "DUTA REPRO v4" dibuat hari itu supaya
+ * angka resep lama tidak hilang dari aplikasi. Namanya sudah berbunyi JANGAN
+ * DIRACIK. Tetapi nama menunggu dibaca, sedangkan tombol dijalankan —
+ * menekannya memotong 7 kg kalsium, 3,15 kg tepung kedelai, maltodextrin,
+ * dextrose dan Fermipan, lalu menghasilkan batch yang sudah ditinggalkan v5.
+ *
+ * `!== false` dan bukan `=== true`: resep lama dibuat sebelum kolom itu ada,
+ * jadi nilainya undefined. Memakai `=== true` akan mematikan tombol meracik
+ * pada resep yang sah hanya karena kolomnya belum pernah diisi.
+ */
+export function bolehDiracik(resep) {
+  if (!resep) return false;
+  return resep.is_active !== false;
+}

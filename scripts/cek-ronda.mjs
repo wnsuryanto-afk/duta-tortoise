@@ -38,7 +38,7 @@
  * Jalankan:  node scripts/cek-ronda.mjs
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -401,6 +401,46 @@ if (C.terakhirBertelur([]).tanggal !== null) {
   temuan.push("terakhirBertelur: daftar kosong seharusnya memberi null");
 }
 
+/* ── 8. Resep nonaktif tidak boleh bisa diracik ────────────────────── */
+
+/*
+ * Arsip "DUTA REPRO v4" sengaja disimpan di aplikasi supaya angka resep lama
+ * tidak hilang. Namanya berbunyi JANGAN DIRACIK — tetapi nama menunggu
+ * dibaca, sedangkan tombol dijalankan. Menekan "Buat Pelet" pada arsip itu
+ * memotong 7 kg kalsium, 3,15 kg tepung kedelai, maltodextrin, dextrose dan
+ * Fermipan, lalu menghasilkan batch yang sudah ditinggalkan v5.
+ *
+ * Perhatikan kasus `undefined`: resep yang dibuat sebelum kolom is_active ada
+ * tidak punya nilainya. Memakai `=== true` akan mematikan tombol meracik pada
+ * resep yang sah. Itu kesalahan yang arahnya berlawanan dan sama buruknya —
+ * racikan yang memang perlu dibuat jadi tidak bisa dibuat.
+ */
+const racikUji = [
+  [{ name: "DUTA REPRO v5", is_active: true }, true, "resep aktif"],
+  [{ name: "ARSIP v4", is_active: false }, false, "arsip nonaktif"],
+  [{ name: "DUTA FEMALE PLUS", is_active: false }, false, "resep lama yang dimatikan"],
+  [{ name: "resep lama tanpa kolom" }, true, "is_active undefined — tetap boleh"],
+  [null, false, "tanpa resep sama sekali"],
+];
+for (const [resep, harap, kenapa] of racikUji) {
+  if (R.bolehDiracik(resep) !== harap) {
+    temuan.push(`bolehDiracik(${kenapa}): menjawab ${!harap}, seharusnya ${harap}`);
+  }
+}
+/*
+ * Dan TOMBOLNYA sendiri yang harus dijaga, bukan sekadar berkasnya.
+ *
+ * Pemeriksaan pertama di sini cuma mencari kata "bolehDiracik(r)" di mana pun
+ * dalam berkas. Itu lolos walaupun gerbang tombolnya sudah dilepas, karena
+ * lencana "nonaktif" di kartu yang sama juga memakai kata itu. Diuji dengan
+ * melepas gerbangnya: penjaganya tetap hijau. Jadi yang dicocokkan sekarang
+ * adalah gerbang tombol Buat Pelet itu sendiri.
+ */
+const layarResep = readFileSync("src/components/stok/StokResepTab.jsx", "utf8");
+if (!layarResep.includes("canEdit && bolehDiracik(r)")) {
+  temuan.push("Tombol Buat Pelet di StokResepTab tidak lagi dijaga bolehDiracik() — resep nonaktif bisa diracik dan memotong stok");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -410,6 +450,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik diuji.`,
 );
 process.exit(0);
