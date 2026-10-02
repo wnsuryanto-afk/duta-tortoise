@@ -1,11 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { useTestMode } from "@/lib/useTestMode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +15,7 @@ import { canApprove } from "@/lib/permissions";
 import { batalkanPergerakan, pesanKonfirmasi, sudahMenggerakkanStok } from "@/lib/koreksiPergerakan";
 import { toast } from "sonner";
 import { rupiah } from "@/lib/rupiah";
+import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 
 
 function StatusBadge({ status }) {
@@ -31,132 +30,9 @@ function StatusBadge({ status }) {
 }
 
 // ── Movement Form ───────────────────────────────────────────────────────
-function MovementForm({ feedstocks, warehouseItems, onClose, threshold }) {
-  const { testModeTag } = useTestMode();
-  const qc = useQueryClient();
-  const { user } = useCurrentUser();
-  const [form, setForm] = useState({ type: "masuk", item_id: "", item_type: "feedstock", quantity: "", unit_price: "", notes: "", date: format(new Date(), "yyyy-MM-dd") });
-  const [saving, setSaving] = useState(false);
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
-  const allOptions = [
-    ...feedstocks.map(i => ({ id: i.id, name: i.name, unit: i.unit, type: "feedstock", price: i.price_per_unit || 0 })),
-    ...warehouseItems.map(i => ({ id: i.id, name: i.name, unit: i.unit, type: "warehouse", price: i.purchase_price || 0 })),
-  ];
-  const selectedItem = allOptions.find(o => o.id === form.item_id);
-
-  const handleItemChange = (id) => {
-    const it = allOptions.find(o => o.id === id);
-    setForm(p => ({ ...p, item_id: id, item_type: it?.type || "feedstock", unit_price: it?.price || "" }));
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!form.item_id || !form.quantity) return;
-    setSaving(true);
-    const total = Number(form.quantity) * Number(form.unit_price || 0);
-    const needsApproval = form.type === "keluar" && total >= threshold;
-    const status = needsApproval ? "menunggu_approval" : "selesai";
-
-    await base44.entities.StockMovement.create({
-      item_id: form.item_id,
-      item_name: selectedItem?.name || "",
-      item_type: form.item_type,
-      type: form.type,
-      quantity: Number(form.quantity),
-      unit: selectedItem?.unit || "",
-      unit_price: Number(form.unit_price || 0),
-      total_value: total,
-      date: form.date,
-      by_email: user?.email || "",
-      by_name: user?.full_name || user?.email || "",
-      notes: form.notes,
-      status,
-      ...testModeTag,
-    });
-
-    // Update actual stock if selesai
-    if (status === "selesai") {
-      const src = allOptions.find(o => o.id === form.item_id);
-      if (src) {
-        const entity = form.item_type === "feedstock" ? base44.entities.FeedStock : base44.entities.WarehouseItem;
-        const allList = form.item_type === "feedstock" ? feedstocks : warehouseItems;
-        const current = allList.find(i => i.id === form.item_id);
-        if (current) {
-          const newStock = form.type === "masuk"
-            ? current.current_stock + Number(form.quantity)
-            : Math.max(0, current.current_stock - Number(form.quantity));
-          await entity.update(form.item_id, { current_stock: newStock });
-        }
-      }
-    }
-
-    qc.invalidateQueries({ queryKey: ["stock-movements"] });
-    qc.invalidateQueries({ queryKey: ["feedstocks"] });
-    qc.invalidateQueries({ queryKey: ["warehouse-items"] });
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <form onSubmit={handleSave} className="space-y-3">
-      <div className="flex gap-2">
-        <button type="button" onClick={() => set("type", "masuk")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${form.type === "masuk" ? "bg-green-500 text-white border-green-500" : "bg-background border-border"}`}>
-          ↑ Stok Masuk
-        </button>
-        <button type="button" onClick={() => set("type", "keluar")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${form.type === "keluar" ? "bg-red-500 text-white border-red-500" : "bg-background border-border"}`}>
-          ↓ Stok Keluar
-        </button>
-      </div>
-      <div>
-        <Label className="text-xs">Item *</Label>
-        <Select value={form.item_id} onValueChange={handleItemChange}>
-          <SelectTrigger className="mt-0.5"><SelectValue placeholder="Pilih item..." /></SelectTrigger>
-          <SelectContent>
-            <optgroup label="Pakan">
-              {feedstocks.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-            </optgroup>
-            <optgroup label="Gudang">
-              {warehouseItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-            </optgroup>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs">Jumlah * {selectedItem ? `(${selectedItem.unit})` : ""}</Label>
-          <Input type="number" min={0.01} step="0.01" value={form.quantity} onChange={e => set("quantity", e.target.value)} required className="mt-0.5" />
-        </div>
-        <div>
-          <Label className="text-xs">Harga Satuan (Rp)</Label>
-          <Input type="number" min={0} value={form.unit_price} onChange={e => set("unit_price", e.target.value)} className="mt-0.5" placeholder="0" />
-        </div>
-      </div>
-      {form.quantity && form.unit_price && (
-        <div className={`rounded-lg p-2.5 text-sm ${Number(form.quantity) * Number(form.unit_price) >= threshold && form.type === "keluar" ? "bg-yellow-50 border border-yellow-200 text-yellow-800" : "bg-muted text-muted-foreground"}`}>
-          Total: {rupiah(Number(form.quantity) * Number(form.unit_price))}
-          {Number(form.quantity) * Number(form.unit_price) >= threshold && form.type === "keluar" && (
-            <span className="ml-2 font-semibold">⚠️ Butuh Approval</span>
-          )}
-        </div>
-      )}
-      <div>
-        <Label className="text-xs">Tanggal</Label>
-        <Input type="date" value={form.date} onChange={e => set("date", e.target.value)} className="mt-0.5" />
-      </div>
-      <div>
-        <Label className="text-xs">Keterangan</Label>
-        <Input value={form.notes} onChange={e => set("notes", e.target.value)} className="mt-0.5" placeholder="Opsional..." />
-      </div>
-      <div className="flex gap-2 pt-1">
-        <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button type="submit" className="flex-1" disabled={saving || !form.item_id || !form.quantity}>{saving ? "Menyimpan..." : "Simpan"}</Button>
-      </div>
-    </form>
-  );
-}
+// MovementForm dipindah ke components/stok/FormPergerakanStok.jsx supaya
+// beranda bisa memakai formulir yang SAMA, bukan jalur kedua yang menulis
+// StockMovement sendiri. Lihat keterangan panjang di berkas itu.
 
 // ── MAIN ─────────────────────────────────────────────────────────────
 export default function StokPergerakanTab({ movements, feedstocks, warehouseItems, batches = [], role }) {
@@ -374,7 +250,7 @@ export default function StokPergerakanTab({ movements, feedstocks, warehouseItem
           <DialogHeader>
             <DialogTitle>Catat Pergerakan Stok</DialogTitle>
           </DialogHeader>
-          <MovementForm
+          <FormPergerakanStok
             feedstocks={feedstocks}
             warehouseItems={warehouseItems}
             onClose={() => setShowForm(false)}

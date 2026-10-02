@@ -1,4 +1,5 @@
 import { hanyaLaporan } from "@/lib/laporan";
+import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { useQuery } from "@tanstack/react-query";
 import SOPDeadlineAlert from "@/components/dashboard/SOPDeadlineAlert";
@@ -212,6 +213,12 @@ export default function AdminDashboard({ user, role = "admin" }) {
             tone: totalCritical > 0 ? "bad" : "good" },
         ]}
       />
+
+      {/* Barang masuk & keluar — sebelum 02-10-2026 beranda ini tidak punya
+          satu pun tombol stok, jadi mencatat pergerakan barang harus lewat
+          halaman Stok lalu tab Pergerakan. Formulirnya sama persis dengan
+          yang di tab itu, bukan jalur kedua. */}
+      <TombolStokCepat />
 
       {/* ── RINGKASAN PAGI ── */}
       <RingkasanPagi />

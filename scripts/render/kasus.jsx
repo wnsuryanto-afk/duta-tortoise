@@ -38,6 +38,8 @@ import VetContactPage from "@/pages/VetContactPage";
 import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
+import TombolStokCepat from "@/components/stok/TombolStokCepat";
+import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import SupplierPage from "@/pages/SupplierPage";
@@ -286,6 +288,19 @@ export default [
     { kunci: "x1", nama: "X1", clutch: [{ status: "bertelur", egg_count: 0 }] },
   ]} />],
   ["RiwayatBertelurInduk tidak ketemu", <RiwayatBertelurInduk cari="Z99" indukDicari={[]} />],
+  // Tombol barang masuk/keluar di beranda. Dua tombol bersebelahan dengan
+  // label panjang — kasus yang paling mudah terpotong di layar 360px.
+  ["TombolStokCepat", <TombolStokCepat />],
+  // Formulir pergerakan stok, dipakai beranda DAN tab Pergerakan. Diuji dua
+  // arah karena tombol yang menyala saat dibuka berbeda.
+  ["FormPergerakanStok masuk", <FormPergerakanStok tipeAwal="masuk" threshold={500000}
+    feedstocks={[{ id: "f1", name: "Rumput", unit: "kg", price_per_unit: 2000, current_stock: 128 }]}
+    warehouseItems={[{ id: "w1", name: "Kalsium karbonat (bahan Duta Repro v5)", unit: "gram", purchase_price: 4.2, current_stock: 30500 }]}
+    onClose={() => {}} />],
+  ["FormPergerakanStok keluar", <FormPergerakanStok tipeAwal="keluar" threshold={500000}
+    feedstocks={[]}
+    warehouseItems={[{ id: "w1", name: "Vitamin D3 100.000 IU/g (bahan Duta Repro v5)", unit: "gram", purchase_price: 0, current_stock: 0 }]}
+    onClose={() => {}} />],
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
     { morph: "normal", gender: "betina" },

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { teksTray } from "@/lib/trayTelur";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -111,7 +112,7 @@ export default function BreedingDetailPage() {
           <Info label="Perkiraan Menetas" value={hatchStr} />
           <Info label="Candling (H+30)" value={cd ? format(cd, "d MMMM yyyy", { locale: idLocale }) : "—"} highlight={late} />
           <Info label="Inkubator" value={b.incubator_name || "—"} />
-          <Info label="Tray" value={b.tray_number ? `Tray ${b.tray_number}` : "—"} />
+          <Info label="Tray" value={teksTray(b) || "—"} />
           <Info label="Musim" value={b.season_year ? `Musim ${b.season_year}` : "—"} />
           <Info label="Suhu Inkubasi" value={b.incubation_temp ? `${b.incubation_temp}°C` : "—"} />
         </div>

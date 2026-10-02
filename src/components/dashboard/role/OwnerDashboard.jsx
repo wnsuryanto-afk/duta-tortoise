@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import MonthlySalesSummary from "@/components/dashboard/MonthlySalesSummary";
 import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
@@ -780,6 +781,12 @@ export default function OwnerDashboard({ user }) {
           </Link>
         }
       />
+
+      {/* Barang masuk & keluar — sebelum 02-10-2026 beranda ini tidak punya
+          satu pun tombol stok, jadi mencatat pergerakan barang harus lewat
+          halaman Stok lalu tab Pergerakan. Formulirnya sama persis dengan
+          yang di tab itu, bukan jalur kedua. */}
+      <TombolStokCepat />
 
       {/*
         ── UANG MASUK & KELUAR BULAN INI ──

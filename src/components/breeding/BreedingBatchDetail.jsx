@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { teksTray } from "@/lib/trayTelur";
 import UbinAngka from "@/components/ui/ubin-angka";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -70,7 +71,7 @@ export default function BreedingBatchDetail({ batch, onClose }) {
               {batch.incubator_name && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                   🌡️ {batch.incubator_name}
-                  {batch.tray_number ? ` · Tray ${batch.tray_number}` : ""}
+                  {teksTray(batch) ? ` · ${teksTray(batch)}` : ""}
                 </span>
               )}
             </div>

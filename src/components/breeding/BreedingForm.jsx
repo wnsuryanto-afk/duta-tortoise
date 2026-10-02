@@ -16,6 +16,7 @@ import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
 import { recoveryDaysAgo } from "@/lib/parentHealthUtils";
 import { selaraskanEggRecords } from "@/lib/hasilInkubasi";
 import { calculateIncubatorEggs as hitungTelurInkubator } from "@/lib/breedingUtils";
+import { daftarTray, uraikanTray, trayTerpakai } from "@/lib/trayTelur";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -26,7 +27,15 @@ export default function BreedingForm({ open, onClose, editData }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  const [form, setForm] = useState(editData || {
+  /*
+    `tray_teks` adalah kotak ketik tray, bukan kolom yang disimpan.
+
+    Disemai dari daftarTray() supaya catatan LAMA — yang traynya ada di kolom
+    `tray_number` (satu angka) — tetap muncul saat diedit. Tanpa ini, membuka
+    clutch lama lalu menyimpannya akan menghapus traynya tanpa suara.
+  */
+  const [form, setForm] = useState(
+    editData ? { ...editData, tray_teks: daftarTray(editData).join(", ") } : {
     male_name: "", female_name: "", male_id: "", female_id: "",
     egg_laying_date: "", egg_count: "",
     // SATU nama, sama dengan skema. Formulir ini dulu menyimpan dua pasang
@@ -40,7 +49,9 @@ export default function BreedingForm({ open, onClose, editData }) {
     estimated_hatch_date: "",
     incubator_name: "",
     tray_number: "",
+    tray_teks: "",
     status: "bertelur", incubation_temp: "", notes: "", photos: [],
+    tray_teks: "",
   });
 
   // Generate QR saat kode kopling berubah
@@ -180,15 +191,32 @@ export default function BreedingForm({ open, onClose, editData }) {
     // Pengurangan hanya membuang baris yang belum dicek — baris yang sudah
     // punya hasil adalah catatan telur yang benar-benar ada.
     const egg_records = selaraskanEggRecords(form.egg_records, eggCount);
+    const trayDiisi = uraikanTray(form.tray_teks);
+    /*
+      `tray_teks` DIBUANG sebelum disebar, bukan ditimpa undefined.
+
+      Ia kotak ketik, bukan kolom Breeding. Menyertakannya — walau bernilai
+      undefined — tetap terhitung mengirim kolom yang tidak ada di skema, dan
+      penjaga cek-kolom-hantu menangkapnya: "datanya dibuang diam-diam".
+    */
+    const { tray_teks: _buang, ...formTersimpan } = form;
 
     const data = {
-      ...form,
+      ...formTersimpan,
       egg_count: eggCount || undefined,
       egg_records,
       // Tautan ke inkubatornya disimpan sebagai id, bukan hanya namanya.
       incubator_id: incubators.find(i => i.name === form.incubator_name)?.id || undefined,
       incubation_temp: form.incubation_temp ? Number(form.incubation_temp) : undefined,
-      tray_number: form.tray_number ? Number(form.tray_number) : undefined,
+      /*
+        DUA KOLOM, SATU KEBENARAN. `tray_numbers` adalah yang berlaku;
+        `tray_number` diisi tray PERTAMA supaya layar lama yang belum
+        diperbarui tetap menampilkan sesuatu yang benar, bukan kosong.
+        Keduanya ditulis dari sumber yang sama persis, jadi tidak bisa
+        berselisih. `tray_teks` sendiri tidak ikut disimpan.
+      */
+      tray_numbers: trayDiisi,
+      tray_number: trayDiisi.length > 0 ? trayDiisi[0] : undefined,
       season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
       estimated_hatch_start: form.estimated_hatch_start || undefined,
       estimated_hatch_end: form.estimated_hatch_end || undefined,
@@ -360,8 +388,52 @@ export default function BreedingForm({ open, onClose, editData }) {
               })()}
             </div>
             <div className="space-y-1.5">
-              <Label>Nomor Tray <span className="text-muted-foreground font-normal text-xs">(opsional)</span></Label>
-              <Input type="number" min="1" value={form.tray_number} onChange={(e) => handleChange("tray_number", e.target.value)} placeholder="cth: 1" />
+              <Label>Nomor Tray <span className="text-muted-foreground font-normal text-xs">(boleh lebih dari satu)</span></Label>
+              {/*
+                Kotak TEKS, bukan angka — satu clutch bisa memakai beberapa tray.
+                Clutch 28 butir (C23, 2 Okt 2026) tidak muat di satu tray, dan
+                sebelum ini kiper yang membaginya tidak punya tempat menuliskan
+                tray keduanya.
+              */}
+              <Input
+                value={form.tray_teks ?? ""}
+                onChange={(e) => handleChange("tray_teks", e.target.value)}
+                placeholder="cth: 1  atau  1, 2"
+                inputMode="numeric"
+              />
+              {(() => {
+                const dipilih = uraikanTray(form.tray_teks);
+                if (dipilih.length === 0) return null;
+                /*
+                  BENTROK TRAY — tray adalah satu-satunya hal yang membedakan
+                  telur induk A dari induk B setelah keduanya masuk inkubator
+                  yang sama. Dua clutch di satu tray berarti saat menetas tidak
+                  ada lagi cara tahu anak itu anak siapa, dan silsilah yang
+                  hilang tidak bisa dipulihkan belakangan.
+                */
+                const terpakai = trayTerpakai(breedings, { kecuali: editData?.id });
+                const bentrok = dipilih.filter((t) => terpakai.has(t));
+                return (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      {dipilih.length} tray: {dipilih.join(", ")}
+                    </p>
+                    {bentrok.length > 0 && (
+                      <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                        <strong>Tray {bentrok.join(", ")} sudah dipakai clutch lain</strong> —{" "}
+                        {bentrok
+                          .map((t) => {
+                            const b = terpakai.get(t);
+                            return `${t}: ${b?.female_name || "?"}`;
+                          })
+                          .join("; ")}
+                        . Kalau dua clutch dicampur dalam satu tray, saat menetas tidak
+                        bisa lagi dibedakan anak siapa.
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 

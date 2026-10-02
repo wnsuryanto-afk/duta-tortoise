@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { teksTray } from "@/lib/trayTelur";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -107,7 +108,7 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
   const T = themeFor(mode, late);
   const parentCode = `${breeding.male_name || "?"} × ${breeding.female_name || "?"}`;
   const eggNum = `${breeding.egg_count || 0}`;
-  const incubatorLine = [breeding.incubator_name, breeding.tray_number ? `Tray ${breeding.tray_number}` : ""].filter(Boolean).join(" · ") || "—";
+  const incubatorLine = [breeding.incubator_name, teksTray(breeding)].filter(Boolean).join(" · ") || "—";
   const season = breeding.season_year || "";
   const inkDays = (d && hs) ? Math.max(0, Math.round((hs - d) / 86400000)) : null;
   const printedDate = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });

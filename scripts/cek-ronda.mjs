@@ -56,6 +56,7 @@ bundel("src/lib/daftarBelanja.js", "belanja.cjs");
 bundel("src/lib/resepRacikan.js", "resep.cjs");
 bundel("src/lib/stokMenipis.js", "stok.cjs");
 bundel("src/lib/cariInduk.js", "cari.cjs");
+bundel("src/lib/trayTelur.js", "tray.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
@@ -63,6 +64,7 @@ const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.defau
 const R = await import("file://" + join(dir, "resep.cjs")).then((m) => m.default || m);
 const S = await import("file://" + join(dir, "stok.cjs")).then((m) => m.default || m);
 const C = await import("file://" + join(dir, "cari.cjs")).then((m) => m.default || m);
+const T = await import("file://" + join(dir, "tray.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -441,6 +443,68 @@ if (!layarResep.includes("canEdit && bolehDiracik(r)")) {
   temuan.push("Tombol Buat Pelet di StokResepTab tidak lagi dijaga bolehDiracik() — resep nonaktif bisa diracik dan memotong stok");
 }
 
+/* ── 9. Tray telur: satu clutch boleh memakai lebih dari satu ──────── */
+
+/*
+ * Kolom `tray_number` menyimpan SATU angka. Pada data 2 Okt 2026 ada clutch
+ * 28 butir, 25 butir, dan dua clutch 23 butir — tidak muat di satu tray.
+ *
+ * Yang paling mudah salah di sini bukan penguraiannya, melainkan URUTAN
+ * SUMBERNYA: kalau `tray_number` dibaca lebih dulu, clutch yang baru diisi
+ * dua tray akan terbaca satu tray saja selama kolom lamanya masih terisi —
+ * dan kolom lamanya MEMANG masih diisi, dengan tray pertama, supaya layar
+ * lama tidak kosong. Jadi salah urutan di sini tidak akan terlihat sebagai
+ * error; ia hanya diam-diam menghilangkan tray kedua.
+ */
+const trayUji = [
+  [{ tray_numbers: [2, 1], tray_number: 2 }, [1, 2], "tray_numbers menang atas tray_number, dan diurutkan"],
+  [{ tray_number: 3 }, [3], "catatan lama: jatuh ke tray_number"],
+  [{ tray_numbers: [], tray_number: 4 }, [4], "tray_numbers kosong: jatuh ke tray_number"],
+  [{ tray_numbers: [5, 5, 5] }, [5], "kembar dibuang"],
+  [{ tray_numbers: [1, 0, -2, null] }, [1], "nol, minus, dan kosong dibuang"],
+  [{}, [], "tanpa tray sama sekali"],
+  [null, [], "tanpa catatan sama sekali"],
+];
+for (const [b, harap, kenapa] of trayUji) {
+  const dapat = T.daftarTray(b);
+  if (JSON.stringify(dapat) !== JSON.stringify(harap)) {
+    temuan.push(`daftarTray (${kenapa}): dapat ${JSON.stringify(dapat)}, seharusnya ${JSON.stringify(harap)}`);
+  }
+}
+
+// Ketikan orang di lapangan — pemisah apa pun yang ada di kepalanya.
+for (const [teks, harap] of [
+  ["1, 2", [1, 2]], ["1,2", [1, 2]], ["1 2", [1, 2]], ["1;2", [1, 2]],
+  ["Tray 1 dan 2", [1, 2]], ["2, 1", [1, 2]], ["", []], ["   ", []], ["abc", []],
+]) {
+  const dapat = T.uraikanTray(teks);
+  if (JSON.stringify(dapat) !== JSON.stringify(harap)) {
+    temuan.push(`uraikanTray("${teks}"): dapat ${JSON.stringify(dapat)}, seharusnya ${JSON.stringify(harap)}`);
+  }
+}
+
+if (T.teksTray({ tray_numbers: [1, 2] }) !== "Tray 1, 2") temuan.push("teksTray: dua tray salah tulis");
+if (T.teksTray({}) !== "") temuan.push("teksTray: tanpa tray seharusnya kosong");
+
+/*
+ * Bentrok tray. Tray adalah satu-satunya hal yang membedakan telur induk A
+ * dari induk B setelah keduanya masuk inkubator yang sama; dua clutch di satu
+ * tray berarti saat menetas tidak ada lagi cara tahu anak itu anak siapa.
+ */
+const clutchUji = [
+  { id: "a", female_name: "A31", tray_numbers: [1, 2] },
+  { id: "b", female_name: "C23", tray_numbers: [2, 3] },
+  { id: "c", female_name: "A47", tray_numbers: [4] },
+];
+const bentrok = T.trayBentrok(clutchUji);
+if (bentrok.length !== 1 || bentrok[0].tray !== 2 || bentrok[0].clutch.length !== 2) {
+  temuan.push(`trayBentrok: seharusnya hanya tray 2 yang bentrok antara 2 clutch, dapat ${JSON.stringify(bentrok.map((x) => [x.tray, x.clutch.length]))}`);
+}
+// Saat mengedit clutch itu sendiri, traynya sendiri tidak boleh dihitung bentrok.
+if (T.trayTerpakai(clutchUji, { kecuali: "a" }).has(1)) {
+  temuan.push("trayTerpakai: clutch yang sedang diedit masih dihitung memakai traynya sendiri");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -450,6 +514,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik + ${trayUji.length} tray telur diuji.`,
 );
 process.exit(0);
