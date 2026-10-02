@@ -79,3 +79,62 @@ export function isiInkubator(inkubator, breedings = []) {
     melencengDariCatatan: telur !== (Number(inkubator?.current_eggs) || 0),
   };
 }
+
+/**
+ * Jenis alarm sebuah pembacaan terhadap ambang inkubatornya.
+ *
+ * ── Kenapa satu fungsi, dipakai semua layar ───────────────────────────────
+ *
+ * Sampai 2 Okt 2026 ada TIGA penilaian suhu yang berbeda di aplikasi ini:
+ *
+ *   record Incubator        29-31 °C   (setelah diubah pemiliknya hari ini)
+ *   MonitorInkubator        membaca record itu — benar
+ *   KeeperIncubatorWidget   `temp >= 28 && temp <= 33` ditulis mati,
+ *                           sementara komentarnya sendiri berbunyi "29-31"
+ *
+ * Yang paling berbahaya yang terakhir: beranda KIPER — orang yang benar-benar
+ * membaca alat ukurnya tiap hari — memakai ambang paling longgar dari
+ * ketiganya. Pembacaan 32,5 °C akan berwarna HIJAU di layar kiper sementara
+ * layar monitor menyebutnya alarm. Yang melihat angkanya lebih dulu justru
+ * yang paling kecil kemungkinannya diberi tahu.
+ *
+ * Ambangnya sekarang selalu datang dari record inkubatornya. Mengubah batas
+ * di satu tempat mengubahnya di semua layar.
+ */
+export function jenisAlarm(suhu, kelembapan, inkubator) {
+  const t = Number(suhu);
+  const h = Number(kelembapan);
+  if (!inkubator) return "normal";
+  if (Number.isFinite(t)) {
+    const atas = Number(inkubator.temp_max_alarm);
+    const bawah = Number(inkubator.temp_min_alarm);
+    if (Number.isFinite(atas) && t > atas) return "suhu_tinggi";
+    if (Number.isFinite(bawah) && t < bawah) return "suhu_rendah";
+  }
+  if (Number.isFinite(h)) {
+    const atas = Number(inkubator.humidity_max_alarm);
+    const bawah = Number(inkubator.humidity_min_alarm);
+    if (Number.isFinite(atas) && h > atas) return "humidity_tinggi";
+    if (Number.isFinite(bawah) && h < bawah) return "humidity_rendah";
+  }
+  return "normal";
+}
+
+/**
+ * Suhu & kelembapan sebuah pembacaan.
+ *
+ * Kolomnya `temperature_actual` / `humidity_actual`. Disebut lewat fungsi
+ * karena KeeperIncubatorWidget membacanya sebagai `temperature` /
+ * `humidity` — kolom yang TIDAK ADA di skema IncubatorReading. Akibatnya
+ * widget itu selalu berkata "belum ada data", bahkan setelah pembacaan
+ * benar-benar dicatat. Tidak ada error; nilainya cuma undefined.
+ */
+export function angkaPembacaan(pembacaan) {
+  if (!pembacaan) return { suhu: null, kelembapan: null };
+  const suhu = Number(pembacaan.temperature_actual);
+  const kelembapan = Number(pembacaan.humidity_actual);
+  return {
+    suhu: Number.isFinite(suhu) ? suhu : null,
+    kelembapan: Number.isFinite(kelembapan) ? kelembapan : null,
+  };
+}

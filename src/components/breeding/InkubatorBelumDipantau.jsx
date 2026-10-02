@@ -58,8 +58,12 @@ export default function InkubatorBelumDipantau({ breedings = [] }) {
                 {p.pembacaanTerakhir
                   ? `Pembacaan terakhir ${tgl(p.pembacaanTerakhir)} — ${p.hariSejakPembacaan} hari lalu, sebelum kelompok telur ini ada.`
                   : "Inkubator belum pernah dicatat sama sekali."}{" "}
-                Sulcata menetas pada 80–105 hari di suhu 31°C; suhu menentukan bukan
-                hanya berhasil-tidaknya, tetapi juga lamanya.
+                {/* Suhunya TIDAK ditulis mati di sini lagi. Target inkubator diubah
+                    dari 31 ke 30 °C pada 02-10-2026, dan kalimat yang menghafal
+                    angkanya langsung jadi salah tanpa ada yang tahu. Yang tersisa
+                    adalah hubungan sebab-akibatnya, yang tidak berubah. */}
+                Suhu menentukan bukan hanya berhasil-tidaknya menetas, tetapi juga
+                lamanya — dan pada sulcata juga jenis kelaminnya.
               </>
             ) : (
               <>

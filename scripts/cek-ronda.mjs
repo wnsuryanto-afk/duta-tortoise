@@ -597,6 +597,49 @@ if (isi.tercatat !== 72 || !isi.melencengDariCatatan) {
   temuan.push("isiInkubator: selisih terhadap current_eggs tidak terdeteksi");
 }
 
+/*
+ * Satu aturan alarm untuk semua layar.
+ *
+ * Sampai 02-10-2026 beranda KIPER memakai ambang `28..33` yang ditulis mati —
+ * paling longgar dari tiga penilaian yang ada — sementara komentarnya sendiri
+ * berbunyi "29-31". Orang yang membaca alat ukurnya tiap hari justru yang
+ * paling kecil kemungkinannya diberi tahu.
+ */
+const INC30 = { temp_setting: 30, temp_min_alarm: 29, temp_max_alarm: 31,
+                humidity_setting: 80, humidity_min_alarm: 70, humidity_max_alarm: 90 };
+const alarmUji = [
+  [30, 80, "normal", "tepat target"],
+  [29, 80, "normal", "tepat di batas bawah — belum alarm"],
+  [31, 80, "normal", "tepat di batas atas — belum alarm"],
+  [28.9, 80, "suhu_rendah", "di bawah batas"],
+  [31.1, 80, "suhu_tinggi", "di atas batas"],
+  [32.5, 80, "suhu_tinggi", "angka yang DULU berwarna hijau di beranda kiper"],
+  [30, 69, "humidity_rendah", "kelembapan di bawah batas"],
+  [30, 91, "humidity_tinggi", "kelembapan di atas batas"],
+];
+for (const [t, h, harap, kenapa] of alarmUji) {
+  const dapat = I.jenisAlarm(t, h, INC30);
+  if (dapat !== harap) {
+    temuan.push(`jenisAlarm(${t}, ${h}) [${kenapa}]: dapat "${dapat}", seharusnya "${harap}"`);
+  }
+}
+// Setelan baru pemiliknya harus LOLOS pemeriksaan ambang.
+if (I.periksaAmbang(INC30).length !== 0) {
+  temuan.push(`periksaAmbang: setelan baru (target 30, pita 29-31) seharusnya bersih, dapat ${JSON.stringify(I.periksaAmbang(INC30))}`);
+}
+/*
+ * Kolom pembacaan. Widget kiper membaca `temperature`/`humidity`; skemanya
+ * `temperature_actual`/`humidity_actual`. Selalu undefined, jadi widgetnya
+ * tidak pernah bisa menampilkan satu pun pembacaan — tanpa error.
+ */
+const ap = I.angkaPembacaan({ temperature_actual: 30.5, humidity_actual: 82 });
+if (ap.suhu !== 30.5 || ap.kelembapan !== 82) {
+  temuan.push(`angkaPembacaan: dapat ${JSON.stringify(ap)}, seharusnya { suhu: 30.5, kelembapan: 82 }`);
+}
+if (I.angkaPembacaan({ temperature: 30.5 }).suhu !== null) {
+  temuan.push("angkaPembacaan: kolom lama `temperature` seharusnya TIDAK dibaca — kolomnya tidak ada di skema");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -606,6 +649,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang inkubator diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { jenisAlarm } from "@/lib/inkubator";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -38,18 +39,16 @@ function ReadingForm({ incubators, user, onClose }) {
 
   const selectedInc = incubators.find(i => i.id === form.incubator_id);
 
-  const getAlarmType = () => {
-    const temp = Number(form.temperature_actual);
-    const hum = Number(form.humidity_actual);
-    if (!selectedInc || !temp || !hum) return "normal";
-    if (temp > (selectedInc.temp_max_alarm ?? 32)) return "suhu_tinggi";
-    if (temp < (selectedInc.temp_min_alarm ?? 31)) return "suhu_rendah";
-    if (hum > (selectedInc.humidity_max_alarm ?? 90)) return "humidity_tinggi";
-    if (hum < (selectedInc.humidity_min_alarm ?? 70)) return "humidity_rendah";
-    return "normal";
-  };
+  /*
+    Aturan alarmnya dipindah ke lib/inkubator.js supaya beranda kiper memakai
+    yang sama persis. Sebelum 02-10-2026 ada tiga penilaian suhu berbeda di
+    aplikasi ini, dan yang paling longgar justru dipakai layar kiper.
 
-  const alarmType = getAlarmType();
+    Cadangan `?? 32` / `?? 31` ikut dibuang: angka itu menyamar sebagai
+    pengaman, padahal ia diam-diam mengembalikan ambang LAMA pada inkubator
+    yang belum diisi ambangnya — persis angka yang hari ini diganti.
+  */
+  const alarmType = jenisAlarm(form.temperature_actual, form.humidity_actual, selectedInc);
   const alarmTriggered = alarmType !== "normal";
 
   const handleSave = async () => {

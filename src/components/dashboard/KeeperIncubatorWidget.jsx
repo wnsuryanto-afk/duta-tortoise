@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { jenisAlarm, angkaPembacaan } from "@/lib/inkubator";
 import { base44 } from "@/api/base44Client";
 import { Thermometer } from "lucide-react";
 import { format } from "date-fns";
@@ -41,13 +42,28 @@ export default function KeeperIncubatorWidget() {
           // benar menampilkan "belum ada data" — tapi kode yang tidak mungkin
           // berjalan membuat pembaca berikutnya mengira ada sumber kedua.
           // Satu-satunya sumber suhu adalah pencatatan IncubatorReading.
-          const temp = last?.temperature ?? null;
-          const hum = last?.humidity ?? null;
+          /*
+            DUA CACAT DIPERBAIKI DI SINI — 02-10-2026.
 
-          // Target range sulcata: 29-31°C, 60-80%
-          const tempOk = temp !== null ? (temp >= 28 && temp <= 33) : null;
-          const humOk = hum !== null ? (hum >= 55 && hum <= 85) : null;
-          const isAlert = tempOk === false || humOk === false;
+            1. Kolomnya salah nama. Widget ini membaca `last.temperature` dan
+               `last.humidity`; skema IncubatorReading menyimpannya sebagai
+               `temperature_actual` dan `humidity_actual`. Keduanya selalu
+               undefined, jadi kartu ini TIDAK PERNAH bisa menampilkan satu
+               pun pembacaan — selalu "belum ada data", bahkan setelah suhu
+               benar-benar dicatat. Tidak ada error; nilainya cuma kosong.
+
+            2. Ambangnya ditulis mati `28..33`, sementara komentarnya sendiri
+               berbunyi "29-31" dan record inkubatornya berbunyi lain lagi.
+               Beranda KIPER — orang yang membaca alat ukurnya tiap hari —
+               memakai ambang paling longgar dari ketiganya: 32,5 °C berwarna
+               hijau di sini sementara layar monitor menyebutnya alarm.
+
+            Keduanya kini satu sumber: angkanya dari kolom yang benar,
+            ambangnya dari record inkubatornya sendiri.
+          */
+          const { suhu: temp, kelembapan: hum } = angkaPembacaan(last);
+          const alarm = jenisAlarm(temp, hum, inc);
+          const isAlert = alarm !== "normal";
           const hasData = temp !== null || hum !== null;
 
           return (
@@ -69,13 +85,13 @@ export default function KeeperIncubatorWidget() {
                 <div className="flex gap-4 mt-2">
                   {temp !== null && (
                     <div className="text-center">
-                      <p className={`text-lg font-bold ${tempOk === false ? "text-red-600" : "text-foreground"}`}>{temp}°C</p>
+                      <p className={`text-lg font-bold ${alarm.startsWith("suhu") ? "text-red-600" : "text-foreground"}`}>{temp}°C</p>
                       <p className="text-[10px] text-muted-foreground">Suhu</p>
                     </div>
                   )}
                   {hum !== null && (
                     <div className="text-center">
-                      <p className={`text-lg font-bold ${humOk === false ? "text-red-600" : "text-foreground"}`}>{hum}%</p>
+                      <p className={`text-lg font-bold ${alarm.startsWith("humidity") ? "text-red-600" : "text-foreground"}`}>{hum}%</p>
                       <p className="text-[10px] text-muted-foreground">Kelembaban</p>
                     </div>
                   )}
