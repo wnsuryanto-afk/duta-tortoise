@@ -39,6 +39,7 @@ import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import TombolStokCepat from "@/components/stok/TombolStokCepat";
+import PeringatanTray from "@/components/breeding/PeringatanTray";
 import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
@@ -291,6 +292,26 @@ export default [
   // Tombol barang masuk/keluar di beranda. Dua tombol bersebelahan dengan
   // label panjang — kasus yang paling mudah terpotong di layar 360px.
   ["TombolStokCepat", <TombolStokCepat />],
+  // Keadaan NYATA 2 Okt 2026: 6 clutch tanpa tray (127 butir) dan tray 8
+  // dipakai dua induk (40 butir). Nama induk + tanggal + jumlah berjejer —
+  // kasus yang mudah terpotong di layar 360px.
+  ["PeringatanTray keadaan nyata", <PeringatanTray breedings={[
+    { id: "1", female_name: "C23", egg_count: 22, egg_laying_date: "2026-08-12", status: "bertelur" },
+    { id: "2", female_name: "A31", egg_count: 23, egg_laying_date: "2026-09-04", status: "bertelur" },
+    { id: "3", female_name: "A46", egg_count: 22, egg_laying_date: "2026-09-04", status: "bertelur" },
+    { id: "4", female_name: "A47", egg_count: 25, egg_laying_date: "2026-09-06", status: "bertelur" },
+    { id: "5", female_name: "C23", egg_count: 23, egg_laying_date: "2026-09-09", status: "bertelur", tray_number: 8 },
+    { id: "6", female_name: "C22", egg_count: 17, egg_laying_date: "2026-09-14", status: "bertelur", tray_number: 8 },
+    { id: "7", female_name: "A48", egg_count: 13, egg_laying_date: "2026-09-26", status: "bertelur", tray_number: 7 },
+    { id: "8", female_name: "B108", egg_count: 13, egg_laying_date: "2026-09-30", status: "bertelur" },
+    { id: "9", female_name: "A31", egg_count: 22, egg_laying_date: "2026-10-01", status: "bertelur" },
+    { id: "10", female_name: "C23", egg_count: 28, egg_laying_date: "2026-10-02", status: "bertelur", tray_numbers: [3, 4] },
+  ]} />],
+  // Semuanya beres -> kartunya harus DIAM, bukan tampil kosong.
+  ["PeringatanTray semua beres", <PeringatanTray breedings={[
+    { id: "a", female_name: "A31", egg_count: 22, egg_laying_date: "2026-10-01", status: "bertelur", tray_numbers: [1] },
+    { id: "b", female_name: "C23", egg_count: 28, egg_laying_date: "2026-10-02", status: "bertelur", tray_numbers: [2, 3] },
+  ]} />],
   // Formulir pergerakan stok, dipakai beranda DAN tab Pergerakan. Diuji dua
   // arah karena tombol yang menyala saat dibuka berbeda.
   ["FormPergerakanStok masuk", <FormPergerakanStok tipeAwal="masuk" threshold={500000}

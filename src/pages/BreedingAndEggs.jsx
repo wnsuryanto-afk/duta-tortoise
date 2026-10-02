@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { saringBreeding, kelompokkanPerInduk } from "@/lib/cariInduk";
+import PeringatanTray from "@/components/breeding/PeringatanTray";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -369,6 +370,12 @@ export default function BreedingAndEggs() {
           karena ia berlaku untuk seluruh halaman — bukan untuk satu tab.
           Lihat lib/pantauInkubator.js untuk angka yang melatarinya. */}
       <InkubatorBelumDipantau breedings={breedings} />
+
+      {/* Tray yang kosong atau bentrok. Seluruh clutch ada di inkubator yang
+          sama, jadi tray satu-satunya pembeda telur induk A dari induk B —
+          dan pada 2 Okt 2026 hanya 41 dari 208 butir yang induknya pasti
+          bisa ditelusuri. Kartunya diam sendiri begitu semuanya beres. */}
+      <PeringatanTray breedings={breedings} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Dua baris di ponsel, satu baris di layar lebar. Enam tab dalam satu

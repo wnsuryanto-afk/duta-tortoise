@@ -1,3 +1,5 @@
+import { clutchAktif } from "@/lib/breedingUtils";
+
 /**
  * trayTelur.js — satu clutch bisa memakai lebih dari satu tray.
  *
@@ -97,4 +99,35 @@ export function trayTerpakai(breedings = [], { kecuali = null } = {}) {
     for (const t of daftarTray(b)) if (!peta.has(t)) peta.set(t, b);
   }
   return peta;
+}
+
+/**
+ * Clutch yang sedang dierami tetapi traynya belum diisi.
+ *
+ * ── Kenapa ini penting, dengan angkanya ───────────────────────────────────
+ *
+ * Diperiksa pada data 2 Okt 2026: dari 208 telur yang sedang dierami di
+ * Inkubator 1, hanya 41 butir (20%) yang induknya pasti bisa ditelusuri.
+ *
+ *   127 butir (6 clutch)  traynya KOSONG
+ *    40 butir (2 clutch)  berbagi tray 8 — C23 9 Sep dan C22 14 Sep
+ *    41 butir (2 clutch)  tray 7 dan tray 3, jelas
+ *
+ * Menetas pertama diperkirakan 31 Okt. Begitu bayinya keluar, 167 butir itu
+ * tidak punya cara lagi dihubungkan ke induknya — dan silsilah yang hilang
+ * tidak bisa dipulihkan belakangan.
+ *
+ * Aplikasi ini sedang dipakai untuk menjawab "betina mana yang produktif".
+ * Jawaban itu dibangun dari catatan induk per clutch. Telur yang sampai ke
+ * penetasan tanpa tray memutus rantainya tepat di langkah terakhir.
+ */
+export function clutchTanpaTray(breedings = []) {
+  return (breedings || []).filter(
+    (b) => b && clutchAktif(b) && daftarTray(b).length === 0,
+  );
+}
+
+/** Bentrok tray, dibatasi pada clutch yang sedang dierami saja. */
+export function bentrokTrayAktif(breedings = []) {
+  return trayBentrok((breedings || []).filter(clutchAktif));
 }

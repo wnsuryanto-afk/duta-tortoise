@@ -505,6 +505,41 @@ if (T.trayTerpakai(clutchUji, { kecuali: "a" }).has(1)) {
   temuan.push("trayTerpakai: clutch yang sedang diedit masih dihitung memakai traynya sendiri");
 }
 
+// Keadaan NYATA 2 Okt 2026 — 208 telur, hanya 41 yang induknya pasti.
+const CLUTCH_NYATA = [
+  { id: "1", female_name: "C23", egg_count: 22, status: "bertelur" },
+  { id: "2", female_name: "A31", egg_count: 23, status: "bertelur" },
+  { id: "3", female_name: "A46", egg_count: 22, status: "bertelur" },
+  { id: "4", female_name: "A47", egg_count: 25, status: "bertelur" },
+  { id: "5", female_name: "C23", egg_count: 23, status: "bertelur", tray_number: 8 },
+  { id: "6", female_name: "C22", egg_count: 17, status: "bertelur", tray_number: 8 },
+  { id: "7", female_name: "A48", egg_count: 13, status: "bertelur", tray_number: 7 },
+  { id: "8", female_name: "B108", egg_count: 13, status: "bertelur" },
+  { id: "9", female_name: "A31", egg_count: 22, status: "bertelur", tray_numbers: [] },
+  { id: "10", female_name: "C23", egg_count: 28, status: "bertelur", tray_number: 3 },
+  // Clutch yang SUDAH SELESAI tidak boleh ikut diperingatkan lagi.
+  { id: "x", female_name: "C24", egg_count: 24, status: "selesai" },
+];
+const tanpa = T.clutchTanpaTray(CLUTCH_NYATA);
+if (tanpa.length !== 6) {
+  temuan.push(`clutchTanpaTray: dapat ${tanpa.length} clutch, seharusnya 6 (clutch selesai tidak ikut)`);
+}
+if (tanpa.reduce((s, b) => s + b.egg_count, 0) !== 127) {
+  temuan.push(`clutchTanpaTray: jumlah butirnya ${tanpa.reduce((s, b) => s + b.egg_count, 0)}, seharusnya 127`);
+}
+if (tanpa.some((b) => b.status === "selesai")) {
+  temuan.push("clutchTanpaTray: clutch yang sudah selesai ikut diperingatkan");
+}
+const bAktif = T.bentrokTrayAktif(CLUTCH_NYATA);
+if (bAktif.length !== 1 || bAktif[0].tray !== 8) {
+  temuan.push(`bentrokTrayAktif: seharusnya hanya tray 8, dapat ${JSON.stringify(bAktif.map((x) => x.tray))}`);
+}
+// Semua beres -> kedua daftar harus kosong, supaya kartunya diam.
+const beres = [{ id: "a", status: "bertelur", tray_numbers: [1] }, { id: "b", status: "bertelur", tray_numbers: [2] }];
+if (T.clutchTanpaTray(beres).length !== 0 || T.bentrokTrayAktif(beres).length !== 0) {
+  temuan.push("tray: keadaan yang sudah beres masih memunculkan peringatan");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
