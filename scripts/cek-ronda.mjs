@@ -57,6 +57,7 @@ bundel("src/lib/resepRacikan.js", "resep.cjs");
 bundel("src/lib/stokMenipis.js", "stok.cjs");
 bundel("src/lib/cariInduk.js", "cari.cjs");
 bundel("src/lib/trayTelur.js", "tray.cjs");
+bundel("src/lib/inkubator.js", "inkubator.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
@@ -65,6 +66,7 @@ const R = await import("file://" + join(dir, "resep.cjs")).then((m) => m.default
 const S = await import("file://" + join(dir, "stok.cjs")).then((m) => m.default || m);
 const C = await import("file://" + join(dir, "cari.cjs")).then((m) => m.default || m);
 const T = await import("file://" + join(dir, "tray.cjs")).then((m) => m.default || m);
+const I = await import("file://" + join(dir, "inkubator.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -540,6 +542,61 @@ if (T.clutchTanpaTray(beres).length !== 0 || T.bentrokTrayAktif(beres).length !=
   temuan.push("tray: keadaan yang sudah beres masih memunculkan peringatan");
 }
 
+/* ── 10. Setelan alarm inkubator: target harus di DALAM pitanya ────── */
+
+/*
+ * Setelan nyata kedua inkubator pada 2 Okt 2026: target 31 °C, alarm bawah
+ * 31, alarm atas 32. Terlihat benar di layar. Dijalankan satu per satu:
+ *
+ *   30,8 -> suhu_rendah   (0,2 di bawah target sudah alarm)
+ *   31,9 -> normal        (0,9 di atas target masih diam)
+ *
+ * Toleransinya −0,0 ke bawah dan +1,0 ke atas. Salah dua arah sekaligus:
+ * alarm palsu yang membuat alarmnya berhenti dipercaya, DAN diam saat suhu
+ * benar-benar naik. Dua pembacaan yang pernah ada keduanya tepat 31,0 —
+ * persis di tepi itu, dan tidak ada yang menyadarinya.
+ */
+const INC_NYATA = { temp_setting: 31, temp_min_alarm: 31, temp_max_alarm: 32,
+                humidity_setting: 80, humidity_min_alarm: 70, humidity_max_alarm: 90 };
+const mAmbang = I.periksaAmbang(INC_NYATA);
+if (!mAmbang.some((m) => m.jenis === "target_di_tepi_bawah")) {
+  temuan.push("periksaAmbang: setelan nyata (target 31, alarm bawah 31) tidak terdeteksi bermasalah");
+}
+if (mAmbang.length !== 1) {
+  temuan.push(`periksaAmbang: setelan nyata seharusnya memberi TEPAT 1 masalah (suhu saja; kelembapan 80 di antara 70-90 sudah benar), dapat ${mAmbang.length}`);
+}
+
+const ambangUji = [
+  [{ temp_setting: 31, temp_min_alarm: 30.5, temp_max_alarm: 31.5 }, 0, "target di tengah pita — benar"],
+  [{ temp_setting: 31, temp_min_alarm: 31, temp_max_alarm: 32 }, 1, "target duduk di tepi bawah"],
+  [{ temp_setting: 32, temp_min_alarm: 31, temp_max_alarm: 32 }, 1, "target duduk di tepi atas"],
+  [{ temp_setting: 31, temp_min_alarm: 32, temp_max_alarm: 31 }, 3, "pita terbalik — bawah > atas"],
+  [{ temp_setting: 31 }, 0, "tanpa ambang sama sekali: diam, bukan menuduh"],
+  [{}, 0, "record kosong"],
+  [null, 0, "tanpa inkubator"],
+];
+for (const [inc, harap, kenapa] of ambangUji) {
+  const dapat = I.periksaAmbang(inc).length;
+  if (dapat !== harap) {
+    temuan.push(`periksaAmbang (${kenapa}): dapat ${dapat} masalah, seharusnya ${harap}`);
+  }
+}
+
+/*
+ * Isi inkubator dihitung dari CLUTCH-nya, bukan dari kolom current_eggs.
+ * Kolom itu hanya berubah saat ada yang menekan sinkron: pada 2 Okt 2026 ia
+ * berbunyi 72 sementara clutch yang menunjuk inkubator itu berisi 208 butir —
+ * angka Juni yang sudah empat bulan tidak benar.
+ */
+const incNyata = { id: "inc1", name: "Inkubator  kecil ", capacity_eggs: 192, current_eggs: 72 };
+const isi = I.isiInkubator(incNyata, CLUTCH_NYATA.map((b) => ({ ...b, incubator_id: "inc1" })));
+if (isi.telur !== 208) {
+  temuan.push(`isiInkubator: menghitung ${isi.telur} butir dari clutch, seharusnya 208 — clutch yang sudah SELESAI tidak boleh ikut mengisi inkubator`);
+}
+if (isi.tercatat !== 72 || !isi.melencengDariCatatan) {
+  temuan.push("isiInkubator: selisih terhadap current_eggs tidak terdeteksi");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -549,6 +606,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik + ${trayUji.length} tray telur diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang inkubator diuji.`,
 );
 process.exit(0);

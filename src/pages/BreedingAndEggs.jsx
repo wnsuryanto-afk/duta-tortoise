@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { saringBreeding, kelompokkanPerInduk } from "@/lib/cariInduk";
 import PeringatanTray from "@/components/breeding/PeringatanTray";
+import { periksaAmbang } from "@/lib/inkubator";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -779,6 +780,37 @@ export default function BreedingAndEggs() {
                     </CardHeader>
 
                     <CardContent className="space-y-4">
+                      {/*
+                        SETELAN ALARMNYA SENDIRI DIPERIKSA, bukan cuma ditampilkan.
+
+                        Pada 2 Okt 2026 kedua inkubator bertarget 31 °C dengan
+                        alarm bawah 31 dan atas 32 — targetnya duduk PERSIS di
+                        tepi bawah pitanya sendiri. Toleransinya −0,0 °C ke
+                        bawah dan +1,0 °C ke atas: alarm palsu untuk penurunan
+                        sekecil apa pun, dan diam untuk kenaikan yang nyata.
+                        Keduanya terlihat benar di layar sampai angkanya
+                        dijalankan satu per satu.
+                      */}
+                      {(() => {
+                        const masalahAmbang = periksaAmbang(inc);
+                        if (masalahAmbang.length === 0) return null;
+                        return (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1">
+                            <p className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                              Setelan alarm perlu diperbaiki
+                            </p>
+                            {masalahAmbang.map((m, i) => (
+                              <p key={i} className="text-[11px] text-amber-800">{m.teks}</p>
+                            ))}
+                            <p className="text-[11px] text-amber-800/80 pt-0.5">
+                              Targetnya sebaiknya di TENGAH pita, mis. target 31 °C dengan
+                              alarm 30,5–31,5 °C, supaya meleset ke dua arah sama-sama terbaca.
+                            </p>
+                          </div>
+                        );
+                      })()}
+
                       {/* Stats */}
                       <div className="grid grid-cols-2 gap-3">
                         {inc.temp_setting && (
