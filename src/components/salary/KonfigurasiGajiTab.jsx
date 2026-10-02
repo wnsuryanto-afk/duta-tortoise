@@ -5,6 +5,35 @@
  * gaji dilebur jadi dua. Isinya tidak diubah; yang berubah hanya tempatnya
  * berdiri, dan sekarang ia berdiri di sebelah layar yang benar-benar memakai
  * angka-angka ini untuk menerbitkan slip.
+ *
+ * ── 02-10-2026: saklar "Tipe Gaji" yang tidak menyalakan apa pun ────
+ *
+ * Layar ini dulu punya dua tombol, "Bulanan" dan "Harian", yang menulis
+ * `salary_type` ke SalaryConfig. Penggajian TIDAK PERNAH membaca kolom itu.
+ * `hitungGaji()` menentukan harian atau bulanan dari PERAN, lewat
+ * `adalahPeranHarian()` — satu-satunya pembacanya `salary_type` adalah layar
+ * ini sendiri, untuk labelnya sendiri.
+ *
+ * Jadi saklarnya memang bergerak, tersimpan, dan mengubah tampilan — tetapi
+ * tidak mengubah satu rupiah pun. Pemilik yang menyetel keeper jadi
+ * "📅 Bulanan" akan melihat "Rp 70.000/bln" dan sebuah kolom Potongan Absen
+ * terbuka, sementara slip tetap terbit sebagai hari-masuk x Rp 70.000.
+ * Tidak ada error, dan tidak ada yang memberitahu bahwa pilihannya diabaikan.
+ *
+ * Bawaan untuk konfigurasi BARU bahkan "bulanan" — salah untuk keeper dan
+ * kepala_feeder, dua-duanya satu-satunya peran yang benar-benar digaji di
+ * sini.
+ *
+ * Sekarang jenis gaji DITURUNKAN dari peran dengan fungsi yang sama yang
+ * dipakai penggajian, dan ditampilkan sebagai keterangan, bukan pilihan.
+ * Bila kelak admin atau manajer memang mau digaji harian, yang diubah
+ * adalah PERAN_HARIAN di hitungGaji.js — satu tempat, dan layar ini ikut
+ * sendiri. `salary_type` berhenti ditulis sama sekali — alasannya ada di
+ * dekat kode yang membuangnya, di handleSave.
+ *
+ * `payment_period` dihapus dari layar dengan alasan yang sama: tidak ada
+ * yang membacanya, dan gaji dibayar BULANAN sejak 30-09-2026 — dijaga oleh
+ * cek-gaji.mjs, bukan oleh dua tombol di sini.
  */
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +48,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Settings, Plus, Pencil } from "lucide-react";
 import { rupiah } from "@/lib/rupiah";
+import { adalahPeranHarian } from "@/lib/hitungGaji";
+import { tarifTrip } from "@/lib/rempesan";
 
 // Owner & investor sengaja di luar daftar: keduanya tidak digaji aplikasi ini.
 const ROLE_OPTIONS = [
@@ -30,26 +61,77 @@ const ROLE_OPTIONS = [
 
 function SalaryConfigDialog({ open, onClose, editData }) {
   const qc = useQueryClient();
+  /*
+   * Tarif trip diisi dari tarifTrip(), bukan dari satu kolom mentah.
+   * Ada DUA kolom untuk angka yang sama (`rempesan_rate_per_trip` yang
+   * dibaca lebih dulu, dan `vegetable_rate_per_trip` jalur lama yang
+   * berisi di data sekarang). Menampilkan kolom lamanya saja berarti
+   * kotaknya bisa kosong padahal penggajian sedang memakai angka lain.
+   */
+  const tripAwal = editData ? tarifTrip(editData) : null;
   const [form, setForm] = useState(editData || {
-    role: "keeper", salary_type: "bulanan", payment_period: "bulanan",
+    role: "keeper",
     base_salary: "", overtime_rate_per_hour: "",
-    vegetable_rate_per_trip: "", point_value: "", absent_deduction: "", notes: "",
+    point_value: "", absent_deduction: "", notes: "",
   });
+  const [tarifTripTeks, setTarifTripTeks] = useState(
+    tripAwal?.dariSetelan ? String(tripAwal.tarif) : ""
+  );
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const isHarian = form.salary_type === "harian";
+  // Sumber yang SAMA dengan hitungGaji(), bukan kolom tersimpan sendiri.
+  const isHarian = adalahPeranHarian(form.role);
 
   const handleSave = async () => {
     setSaving(true);
+    /*
+     * `payment_period` sengaja tidak disentuh: ia ada di baris yang
+     * tersimpan, tidak ada yang membacanya, dan menghapusnya bukan
+     * perbaikan — jadi ia lewat apa adanya dari editData.
+     */
     const data = {
       ...form,
       base_salary: Number(form.base_salary) || 0,
       overtime_rate_per_hour: Number(form.overtime_rate_per_hour) || 0,
-      vegetable_rate_per_trip: Number(form.vegetable_rate_per_trip) || 0,
       point_value: Number(form.point_value) || 0,
       absent_deduction: isHarian ? 0 : (Number(form.absent_deduction) || 0),
     };
+
+    /*
+     * Satu kotak, dua kolom — supaya yang dibaca lebih dulu dan
+     * cadangannya tidak bisa berselisih.
+     *
+     * Kosong berarti "tidak diputuskan": `rempesan_rate_per_trip` TIDAK
+     * ditulis sama sekali, karena tarifTrip() menerima 0 sebagai
+     * keputusan yang sah (`>= 0`) dan menulis 0 ke sana akan membayar
+     * trip Rp 0 — bukan jatuh ke cadangan.
+     */
+    /*
+     * `salary_type` TIDAK ditulis lagi.
+     *
+     * Ia bukan kolom SalaryConfig (cek-kolom-hantu.mjs menolaknya), dan
+     * sesudah perubahan ini tidak ada satu pun pembacanya: label layar ini
+     * menurunkannya dari peran, dan penggajian selalu memakai
+     * adalahPeranHarian(). Menyimpan nilai TURUNAN ke basis data justru
+     * mengembalikan masalah yang baru dibereskan — sebuah kolom tersimpan
+     * yang kelak bisa dipercaya melebihi peran, lalu berselisih dengannya.
+     *
+     * Nilai yang sudah ada di keempat baris tidak dihapus: ia lewat apa
+     * adanya lewat `...form` saat baris lama disunting, dan hari ini
+     * keempatnya memang sejalan dengan perannya.
+     */
+    delete data.salary_type;
+
+    const tripAngka = tarifTripTeks.trim() === "" ? null : Number(tarifTripTeks) || 0;
+    if (tripAngka === null) {
+      data.vegetable_rate_per_trip = 0;
+      delete data.rempesan_rate_per_trip;
+    } else {
+      data.vegetable_rate_per_trip = tripAngka;
+      data.rempesan_rate_per_trip = tripAngka;
+    }
+
     if (editData?.id) await base44.entities.SalaryConfig.update(editData.id, data);
     else await base44.entities.SalaryConfig.create(data);
     qc.invalidateQueries({ queryKey: ["salary-configs"] });
@@ -74,61 +156,33 @@ function SalaryConfigDialog({ open, onClose, editData }) {
             </Select>
           </div>
 
-          {/* Bagian 3: Tipe Gaji */}
-          <div>
-            <Label>Tipe Gaji *</Label>
-            <div className="flex gap-2 mt-1.5">
-              {[
-                { val: "bulanan", label: "📅 Bulanan (Rp/bulan)" },
-                { val: "harian", label: "📆 Harian (Rp/hari)" },
-              ].map(opt => (
-                <button
-                  key={opt.val}
-                  type="button"
-                  onClick={() => set("salary_type", opt.val)}
-                  className={`flex-1 py-2 px-2 rounded-lg border-2 font-medium text-xs transition-all ${
-                    form.salary_type === opt.val
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-muted bg-muted/30 text-muted-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          {/* Jenis gaji: keterangan, bukan pilihan — ikut peran di atas. */}
+          <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-muted-foreground">Jenis Gaji</span>
+              <Badge variant="outline" className="text-xs">
+                {isHarian ? "📆 Harian" : "📅 Bulanan"}
+              </Badge>
             </div>
-            {isHarian && (
-              <div className="mt-2">
-                <Label className="text-xs">Dibayar Setiap</Label>
-                <div className="flex gap-2 mt-1">
-                  {["mingguan", "bulanan"].map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => set("payment_period", p)}
-                      className={`flex-1 py-1.5 px-2 rounded-lg border text-xs transition-all ${
-                        form.payment_period === p ? "border-primary bg-primary/5 text-primary" : "border-muted bg-muted/30"
-                      }`}
-                    >
-                      {p === "mingguan" ? "Minggu" : "Bulan"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {isHarian
+                ? "Mengikuti peran: hari masuk x Rp/hari. Absen tidak dibayar, jadi tidak ada potongan absen."
+                : "Mengikuti peran: dibayar flat per bulan, tidak dikalikan hari masuk."}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <Label>{isHarian ? "Gaji Pokok (Rp/hari)" : "Gaji Pokok (Rp/bulan)"}</Label>
-              <Input type="number" value={form.base_salary} onChange={e => set("base_salary", e.target.value)} placeholder={isHarian ? "100000" : "3000000"} />
+              <Input type="number" value={form.base_salary} onChange={e => set("base_salary", e.target.value)} placeholder={isHarian ? "70000" : "3000000"} />
             </div>
             <div>
               <Label>Tarif Lembur (Rp/jam)</Label>
               <Input type="number" value={form.overtime_rate_per_hour} onChange={e => set("overtime_rate_per_hour", e.target.value)} placeholder="25000" />
             </div>
             <div>
-              <Label>Tunjangan Sayur (Rp/trip)</Label>
-              <Input type="number" value={form.vegetable_rate_per_trip} onChange={e => set("vegetable_rate_per_trip", e.target.value)} placeholder="15000" />
+              <Label>Tarif Rempesan (Rp/trip)</Label>
+              <Input type="number" value={tarifTripTeks} onChange={e => setTarifTripTeks(e.target.value)} placeholder="30000" />
             </div>
             <div>
               <Label>Nilai Poin KPI (Rp/poin)</Label>
@@ -188,7 +242,10 @@ export default function KonfigurasiGajiTab({ bolehUbah }) {
         </Button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {salaryConfigs.map((cfg) => (
+        {salaryConfigs.map((cfg) => {
+          const harian = adalahPeranHarian(cfg.role);
+          const trip = tarifTrip(cfg);
+          return (
           <Card key={cfg.id} className="p-4">
             <div className="flex items-center justify-between mb-3">
               <Badge className="capitalize">{cfg.role}</Badge>
@@ -199,22 +256,29 @@ export default function KonfigurasiGajiTab({ bolehUbah }) {
             </div>
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Tipe Gaji</span>
-                <Badge variant="outline" className="text-xs">{cfg.salary_type === "harian" ? "📆 Harian" : "📅 Bulanan"}</Badge>
+                <span className="text-muted-foreground">Jenis Gaji</span>
+                <Badge variant="outline" className="text-xs">{harian ? "📆 Harian" : "📅 Bulanan"}</Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Gaji {cfg.salary_type === "harian" ? "Harian" : "Pokok"}</span>
-                <span className="font-medium">{rupiah(cfg.base_salary)}/{cfg.salary_type === "harian" ? "hari" : "bln"}</span>
+                <span className="text-muted-foreground">Gaji {harian ? "Harian" : "Pokok"}</span>
+                <span className="font-medium">{rupiah(cfg.base_salary)}/{harian ? "hari" : "bln"}</span>
               </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Tarif Lembur</span><span className="font-medium">{rupiah(cfg.overtime_rate_per_hour)}/jam</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tarif Rempesan</span><span className="font-medium">{rupiah(cfg.rempesan_rate_per_trip ?? cfg.vegetable_rate_per_trip)}/trip</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tarif Rempesan</span>
+                <span className="font-medium">
+                  {rupiah(trip.tarif)}/trip
+                  {!trip.dariSetelan && <span className="text-xs text-muted-foreground font-normal"> (bawaan)</span>}
+                </span>
+              </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Nilai Poin KPI</span><span className="font-medium">{rupiah(cfg.point_value)}/poin</span></div>
-              {cfg.salary_type !== "harian" && (
+              {!harian && (
                 <div className="flex justify-between"><span className="text-muted-foreground">Potongan Absen</span><span className="font-medium text-red-600">-{rupiah(cfg.absent_deduction)}/hari</span></div>
               )}
             </div>
           </Card>
-        ))}
+          );
+        })}
         {salaryConfigs.length === 0 && (
           <Card className="col-span-full p-8 text-center text-muted-foreground">
             <Settings className="w-10 h-10 mx-auto mb-2 opacity-30" />

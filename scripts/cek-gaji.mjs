@@ -362,6 +362,57 @@ if (!ownerKode.includes("totalBelumLunas")) {
   temuan.push("OwnerDashboard tidak memakai totalBelumLunas() — angka kasbon bisa melenceng lagi dari gaji dan Panel Kasbon");
 }
 
+/* ── 6. Satu sumber untuk "harian atau bulanan" ────────────────────── */
+
+/*
+ * SalaryConfig punya kolom `salary_type` berisi "harian"/"bulanan" di
+ * keempat barisnya. Penggajian TIDAK PERNAH membacanya: hitungGaji()
+ * menentukannya dari PERAN lewat adalahPeranHarian().
+ *
+ * Selama layar konfigurasi memakai `salary_type` untuk labelnya, ia
+ * menawarkan pilihan yang tidak menyalakan apa pun — keeper disetel
+ * "Bulanan" akan tampil "Rp 70.000/bln" dengan kolom Potongan Absen
+ * terbuka, sementara slipnya tetap terbit hari-masuk x Rp 70.000. Tidak
+ * ada error, karena kedua nilainya sah.
+ *
+ * Penjaga ini memastikan layar itu bertanya ke sumber yang sama dengan
+ * yang membayar. Bila kelak admin atau manajer memang digaji harian,
+ * yang diubah adalah PERAN_HARIAN — dan layarnya ikut sendiri.
+ */
+const LAYAR_KONFIG = "src/components/salary/KonfigurasiGajiTab.jsx";
+const konfigSrc = readFileSync(join(AKAR, LAYAR_KONFIG), "utf8");
+const konfigKode = konfigSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+
+if (/salary_type\s*[=!]==/.test(konfigKode)) {
+  temuan.push(
+    `${LAYAR_KONFIG}  menentukan harian/bulanan dari kolom salary_type — ` +
+    `penggajian memakai adalahPeranHarian(peran), jadi labelnya bisa berselisih dengan slipnya`,
+  );
+}
+if (!konfigKode.includes("adalahPeranHarian")) {
+  temuan.push(
+    `${LAYAR_KONFIG}  tidak memakai adalahPeranHarian() — jenis gaji di layar ini harus turun dari peran, ` +
+    `sumber yang sama dengan hitungGaji()`,
+  );
+}
+/*
+ * Dan tarif trip harus dibaca lewat tarifTrip(), bukan satu kolom
+ * mentah: ada DUA kolom untuk angka yang sama, dan yang berisi di data
+ * sekarang (`vegetable_rate_per_trip`) bukan yang dibaca lebih dulu.
+ */
+/*
+ * Dicari `tarifTrip(` — PEMANGGILANNYA, bukan namanya. Nama state di
+ * layar itu `tarifTripTeks`, jadi mencari "tarifTrip" saja akan lolos
+ * meski fungsinya sudah dibuang. Penjaga yang hijau karena kebetulan
+ * cocok dengan nama lain tidak menjaga apa pun.
+ */
+if (!/tarifTrip\s*\(/.test(konfigKode)) {
+  temuan.push(
+    `${LAYAR_KONFIG}  tidak memakai tarifTrip() — kotak tarif rempesan bisa kosong ` +
+    `padahal penggajian sedang memakai angka dari kolom yang satunya`,
+  );
+}
+
 if (temuan.length) {
   console.error(
     `${temuan.length} masalah pada modul gaji.\n\n` +
@@ -373,6 +424,7 @@ console.log(
   `Gaji: satu periode (${payloadDiperiksa} payload period_type, semuanya bulanan), ` +
   `potongan kasbon bawaan Rp ${depan.toLocaleString("id-ID")} sama di frontend & backend, ` +
   `${janji.length} janji potongan kasbon + ${bandingLembur.length} kasus lembur diuji, ` +
-  `${gaji.PERAN_BERGAJI.length} peran bergaji punya pintu ke slipnya sendiri.`,
+  `${gaji.PERAN_BERGAJI.length} peran bergaji punya pintu ke slipnya sendiri, ` +
+  `jenis gaji di layar konfigurasi turun dari peran.`,
 );
 process.exit(0);
