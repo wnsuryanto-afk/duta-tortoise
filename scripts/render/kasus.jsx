@@ -37,6 +37,7 @@ import OperationalToday from "@/components/dashboard/OperationalToday";
 import VetContactPage from "@/pages/VetContactPage";
 import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
+import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import SupplierPage from "@/pages/SupplierPage";
@@ -255,6 +256,36 @@ export default [
     item={{ id: "w3", name: "Tanpa apa-apa", current_stock: 2 }}
     onClose={() => {}} />],
 
+  // Pencarian induk di modul Pembiakan. Nama kura di kebun ini berspasi ekor
+  // dan berhuruf besar ("RD besar ", "8 BESAR"), jadi kasusnya memakai nama
+  // yang panjang DAN angka pecahan sekaligus — itu kombinasi yang paling
+  // mudah terpotong di layar 360px.
+  ["RiwayatBertelurInduk belum ada hasil", <RiwayatBertelurInduk cari="A31" indukDicari={[
+    { kunci: "a31", nama: "A31", clutch: [
+      { status: "bertelur", egg_laying_date: "2026-10-01", egg_count: 22 },
+      { status: "bertelur", egg_laying_date: "2026-09-04", egg_count: 23, hatched_count: 0 },
+    ] },
+  ]} />],
+  ["RiwayatBertelurInduk sudah ada hasil", <RiwayatBertelurInduk cari="C24" indukDicari={[
+    { kunci: "c24", nama: "C24", clutch: [
+      { status: "selesai", egg_laying_date: "2026-03-09", egg_count: 25, hatched_count: 7 },
+      { status: "selesai", egg_laying_date: "2026-04-08", egg_count: 24, hatched_count: 22 },
+    ] },
+  ]} />],
+  ["RiwayatBertelurInduk nama panjang & campur", <RiwayatBertelurInduk cari="besar" indukDicari={[
+    { kunci: "rd besar", nama: "RD besar", clutch: [
+      { status: "selesai", egg_laying_date: "2026-08-01", egg_count: 10, hatched_count: 9 },
+      { status: "bertelur", egg_laying_date: "2026-09-20", egg_count: 12 },
+    ] },
+    { kunci: "8 besar", nama: "8 BESAR", clutch: [
+      { status: "bertelur", egg_laying_date: "2026-07-01", egg_count: 11 },
+    ] },
+  ]} />],
+  // Clutch tanpa tanggal: "terakhir bertelur" harus berbunyi strip, bukan 1970.
+  ["RiwayatBertelurInduk tanpa tanggal", <RiwayatBertelurInduk cari="X1" indukDicari={[
+    { kunci: "x1", nama: "X1", clutch: [{ status: "bertelur", egg_count: 0 }] },
+  ]} />],
+  ["RiwayatBertelurInduk tidak ketemu", <RiwayatBertelurInduk cari="Z99" indukDicari={[]} />],
   ["TortoiseMorphSummary tanpa data", <TortoiseMorphSummary />],
   ["TortoiseMorphSummary morph tak berwarna", <TortoiseMorphSummary tortoises={[
     { morph: "normal", gender: "betina" },

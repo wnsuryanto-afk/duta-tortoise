@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { saringBreeding, kelompokkanPerInduk } from "@/lib/cariInduk";
+import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, Printer, ScanLine, Heart } from "lucide-react";
+import { Plus, Egg, Thermometer, Droplets, AlertTriangle, Edit, Calendar, Printer, ScanLine, Heart, Search, X } from "lucide-react";
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import BreedingCardMenu from "@/components/breeding/BreedingCardMenu";
 import EggLabelGenerator, { isCandlingLate } from "@/components/breeding/EggLabelGenerator";
@@ -156,6 +158,22 @@ export default function BreedingAndEggs() {
     else next.set("tab", nilai);
     setSearchParams(next, { replace: true });
   };
+  /*
+    Kata pencarian induk ikut disimpan di ALAMAT, alasan yang sama dengan tab.
+
+    Yang menentukan: hasil pencarian ini sering jadi jawaban yang mau
+    DITUNJUKKAN ke orang lain ("ini lho A31, sudah dua kali") — dan jawaban
+    yang tidak punya alamat tidak bisa dikirim. Tombol kembali peramban juga
+    membatalkan pencarian, bukan melompat keluar halaman.
+  */
+  const cari = searchParams.get("cari") || "";
+  const setCari = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai) next.set("cari", nilai);
+    else next.delete("cari");
+    setSearchParams(next, { replace: true });
+  };
+
   // Pemindai label telur (QR "BREED:<id>") langsung dari modul Breeding,
   // sebelumnya hanya tersedia di halaman Gudang / Stok Pakan.
   const [showScanner, setShowScanner] = useState(false);
@@ -231,12 +249,39 @@ export default function BreedingAndEggs() {
     const pb = getIncubationPhase(b)?.fase || "awal";
     return (phaseOrder[pa] ?? 9) - (phaseOrder[pb] ?? 9);
   });
-  const pembiakanBreedings = sortedBreedings.filter(b => b.status !== "selesai");
+  /*
+    Pencarian induk disaring PALING AKHIR, setelah saringan status.
+
+    Urutannya penting. Kalau pencarian dijalankan lebih dulu lalu status
+    disaring di atas hasilnya, tiap tab masih benar — tetapi ringkasan riwayat
+    bertelur di bawah hanya akan melihat clutch yang lolos saringan tab yang
+    sedang dibuka. "A31 sudah 2 kali bertelur" akan berubah menjadi 1 begitu
+    orang berpindah ke tab Riwayat. Ringkasannya membaca `cocokSemua`, yaitu
+    seluruh catatan yang cocok tanpa memandang status dan tanpa memandang tab.
+  */
+  const cocokSemua = saringBreeding(breedings, cari);
+  const pembiakanBreedings = saringBreeding(sortedBreedings.filter(b => b.status !== "selesai"), cari);
 
   // Telur & Inkubasi: bertelur, inkubasi, menetas, selesai
-  const activeBreedings = breedings.filter(b => b.status !== "gagal" && b.status !== "selesai");
+  const activeBreedings = saringBreeding(breedings.filter(b => b.status !== "gagal" && b.status !== "selesai"), cari);
   // Riwayat: hanya yang sudah selesai difinalisasi
-  const historyBreedings = breedings.filter(b => b.status === "selesai");
+  const historyBreedings = saringBreeding(breedings.filter(b => b.status === "selesai"), cari);
+
+  // Riwayat bertelur per induk betina dari seluruh catatan yang cocok.
+  const indukDicari = cari ? kelompokkanPerInduk(cocokSemua) : [];
+
+  // Berapa hasil pencarian di tiap tab, dan tab mana saja selain yang dibuka.
+  const tabCocok = (() => {
+    const semua = [
+      { nilai: "pembiakan", label: "Pembiakan", jumlah: pembiakanBreedings.length },
+      { nilai: "telur", label: "Telur & Inkubasi", jumlah: activeBreedings.length },
+      { nilai: "riwayat", label: "Riwayat", jumlah: historyBreedings.length },
+    ];
+    return {
+      aktif: semua.find((t) => t.nilai === activeTab)?.jumlah ?? 0,
+      lain: semua.filter((t) => t.nilai !== activeTab && t.jumlah > 0),
+    };
+  })();
 
   // ── Label Telur helpers ──────────────────────────────────────
   const jantanList = (tortoises || []).filter(t => t.gender === "jantan");
@@ -340,6 +385,68 @@ export default function BreedingAndEggs() {
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="statistik">Statistik</TabsTrigger>
         </TabsList>
+
+        {/*
+          PENCARIAN INDUK — hanya pada tab yang memang berisi daftar clutch.
+
+          Tab Pasangan, Inkubator, Timeline dan Statistik tidak disaring oleh
+          kotak ini, jadi menampilkannya di sana hanya akan membuat orang
+          mengetik lalu heran kenapa tidak terjadi apa-apa.
+        */}
+        {["pembiakan", "telur", "riwayat"].includes(activeTab) && (
+          <div className="mt-4 space-y-3">
+            <div className="relative">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Input
+                value={cari}
+                onChange={(e) => setCari(e.target.value)}
+                placeholder="Cari induk atau pejantan — mis. A31"
+                className="pl-9 pr-9"
+                aria-label="Cari induk atau pejantan"
+              />
+              {cari && (
+                <button
+                  type="button"
+                  onClick={() => setCari("")}
+                  aria-label="Hapus pencarian"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted text-muted-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <RiwayatBertelurInduk cari={cari} indukDicari={indukDicari} />
+
+            {/*
+              Penunjuk tab — supaya pencarian yang BERHASIL tidak terlihat gagal.
+
+              Contoh nyata: C24 punya dua clutch, keduanya sudah selesai. Mencari
+              "C24" dari tab Pembiakan memberi ringkasan "2 clutch, 49 telur" lalu
+              daftar KOSONG di bawahnya, karena tab itu memang hanya memuat clutch
+              yang belum selesai. Ringkasannya benar dan daftarnya benar; yang
+              hilang cuma keterangan bahwa catatannya ada di tab sebelah.
+            */}
+            {cari && tabCocok.aktif === 0 && tabCocok.lain.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Tidak ada di tab ini. Catatan &ldquo;{cari}&rdquo; ada di{" "}
+                {tabCocok.lain.map((t, i) => (
+                  <span key={t.nilai}>
+                    {i > 0 && (i === tabCocok.lain.length - 1 ? " dan " : ", ")}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(t.nilai)}
+                      className="font-medium text-primary underline underline-offset-2"
+                    >
+                      {t.label} ({t.jumlah})
+                    </button>
+                  </span>
+                ))}
+                .
+              </p>
+            )}
+          </div>
+        )}
 
         {/* TAB: PASANGAN — siapa berpasangan dengan siapa.
             Ditaruh paling depan karena inilah yang ditanyakan lebih dulu di

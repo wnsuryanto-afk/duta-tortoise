@@ -55,12 +55,14 @@ bundel("src/lib/jadwalPerawatan.js", "jadwal.cjs");
 bundel("src/lib/daftarBelanja.js", "belanja.cjs");
 bundel("src/lib/resepRacikan.js", "resep.cjs");
 bundel("src/lib/stokMenipis.js", "stok.cjs");
+bundel("src/lib/cariInduk.js", "cari.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
 const R = await import("file://" + join(dir, "resep.cjs")).then((m) => m.default || m);
 const S = await import("file://" + join(dir, "stok.cjs")).then((m) => m.default || m);
+const C = await import("file://" + join(dir, "cari.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -331,6 +333,74 @@ if (!g0.habis.some((i) => i.id === RACIKAN_JADI)) {
   temuan.push("golonganStok: tanpa daftar resep, barang jadi hilang dari habis — artinya yang memindahkannya bukan data resep");
 }
 
+/* ── 7. Pencarian induk: riwayat bertelur tiap kura ────────────────── */
+
+/*
+ * Nama kura di kebun ini tidak rapi, dan itu bukan kesalahan yang bisa
+ * diperbaiki sekali lalu dilupakan — ia datang dari impor awal dan dari
+ * orang yang mengetik di ponsel. Dua contoh nyata dari data:
+ *
+ *   "RD besar "   berspasi ekor
+ *   "8 BESAR"     huruf besar semua
+ *
+ * Kalau pencarian membandingkan apa adanya, mengetik "rd besar" tidak akan
+ * menemukan kuranya sendiri, dan orang akan menyimpulkan kura itu belum
+ * pernah bertelur — kesimpulan yang persis terbalik.
+ */
+const BREED_UJI = [
+  { female_name: "A31", male_name: "A36", status: "bertelur", egg_laying_date: "2026-10-01", egg_count: 22 },
+  { female_name: "A31", male_name: "A36", status: "bertelur", egg_laying_date: "2026-09-04", egg_count: 23, hatched_count: 0 },
+  { female_name: "C24", male_name: "A36", status: "selesai",  egg_laying_date: "2026-04-08", egg_count: 24, hatched_count: 22 },
+  { female_name: "RD besar ", male_name: "A35", status: "bertelur", egg_laying_date: "2026-08-01", egg_count: 10 },
+  { female_name: "8 BESAR", male_name: "A35", status: "bertelur", egg_laying_date: "2026-07-01", egg_count: 11 },
+  // Catatan baru yang tanggalnya belum diisi — penjebak "terakhir bertelur".
+  { female_name: "A31", male_name: "A36", status: "bertelur", egg_count: 0 },
+];
+
+const cariUji = [
+  ["A31", 3, "induk betina"],
+  ["a31", 3, "huruf kecil"],
+  ["A36", 4, "nama PEJANTAN juga dikenali"],
+  ["rd besar", 1, "nama berspasi ekor"],
+  ["8  besar", 1, "spasi ganda yang diketik orang"],
+  ["Z99", 0, "tidak ada"],
+  ["", 6, "kata kosong TIDAK menyaring"],
+  ["   ", 6, "spasi saja TIDAK menyaring"],
+];
+for (const [kata, harap, kenapa] of cariUji) {
+  const dapat = C.saringBreeding(BREED_UJI, kata).length;
+  if (dapat !== harap) {
+    temuan.push(`saringBreeding("${kata}"): dapat ${dapat}, seharusnya ${harap} — ${kenapa}`);
+  }
+}
+
+// Dikelompokkan per INDUK BETINA, terbanyak di atas.
+const kel = C.kelompokkanPerInduk(C.saringBreeding(BREED_UJI, "A36"));
+if (kel.length !== 2 || kel[0].nama !== "A31" || kel[0].clutch.length !== 3) {
+  temuan.push(`kelompokkanPerInduk: mencari pejantan A36 seharusnya memberi 2 induk dengan A31 (3 clutch) di atas, dapat ${JSON.stringify(kel.map((k) => [k.nama, k.clutch.length]))}`);
+}
+// Nama yang ditampilkan harus nama asli, bukan versi yang sudah dirapikan.
+const kelRd = C.kelompokkanPerInduk(C.saringBreeding(BREED_UJI, "rd besar"));
+if (kelRd[0]?.nama !== "RD besar") {
+  temuan.push(`kelompokkanPerInduk: nama tampil seharusnya "RD besar", dapat "${kelRd[0]?.nama}"`);
+}
+
+/*
+ * Clutch tanpa tanggal tidak boleh ikut menentukan "terakhir bertelur".
+ * Kalau ikut, `new Date(undefined)` atau string kosong akan menjadikan
+ * terakhir bertelur melompat ke 1970 dan "hari lalu" menjadi puluhan ribu.
+ */
+const akhirA31 = C.terakhirBertelur(
+  BREED_UJI.filter((b) => b.female_name === "A31"),
+  new Date("2026-10-02"),
+);
+if (akhirA31.tanggal !== "2026-10-01" || akhirA31.hariLalu !== 1) {
+  temuan.push(`terakhirBertelur: seharusnya 2026-10-01 / 1 hari lalu, dapat ${akhirA31.tanggal} / ${akhirA31.hariLalu}`);
+}
+if (C.terakhirBertelur([]).tanggal !== null) {
+  temuan.push("terakhirBertelur: daftar kosong seharusnya memberi null");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (temuan.length) {
@@ -340,6 +410,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk diuji.`,
 );
 process.exit(0);
