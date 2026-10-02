@@ -421,9 +421,22 @@ export default function GuidedHariIni({ user }) {
   // hanya diberikan kepada betina. Menghitungnya sebagai "mundur" membuat
   // kiper mengira kalsium jantan sudah tergantikan; tidak ada yang
   // menggantikannya.
+  //
+  // DAFTARNYA, BUKAN SEKADAR JUMLAHNYA — 02-10-2026.
+  //
+  // Kalimat di layar dulu menyebut isinya secara tertulis mati: "Kalsium,
+  // asam folat, dan vitamin E sudah termasuk di dalam racikan Duta Repro."
+  // Sejak resep v5 (1 Okt 2026) itu KELIRU — v5 membuang asam folat
+  // sepenuhnya. Kalimat itu menyuruh kiper TIDAK menambah folat dengan
+  // alasan sudah ada di racikan, padahal tidak ada sama sekali.
+  //
+  // Karena itu yang disebut sekarang nama jadwal yang benar-benar mundur,
+  // dibaca dari data yang sama yang memundurkannya. Resep boleh berubah lagi
+  // nanti; kalimatnya ikut sendiri.
+  //
   const suplemenMundur = (treatmentSchedules || []).filter(
     (ts) => ts.is_active === true && sesuaikanMundurRacikan(ts, racikanRepro > 0) === null
-  ).length;
+  );
 
   const flashPoin = (label, poin) => {
     setPoinFlash({ label, poin });
@@ -1166,12 +1179,15 @@ export default function GuidedHariIni({ user }) {
             dengan alasannya. Tugas yang hilang tanpa keterangan terbaca sebagai
             aplikasi rusak - dan kiper yang bingung akan memberi suplemennya
             sendiri, yang justru membuat dosisnya dobel. */}
-        {suplemenMundur > 0 && (
+        {suplemenMundur.length > 0 && (
           <div className="bg-card rounded-xl border border-border p-3.5 flex items-start gap-2.5">
             <span className="text-base leading-none mt-0.5">🧪</span>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <span className="font-semibold text-foreground">{suplemenMundur} tugas suplemen sedang tidak perlu.</span>{" "}
-              Kalsium, asam folat, dan vitamin E sudah termasuk di dalam racikan Duta Repro yang diberikan hari ini.
+              <span className="font-semibold text-foreground">
+                {suplemenMundur.length} tugas suplemen sedang tidak perlu.
+              </span>{" "}
+              {suplemenMundur.map((ts) => ts.title).filter(Boolean).join(", ")} &mdash;
+              kandungannya sudah ada di dalam racikan Duta Repro yang diberikan hari ini.
               Jangan memberi tambahan lagi &mdash; dosisnya bisa dobel. Tugasnya kembali sendiri kalau racikan habis.
             </p>
           </div>

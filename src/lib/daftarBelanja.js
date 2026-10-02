@@ -213,8 +213,11 @@ export function cocokkanBarisBelanja(daftar = [], itemPesanan = {}, barangGudang
  *
  * ── Kenapa fungsi ini ada ───────────────────────────────────────────
  *
- * VIT-REP00 "RACIKAN Vitamin Reproduksi Betina" adalah hasil meracik 12
- * bahan, bukan barang yang bisa dipesan. Stoknya nol dan batas minimumnya
+ * VIT-REP00 adalah hasil meracik beberapa bahan, bukan barang yang bisa
+ * dipesan. (Jumlah bahannya 12 pada resep v4; sejak v5 — 1 Okt 2026 —
+ * tinggal 5. Angkanya sengaja tidak disebut lagi di sini: komentar yang
+ * menghafal isi resep akan basi tiap kali resepnya berubah, dan aturan di
+ * bawah tidak pernah bergantung pada jumlahnya.) Stoknya nol dan batas minimumnya
  * 3.000 gram, jadi penilai stok menandainya gawat, dan tombol "masukkan
  * barang gawat ke daftar belanja" di beranda memasukkannya seperti barang
  * lain.
@@ -233,8 +236,10 @@ export function cocokkanBarisBelanja(daftar = [], itemPesanan = {}, barangGudang
  * untuk dibeli.
  *
  * Bahannya tetap ditawarkan seperti biasa, dan memang itu yang benar:
- * ketiga bahan pemblokir Duta Repro sudah ada di daftar belanja bertanda
- * "segera" — yang keliru hanya barang jadinya.
+ * bahan pemblokir Duta Repro sudah ada di daftar belanja bertanda "segera"
+ * — yang keliru hanya barang jadinya. (Pada v4 pemblokirnya tiga: Fermipan,
+ * Vitamin E, Vitamin D3. Sejak v5 Fermipan tidak dipakai lagi, dan
+ * penggantinya tepung hijauan VIT-REP20.)
  *
  * @param {Array} resep daftar PelletRecipe
  * @returns {Set<string>} id WarehouseItem yang merupakan hasil racikan
