@@ -1,6 +1,207 @@
 {
   "name": "Breeding",
-  "type": "object",
+  "properties": {
+    "candling_day_30_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "candling_day_30_done": {
+      "default": false,
+      "type": "boolean"
+    },
+    "candling_notes": {
+      "items": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "fertile",
+              "infertile",
+              "unclear"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "clutch_number": {
+      "type": "number"
+    },
+    "completed_date": {
+      "description": "Tanggal inkubasi diselesaikan",
+      "format": "date",
+      "type": "string"
+    },
+    "egg_count": {
+      "type": "number"
+    },
+    "egg_laying_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "egg_records": {
+      "description": "Status tracking per butir telur",
+      "items": {
+        "properties": {
+          "check_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "egg_number": {
+            "type": "number"
+          },
+          "hatch_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "belum_dicek",
+              "fertile",
+              "infertil",
+              "menetas",
+              "gagal"
+            ],
+            "type": "string"
+          },
+          "tortoise_code": {
+            "description": "Kode bayi (BB-YYYYNNN) untuk tampilan cepat",
+            "type": "string"
+          },
+          "tortoise_id": {
+            "description": "ID Tortoise yang dibuat saat telur menetas",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "egg_weight_grams": {
+      "type": "number"
+    },
+    "estimated_hatch_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "estimated_hatch_end": {
+      "description": "Estimasi selesai menetas (egg_laying_date + 105 hari)",
+      "format": "date",
+      "type": "string"
+    },
+    "estimated_hatch_start": {
+      "description": "Estimasi mulai menetas (egg_laying_date + 80 hari)",
+      "format": "date",
+      "type": "string"
+    },
+    "failed_count": {
+      "type": "number"
+    },
+    "female_id": {
+      "type": "string"
+    },
+    "female_name": {
+      "type": "string"
+    },
+    "fertile_count": {
+      "description": "Jumlah telur fertile (termasuk yang menetas)",
+      "type": "number"
+    },
+    "hatch_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "hatch_rate": {
+      "description": "Hatch rate (%) = menetas / egg_count x 100",
+      "type": "number"
+    },
+    "hatched_count": {
+      "type": "number"
+    },
+    "incubation_humidity": {
+      "type": "number"
+    },
+    "incubation_temp": {
+      "type": "number"
+    },
+    "incubator_id": {
+      "description": "Inkubator tempat telur ini dierami. Tanpa ini, satu-satunya penghubung clutch ke inkubator adalah namanya \u2014 ganti nama inkubatornya dan seluruh clutch di dalamnya lepas tanpa suara.",
+      "type": "string"
+    },
+    "incubator_name": {
+      "description": "Nama inkubator (diambil dari entity Incubator)",
+      "type": "string"
+    },
+    "infertile_count": {
+      "description": "Jumlah telur infertil",
+      "type": "number"
+    },
+    "is_archived": {
+      "default": false,
+      "description": "Apakah data sudah diarsipkan",
+      "type": "boolean"
+    },
+    "male_id": {
+      "type": "string"
+    },
+    "male_name": {
+      "type": "string"
+    },
+    "mating_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "photos": {
+      "items": {
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "season_year": {
+      "type": "number"
+    },
+    "status": {
+      "default": "bertelur",
+      "enum": [
+        "bertelur",
+        "inkubasi",
+        "menetas",
+        "gagal",
+        "selesai"
+      ],
+      "type": "string"
+    },
+    "tray_number": {
+      "description": "LAMA \u2014 satu nomor tray saja. Dipertahankan supaya catatan sebelum 02-10-2026 tidak kehilangan traynya. Pengisian baru memakai tray_numbers; pembacaan memakai tray_numbers lebih dulu lalu jatuh ke kolom ini.",
+      "type": "number"
+    },
+    "tray_numbers": {
+      "description": "Nomor tray yang dipakai clutch ini. Satu clutch bisa memakai LEBIH DARI SATU tray \u2014 clutch 28 butir tidak muat di satu tray. Ditambahkan 02-10-2026 saat kebun punya 32 tray.",
+      "items": {
+        "type": "number"
+      },
+      "type": "array"
+    }
+  },
   "required": [
     "male_name",
     "female_name",
@@ -10,199 +211,5 @@
     "season_year",
     "incubator_name"
   ],
-  "properties": {
-    "male_id": {
-      "type": "string"
-    },
-    "female_id": {
-      "type": "string"
-    },
-    "male_name": {
-      "type": "string"
-    },
-    "female_name": {
-      "type": "string"
-    },
-    "clutch_number": {
-      "type": "number"
-    },
-    "season_year": {
-      "type": "number"
-    },
-    "mating_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "egg_laying_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "egg_count": {
-      "type": "number"
-    },
-    "egg_weight_grams": {
-      "type": "number"
-    },
-    "incubator_id": {
-      "type": "string",
-      "description": "Inkubator tempat telur ini dierami. Tanpa ini, satu-satunya penghubung clutch ke inkubator adalah namanya \u2014 ganti nama inkubatornya dan seluruh clutch di dalamnya lepas tanpa suara."
-    },
-    "incubator_name": {
-      "type": "string",
-      "description": "Nama inkubator (diambil dari entity Incubator)"
-    },
-    "tray_number": {
-      "type": "number",
-      "description": "Nomor Tray (opsional)"
-    },
-    "estimated_hatch_start": {
-      "type": "string",
-      "format": "date",
-      "description": "Estimasi mulai menetas (egg_laying_date + 80 hari)"
-    },
-    "estimated_hatch_end": {
-      "type": "string",
-      "format": "date",
-      "description": "Estimasi selesai menetas (egg_laying_date + 105 hari)"
-    },
-    "estimated_hatch_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "hatch_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "hatched_count": {
-      "type": "number"
-    },
-    "failed_count": {
-      "type": "number"
-    },
-    "fertile_count": {
-      "type": "number",
-      "description": "Jumlah telur fertile (termasuk yang menetas)"
-    },
-    "infertile_count": {
-      "type": "number",
-      "description": "Jumlah telur infertil"
-    },
-    "hatch_rate": {
-      "type": "number",
-      "description": "Hatch rate (%) = menetas / egg_count x 100"
-    },
-    "completed_date": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal inkubasi diselesaikan"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "bertelur",
-        "inkubasi",
-        "menetas",
-        "gagal",
-        "selesai"
-      ],
-      "default": "bertelur"
-    },
-    "incubation_temp": {
-      "type": "number"
-    },
-    "incubation_humidity": {
-      "type": "number"
-    },
-    "egg_records": {
-      "type": "array",
-      "description": "Status tracking per butir telur",
-      "items": {
-        "type": "object",
-        "properties": {
-          "egg_number": {
-            "type": "number"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "belum_dicek",
-              "fertile",
-              "infertil",
-              "menetas",
-              "gagal"
-            ]
-          },
-          "check_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "hatch_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "tortoise_id": {
-            "type": "string",
-            "description": "ID Tortoise yang dibuat saat telur menetas"
-          },
-          "tortoise_code": {
-            "type": "string",
-            "description": "Kode bayi (BB-YYYYNNN) untuk tampilan cepat"
-          },
-          "notes": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "candling_day_30_done": {
-      "type": "boolean",
-      "default": false
-    },
-    "candling_day_30_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "candling_notes": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "result": {
-            "type": "string",
-            "enum": [
-              "fertile",
-              "infertile",
-              "unclear"
-            ]
-          },
-          "notes": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "photos": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "notes": {
-      "type": "string"
-    },
-    "is_archived": {
-      "type": "boolean",
-      "default": false,
-      "description": "Apakah data sudah diarsipkan"
-    }
-  }
+  "type": "object"
 }
