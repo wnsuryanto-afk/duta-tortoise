@@ -137,3 +137,40 @@ export function patchBatalkanPotonganSlip(kasbon, salarySlipId) {
     _dikembalikan: dikembalikan,
   };
 }
+
+/** Status kasbon yang artinya uangnya sudah keluar dan masih harus ditagih. */
+export const STATUS_BERJALAN = "approved";
+
+/**
+ * Kasbon yang masih punya sisa untuk ditagih.
+ *
+ * ── Kenapa ini jadi fungsi ────────────────────────────────────────────────
+ *
+ * Beranda Owner menyaringnya begini sampai 2 Okt 2026:
+ *
+ *     kasbons.filter(k => k.status === "active" || k.remaining_amount > 0)
+ *
+ * KEDUA syaratnya mati. Status "active" tidak ada di enum Kasbon sama sekali
+ * (yang ada: diajukan, pending, approved, rejected, lunas), dan
+ * `remaining_amount` bukan kolom Kasbon — komentar di baris TEPAT DI BAWAHNYA
+ * bahkan sudah menuliskan itu, lalu barisnya dibiarkan. Jadi daftarnya selalu
+ * kosong dan "Kasbon outstanding" di beranda pemilik selalu Rp 0.
+ *
+ * Pada data hari itu angka yang benar Rp 600.000: kasbon Ahmad Ali 11 Agustus,
+ * Rp 1.000.000 dengan Rp 400.000 sudah terbayar, berstatus "approved".
+ *
+ * Aturannya sendiri tidak baru — hitungGaji.js dan PanelKasbon.jsx sama-sama
+ * memakai `status === "approved"` dan sisa = amount − terbayar. Yang hilang
+ * cuma satu tempat untuk menuliskannya, sehingga layar ketiga bisa melenceng
+ * tanpa ada yang membandingkannya.
+ */
+export function belumLunas(kasbon) {
+  if (!kasbon) return false;
+  if (kasbon.status !== STATUS_BERJALAN) return false;
+  return sisaKasbon(kasbon) > 0;
+}
+
+/** Total yang masih harus ditagih dari sekumpulan kasbon. */
+export function totalBelumLunas(kasbons = []) {
+  return (kasbons || []).filter(belumLunas).reduce((t, k) => t + sisaKasbon(k), 0);
+}

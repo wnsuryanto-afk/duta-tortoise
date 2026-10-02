@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { belumLunas, totalBelumLunas, sisaKasbon } from "@/lib/potonganKasbon";
 import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import MonthlySalesSummary from "@/components/dashboard/MonthlySalesSummary";
 import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
@@ -502,11 +503,25 @@ export default function OwnerDashboard({ user }) {
   const targetPoin = targetPoinBulanan(settings);
 
   // kasbon outstanding
-  const activeKasbons = kasbons.filter(k => k.status === "active" || k.remaining_amount > 0);
-  // Skema Kasbon tidak menyimpan remaining_amount — sisa dihitung dari
-  // amount dikurangi total_paid, agar cicilan yang sudah berjalan ikut terhitung.
-  const sisaKasbon = (k) => Math.max(0, (k.amount || 0) - (k.total_paid || 0));
-  const totalKasbonDebt = activeKasbons.reduce((s, k) => s + sisaKasbon(k), 0);
+  /*
+    KEDUA syarat saringan lama mati, dan angkanya selalu Rp 0.
+
+        kasbons.filter(k => k.status === "active" || k.remaining_amount > 0)
+
+    Status "active" tidak ada di enum Kasbon (diajukan, pending, approved,
+    rejected, lunas), dan `remaining_amount` bukan kolom Kasbon — komentar
+    di baris tepat di bawahnya bahkan sudah menuliskan itu, lalu barisnya
+    dibiarkan. Yang satu salah tanpa suara, yang lain sudah diketahui salah
+    dan tetap dipakai.
+
+    Angka yang benar pada 02-10-2026: Rp 600.000 — kasbon Ahmad Ali
+    11 Agustus, Rp 1.000.000 dengan Rp 400.000 terbayar, berstatus approved.
+
+    Aturannya kini dari lib/potonganKasbon.js, sama dengan yang dipakai
+    perhitungan gaji dan Panel Kasbon.
+  */
+  const activeKasbons = kasbons.filter(belumLunas);
+  const totalKasbonDebt = totalBelumLunas(kasbons);
 
   // SP Aktif + filtered logs.
   // Masa berlakunya dihitung dari tanggal surat lewat suratAktif(), sama

@@ -154,8 +154,10 @@ const bundel = (masuk, keluar) =>
 
 bundel("src/lib/permissions.js", "perm.cjs");
 bundel("src/lib/hitungGaji.js", "gaji.cjs");
+bundel("src/lib/potonganKasbon.js", "kasbon.cjs");
 const perm = await import("file://" + join(dir, "perm.cjs")).then((m) => m.default || m);
 const gaji = await import("file://" + join(dir, "gaji.cjs")).then((m) => m.default || m);
+const kas = await import("file://" + join(dir, "kasbon.cjs")).then((m) => m.default || m);
 
 /*
  * Section yang menampilkan slip & kasbon MILIK SENDIRI. Bila kelak
@@ -311,6 +313,54 @@ if (/harian\s*===\s*undefined/.test(absensiSrc)) {
 }
 
 /* ── hasil ─────────────────────────────────────────────────────────── */
+
+/* ── Kasbon outstanding: satu aturan, bukan tiga ───────────────────── */
+
+/*
+ * Beranda Owner menyaring kasbon begini sampai 02-10-2026:
+ *
+ *     kasbons.filter(k => k.status === "active" || k.remaining_amount > 0)
+ *
+ * KEDUA syaratnya mati. "active" tidak ada di enum Kasbon sama sekali — yang
+ * ada diajukan/pending/approved/rejected/lunas — dan `remaining_amount` bukan
+ * kolom Kasbon. Komentar di baris TEPAT DI BAWAHNYA sudah menuliskan hal itu,
+ * lalu barisnya dibiarkan: yang satu salah tanpa suara, yang lain sudah
+ * diketahui salah dan tetap dipakai.
+ *
+ * Akibatnya "Kasbon outstanding" di beranda pemilik SELALU Rp 0. Angka yang
+ * benar pada data hari itu Rp 600.000.
+ */
+const KASBON_NYATA = [
+  { employee_name: "Ahmad Ali", status: "approved", amount: 1000000, total_paid: 400000 },
+  { employee_name: "Ahmad Ali", status: "lunas", amount: 300000, total_paid: 300000 },
+];
+if (kas.totalBelumLunas(KASBON_NYATA) !== 600000) {
+  temuan.push(`Kasbon outstanding: dapat ${kas.totalBelumLunas(KASBON_NYATA)}, seharusnya 600000 (Ahmad Ali, approved, 1jt - 400rb)`);
+}
+const kasbonLunasUji = [
+  [{ status: "approved", amount: 1000000, total_paid: 400000 }, true, "approved dan masih bersisa"],
+  [{ status: "approved", amount: 300000, total_paid: 300000 }, false, "approved tetapi sudah habis terbayar"],
+  [{ status: "lunas", amount: 300000, total_paid: 300000 }, false, "sudah lunas"],
+  [{ status: "pending", amount: 500000, total_paid: 0 }, false, "belum disetujui — uangnya belum keluar"],
+  [{ status: "diajukan", amount: 500000, total_paid: 0 }, false, "baru diajukan"],
+  [{ status: "rejected", amount: 500000, total_paid: 0 }, false, "ditolak"],
+  [{ status: "active", amount: 500000, total_paid: 0 }, false, "status yang TIDAK ADA di enum — tidak boleh dikenali"],
+  [null, false, "tanpa kasbon"],
+];
+for (const [k, harap, kenapa] of kasbonLunasUji) {
+  if (kas.belumLunas(k) !== harap) {
+    temuan.push(`belumLunas (${kenapa}): menjawab ${!harap}, seharusnya ${harap}`);
+  }
+}
+// Layarnya harus memakai aturan itu, bukan menulis syaratnya sendiri.
+const ownerSrc = readFileSync(join(AKAR, "src/components/dashboard/role/OwnerDashboard.jsx"), "utf8");
+const ownerKode = ownerSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+if (/status\s*===\s*"active"/.test(ownerKode) || /\.remaining_amount/.test(ownerKode)) {
+  temuan.push("OwnerDashboard masih menyaring kasbon dengan status \"active\" atau kolom remaining_amount — keduanya tidak ada");
+}
+if (!ownerKode.includes("totalBelumLunas")) {
+  temuan.push("OwnerDashboard tidak memakai totalBelumLunas() — angka kasbon bisa melenceng lagi dari gaji dan Panel Kasbon");
+}
 
 if (temuan.length) {
   console.error(
