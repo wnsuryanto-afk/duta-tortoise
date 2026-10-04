@@ -9,9 +9,9 @@ import { Trophy, TrendingUp, Egg } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import { ringkasProduksi, adaHasil } from "@/lib/hasilInkubasi";
+import { ringkasProduksi, adaHasil, ringkasTelurDicek } from "@/lib/hasilInkubasi";
 import { kepastianAyahClutch } from "@/lib/produksiBetina";
-import { parentHasSickHistory } from "@/lib/parentHealthUtils";
+import { BOBOT, peringkat } from "@/lib/peringkatIndukan";
 import KartuAngka from "@/components/ui/kartu-angka";
 import { Egg as EggIcon, Percent, Baby, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -47,8 +47,21 @@ function ScoreBar({ score }) {
 
 function PairDetailModal({ pair, history, onClose }) {
   if (!pair) return null;
+  /*
+    Disaring per SISI yang punya nama.
+
+    Sebelumnya selalu disyaratkan kedua nama cocok. Di tab Induk Jantan
+    `femaleName` berisi "—", dan di tab Induk Betina `maleName` berisi "—" —
+    tanda hubung itu tidak pernah cocok dengan nama kura mana pun, jadi
+    rinciannya selalu kosong: kartunya menyebut "3 clutch", dan dialog yang
+    dibuka dari kartu itu berbunyi "Belum ada riwayat". Dua dari tiga tab
+    berperilaku begitu sejak awal.
+  */
+  const cocokJantan = pair.maleName && pair.maleName !== "—";
+  const cocokBetina = pair.femaleName && pair.femaleName !== "—";
   const clutches = history.filter(b =>
-    b.male_name === pair.maleName && b.female_name === pair.femaleName
+    (!cocokJantan || b.male_name === pair.maleName) &&
+    (!cocokBetina || b.female_name === pair.femaleName)
   ).sort((a, b) => new Date(b.egg_laying_date) - new Date(a.egg_laying_date));
 
   return (
@@ -110,7 +123,7 @@ function PairDetailModal({ pair, history, onClose }) {
   );
 }
 
-function RankingList({ pairs, breedings, label }) {
+function RankingList({ pairs, breedings }) {
   const [selected, setSelected] = useState(null);
 
   return (
@@ -227,92 +240,41 @@ export default function PeringkatIndukan() {
     return breedings.filter(b => String(b.season_year) === yearFilter || b.egg_laying_date?.startsWith(yearFilter));
   }, [breedings, yearFilter]);
 
-  const computePairs = (data) => {
-    const map = {};
-    data.forEach(b => {
-      const key = `${b.male_name}||${b.female_name}`;
-      if (!map[key]) {
-        map[key] = { maleName: b.male_name, femaleName: b.female_name, clutches: [] };
-      }
-      map[key].clutches.push(b);
-    });
+  /*
+    Ketiga tab memakai SATU perhitungan (lib/peringkatIndukan.js).
 
-    return Object.values(map).map(p => {
-      const allTime = breedings.filter(b => b.male_name === p.maleName && b.female_name === p.femaleName);
-      // Clutch yang ditutup lewat "Selesaikan Inkubasi" berstatus "selesai",
-      // bukan "menetas". Menghitung "menetas" saja membuat pasangan yang
-      // clutch-nya ditutup dari layar telur ber-hatch-rate 0% — padahal
-      // telurnya menetas.
-      const { totalTelur: totalEggs, totalMenetas: totalHatched, hatchRate } = ringkasProduksi(p.clutches);
-      const clutchesThisYear = p.clutches.filter(c => c.season_year === currentYear || c.egg_laying_date?.startsWith(String(currentYear))).length;
-      const clutchPerYear = allTime.length > 0 ? allTime.length / Math.max(1, yearOptions.length) : 0;
-
-      // Normalize for scoring
-      const maxEggs = 50; // assume 50 eggs max per season for normalization
-      const normalizedEggs = Math.min(100, (totalEggs / maxEggs) * 100);
-      const normalizedClutch = Math.min(100, (clutchPerYear / 3) * 100);
-
-      const score = (hatchRate * 0.4) + (normalizedEggs * 0.3) + (normalizedClutch * 0.3);
-
-      // Dua hal yang dibawa dari halaman Laporan Breeding saat keduanya
-      // disatukan: berapa clutch yang induknya sedang sakit pada saat
-      // bertelur, dan kapan pasangan ini terakhir bertelur.
-      const clutchIndukSakit = p.clutches.filter(
-        (c) => parentHasSickHistory(c.male_id, c.female_id, healthRecords, c.egg_laying_date).affected,
-      ).length;
-      const terakhirBertelur = p.clutches
-        .map((c) => c.egg_laying_date)
-        .filter(Boolean)
-        .sort()
-        .slice(-1)[0] || null;
-
-      return {
-        maleName: p.maleName,
-        femaleName: p.femaleName,
-        totalClutch: p.clutches.length,
-        totalEggs,
-        totalHatched,
-        hatchRate,
-        clutchesThisYear,
-        clutchIndukSakit,
-        terakhirBertelur,
-        score,
-      };
-    }).sort((a, b) => b.score - a.score);
+    Sebelumnya rumusnya disalin tiga kali, dan salinannya tidak sama: tab
+    Jantan dan Betina menulis `clutchesThisYear: 0` sebagai angka mati, lalu
+    kartunya menampilkannya tanpa syarat — "📅 0 clutch tahun ini" untuk
+    semua betina, termasuk C23 yang bertelur tiga kali tahun ini. Dua angka
+    lain, tanggal terakhir bertelur dan clutch saat induk sakit, tidak pernah
+    dihitung di kedua tab itu sehingga barisnya tidak muncul sama sekali.
+  */
+  const opsiPeringkat = {
+    tahunIni: currentYear,
+    jumlahMusim: Math.max(1, yearOptions.length),
+    healthRecords,
   };
 
-  const allPairs = computePairs(filtered);
-  const malePairs = useMemo(() => {
-    const maleMap = {};
-    filtered.forEach(b => {
-      if (!maleMap[b.male_name]) maleMap[b.male_name] = [];
-      maleMap[b.male_name].push(b);
-    });
-    return Object.entries(maleMap).map(([name, clutches]) => {
-      const { totalTelur: totalEggs, totalMenetas: totalHatched, hatchRate } = ringkasProduksi(clutches);
-      const clutchPerYear = clutches.length / Math.max(1, yearOptions.length);
-      const normalizedEggs = Math.min(100, (totalEggs/50)*100);
-      const normalizedClutch = Math.min(100, (clutchPerYear/3)*100);
-      const score = (hatchRate*0.4)+(normalizedEggs*0.3)+(normalizedClutch*0.3);
-      return { maleName: name, femaleName: "—", totalClutch: clutches.length, totalEggs, totalHatched, hatchRate, clutchesThisYear: 0, score };
-    }).sort((a,b)=>b.score-a.score);
-  }, [filtered]);
+  const allPairs = useMemo(
+    () => peringkat(
+      filtered,
+      (b) => `${b.male_name}||${b.female_name}`,
+      (b) => ({ maleName: b.male_name, femaleName: b.female_name }),
+      opsiPeringkat,
+    ),
+    [filtered, yearOptions.length, healthRecords],
+  );
 
-  const femalePairs = useMemo(() => {
-    const femaleMap = {};
-    filtered.forEach(b => {
-      if (!femaleMap[b.female_name]) femaleMap[b.female_name] = [];
-      femaleMap[b.female_name].push(b);
-    });
-    return Object.entries(femaleMap).map(([name, clutches]) => {
-      const { totalTelur: totalEggs, totalMenetas: totalHatched, hatchRate } = ringkasProduksi(clutches);
-      const clutchPerYear = clutches.length / Math.max(1, yearOptions.length);
-      const normalizedEggs = Math.min(100, (totalEggs/50)*100);
-      const normalizedClutch = Math.min(100, (clutchPerYear/3)*100);
-      const score = (hatchRate*0.4)+(normalizedEggs*0.3)+(normalizedClutch*0.3);
-      return { maleName: "—", femaleName: name, totalClutch: clutches.length, totalEggs, totalHatched, hatchRate, clutchesThisYear: 0, score };
-    }).sort((a,b)=>b.score-a.score);
-  }, [filtered]);
+  const malePairs = useMemo(
+    () => peringkat(filtered, (b) => b.male_name, (b) => ({ maleName: b.male_name, femaleName: "—" }), opsiPeringkat),
+    [filtered, yearOptions.length, healthRecords],
+  );
+
+  const femalePairs = useMemo(
+    () => peringkat(filtered, (b) => b.female_name, (b) => ({ maleName: "—", femaleName: b.female_name }), opsiPeringkat),
+    [filtered, yearOptions.length, healthRecords],
+  );
 
   // Penjaga akses dibiarkan: tab ini ikut halaman Produksi Indukan, tetapi
   // kalau kelak dipakai di tempat lain penjaganya sudah ikut.
@@ -343,17 +305,38 @@ export default function PeringkatIndukan() {
           Breeding & Telur, dan menyalinnya berarti membuat salinan ketiga
           dari gambar yang sama. Tautannya ada di bawah. */}
       {(() => {
-        const telur = filtered.reduce((n, b) => n + (Number(b.egg_count) || 0), 0);
-        const menetas = filtered.reduce((n, b) => n + (Number(b.hatched_count) || 0), 0);
+        const r = ringkasProduksi(filtered);
+        /*
+          Tingkat penetasan dihitung dari telur yang SUDAH ada hasilnya, sama
+          seperti tab Statistik (lib/hasilInkubasi.ringkasTelurDicek).
+
+          Sebelumnya kartu ini membagi seluruh telur yang pernah tercatat:
+          49 / 280 = 17,5%. Dua ratus delapan butir di antaranya masih
+          dierami hari ini — belum menetas BUKAN berarti gagal, dan
+          menghitungnya sebagai gagal membuat seluruh kebun terbaca nyaris
+          mandul.
+
+          Angka yang benar 49 / 72 = 68,1%, dan itu pula yang ditampilkan tab
+          Statistik di halaman Breeding. Dua layar dalam satu aplikasi
+          menjawab 17,5% dan 68,1% untuk pertanyaan yang sama, dan yang
+          dipakai memutuskan indukan mana dipertahankan adalah layar INI.
+        */
+        const { persen } = ringkasTelurDicek(filtered);
         return (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KartuAngka label="Sesi bertelur" nilai={filtered.length} ikon={Baby} nada="netral" />
-            <KartuAngka label="Total telur" nilai={telur} ikon={EggIcon} nada="netral" />
-            <KartuAngka label="Berhasil menetas" nilai={menetas} ikon={Baby} nada={menetas > 0 ? "baik" : "netral"} />
+            <KartuAngka
+              label="Total telur"
+              nilai={r.totalTelur}
+              sub={r.telurMasihDierami > 0 ? `${r.telurMasihDierami} masih dierami` : undefined}
+              ikon={EggIcon}
+              nada="netral"
+            />
+            <KartuAngka label="Berhasil menetas" nilai={r.totalMenetas} ikon={Baby} nada={r.totalMenetas > 0 ? "baik" : "netral"} />
             <KartuAngka
               label="Tingkat penetasan"
-              nilai={telur > 0 ? `${((menetas / telur) * 100).toFixed(1)}%` : "—"}
-              sub="grafik bulanan di tab Statistik"
+              nilai={r.telurAdaHasil > 0 ? `${persen.toFixed(1)}%` : "—"}
+              sub={r.telurAdaHasil > 0 ? `dari ${r.telurAdaHasil} telur yang sudah ada hasilnya` : "belum ada clutch yang selesai"}
               ikon={Percent}
               nada="utama"
               ke="/breeding"
@@ -366,7 +349,11 @@ export default function PeringkatIndukan() {
       <div className="bg-muted/50 border border-border rounded-xl p-3 text-xs text-muted-foreground flex items-start gap-2">
         <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
         <span>
-          <strong className="text-foreground">Formula Skor:</strong> Hatch Rate × 40% + Total Telur × 30% + Clutch/Tahun × 30% · Skor maks 100
+          {/* Angkanya dibaca dari rumusnya sendiri, bukan diketik ulang —
+              keterangan yang ditulis tangan adalah keterangan yang kelak
+              berbeda dari perhitungannya. */}
+          <strong className="text-foreground">Formula Skor:</strong>{" "}
+          Hatch Rate × {Math.round(BOBOT.hatchRate * 100)}% + Total Telur × {Math.round(BOBOT.telur * 100)}% + Clutch/Tahun × {Math.round(BOBOT.clutch * 100)}% · Skor maks 100
         </span>
       </div>
 
@@ -410,13 +397,13 @@ export default function PeringkatIndukan() {
             <TabsTrigger value="betina">Induk Betina</TabsTrigger>
           </TabsList>
           <TabsContent value="pasangan" className="mt-4">
-            <RankingList pairs={allPairs} breedings={breedings} label="pasangan" />
+            <RankingList pairs={allPairs} breedings={breedings} />
           </TabsContent>
           <TabsContent value="jantan" className="mt-4">
-            <RankingList pairs={malePairs} breedings={breedings} label="jantan" />
+            <RankingList pairs={malePairs} breedings={breedings} />
           </TabsContent>
           <TabsContent value="betina" className="mt-4">
-            <RankingList pairs={femalePairs} breedings={breedings} label="betina" />
+            <RankingList pairs={femalePairs} breedings={breedings} />
           </TabsContent>
         </Tabs>
       )}

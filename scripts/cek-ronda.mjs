@@ -59,6 +59,8 @@ bundel("src/lib/cariInduk.js", "cari.cjs");
 bundel("src/lib/trayTelur.js", "tray.cjs");
 bundel("src/lib/inkubator.js", "inkubator.cjs");
 bundel("src/lib/hitungMundur.js", "mundur.cjs");
+bundel("src/lib/peringkatIndukan.js", "peringkat.cjs");
+bundel("src/lib/hasilInkubasi.js", "hasil.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
@@ -69,6 +71,8 @@ const C = await import("file://" + join(dir, "cari.cjs")).then((m) => m.default 
 const T = await import("file://" + join(dir, "tray.cjs")).then((m) => m.default || m);
 const I = await import("file://" + join(dir, "inkubator.cjs")).then((m) => m.default || m);
 const M = await import("file://" + join(dir, "mundur.cjs")).then((m) => m.default || m);
+const P = await import("file://" + join(dir, "peringkat.cjs")).then((m) => m.default || m);
+const H = await import("file://" + join(dir, "hasil.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -752,6 +756,90 @@ if (I.angkaPembacaan({ temperature: 30.5 }).suhu !== null) {
 
 rmSync(dir, { recursive: true, force: true });
 
+/* ── Peringkat indukan ─────────────────────────────────────────────── */
+
+/*
+ * Ketigabelas clutch yang sungguhan, 4 Okt 2026. Angka harapannya dihitung
+ * tangan dari daftar ini, bukan disalin dari keluaran kodenya sendiri — uji
+ * yang menyalin jawabannya hanya memastikan kodenya tidak berubah, bukan
+ * memastikan kodenya benar.
+ */
+const CLUTCH_NYATA_2026 = [
+  { female_name: "C23", male_name: "A40", egg_laying_date: "2026-10-02", season_year: 2026, egg_count: 28, hatched_count: null, status: "bertelur" },
+  { female_name: "A31", male_name: "A36", egg_laying_date: "2026-10-01", season_year: 2026, egg_count: 22, hatched_count: null, status: "bertelur" },
+  { female_name: "B108", male_name: "A43", egg_laying_date: "2026-09-30", season_year: 2026, egg_count: 13, hatched_count: null, status: "bertelur" },
+  { female_name: "A48", male_name: "A35", egg_laying_date: "2026-09-26", season_year: 2026, egg_count: 13, hatched_count: null, status: "bertelur" },
+  { female_name: "C22", male_name: "A37", egg_laying_date: "2026-09-14", season_year: 2026, egg_count: 17, hatched_count: null, status: "bertelur" },
+  { female_name: "C23", male_name: "A40", egg_laying_date: "2026-09-09", season_year: 2026, egg_count: 23, hatched_count: null, status: "bertelur" },
+  { female_name: "A47", male_name: "A35", egg_laying_date: "2026-09-06", season_year: 2026, egg_count: 25, hatched_count: null, status: "bertelur" },
+  { female_name: "A31", male_name: "A36", egg_laying_date: "2026-09-04", season_year: 2026, egg_count: 23, hatched_count: 0, status: "bertelur" },
+  { female_name: "A46", male_name: "A35", egg_laying_date: "2026-09-04", season_year: 2026, egg_count: 22, hatched_count: null, status: "bertelur" },
+  { female_name: "C23", male_name: "A40", egg_laying_date: "2026-08-12", season_year: 2026, egg_count: 22, hatched_count: null, status: "bertelur" },
+  { female_name: "C24", male_name: "A36", egg_laying_date: "2026-03-09", season_year: 2026, egg_count: 25, hatched_count: 7, status: "selesai" },
+  { female_name: "C14", male_name: "A29", egg_laying_date: "2026-03-16", season_year: 2026, egg_count: 23, hatched_count: 20, status: "selesai" },
+  { female_name: "C24", male_name: "A36", egg_laying_date: "2026-04-08", season_year: 2026, egg_count: 24, hatched_count: 22, status: "selesai" },
+];
+const opsiPeringkat = { tahunIni: 2026, jumlahMusim: 1, healthRecords: [] };
+
+/*
+ * Tingkat penetasan kebun: 49 menetas dari 72 telur yang SUDAH ada hasilnya
+ * (25 + 23 + 24). Bukan dari 280 telur yang pernah tercatat — 208 di
+ * antaranya masih dierami hari ini, dan menghitungnya sebagai gagal membuat
+ * 68,1% terbaca 17,5%.
+ */
+const semuaClutch = H.ringkasProduksi(CLUTCH_NYATA_2026);
+if (semuaClutch.totalTelur !== 280) temuan.push(`ringkasProduksi.totalTelur: ${semuaClutch.totalTelur}, seharusnya 280`);
+if (semuaClutch.telurAdaHasil !== 72) temuan.push(`ringkasProduksi.telurAdaHasil: ${semuaClutch.telurAdaHasil}, seharusnya 72`);
+if (semuaClutch.totalMenetas !== 49) temuan.push(`ringkasProduksi.totalMenetas: ${semuaClutch.totalMenetas}, seharusnya 49`);
+if (semuaClutch.telurMasihDierami !== 208) temuan.push(`ringkasProduksi.telurMasihDierami: ${semuaClutch.telurMasihDierami}, seharusnya 208`);
+if (semuaClutch.hatchRate.toFixed(1) !== "68.1") {
+  temuan.push(`hatchRate kebun: ${semuaClutch.hatchRate.toFixed(1)}%, seharusnya 68,1% (49/72 — bukan 49/280 = 17,5%)`);
+}
+if (H.ringkasTelurDicek(CLUTCH_NYATA_2026).persen.toFixed(1) !== semuaClutch.hatchRate.toFixed(1)) {
+  temuan.push("ringkasTelurDicek dan ringkasProduksi menjawab beda untuk data yang sama — dua layar akan menyebut dua angka");
+}
+
+/*
+ * Tab Induk Betina: tiap betina harus punya "clutch tahun ini" yang BENAR.
+ * Dulu ditulis 0 mati di kode, jadi C23 yang bertelur tiga kali tahun ini
+ * pun tertulis nol.
+ */
+const betinaPeringkat = P.peringkat(
+  CLUTCH_NYATA_2026,
+  (b) => b.female_name,
+  (b) => ({ maleName: "—", femaleName: b.female_name }),
+  opsiPeringkat,
+);
+const betinaUji = [
+  ["C23", 3, 73, 0],
+  ["A31", 2, 45, 0],
+  ["C24", 2, 49, 29],
+  ["C14", 1, 23, 20],
+  ["B108", 1, 13, 0],
+];
+for (const [nama, clutchTahunIni, telur, menetas] of betinaUji) {
+  const baris = betinaPeringkat.find((x) => x.femaleName === nama);
+  if (!baris) { temuan.push(`peringkat betina: ${nama} tidak ada di daftar`); continue; }
+  if (baris.clutchesThisYear !== clutchTahunIni) {
+    temuan.push(`peringkat betina ${nama}: clutch tahun ini ${baris.clutchesThisYear}, seharusnya ${clutchTahunIni} — angka mati 0 pernah dipajang untuk semua betina`);
+  }
+  if (baris.totalEggs !== telur) temuan.push(`peringkat betina ${nama}: ${baris.totalEggs} telur, seharusnya ${telur}`);
+  if (baris.totalHatched !== menetas) temuan.push(`peringkat betina ${nama}: ${baris.totalHatched} menetas, seharusnya ${menetas}`);
+}
+const c23Baris = betinaPeringkat.find((x) => x.femaleName === "C23");
+if (c23Baris && c23Baris.terakhirBertelur !== "2026-10-02") {
+  temuan.push(`peringkat betina C23: terakhir bertelur "${c23Baris.terakhirBertelur}", seharusnya "2026-10-02"`);
+}
+const jantanPeringkat = P.peringkat(CLUTCH_NYATA_2026, (b) => b.male_name, (b) => ({ maleName: b.male_name, femaleName: "—" }), opsiPeringkat);
+const a35Baris = jantanPeringkat.find((x) => x.maleName === "A35");
+if (!a35Baris || a35Baris.clutchesThisYear !== 3) {
+  temuan.push(`peringkat jantan A35: clutch tahun ini ${a35Baris?.clutchesThisYear}, seharusnya 3`);
+}
+const jumlahBobot = P.BOBOT.hatchRate + P.BOBOT.telur + P.BOBOT.clutch;
+if (Math.abs(jumlahBobot - 1) > 1e-9) {
+  temuan.push(`BOBOT skor berjumlah ${jumlahBobot}, seharusnya 1`);
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah pada ronda kandang.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
@@ -759,6 +847,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${betinaUji.length} peringkat betina + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

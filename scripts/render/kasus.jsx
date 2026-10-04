@@ -40,6 +40,7 @@ import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import BulanBertelur from "@/components/breeding/BulanBertelur";
+import PeringkatIndukan from "@/components/breeding/PeringkatIndukan";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
 import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
@@ -298,6 +299,9 @@ export default [
     induk berbeda, 136 butir — tujuh keping nama berjejer, kasus yang mudah
     terpotong di layar 360px.
   */
+  // Tab yang dipakai menjawab "betina mana yang berproduksi" — sampai hari
+  // ini belum pernah dirender satu penjaga pun.
+  ["PeringkatIndukan", <PeringkatIndukan />],
   ["BulanBertelur September", <BulanBertelur bulan="2026-09" breedings={[
     { id: "2", female_name: "A31", egg_count: 23, egg_laying_date: "2026-09-04", status: "bertelur" },
     { id: "3", female_name: "A46", egg_count: 22, egg_laying_date: "2026-09-04", status: "bertelur" },
