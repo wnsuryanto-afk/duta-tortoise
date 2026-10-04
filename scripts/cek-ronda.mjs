@@ -62,6 +62,7 @@ bundel("src/lib/inkubator.js", "inkubator.cjs");
 bundel("src/lib/hitungMundur.js", "mundur.cjs");
 bundel("src/lib/peringkatIndukan.js", "peringkat.cjs");
 bundel("src/lib/rekapTahunan.js", "tahunan.cjs");
+bundel("src/lib/tanggalMasukAkal.js", "tanggal.cjs");
 bundel("src/lib/hasilInkubasi.js", "hasil.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
@@ -75,6 +76,7 @@ const I = await import("file://" + join(dir, "inkubator.cjs")).then((m) => m.def
 const M = await import("file://" + join(dir, "mundur.cjs")).then((m) => m.default || m);
 const P = await import("file://" + join(dir, "peringkat.cjs")).then((m) => m.default || m);
 const Y = await import("file://" + join(dir, "tahunan.cjs")).then((m) => m.default || m);
+const TGL = await import("file://" + join(dir, "tanggal.cjs")).then((m) => m.default || m);
 const H = await import("file://" + join(dir, "hasil.cjs")).then((m) => m.default || m);
 
 const temuan = [];
@@ -1049,6 +1051,78 @@ for (const berkas of LAYAR_LAPOR_FERTIL) {
   }
 }
 
+/* ── Tanggal dari pembaca invoice AI ───────────────────────────────── */
+
+/*
+ * Pembaca invoice mengembalikan tanggal sebagai TEKS, dan saat tidak
+ * menemukannya ia mengembalikan teks `"null"` — bukan nilai null. Penulisnya
+ * dulu memakai `inv.tanggal || form.date`, dan teks "null" adalah nilai yang
+ * benar menurut `||`, jadi ia lolos utuh.
+ *
+ * Dua baris FinanceTransaction tersimpan bertanggal "null" pada 4 Okt 2026
+ * karena itu, dan halaman Catat Pengeluaran MATI TOTAL: new Date("nullT00:00:00")
+ * tidak sah, format() melemparnya, dan seluruh halaman diganti layar
+ * "Terjadi Kesalahan: Invalid time value".
+ */
+const tanggalUji = [
+  ["null", "2026-10-04", "teks \"null\" dari pembaca AI — justru yang merusak"],
+  ["undefined", "2026-10-04", "teks \"undefined\""],
+  [null, "2026-10-04", "nilai null sungguhan"],
+  [undefined, "2026-10-04", "tidak diisi"],
+  ["", "2026-10-04", "kosong"],
+  ["bukan tanggal", "2026-10-04", "teks sembarang"],
+  ["2026-13-45", "2026-10-04", "berbentuk benar tetapi bulan/tanggal mustahil"],
+  ["2026-09-13", "2026-09-13", "tanggal sah — dipakai apa adanya"],
+  ["2026-09-13T08:00:00", "2026-09-13", "tanggal berjam — dipotong, bukan ditolak"],
+];
+for (const [nilai, harap, kenapa] of tanggalUji) {
+  const dapat = TGL.tanggalISOAman(nilai, "2026-10-04");
+  if (dapat !== harap) {
+    temuan.push(`tanggalISOAman(${JSON.stringify(nilai)}): dapat "${dapat}", seharusnya "${harap}" — ${kenapa}`);
+  }
+}
+
+/*
+ * Dan layar tidak boleh mati karena satu baris data yang rusak.
+ * tanggalTampil mengembalikan tanda hubung, bukan melempar.
+ */
+const pemformat = (d) => `${d.getFullYear()}`;
+for (const [nilai, harap] of [["null", "—"], [null, "—"], ["2026-09-13", "2026"]]) {
+  let dapat;
+  try {
+    dapat = TGL.tanggalTampil(nilai, pemformat);
+  } catch (e) {
+    temuan.push(`tanggalTampil(${JSON.stringify(nilai)}) MELEMPAR: ${e.message} — satu baris rusak tidak boleh mematikan halaman`);
+    continue;
+  }
+  if (dapat !== harap) temuan.push(`tanggalTampil(${JSON.stringify(nilai)}): dapat "${dapat}", seharusnya "${harap}"`);
+}
+/*
+ * Pemformat yang melempar pun tidak boleh lolos ke atas — dan pemeriksaannya
+ * sendiri harus MELAPORKAN, bukan ikut melempar. Penjaga yang mati dengan
+ * jejak tumpukan alih-alih satu kalimat membuat orang menebak apa yang rusak.
+ */
+try {
+  if (TGL.tanggalTampil("2026-09-13", () => { throw new Error("uji"); }) !== "—") {
+    temuan.push("tanggalTampil: lemparan dari pemformatnya tidak ditangkap");
+  }
+} catch (e) {
+  temuan.push(`tanggalTampil meneruskan lemparan pemformatnya (${e.message}) — satu baris rusak akan mematikan halaman`);
+}
+
+/*
+ * Penulisnya harus memakai penyaring itu. Tanpa pemeriksaan ini, cukup satu
+ * orang menulis `inv.tanggal || form.date` lagi dan baris "null" kembali
+ * masuk — kali ini tanpa ada yang tahu sampai halamannya mati lagi.
+ */
+const financeSrc = kupasKomentar(readFileSync(join(AKAR, "src/pages/FinancePage.jsx"), "utf8"));
+if (/date:\s*inv\.tanggal\s*\|\|/.test(financeSrc)) {
+  temuan.push('src/pages/FinancePage.jsx  menulis `date: inv.tanggal || …` — teks "null" dari pembaca AI lolos lewat ||. Pakai tanggalISOAman().');
+}
+if (!/tanggalISOAman\s*\(/.test(financeSrc)) {
+  temuan.push("src/pages/FinancePage.jsx  tidak memakai tanggalISOAman() — tanggal dari pembaca invoice masuk tanpa diperiksa");
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah pada ronda kandang.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
@@ -1056,6 +1130,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

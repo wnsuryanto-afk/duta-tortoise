@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { tanggalTampil } from "@/lib/tanggalMasukAkal";
 import { base44 } from "@/api/base44Client";
 import { format, subDays, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
@@ -155,7 +156,7 @@ export default function GuidedPoinSaya({ user }) {
                 }`}
               >
                 <span className={`text-sm ${isToday ? "font-semibold text-green-700" : "text-muted-foreground"}`}>
-                  {isToday ? "Hari ini" : format(new Date(day.date + "T00:00:00"), "EEE, d MMM", { locale: id })}
+                  {isToday ? "Hari ini" : tanggalTampil(day.date, (d) => format(d, "EEE, d MMM", { locale: id }))}
                 </span>
                 <div className="flex items-center gap-2">
                   {day.poin > 0 ? (

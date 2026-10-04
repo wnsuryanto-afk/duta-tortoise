@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { tanggalISOAman } from "@/lib/tanggalMasukAkal";
 import { Link, useSearchParams } from "react-router-dom";
 import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
@@ -108,7 +109,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
             type: "pengeluaran",
             category: guessCategory(it.nama),
             amount: sub,
-            date: inv.tanggal || form.date,
+            date: tanggalISOAman(inv.tanggal, form.date),
             description: `${inv.toko || "Invoice"} — ${it.nama}`.slice(0, 200),
             qty: Number(it.qty) > 0 ? Number(it.qty) : undefined,
             harga_satuan: Number(it.harga_satuan) > 0 ? Number(it.harga_satuan) : undefined,
@@ -141,7 +142,7 @@ function AddTransactionForm({ user, onClose, onSaved }) {
       ...p,
       type: "pengeluaran",
       amount: String(total || ""),
-      date: inv.tanggal || p.date,
+      date: tanggalISOAman(inv.tanggal, p.date),
       description: `${inv.toko || "Invoice"} — ${ringkas}`.slice(0, 200),
       category: guessCategory(items.map((i) => i.nama).join(" ")),
     }));

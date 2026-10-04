@@ -4,6 +4,7 @@
  * Buat tugas baru (dialog) & batalkan tugas yang belum dikerjakan.
  */
 import { useState, useEffect } from "react";
+import { tanggalTampil } from "@/lib/tanggalMasukAkal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -226,7 +227,7 @@ export default function TugasInsidentilTab() {
                         <span>· Sejak: {format(new Date(t.created_date), "d MMM yyyy", { locale: id })}</span>
                       )}
                       <span className={isOverdue ? "text-red-600 font-medium" : ""}>
-                        · Tenggat: {t.due_date ? format(new Date(t.due_date + "T00:00:00"), "d MMM yyyy", { locale: id }) : "-"}
+                        · Tenggat: {tanggalTampil(t.due_date, (d) => format(d, "d MMM yyyy", { locale: id }), "-")}
                       </span>
                       {t.done_by_name && <span>· Dikerjakan: {t.done_by_name} ({t.done_at})</span>}
                     </div>

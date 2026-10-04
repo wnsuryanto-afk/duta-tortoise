@@ -50,3 +50,55 @@ export function tanggalMencurigakan(tanggal, acuan) {
   }
   return null;
 }
+
+/**
+ * Jadikan sebuah nilai tanggal "YYYY-MM-DD" yang sah, atau pakai cadangannya.
+ *
+ * ── Kenapa ini perlu ─────────────────────────────────────────────────────
+ *
+ * Pembaca invoice AI mengembalikan tanggal sebagai TEKS, dan saat ia tidak
+ * menemukannya, yang dikembalikan sering kali teks `"null"` — bukan nilai
+ * null. Penulisnya memakai `inv.tanggal || form.date`, dan teks "null"
+ * adalah nilai yang benar menurut `||`, jadi ia lolos utuh ke basis data.
+ *
+ * Dua baris FinanceTransaction tersimpan bertanggal `"null"` pada 4 Okt
+ * 2026 karena itu. Akibatnya bukan angka yang meleset: halaman Catat
+ * Pengeluaran MATI TOTAL — `new Date("nullT00:00:00")` menghasilkan tanggal
+ * tidak sah, `format()` melemparnya, dan seluruh halaman diganti layar
+ * "Terjadi Kesalahan: Invalid time value".
+ *
+ * @param {*} nilai     calon tanggal, dari mana pun asalnya
+ * @param {string} cadangan  dipakai bila `nilai` tidak sah
+ */
+export function tanggalISOAman(nilai, cadangan = hariIniISO()) {
+  const t = String(nilai ?? "").slice(0, 10);
+  // "null" dan "undefined" adalah teks yang lolos dari `||`, jadi ia harus
+  // ditolak di sini — bukan diserahkan ke new Date().
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return cadangan;
+  const d = new Date(`${t}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? cadangan : t;
+}
+
+/**
+ * Tanggal yang TIDAK pernah bisa menjatuhkan layar.
+ *
+ * `format()` date-fns melempar untuk tanggal tidak sah, dan satu lemparan
+ * saat render berarti seluruh halaman diganti layar kesalahan. Satu baris
+ * data yang rusak tidak boleh membuat halaman yang memuat ratusan baris
+ * lain tidak bisa dibuka.
+ *
+ * @param {*} nilai            tanggal tersimpan
+ * @param {Function} pemformat (Date) => string, biasanya pembungkus format()
+ * @param {string} kosong      yang ditampilkan bila tanggalnya tidak terbaca
+ */
+export function tanggalTampil(nilai, pemformat, kosong = "—") {
+  const t = String(nilai ?? "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return kosong;
+  const d = new Date(`${t}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return kosong;
+  try {
+    return pemformat(d);
+  } catch {
+    return kosong;
+  }
+}

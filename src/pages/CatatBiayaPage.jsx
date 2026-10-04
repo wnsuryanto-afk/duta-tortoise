@@ -34,6 +34,7 @@
  * membuat gaji yang sama masuk dua kali.
  */
 import { hanyaLaporan } from "@/lib/laporan";
+import { tanggalTampil } from "@/lib/tanggalMasukAkal";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -256,7 +257,7 @@ export default function CatatBiayaPage() {
                     <span className="text-sm tabular-nums text-muted-foreground whitespace-nowrap">
                       {rupiah(t.amount)}
                       <span className="ml-2 text-xs">
-                        {t.date ? format(new Date(t.date + "T00:00:00"), "d MMM", { locale: localeId }) : ""}
+                        {tanggalTampil(t.date, (d) => format(d, "d MMM", { locale: localeId }), "")}
                       </span>
                     </span>
                   </li>
