@@ -1,4 +1,5 @@
 import { dilacak, perluDiperhatikan, stokHabis } from "@/lib/stokMenipis";
+import { rupiah } from "@/lib/rupiah";
 // Halaman /dashboard-stok digabungkan ke sini sebagai tab. Isinya ringkasan
 // atas persediaan yang sama yang didaftar tab Inventaris — nilai stok, yang
 // akan kadaluarsa, pemakaian pakan, dan pengeluaran bulan ini. Berdiri
@@ -12,7 +13,8 @@ import { AlertTriangle, Package, ArrowUpDown, FlaskConical, TrendingDown, Layout
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
-import KartuAngka from "@/components/ui/kartu-angka";
+import PageHeader from "@/components/common/PageHeader";
+import RingkasanAngka from "@/components/common/RingkasanAngka";
 import StokInventoryTab from "@/components/stok/StokInventoryTab";
 import StokPergerakanTab from "@/components/stok/StokPergerakanTab";
 import StokResepTab from "@/components/stok/StokResepTab";
@@ -82,13 +84,14 @@ export default function UnifiedStokPage() {
 
   return (
     <div className="space-y-5 p-4 sm:p-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Stok & Gudang</h1>
-          <p className="text-muted-foreground text-sm">Inventaris pakan, obat, alat & pergerakan stok terpusat</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* Kepala halaman memakai PageHeader, bukan <h1> sendiri: judul dan
+          angka ringkasannya jadi sebentuk dengan halaman lain, dan angkanya
+          punya tempat yang sudah tahu cara mengurutkan yang mendesak. */}
+      <PageHeader
+        title="Stok & Gudang"
+        subtitle="Inventaris pakan, obat, alat & pergerakan stok terpusat"
+        icon={Package}
+        actions={<>
           <AmbilBarangScan />
           {/*
             Label batch dicetak setelah barang datang, sekali, untuk batch yang
@@ -105,60 +108,61 @@ export default function UnifiedStokPage() {
             <Printer className="w-4 h-4" />
             Label Batch{batchBelumBerlabel.length > 0 ? ` (${batchBelumBerlabel.length})` : ""}
           </Button>
-        </div>
-      </div>
+        </>}
+      >
+        {/*
+          Empat angka yang sama, tetapi besarnya kini mengikuti ISI-nya.
+          "Stok kritis 0" adalah kabar baik dan mengecil sendiri; "Stok
+          kritis 7" melebar dan berwarna. Sebelumnya keempatnya selalu
+          sebesar kartu yang sama, jadi nol dan tujuh terbaca setara.
+        */}
+        <RingkasanAngka ubin={[
+          {
+            kunci: "kritis",
+            ikon: AlertTriangle,
+            label: "Stok kritis",
+            nilai: criticalCount,
+            sub: criticalCount > 0 ? "di bawah minimum — belanja" : "✓ semua di atas minimum",
+            ke: "/pembelian",
+            nada: criticalCount > 0 ? "bahaya" : "tenang",
+            tingkat: criticalCount > 0 ? "mendesak" : "tenang",
+          },
+          {
+            kunci: "habis",
+            ikon: TrendingDown,
+            label: "Barang wajib habis",
+            nilai: mandatoryEmptyCount,
+            sub: mandatoryEmptyCount > 0 ? "lihat daftarnya" : "✓ semua ada",
+            onKlik: mandatoryEmptyCount > 0 ? () => setTab("inventory") : undefined,
+            nada: mandatoryEmptyCount > 0 ? "bahaya" : "tenang",
+            tingkat: mandatoryEmptyCount > 0 ? "mendesak" : "tenang",
+          },
+          {
+            kunci: "nilai",
+            ikon: Package,
+            label: "Nilai stok",
+            nilai: rupiah(totalNilai),
+            sub: "pakan + gudang",
+            ke: "/dashboard-stok",
+            tingkat: "biasa",
+          },
+          {
+            kunci: "gerak",
+            ikon: ArrowUpDown,
+            label: "Pergerakan hari ini",
+            nilai: `+${todayMasuk} / -${todayKeluar}`,
+            sub: "masuk / keluar (unit)",
+            onKlik: () => setTab("pergerakan"),
+            tingkat: "biasa",
+          },
+        ]} />
+      </PageHeader>
 
       <BatchLabelModal
         open={labelBatchOpen}
         batches={batchBelumBerlabel}
         onClose={() => setLabelBatchOpen(false)}
       />
-
-      {/* ── Empat angka kepala halaman ──
-          Memakai KartuAngka bersama (components/ui/kartu-angka.jsx), bukan
-          StatCard lokal. Yang berubah dan kenapa:
-
-          · Nilai stok diringkas jadi "Rp 9,4 jt" — bentuk lama mencetaknya
-            penuh dengan text-2xl di kolom ±150px dan terpotong tepi kartu.
-            Angka persisnya tetap ada di tooltip.
-          · Warna tidak lagi dikirim sebagai kelas Tailwind mentah oleh
-            pemanggil; yang dikirim NADA, dan kartunya yang tahu warnanya di
-            mode terang maupun gelap.
-          · "Item Wajib Habis" tidak lagi <div onClick> dengan tulisan "Klik
-            untuk lihat" — ia sekarang tombol sungguhan yang bisa dijangkau
-            keyboard, dengan panah dan sedikit angkat saat disentuh. */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KartuAngka
-          label="Total Nilai Stok"
-          nilai={totalNilai}
-          format="rupiah"
-          sub="Pakan + Gudang"
-          nada="utama"
-          ikon={Package}
-        />
-        <KartuAngka
-          label="Stok Kritis"
-          nilai={criticalCount}
-          sub="item di bawah minimum"
-          nada={criticalCount > 0 ? "bahaya" : "baik"}
-          ikon={AlertTriangle}
-        />
-        <KartuAngka
-          label="Pergerakan Hari Ini"
-          nilai={`+${todayMasuk} / -${todayKeluar}`}
-          sub="masuk / keluar (unit)"
-          nada="netral"
-          ikon={ArrowUpDown}
-        />
-        <KartuAngka
-          label="Item Wajib Habis"
-          nilai={mandatoryEmptyCount}
-          sub={mandatoryEmptyCount > 0 ? "lihat daftarnya" : "semua aman"}
-          nada={mandatoryEmptyCount > 0 ? "bahaya" : "baik"}
-          ikon={TrendingDown}
-          onKlik={mandatoryEmptyCount > 0 ? () => setTab("inventory") : undefined}
-        />
-      </div>
 
       {/* Main tabs */}
       <Tabs value={tab} onValueChange={setTab}>

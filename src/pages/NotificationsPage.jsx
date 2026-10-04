@@ -165,8 +165,8 @@ export default function NotificationsPage() {
         subtitle="Peringatan dan pengumuman untuk tim"
         icon={Bell}
         chips={[
-          { key: "belum", label: "Belum dibaca", value: unreadCount, tone: unreadCount > 0 ? "warn" : "good" },
-          { key: "total", label: "Di kotak", value: aktif.length },
+          { key: "belum", label: "Belum dibaca", value: unreadCount, tanpaTujuan: "daftarnya tepat di bawah chip ini", tone: unreadCount > 0 ? "warn" : "good" },
+          { key: "total", label: "Di kotak", value: aktif.length, tanpaTujuan: "daftarnya tepat di bawah chip ini" },
         ]}
         actions={
           <>

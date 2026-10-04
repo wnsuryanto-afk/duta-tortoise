@@ -46,7 +46,7 @@ import { suratAktif } from "@/lib/suratPeringatan";
 import { periksaStok } from "@/lib/stokMenipis";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { clutchMendesak, HARI_SEGERA } from "@/lib/hitungMundur";
-import RingkasanBeranda from "@/components/dashboard/RingkasanBeranda";
+import RingkasanAngka from "@/components/common/RingkasanAngka";
 import { rupiah } from "@/lib/rupiah";
 
 // ─── Helpers ───────────────────────────────────────
@@ -772,7 +772,7 @@ export default function OwnerDashboard({ user }) {
 
     Besar-kecilnya ditentukan ISI angkanya, bukan jenis ubinnya. "Sakit 0"
     adalah kabar BAIK dan tidak perlu tempat besar; "Sakit 3" adalah kerja
-    hari ini dan perlu. Lihat RingkasanBeranda untuk aturannya.
+    hari ini dan perlu. Lihat RingkasanAngka untuk aturannya.
 
     Setiap ubin punya tujuan. Angka yang menimbulkan pertanyaan tetapi tidak
     bisa ditelusuri hanya memindahkan pekerjaan ke orang yang membacanya.
@@ -879,7 +879,7 @@ export default function OwnerDashboard({ user }) {
           berselisih. Yang di atas kini menjawab pertanyaan yang sama dengan
           kartunya.
         */}
-        <RingkasanBeranda ubin={ubinRingkasan} />
+        <RingkasanAngka ubin={ubinRingkasan} />
       </PageHeader>
 
       {/* Barang masuk & keluar — sebelum 02-10-2026 beranda ini tidak punya

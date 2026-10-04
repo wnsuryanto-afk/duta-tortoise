@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { LeafPattern } from "@/components/common/Illustration";
 import { cn } from "@/lib/utils";
 
@@ -26,22 +27,35 @@ import { cn } from "@/lib/utils";
  * bawahnya dengan lebar penuh. Bersebelahan hanya mulai md ke atas, di
  * mana memang ada ruangnya.
  */
-export function HeaderChip({ icon: Icon, label, value, tone = "default", onClick, title }) {
+/**
+ * Satu angka ringkas di kepala halaman.
+ *
+ * `ke` membuatnya bisa diklik. Disurvei 4 Okt 2026: sepuluh halaman memajang
+ * chip seperti ini dan TIDAK SATU PUN bisa diklik — "23 kura sakit" di kepala
+ * halaman memunculkan pertanyaan lalu membiarkan orang mencari sendiri
+ * halamannya. Tujuan yang diawali "#" dipasang sebagai <a> biasa, karena
+ * React Router tidak menggulir ke jangkar.
+ */
+export function HeaderChip({ icon: Icon, label, value, tone = "default", onClick, ke, title }) {
   const tones = {
     default: "bg-card/70 text-foreground border-border",
     good: "bg-accent/12 text-accent border-accent/25",
     warn: "bg-amber-500/12 text-amber-700 dark:text-amber-400 border-amber-500/25",
     bad: "bg-destructive/12 text-destructive border-destructive/25",
   };
-  const Comp = onClick ? "button" : "div";
+  const bisaDiklik = Boolean(onClick || ke);
+  const jangkar = typeof ke === "string" && ke.startsWith("#");
+  const Comp = ke ? (jangkar ? "a" : Link) : onClick ? "button" : "div";
+  const tujuan = ke ? (jangkar ? { href: ke } : { to: ke }) : {};
   return (
     <Comp
+      {...tujuan}
       onClick={onClick}
       title={title}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur-sm",
         "transition-all",
-        onClick && "hover:-translate-y-0.5 hover:shadow-card cursor-pointer",
+        bisaDiklik && "hover:-translate-y-0.5 hover:shadow-card cursor-pointer",
         tones[tone] || tones.default
       )}
     >
@@ -50,6 +64,31 @@ export function HeaderChip({ icon: Icon, label, value, tone = "default", onClick
       <span className="tabular">{value}</span>
     </Comp>
   );
+}
+
+/**
+ * Chip yang menuntut perhatian didahulukan.
+ *
+ * Di kesepuluh halaman yang memakai chip, `tone: "warn"` dan `tone: "bad"`
+ * SELALU dipasang bersyarat — hanya saat angkanya memang buruk ("sakit > 0
+ * ? warn : good", "kritis > 0 ? bad : good"). Jadi mengangkat keduanya ke
+ * depan sama dengan mengangkat yang perlu dikerjakan, bukan sekadar
+ * mengurutkan warna.
+ *
+ * Urutannya STABIL: chip dengan tingkat yang sama tetap pada urutan yang
+ * ditulis halamannya, dan pada hari yang tenang (tidak ada warn/bad sama
+ * sekali) susunannya persis seperti sebelum fungsi ini ada.
+ *
+ * "good" TIDAK dibedakan dari "default": pada beberapa halaman "good" berarti
+ * "angkanya bagus" (margin positif), bukan "tidak ada yang perlu dikerjakan".
+ * Mendorongnya ke belakang akan memindahkan margin ke ujung tanpa alasan.
+ */
+function urutkanChip(chips) {
+  const tingkat = (c) => (c?.tone === "bad" ? 0 : c?.tone === "warn" ? 1 : 2);
+  return [...chips]
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => tingkat(a.c) - tingkat(b.c) || a.i - b.i)
+    .map((x) => x.c);
 }
 
 export default function PageHeader({
@@ -133,7 +172,7 @@ export default function PageHeader({
               {/* `key` dikeluarkan dari objeknya: menyebarkan objek yang masih
                   memuat key ke JSX membuat React memperingatkan, dan key itu
                   bukan prop yang perlu diterima HeaderChip. */}
-              {chips.map(({ key, ...c }, i) => (
+              {urutkanChip(chips).map(({ key, ...c }, i) => (
                 <HeaderChip key={key || c.label || i} {...c} />
               ))}
             </div>

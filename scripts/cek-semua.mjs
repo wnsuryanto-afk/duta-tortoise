@@ -56,6 +56,10 @@
  *   cek-entitas     tabel yang dibaca tapi tak pernah ditulis (layar selalu
  *                   kosong), ditulis tapi tak pernah dibaca (data hilang), atau
  *                   menganggur menunggu ditulisi orang yang salah sangka
+ *   cek-tataletak   angka ringkasan di kepala halaman yang tidak bisa diklik →
+ *                   "Sakit 3" memunculkan pertanyaan lalu membiarkan orang
+ *                   mencari sendiri halamannya; dan judul halaman yang
+ *                   dibuat sendiri-sendiri alih-alih memakai PageHeader
  *   cek-boolean     kolom boolean diisi hasil `a || b` → nilainya salah satu
  *                   operandnya, bukan true/false; semua pembacanya memakai
  *                   `=== true`, jadi ia ditolak diam-diam dan spanduk
@@ -75,7 +79,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-penjaga.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

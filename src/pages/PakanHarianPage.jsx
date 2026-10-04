@@ -67,11 +67,12 @@ export default function PakanHarianPage() {
             key: "hariini",
             label: "Hari ini",
             value: todayTotal || "Belum dicatat",
+            tanpaTujuan: "catatannya tepat di bawah chip ini",
             tone: todayTotal ? "good" : "warn",
             title: todaySources.length > 0 ? todaySources.join(", ") : undefined,
           },
           ...(todaySources.length > 0
-            ? [{ key: "sumber", label: "Dari", value: todaySources.join(", ") }]
+            ? [{ key: "sumber", label: "Dari", value: todaySources.join(", "), tanpaTujuan: "daftar sumber, bukan angka" }]
             : []),
         ]}
         actions={

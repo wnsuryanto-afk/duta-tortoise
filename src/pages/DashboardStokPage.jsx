@@ -141,12 +141,13 @@ export default function DashboardStokPage() {
         icon={Package}
         art={<WarehouseArt size="md" />}
         chips={[
-          { key: "nilai", icon: Wallet, label: "Nilai stok", value: formatRp(totalStockValue) },
+          { key: "nilai", icon: Wallet, label: "Nilai stok", value: formatRp(totalStockValue), ke: "/stok-unified" },
           {
             key: "kritis",
             icon: AlertTriangle,
             label: "Kritis",
             value: allCritical.length,
+            ke: "/pembelian",
             tone: allCritical.length > 0 ? "bad" : "good",
             title: `Pakan ${formatRp(totalFeedValue)} · Gudang ${formatRp(totalWarehouseValue)}`,
           },
@@ -155,6 +156,7 @@ export default function DashboardStokPage() {
             icon: Calendar,
             label: "Kedaluwarsa <30 hari",
             value: expiringSoon.length,
+            ke: "/stok-unified",
             tone: expiringSoon.length > 0 ? "warn" : "good",
           },
           {
@@ -162,6 +164,7 @@ export default function DashboardStokPage() {
             icon: TrendingDown,
             label: "Keluar bulan ini",
             value: formatRp(monthExpense),
+            ke: "/finance?tab=pengeluaran",
           },
         ]}
       />

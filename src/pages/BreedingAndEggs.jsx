@@ -370,11 +370,13 @@ export default function BreedingAndEggs() {
         icon={Egg}
         art={<EggNestArt size="md" />}
         chips={[
-          { key: "batch", icon: Egg, label: "Batch aktif", value: ringkasanBreeding.batchAktif },
-          { key: "telur", icon: Thermometer, label: "Telur diinkubasi", value: ringkasanBreeding.telurAktif },
+          { key: "batch", icon: Egg, label: "Batch aktif", value: ringkasanBreeding.batchAktif, ke: "/breeding?tab=pembiakan" },
+          { key: "telur", icon: Thermometer, label: "Telur diinkubasi", value: ringkasanBreeding.telurAktif, ke: "/breeding?tab=telur" },
           { key: "segera", icon: Calendar, label: "Menetas ≤7 hari", value: ringkasanBreeding.segeraMenetas,
+            ke: "/breeding?tab=telur",
             tone: ringkasanBreeding.segeraMenetas > 0 ? "warn" : "default" },
           { key: "rate", icon: AlertTriangle, label: "Tingkat menetas",
+            ke: "/breeding?tab=statistik",
             value: ringkasanBreeding.hatchRate === null ? "—" : `${ringkasanBreeding.hatchRate}%`,
             tone: ringkasanBreeding.hatchRate === null ? "default"
               : ringkasanBreeding.hatchRate >= 60 ? "good"

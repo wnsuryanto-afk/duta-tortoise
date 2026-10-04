@@ -220,9 +220,9 @@ export default function KritikSaranPage() {
         icon={MessageSquare}
         art={<TeamArt size="md" />}
         chips={[
-          { key: "bonus", label: "Masukan yang ditindaklanjuti", value: "+10 poin", tone: "good" },
+          { key: "bonus", label: "Masukan yang ditindaklanjuti", value: "+10 poin", tanpaTujuan: "aturan bonus, bukan angka yang bisa ditelusuri", tone: "good" },
           ...(canReview && newCount > 0
-            ? [{ key: "baru", label: "Belum ditinjau", value: newCount, tone: "warn" }]
+            ? [{ key: "baru", label: "Belum ditinjau", value: newCount, tanpaTujuan: "daftarnya tepat di bawah chip ini", tone: "warn" }]
             : []),
         ]}
       />

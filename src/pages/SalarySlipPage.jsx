@@ -120,13 +120,13 @@ export default function SalarySlipPage() {
         icon={Receipt}
         art={<WalletArt size="md" />}
         chips={[
-          { key: "belum", label: "Belum dibayar", value: rupiah(totalPending), tone: totalPending > 0 ? "warn" : "good" },
-          { key: "lunas", label: "Sudah dibayar", value: rupiah(totalPaid) },
+          { key: "belum", label: "Belum dibayar", value: rupiah(totalPending), tanpaTujuan: "slipnya terdaftar di halaman ini", tone: totalPending > 0 ? "warn" : "good" },
+          { key: "lunas", label: "Sudah dibayar", value: rupiah(totalPaid), tanpaTujuan: "slipnya terdaftar di halaman ini" },
           // Slip batal disebut, bukan dihilangkan: lima slip yang lenyap dari
           // hitungan tanpa keterangan lebih membingungkan daripada lima slip
           // yang tertulis batal.
           ...(jumlahBatal > 0
-            ? [{ key: "batal", label: `${jumlahBatal} slip dibatalkan`, value: rupiah(totalBatal) }]
+            ? [{ key: "batal", label: `${jumlahBatal} slip dibatalkan`, value: rupiah(totalBatal), tanpaTujuan: "slipnya terdaftar di halaman ini" }]
             : []),
         ]}
       />

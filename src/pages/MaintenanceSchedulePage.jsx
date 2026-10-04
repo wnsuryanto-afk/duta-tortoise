@@ -272,8 +272,9 @@ export default function MaintenanceSchedulePage() {
         art={<TortoiseArt size="md" />}
         chips={[
           { key: "sisa", icon: AlertCircle, label: "Belum selesai", value: todayTotal - todayDone,
+            ke: "/sop",
             tone: todayTotal - todayDone > 0 ? "warn" : "good" },
-          { key: "selesai", icon: CheckCircle2, label: "Selesai hari ini", value: `${todayDone}/${todayTotal}` },
+          { key: "selesai", icon: CheckCircle2, label: "Selesai hari ini", value: `${todayDone}/${todayTotal}`, tanpaTujuan: "rinciannya jadwal di halaman ini sendiri" },
         ]}
       />
 

@@ -403,10 +403,10 @@ export default function FinancePage() {
         icon={DollarSign}
         art={<WalletArt size="md" />}
         chips={[
-          { key: "margin", icon: TrendingUp, label: "Margin",
+          { key: "margin", icon: TrendingUp, label: "Margin", ke: "/finance?tab=laba-rugi",
             value: totalPemasukan > 0 ? `${((labaRugi / totalPemasukan) * 100).toFixed(1)}%` : "—",
             tone: labaRugi >= 0 ? "good" : "bad" },
-          { key: "transaksi", icon: Edit2, label: "Transaksi periode ini", value: transaksiPeriode },
+          { key: "transaksi", icon: Edit2, label: "Transaksi periode ini", value: transaksiPeriode, ke: "/finance?tab=semua" },
         ]}
         actions={
           <>

@@ -186,9 +186,10 @@ export default function HealthList() {
         art={<HealthArt size="md" />}
         chips={[
           { key: "sakit", icon: Heart, label: "Sedang sakit", value: ringkasanSehat.sedangSakit,
+            ke: "/tortoise?tab=kura",
             tone: ringkasanSehat.sedangSakit > 0 ? "warn" : "good" },
-          { key: "bulan", icon: CalendarDays, label: "Kasus bulan ini", value: ringkasanSehat.bulanIni },
-          { key: "total", icon: BookOpen, label: "Total catatan", value: records.length },
+          { key: "bulan", icon: CalendarDays, label: "Kasus bulan ini", value: ringkasanSehat.bulanIni, ke: "/health?tab=catatan" },
+          { key: "total", icon: BookOpen, label: "Total catatan", value: records.length, ke: "/health?tab=catatan" },
         ]}
         actions={perms.canCreate && (
           <Button onClick={() => { setEditData(null); setShowForm(true); }} className="gap-2 bg-primary hover-lift">

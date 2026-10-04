@@ -2,7 +2,11 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 /**
- * RingkasanBeranda — angka kepala beranda, disusun menurut DESAKANNYA.
+ * RingkasanAngka — angka kepala halaman, disusun menurut DESAKANNYA.
+ *
+ * Lahir di beranda Owner, lalu dipindahkan ke common/ karena masalah yang
+ * diselesaikannya ada di SELURUH aplikasi: disurvei 4 Okt 2026, sepuluh
+ * halaman memajang angka ringkasan dan TIDAK SATU PUN bisa diklik.
  *
  * ── Yang diganti ─────────────────────────────────────────────────────────
  *
@@ -38,7 +42,7 @@ const NADA = {
   tenang: "border-border bg-muted/30 text-muted-foreground",
 };
 
-function Ubin({ ke, ikon: Ikon, label, nilai, sub, nada = "biasa", lebar = false }) {
+function Ubin({ ke, onKlik, ikon: Ikon, label, nilai, sub, nada = "biasa", lebar = false }) {
   const isi = (
     <>
       <div className="flex items-center gap-1.5 min-w-0">
@@ -68,18 +72,31 @@ function Ubin({ ke, ikon: Ikon, label, nilai, sub, nada = "biasa", lebar = false
     dibereskan di beranda ini. Peramban menangani jangkar sendiri, jadi
     serahkan padanya.
   */
-  if (String(ke).startsWith("#")) {
+  if (ke && String(ke).startsWith("#")) {
     return <a href={ke} className={kelas}>{isi}</a>;
+  }
+
+  /*
+    Sebagian ubin tidak pergi ke mana-mana — ia memindahkan tab di halaman
+    yang sama. Itu tetap tujuan yang sah, dan tombol sungguhan (bukan div
+    ber-onClick) supaya bisa dijangkau keyboard.
+  */
+  if (!ke) {
+    return (
+      <button type="button" onClick={onKlik} disabled={!onKlik} className={cn(kelas, !onKlik && "cursor-default hover:translate-y-0 hover:shadow-none")}>
+        {isi}
+      </button>
+    );
   }
 
   return <Link to={ke} className={kelas}>{isi}</Link>;
 }
 
 /**
- * @param ubin daftar { kunci, ke, ikon, label, nilai, sub, nada, tingkat }
+ * @param ubin daftar { kunci, ke | onKlik, ikon, label, nilai, sub, nada, tingkat }
  *             tingkat: "mendesak" | "biasa" | "tenang"
  */
-export default function RingkasanBeranda({ ubin = [] }) {
+export default function RingkasanAngka({ ubin = [] }) {
   const urutan = { mendesak: 0, biasa: 1, tenang: 2 };
   const terurut = [...ubin].sort(
     (a, b) => (urutan[a.tingkat] ?? 1) - (urutan[b.tingkat] ?? 1),

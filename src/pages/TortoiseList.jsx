@@ -369,12 +369,12 @@ export default function TortoiseList() {
         icon={Shell}
         art={<TortoiseArt size="md" />}
         chips={[
-          { key: "aktif", icon: Shell, label: "Aktif", value: ringkasan.aktif },
-          { key: "jk", icon: Home, label: "Jantan : Betina",
+          { key: "aktif", icon: Shell, label: "Aktif", value: ringkasan.aktif, ke: "/tortoise?tab=kura" },
+          { key: "jk", icon: Home, label: "Jantan : Betina", ke: "/tortoise?tab=kandang",
             value: `${ringkasan.jantan} : ${ringkasan.betina}` },
-          { key: "sakit", icon: HeartPulse, label: "Sakit", value: ringkasan.sakit,
+          { key: "sakit", icon: HeartPulse, label: "Sakit", value: ringkasan.sakit, ke: "/health",
             tone: ringkasan.sakit > 0 ? "warn" : "good" },
-          { key: "karantina", icon: CalendarX, label: "Karantina", value: ringkasan.karantina,
+          { key: "karantina", icon: CalendarX, label: "Karantina", value: ringkasan.karantina, ke: "/tortoise?tab=karantina",
             tone: ringkasan.karantina > 0 ? "warn" : "default" },
         ]}
       />
