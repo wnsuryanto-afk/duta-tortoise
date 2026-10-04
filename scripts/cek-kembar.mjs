@@ -15,6 +15,7 @@
  * Keluar dengan kode 1 bila ada yang melenceng.
  */
 import fs from "fs";
+import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 const PASANGAN = [
   ["src/lib/stokMenipis.js",   "base44/shared/stok.ts",          ["stokHabis", "stokMenipis", "perluDiperhatikan", "dilacak", "golonganStok", "idBarangRacikan", "diracikSendiri"]],
@@ -113,7 +114,7 @@ function badan(src, nama) {
   if (tutup === -1) return null;
   const params = m[1].split(",").map((p) => p.trim().split(/[:=\s]/)[0]).filter(Boolean);
   let t = src.slice(buka + 1, tutup);
-  t = t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+  t = kupasKomentar(t);
   for (const p of params) t = t.replace(new RegExp(`\\b${p}\\b`, "g"), "_");
   t = t.replace(/:\s*(boolean|number|string|any|unknown|Set<string>|string\[\]|any\[\])/g, "");
   t = t.replace(/<string>/g, "").replace(/\s+/g, "");

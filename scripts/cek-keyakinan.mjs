@@ -27,6 +27,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 const AKAR = process.cwd();
 const dir = mkdtempSync(join(tmpdir(), "cek-keyakinan-"));
@@ -119,11 +120,7 @@ for (const p of berkasJs(join(AKAR, "src"))) {
   if (DIKECUALIKAN.has(rel)) continue;
   // Komentar dibuang lebih dulu: penjelasan soal cacat ini memuat contoh
   // kodenya, dan penjaga yang tersandung komentarnya sendiri tidak berguna.
-  const isi = readFileSync(p, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .filter((b) => !b.trim().startsWith("//"))
-    .join("\n");
+  const isi = kupasKomentar(readFileSync(p, "utf8"));
   isi.split("\n").forEach((baris, i) => {
     if (POLA.test(baris)) temuan.push(`${rel}:${i + 1}  ${baris.trim().slice(0, 90)}`);
   });

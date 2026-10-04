@@ -1,10 +1,26 @@
 /**
  * cek-kolom-hantu.mjs — cari kolom yang DITULIS kode tapi tidak ada di skema
- * entity, dan karena itu dibuang diam-diam oleh Base44.
+ * entity.
+ *
+ * ── Satu koreksi atas apa yang ditulis di sini sebelumnya ────────────
+ *
+ * Berkas ini dulu menyatakan kolom semacam itu "dibuang diam-diam oleh
+ * Base44". Itu MELEBIHI yang bisa dibuktikan. Diperiksa 4 Okt 2026:
+ * keempat baris SalaryConfig memuat `salary_type`, `payment_period`,
+ * `shift_start` dan `shift_end` — tidak satu pun ada di skemanya, dan
+ * keempatnya tetap terbaca dari basis data. Jadi nilainya setidaknya bisa
+ * bertahan; apakah TULISAN BARU ke kolom tak terdaftar juga bertahan tidak
+ * diuji di sini, karena mengujinya berarti menulis ke data sungguhan.
+ *
+ * Yang pasti, dan itu sudah cukup: kolom yang tidak ada di skema TIDAK
+ * TERLIHAT oleh apa pun yang bekerja dari skema — penjaga ini, laporan,
+ * ekspor, dan layar mana pun yang ditulis orang lain yang membaca skemanya
+ * lebih dulu. Entah nilainya hilang atau tersimpan di tempat yang tidak
+ * pernah dilihat siapa pun, keduanya sama-sama cacat, dan perbaikannya
+ * sama: pakai kolom yang ada, atau daftarkan kolomnya.
  *
  * Ini kelas bug yang paling sunyi di aplikasi ini: tidak ada error, tidak ada
- * peringatan build, tidak ada apa pun di layar. Barisnya tetap tersimpan,
- * hanya kolom itu yang hilang. Yang sudah ditemukan skrip ini:
+ * peringatan build, tidak ada apa pun di layar. Yang sudah ditemukan skrip ini:
  *
  *   ShoppingList.item_name       — kolom nama kedua yang isinya sudah lama
  *                                  tidak sinkron dengan item_sku di baris yang
@@ -169,6 +185,17 @@ function objekVariabel(s, nama, sebelum) {
     new RegExp(`const\\s+${nama}\\s*=\\s*\\{`, "g"),
     new RegExp(`const\\s+\\[\\s*${nama}\\s*,[^\\]]*\\]\\s*=\\s*useState\\([^{]{0,60}\\{`, "g"),
     new RegExp(`let\\s+${nama}\\s*=\\s*\\{`, "g"),
+    /*
+     * Payload yang dibangun lewat `.map(x => ({ ... }))`.
+     *
+     * Satu-satunya bulkCreate di aplikasi ini berbentuk begitu:
+     *   const babyData = babies.map(b => ({ name: ..., photo_url: ... }));
+     * dan karena polanya bukan `const X = {`, isinya tidak pernah diperiksa.
+     * Itulah yang menyembunyikan `Tortoise.photo_url` — kolom yang tidak ada
+     * di skema — selama sebuah layar menulisnya tiap kali satu clutch
+     * menetas.
+     */
+    new RegExp(`const\\s+${nama}\\s*=\\s*[^;=]{0,120}\\.map\\s*\\(\\s*(?:\\([^)]*\\)|[\\w$]+)\\s*=>\\s*\\(\\s*\\{`, "g"),
   ];
   let terbaik = -1;
   for (const re of pola) {
@@ -264,7 +291,7 @@ if (hantu.size === 0) {
   console.log(`Tidak ada kolom hantu (${Object.keys(skema).length} entity diperiksa).`);
   process.exit(0);
 }
-console.error("KOLOM DITULIS TAPI TIDAK ADA DI SKEMA — datanya dibuang diam-diam:\n");
+console.error("KOLOM DITULIS TAPI TIDAK ADA DI SKEMA — tidak terlihat oleh laporan, ekspor, dan penjaga:\n");
 for (const [k, v] of [...hantu].sort()) console.error(`  ${k}\n      ${[...v].sort().join("\n      ")}`);
 console.error("\nPeriksa dulu apakah kolom ini bersarang di dalam array yang sah sebelum memperbaiki.");
 process.exit(1);

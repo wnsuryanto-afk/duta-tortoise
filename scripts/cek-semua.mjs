@@ -56,6 +56,9 @@
  *   cek-entitas     tabel yang dibaca tapi tak pernah ditulis (layar selalu
  *                   kosong), ditulis tapi tak pernah dibaca (data hilang), atau
  *                   menganggur menunggu ditulisi orang yang salah sangka
+ *   cek-penjaga     penjaga yang mengupas komentar sendiri → satu atribut
+ *                   accept="image/*" membuatnya ikut memakan kode sesudahnya,
+ *                   dan penjaganya hijau karena tidak pernah melihatnya
  *   eslint          variabel yang dipakai tapi tidak ada (no-undef). Halaman
  *                   Pembelian pernah mati karena satu sisa nama variabel di
  *                   daftar dependensi useMemo — build tetap hijau.
@@ -68,7 +71,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-penjaga.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

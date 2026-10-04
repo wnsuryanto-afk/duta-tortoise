@@ -43,6 +43,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 const AKAR = process.cwd();
 const temuan = [];
@@ -69,9 +70,7 @@ for (const p of sumber) {
   const asli = readFileSync(p, "utf8");
   // Komentar dibuang: penjelasan di berkas ini dan di hitungGaji.js
   // menyebut "weekly" justru untuk menerangkan kenapa ia dilarang.
-  const s = asli
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n").filter((b) => !b.trim().startsWith("//") && !b.trim().startsWith("*")).join("\n");
+  const s = kupasKomentar(asli);
 
   for (const m of s.matchAll(/period_type\s*:\s*["'](\w+)["']/g)) {
     payloadDiperiksa++;
@@ -105,9 +104,7 @@ let literalDiperiksa = 0;
 for (const p of sumber) {
   const rel = relative(AKAR, p);
   if (rel === SUMBER_POTONGAN) continue;
-  const s = readFileSync(p, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n").filter((b) => !b.trim().startsWith("//") && !b.trim().startsWith("*")).join("\n");
+  const s = kupasKomentar(readFileSync(p, "utf8"));
 
   for (const m of s.matchAll(/weekly_deduction[^;\n]*?\|\|\s*(\d{5,})/g)) {
     literalDiperiksa++;
@@ -301,9 +298,7 @@ for (const [nama, att, jam, absensiSaja] of bandingLembur) {
  */
 // Komentar dibuang lebih dulu: penjelasan cacat ini di absensi.js memuat
 // contoh kodenya sendiri, dan tanpa ini penjaga menangkap penjelasannya.
-const absensiSrc = readFileSync(join(AKAR, "src/lib/absensi.js"), "utf8")
-  .replace(/\/\*[\s\S]*?\*\//g, "")
-  .split("\n").filter((b) => !b.trim().startsWith("//")).join("\n");
+const absensiSrc = kupasKomentar(readFileSync(join(AKAR, "src/lib/absensi.js"), "utf8"));
 if (/harian\s*===\s*undefined/.test(absensiSrc)) {
   temuan.push(
     'src/lib/absensi.js  catatCheckOut membaca ulang checklist hanya saat `harian === undefined`. ' +
@@ -354,7 +349,7 @@ for (const [k, harap, kenapa] of kasbonLunasUji) {
 }
 // Layarnya harus memakai aturan itu, bukan menulis syaratnya sendiri.
 const ownerSrc = readFileSync(join(AKAR, "src/components/dashboard/role/OwnerDashboard.jsx"), "utf8");
-const ownerKode = ownerSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+const ownerKode = kupasKomentar(ownerSrc);
 if (/status\s*===\s*"active"/.test(ownerKode) || /\.remaining_amount/.test(ownerKode)) {
   temuan.push("OwnerDashboard masih menyaring kasbon dengan status \"active\" atau kolom remaining_amount — keduanya tidak ada");
 }
@@ -381,7 +376,7 @@ if (!ownerKode.includes("totalBelumLunas")) {
  */
 const LAYAR_KONFIG = "src/components/salary/KonfigurasiGajiTab.jsx";
 const konfigSrc = readFileSync(join(AKAR, LAYAR_KONFIG), "utf8");
-const konfigKode = konfigSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+const konfigKode = kupasKomentar(konfigSrc);
 
 if (/salary_type\s*[=!]==/.test(konfigKode)) {
   temuan.push(

@@ -27,7 +27,8 @@
  *
  * Yang diperiksa, dua hal:
  *
- * 1. Tiap `entities.X.create({...})` di src/ dengan X punya kolom
+ * 1. Tiap `entities.X.create({...})` ATAU `entities.X.bulkCreate(...)`
+ *    di src/ dengan X punya kolom
  *    `is_test_data`: payload literalnya harus memuat `testModeTag`,
  *    `tandaUji`, atau `is_test_data`. Pemanggilan yang mengirim VARIABEL
  *    (bukan objek literal) dilewati — isinya tidak terbaca dari sini,
@@ -48,6 +49,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 const AKAR = process.cwd();
 
@@ -90,9 +92,7 @@ function berkas(dir, keluar = []) {
  * contoh di dalam komentar tidak boleh ikut terbaca sebagai kode.
  */
 function bersih(asli) {
-  return asli
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n").filter((b) => !b.trim().startsWith("//")).join("\n");
+  return kupasKomentar(asli);
 }
 
 /** Ambil isi kurung kurawal payload, dari posisi `{` sesudah create(. */
@@ -103,6 +103,28 @@ function payloadDari(s, i) {
     else if (s[j] === "}") { dalam--; if (dalam === 0) return s.slice(i, j + 1); }
   }
   return null;
+}
+
+/**
+ * Isi `const X = ....map(y => ({ ... }))` — bentuk yang hampir selalu dipakai
+ * untuk menyiapkan payload bulkCreate. Dikembalikan null bila tidak ketemu,
+ * supaya yang tidak terbaca dilaporkan apa adanya alih-alih dianggap aman.
+ */
+function deklarasiMap(s, nama, sebelum) {
+  const re = new RegExp(`(?:const|let)\\s+${nama}\\s*=\\s*[^;=]{0,160}?\\.map\\s*\\(\\s*(?:\\([^)]*\\)|[\\w$]+)\\s*=>\\s*\\(\\s*\\{`, "g");
+  let terbaik = -1, m;
+  while ((m = re.exec(s))) {
+    if (m.index < sebelum && m.index > terbaik) terbaik = m.index;
+  }
+  if (terbaik === -1) {
+    const polos = new RegExp(`(?:const|let)\\s+${nama}\\s*=\\s*\\[`, "g");
+    while ((m = polos.exec(s))) {
+      if (m.index < sebelum && m.index > terbaik) terbaik = m.index;
+    }
+    if (terbaik === -1) return null;
+  }
+  const buka = s.indexOf("{", terbaik) >= 0 ? s.indexOf("{", terbaik) : -1;
+  return buka === -1 ? null : payloadDari(s, buka);
 }
 
 const BERPENANDA = entityBerpenanda();
@@ -123,6 +145,38 @@ for (const p of berkas(path.join(AKAR, "src"))) {
     if (/testModeTag|tandaUji|is_test_data/.test(payload)) continue;
     const baris = s.slice(0, m.index).split("\n").length;
     temuan.push(`${rel}:${baris}  ${ent}.create() tanpa penanda Mode Uji`);
+  }
+
+  /*
+   * `bulkCreate` sama sekali tidak dicari sebelumnya — polanya hanya
+   * `\.create\s*\(`, dan `bulkCreate(` tidak cocok dengannya.
+   *
+   * Hari ini satu-satunya pemakainya menulis Tortoise, tabel yang memang
+   * TIDAK punya `is_test_data`, jadi tidak ada yang bocor. Tapi lubangnya
+   * nyata: satu `bulkCreate` ke tabel bertanda akan lewat tanpa suara, dan
+   * justru bulkCreate-lah yang menulis BANYAK baris sekaligus.
+   *
+   * Isinya hampir selalu dibangun lewat `.map(x => ({...}))`, jadi yang
+   * diperiksa seluruh pernyataannya — bukan satu objek literal.
+   */
+  for (const m of s.matchAll(/entities\.(\w+)\.bulkCreate\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/g)) {
+    const ent = m[1];
+    if (!BERPENANDA.has(ent)) continue;
+    diperiksa++;
+    const baris = s.slice(0, m.index).split("\n").length;
+    /*
+     * Payloadnya ditelusuri ke deklarasinya, bukan dicari di seluruh
+     * berkas. Mencari kata "tandaUji" di mana saja dalam berkas akan
+     * hijau hanya karena ada pemanggilan LAIN yang memakainya — penjaga
+     * yang hijau karena kebetulan tidak menjaga apa pun.
+     */
+    const blok = deklarasiMap(s, m[2], m.index);
+    if (blok === null) {
+      temuan.push(`${rel}:${baris}  ${ent}.bulkCreate(${m[2]}) — isi payloadnya tidak terbaca, penanda Mode Uji tidak bisa dipastikan`);
+      continue;
+    }
+    if (/testModeTag|tandaUji|is_test_data/.test(blok)) continue;
+    temuan.push(`${rel}:${baris}  ${ent}.bulkCreate() tanpa penanda Mode Uji`);
   }
 }
 

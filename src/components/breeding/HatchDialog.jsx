@@ -244,10 +244,47 @@ export default function HatchDialog({ open, onClose, breeding }) {
         // bertelur lebih dari sekali.
         last_breeding_id: breeding.id,
         enclosure: b.enclosure || undefined,
+        /*
+         * Nomor kandang ikut dikirim, bukan cuma namanya.
+         *
+         * Formulir ini SUDAH mengisi `enclosure_id` di tiap baris bayi
+         * (dari kandang yang dipilih), lalu membuangnya di sini. Akibatnya
+         * tercatat di data: 14 dari 16 bayi hidup di "Baby 1" punya
+         * `enclosure_id: null`. Kura yang punya nomor mengikuti pergantian
+         * nama kandang dengan sendirinya — yang tidak punya harus ditulis
+         * ulang satu per satu oleh RenameEnclosureDialog.
+         *
+         * Dua bayi yang punya nomornya (BB-2026048, BB-2026049) mendapatkannya
+         * dari formulir data kura belakangan, bukan dari sini.
+         */
+        enclosure_id: b.enclosure_id || undefined,
         shell_type: b.shell_type || "normal",
         weight_grams: b.weight_grams ? Number(b.weight_grams) : undefined,
         shell_length_cm: b.shell_length_cm ? Number(b.shell_length_cm) : undefined,
-        photo_url: b.photo_url || undefined,
+        /*
+         * Foto masuk ke `photos`, BUKAN ke `photo_url`.
+         *
+         * `photo_url` bukan kolom Tortoise — skemanya hanya punya `photos`
+         * (larik), dan nol dari 178 baris memakainya. Kartu kura memang
+         * punya cadangan yang membacanya, jadi fotonya tetap tampil… sampai
+         * ada foto kedua. Begitu PhotoProgressPanel menambah satu foto,
+         * `photos` jadi berisi, cadangan di kartu berhenti menyala, dan foto
+         * hari pertama bayi ini hilang dari semua layar — padahal justru itu
+         * titik awal catatan pertumbuhannya.
+         *
+         * Berat dan panjangnya ikut dibawa karena grafik pertumbuhan di
+         * PhotoProgressPanel dibangun dari `photos[].weight_grams`.
+         */
+        photos: b.photo_url
+          ? [{
+              url: b.photo_url,
+              is_primary: true,
+              date: hatchDate,
+              weight_grams: b.weight_grams ? Number(b.weight_grams) : null,
+              shell_length_cm: b.shell_length_cm ? Number(b.shell_length_cm) : null,
+              notes: null,
+            }]
+          : undefined,
         notes: b.notes || `Menetas dari breeding ${breeding.male_name} × ${breeding.female_name} (${hatchDate})`,
       }));
       newBabies = await base44.entities.Tortoise.bulkCreate(babyData);

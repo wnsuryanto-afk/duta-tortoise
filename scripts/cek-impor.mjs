@@ -23,6 +23,7 @@
  */
 import fs from "fs";
 import path from "path";
+import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 /** Semua nama yang diekspor src/lib/*.js — inilah permukaan yang berisiko. */
 function namaEkspor(dir) {
@@ -109,9 +110,7 @@ for (const p of berkas("src")) {
 
   // Buang komentar dan string sebelum mencari pemakaian — inilah yang dulu
   // membuat skrip lama tertipu oleh path di dalam komentar.
-  const kode = s
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "")
+  const kode = kupasKomentar(s)
     .replace(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g, '""');
 
   for (const [nama, asal] of ekspor) {
