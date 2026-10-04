@@ -1,12 +1,18 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { simpananLokal } from "@/lib/simpananAman";
 
 const ThemeContext = createContext({ theme: "light", setTheme: () => {} });
 
 export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(() => {
-    return localStorage.getItem("duta_theme") || "light";
-  });
+  /*
+    Dibaca lewat simpananLokal, bukan localStorage langsung: pembacaan ini
+    terjadi di dalam useState penyedia yang membungkus SELURUH aplikasi.
+    Kalau ia melempar — dan localStorage memang melempar saat data situs
+    diblokir — tidak ada satu layar pun yang terbentuk. Lihat
+    lib/simpananAman.js.
+  */
+  const [theme, setThemeState] = useState(() => simpananLokal.baca("duta_theme") || "light");
 
   // Load from profile on mount
   useEffect(() => {
@@ -17,9 +23,9 @@ export function ThemeProvider({ children }) {
         const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
         if (profiles.length > 0 && profiles[0].theme_preference) {
           const saved = profiles[0].theme_preference;
-          if (saved !== localStorage.getItem("duta_theme")) {
+          if (saved !== simpananLokal.baca("duta_theme")) {
             setThemeState(saved);
-            localStorage.setItem("duta_theme", saved);
+            simpananLokal.tulis("duta_theme", saved);
           }
         }
       } catch {
@@ -46,7 +52,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     applyTheme(theme);
-    localStorage.setItem("duta_theme", theme);
+    simpananLokal.tulis("duta_theme", theme);
 
     // Save to UserProfile asynchronously
     const save = async () => {

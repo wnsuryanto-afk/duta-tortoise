@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import { simpananSesi } from "@/lib/simpananAman";
 
 const ViewAsContext = createContext(null);
 
@@ -8,10 +9,10 @@ const SESSION_EMAIL_KEY = "current_view_as_user_email";
 const SESSION_TESTSAVE_KEY = "current_view_as_test_save";
 
 export function ViewAsProvider({ children }) {
-  const [viewAsRole, setViewAsRole] = useState(() => sessionStorage.getItem(SESSION_KEY) || null);
-  const [viewAsLabel, setViewAsLabel] = useState(() => sessionStorage.getItem(SESSION_LABEL_KEY) || "");
-  const [viewAsUserEmail, setViewAsUserEmail] = useState(() => sessionStorage.getItem(SESSION_EMAIL_KEY) || null);
-  const [testSaveMode, setTestSaveMode] = useState(() => sessionStorage.getItem(SESSION_TESTSAVE_KEY) === "true");
+  const [viewAsRole, setViewAsRole] = useState(() => simpananSesi.baca(SESSION_KEY) || null);
+  const [viewAsLabel, setViewAsLabel] = useState(() => simpananSesi.baca(SESSION_LABEL_KEY) || "");
+  const [viewAsUserEmail, setViewAsUserEmail] = useState(() => simpananSesi.baca(SESSION_EMAIL_KEY) || null);
+  const [testSaveMode, setTestSaveMode] = useState(() => simpananSesi.baca(SESSION_TESTSAVE_KEY) === "true");
 
   const activateViewAs = (role, label, userEmail = null, { testSave = false } = {}) => {
     if (!role || role === "owner") {
@@ -22,12 +23,12 @@ export function ViewAsProvider({ children }) {
     setViewAsLabel(label);
     setViewAsUserEmail(userEmail);
     setTestSaveMode(testSave);
-    sessionStorage.setItem(SESSION_KEY, role);
-    sessionStorage.setItem(SESSION_LABEL_KEY, label);
-    if (userEmail) sessionStorage.setItem(SESSION_EMAIL_KEY, userEmail);
-    else sessionStorage.removeItem(SESSION_EMAIL_KEY);
-    if (testSave) sessionStorage.setItem(SESSION_TESTSAVE_KEY, "true");
-    else sessionStorage.removeItem(SESSION_TESTSAVE_KEY);
+    simpananSesi.tulis(SESSION_KEY, role);
+    simpananSesi.tulis(SESSION_LABEL_KEY, label);
+    if (userEmail) simpananSesi.tulis(SESSION_EMAIL_KEY, userEmail);
+    else simpananSesi.hapus(SESSION_EMAIL_KEY);
+    if (testSave) simpananSesi.tulis(SESSION_TESTSAVE_KEY, "true");
+    else simpananSesi.hapus(SESSION_TESTSAVE_KEY);
   };
 
   const resetViewAs = () => {
@@ -35,10 +36,10 @@ export function ViewAsProvider({ children }) {
     setViewAsLabel("");
     setViewAsUserEmail(null);
     setTestSaveMode(false);
-    sessionStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem(SESSION_LABEL_KEY);
-    sessionStorage.removeItem(SESSION_EMAIL_KEY);
-    sessionStorage.removeItem(SESSION_TESTSAVE_KEY);
+    simpananSesi.hapus(SESSION_KEY);
+    simpananSesi.hapus(SESSION_LABEL_KEY);
+    simpananSesi.hapus(SESSION_EMAIL_KEY);
+    simpananSesi.hapus(SESSION_TESTSAVE_KEY);
   };
 
   const isViewingAs = !!viewAsRole;

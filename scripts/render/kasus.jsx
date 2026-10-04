@@ -43,6 +43,32 @@ import BulanBertelur from "@/components/breeding/BulanBertelur";
 import PeringkatIndukan from "@/components/breeding/PeringkatIndukan";
 import RekapTahunan from "@/components/breeding/RekapTahunan";
 import RingkasanAngka from "@/components/common/RingkasanAngka";
+import TermConditionSOPPage from "@/pages/TermConditionSOPPage";
+import RiwayatKlusterPage from "@/pages/RiwayatKlusterPage";
+import HubPage from "@/pages/HubPage";
+import BreedingDetailPage from "@/pages/BreedingDetailPage";
+import PanduanPakanPage from "@/pages/PanduanPakanPage";
+import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
+import WhatsAppLogPage from "@/pages/WhatsAppLogPage";
+import PanduanPenyakitDetailPage from "@/pages/PanduanPenyakitDetailPage";
+import TortoiseLabelPage from "@/pages/TortoiseLabelPage";
+import StockPredictionPage from "@/pages/StockPredictionPage";
+import PengaturanPoinPage from "@/pages/PengaturanPoinPage";
+import IncompleteDataPage from "@/pages/IncompleteDataPage";
+import SystemMaintenancePage from "@/pages/SystemMaintenancePage";
+import CatatBiayaPage from "@/pages/CatatBiayaPage";
+import TemuanFotoPage from "@/pages/TemuanFotoPage";
+import ActivityLogPage from "@/pages/ActivityLogPage";
+import DeathRecordsPage from "@/pages/DeathRecordsPage";
+import EditProfilePage from "@/pages/EditProfilePage";
+import HRPage from "@/pages/HRPage";
+import InfoPage from "@/pages/InfoPage";
+import OtomatisasiPage from "@/pages/OtomatisasiPage";
+import PrinterConfigPage from "@/pages/PrinterConfigPage";
+import PengaturanWhatsAppPage from "@/pages/PengaturanWhatsAppPage";
+import LayarTimPage from "@/pages/LayarTimPage";
+import PembelianPage from "@/pages/PembelianPage";
+import UnifiedStokPage from "@/pages/UnifiedStokPage";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
 import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
@@ -403,4 +429,38 @@ export default [
     { morph: "", gender: "betina" },
     { gender: "jantan" },
   ]} />],
+  /*
+    Halaman yang kepala halamannya dipindahkan ke PageHeader pada 4 Okt 2026.
+
+    Tiga puluh dua berkas disentuh dalam satu hari, dan yang memeriksanya cuma
+    eslint — yang tahu kodenya SAH, bukan bahwa halamannya MAU TAMPIL. Satu
+    prop yang tidak ditutup atau satu variabel yang pindah ruang lingkup lolos
+    begitu saja. Di sinilah halamannya benar-benar dirender.
+  */
+  ["TermConditionSOPPage tanpa data", <TermConditionSOPPage />],
+  ["RiwayatKlusterPage tanpa data", <RiwayatKlusterPage />],
+  ["HubPage tanpa data", <HubPage />],
+  ["BreedingDetailPage tanpa data", <BreedingDetailPage />],
+  ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
+  ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],
+  ["WhatsAppLogPage tanpa data", <WhatsAppLogPage />],
+  ["PanduanPenyakitDetailPage tanpa data", <PanduanPenyakitDetailPage />],
+  ["TortoiseLabelPage tanpa data", <TortoiseLabelPage />],
+  ["StockPredictionPage tanpa data", <StockPredictionPage />],
+  ["PengaturanPoinPage tanpa data", <PengaturanPoinPage />],
+  ["IncompleteDataPage tanpa data", <IncompleteDataPage />],
+  ["SystemMaintenancePage tanpa data", <SystemMaintenancePage />],
+  ["CatatBiayaPage tanpa data", <CatatBiayaPage />],
+  ["TemuanFotoPage tanpa data", <TemuanFotoPage />],
+  ["ActivityLogPage tanpa data", <ActivityLogPage />],
+  ["DeathRecordsPage tanpa data", <DeathRecordsPage />],
+  ["EditProfilePage tanpa data", <EditProfilePage />],
+  ["HRPage tanpa data", <HRPage />],
+  ["InfoPage tanpa data", <InfoPage />],
+  ["OtomatisasiPage tanpa data", <OtomatisasiPage />],
+  ["PrinterConfigPage tanpa data", <PrinterConfigPage />],
+  ["PengaturanWhatsAppPage tanpa data", <PengaturanWhatsAppPage />],
+  ["LayarTimPage tanpa data", <LayarTimPage />],
+  ["PembelianPage tanpa data", <PembelianPage />],
+  ["UnifiedStokPage tanpa data", <UnifiedStokPage />],
 ];

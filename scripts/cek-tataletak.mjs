@@ -164,6 +164,33 @@ if (pakaiH1Sendiri.length > BATAS_H1_SENDIRI) {
   );
 }
 
+/* ── 3. Penyedia yang membungkus seluruh aplikasi ──────────────────── */
+
+/*
+ * ThemeProvider dan ViewAsProvider membungkus SELURUH aplikasi, dan
+ * keduanya membaca penyimpanan peramban di dalam `useState` — yaitu saat
+ * render pertama. Kalau pembacaan itu melempar, tidak ada satu layar pun
+ * yang terbentuk: layar putih, tanpa pesan apa pun.
+ *
+ * `localStorage` memang melempar saat data situs diblokir — menyentuh
+ * propertinya saja sudah cukup. Jadi kedua penyedia itu WAJIB lewat
+ * lib/simpananAman.js, yang mengembalikan null alih-alih melempar.
+ *
+ * Ditempatkan di penjaga tata letak karena inilah lapisan terluar tata
+ * letak aplikasi: kalau ia gagal, tidak ada tata letak sama sekali.
+ */
+const PENYEDIA_AKAR = ["src/lib/ThemeContext.jsx", "src/lib/ViewAsContext.jsx"];
+for (const rel of PENYEDIA_AKAR) {
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  if (/\b(localStorage|sessionStorage)\s*\./.test(isi)) {
+    temuan.push(
+      `${rel}  menyentuh localStorage/sessionStorage langsung. Penyedia ini membungkus ` +
+      `seluruh aplikasi dan membacanya saat render pertama — satu lemparan berarti layar ` +
+      `putih tanpa pesan. Pakai simpananLokal / simpananSesi dari lib/simpananAman.js.`,
+    );
+  }
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah tata letak kepala halaman.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
