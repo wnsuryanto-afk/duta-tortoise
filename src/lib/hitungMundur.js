@@ -97,3 +97,45 @@ export function hitungMundur(breeding, hariIni = new Date()) {
   }
   return { jenis: "lewat", hari: Math.round((kini - akhir) / HARI), nada: "merah" };
 }
+
+/** Berapa hari sebelum perkiraan menetas sebuah clutch mulai disebut "segera". */
+export const HARI_SEGERA = 7;
+
+/**
+ * Clutch yang perlu diperhatikan sekarang, dikelompokkan per tingkat desakan.
+ *
+ * Dipakai beranda Owner. Sebelum ini beranda sama sekali tidak menyebut
+ * penetasan: pemilik baru tahu ada telur yang mau menetas kalau kebetulan
+ * membuka halaman Breeding. Penetasan pertama diperkirakan 31 Okt 2026, dan
+ * kura menetas berhari-hari — melewatkan hari pertamanya berarti bayi yang
+ * baru keluar menunggu di inkubator tanpa ada yang tahu.
+ *
+ * Urutannya adalah urutan mendesaknya, dan itu disengaja: `lewat` lebih
+ * mendesak daripada `masa`, karena perkiraan yang sudah terlampaui berarti
+ * ada yang perlu DIPERIKSA, bukan sekadar ditunggu.
+ *
+ * @returns {{ lewat: Array, masa: Array, segera: Array, total: number }}
+ */
+export function clutchMendesak(breedings = [], hariIni = new Date()) {
+  const lewat = [];
+  const masa = [];
+  const segera = [];
+
+  for (const b of breedings || []) {
+    const m = hitungMundur(b, hariIni);
+    if (!m) continue;
+    if (m.jenis === "lewat") lewat.push({ breeding: b, mundur: m });
+    else if (m.jenis === "masa") masa.push({ breeding: b, mundur: m });
+    else if (m.jenis === "menuju" && m.hari !== null && m.hari <= HARI_SEGERA) {
+      segera.push({ breeding: b, mundur: m });
+    }
+  }
+
+  // Yang paling dekat lebih dulu di tiap kelompok.
+  const urut = (a, b) => (a.mundur.hari ?? 0) - (b.mundur.hari ?? 0);
+  segera.sort(urut);
+  masa.sort(urut);
+  lewat.sort((a, b) => (b.mundur.hari ?? 0) - (a.mundur.hari ?? 0));
+
+  return { lewat, masa, segera, total: lewat.length + masa.length + segera.length };
+}

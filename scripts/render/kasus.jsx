@@ -42,6 +42,7 @@ import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import BulanBertelur from "@/components/breeding/BulanBertelur";
 import PeringkatIndukan from "@/components/breeding/PeringkatIndukan";
 import RekapTahunan from "@/components/breeding/RekapTahunan";
+import RingkasanBeranda from "@/components/dashboard/RingkasanBeranda";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
 import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
@@ -322,6 +323,27 @@ export default [
   ]} />],
   // Sama sekali belum ada catatan -> dua tahun kosong, tanpa angka nol.
   ["RekapTahunan kosong", <RekapTahunan tahunIni={2026} breedings={[]} />],
+  /*
+    Ubin ringkasan beranda. Dua keadaan yang berlawanan: hari yang ramai
+    (ada kura sakit, ada tagihan, ada clutch mau menetas) dan hari yang
+    tenang — pada hari tenang ubin kabar buruk harus MENGECIL, bukan hilang.
+  */
+  ["RingkasanBeranda hari ramai", <RingkasanBeranda ubin={[
+    { kunci: "kura", ke: "/tortoise", label: "Kura di peternakan", nilai: 136, tingkat: "biasa" },
+    { kunci: "telur", ke: "/breeding", label: "Telur aktif", nilai: 232, sub: "10 clutch dierami", tingkat: "biasa" },
+    { kunci: "laba", ke: "/finance", label: "Laba 2026", nilai: "Rp 41.243.901", nada: "baik", tingkat: "biasa" },
+    { kunci: "sakit", ke: "/health", label: "Kura sakit", nilai: 3, sub: "perlu diperiksa", nada: "bahaya", tingkat: "mendesak" },
+    { kunci: "alert", ke: "#perlu-perhatian", label: "Perlu perhatian", nilai: 23, sub: "lihat daftarnya", nada: "mendesak", tingkat: "mendesak" },
+    { kunci: "menetas", ke: "/breeding?tab=telur", label: "Clutch perlu dipantau", nilai: "3 clutch",
+      sub: "1 lewat perkiraan · 2 sedang menetas — terdekat C23", nada: "bahaya", tingkat: "mendesak" },
+  ]} />],
+  ["RingkasanBeranda hari tenang", <RingkasanBeranda ubin={[
+    { kunci: "kura", ke: "/tortoise", label: "Kura di peternakan", nilai: 136, tingkat: "biasa" },
+    { kunci: "telur", ke: "/breeding", label: "Telur aktif", nilai: 232, sub: "10 clutch dierami", tingkat: "biasa" },
+    { kunci: "laba", ke: "/finance", label: "Laba 2026", nilai: "Rp 41.243.901", nada: "baik", tingkat: "biasa" },
+    { kunci: "sakit", ke: "/health", label: "Kura sakit", nilai: 0, sub: "✓ tidak ada", nada: "tenang", tingkat: "tenang" },
+    { kunci: "alert", ke: "#perlu-perhatian", label: "Perlu perhatian", nilai: 0, sub: "✓ semua normal", nada: "tenang", tingkat: "tenang" },
+  ]} />],
   ["BulanBertelur September", <BulanBertelur bulan="2026-09" breedings={[
     { id: "2", female_name: "A31", egg_count: 23, egg_laying_date: "2026-09-04", status: "bertelur" },
     { id: "3", female_name: "A46", egg_count: 22, egg_laying_date: "2026-09-04", status: "bertelur" },

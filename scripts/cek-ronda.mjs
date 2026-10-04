@@ -759,6 +759,53 @@ if (I.angkaPembacaan({ temperature: 30.5 }).suhu !== null) {
 
 rmSync(dir, { recursive: true, force: true });
 
+/* ── Clutch yang perlu dipantau di beranda ─────────────────────────── */
+
+/*
+ * Clutch C23 yang sungguhan (12 Agt 2026): jendela menetas 31 Okt - 25 Nov.
+ * Hari acuannya dipatok supaya jawabannya tidak berubah tiap penjaga
+ * dijalankan.
+ */
+const KEBUN_MUNDUR = [
+  { female_name: "C23", status: "bertelur", estimated_hatch_start: "2026-10-31", estimated_hatch_end: "2026-11-25" },
+  { female_name: "A31", status: "bertelur", estimated_hatch_start: "2026-11-23", estimated_hatch_end: "2026-12-18" },
+  { female_name: "A47", status: "bertelur", estimated_hatch_start: "2026-11-25", estimated_hatch_end: "2026-12-20" },
+  { female_name: "C24", status: "selesai", estimated_hatch_start: "2026-06-27", estimated_hatch_end: "2026-07-22" },
+];
+const mendesakUji = [
+  ["2026-10-04", 0, 0, 0, "masih jauh — beranda tidak menyebut apa-apa"],
+  ["2026-10-27", 0, 0, 1, "C23 empat hari lagi"],
+  ["2026-11-05", 0, 1, 0, "C23 sedang di dalam jendela"],
+  // 20 Nov: C23 di dalam jendela; A31 (23 Nov) 3 hari lagi dan A47 (25 Nov)
+  // 5 hari lagi — KEDUANYA di bawah tujuh hari, jadi dua-duanya "segera".
+  ["2026-11-20", 0, 1, 2, "C23 masih menetas, A31 dan A47 di bawah tujuh hari"],
+  // 26 Nov: jendela C23 (s/d 25 Nov) sudah lewat; jendela A31 dan A47
+  // dua-duanya sudah terbuka.
+  ["2026-11-26", 1, 2, 0, "C23 lewat perkiraan, A31 dan A47 sedang menetas"],
+];
+for (const [hari, lewat, masa, segera, kenapa] of mendesakUji) {
+  const m = M.clutchMendesak(KEBUN_MUNDUR, new Date(`${hari}T17:30:00`));
+  if (m.lewat.length !== lewat || m.masa.length !== masa || m.segera.length !== segera) {
+    temuan.push(
+      `clutchMendesak pada ${hari}: lewat ${m.lewat.length}/${lewat}, masa ${m.masa.length}/${masa}, ` +
+      `segera ${m.segera.length}/${segera} — ${kenapa}`,
+    );
+  }
+  if (m.total !== lewat + masa + segera) {
+    temuan.push(`clutchMendesak pada ${hari}: total ${m.total}, seharusnya ${lewat + masa + segera}`);
+  }
+}
+/*
+ * Clutch yang sudah selesai TIDAK boleh ikut — kalau ikut, beranda akan
+ * menagih penetasan yang sudah dicatat berbulan-bulan lalu, tiap hari,
+ * selamanya.
+ */
+const adaSelesai = M.clutchMendesak(KEBUN_MUNDUR, new Date("2026-11-26T17:30:00"));
+const semuaNama = [...adaSelesai.lewat, ...adaSelesai.masa, ...adaSelesai.segera].map((x) => x.breeding.female_name);
+if (semuaNama.includes("C24")) {
+  temuan.push("clutchMendesak: clutch berstatus \"selesai\" ikut ditagih — beranda akan menagihnya tiap hari selamanya");
+}
+
 /* ── Peringkat indukan ─────────────────────────────────────────────── */
 
 /*
@@ -1009,6 +1056,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

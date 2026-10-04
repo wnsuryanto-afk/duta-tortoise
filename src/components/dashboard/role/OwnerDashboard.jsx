@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 // useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
-  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, ChevronRight, ChevronDown, ShieldAlert, ListChecks, StickyNote
+  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, ChevronRight, ChevronDown, ShieldAlert, ListChecks, StickyNote, Timer
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
@@ -45,6 +45,8 @@ import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
 import { periksaStok } from "@/lib/stokMenipis";
 import { clutchAktif } from "@/lib/breedingUtils";
+import { clutchMendesak, HARI_SEGERA } from "@/lib/hitungMundur";
+import RingkasanBeranda from "@/components/dashboard/RingkasanBeranda";
 import { rupiah } from "@/lib/rupiah";
 
 // ─── Helpers ───────────────────────────────────────
@@ -765,6 +767,94 @@ export default function OwnerDashboard({ user }) {
   }
 
 
+  /*
+    ── UBIN RINGKASAN KEPALA BERANDA ────────────────────────────────────
+
+    Besar-kecilnya ditentukan ISI angkanya, bukan jenis ubinnya. "Sakit 0"
+    adalah kabar BAIK dan tidak perlu tempat besar; "Sakit 3" adalah kerja
+    hari ini dan perlu. Lihat RingkasanBeranda untuk aturannya.
+
+    Setiap ubin punya tujuan. Angka yang menimbulkan pertanyaan tetapi tidak
+    bisa ditelusuri hanya memindahkan pekerjaan ke orang yang membacanya.
+  */
+  const mendesak = clutchMendesak(breedings);
+  const ubinRingkasan = [
+    {
+      kunci: "kura",
+      ke: "/tortoise",
+      ikon: Shell,
+      label: "Kura di peternakan",
+      nilai: kuraDiPeternakan.length,
+      tingkat: "biasa",
+    },
+    {
+      kunci: "telur",
+      ke: "/breeding",
+      ikon: Egg,
+      label: "Telur aktif",
+      nilai: totalEggs,
+      sub: `${activeBreedings.length} clutch dierami`,
+      tingkat: "biasa",
+    },
+    {
+      kunci: "laba",
+      ke: "/finance",
+      ikon: DollarSign,
+      label: `Laba ${tahunIni}`,
+      nilai: rupiah(setahun.laba),
+      nada: setahun.laba >= 0 ? "baik" : "bahaya",
+      tingkat: "biasa",
+    },
+    {
+      kunci: "sakit",
+      ke: "/health",
+      ikon: Heart,
+      label: "Kura sakit",
+      nilai: sickTortoises.length,
+      sub: sickTortoises.length === 0 ? "✓ tidak ada" : "perlu diperiksa",
+      nada: sickTortoises.length > 0 ? "bahaya" : "tenang",
+      tingkat: sickTortoises.length > 0 ? "mendesak" : "tenang",
+    },
+    {
+      kunci: "alert",
+      // Tautan ke dalam halaman ini sendiri: daftar lengkapnya ada beberapa
+      // layar di bawah, dan membawa orang KELUAR dari beranda untuk membaca
+      // sesuatu yang sudah ada di beranda adalah perjalanan yang sia-sia.
+      ke: "#perlu-perhatian",
+      ikon: AlertTriangle,
+      label: "Perlu perhatian",
+      nilai: criticalAlerts.length,
+      sub: criticalAlerts.length === 0 ? "✓ semua normal" : "lihat daftarnya",
+      nada: criticalAlerts.length > 0 ? "mendesak" : "tenang",
+      tingkat: criticalAlerts.length > 0 ? "mendesak" : "tenang",
+    },
+  ];
+
+  /*
+    Clutch yang mau menetas hanya muncul kalau MEMANG ada.
+
+    Ubin yang berbunyi "0 clutch segera menetas" sepanjang sepuluh bulan
+    dalam setahun mengajari orang untuk berhenti membacanya — dan ia akan
+    tetap tidak terbaca pada hari ia akhirnya berisi.
+  */
+  if (mendesak.total > 0) {
+    const bagian = [];
+    if (mendesak.lewat.length) bagian.push(`${mendesak.lewat.length} lewat perkiraan`);
+    if (mendesak.masa.length) bagian.push(`${mendesak.masa.length} sedang menetas`);
+    if (mendesak.segera.length) bagian.push(`${mendesak.segera.length} dalam ${HARI_SEGERA} hari`);
+    const terdekat = mendesak.lewat[0] || mendesak.masa[0] || mendesak.segera[0];
+    ubinRingkasan.push({
+      kunci: "menetas",
+      ke: "/breeding?tab=telur",
+      ikon: Timer,
+      label: "Clutch perlu dipantau",
+      nilai: `${mendesak.total} clutch`,
+      sub: `${bagian.join(" · ")} — terdekat ${terdekat.breeding.female_name || "?"}`,
+      nada: mendesak.lewat.length || mendesak.masa.length ? "bahaya" : "mendesak",
+      tingkat: "mendesak",
+    });
+  }
+
   return (
     <div className="space-y-6 pb-10 animate-fade-in">
       {/* ── HEADER ──
@@ -774,28 +864,23 @@ export default function OwnerDashboard({ user }) {
         title={greeting(user?.full_name)}
         subtitle={today}
         art={<TortoiseArt size="md" />}
-        chips={[
-          // Lencana ini dulu menyebut 194 sementara kartu "Kawanan hari ini"
-          // di layar yang sama menyebut 200. Keduanya benar untuk pertanyaan
-          // yang berbeda, tapi tidak ada satu pun keterangan di layar yang
-          // mengatakan itu — jadi yang terbaca cuma dua angka yang berselisih.
-          // Yang di atas kini menjawab pertanyaan yang sama dengan kartunya.
-          { key: "kura", icon: Shell, label: "Kura di peternakan", value: kuraDiPeternakan.length },
-          { key: "sakit", icon: Heart, label: "Sakit", value: sickTortoises.length,
-            tone: sickTortoises.length > 0 ? "warn" : "good" },
-          { key: "telur", icon: Egg, label: "Telur aktif", value: totalEggs },
-          { key: "laba", icon: DollarSign, label: `Laba ${tahunIni}`, value: rupiah(setahun.laba),
-            tone: setahun.laba >= 0 ? "good" : "bad" },
-          { key: "alert", icon: AlertTriangle, label: "Perlu perhatian", value: criticalAlerts.length,
-            tone: criticalAlerts.length > 0 ? "warn" : "good" },
-        ]}
         actions={
           <Link to="/finance"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 hover-lift transition-colors">
             <BarChart2 className="w-4 h-4" /> Laporan Lengkap
           </Link>
         }
-      />
+      >
+        {/*
+          Lencana "Kura di peternakan" dulu menyebut 194 sementara kartu
+          "Kawanan hari ini" di layar yang sama menyebut 200. Keduanya benar
+          untuk pertanyaan yang berbeda, tapi tidak ada keterangan apa pun di
+          layar yang mengatakan itu — jadi yang terbaca cuma dua angka yang
+          berselisih. Yang di atas kini menjawab pertanyaan yang sama dengan
+          kartunya.
+        */}
+        <RingkasanBeranda ubin={ubinRingkasan} />
+      </PageHeader>
 
       {/* Barang masuk & keluar — sebelum 02-10-2026 beranda ini tidak punya
           satu pun tombol stok, jadi mencatat pergerakan barang harus lewat
@@ -854,7 +939,7 @@ export default function OwnerDashboard({ user }) {
       <PoinBonusTim />
 
       {/* ── ROW 13: ALERT KRITIS ── */}
-      <div className="bg-card rounded-xl border border-border p-4">
+      <div id="perlu-perhatian" className="bg-card rounded-xl border border-border p-4 scroll-mt-20">
         <SectionTitle icon={AlertTriangle}>Perlu Perhatianmu</SectionTitle>
         {criticalAlerts.length === 0 ? (
           <div className="flex items-center gap-3 py-2">
