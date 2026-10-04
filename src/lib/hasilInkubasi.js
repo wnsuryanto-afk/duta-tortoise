@@ -21,14 +21,41 @@
 export const STATUS_ADA_HASIL = ["menetas", "selesai", "gagal"];
 
 /**
+ * Status clutch yang berarti masih BERJALAN.
+ *
+ * Disalin dari lib/breedingUtils.STATUS_CLUTCH_AKTIF alih-alih diimpor:
+ * breedingUtils mengimpor dari berkas ini, dan saling-impor membuat salah
+ * satunya menerima `undefined` saat bundel dimuat. Nilainya dijaga tetap sama
+ * oleh cek-ronda.mjs.
+ */
+const STATUS_MASIH_BERJALAN = ["bertelur", "inkubasi"];
+
+/**
  * Apakah clutch ini sudah punya hasil yang bisa dihitung?
  *
  * Statusnya didahulukan; `hatched_count` dipakai sebagai jaring pengaman untuk
  * data lama yang tetasannya tercatat tapi statusnya tertinggal.
+ *
+ * ── Kenapa clutch yang MASIH BERJALAN dikecualikan dari jaring itu ───────
+ *
+ * EggGrid menulis `hatched_count` setiap kali SATU telur ditandai menetas,
+ * tanpa mengubah status clutch-nya. Penetasan kura berlangsung berhari-hari,
+ * jadi clutch berstatus "inkubasi" dengan 5 dari 28 telur sudah menetas
+ * adalah keadaan yang normal — bukan clutch yang statusnya tertinggal.
+ *
+ * Jaring pengaman lama menganggapnya SUDAH SELESAI: 28 telurnya masuk
+ * penyebut sementara 23 di antaranya masih punya kesempatan menetas, dan
+ * tingkat keberhasilan kebun terbaca 18% pada hari-hari paling produktifnya.
+ * Itu cacat yang sama dengan kartu "tingkat penetasan" yang baru dibereskan,
+ * hanya bersembunyi satu lapis lebih dalam.
+ *
+ * Penetasan pertama diperkirakan 31 Okt 2026 — sesudah itu keadaan ini tidak
+ * lagi teoretis.
  */
 export function adaHasil(breeding) {
   if (!breeding) return false;
   if (STATUS_ADA_HASIL.includes(breeding.status)) return true;
+  if (STATUS_MASIH_BERJALAN.includes(breeding.status)) return false;
   return Number(breeding.hatched_count) > 0;
 }
 
@@ -233,4 +260,31 @@ export function ringkasDariBarisTelur(records = []) {
     infertile_count: n("infertil"),
     belum_dicek: n("belum_dicek"),
   };
+}
+
+/**
+ * Berapa telur FERTIL pada satu clutch — satu jawaban, bukan dua.
+ *
+ * Telur yang menetas jelas fertil. Telur yang mati di dalam cangkang juga
+ * fertil: ia terbukti dibuahi saat candling lalu gagal berkembang. Yang
+ * berstatus "fertile" di baris telur hanyalah yang MASIH berjalan — belum
+ * menetas, belum gagal.
+ *
+ * Menghitung fertil sebagai `status === "fertile"` saja karena itu
+ * mengembalikan NOL untuk clutch yang seluruh telurnya sudah menetas. Untuk
+ * C14 x A29 (16 Mar 2026) jawabannya 0, padahal 22 dari 23 telurnya fertil.
+ *
+ * Bedanya bukan sekadar angka. Fertilitas mengukur PEJANTAN, daya tetas
+ * mengukur INKUBATOR — laporan bulanan yang menyebut fertilitas nol akan
+ * menuding pejantan untuk kegagalan yang bukan miliknya.
+ *
+ * Baris per telur didahulukan; `fertile_count` yang tersimpan dipakai untuk
+ * clutch lama yang tidak punya baris sama sekali.
+ */
+export function fertilClutch(clutch) {
+  const baris = clutch?.egg_records;
+  if (Array.isArray(baris) && baris.length > 0) {
+    return ringkasDariBarisTelur(baris).fertile_count;
+  }
+  return Number(clutch?.fertile_count) || 0;
 }

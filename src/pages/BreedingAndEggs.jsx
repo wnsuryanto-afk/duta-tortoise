@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { saringBreeding, kelompokkanPerInduk, saringBulan, daftarBulanBertelur } from "@/lib/cariInduk";
 import { periksaAmbang } from "@/lib/inkubator";
+import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import BulanBertelur from "@/components/breeding/BulanBertelur";
 import RekapTahunan from "@/components/breeding/RekapTahunan";
@@ -332,15 +333,28 @@ export default function BreedingAndEggs() {
       const sisa = Math.ceil((new Date(b.estimated_hatch_end) - sekarang) / 86400000);
       return sisa >= 0 && sisa <= 7;
     }).length;
-    const telurRiwayat = breedings
-      .filter(b => !clutchAktif(b))
-      .reduce((t, b) => t + (b.egg_count || 0), 0);
-    const menetasRiwayat = breedings.reduce((t, b) => t + (b.hatched_count || 0), 0);
+    /*
+      Tingkat menetas dibaca dari ringkasProduksi(), bukan dihitung di sini.
+
+      Versi sebelumnya mengambil PEMBILANG dan PENYEBUT dari himpunan yang
+      berbeda: pembilangnya `hatched_count` SELURUH catatan, penyebutnya telur
+      dari clutch yang TIDAK aktif saja. Hari ini keduanya kebetulan sepadan
+      karena clutch yang masih dierami belum punya tetasan.
+
+      Tapi EggGrid menulis `hatched_count` setiap kali satu telur ditandai
+      menetas, TANPA mengubah status clutch-nya. Begitu telur pertama menetas
+      pada clutch yang masih berstatus "inkubasi" — dan penetasan kura memang
+      berlangsung berhari-hari — tetasannya masuk pembilang sementara telurnya
+      tidak pernah masuk penyebut. Angkanya membengkak, dan bisa melewati 100%.
+
+      Penetasan pertama diperkirakan 31 Okt 2026.
+    */
+    const produksi = ringkasProduksi(breedings);
     return {
       batchAktif: aktif.length,
       telurAktif: aktif.reduce((t, b) => t + (b.egg_count || 0), 0),
       segeraMenetas: segera,
-      hatchRate: telurRiwayat > 0 ? Math.round((menetasRiwayat / telurRiwayat) * 100) : null,
+      hatchRate: produksi.telurAdaHasil > 0 ? Math.round(produksi.hatchRate) : null,
     };
   })();
 

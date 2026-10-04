@@ -41,6 +41,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 const AKAR = process.cwd();
 const dir = mkdtempSync(join(tmpdir(), "cek-ronda-"));
@@ -904,6 +905,103 @@ if (cadangan.find((x) => x.tahun === 2026)?.telur !== 9) {
   temuan.push("rekapTahunan: clutch tanpa egg_laying_date hilang dari rekap — season_year seharusnya jadi cadangan");
 }
 
+/* ── Telur fertil, dan tingkat menetas yang tidak boleh membengkak ── */
+
+/*
+ * Telur yang MENETAS jelas fertil. Telur yang mati di dalam cangkang juga
+ * fertil — ia terbukti dibuahi saat candling lalu gagal berkembang. Yang
+ * berstatus "fertile" di baris telur hanyalah yang masih berjalan.
+ *
+ * Menghitung fertil sebagai `status === "fertile"` saja mengembalikan NOL
+ * untuk clutch yang seluruh telurnya sudah menetas. Bentuk data di bawah
+ * disalin dari C14 x A29 (16 Mar 2026): 20 menetas, 2 gagal, 1 infertil —
+ * 22 dari 23 telurnya fertil, dan `fertile_count` yang tersimpan memang 22.
+ */
+const barisTelur = (jumlah, status) => Array.from({ length: jumlah }, (_, i) => ({ egg_number: i + 1, status }));
+const C14_BARIS = [
+  ...barisTelur(20, "menetas"),
+  ...barisTelur(2, "gagal"),
+  ...barisTelur(1, "infertil"),
+];
+const fertilUji = [
+  [{ egg_records: C14_BARIS, fertile_count: 22 }, 22, "C14 x A29 — menetas dan gagal ikut fertil"],
+  [{ egg_records: barisTelur(24, "menetas"), fertile_count: 24 }, 24, "seluruhnya menetas — bukan nol"],
+  [{ egg_records: barisTelur(10, "infertil") }, 0, "seluruhnya infertil"],
+  [{ egg_records: barisTelur(6, "fertile") }, 6, "masih berjalan semua"],
+  [{ egg_records: [], fertile_count: 14 }, 14, "tanpa baris telur — pakai angka tersimpan"],
+  [{ fertile_count: 11 }, 11, "clutch lama tanpa egg_records"],
+];
+for (const [clutch, harap, kenapa] of fertilUji) {
+  const dapat = H.fertilClutch(clutch);
+  if (dapat !== harap) temuan.push(`fertilClutch: dapat ${dapat}, seharusnya ${harap} — ${kenapa}`);
+}
+
+/*
+ * EggGrid menulis `hatched_count` setiap kali satu telur ditandai menetas,
+ * TANPA mengubah status clutch-nya. Jadi clutch berstatus "inkubasi" bisa
+ * punya tetasan. Pembilang dan penyebut harus datang dari himpunan yang
+ * SAMA — kalau tidak, angkanya membengkak dan bisa melewati 100%.
+ */
+const SEDANG_MENETAS = [
+  { egg_count: 23, hatched_count: 20, status: "selesai" },
+  { egg_count: 28, hatched_count: 5, status: "inkubasi" },
+  { egg_count: 22, hatched_count: 0, status: "bertelur" },
+];
+const rSedang = H.ringkasProduksi(SEDANG_MENETAS);
+if (rSedang.hatchRate > 100) {
+  temuan.push(`ringkasProduksi: hatchRate ${rSedang.hatchRate.toFixed(1)}% melewati 100% — pembilang dan penyebut dari himpunan berbeda`);
+}
+if (rSedang.telurAdaHasil !== 23 || rSedang.totalMenetas !== 20) {
+  temuan.push(`ringkasProduksi pada clutch yang sedang menetas: ${rSedang.totalMenetas}/${rSedang.telurAdaHasil}, seharusnya 20/23 — tetasan clutch yang masih dierami tidak boleh masuk pembilang sendirian`);
+}
+
+/*
+ * Dua salinan daftar status "masih berjalan" harus bernilai SAMA.
+ *
+ * hasilInkubasi.js menyalinnya dari breedingUtils.js alih-alih mengimpor,
+ * karena breedingUtils mengimpor dari hasilInkubasi — saling-impor membuat
+ * salah satunya menerima `undefined` saat bundel dimuat. Salinan yang tidak
+ * dijaga adalah salinan yang kelak berselisih, dan selisihnya di sini berarti
+ * clutch yang sedang menetas kembali dihitung sebagai sudah selesai.
+ */
+const statusDari = (berkas, nama) => {
+  const m = kupasKomentar(readFileSync(join(AKAR, berkas), "utf8"))
+    .match(new RegExp(`${nama}\\s*=\\s*\\[([^\\]]*)\\]`));
+  return m ? m[1].split(",").map((x) => x.trim().replace(/["']/g, "")).filter(Boolean) : null;
+};
+const aktifUtils = statusDari("src/lib/breedingUtils.js", "STATUS_CLUTCH_AKTIF");
+const aktifHasil = statusDari("src/lib/hasilInkubasi.js", "STATUS_MASIH_BERJALAN");
+if (!aktifUtils || !aktifHasil) {
+  temuan.push("daftar status clutch aktif tidak ketemu di salah satu berkasnya — penjaganya berhenti menjaga tanpa suara");
+} else if (aktifUtils.join("|") !== aktifHasil.join("|")) {
+  temuan.push(
+    `Status clutch aktif berselisih: breedingUtils = [${aktifUtils}], hasilInkubasi = [${aktifHasil}]. ` +
+    `Clutch yang sedang menetas akan dihitung sebagai sudah selesai di salah satunya.`,
+  );
+}
+
+/*
+ * Dan layar yang MELAPORKAN fertilitas harus memakai fungsinya, bukan
+ * menghitung ulang. Laporan bulanan sempat melakukannya sendiri dan
+ * menyebut fertilitas nol untuk clutch yang seluruh telurnya menetas.
+ *
+ * EggGrid dan EggHatchChart sengaja di luar daftar: keduanya menampilkan
+ * "fertile" sebagai KATEGORI di samping menetas dan gagal, bukan sebagai
+ * jumlah seluruh telur fertil.
+ */
+const LAYAR_LAPOR_FERTIL = [
+  "src/components/finance/MonthlyReportExport.jsx",
+];
+for (const berkas of LAYAR_LAPOR_FERTIL) {
+  const isi = kupasKomentar(readFileSync(join(AKAR, berkas), "utf8"));
+  if (/status\s*===\s*["']fertile["']/.test(isi)) {
+    temuan.push(`${berkas}  menghitung fertil sebagai status === "fertile" saja — telur yang menetas dan yang gagal di dalam cangkang ikut fertil. Pakai fertilClutch() dari lib/hasilInkubasi.js`);
+  }
+  if (!/fertilClutch\s*\(/.test(isi)) {
+    temuan.push(`${berkas}  tidak memakai fertilClutch() — angka fertil di laporan bisa berbeda dari yang tersimpan`);
+  }
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah pada ronda kandang.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
@@ -911,6 +1009,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

@@ -10,6 +10,7 @@ import { id as idLocale } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
+import { fertilClutch } from "@/lib/hasilInkubasi";
 import { perluDiperhatikan } from "@/lib/stokMenipis";
 import { diPeternakan } from "@/lib/populasiKura";
 import { rupiah } from "@/lib/rupiah";
@@ -265,7 +266,10 @@ export default function MonthlyReportExport({ role }) {
 
       // Breeding summary
       const totalEggsActive = activeBreedings.reduce((s, b) => s + (b.egg_count || 0), 0);
-      const totalFertile = activeBreedings.reduce((s, b) => s + (b.egg_records || []).filter(e => e.status === "fertile").length, 0);
+      // Telur yang menetas dan yang mati di dalam cangkang IKUT fertil —
+      // lihat fertilClutch(). Menghitung `status === "fertile"` saja
+      // mengembalikan nol untuk clutch yang seluruh telurnya sudah menetas.
+      const totalFertile = activeBreedings.reduce((s, b) => s + fertilClutch(b), 0);
       const totalHatched = activeBreedings.reduce((s, b) => s + (b.hatched_count || 0), 0);
 
       doc.setFillColor(...GREEN_LIGHT);
@@ -619,7 +623,7 @@ export default function MonthlyReportExport({ role }) {
       // Semua batch aktif
       const breedingRows = activeBreedings.map((b, i) => {
         const totalEggs = b.egg_count || 0;
-        const fertile = (b.egg_records || []).filter(e => e.status === "fertile").length;
+        const fertile = fertilClutch(b);
         const infertil = (b.egg_records || []).filter(e => e.status === "infertil").length;
         const menetas = b.hatched_count || 0;
         const gagal = b.failed_count || 0;
