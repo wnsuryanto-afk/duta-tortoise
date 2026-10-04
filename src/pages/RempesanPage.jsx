@@ -123,7 +123,11 @@ export default function RempesanPage() {
         }
         chips={
           pendingCount > 0 && isManager
-            ? [{ key: "menunggu", label: "Menunggu persetujuan", value: pendingCount, tone: "warn" }]
+            // Menyaring daftar di bawah ke yang menunggu, bukan pindah
+            // halaman: yang dicari orang setelah membaca angka ini memang
+            // daftar itu, dan ia ada di layar yang sama.
+            ? [{ key: "menunggu", label: "Menunggu persetujuan", value: pendingCount,
+                 onClick: () => setFilter("pending"), tone: "warn" }]
             : []
         }
         actions={

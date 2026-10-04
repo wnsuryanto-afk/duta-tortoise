@@ -1,5 +1,6 @@
 import { hitungGajiKaryawan, karyawanBergaji, POTONGAN_KASBON_BAWAAN } from "@/lib/hitungGaji";
-import { patchPotongan } from "@/lib/potonganKasbon";
+import { patchPotongan, totalBelumLunas } from "@/lib/potonganKasbon";
+import PageHeader from "@/components/common/PageHeader";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
@@ -8,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2, Eye, AlertTriangle } from "lucide-react";
+import { Users, Star, TrendingUp, FileText, CheckCircle2, Loader2, Eye, AlertTriangle, Wallet, Banknote } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -193,6 +194,22 @@ export default function RekapPoinGajiPage() {
     });
   }, [employees, salaryConfigs, bonusRewards, dailyChecklists, slips, kasbons, attendances, overtimeLogs, rempesanLogs, selectedMonth, monthStart, monthEnd, TARGET_POIN_SETTING, settings]);
 
+  /*
+    Tiga angka kepala halaman, dari rekapData yang sudah dihitung di atas.
+
+    `belumTerbit` memakai `existingSlip` yang sudah disiapkan tiap baris —
+    menghitungnya ulang dari `slips` berarti dua jawaban untuk satu
+    pertanyaan, dan yang satu akan ketinggalan saat aturannya berubah.
+
+    Kasbon memakai totalBelumLunas() dari lib yang sama dengan beranda Owner
+    dan Panel Kasbon. Sebelum lib itu ada, beranda menyaring dengan
+    `status === "active"` — status yang tidak ada di enum — sehingga
+    angkanya selalu Rp 0 padahal Ahmad Ali berutang Rp 600.000.
+  */
+  const belumTerbit = rekapData.filter((r) => !r.existingSlip).length;
+  const totalGajiPeriode = rekapData.reduce((t, r) => t + (Number(r.netTotal) || 0), 0);
+  const kasbonBerjalan = totalBelumLunas(kasbons);
+
   if (!canAccess(role, "payroll")) return <AccessDenied />;
 
   // Render SalarySlipDetail modal jika ada viewSlip.
@@ -342,10 +359,34 @@ export default function RekapPoinGajiPage() {
   return (
     <div className="space-y-6">
       <AlurGaji aktif="hitung" periode={selectedMonth} />
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Gaji</h1>
-        <p className="text-muted-foreground text-sm">Hitung gaji rutin, terbitkan slip, dan lihat laporannya &mdash; satu tempat</p>
-      </div>
+      {/*
+        Kepala halaman memakai PageHeader, bukan <h1> sendiri — dan sekaligus
+        memajang tiga angka yang selama ini hanya bisa didapat dengan membuka
+        tab satu per satu: berapa slip yang belum terbit bulan ini, berapa
+        kasbon yang masih berjalan, dan berapa total gaji periode ini.
+
+        Ketiganya dihitung dari data yang SUDAH ada di halaman ini, bukan
+        dari kueri baru — angka keempat untuk pertanyaan yang sama adalah
+        angka yang kelak berselisih.
+      */}
+      <PageHeader
+        title="Gaji"
+        subtitle="Hitung gaji rutin, terbitkan slip, dan lihat laporannya — satu tempat"
+        icon={Banknote}
+        chips={[
+          { key: "terbit", icon: FileText, label: "Slip belum terbit",
+            value: `${belumTerbit} dari ${rekapData.length}`,
+            ke: "/rekap-poin-gaji?tab=terbitkan",
+            tone: belumTerbit > 0 ? "warn" : "good" },
+          { key: "kasbon", icon: Wallet, label: "Kasbon berjalan",
+            value: rupiah(kasbonBerjalan),
+            ke: "/rekap-poin-gaji?tab=kasbon",
+            tone: kasbonBerjalan > 0 ? "warn" : "good" },
+          { key: "total", icon: Banknote, label: "Total gaji periode ini",
+            value: rupiah(totalGajiPeriode),
+            ke: "/rekap-poin-gaji?tab=laporan" },
+        ]}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* `h-auto` diperlukan karena tinggi bawaan TabsList memotong label

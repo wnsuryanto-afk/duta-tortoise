@@ -315,22 +315,44 @@ export default function SalesList() {
         }
       />
 
-      {/* Summary widgets */}
+      {/*
+        Keempat kartu ini punya `href` sejak dulu — StatCard mendukungnya —
+        tetapi tidak satu pun memakainya. "Menunggu Follow-up 4" memunculkan
+        pertanyaan paling mendesak di halaman ini lalu membiarkan orang
+        mencari sendiri tabnya.
+
+        Yang menunggu follow-up juga ditaruh PALING DEPAN saat memang ada:
+        ia satu-satunya angka di sini yang menuntut dikerjakan hari ini,
+        sementara tiga lainnya adalah keadaan. Saat nol, ia kembali ke
+        tempat semula dan warnanya ikut tenang — nol bukan tagihan.
+      */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+        {salesAktif.length > 0 && (
+          <StatCard label="Menunggu Follow-up" value={salesAktif.length}
+            icon={Clock} color="bg-amber-100 text-amber-700"
+            href="/sales?tab=aktif"
+            sub="DP / belum bayar" />
+        )}
         <StatCard label="Bulan Ini" value={`${salesThisMonth.length} ekor`}
           icon={ShoppingBag} color="bg-primary/15 text-primary"
+          href="/sales?tab=riwayat"
           sub={`Rp ${angkaRibuan(revenueThisMonth)}`} />
         <StatCard label="Laba Bulan Ini" value={`Rp ${angkaRibuan(labaThisMonth)}`}
           icon={TrendingUp}
           color={labaThisMonth >= 0 ? "bg-accent/15 text-accent" : "bg-red-100 text-red-600"}
+          href="/sales?tab=laporan"
           sub={`Margin rata-rata ${avgMargin}%`}
           hint="Hanya penjualan yang HPP-nya sudah diisi yang ikut dihitung. Penjualan tanpa HPP tidak bisa dihitung labanya." />
-        <StatCard label="Menunggu Follow-up" value={salesAktif.length}
-          icon={Clock} color="bg-amber-100 text-amber-700"
-          sub="DP / belum bayar" />
         <StatCard label="Total Terjual" value={enrichedSales.length}
           icon={DollarSign} color="bg-primary/15 text-primary"
+          href="/sales?tab=semua"
           sub={`Rp ${angkaRibuan(totalRevenue)}`} />
+        {salesAktif.length === 0 && (
+          <StatCard label="Menunggu Follow-up" value={0}
+            icon={Clock} color="bg-muted text-muted-foreground"
+            href="/sales?tab=aktif"
+            sub="✓ semua lunas" />
+        )}
       </div>
 
       {/* Tabs */}

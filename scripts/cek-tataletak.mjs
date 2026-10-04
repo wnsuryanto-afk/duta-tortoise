@@ -45,15 +45,39 @@ const temuan = [];
  * Entri bisa berupa objek `{…}` maupun sebaran `...(syarat ? [{…}] : [])`.
  */
 function entriChip(isi) {
+  /*
+   * Chip selalu ditulis sebagai objek di dalam LARIK — baik larik tertulis
+   * (`chips={[{…}, {…}]}`) maupun larik di dalam syarat
+   * (`chips={n > 0 ? [{…}] : []}`). Jadi yang dicari larik-lariknya dulu,
+   * lalu isinya dipotong pada koma di kedalaman teratas larik itu.
+   *
+   * Versi sebelumnya memotong langsung pada isi `chips={…}`. Untuk larik
+   * tertulis, seluruh isinya berada di dalam `[` sehingga tidak pernah ada
+   * koma di kedalaman nol: kesepuluh halaman menyusut jadi satu entri raksasa
+   * dan jumlah chip yang diperiksa anjlok dari 30 ke 12 tanpa satu pun
+   * penjaga merah. Penjaga yang diam karena berhenti melihat lebih buruk
+   * daripada penjaga yang menuduh.
+   */
   const entri = [];
-  let dalam = 0, mulai = 0;
   for (let i = 0; i < isi.length; i++) {
-    const c = isi[i];
-    if ("{[(".includes(c)) dalam++;
-    else if ("}])".includes(c)) dalam--;
-    else if (c === "," && dalam === 0) { entri.push(isi.slice(mulai, i)); mulai = i + 1; }
+    if (isi[i] !== "[") continue;
+    let dalam = 0, tutup = -1;
+    for (let j = i; j < isi.length; j++) {
+      if (isi[j] === "[") dalam++;
+      else if (isi[j] === "]") { dalam--; if (dalam === 0) { tutup = j; break; } }
+    }
+    if (tutup === -1) break;
+    const dalamLarik = isi.slice(i + 1, tutup);
+    let d = 0, mulai = 0;
+    for (let k = 0; k < dalamLarik.length; k++) {
+      const c = dalamLarik[k];
+      if ("{[(".includes(c)) d++;
+      else if ("}])".includes(c)) d--;
+      else if (c === "," && d === 0) { entri.push(dalamLarik.slice(mulai, k)); mulai = k + 1; }
+    }
+    entri.push(dalamLarik.slice(mulai));
+    i = tutup;
   }
-  entri.push(isi.slice(mulai));
   return entri.map((e) => e.trim()).filter(Boolean);
 }
 
@@ -63,10 +87,26 @@ let chipDiperiksa = 0;
 for (const nama of halaman) {
   const rel = `src/pages/${nama}`;
   const s = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
-  const m = s.match(/chips=\{\[([\s\S]*?)\n\s*\]\}/);
-  if (!m) continue;
+  /*
+   * Dicari `chips={` apa pun bentuknya, bukan hanya `chips={[`.
+   *
+   * Versi pertama penjaga ini hanya mengenali larik tertulis. TreatmentPage
+   * menulisnya bersyarat — `chips={jumlah > 0 ? [{…}] : []}` — jadi chipnya
+   * lolos tanpa diperiksa, dan ia memang tidak punya tujuan. Penjaga yang
+   * hanya mengenali satu bentuk penulisan menjaga gaya penulisan, bukan
+   * aturannya.
+   */
+  const awal = s.indexOf("chips={");
+  if (awal === -1) continue;
+  let dalam = 0, akhir = -1;
+  for (let i = awal + "chips=".length; i < s.length; i++) {
+    if (s[i] === "{") dalam++;
+    else if (s[i] === "}") { dalam--; if (dalam === 0) { akhir = i; break; } }
+  }
+  if (akhir === -1) continue;
+  const isiChips = s.slice(awal + "chips={".length, akhir);
 
-  for (const e of entriChip(m[1])) {
+  for (const e of entriChip(isiChips)) {
     // Hanya entri yang benar-benar mendefinisikan sebuah chip.
     if (!/\blabel\s*:/.test(e)) continue;
     chipDiperiksa++;
@@ -97,7 +137,7 @@ for (const nama of halaman) {
  * dan saat turun angkanya di bawah ikut diturunkan supaya penjaganya tetap
  * menggigit.
  */
-const BATAS_H1_SENDIRI = 31;
+const BATAS_H1_SENDIRI = 28;
 
 const pakaiH1Sendiri = [];
 for (const nama of halaman) {

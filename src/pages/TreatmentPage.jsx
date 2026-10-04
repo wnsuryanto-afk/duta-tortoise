@@ -393,7 +393,11 @@ export default function TreatmentPage() {
         art={<HealthArt size="md" />}
         chips={
           pendingRemindersCount > 0
-            ? [{ key: "ingat", label: "Pengingat belum selesai", value: pendingRemindersCount, tone: "warn" }]
+            // Membuka tab Pengingat, bukan pindah halaman: rinciannya ada
+            // di tab sebelah, dan tab halaman ini belum punya alamat sendiri
+            // sehingga tidak bisa ditautkan lewat URL.
+            ? [{ key: "ingat", label: "Pengingat belum selesai", value: pendingRemindersCount,
+                 onClick: () => setTab("pengingat"), tone: "warn" }]
             : []
         }
         actions={

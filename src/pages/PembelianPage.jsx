@@ -14,6 +14,7 @@
  *   - Sisa yang tidak datang otomatis kembali ke daftar belanja
  */
 import { useState, useMemo } from "react";
+import PageHeader from "@/components/common/PageHeader";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
@@ -636,14 +637,31 @@ export default function PembelianPage() {
 
   return (
     <div className="space-y-4 pb-10">
-      <div>
-        <h1 className="text-xl font-bold font-heading flex items-center gap-2">
-          <ShoppingCart className="w-5 h-5 text-primary" /> Pembelian Barang
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Satu alur: apa yang kurang, dipesan, diterima, lalu stok dan biayanya tercatat.
-        </p>
-        <div className="mt-3">
+      {/*
+        Kepala halaman memakai PageHeader, bukan <h1> sendiri — dan memajang
+        tiga angka yang menentukan apakah ada kerjaan di sini hari ini.
+        Ketiganya dihitung dari daftar yang sudah ada di halaman ini, dan
+        masing-masing memindahkan tahap di alur yang sama (tahapnya bukan
+        tab ber-URL, jadi yang dipakai aksi, bukan tautan).
+      */}
+      <PageHeader
+        title="Pembelian Barang"
+        subtitle="Satu alur: apa yang kurang, dipesan, diterima, lalu stok dan biayanya tercatat."
+        icon={ShoppingCart}
+        chips={[
+          { key: "belum", label: "Daftar belanja", value: belumDibeli.length,
+            onClick: () => setTab("belum"),
+            tone: belumDibeli.length > 0 ? "warn" : "good" },
+          { key: "menunggu", label: "Menunggu barang", value: menunggu.length,
+            onClick: () => setTab("menunggu"),
+            tone: menunggu.length > 0 ? "warn" : "good" },
+          { key: "talangan", icon: Wallet, label: "Talangan belum lunas", value: rupiah(totalUtang),
+            title: utang.length > 0 ? `${utang.length} pesanan belum dilunasi` : undefined,
+            onClick: () => setTab("riwayat"),
+            tone: totalUtang > 0 ? "bad" : "good" },
+        ]}
+        actions={
+          <div>
           {/*
             Jalan pintas untuk belanja yang TIDAK lewat daftar belanja aplikasi —
             barang yang sudah terlanjur dipesan di marketplace. Tanpa ini, satu-satunya
@@ -662,18 +680,14 @@ export default function PembelianPage() {
               setTab("menunggu");
             }}
           />
-        </div>
-      </div>
+          </div>
+        }
+      />
 
-      {totalUtang > 0 && (
-        <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
-          <Wallet className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <span>
-            <strong>Talangan belum dilunasi: {rupiah(totalUtang)}</strong> dari {utang.length} pesanan.
-            Lihat tab Riwayat untuk menandai lunas.
-          </span>
-        </div>
-      )}
+      {/* Spanduk talangan dibuang: angkanya sudah jadi chip di kepala halaman
+          yang LANGSUNG membuka tab Riwayat, sementara spanduk ini hanya
+          menyuruh orang mencarinya sendiri. Jumlah pesanannya ikut ke
+          keterangan chip supaya tidak ada yang hilang. */}
 
       {/* Panah di antara tahap menunjukkan barang bergerak ke satu arah —
           dengan pil terpisah, keempatnya terbaca sebagai penyaring sejajar,

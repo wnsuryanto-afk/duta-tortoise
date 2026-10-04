@@ -18,6 +18,7 @@ import { base44 } from "@/api/base44Client";
 import { poinDisetujui, poinDiklaim } from "@/lib/poinChecklist";
 import KeteranganMasuk from "@/components/attendance/KeteranganMasuk";
 import { format, subDays, addDays } from "date-fns";
+import PageHeader from "@/components/common/PageHeader";
 import { id as idLocale } from "date-fns/locale";
 import { masukLaporan } from "@/lib/laporan";
 import {
@@ -274,15 +275,14 @@ export default function LayarTimPage() {
 
   return (
     <div className="space-y-4 pb-10">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold font-heading flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" /> Layar Tim
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Apa yang benar-benar dikerjakan tim — urutan, jeda waktu, dan bukti foto.
-          </p>
-        </div>
+      {/* Kepala halaman memakai PageHeader, bukan <h1> sendiri: judulnya jadi
+          sebentuk dengan halaman lain, dan pemilih tanggal berdiri sebagai
+          tindakan — tempat yang sudah tahu cara melipat diri di ponsel. */}
+      <PageHeader
+        title="Layar Tim"
+        subtitle="Apa yang benar-benar dikerjakan tim — urutan, jeda waktu, dan bukti foto."
+        icon={Users}
+        actions={
         <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
           <button onClick={() => shift(-1)} className="p-1.5 rounded hover:bg-muted" aria-label="Hari sebelumnya">
             <ChevronLeft className="w-4 h-4" />
@@ -299,7 +299,8 @@ export default function LayarTimPage() {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
+        }
+      />
 
       <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800">
         <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
