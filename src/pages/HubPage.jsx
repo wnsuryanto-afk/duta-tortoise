@@ -13,6 +13,7 @@ import { NAV_SECTIONS } from "@/lib/navigation";
 import { canAccess } from "@/lib/permissions";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useViewAs } from "@/lib/ViewAsContext";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function HubPage() {
   const { areaId } = useParams();
@@ -28,15 +29,7 @@ export default function HubPage() {
 
   return (
     <div className="space-y-5 pb-10">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl bg-muted flex items-center justify-center ${section.color}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold font-heading">{section.label}</h1>
-          <p className="text-sm text-muted-foreground">{section.blurb}</p>
-        </div>
-      </div>
+      <PageHeader title={section.label} subtitle={section.blurb} icon={Icon} />
 
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">

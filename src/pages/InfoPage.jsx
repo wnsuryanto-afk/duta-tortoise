@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, PlayCircle, ChevronRight, Leaf, Heart, AlertTriangle, Plus, Pencil, Trash2, ImagePlus, Wand2, Loader2, Youtube } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import GenerateVideoTabContent from "@/components/info/GenerateVideoTabContent";
+import PageHeader from "@/components/common/PageHeader";
 
 const CATEGORIES = [
   { id: "all", label: "Semua" },
@@ -322,12 +323,10 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-heading font-bold">Pusat Informasi Sulcata</h1>
-          <p className="text-muted-foreground mt-1">Panduan lengkap, artikel, & video merawat Sulcata</p>
-        </div>
-        {isAdmin && (
+      <PageHeader
+        title="Pusat Informasi Sulcata"
+        subtitle="Panduan lengkap, artikel, & video merawat Sulcata"
+        actions={isAdmin && (
           <div className="flex gap-2 flex-wrap">
             <Button onClick={handleAutoGenerateYouTube} variant="outline" className="gap-2" disabled={generatingYT}>
               {generatingYT ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4 text-red-600" />}
@@ -336,7 +335,7 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
             <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" /> Tambah Konten</Button>
           </div>
         )}
-      </div>
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

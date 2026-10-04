@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings2, Pill } from "lucide-react";
 import SOPTermConditionTable from "@/components/sop/SOPTermConditionTable";
 import TreatmentTermConditionTable from "@/components/treatment/TreatmentTermConditionTable";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function TermConditionSOPPage() {
   const { role } = useCurrentUser();
@@ -22,14 +23,11 @@ export default function TermConditionSOPPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-heading font-bold flex items-center gap-2">
-          <Settings2 className="w-7 h-7 text-primary" /> Term & Condition
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Aturan default tiap task & treatment — dibaca langsung oleh checklist keeper. Perubahan langsung berlaku pada tugas yang dikerjakan.
-        </p>
-      </div>
+      <PageHeader
+        title="Term & Condition"
+        icon={Settings2}
+        description="Aturan default tiap task & treatment — dibaca langsung oleh checklist keeper. Perubahan langsung berlaku pada tugas yang dikerjakan."
+      />
 
       <Tabs defaultValue="sop">
         <TabsList className="flex-wrap h-auto gap-1">

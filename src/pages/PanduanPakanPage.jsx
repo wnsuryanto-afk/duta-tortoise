@@ -1,5 +1,6 @@
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { AlertTriangle, Leaf } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 
 const CARDS = [
   {
@@ -114,21 +115,18 @@ export default function PanduanPakanPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-          <Leaf className="w-5 h-5 text-green-700" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-heading font-bold text-foreground">Panduan Pakan Sulcata</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Referensi nutrisi dan pemberian makan untuk kura-kura sulcata</p>
-        </div>
-        {isEditable && (
-          <span className="ml-auto text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200 font-medium">
-            ✏️ Mode Edit (Owner/Admin)
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Panduan Pakan Sulcata"
+        subtitle="Referensi nutrisi dan pemberian makan untuk kura-kura sulcata"
+        icon={Leaf}
+        actions={
+          isEditable && (
+            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200 font-medium">
+              ✏️ Mode Edit (Owner/Admin)
+            </span>
+          )
+        }
+      />
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

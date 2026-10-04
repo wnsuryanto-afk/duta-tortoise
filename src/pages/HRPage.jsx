@@ -13,10 +13,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, AlertTriangle, GraduationCap, Clock, Calendar, Building2, Save, Star } from "lucide-react";
+import { Plus, Edit, Trash2, AlertTriangle, GraduationCap, Clock, Calendar, Building2, Save, Star, Users } from "lucide-react";
 import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import PageHeader from "@/components/common/PageHeader";
 
 const fmt = (d) => d ? format(new Date(d), "d MMM yyyy", { locale: id }) : "-";
 
@@ -486,10 +487,11 @@ function CompanySettingsTab() {
 export default function HRPage() {
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Manajemen SDM</h1>
-        <p className="text-sm text-muted-foreground">Absensi, lembur, surat peringatan, dan training karyawan</p>
-      </div>
+      <PageHeader
+        title="Manajemen SDM"
+        subtitle="Absensi, lembur, surat peringatan, dan training karyawan"
+        icon={Users}
+      />
       <Tabs defaultValue="attendance">
         <TabsList className="flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="attendance" className="gap-1.5"><Calendar className="w-3.5 h-3.5" />Absensi</TabsTrigger>

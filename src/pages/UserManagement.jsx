@@ -15,6 +15,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import UserDetailPage from "@/pages/UserDetailPage";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import PageHeader from "@/components/common/PageHeader";
 
 const ROLE_DESCRIPTIONS = {
   keeper:         "Kelola kura-kura & kesehatan. Tidak bisa akses penjualan & keuangan.",
@@ -158,20 +159,17 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-heading font-bold">
-            {role === "admin" ? "Direktori User" : "Manajemen User"}
-          </h1>
-          <p className="text-muted-foreground mt-1">{activeCount} pengguna aktif dari {users.length} terdaftar</p>
-        </div>
-        {canInvite && (
+      <PageHeader
+        title={role === "admin" ? "Direktori User" : "Manajemen User"}
+        subtitle={`${activeCount} pengguna aktif dari ${users.length} terdaftar`}
+        icon={UserPlus}
+        actions={canInvite && (
           <Button onClick={() => setShowInvite(true)} className="gap-2">
             <UserPlus className="w-4 h-4" />
             Tambah User Baru
           </Button>
         )}
-      </div>
+      />
 
       {/* Role summary cards */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">

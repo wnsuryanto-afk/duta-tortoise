@@ -11,12 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { 
   Plus, Phone, MessageCircle, Mail, Star, MapPin, Clock, 
-  AlertCircle, Search, Calendar, Edit2, Navigation
-} from "lucide-react";
+  AlertCircle, Search, Calendar, Edit2, Navigation, Stethoscope } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatDateIndonesian, formatCurrency } from "@/lib/formatIndonesian";
 import EmptyState from "@/components/common/EmptyState";
 import { toast } from "sonner";
+import PageHeader from "@/components/common/PageHeader";
 
 const WA_TEMPLATE = (name) =>
   `Halo dr. ${name}, saya dari peternakan Duta Tortoise. Ingin konsultasi tentang kura-kura sulcata kami...`;
@@ -254,17 +254,16 @@ export default function VetContactPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5">
-      <div className="flex justify-between items-start flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Dokter Hewan</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Kontak dokter hewan dan klinik rekanan ({vets.length} dokter)</p>
-        </div>
-        {canEdit && (
+      <PageHeader
+        title="Dokter Hewan"
+        subtitle={`Kontak dokter hewan dan klinik rekanan (${vets.length} dokter)`}
+        icon={Stethoscope}
+        actions={canEdit && (
           <Button className="gap-2" onClick={() => { setEditVet(null); setShowForm(true); }}>
             <Plus className="w-4 h-4" /> Tambah Dokter
           </Button>
         )}
-      </div>
+      />
 
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-2">

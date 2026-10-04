@@ -10,6 +10,7 @@ import { AlertTriangle, CheckCircle2, ClipboardList, Filter } from "lucide-react
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { Link } from "react-router-dom";
 import { diPeternakan } from "@/lib/populasiKura";
+import PageHeader from "@/components/common/PageHeader";
 
 function ProgressBar({ done, total }) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 100;
@@ -122,18 +123,11 @@ export default function IncompleteDataPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-100 rounded-xl">
-            <ClipboardList className="w-6 h-6 text-amber-700" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">📋 Data Perlu Dilengkapi</h1>
-            <p className="text-sm text-muted-foreground">
-              {totalIncomplete > 0 ? `${totalIncomplete} data membutuhkan perhatian` : "Semua data sudah lengkap!"}
-            </p>
-          </div>
-        </div>
+      <PageHeader
+        title="Data Perlu Dilengkapi"
+        subtitle={totalIncomplete > 0 ? `${totalIncomplete} data membutuhkan perhatian` : "Semua data sudah lengkap!"}
+        icon={ClipboardList}
+        actions={
         <button
           onClick={() => setFilterIncomplete(f => !f)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filterIncomplete ? "bg-amber-500 text-white border-amber-500" : "bg-background border-border hover:bg-muted"}`}
@@ -141,7 +135,8 @@ export default function IncompleteDataPage() {
           <Filter className="w-3.5 h-3.5" />
           {filterIncomplete ? "Hanya belum lengkap" : "Tampilkan semua"}
         </button>
-      </div>
+        }
+      />
 
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">

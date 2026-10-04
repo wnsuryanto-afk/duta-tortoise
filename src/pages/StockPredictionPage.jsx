@@ -8,6 +8,7 @@ import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { hitungSisaHari, gabungRiwayatPemakaian, tingkatUrgensi, adalahPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import { dilacak } from "@/lib/stokMenipis";
+import PageHeader from "@/components/common/PageHeader";
 
 /**
  * Halaman ini dulu menghitung sendiri siapa yang "kritis": `sisaHari < 7`.
@@ -147,12 +148,11 @@ export default function StockPredictionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <Clock className="w-6 h-6 text-primary" /> Prediksi Stok
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">Estimasi waktu habisnya stok berdasarkan pola konsumsi</p>
-      </div>
+      <PageHeader
+        title="Prediksi Stok"
+        subtitle="Estimasi waktu habisnya stok berdasarkan pola konsumsi"
+        icon={Clock}
+      />
 
       {/*
         Halaman ini menjanjikan prediksi, dan prediksi butuh catatan pemakaian.

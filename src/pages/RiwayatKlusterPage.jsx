@@ -12,6 +12,7 @@ import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { detectDiseaseClusters } from "@/lib/diseaseClusterUtils";
 import DiseaseClusterCard from "@/components/health/DiseaseClusterCard";
 import { Button } from "@/components/ui/button";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function RiwayatKlusterPage() {
   const { data: healthRecords = [], isLoading } = useQuery({
@@ -35,19 +36,17 @@ export default function RiwayatKlusterPage() {
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto p-4 animate-fade-in">
-      <div className="flex items-center gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Kembali
-          </Link>
-        </Button>
-        <h1 className="text-xl font-heading font-bold">Riwayat Kluster Penyakit</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Deteksi otomatis: 3 kura atau lebih dengan diagnosis yang sama dalam rentang 3 hari.
-        Membaca seluruh catatan kesehatan — berguna untuk melihat pola yang berulang di bulan
-        yang sama tiap tahun.
-      </p>
+      <PageHeader
+        title="Riwayat Kluster Penyakit"
+        description="Deteksi otomatis: 3 kura atau lebih dengan diagnosis yang sama dalam rentang 3 hari. Membaca seluruh catatan kesehatan — berguna untuk melihat pola yang berulang di bulan yang sama tiap tahun."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link to="/">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Kembali
+            </Link>
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-16">

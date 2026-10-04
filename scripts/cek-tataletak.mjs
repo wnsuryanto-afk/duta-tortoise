@@ -14,7 +14,8 @@
  *
  * 2. TIGA PULUH DUA halaman memakai `<h1>` sendiri alih-alih PageHeader,
  *    jadi tidak punya tempat untuk angka ringkasan sama sekali, dan judul
- *    halamannya tidak sebentuk dengan yang lain.
+ *    halamannya tidak sebentuk dengan yang lain. Ketiga puluh duanya sudah
+ *    dipindahkan; yang tersisa dua, dengan alasan tertulis di DIKECUALIKAN.
  *
  * ── Dua hal yang dijaga ──────────────────────────────────────────────
  *
@@ -22,12 +23,10 @@
  *    Angka yang menimbulkan pertanyaan tetapi tidak bisa ditelusuri adalah
  *    pekerjaan yang dipindahkan, bukan informasi.
  *
- * 2. Jumlah halaman yang masih memakai `<h1>` sendiri TIDAK BOLEH NAIK.
- *    Membereskan ketiga puluh dua sekaligus berarti menyentuh tiga puluh
- *    dua berkas dalam satu kali — yang ditolak bukan karena salah, tetapi
- *    karena tidak bisa diperiksa. Jadi utangnya dibekukan di sini dan
- *    diturunkan sedikit demi sedikit; angkanya di bawah ikut turun tiap
- *    kali satu halaman dipindahkan.
+ * 2. Halaman BARU tidak boleh membuat judulnya sendiri. Batasnya NOL.
+ *    Utangnya dulu dibekukan lalu diturunkan bertahap — 32, 28, 24, 19,
+ *    15, 10, 6, 0 — tiap turunan satu kelompok kecil yang bisa diperiksa,
+ *    bukan satu lompatan yang tidak bisa.
  *
  * Jalankan:  node scripts/cek-tataletak.mjs
  */
@@ -132,18 +131,28 @@ for (const nama of halaman) {
 
 /* ── 2. Utang `<h1>` sendiri tidak boleh bertambah ─────────────────── */
 
+const BATAS_H1_SENDIRI = 0;
+
 /*
- * Angka ini TIDAK BOLEH NAIK. Ia boleh — dan memang seharusnya — turun,
- * dan saat turun angkanya di bawah ikut diturunkan supaya penjaganya tetap
- * menggigit.
+ * Dua halaman yang memang BUKAN halaman biasa. Alasannya ditulis di sini,
+ * bukan disimpan di kepala orang — pengecualian tanpa alasan adalah celah
+ * yang kelak dipakai halaman yang tidak punya alasan.
  */
-const BATAS_H1_SENDIRI = 28;
+const DIKECUALIKAN = new Map([
+  ["src/pages/ProfileSetupPage.jsx",
+   "layar penyiapan profil sebelum kerangka aplikasi ada — satu kartu di tengah " +
+   "layar penuh (min-h-screen), tanpa menu dan tanpa kepala halaman"],
+  ["src/pages/TortoisePassport.jsx",
+   "lembar paspor yang DICETAK dan dibawa pembeli — judulnya nama kuranya, " +
+   "di atas kertas, bukan judul halaman aplikasi"],
+]);
 
 const pakaiH1Sendiri = [];
 for (const nama of halaman) {
   const rel = `src/pages/${nama}`;
   const s = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
   if (/<PageHeader/.test(s)) continue;
+  if (DIKECUALIKAN.has(rel)) continue;
   if (/<h1[\s>]/.test(s)) pakaiH1Sendiri.push(rel);
 }
 
@@ -161,7 +170,7 @@ if (temuan.length) {
 }
 console.log(
   `Kepala halaman: ${chipDiperiksa} chip punya tujuan, ` +
-  `${pakaiH1Sendiri.length} dari ${halaman.length} halaman masih memakai <h1> sendiri ` +
-  `(batas ${BATAS_H1_SENDIRI} — tidak boleh naik).`,
+  `${pakaiH1Sendiri.length} dari ${halaman.length} halaman memakai <h1> sendiri ` +
+  `(batas ${BATAS_H1_SENDIRI}), ${DIKECUALIKAN.size} dikecualikan dengan alasan tertulis.`,
 );
 process.exit(0);

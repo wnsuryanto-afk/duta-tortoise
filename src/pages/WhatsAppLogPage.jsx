@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import AccessDenied from "@/components/common/AccessDenied";
 import { Loader2, MessageCircle, RefreshCw, Inbox } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 
 const TYPE_LABELS = {
   daily_approval: "⏰ Pengingat Harian",
@@ -76,23 +77,17 @@ export default function WhatsAppLogPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-4 p-4 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-            <MessageCircle className="w-5 h-5 text-green-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">Log WhatsApp</h1>
-            <p className="text-sm text-muted-foreground">
-              Riwayat pesan notifikasi terkirim
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title="Log WhatsApp"
+        subtitle="Riwayat pesan notifikasi terkirim"
+        icon={MessageCircle}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        }
+      />
 
       {/* AI Call Counter */}
       {waSettings && (

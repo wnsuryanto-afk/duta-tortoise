@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Printer, QrCode, Loader2, CheckSquare, Square } from "lucide-react";
 import { toast } from "sonner";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function TortoiseLabelPage() {
   const [selected, setSelected] = useState(() => new Set());
@@ -128,14 +129,11 @@ export default function TortoiseLabelPage() {
 
   return (
     <div className="space-y-4 pb-10">
-      <div>
-        <h1 className="text-xl font-bold font-heading flex items-center gap-2">
-          <QrCode className="w-5 h-5 text-primary" /> Cetak Label QR Kura
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Label 50×30 mm untuk printer termal. Dipindai membuka paspor kura.
-        </p>
-      </div>
+      <PageHeader
+        title="Cetak Label QR Kura"
+        subtitle="Label 50×30 mm untuk printer termal. Dipindai membuka paspor kura."
+        icon={QrCode}
+      />
 
       {/* Penyaring */}
       <div className="flex flex-wrap gap-2">

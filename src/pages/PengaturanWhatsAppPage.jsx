@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/components/ui/use-toast";
 import AccessDenied from "@/components/common/AccessDenied";
 import { propsTekan } from "@/lib/a11y";
+import PageHeader from "@/components/common/PageHeader";
 import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
   AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy, Sunrise,
@@ -523,17 +524,11 @@ export default function PengaturanWhatsAppPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-4 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-          <MessageCircle className="w-5 h-5 text-green-600" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold">Pengaturan WhatsApp</h1>
-          <p className="text-sm text-muted-foreground">
-            Integrasi notifikasi otomatis via Fonnte
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Pengaturan WhatsApp"
+        subtitle="Integrasi notifikasi otomatis via Fonnte"
+        icon={MessageCircle}
+      />
 
       {/* Status device — sebelum kartu token, karena inilah yang paling sering jadi penyebab */}
       {savedToken && (

@@ -55,6 +55,7 @@ import { canAccess } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import { logActivity } from "@/lib/logActivity";
 import { rupiah } from "@/lib/rupiah";
+import PageHeader from "@/components/common/PageHeader";
 
 
 // Kategori yang benar-benar berulang di peternakan ini. Urutannya mengikuti
@@ -201,12 +202,10 @@ export default function CatatBiayaPage() {
 
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Catat Pengeluaran</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Tiga ketukan: pilih jenis, isi nominal, simpan.
-        </p>
-      </div>
+      <PageHeader
+        title="Catat Pengeluaran"
+        subtitle="Tiga ketukan: pilih jenis, isi nominal, simpan."
+      />
 
       {!kategori ? (
         <>

@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { ListTodo, Plus, Pencil, Trash2 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import AccessDenied from "@/components/common/AccessDenied";
+import PageHeader from "@/components/common/PageHeader";
 
 const ROLE_COLORS = { keeper: "bg-green-100 text-green-800", admin: "bg-blue-100 text-blue-800", manajer: "bg-purple-100 text-purple-800" };
 const TIME_LABELS = { pagi: "🌅 Pagi", siang: "☀️ Siang", sore: "🌆 Sore", malam: "🌙 Malam" };
@@ -131,18 +132,11 @@ export default function DailyTaskTemplatePage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-100 rounded-xl"><ListTodo className="w-6 h-6 text-purple-700" /></div>
-          <div>
-            <h1 className="text-2xl font-bold">Template Task Harian</h1>
-            <p className="text-sm text-muted-foreground">{templates.length} template terdaftar</p>
-            <div className="mt-2 p-2.5 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-800">
-              <span className="font-semibold">ℹ️ Fungsi halaman ini:</span> Template tugas <span className="font-semibold">rutin harian per role</span> (keeper, admin, manajer)
-              yang muncul otomatis di checklist setiap hari. Berbeda dengan <span className="font-semibold">SOP Task</span> yang merupakan tugas spesifik per kandang atau per kura-kura tertentu.
-            </div>
-          </div>
-        </div>
+      <PageHeader
+        title="Template Task Harian"
+        subtitle={`${templates.length} template terdaftar`}
+        icon={ListTodo}
+        actions={
         <div className="flex items-center gap-2">
           <Select value={filterRole} onValueChange={setFilterRole}>
             <SelectTrigger className="w-36"><SelectValue placeholder="Filter Role" /></SelectTrigger>
@@ -155,7 +149,8 @@ export default function DailyTaskTemplatePage() {
             <Plus className="w-4 h-4 mr-2" /> Tambah Template
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {isLoading ? (
         <div className="text-center py-16 text-muted-foreground">Memuat...</div>

@@ -13,6 +13,7 @@ import { User, Mail, Calendar, Building, Shield, Save, X, Camera, Loader2 } from
 import UserAvatar from "@/components/common/UserAvatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import PageHeader from "@/components/common/PageHeader";
 
 function ProfilePhotoSection({ formData, user, onChange }) {
   const [uploading, setUploading] = useState(false);
@@ -184,15 +185,16 @@ export default function EditProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-heading font-bold">Edit Profil</h1>
-          <p className="text-muted-foreground text-sm mt-1">Kelola informasi pribadi Anda</p>
-        </div>
-        <Button variant="outline" onClick={handleCancel} className="gap-2">
-          <X className="w-4 h-4" /> Batal
-        </Button>
-      </div>
+      <PageHeader
+        title="Edit Profil"
+        subtitle="Kelola informasi pribadi Anda"
+        icon={User}
+        actions={
+          <Button variant="outline" onClick={handleCancel} className="gap-2">
+            <X className="w-4 h-4" /> Batal
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>

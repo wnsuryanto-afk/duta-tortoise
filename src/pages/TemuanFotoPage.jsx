@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, ScanSearch, CheckCircle2, AlertTriangle, Camera } from "lucide-react";
 import { toast } from "sonner";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function TemuanFotoPage() {
   const { user, isLoading: userLoading } = useCurrentUser();
@@ -239,15 +240,11 @@ export default function TemuanFotoPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 p-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold font-heading flex items-center gap-2">
-          <ScanSearch className="w-5 h-5 text-purple-600" /> Temuan dari Foto
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Temuan sampingan ditangkap AI Vision dari foto task harian · 7 hari terakhir
-        </p>
-      </div>
+      <PageHeader
+        title="Temuan dari Foto"
+        subtitle="Temuan sampingan ditangkap AI Vision dari foto task harian · 7 hari terakhir"
+        icon={ScanSearch}
+      />
 
       {/* Summary bar */}
       <Card>

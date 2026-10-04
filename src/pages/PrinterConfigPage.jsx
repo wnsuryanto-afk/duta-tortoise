@@ -19,6 +19,7 @@ import {
 import AccessDenied from "@/components/common/AccessDenied";
 import { Link } from "react-router-dom";
 import { UKURAN_LABEL, UKURAN_BAWAAN, cariUkuran } from "@/lib/ukuranLabel";
+import PageHeader from "@/components/common/PageHeader";
 
 /**
  * Label yang benar-benar bisa dibuka dari suatu layar, beserta ukuran yang
@@ -573,18 +574,16 @@ export default function PrinterConfigPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Printer className="w-6 h-6 text-primary" /> Konfigurasi Printer
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Kelola printer label XPrinter (XP-420B, XP-480B, dll) untuk semua keperluan cetak</p>
-        </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Tambah Printer
-        </Button>
-      </div>
+      <PageHeader
+        title="Konfigurasi Printer"
+        subtitle="Kelola printer label XPrinter (XP-420B, XP-480B, dll) untuk semua keperluan cetak"
+        icon={Printer}
+        actions={
+          <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Tambah Printer
+          </Button>
+        }
+      />
 
       {/* Info box */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">

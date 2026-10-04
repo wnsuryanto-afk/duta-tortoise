@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { normalizePhone } from "@/lib/normalizePhone";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
+import PageHeader from "@/components/common/PageHeader";
 
 function StarRating({ rating }) {
   return (
@@ -180,19 +181,16 @@ export default function SupplierPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Package className="w-6 h-6 text-primary" /> Supplier
-          </h1>
-            <p className="text-muted-foreground text-sm mt-1">Supplier aktif, daftar harga, dan calon supplier dari Facebook</p>
-        </div>
-        {canEdit && (
+      <PageHeader
+        title="Supplier"
+        subtitle="Supplier aktif, daftar harga, dan calon supplier dari Facebook"
+        icon={Package}
+        actions={canEdit && (
           <Button onClick={() => { setEditSupplier(null); setShowForm(true); }} className="gap-2">
             <Plus className="w-4 h-4" /> Tambah Supplier
           </Button>
         )}
-      </div>
+      />
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-sm">

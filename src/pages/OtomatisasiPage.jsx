@@ -34,6 +34,7 @@ import {
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import AccessDenied from "@/components/common/AccessDenied";
+import PageHeader from "@/components/common/PageHeader";
 
 /**
  * Daftar otomatisasi. Satu sumber kebenaran untuk halaman ini — menambah
@@ -401,15 +402,11 @@ export default function OtomatisasiPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-5 pb-28">
-      {/* Judul */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Zap className="w-6 h-6 text-amber-500" /> Otomatisasi
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {jumlahNyala} dari {GRUP.flatMap((g) => g.items).filter((i) => i.saklar).length} otomatisasi menyala.
-        </p>
-      </div>
+      <PageHeader
+        title="Otomatisasi"
+        subtitle={`${jumlahNyala} dari ${GRUP.flatMap((g) => g.items).filter((i) => i.saklar).length} otomatisasi menyala.`}
+        icon={Zap}
+      />
 
       {/* Peringatan yang paling sering bikin salah paham */}
       <Card className="p-4 border-amber-300 bg-amber-50 dark:bg-amber-950/20">

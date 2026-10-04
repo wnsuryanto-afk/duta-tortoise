@@ -11,6 +11,7 @@ import { Activity, Search, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import PageHeader from "@/components/common/PageHeader";
 
 const ACTION_META = {
   create:   { label: "BUAT",      color: "bg-green-100 text-green-700 border-green-300",   icon: "➕" },
@@ -233,10 +234,11 @@ export default function ActivityLogPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-heading font-bold text-foreground">Riwayat Aktivitas</h1>
-        <p className="text-muted-foreground text-sm mt-1">Monitor semua perubahan data di sistem</p>
-      </div>
+      <PageHeader
+        title="Riwayat Aktivitas"
+        subtitle="Monitor semua perubahan data di sistem"
+        icon={Activity}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

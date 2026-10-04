@@ -11,6 +11,7 @@ import DiagnosisProtocolForm from "@/components/health/DiagnosisProtocolForm";
 import DiseaseImageGallery from "@/components/health/DiseaseImageGallery";
 import FotoPenyakitRequestButton from "@/components/health/FotoPenyakitRequestButton";
 import FotoPenyakitVerificationPanel from "@/components/health/FotoPenyakitVerificationPanel";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function PanduanPenyakitDetailPage() {
   const { id } = useParams();
@@ -117,12 +118,10 @@ export default function PanduanPenyakitDetailPage() {
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${sev.color}`}>{sev.label}</span>
         )}
       </div>
-      <div>
-        <h1 className="text-2xl font-heading font-bold">{protocol.diagnosis_name}</h1>
-        {protocol.diagnosis_name_en && (
-          <p className="text-muted-foreground italic text-sm mt-0.5">{protocol.diagnosis_name_en}</p>
-        )}
-      </div>
+      <PageHeader
+        title={protocol.diagnosis_name}
+        subtitle={protocol.diagnosis_name_en || undefined}
+      />
 
       {/* Image Gallery */}
       <Card className="overflow-hidden">

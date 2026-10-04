@@ -12,6 +12,7 @@ import { ArrowLeft, Printer, AlertTriangle } from "lucide-react";
 import EggLabelGenerator, { candlingDate30, isCandlingLate } from "@/components/breeding/EggLabelGenerator";
 import EggGrid from "@/components/breeding/EggGrid";
 import ParentHealthBadges from "@/components/breeding/ParentHealthBadges";
+import PageHeader from "@/components/common/PageHeader";
 
 const statusColors = {
   bertelur: "bg-chart-3/10 text-chart-3 border-chart-3/20",
@@ -68,22 +69,23 @@ export default function BreedingDetailPage() {
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      <div className="flex items-center gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/breeding"><ArrowLeft className="w-4 h-4 mr-1" /> Kembali</Link>
-        </Button>
-        {/* Tanpa `truncate`. Di lebar 390px baris ini menyisakan 115px untuk
-            judul yang butuh 211px, jadi "Rincian Pembiakan" terbaca "Rincian
-            Pem…" di antara dua tombol. Judul halaman yang terpotong lebih
-            buruk daripada judul yang turun dua baris — aturan yang sama sudah
-            tertulis di components/common/PageHeader.jsx. */}
-        <h1 className="text-lg sm:text-xl font-heading font-bold flex-1 min-w-0 leading-tight">
-          Rincian Pembiakan
-        </h1>
-        <Button size="sm" variant="outline" onClick={() => setShowLabel(true)}>
-          <Printer className="w-4 h-4 mr-1" /> Cetak Label
-        </Button>
-      </div>
+      {/* Aturan "judul tidak boleh dijepit sampai terpotong" yang dulu
+          ditulis ulang di sini sekarang datang dari PageHeader sendiri —
+          di situlah ia dirumuskan, dan dua salinan aturan yang sama selalu
+          berakhir berselisih. */}
+      <PageHeader
+        title="Rincian Pembiakan"
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/breeding"><ArrowLeft className="w-4 h-4 mr-1" /> Kembali</Link>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowLabel(true)}>
+              <Printer className="w-4 h-4 mr-1" /> Cetak Label
+            </Button>
+          </>
+        }
+      />
 
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between gap-2">

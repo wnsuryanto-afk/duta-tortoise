@@ -30,6 +30,7 @@ import PoinGrafik from "@/components/settings/poin/PoinGrafik";
 import PoinTabelSimulasi from "@/components/settings/poin/PoinTabelSimulasi";
 import PoinRiwayatPerubahan from "@/components/settings/poin/PoinRiwayatPerubahan";
 import { rupiah } from "@/lib/rupiah";
+import PageHeader from "@/components/common/PageHeader";
 
 
 export default function PengaturanPoinPage() {
@@ -194,15 +195,11 @@ export default function PengaturanPoinPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <Star className="w-6 h-6 text-amber-500 fill-amber-400" />
-          Pengaturan Poin & Simulasi
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Atur nilai rupiah per poin dan target bulanan. Lihat dampak biaya SEBELUM menyimpan.
-        </p>
-      </div>
+      <PageHeader
+        title="Pengaturan Poin & Simulasi"
+        subtitle="Atur nilai rupiah per poin dan target bulanan. Lihat dampak biaya SEBELUM menyimpan."
+        icon={Star}
+      />
 
       {mainRecords.length > 1 && (
         <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border-2 border-red-300 text-sm text-red-800 font-medium">

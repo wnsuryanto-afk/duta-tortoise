@@ -13,6 +13,7 @@ import { id as localeId } from "date-fns/locale";
 import { Skull, Search, ArrowLeft, ExternalLink, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import DeathRecordModal from "@/components/tortoise/DeathRecordModal";
+import PageHeader from "@/components/common/PageHeader";
 
 const DEATH_CAUSE_LABELS = {
   sakit:           "💊 Sakit / Penyakit",
@@ -345,20 +346,16 @@ export default function DeathRecordsPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Skull className="w-6 h-6 text-muted-foreground" /> Catatan Kematian
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {statsThisYear} kura mati tahun ini · {statsThisMonth} bulan ini
-          </p>
-        </div>
-        <Button onClick={() => setShowSelectModal(true)} className="gap-2 bg-red-600 hover:bg-red-700 text-white flex-shrink-0">
-          <Plus className="w-4 h-4" /> Lapor Kematian Baru
-        </Button>
-      </div>
+      <PageHeader
+        title="Catatan Kematian"
+        subtitle={`${statsThisYear} kura mati tahun ini · ${statsThisMonth} bulan ini`}
+        icon={Skull}
+        actions={
+          <Button onClick={() => setShowSelectModal(true)} className="gap-2 bg-red-600 hover:bg-red-700 text-white flex-shrink-0">
+            <Plus className="w-4 h-4" /> Lapor Kematian Baru
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">

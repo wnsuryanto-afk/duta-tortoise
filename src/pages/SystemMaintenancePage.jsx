@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Database, Home, Users, CheckCircle2, AlertTriangle, Baby, FlaskConical } from "lucide-react";
+import { RefreshCw, Database, Home, Users, CheckCircle2, AlertTriangle, Baby, FlaskConical, Wrench } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
 import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
@@ -15,6 +15,7 @@ import BarangKembar from "@/components/owner/BarangKembar";
 import IsiTanggalKedaluwarsa from "@/components/owner/IsiTanggalKedaluwarsa";
 import PotonganTanpaAlasan from "@/components/owner/PotonganTanpaAlasan";
 import AISaranToggle from "@/components/settings/AISaranToggle";
+import PageHeader from "@/components/common/PageHeader";
 
 export default function SystemMaintenancePage() {
   const { role } = useCurrentUser();
@@ -62,10 +63,11 @@ export default function SystemMaintenancePage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-heading font-bold text-foreground">Pemeliharaan Sistem</h1>
-        <p className="text-muted-foreground text-sm mt-1">Sinkronisasi dan recalculate data untuk menjaga integritas</p>
-      </div>
+      <PageHeader
+        title="Pemeliharaan Sistem"
+        subtitle="Sinkronisasi dan recalculate data untuk menjaga integritas"
+        icon={Wrench}
+      />
 
       {/* Sambungan kura ke kandang — dijalankan sekali, aman diulang */}
       <PemindahanKandang />
