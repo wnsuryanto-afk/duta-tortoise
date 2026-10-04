@@ -139,10 +139,34 @@ export default function EditProfilePage() {
       return;
     }
 
-    // Pertahankan is_complete yang sudah ada, atau set true jika data utama terisi
-    const isComplete = formData.is_complete === true || (
-      formData.hp_whatsapp && formData.join_date
-    );
+    /*
+      `is_complete` HARUS boolean, dan sebelumnya bisa berisi tanggal.
+
+      `a === true || (b && c)` tidak menghasilkan true/false: bila bagian
+      pertama salah dan kedua sisanya terisi, nilainya adalah `c` sendiri —
+      yaitu `formData.join_date`, sebuah teks "2026-05-01".
+
+      Itu bukan kesalahan ketik yang diam. Setiap pembacanya memakai
+      perbandingan KETAT:
+
+        IncompleteProfileBanner  profile?.is_complete === true
+        AppLayout                profile?.is_complete === true
+        getBestProfile           p.is_complete === true
+        profilUser               p.is_complete === true
+        userProfileUpsert        p.is_complete === true
+
+      Teks "2026-05-01" tidak sama dengan true di satu pun dari lima tempat
+      itu. Orangnya menekan Simpan, melihat "Profil berhasil diperbarui ✅",
+      dan spanduk "profil belum lengkap" tetap menempel — tanpa satu pun
+      error, dan tanpa cara menebak kenapa.
+
+      Kedelapan profil yang ada hari ini sudah `is_complete: true`, jadi
+      cabang pertama selalu menang dan tidak ada yang pernah terkena. Yang
+      akan terkena adalah karyawan BARU yang melewati setup lalu melengkapi
+      profilnya lewat layar ini.
+    */
+    const isComplete = formData.is_complete === true
+      || Boolean(formData.hp_whatsapp && formData.join_date);
     updateMutation.mutate({ ...formData, is_complete: isComplete });
   };
 
@@ -196,10 +220,10 @@ export default function EditProfilePage() {
               <Label htmlFor="hp_whatsapp">No. HP / WhatsApp *</Label>
               <Input
                 id="hp_whatsapp"
-                value={formData.hp_whatsapp || formData.phone || ""}
+                value={formData.hp_whatsapp || ""}
                 onChange={(e) => handleChange("hp_whatsapp", e.target.value)}
                 placeholder="08123456789"
-                className={!formData.hp_whatsapp && !formData.phone ? "border-red-500" : ""}
+                className={!formData.hp_whatsapp ? "border-red-500" : ""}
               />
             </div>
 
