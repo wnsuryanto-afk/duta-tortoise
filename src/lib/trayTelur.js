@@ -120,6 +120,16 @@ export function trayTerpakai(breedings = [], { kecuali = null } = {}) {
  * Aplikasi ini sedang dipakai untuk menjawab "betina mana yang produktif".
  * Jawaban itu dibangun dari catatan induk per clutch. Telur yang sampai ke
  * penetasan tanpa tray memutus rantainya tepat di langkah terakhir.
+ *
+ * ── 4 Okt 2026: kartunya dicabut, hitungannya tidak ──────────────────────
+ *
+ * Kartu peringatan di halaman Breeding dihapus atas permintaan pemilik.
+ * Kedua fungsi di bawah SENGAJA ditinggalkan meski tidak ada layar yang
+ * memanggilnya lagi: keadaannya belum berubah (127 butir masih tanpa tray
+ * pada tanggal itu), tugas mengisinya masih terbuka, dan laporan
+ * `laporan/2026-10-02-telur-tanpa-tray.md` dibangun dari angka-angka ini.
+ * Menghapusnya berarti menurunkan ulang aturannya dari nol saat angkanya
+ * ditanyakan lagi. Keduanya tetap diuji di cek-ronda.mjs.
  */
 export function clutchTanpaTray(breedings = []) {
   return (breedings || []).filter(

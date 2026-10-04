@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { saringBreeding, kelompokkanPerInduk } from "@/lib/cariInduk";
-import PeringatanTray from "@/components/breeding/PeringatanTray";
+import { saringBreeding, kelompokkanPerInduk, saringBulan, daftarBulanBertelur } from "@/lib/cariInduk";
 import { periksaAmbang } from "@/lib/inkubator";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
+import BulanBertelur from "@/components/breeding/BulanBertelur";
+import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -176,6 +178,17 @@ export default function BreedingAndEggs() {
     setSearchParams(next, { replace: true });
   };
 
+  // Bulan bertelur ikut disimpan di alamat, alasan yang sama dengan `cari`:
+  // "September kemarin siapa saja yang bertelur" adalah jawaban yang mau
+  // ditunjukkan ke orang lain, dan jawaban tanpa alamat tidak bisa dikirim.
+  const bulan = searchParams.get("bulan") || "";
+  const setBulan = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai) next.set("bulan", nilai);
+    else next.delete("bulan");
+    setSearchParams(next, { replace: true });
+  };
+
   // Pemindai label telur (QR "BREED:<id>") langsung dari modul Breeding,
   // sebelumnya hanya tersedia di halaman Gudang / Stok Pakan.
   const [showScanner, setShowScanner] = useState(false);
@@ -261,16 +274,34 @@ export default function BreedingAndEggs() {
     orang berpindah ke tab Riwayat. Ringkasannya membaca `cocokSemua`, yaitu
     seluruh catatan yang cocok tanpa memandang status dan tanpa memandang tab.
   */
-  const cocokSemua = saringBreeding(breedings, cari);
-  const pembiakanBreedings = saringBreeding(sortedBreedings.filter(b => b.status !== "selesai"), cari);
+  /*
+    Saringan bulan dipasang BERSAMA saringan nama, bukan menggantikannya.
+
+    Keduanya menjawab pertanyaan yang berbeda dan sering dipakai berbarengan:
+    "A31 bulan September" adalah satu pertanyaan, bukan dua. Kalau memilih
+    bulan diam-diam menghapus kata yang sudah diketik, orang akan mengetiknya
+    lagi — dan heran kenapa hasilnya berubah.
+  */
+  const saring = (daftar) => saringBulan(saringBreeding(daftar, cari), bulan);
+
+  const cocokSemua = saring(breedings);
+  const pembiakanBreedings = saring(sortedBreedings.filter(b => b.status !== "selesai"));
 
   // Telur & Inkubasi: bertelur, inkubasi, menetas, selesai
-  const activeBreedings = saringBreeding(breedings.filter(b => b.status !== "gagal" && b.status !== "selesai"), cari);
+  const activeBreedings = saring(breedings.filter(b => b.status !== "gagal" && b.status !== "selesai"));
   // Riwayat: hanya yang sudah selesai difinalisasi
-  const historyBreedings = saringBreeding(breedings.filter(b => b.status === "selesai"), cari);
+  const historyBreedings = saring(breedings.filter(b => b.status === "selesai"));
 
   // Riwayat bertelur per induk betina dari seluruh catatan yang cocok.
   const indukDicari = cari ? kelompokkanPerInduk(cocokSemua) : [];
+
+  /*
+    Pilihan bulan dihitung dari SELURUH catatan, bukan dari yang sudah
+    disaring. Kalau dihitung dari hasil saringan, memilih September akan
+    menyisakan September sebagai satu-satunya pilihan — dan tidak ada jalan
+    kembali ke bulan lain selain menghapus saringannya dulu.
+  */
+  const pilihanBulan = daftarBulanBertelur(breedings);
 
   // Berapa hasil pencarian di tiap tab, dan tab mana saja selain yang dibuka.
   const tabCocok = (() => {
@@ -372,12 +403,6 @@ export default function BreedingAndEggs() {
           Lihat lib/pantauInkubator.js untuk angka yang melatarinya. */}
       <InkubatorBelumDipantau breedings={breedings} />
 
-      {/* Tray yang kosong atau bentrok. Seluruh clutch ada di inkubator yang
-          sama, jadi tray satu-satunya pembeda telur induk A dari induk B —
-          dan pada 2 Okt 2026 hanya 41 dari 208 butir yang induknya pasti
-          bisa ditelusuri. Kartunya diam sendiri begitu semuanya beres. */}
-      <PeringatanTray breedings={breedings} />
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Dua baris di ponsel, satu baris di layar lebar. Enam tab dalam satu
             baris selebar 390px membuat labelnya saling menimpa sampai tidak
@@ -423,6 +448,41 @@ export default function BreedingAndEggs() {
                 </button>
               )}
             </div>
+
+            {/*
+              Pilihan bulan. Hanya bulan yang PUNYA catatan yang muncul —
+              daftar dua belas bulan yang sebelas di antaranya kosong
+              membuat orang mengira datanya hilang.
+            */}
+            {pilihanBulan.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Select value={bulan || "semua"} onValueChange={(v) => setBulan(v === "semua" ? "" : v)}>
+                  <SelectTrigger className="h-9 text-sm" aria-label="Pilih bulan bertelur">
+                    <SelectValue placeholder="Semua bulan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="semua">Semua bulan</SelectItem>
+                    {pilihanBulan.map((b) => (
+                      <SelectItem key={b.kunci} value={b.kunci}>
+                        {b.label} — {b.induk} induk, {b.clutch} clutch
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {bulan && (
+                  <button
+                    type="button"
+                    onClick={() => setBulan("")}
+                    aria-label="Hapus saringan bulan"
+                    className="p-1.5 rounded-full hover:bg-muted text-muted-foreground flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            <BulanBertelur bulan={bulan} breedings={breedings} />
 
             <RiwayatBertelurInduk cari={cari} indukDicari={indukDicari} />
 
@@ -519,6 +579,13 @@ export default function BreedingAndEggs() {
                               refDate={b.egg_laying_date}
                             />
                           </div>
+                          {/* Angka besar hitung mundur, lalu ⋮ di pojok.
+                              Tab ini yang dibuka sehari-hari, dan sampai
+                              sekarang ia satu-satunya yang TIDAK menyebut
+                              berapa hari lagi menetas — angkanya cuma ada di
+                              tab Telur & Inkubasi. Menunya tetap paling kanan
+                              karena di situlah orang mencarinya. */}
+                          <HitungMundurMenetas breeding={b} hariIni={today} />
                           <BreedingCardMenu
                             canEdit={perms.canEdit}
                             canDelete={perms.canDelete}
@@ -644,12 +711,6 @@ export default function BreedingAndEggs() {
                 const incubationDay = b.egg_laying_date ? differenceInDays(today, new Date(b.egg_laying_date)) : 0;
                 const incubationProgress = Math.min(100, Math.max(0, (incubationDay / 105) * 100));
 
-                const countdownDays = daysToStart;
-                const countdownColor = countdownDays === null ? "text-muted-foreground" :
-                  (daysToEnd !== null && daysToEnd < 0) || inHatchRange ? "text-red-600" :
-                  countdownDays <= 7 ? "text-red-600" :
-                  countdownDays <= 30 ? "text-orange-500" : "text-green-600";
-
                 return (
                   <Card key={b.id} className={`overflow-hidden ${
                     daysToEnd !== null && daysToEnd < 0 ? "border-red-400" :
@@ -667,33 +728,20 @@ export default function BreedingAndEggs() {
                           {b.egg_laying_date && <span className={inHatchRange ? "text-red-100" : "text-muted-foreground"}>🗓 {format(new Date(b.egg_laying_date), "d MMM yyyy", { locale: id })}</span>}
                         </div>
                       </div>
-                      {/* COUNTDOWN / SELESAI BADGE */}
-                      <div className="flex-shrink-0 text-center min-w-[72px]">
-                        {b.status === "selesai" ? (
-                          <div className="text-green-700 text-center">
-                            <div className="text-xl">✅</div>
-                            <div className="text-[10px] font-semibold leading-tight">Selesai</div>
-                            {b.completed_date && (
-                              <div className="text-[9px] text-muted-foreground">{format(new Date(b.completed_date), "d MMM", { locale: id })}</div>
-                            )}
-                          </div>
-                        ) : inHatchRange ? (
-                          <div className="text-white text-center">
-                            <div className="text-2xl">🚨</div>
-                            <div className="text-xs font-bold">Menetas!</div>
-                          </div>
-                        ) : daysToEnd !== null && daysToEnd < 0 ? (
-                          <div className="text-red-600 font-black text-center">
-                            <div className="text-xs">⚠️ Segera</div>
-                            <div className="text-2xl">Cek!</div>
-                          </div>
-                        ) : countdownDays !== null ? (
-                          <div className="text-center">
-                            <div className={`font-black leading-none ${countdownColor}`} style={{ fontSize: "2rem" }}>{countdownDays}</div>
-                            <div className="text-[10px] text-muted-foreground font-medium leading-tight">hari lagi</div>
-                          </div>
-                        ) : null}
-                      </div>
+                      {/*
+                        Hitung mundur dipakai bersama tab Pembiakan lewat satu
+                        komponen. Sebelumnya aturannya ditulis di sini saja —
+                        belasan baris daysToStart/daysToEnd/inHatchRange — dan
+                        tab sebelah tidak punya angkanya sama sekali. Yang
+                        tersisa di halaman ini hanyalah `inHatchRange`, karena
+                        ia juga mewarnai header dan bingkai kartunya.
+                      */}
+                      <HitungMundurMenetas
+                        breeding={b}
+                        hariIni={today}
+                        kontras={inHatchRange}
+                        tanggalSelesai={b.completed_date ? format(new Date(b.completed_date), "d MMM", { locale: id }) : null}
+                      />
                     </div>
 
                     {/* Progress Inkubasi */}

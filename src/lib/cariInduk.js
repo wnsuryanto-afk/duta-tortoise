@@ -104,3 +104,73 @@ export function terakhirBertelur(clutch = [], hariIni = new Date()) {
   const selisih = Math.floor((acuan - new Date(terakhir)) / 86400000);
   return { tanggal: terakhir, hariLalu: Number.isFinite(selisih) ? selisih : null };
 }
+
+/* ── Mencari per BULAN: induk mana saja yang bertelur ─────────────────────
+ *
+ * Pertanyaan yang dijawab: "bulan September kemarin, induk mana saja yang
+ * bertelur?" Pencarian per nama hanya menjawab satu kura sekaligus, dan
+ * daftar clutch tersusun per catatan, bukan per bulan.
+ *
+ * Bulannya diambil dengan MEMOTONG TEKS tanggalnya, bukan lewat `new Date`.
+ * `egg_laying_date` tersimpan sebagai "YYYY-MM-DD"; `new Date("2026-10-01")`
+ * dibaca tengah malam UTC, dan di zona waktu barat Greenwich tanggal itu
+ * jatuh ke 30 September — catatan paling awal tiap bulan akan terhitung di
+ * bulan sebelumnya. Lima karakter pertama tidak bisa salah baca.
+ */
+
+const NAMA_BULAN = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+/** "2026-09-04" -> "2026-09". Nilai yang tidak berbentuk tanggal -> null. */
+export function kunciBulan(tanggal) {
+  const m = String(tanggal ?? "").match(/^(\d{4})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}` : null;
+}
+
+/** "2026-09" -> "September 2026". */
+export function labelBulan(kunci) {
+  const m = String(kunci ?? "").match(/^(\d{4})-(\d{2})$/);
+  if (!m) return "";
+  const nama = NAMA_BULAN[Number(m[2]) - 1];
+  return nama ? `${nama} ${m[1]}` : "";
+}
+
+/**
+ * Daftar bulan yang PUNYA catatan bertelur, terbaru dulu.
+ *
+ * Hanya bulan yang ada isinya — pilihan bulan kosong hanya membuat orang
+ * mengira datanya hilang. Clutch tanpa `egg_laying_date` tidak masuk mana
+ * pun; ia tidak punya bulan, dan menaruhnya di bulan mana saja akan salah.
+ *
+ * @returns {Array<{ kunci, label, clutch, telur, induk }>}
+ */
+export function daftarBulanBertelur(daftar = []) {
+  const peta = new Map();
+  for (const b of daftar || []) {
+    const kunci = kunciBulan(b?.egg_laying_date);
+    if (!kunci) continue;
+    if (!peta.has(kunci)) peta.set(kunci, { kunci, label: labelBulan(kunci), clutch: 0, telur: 0, induk: new Set() });
+    const baris = peta.get(kunci);
+    baris.clutch += 1;
+    baris.telur += Number(b?.egg_count) || 0;
+    const nama = rapikan(b?.female_name);
+    if (nama) baris.induk.add(nama);
+  }
+  return [...peta.values()]
+    .map((b) => ({ ...b, induk: b.induk.size }))
+    .sort((a, b) => (a.kunci < b.kunci ? 1 : a.kunci > b.kunci ? -1 : 0));
+}
+
+/**
+ * Saring clutch pada satu bulan.
+ *
+ * Bulan kosong berarti TIDAK MENYARING — sama seperti `saringBreeding`,
+ * supaya layar tidak perlu menulis cabang "kalau belum dipilih".
+ */
+export function saringBulan(daftar = [], kunci) {
+  const k = String(kunci ?? "").trim();
+  if (!k) return daftar || [];
+  return (daftar || []).filter((b) => kunciBulan(b?.egg_laying_date) === k);
+}

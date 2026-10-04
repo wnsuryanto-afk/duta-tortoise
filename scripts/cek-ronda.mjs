@@ -58,6 +58,7 @@ bundel("src/lib/stokMenipis.js", "stok.cjs");
 bundel("src/lib/cariInduk.js", "cari.cjs");
 bundel("src/lib/trayTelur.js", "tray.cjs");
 bundel("src/lib/inkubator.js", "inkubator.cjs");
+bundel("src/lib/hitungMundur.js", "mundur.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
@@ -67,6 +68,7 @@ const S = await import("file://" + join(dir, "stok.cjs")).then((m) => m.default 
 const C = await import("file://" + join(dir, "cari.cjs")).then((m) => m.default || m);
 const T = await import("file://" + join(dir, "tray.cjs")).then((m) => m.default || m);
 const I = await import("file://" + join(dir, "inkubator.cjs")).then((m) => m.default || m);
+const M = await import("file://" + join(dir, "mundur.cjs")).then((m) => m.default || m);
 
 const temuan = [];
 
@@ -378,6 +380,114 @@ for (const [kata, harap, kenapa] of cariUji) {
   }
 }
 
+/* ── Mencari per BULAN ─────────────────────────────────────────────── */
+
+/*
+ * Angka harapannya diambil dari BREED_UJI di atas, yang bentuknya meniru
+ * data sungguhan: dua clutch A31 di bulan berbeda, satu catatan TANPA
+ * tanggal, dan dua nama berantakan yang sebenarnya satu kura ("RD besar "
+ * dan "8 BESAR" adalah dua kura berbeda, tapi ejaannya tidak rapi).
+ */
+const bulanUji = [
+  ["2026-10", 1, 1, "Oktober: satu clutch A31"],
+  ["2026-09", 1, 1, "September: satu clutch A31"],
+  ["2026-04", 1, 1, "April: C24 yang sudah selesai TETAP terhitung"],
+  ["2026-01", 0, 0, "bulan tanpa catatan"],
+  ["", 6, 0, "bulan kosong TIDAK menyaring"],
+];
+for (const [kunci, harapClutch, harapInduk, kenapa] of bulanUji) {
+  const clutch = C.saringBulan(BREED_UJI, kunci);
+  if (clutch.length !== harapClutch) {
+    temuan.push(`saringBulan("${kunci}"): dapat ${clutch.length} clutch, seharusnya ${harapClutch} — ${kenapa}`);
+  }
+  if (kunci) {
+    const induk = C.kelompokkanPerInduk(clutch).length;
+    if (induk !== harapInduk) {
+      temuan.push(`saringBulan("${kunci}") -> kelompokkanPerInduk: dapat ${induk} induk, seharusnya ${harapInduk} — ${kenapa}`);
+    }
+  }
+}
+
+/*
+ * Catatan tanpa `egg_laying_date` tidak boleh masuk bulan mana pun. Kalau ia
+ * ikut terhitung, "September" akan menyebut satu induk yang tidak pernah
+ * bertelur di September.
+ */
+const semuaBulan = C.daftarBulanBertelur(BREED_UJI);
+const jumlahDiBulan = semuaBulan.reduce((t, b) => t + b.clutch, 0);
+if (jumlahDiBulan !== BREED_UJI.filter((b) => b.egg_laying_date).length) {
+  temuan.push(`daftarBulanBertelur: ${jumlahDiBulan} clutch terbagi ke bulan, seharusnya ${BREED_UJI.filter((b) => b.egg_laying_date).length} (catatan tanpa tanggal tidak punya bulan)`);
+}
+if (semuaBulan[0]?.kunci !== "2026-10") {
+  temuan.push(`daftarBulanBertelur: bulan pertama "${semuaBulan[0]?.kunci}", seharusnya "2026-10" — terbaru dulu`);
+}
+if (semuaBulan.some((b) => b.clutch === 0)) {
+  temuan.push("daftarBulanBertelur: ada bulan kosong di daftar pilihan — hanya bulan yang punya catatan yang boleh muncul");
+}
+
+/*
+ * Bulan dipotong dari TEKS tanggalnya, bukan lewat new Date(). Tanggal 1
+ * adalah pembuktinya: `new Date("2026-10-01")` di zona waktu barat Greenwich
+ * jatuh ke 30 September.
+ */
+const kunciUji = [
+  ["2026-10-01", "2026-10", "tanggal 1 — penjebak zona waktu"],
+  ["2026-12-31", "2026-12", "tanggal terakhir tahun"],
+  ["2026-09-04T00:00:00", "2026-09", "tanggal berjam"],
+  ["", null, "kosong"],
+  [null, null, "null"],
+  ["bukan tanggal", null, "teks sembarang"],
+];
+for (const [nilai, harap, kenapa] of kunciUji) {
+  const dapat = C.kunciBulan(nilai);
+  if (dapat !== harap) {
+    temuan.push(`kunciBulan(${JSON.stringify(nilai)}): dapat ${JSON.stringify(dapat)}, seharusnya ${JSON.stringify(harap)} — ${kenapa}`);
+  }
+}
+if (C.labelBulan("2026-09") !== "September 2026") {
+  temuan.push(`labelBulan("2026-09"): dapat "${C.labelBulan("2026-09")}", seharusnya "September 2026"`);
+}
+
+/* ── Hitung mundur menetas ─────────────────────────────────────────── */
+
+/*
+ * Clutch C23 12 Agt 2026 yang sungguhan: mulai 31 Okt, akhir 25 Nov. Hari
+ * acuannya dipatok supaya jawabannya tidak berubah tiap penjaga dijalankan.
+ */
+const CLUTCH_MUNDUR = { status: "bertelur", estimated_hatch_start: "2026-10-31", estimated_hatch_end: "2026-11-25" };
+const mundurUji = [
+  [CLUTCH_MUNDUR, "2026-10-04", "menuju", 27, "masih jauh"],
+  [CLUTCH_MUNDUR, "2026-10-24", "menuju", 7, "tujuh hari — batas merah"],
+  [CLUTCH_MUNDUR, "2026-10-30", "menuju", 1, "besok"],
+  [CLUTCH_MUNDUR, "2026-10-31", "masa", 25, "hari pertama jendela menetas"],
+  [CLUTCH_MUNDUR, "2026-11-25", "masa", 0, "hari terakhir jendela — masih di DALAM"],
+  [CLUTCH_MUNDUR, "2026-11-26", "lewat", 1, "sehari lewat"],
+  [{ ...CLUTCH_MUNDUR, status: "selesai" }, "2026-11-26", "selesai", null, "sudah difinalisasi"],
+  [{ ...CLUTCH_MUNDUR, status: "menetas" }, "2026-11-26", "menetas", null, "sudah menetas"],
+  [{ ...CLUTCH_MUNDUR, status: "gagal" }, "2026-11-26", "gagal", null, "gagal"],
+  // Cadangan `estimated_hatch_date` dipakai sebagai tanggal AKHIR.
+  [{ status: "bertelur", estimated_hatch_start: "2026-10-31", estimated_hatch_date: "2026-11-25" }, "2026-11-10", "masa", 15, "akhir diambil dari estimated_hatch_date"],
+];
+for (const [clutch, hari, harapJenis, harapHari, kenapa] of mundurUji) {
+  // Sengaja memakai jam SORE: inilah saat selisih UTC-vs-lokal mulai
+  // menggeser jawaban kalau tanggalnya tidak diturunkan ke "hari" dulu.
+  const m = M.hitungMundur(clutch, new Date(`${hari}T17:30:00`));
+  if (!m) {
+    temuan.push(`hitungMundur pada ${hari}: tidak menjawab apa-apa — ${kenapa}`);
+    continue;
+  }
+  if (m.jenis !== harapJenis || m.hari !== harapHari) {
+    temuan.push(`hitungMundur pada ${hari}: dapat ${m.jenis}/${m.hari}, seharusnya ${harapJenis}/${harapHari} — ${kenapa}`);
+  }
+}
+// Tanpa satu pun tanggal perkiraan, TIDAK boleh menjawab angka.
+if (M.hitungMundur({ status: "bertelur" }) !== null) {
+  temuan.push("hitungMundur tanpa tanggal perkiraan: menjawab angka — seharusnya diam");
+}
+if (M.hitungMundur(null) !== null) {
+  temuan.push("hitungMundur(null): menjawab angka — seharusnya diam");
+}
+
 // Dikelompokkan per INDUK BETINA, terbanyak di atas.
 const kel = C.kelompokkanPerInduk(C.saringBreeding(BREED_UJI, "A36"));
 if (kel.length !== 2 || kel[0].nama !== "A31" || kel[0].clutch.length !== 3) {
@@ -649,6 +759,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);
