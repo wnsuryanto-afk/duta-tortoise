@@ -10,6 +10,7 @@ import { saringBreeding, kelompokkanPerInduk, saringBulan, daftarBulanBertelur }
 import { periksaAmbang } from "@/lib/inkubator";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import BulanBertelur from "@/components/breeding/BulanBertelur";
+import RekapTahunan from "@/components/breeding/RekapTahunan";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -1052,6 +1053,11 @@ export default function BreedingAndEggs() {
         </TabsContent>
 
         <TabsContent value="statistik" className="space-y-4">
+          {/* Telur per tahun berdiri PALING ATAS dan membaca `breedings`
+              utuh, bukan yang sudah disaring kotak pencarian — "berapa telur
+              tahun ini" adalah pertanyaan tentang kebun, bukan tentang satu
+              induk yang kebetulan sedang dicari. */}
+          <RekapTahunan breedings={breedings} />
           <BreedingStatsSection breedings={breedings} />
         </TabsContent>
       </Tabs>

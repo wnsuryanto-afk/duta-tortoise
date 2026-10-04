@@ -41,6 +41,7 @@ import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import BulanBertelur from "@/components/breeding/BulanBertelur";
 import PeringkatIndukan from "@/components/breeding/PeringkatIndukan";
+import RekapTahunan from "@/components/breeding/RekapTahunan";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
 import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
@@ -302,6 +303,25 @@ export default [
   // Tab yang dipakai menjawab "betina mana yang berproduksi" — sampai hari
   // ini belum pernah dirender satu penjaga pun.
   ["PeringkatIndukan", <PeringkatIndukan />],
+  /*
+    Telur per tahun. Datanya NYATA: 2026 punya catatan, 2025 TIDAK — dan
+    tahun kosong itu harus tetap muncul dengan kalimatnya sendiri, bukan
+    sebagai "0 butir".
+  */
+  ["RekapTahunan 2026 vs 2025", <RekapTahunan tahunIni={2026} breedings={[
+    { id: "1", female_name: "C23", egg_laying_date: "2026-10-04", egg_count: 24, status: "bertelur" },
+    { id: "2", female_name: "A31", egg_laying_date: "2026-10-01", egg_count: 22, status: "bertelur" },
+    { id: "3", female_name: "C24", egg_laying_date: "2026-04-08", egg_count: 24, hatched_count: 22, status: "selesai" },
+    { id: "4", female_name: "C14", egg_laying_date: "2026-03-16", egg_count: 23, hatched_count: 20, status: "selesai" },
+  ]} />],
+  // Dua tahun yang sama-sama berisi -> baris selisihnya muncul.
+  ["RekapTahunan dua tahun berisi", <RekapTahunan tahunIni={2026} breedings={[
+    { id: "a", female_name: "C23", egg_laying_date: "2026-10-04", egg_count: 24, status: "bertelur" },
+    { id: "b", female_name: "A31", egg_laying_date: "2025-05-02", egg_count: 31, hatched_count: 18, status: "selesai" },
+    { id: "c", female_name: "C14", egg_laying_date: "2025-07-11", egg_count: 19, hatched_count: 9, status: "selesai" },
+  ]} />],
+  // Sama sekali belum ada catatan -> dua tahun kosong, tanpa angka nol.
+  ["RekapTahunan kosong", <RekapTahunan tahunIni={2026} breedings={[]} />],
   ["BulanBertelur September", <BulanBertelur bulan="2026-09" breedings={[
     { id: "2", female_name: "A31", egg_count: 23, egg_laying_date: "2026-09-04", status: "bertelur" },
     { id: "3", female_name: "A46", egg_count: 22, egg_laying_date: "2026-09-04", status: "bertelur" },

@@ -60,6 +60,7 @@ bundel("src/lib/trayTelur.js", "tray.cjs");
 bundel("src/lib/inkubator.js", "inkubator.cjs");
 bundel("src/lib/hitungMundur.js", "mundur.cjs");
 bundel("src/lib/peringkatIndukan.js", "peringkat.cjs");
+bundel("src/lib/rekapTahunan.js", "tahunan.cjs");
 bundel("src/lib/hasilInkubasi.js", "hasil.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
@@ -72,6 +73,7 @@ const T = await import("file://" + join(dir, "tray.cjs")).then((m) => m.default 
 const I = await import("file://" + join(dir, "inkubator.cjs")).then((m) => m.default || m);
 const M = await import("file://" + join(dir, "mundur.cjs")).then((m) => m.default || m);
 const P = await import("file://" + join(dir, "peringkat.cjs")).then((m) => m.default || m);
+const Y = await import("file://" + join(dir, "tahunan.cjs")).then((m) => m.default || m);
 const H = await import("file://" + join(dir, "hasil.cjs")).then((m) => m.default || m);
 
 const temuan = [];
@@ -840,6 +842,68 @@ if (Math.abs(jumlahBobot - 1) > 1e-9) {
   temuan.push(`BOBOT skor berjumlah ${jumlahBobot}, seharusnya 1`);
 }
 
+/* ── Telur per tahun ───────────────────────────────────────────────── */
+
+/*
+ * Keempat belas clutch yang sungguhan semuanya 2026 — catatan pertama
+ * dibuat 17 Mei 2026, jadi 2025 benar-benar kosong. Rekap harus
+ * MEMBEDAKAN "tidak ada catatan" dari "nol telur": yang pertama berarti
+ * aplikasinya belum dipakai, yang kedua berarti tidak ada yang bertelur.
+ */
+const CLUTCH_TAHUNAN = [
+  ...CLUTCH_NYATA_2026,
+  // Catatan terbaru, 4 Okt 2026: A46 x A35, 24 butir, tray 5.
+  { female_name: "A46", male_name: "A35", egg_laying_date: "2026-10-04", season_year: 2026, egg_count: 24, hatched_count: null, status: "bertelur" },
+];
+const rekap2026 = Y.rekapTahunan(CLUTCH_TAHUNAN, { tahunIni: 2026 });
+const tahunanUji = [
+  [2026, true, 14, 304, 49],
+  [2025, false, 0, 0, 0],
+];
+for (const [tahun, adaCatatan, clutch, telur, menetas] of tahunanUji) {
+  const b = rekap2026.find((x) => x.tahun === tahun);
+  if (!b) { temuan.push(`rekapTahunan: tahun ${tahun} tidak muncul — tahun kosong pun harus tetap ada barisnya`); continue; }
+  if (b.adaCatatan !== adaCatatan) temuan.push(`rekapTahunan ${tahun}: adaCatatan ${b.adaCatatan}, seharusnya ${adaCatatan}`);
+  if (b.clutch !== clutch) temuan.push(`rekapTahunan ${tahun}: ${b.clutch} clutch, seharusnya ${clutch}`);
+  if (b.telur !== telur) temuan.push(`rekapTahunan ${tahun}: ${b.telur} telur, seharusnya ${telur}`);
+  if (b.menetas !== menetas) temuan.push(`rekapTahunan ${tahun}: ${b.menetas} menetas, seharusnya ${menetas}`);
+}
+// Sembilan betina berbeda bertelur pada 2026: C23, A31, B108, A48, C22,
+// A47, A46, C24, C14 — A46 dan C23 masing-masing lebih dari sekali.
+if (rekap2026.find((x) => x.tahun === 2026)?.induk !== 9) {
+  temuan.push(`rekapTahunan 2026: ${rekap2026.find((x) => x.tahun === 2026)?.induk} induk, seharusnya 9 (betina yang sama tidak boleh dihitung dua kali)`);
+}
+// Terbaru dulu.
+if (rekap2026[0]?.tahun !== 2026) {
+  temuan.push(`rekapTahunan: baris pertama tahun ${rekap2026[0]?.tahun}, seharusnya 2026 — terbaru dulu`);
+}
+/*
+ * Selisih TIDAK boleh dihitung terhadap tahun yang tidak punya catatan.
+ * "+304 butir dibanding 2025" bukan pertumbuhan — itu hanya tanda kapan
+ * pencatatan dimulai.
+ */
+if (rekap2026.find((x) => x.tahun === 2026)?.selisihTelur !== null) {
+  temuan.push("rekapTahunan 2026: selisih dihitung terhadap 2025 yang tidak punya catatan — itu bukan pertumbuhan, itu awal pencatatan");
+}
+// Dua tahun yang sama-sama berisi: selisihnya dihitung.
+const duaTahun = Y.rekapTahunan([
+  { female_name: "C23", egg_laying_date: "2026-10-04", egg_count: 24, status: "bertelur" },
+  { female_name: "A31", egg_laying_date: "2025-05-02", egg_count: 31, hatched_count: 18, status: "selesai" },
+], { tahunIni: 2026 });
+if (duaTahun.find((x) => x.tahun === 2026)?.selisihTelur !== -7) {
+  temuan.push(`rekapTahunan selisih 2026 vs 2025: ${duaTahun.find((x) => x.tahun === 2026)?.selisihTelur}, seharusnya -7 (24 - 31)`);
+}
+// Tahun dipotong dari TEKS: 1 Januari tidak boleh jatuh ke tahun sebelumnya.
+const januari = Y.rekapTahunan([{ female_name: "X", egg_laying_date: "2026-01-01", egg_count: 5, status: "bertelur" }], { tahunIni: 2026 });
+if (januari.find((x) => x.tahun === 2026)?.telur !== 5) {
+  temuan.push("rekapTahunan: clutch 1 Januari tidak terhitung di tahunnya sendiri — penjebak zona waktu");
+}
+// Tanpa tanggal, `season_year` dipakai sebagai cadangan.
+const cadangan = Y.rekapTahunan([{ female_name: "X", season_year: 2026, egg_count: 9, status: "bertelur" }], { tahunIni: 2026 });
+if (cadangan.find((x) => x.tahun === 2026)?.telur !== 9) {
+  temuan.push("rekapTahunan: clutch tanpa egg_laying_date hilang dari rekap — season_year seharusnya jadi cadangan");
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah pada ronda kandang.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
@@ -847,6 +911,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${betinaUji.length} peringkat betina + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);
