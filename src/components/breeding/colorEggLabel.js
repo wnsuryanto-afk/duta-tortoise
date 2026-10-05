@@ -126,7 +126,7 @@ export async function renderColorLabelHTML(breeding, sizeDef) {
     ${qrCol}
   </div>`;
 
-  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;font-family:Arial, Helvetica, sans-serif;border:2px solid #2D6A4F;border-radius:12px;padding:0;box-sizing:border-box;display:flex;overflow:hidden">
+  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;font-family:Arial, Helvetica, sans-serif-webkit-text-size-adjust:100%;text-size-adjust:100%;border:2px solid #2D6A4F;border-radius:12px;padding:0;box-sizing:border-box;display:flex;overflow:hidden">
     <div style="flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden">${kepala}${body}</div>
   </div>`;
 }

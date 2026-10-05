@@ -219,6 +219,31 @@ if (!existsSync(CHROMIUM)) {
   // tetapi perangkat yang tidak punya Arial akan memakai gantinya — dan
   // gantinya itulah yang dulu memotong.
   const FONT = ["Arial, Helvetica, sans-serif", "'DejaVu Sans', sans-serif", "'Liberation Serif', serif", "monospace"];
+
+  // Safari di iPad membesarkan sendiri ukuran huruf di blok yang lebar
+  // (`text-size-adjust`). Karena `line-height` dinyatakan tanpa satuan, kotak
+  // barisnya ikut membesar — dan jalur yang tingginya dipatok tidak. Itu yang
+  // memotong "24 butir · bertelur …" dan "3 Nov 2026" pada 5 Okt 2026, dan
+  // tidak terlihat sama sekali di sini karena Chromium tidak melakukannya.
+  //
+  // Jadi pembesarannya ditiru: tiap `font-size:Npx` dikalikan, lalu labelnya
+  // diukur lagi. Label yang benar harus tetap utuh saat hurufnya membesar
+  // 25% — bukan hanya saat semuanya persis seperti yang dihitung.
+  // Sampai ×1,25, bukan lebih — dan alasannya perlu ditulis supaya tidak
+  // terbaca sebagai angka yang dipilih supaya hijau.
+  //
+  // Pada ×1,5 label 50×30 memang meluap: tinggi 30 mm tidak bisa memuat judul
+  // 44px yang dibesarkan jadi 66px, apa pun tata letaknya. Menuntut ×1,5
+  // berarti menuntut label yang isinya sedikit — padahal yang diminta justru
+  // perkiraan menetas yang BESAR.
+  //
+  // Yang menutup sumbernya adalah `text-size-adjust:100%` di akar label, jadi
+  // pembesaran itu seharusnya tidak terjadi sama sekali. ×1,25 di sini adalah
+  // marginnya: kalau suatu saat ada perangkat yang tetap membesarkan sedikit,
+  // labelnya masih utuh. Properti itu menanggung sisanya, dan karena ia
+  // menanggung sesuatu, ia tidak boleh dihapus tanpa mengganti penjaga ini.
+  const PEMBESARAN = [1, 1.25];
+  const besarkan = (html, k) => (k === 1 ? html : html.replace(/font-size:(\d+(?:\.\d+)?)px/g, (_, n) => `font-size:${(Number(n) * k).toFixed(1)}px`));
   // Tanggal yang HARUS jadi tulisan terbesar, ditulis sama persis seperti
   // labelnya menulisnya.
   const tglMenetas = "21 Des 2026";   // CLUTCH[1] = A40×C23, 2 Okt 2026
@@ -230,7 +255,9 @@ if (!existsSync(CHROMIUM)) {
   ];
 
   let diukur = 0, terbesarOK = 0;
-  for (const [nama, html] of HALAMAN) {
+  for (const [nama, htmlAsli] of HALAMAN) {
+   for (const k of PEMBESARAN) {
+    const html = besarkan(htmlAsli, k);
     for (const font of FONT) {
       const buruk = await page.evaluate(({ html, font, tglMenetas }) => {
         const c = document.createElement("div");
@@ -238,6 +265,16 @@ if (!existsSync(CHROMIUM)) {
         c.innerHTML = html;
         document.body.appendChild(c);
         const hasil = [];
+        // Isi tiap kotak harus muat di kotaknya. Ini tanda luapan yang paling
+        // langsung — tidak bergantung pada leluhur mana yang memotong, dan
+        // tidak bisa lolos karena selisihnya kebetulan kecil.
+        for (const el of c.querySelectorAll("*")) {
+          if (el.scrollHeight > el.clientHeight + 1 && el.clientHeight > 0) {
+            hasil.push({ teks: (el.textContent || "").trim().slice(0, 24) || "(kotak)",
+              fs: getComputedStyle(el).fontSize,
+              lewat: el.scrollHeight - el.clientHeight, sebab: "isinya tidak muat di kotaknya" });
+          }
+        }
         for (const el of c.querySelectorAll("*")) {
           if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
           const gaya = getComputedStyle(el);
@@ -276,22 +313,23 @@ if (!existsSync(CHROMIUM)) {
         }
         document.body.removeChild(c);
         return { hasil, maks, besarMenetas };
-      }, { html, font, tglMenetas });
+      }, { html, font, tglMenetas: k === 1 ? tglMenetas : tglMenetas });
       diukur++;
       for (const b of buruk.hasil) {
-        salah(`${nama} / ${font.split(",")[0]}: "${b.teks}" ${b.fs} terpotong ${b.lewat}px oleh ${b.sebab}`);
+        salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: "${b.teks}" ${b.fs} terpotong ${b.lewat}px oleh ${b.sebab}`);
       }
       if (!buruk.besarMenetas) {
-        salah(`${nama} / ${font.split(",")[0]}: tanggal menetas "${tglMenetas}" tidak ketemu di label`);
+        salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: tanggal menetas "${tglMenetas}" tidak ketemu di label`);
       } else if (buruk.besarMenetas < buruk.maks) {
-        salah(`${nama} / ${font.split(",")[0]}: perkiraan menetas ${buruk.besarMenetas}px, padahal ada tulisan ${buruk.maks}px`);
+        salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: perkiraan menetas ${buruk.besarMenetas}px, padahal ada tulisan ${buruk.maks}px`);
       } else {
         terbesarOK++;
       }
     }
+   }
   }
   await browser.close();
-  console.log(`  ${diukur} gabungan ukuran × tumpukan huruf diukur, tidak ada yang terpotong.`);
+  console.log(`  ${diukur} gabungan ukuran × tumpukan huruf × pembesaran diukur, tidak ada yang terpotong.`);
   console.log(`Tulisan terbesar:\n  perkiraan menetas yang terbesar pada ${terbesarOK} dari ${diukur} gabungan.`);
 }
 

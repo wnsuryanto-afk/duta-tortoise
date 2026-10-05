@@ -117,3 +117,82 @@ Itu perilaku yang benar, tapi pemeriksaannya memang rapuh. Sekarang ia mengukur
 terbesar di label — tidak lagi bergantung pada bagaimana gayanya ditulis.
 Diuji merah: membesarkan nama induk → *"perkiraan menetas 44px, padahal ada
 tulisan 71px"*.
+
+---
+
+# Putaran kedua: masih terpotong, dan penjaganya ikut salah
+
+Setelah perbaikan di atas, pemilik melaporkan **masih ada sedikit terpotong** —
+kali ini hanya dua tempat: baris terakhir badan (*"24 butir · bertelur …"*) dan
+tanggal candling (*"3 Nov 2026"*). Keduanya **baris terakhir jalurnya
+masing-masing**.
+
+## Penyebab yang berbeda dari putaran pertama
+
+Putaran pertama: kotak baris terlalu ketat untuk hurufnya.
+Putaran kedua: **jalurnya yang tingginya dipatok.**
+
+Ketiga jalur diberi tinggi tetap dalam piksel (kepala 0,22 × tinggi label,
+candling 0,21, badan sisanya). Rapi — selama tulisannya setinggi yang dihitung.
+Safari di iPad membesarkan sendiri ukuran huruf di blok yang lebar
+(`text-size-adjust`), dan karena `line-height` dinyatakan tanpa satuan, kotak
+barisnya ikut membesar. Jalur yang tingginya dipatok tidak ikut membesar — jadi
+baris **terakhir** tiap jalur keluar dari jalurnya dan dipotong.
+
+Diukur, bukan ditebak. Dengan tinggi mati, huruf dibesarkan 1,5×:
+
+```
+jalur 0 (kepala):   tinggi 78,  isi 81  ← lebih 3px
+jalur 2 (candling): tinggi 74,  isi 79  ← lebih 5px
+```
+
+Dengan jalur yang bisa tumbuh, pada pembesaran yang sama:
+
+```
+jalur 0: tinggi 92, isi 92      jalur 1: tinggi 161, isi 161
+jalur 2: tinggi 97, isi 95      (tidak ada yang meluap)
+```
+
+## Perbaikannya
+
+1. **Kepala dan jalur candling memakai tinggi MINIMUM** (`min-height` +
+   `flex:0 0 auto`), bukan tinggi mati — ikut tumbuh kalau isinya tumbuh.
+   **Badan memakai `flex:1 1 auto; min-height:0`** sehingga ia yang mengalah;
+   badanlah yang ruang leganya paling banyak.
+2. **`text-size-adjust:100%` di akar label**, menutup sumber pembesarannya.
+   Tetapi tata letak yang hanya benar kalau satu properti CSS dihormati bukan
+   tata letak yang benar — keduanya dipasang.
+3. **Ukuran huruf badan diturunkan sedikit** (judul 44 → 41px, dan seterusnya)
+   supaya ada ruang lega sungguhan, bukan pas-pasan. Label yang isinya persis
+   setinggi kotaknya akan terpotong begitu ada perangkat yang menggambar
+   hurufnya sedikit lebih besar.
+
+## Penjaga yang tidak bisa melihat cacatnya sendiri
+
+Penjaga putaran pertama mengukur kotak tinta tiap baris terhadap kotak
+pemotongnya. Itu menangkap cacat putaran pertama, tapi **tidak menangkap
+cacat putaran kedua** — saya mengujinya: mengembalikan tinggi mati pada jalur
+tidak membuatnya merah.
+
+Dua hal diperbaiki:
+
+- **Tanda luapan yang langsung.** Ditambah `scrollHeight > clientHeight` untuk
+  SETIAP kotak di label. Tidak bergantung pada leluhur mana yang memotong, dan
+  tidak bisa lolos karena selisihnya kebetulan kecil.
+- **Pembesaran huruf ditiru.** Tiap `font-size:Npx` dikalikan lalu labelnya
+  diukur lagi. Versi pertama memakai ×1,25 — dan ×1,25 **tidak cukup**: pada
+  tata letak lama luapannya baru muncul di ×1,5. Penjaga yang hijau terhadap
+  cacat yang menyebabkannya ditulis bukan penjaga.
+
+## Batasnya ×1,25, dan itu memang pilihan
+
+Pada ×1,5 label 50 × 30 **memang meluap** — tinggi 30 mm tidak bisa memuat
+judul yang dibesarkan jadi 66px, apa pun tata letaknya. Menuntut ×1,5 berarti
+menuntut label yang isinya sedikit, padahal yang diminta justru perkiraan
+menetas yang **besar**.
+
+Jadi yang menanggung sisanya adalah `text-size-adjust:100%`. Karena ia
+menanggung sesuatu, ia tidak boleh dihapus tanpa mengganti penjaga ini — dan
+itu tertulis di penjaganya.
+
+Sekarang: **32 gabungan** (4 desain × 4 tumpukan huruf × 2 pembesaran) bersih.

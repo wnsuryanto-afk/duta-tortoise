@@ -112,12 +112,26 @@ export const PALET_TERMAL = {
 };
 
 /**
- * Tinggi ketiga jalur dijumlahkan PERSIS setinggi label.
+ * Tinggi MINIMUM kepala dan jalur candling. Bukan tinggi mati.
  *
- * Bukan kerapian: label lama menyisakan pita kosong karena tiap bagian memakai
- * jarak tetap dari atas, dan sisanya menganga di bawah. Di sini kepala dan
- * jalur candling dihitung dari tinggi label, dan badan mengambil SISANYA —
- * jadi tidak ada piksel yang tidak dipakai, berapa pun ukurannya.
+ * ── Kenapa tidak dipatok ──────────────────────────────────────────────────
+ *
+ * Sebelumnya ketiga jalur diberi tinggi tetap dalam piksel, dan badan mengambil
+ * sisanya — rapi di atas kertas, tetapi hanya selama tulisannya setinggi yang
+ * dihitung. Di iPad tidak begitu: Safari membesarkan sendiri ukuran huruf di
+ * blok yang lebar (`text-size-adjust`), dan karena `line-height` dinyatakan
+ * tanpa satuan, kotak barisnya ikut membesar. Jalur yang tingginya dipatok
+ * tidak ikut membesar — jadi baris TERAKHIR tiap jalur keluar dari jalurnya
+ * dan dipotong: "24 butir · bertelur …" dan "3 Nov 2026".
+ *
+ * Sekarang kepala dan jalur candling memakai `flex:0 0 auto` dengan tinggi
+ * MINIMUM, jadi mereka ikut membesar kalau isinya membesar; badan memakai
+ * `flex:1 1 auto; min-height:0` sehingga ia yang mengalah. Badan punya ruang
+ * lega paling banyak, jadi di situlah tekanan sebaiknya ditampung.
+ *
+ * `text-size-adjust:100%` di akar label menutup sumbernya sekalian — tapi
+ * tata letak yang hanya benar kalau satu properti CSS dihormati bukan tata
+ * letak yang benar. Keduanya dipasang.
  */
 export function tinggiJalur(hPx) {
   const kepala = Math.round(hPx * 0.22);
@@ -165,11 +179,20 @@ const HURUF = "Arial, Helvetica, sans-serif";
  * line-height 1,35 + bantalan 0,18em memuat huruf setinggi ~1,7em. Arial
  * ~1,12em, SF Pro ~1,2em, DejaVu ~1,16em. cek-label.mjs mengukurnya sungguhan
  * di beberapa tumpukan huruf, bukan mempercayai hitungan ini.
+ *
+ * `flex-shrink:0` dipasang sebagai pengaman, bukan karena ada cacat yang
+ * sedang diperbaiki olehnya. Anak flex boleh menyusut di bawah tinggi isinya
+ * secara bawaan; kalau itu terjadi, kotak barisnya jadi lebih pendek daripada
+ * hurufnya dan `overflow:hidden` memotong sedikit di SETIAP baris — luapan
+ * yang tersebar seperti itu jauh lebih sulit dilihat daripada satu tempat yang
+ * jelas meluap. Dengan ukuran huruf sekarang badan label punya ruang lega, jadi
+ * mencabutnya TIDAK membuat cek-label.mjs merah; itu sudah dicoba. Ia menjaga
+ * kalau isinya nanti bertambah.
  */
 const LH = 1.35;
 const BANTALAN = 0.18;
 export function gayaBaris(fs) {
-  return `font-size:${fs}px;line-height:${LH};padding-bottom:${Math.ceil(fs * BANTALAN)}px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis`;
+  return `font-size:${fs}px;line-height:${LH};padding-bottom:${Math.ceil(fs * BANTALAN)}px;flex-shrink:0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis`;
 }
 /** Tinggi yang benar-benar dipakai satu baris teks. */
 export function tinggiBaris(fs) {
@@ -206,17 +229,17 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
   const cdStr = cdDate && !Number.isNaN(cdDate.getTime()) ? format(cdDate, "d MMM yyyy", { locale: idLocale }) : "—";
   const telat = Boolean(cdDate && !Number.isNaN(cdDate.getTime()) && cdDate < new Date() && !breeding.candling_day_30_done);
 
-  const fNama = fs(0.082);
+  const fNama = fs(0.075);
   const fTrayLbl = fs(0.034);
-  const fTray = fs(0.062);
-  const fKapsi = fs(0.04);
-  const fBesar = fs(0.125);
-  const fSampai = fs(0.056);
-  const fMeta = fs(0.046);
+  const fTray = fs(0.056);
+  const fKapsi = fs(0.036);
+  const fBesar = fs(0.115);
+  const fSampai = fs(0.05);
+  const fMeta = fs(0.042);
   const fCandLbl = fs(0.04);
-  const fCandTgl = fs(0.07);
+  const fCandTgl = fs(0.064);
 
-  const kepalaHtml = `<div style="height:${hdrH}px;box-sizing:border-box;background:${K.kepalaBg};padding:0 ${pad}px;display:flex;align-items:center;gap:${pad}px;flex-shrink:0">
+  const kepalaHtml = `<div style="min-height:${hdrH}px;box-sizing:border-box;background:${K.kepalaBg};padding:${Math.round(pad * 0.3)}px ${pad}px;display:flex;align-items:center;gap:${pad}px;flex:0 0 auto">
     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:${Math.round(pad * 0.7)}px">
       <span style="font-weight:900;color:${K.kepalaFg};${gayaBaris(fNama)}">${breeding.male_name || "—"}</span>
       <span style="font-size:${Math.round(fNama * 0.6)}px;color:${K.kepalaRedup};line-height:1">&times;</span>
@@ -228,7 +251,7 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
     </div>
   </div>`;
 
-  const badanHtml = `<div style="height:${bodyH}px;box-sizing:border-box;display:flex;flex-direction:row;flex-shrink:0;overflow:hidden">
+  const badanHtml = `<div style="flex:1 1 auto;min-height:0;box-sizing:border-box;display:flex;flex-direction:row;overflow:hidden">
     <div style="flex:1 1 auto;min-width:0;padding:${Math.round(pad * 0.5)}px ${pad}px;display:flex;flex-direction:column;justify-content:center">
       <div style="font-weight:800;letter-spacing:1.2px;color:${K.kapsi};${gayaBaris(fKapsi)}">PERKIRAAN MENETAS</div>
       <div style="font-weight:900;color:${K.besar};${gayaBaris(fBesar)}">${mulai}</div>
@@ -240,7 +263,7 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
     </div>
   </div>`;
 
-  const candlingHtml = `<div style="height:${candH}px;box-sizing:border-box;background:${telat ? K.candBgTelat : K.candBg};border-top:2px solid ${telat ? K.candGarisTelat : K.candGaris};padding:0 ${pad}px;display:flex;align-items:center;gap:${pad}px;flex-shrink:0">
+  const candlingHtml = `<div style="min-height:${candH}px;box-sizing:border-box;background:${telat ? K.candBgTelat : K.candBg};border-top:2px solid ${telat ? K.candGarisTelat : K.candGaris};padding:${Math.round(pad * 0.3)}px ${pad}px;display:flex;align-items:center;gap:${pad}px;flex:0 0 auto">
     <div style="flex:1;min-width:0">
       <div style="font-weight:800;letter-spacing:0.8px;color:${telat ? K.candFgTelat : K.candFg};${gayaBaris(fCandLbl)}">CANDLING H+30${telat ? " · TERLAMBAT" : ""}</div>
       <div style="font-weight:900;color:${telat ? K.candFgTelat : K.candTgl};${gayaBaris(fCandTgl)}">${cdStr}</div>
@@ -248,5 +271,5 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
     <div style="width:${Math.round(candH * 0.42)}px;height:${Math.round(candH * 0.42)}px;border:2px solid ${telat ? K.candFgTelat : K.candKotak};background:#fff;border-radius:${r(3)};flex-shrink:0"></div>
   </div>`;
 
-  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;font-family:${HURUF};border:2px solid ${K.bingkai};border-radius:${r(Math.round(hPx * 0.03))};box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden">${kepalaHtml}${badanHtml}${candlingHtml}</div>`;
+  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;font-family:${HURUF};-webkit-text-size-adjust:100%;text-size-adjust:100%;border:2px solid ${K.bingkai};border-radius:${r(Math.round(hPx * 0.03))};box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden">${kepalaHtml}${badanHtml}${candlingHtml}</div>`;
 }
