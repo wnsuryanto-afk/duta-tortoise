@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { tanggalISOAman } from "@/lib/tanggalMasukAkal";
+import { tanggalISOAman, tanggalMencurigakan, tanggalTampil } from "@/lib/tanggalMasukAkal";
 import { Link, useSearchParams } from "react-router-dom";
 import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
 import MonthlyReportExport from "@/components/finance/MonthlyReportExport";
@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, TrendingUp, TrendingDown, DollarSign, Loader2, Settings, Edit2 } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, DollarSign, Loader2, Settings, Edit2, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import PageHeader from "@/components/common/PageHeader";
 import StatCard from "@/components/dashboard/StatCard";
@@ -94,6 +94,25 @@ function AddTransactionForm({ user, onClose, onSaved }) {
   const hargaNum = Number(form.harga_satuan) || 0;
   const autoTotal = qtyNum > 0 && hargaNum > 0 ? qtyNum * hargaNum : null;
   const displayAmount = autoTotal !== null ? autoTotal : (Number(form.amount) || 0);
+
+  // D19 — tanggal hasil AI harus KELIHATAN sebelum "Terapkan Hasil Scan" ditekan.
+  //
+  // Kartu hasil scan dulu hanya menyebut nama toko dan jumlah item. Tanggalnya
+  // tidak pernah ditampilkan, padahal mode "pecah jadi beberapa transaksi"
+  // MENULIS LANGSUNG ke buku besar tanpa layar periksa. Jadi tanggal salah baca
+  // masuk tanpa satu pun mata melihatnya.
+  //
+  // Bukti nyata, bukan dugaan: FinanceTransaction 6ac248e4faaa703aa9999e6b
+  // ("Mustika Djamue — Susu Bubuk Kedelai Soya Kaori 1kg Org", Rp 130.700)
+  // tersimpan bertanggal 2024-09-08 padahal notanya September 2026. Selisih dua
+  // tahun membuat belanja itu tidak muncul di laporan tahun mana pun.
+  //
+  // Yang berubah hanya TAMPILAN: tanggal yang akan dipakai dicetak di kartu,
+  // dan bila mencurigakan diberi peringatan merah. Tombolnya tidak dikunci —
+  // pemilik tetap boleh melanjutkan, asal ia melihat dulu apa yang dilanjutkan.
+  const tanggalScanMentah = String(pendingInvoice?.invoice?.tanggal ?? "").slice(0, 10);
+  const tanggalScanDipakai = pendingInvoice ? tanggalISOAman(pendingInvoice.invoice.tanggal, form.date) : "";
+  const peringatanScan = tanggalScanDipakai ? tanggalMencurigakan(tanggalScanDipakai) : null;
 
   const handleApplyInvoice = async (inv, photoUrls) => {
     const photoUrl = photoUrls?.[0] || null;
@@ -187,6 +206,22 @@ function AddTransactionForm({ user, onClose, onSaved }) {
           <p className="text-xs font-semibold text-blue-800">
             Hasil Scan: {pendingInvoice.invoice.toko || "Invoice"} — {pendingInvoice.invoice.items?.length || 0} item
           </p>
+          <div className="text-xs space-y-1">
+            <p className={peringatanScan ? "text-red-700 font-semibold" : "text-blue-800"}>
+              Tanggal dipakai: {tanggalTampil(tanggalScanDipakai, (d) => format(d, "d MMMM yyyy", { locale: id }))}
+              {tanggalScanMentah !== tanggalScanDipakai && (
+                <span className="font-normal">
+                  {" "}(AI membaca {tanggalScanMentah ? `"${tanggalScanMentah}"` : "kosong"} — dipakai tanggal form)
+                </span>
+              )}
+            </p>
+            {peringatanScan && (
+              <p className="flex items-start gap-1 text-red-700">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>{peringatanScan}</span>
+              </p>
+            )}
+          </div>
           {(pendingInvoice.invoice.items?.length || 0) > 1 && (
             <div className="flex gap-3 text-xs flex-wrap">
               <label className="flex items-center gap-1 cursor-pointer">
@@ -285,7 +320,6 @@ function AddTransactionForm({ user, onClose, onSaved }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FinancePage() {
   const { user, role } = useCurrentUser();
-  const qc = useQueryClient();
   const canManage = ["admin", "owner", "manajer"].includes(role);
   const canDelete = ["admin", "owner"].includes(role);
   const currentPeriod = format(new Date(), "yyyy-MM");

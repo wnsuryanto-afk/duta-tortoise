@@ -12,8 +12,9 @@
  * talangan terbaca dua tahun. Kesalahan yang diam seperti ini hanya bisa
  * dicegah kalau ada yang memeriksanya sebelum disimpan.
  *
- * Dipakai di dua tempat — saat memindai struk dan saat memperbaiki pesanan
- * yang sudah tersimpan — jadi definisinya satu, di sini.
+ * Dipakai di tiga tempat — saat memindai struk pembelian, saat memperbaiki
+ * pesanan yang sudah tersimpan, dan saat memindai nota di buku besar keuangan
+ * — jadi definisinya satu, di sini.
  */
 
 /**

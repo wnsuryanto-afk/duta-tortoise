@@ -69,7 +69,9 @@
  *                   dan penjaganya hijau karena tidak pernah melihatnya
  *   eslint          variabel yang dipakai tapi tidak ada (no-undef). Halaman
  *                   Pembelian pernah mati karena satu sisa nama variabel di
- *                   daftar dependensi useMemo — build tetap hijau.
+ *                   daftar dependensi useMemo — build tetap hijau. Peringatan
+ *                   ikut dihitung dengan langit-langit yang tidak boleh naik:
+ *                   prop yang diterima lalu diabaikan bersembunyi di situ.
  *
  * Jalankan:  node scripts/cek-semua.mjs
  */
@@ -96,13 +98,65 @@ for (const p of PENJAGA) {
 // ESLint ikut dijalankan di sini, bukan berdiri sendiri — penjaga yang harus
 // diingat orang untuk dijalankan terpisah adalah penjaga yang tidak dijalankan.
 process.stdout.write(`\n── eslint ${"─".repeat(40)}\n`);
+
+// `--quiet` hanya melihat ERROR. Peringatan dibiarkan lewat, dan di situ
+// bersembunyi pola yang sudah berkali-kali jadi cacat nyata di aplikasi ini:
+// prop yang diterima lalu diabaikan (nilai yang kelihatan bisa diklik tapi
+// tidak melakukan apa-apa), dan sisa variabel yang menandai jalur yang dulu
+// ada lalu dilupakan. Contohnya ditemukan 05-10-2026: `InfoRow` menerima
+// `clickable` dan tidak pernah memakainya, dan FinancePage memanggil
+// useQueryClient() yang tidak menyegarkan apa pun.
+//
+// Memperbaiki 102 peringatan sekaligus bukan perbaikan, itu pengeditan massal
+// pada file yang tidak sedang dikerjakan. Jadi yang dijaga adalah ARAHNYA:
+// angkanya boleh turun, tidak boleh naik. Turunkan BATAS_PERINGATAN setiap
+// kali ada yang dibersihkan — penjaga ini akan memaksanya.
+const BATAS_PERINGATAN = 102;
+
+let keluaranEslint = "";
+let eslintMelempar = false;
 try {
-  execFileSync("npx", ["eslint", ".", "--quiet"], { encoding: "utf8", stdio: "pipe" });
-  process.stdout.write("Tidak ada variabel tak dikenal atau impor menganggur.\n");
+  keluaranEslint = execFileSync("npx", ["eslint", "."], { encoding: "utf8", stdio: "pipe" });
 } catch (e) {
-  process.stdout.write(e.stdout || "");
-  process.stderr.write(e.stderr || "");
-  gagal++;
+  keluaranEslint = e.stdout || "";
+  eslintMelempar = true;
+}
+
+// Baris ringkasan eslint: "✖ 102 problems (0 errors, 102 warnings)". Kedua
+// angkanya dibaca dari DALAM tanda kurung. Mencocokkan "0 errors" di mana saja
+// adalah jebakan: teks "10 errors" juga memuatnya, jadi sepuluh error akan
+// terbaca sebagai nol.
+const ringkasan = keluaranEslint.match(/\((\d+) errors?, (\d+) warnings?\)/);
+
+if (!ringkasan) {
+  // Tidak ada ringkasan: entah benar-benar bersih, entah eslint sendiri gagal
+  // jalan. Keduanya tidak boleh dilaporkan sebagai lolos tanpa dilihat.
+  if (eslintMelempar) {
+    process.stdout.write(keluaranEslint || "eslint gagal dijalankan dan tidak mengeluarkan apa pun.\n");
+    gagal++;
+  } else if (BATAS_PERINGATAN > 0) {
+    process.stdout.write(`Tidak ada temuan eslint sama sekali — turunkan BATAS_PERINGATAN di scripts/cek-semua.mjs menjadi 0.\n`);
+    gagal++;
+  } else {
+    process.stdout.write("Tidak ada temuan eslint.\n");
+  }
+} else {
+  const error = Number(ringkasan[1]);
+  const peringatan = Number(ringkasan[2]);
+  if (error > 0) {
+    process.stdout.write(keluaranEslint);
+    process.stdout.write(`\nGAGAL: ${error} error eslint.\n`);
+    gagal++;
+  } else if (peringatan > BATAS_PERINGATAN) {
+    process.stdout.write(keluaranEslint);
+    process.stdout.write(`\nGAGAL: peringatan eslint naik dari ${BATAS_PERINGATAN} ke ${peringatan}.\n`);
+    gagal++;
+  } else if (peringatan < BATAS_PERINGATAN) {
+    process.stdout.write(`Tidak ada error. Peringatan turun ke ${peringatan} — turunkan BATAS_PERINGATAN di scripts/cek-semua.mjs menjadi ${peringatan}.\n`);
+    gagal++;
+  } else {
+    process.stdout.write(`Tidak ada error eslint; ${peringatan} peringatan (batas ${BATAS_PERINGATAN}, tidak boleh naik).\n`);
+  }
 }
 
 console.log(gagal === 0 ? "\nSemua penjaga lolos." : `\n${gagal} penjaga gagal.`);

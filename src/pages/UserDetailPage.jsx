@@ -181,7 +181,7 @@ function Section({ title, icon: Icon, defaultOpen = true, children }) {
 }
 
 // ── Info Row ──────────────────────────────────────────────────────────
-function InfoRow({ label, value, href, clickable }) {
+function InfoRow({ label, value, href }) {
   return (
     <div className="flex flex-col gap-0.5">
       <p className="text-xs text-muted-foreground">{label}</p>
