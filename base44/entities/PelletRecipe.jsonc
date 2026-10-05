@@ -1,19 +1,16 @@
 {
   "name": "PelletRecipe",
-  "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "description": "Nama resep pelet"
+    "created_by": {
+      "type": "string"
     },
-    "yield_kg": {
-      "type": "number",
-      "description": "Hasil pelet per resep (kg)"
+    "dosis_gram": {
+      "description": "Takaran satu ekor per hari, dalam GRAM. Dipakai layar resep untuk menghitung berapa tiap bahan yang benar-benar masuk ke satu ekor sehari \u2014 satu-satunya angka yang bisa dibandingkan dengan rentang rujukan. Sebelum kolom ini ada, layar memakai 15 g yang ditulis mati untuk SEMUA resep: salah untuk Duta Repro v7 (10 g) dan 50x meleset untuk resep kapsul (0,3 g).",
+      "type": "number"
     },
     "ingredients": {
-      "type": "array",
+      "description": "Daftar bahan (minimal 1 bahan wajib)",
       "items": {
-        "type": "object",
         "properties": {
           "item_id": {
             "type": "string"
@@ -27,13 +24,25 @@
           "unit": {
             "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "description": "Daftar bahan (minimal 1 bahan wajib)"
+      "type": "array"
+    },
+    "is_active": {
+      "default": true,
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Nama resep pelet",
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
     },
     "output_item_id": {
-      "type": "string",
-      "description": "Barang tujuan hasil produksi (WarehouseItem atau FeedStock). Duta Repro masuk ke VIT-REP00. Bila kosong, dicari lewat nama yang sama persis \u2014 pencocokan yang mudah meleset, jadi sebaiknya diisi."
+      "description": "Barang tujuan hasil produksi (WarehouseItem atau FeedStock). Duta Repro masuk ke VIT-REP00. Bila kosong, dicari lewat nama yang sama persis \u2014 pencocokan yang mudah meleset, jadi sebaiknya diisi.",
+      "type": "string"
     },
     "preparation_steps": {
       "type": "string"
@@ -42,23 +51,18 @@
       "type": "number"
     },
     "shelf_life_days": {
-      "type": "number",
-      "description": "Daya tahan (hari)"
+      "description": "Daya tahan (hari)",
+      "type": "number"
     },
-    "notes": {
-      "type": "string"
-    },
-    "created_by": {
-      "type": "string"
-    },
-    "is_active": {
-      "type": "boolean",
-      "default": true
+    "yield_kg": {
+      "description": "Hasil pelet per resep (kg)",
+      "type": "number"
     }
   },
   "required": [
     "name",
     "yield_kg",
     "ingredients"
-  ]
+  ],
+  "type": "object"
 }
