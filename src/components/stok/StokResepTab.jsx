@@ -366,6 +366,23 @@ export default function StokResepTab({ role }) {
   const canEdit = ["owner", "manajer", "admin", "kepala_feeder"].includes(role);
 
   const { data: recipes = [], isLoading } = useQuery({ queryKey: ["pellet-recipes"], queryFn: () => base44.entities.PelletRecipe.list("-created_date") });
+
+  /*
+    Resep yang DIPAKAI dipisahkan dari yang diarsipkan.
+
+    Pada 5 Okt 2026 ada enam resep berjejer sama rata di layar ini: Duta Repro
+    v7 yang dipakai, arsip v4, arsip generasi pertama, dan tiga resep kapsul
+    yang sudah tidak dibuat. Pemiliknya menyebutnya sendiri — "pakai satu
+    supaya ndak bingung". Resep yang salah diracik bukan kesalahan ketik; ia
+    menghasilkan 28 kg bubuk yang diberikan ke 93 betina selama sebulan.
+
+    Arsipnya tidak dihapus: angka resep lama adalah satu-satunya catatan
+    kenapa resep sekarang begini, dan pernah hilang sekali saat v4 ditimpa v5.
+    Ia hanya tidak lagi berdiri sejajar dengan yang dipakai.
+  */
+  const resepDipakai = recipes.filter(bolehDiracik);
+  const resepArsip = recipes.filter((r) => !bolehDiracik(r));
+  const [arsipTerbuka, setArsipTerbuka] = useState(false);
   const { data: productions = [] } = useQuery({ queryKey: ["pellet-productions"], queryFn: () => base44.entities.PelletProduction.list("-production_date", 100) });
   const { data: feedItems = [] } = useQuery({ queryKey: ["feedstocks", "-name", 300], queryFn: () => base44.entities.FeedStock.list("-name", 300) });
   const { data: warehouseItems = [] } = useQuery({ queryKey: ["warehouse-items", "-created_date", 300], queryFn: () => base44.entities.WarehouseItem.list("-created_date", 300) });
@@ -403,12 +420,12 @@ export default function StokResepTab({ role }) {
 
       <Tabs defaultValue="resep">
         <TabsList>
-          <TabsTrigger value="resep">Daftar Resep ({recipes.length})</TabsTrigger>
+          <TabsTrigger value="resep">Daftar Resep ({resepDipakai.length})</TabsTrigger>
           <TabsTrigger value="produksi">Riwayat Produksi ({productions.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resep" className="mt-4">
-          {recipes.length === 0 ? (
+          {resepDipakai.length === 0 && resepArsip.length === 0 ? (
             <Card className="py-12 text-center text-muted-foreground">
               <FlaskConical className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p>Belum ada resep pelet</p>
@@ -416,7 +433,7 @@ export default function StokResepTab({ role }) {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recipes.map(r => (
+              {(arsipTerbuka ? [...resepDipakai, ...resepArsip] : resepDipakai).map(r => (
                 <Card key={r.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -475,12 +492,23 @@ export default function StokResepTab({ role }) {
                     itu baru terlihat kalau dosisnya ditampilkan.
                   */}
                   {(() => {
-                    const h = periksaResep(r, 15);
+                    // Dosisnya milik RESEPNYA, bukan layar ini. Sebelum kolom
+                    // `dosis_gram` ada, angka 15 ditulis mati di sini dan
+                    // dipakai untuk SEMUA resep: salah untuk Duta Repro v7
+                    // (10 g) dan 50x meleset untuk resep kapsul (0,3 g) —
+                    // sehingga kolom yang justru dipasang untuk menangkap
+                    // salah takar malah menampilkan angka yang salah sendiri.
+                    const dosis = Number(r.dosis_gram) || 0;
+                    const h = periksaResep(r, dosis);
                     if (!h) return null;
                     return (
                       <div className="mt-3 pt-3 border-t space-y-1">
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-muted-foreground">Per 15 g (satu ekor sehari)</span>
+                          <span className="text-muted-foreground">
+                            {dosis > 0
+                              ? `Per ${dosis} g (satu ekor sehari)`
+                              : "Takaran harian belum diisi — isi kolom dosis supaya angka per ekor bisa dihitung"}
+                          </span>
                           {!h.seimbang && (
                             <span className="text-amber-700 font-medium">
                               jumlah bahan {h.jumlahKg.toFixed(3)} kg ≠ hasil {h.hasilKg} kg
@@ -512,7 +540,18 @@ export default function StokResepTab({ role }) {
               ))}
             </div>
           )}
-        </TabsContent>
+            {resepArsip.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setArsipTerbuka((v) => !v)}
+                className="mt-4 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                {arsipTerbuka
+                  ? `Sembunyikan ${resepArsip.length} resep arsip`
+                  : `Lihat ${resepArsip.length} resep arsip (tidak boleh diracik)`}
+              </button>
+            )}
+          </TabsContent>
 
         <TabsContent value="produksi" className="mt-4 space-y-3">
           {productions.length === 0 ? (

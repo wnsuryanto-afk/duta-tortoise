@@ -236,65 +236,81 @@ if (B.diracikSendiri({ id: "apa-saja" }, B.idBarangRacikan([])) !== false) {
 /* ── 5. Resep racikan: dosis per ekor, dan bahan mikro ─────────────── */
 
 /*
- * Duta Repro v5 memakai Vitamin D3 2,5 g dalam batch 21.000 g —
- * 0,0119%. Angka itu menentukan 179 IU per ekor per hari, dan resepnya
+ * Duta Repro v7 FINAL memakai Vitamin D3 4,6 g dalam batch 28.000 g —
+ * 0,0164%. Angka itu menentukan 164 IU per ekor per hari, dan resepnya
  * sendiri menuliskan batasnya.
  *
- * Mengetik 25 g alih-alih 2,5 melipatgandakan dosisnya SEPULUH KALI dan
- * hanya menggeser jumlah adonan 0,110% — di bawah ambang kewajaran mana
+ * Mengetik 46 g alih-alih 4,6 melipatgandakan dosisnya SEPULUH KALI dan
+ * hanya menggeser jumlah adonan 0,148% — di bawah ambang kewajaran mana
  * pun. Jadi pemeriksaan "jumlahnya cocok atau tidak" TIDAK menangkapnya,
  * justru KARENA bahannya mikro.
  *
  * Yang diuji di sini: angka per dosis yang dihitung harus cocok dengan
- * tabel resmi v5, DAN salah ketik sepuluh kali lipat harus terlihat di
+ * tabel resmi v7, DAN salah ketik sepuluh kali lipat harus terlihat di
  * angka itu meski jumlahnya masih dianggap seimbang.
  */
-const V5 = {
-  yield_kg: 21,
+const V7 = {
+  yield_kg: 28,
   ingredients: [
-    { item_name: "Tepung hijauan — VIT-REP20", quantity_kg: 11.398 },
-    { item_name: "Kalsium karbonat — VIT-REP07", quantity_kg: 5.25 },
-    { item_name: "Moringa — VIT-REP03", quantity_kg: 4.2 },
-    { item_name: "Vitamin E 50% — VIT-REP01", quantity_kg: 0.15 },
-    { item_name: "Vitamin D3 — VIT-REP02", quantity_kg: 0.0025 },
+    { item_name: "Tepung hijauan — VIT-REP20", quantity_kg: 18.3254 },
+    { item_name: "Kalsium karbonat — VIT-REP07", quantity_kg: 9.52 },
+    { item_name: "Vitamin E asetat 50% — VIT-REP01", quantity_kg: 0.15 },
+    { item_name: "Vitamin D3 — VIT-REP02", quantity_kg: 0.0046 },
   ],
 };
-const hasilV5 = R.periksaResep(V5, 15);
+const DOSIS_V7 = 10;
+const hasilV7 = R.periksaResep(V7, DOSIS_V7);
 const dekat = (a, b, toleransi) => Math.abs(a - b) <= toleransi;
 
-// Angka resmi dari dokumen v5 FINAL, tabel bagian 1 dan 2.
+// Angka resmi dari dokumen "Duta Repro — review resep awal & formulasi
+// final" (5 Okt 2026), bagian 4.
 const RESMI = [
-  ["Tepung hijauan", 54.27, 8.14],
-  ["Kalsium karbonat", 25.00, 3.75],
-  ["Moringa", 20.00, 3.00],
-  ["Vitamin E 50%", 0.71, 0.11],
-  ["Vitamin D3", 0.0119, 0.0018],
+  ["Tepung hijauan", 65.45, 6.54],
+  ["Kalsium karbonat", 34.00, 3.40],
+  ["Vitamin E asetat 50%", 0.536, 0.05],
+  ["Vitamin D3", 0.0164, 0.00164],
 ];
-if (!hasilV5) {
-  temuan.push("periksaResep: tidak bisa membaca resep v5");
+if (!hasilV7) {
+  temuan.push("periksaResep: tidak bisa membaca resep v7");
 } else {
-  if (!hasilV5.seimbang) temuan.push(`periksaResep: v5 dianggap tidak seimbang (selisih ${hasilV5.selisihPersen.toFixed(3)}%)`);
+  if (!hasilV7.seimbang) temuan.push(`periksaResep: v7 dianggap tidak seimbang (selisih ${hasilV7.selisihPersen.toFixed(3)}%)`);
   RESMI.forEach(([nama, persen, perDosis], i) => {
-    const b = hasilV5.bahan[i];
+    const b = hasilV7.bahan[i];
     if (!dekat(b.persen, persen, 0.01)) {
-      temuan.push(`periksaResep: "${nama}" ${b.persen.toFixed(4)}%, dokumen v5 menulis ${persen}%`);
+      temuan.push(`periksaResep: "${nama}" ${b.persen.toFixed(4)}%, dokumen v7 menulis ${persen}%`);
     }
     if (!dekat(b.perDosisGram, perDosis, 0.005)) {
-      temuan.push(`periksaResep: "${nama}" ${b.perDosisGram.toFixed(4)} g per dosis, dokumen v5 menulis ${perDosis} g`);
+      temuan.push(`periksaResep: "${nama}" ${b.perDosisGram.toFixed(5)} g per dosis, dokumen v7 menulis ${perDosis} g`);
     }
   });
-  const d3 = hasilV5.bahan[4];
+  const d3 = hasilV7.bahan[3];
   if (!d3.mikro) temuan.push("periksaResep: Vitamin D3 tidak ditandai bahan mikro — pengenceran bertingkat jadi tidak diingatkan");
-  if (hasilV5.bahan[0].mikro) temuan.push("periksaResep: pembawa utama salah ditandai bahan mikro");
+  if (hasilV7.bahan[0].mikro) temuan.push("periksaResep: pembawa utama salah ditandai bahan mikro");
+
+  // Kandungan per ekor per hari, angka yang dibandingkan dengan rentang
+  // rujukan. Kalsium karbonat 40,04% kalsium menurut massa molekulnya.
+  const caMg = hasilV7.bahan[1].perDosisGram * 1000 * 0.4004;
+  if (!dekat(caMg, 1360, 15)) temuan.push(`periksaResep: kalsium ${Math.round(caMg)} mg/ekor/hari, dokumen v7 menulis 1.360 mg`);
+  const d3IU = hasilV7.bahan[3].perDosisGram * 100000;
+  if (!dekat(d3IU, 164, 2)) temuan.push(`periksaResep: vitamin D3 ${d3IU.toFixed(1)} IU/ekor/hari, dokumen v7 menulis 164 IU`);
+  const eMg = hasilV7.bahan[2].perDosisGram * 1000 * 0.5;
+  if (!dekat(eMg, 26.8, 0.5)) temuan.push(`periksaResep: vitamin E aktif ${eMg.toFixed(1)} mg/ekor/hari, dokumen v7 menulis 26,8 mg`);
 }
 
-// Salah ketik sepuluh kali lipat pada D3.
-const SALAH = { ...V5, ingredients: V5.ingredients.map((b) =>
-  b.item_name.includes("D3") ? { ...b, quantity_kg: 0.025 } : b) };
-const hasilSalah = R.periksaResep(SALAH, 15);
-const d3Salah = hasilSalah.bahan[4].perDosisGram * 1000;
-if (!(d3Salah > 17 && d3Salah < 19)) {
-  temuan.push(`periksaResep: salah ketik D3 10x seharusnya terlihat sebagai ~17,8 mg per dosis, terbaca ${d3Salah.toFixed(2)} mg`);
+// Salah ketik sepuluh kali lipat pada D3: 4,6 g diketik 46 g.
+//
+// Jumlah adonannya hanya bergeser 0,148% — di bawah ambang kewajaran, jadi
+// pemeriksaan keseimbangan tetap menganggapnya wajar. Yang harus berteriak
+// adalah angka per dosisnya.
+const SALAH = { ...V7, ingredients: V7.ingredients.map((b) =>
+  b.item_name.includes("D3") ? { ...b, quantity_kg: 0.046 } : b) };
+const hasilSalah = R.periksaResep(SALAH, DOSIS_V7);
+if (!hasilSalah.seimbang) {
+  temuan.push("periksaResep: salah ketik D3 10x ternyata tertangkap pemeriksaan keseimbangan — ujinya jadi tidak membuktikan apa pun");
+}
+const d3Salah = hasilSalah.bahan[3].perDosisGram * 1000;
+if (!(d3Salah > 16 && d3Salah < 17)) {
+  temuan.push(`periksaResep: salah ketik D3 10x seharusnya terlihat sebagai ~16,4 mg per dosis, terbaca ${d3Salah.toFixed(2)} mg`);
 }
 
 /* ── 6. Golongan stok: yang diracik tidak pernah "perlu dibeli" ────── */
@@ -1130,6 +1146,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v5 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);
