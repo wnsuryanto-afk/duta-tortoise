@@ -89,9 +89,10 @@ export function perluDiperhatikan(item) {
  *
  * ── Kenapa aturan ini ada di sini ───────────────────────────────────
  *
- * RACIKAN Duta Repro (VIT-REP00) adalah hasil resep dari lima bahan, bukan
- * barang yang bisa dipesan ke mana pun. Ia bertanda wajib-ada dengan minimum
- * 3.000 g dan stoknya nol, jadi setiap saringan "di bawah minimum" menangkapnya
+ * RACIKAN Duta Repro (VIT-REP00) adalah hasil resep, bukan barang yang bisa
+ * dipesan ke mana pun. Ia bertanda wajib-ada dengan minimum 6.500 g — sekitar
+ * tujuh hari pada dosis v7 — dan stoknya nol, jadi setiap saringan
+ * "di bawah minimum" menangkapnya
  * dan menyebutnya perlu dibeli.
  *
  * Pemiliknya sudah membatalkan baris belanjanya DUA KALI dengan keterangan

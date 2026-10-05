@@ -61,13 +61,31 @@ Poin kedua yang membuatnya berarti: tanpa itu, melucuti aturannya akan tetap
 hijau. Diuji — dan memang begitu: mengganti syaratnya dengan `if (false)`
 membuat pemeriksaan "harus dua temuan" merah.
 
-## Yang TIDAK saya ubah, dan alasannya
+## Minimum racikan jadi: 3.000 → 6.500 g
 
-**Minimum racikan jadi (`VIT-REP00`) tetap 3.000 g.** Dengan dosis v7 10 g ×
-93 betina = **930 g per hari**, 3.000 g berarti peringatan menyala saat tersisa
-**3,2 hari** — sementara batch berikutnya butuh menimbang, mencampur bertingkat,
-dan mengemas 30 kantong.
+Ini satu-satunya angka yang saya tanyakan lebih dulu, karena ia bukan koreksi
+angka yang salah melainkan keputusan tentang **kapan pemilik mau
+diperingatkan**. Jawabannya: naikkan ke 6.500 g.
 
-Secara hitungan, peringatan seminggu (±6.500 g) lebih masuk akal. Tetapi itu
-keputusan tentang **kapan Anda mau diperingatkan**, bukan koreksi angka yang
-salah — jadi saya biarkan dan menanyakannya.
+Dasarnya:
+
+```
+dosis v7          10 g per ekor per hari
+betina            93 ekor
+pemakaian harian  930 g
+batch             28.000 g  = 30,1 hari
+
+minimum 3.000 g → peringatan menyala saat tersisa 3,2 hari
+minimum 6.500 g → peringatan menyala saat tersisa 7,0 hari
+```
+
+Tiga hari tidak cukup: batch berikutnya butuh menimbang empat bahan dengan
+timbangan 0,01 g, dua tahap pengenceran bertingkat, pengadukan 15 menit, dan
+pengemasan 30 kantong — dan bila salah satu bahannya ternyata kurang, ia harus
+**dibeli** dulu.
+
+Angka 3.000 g juga masih tertulis di satu perlengkapan uji dan tiga komentar
+kode yang menjelaskan keadaan nyata. Keempatnya diperbarui: komentar yang
+menyebut ambang yang sudah tidak berlaku akan menyesatkan orang berikutnya yang
+membacanya, meskipun perilakunya sendiri sudah benar karena ambangnya memang
+ada di data, bukan di kode.

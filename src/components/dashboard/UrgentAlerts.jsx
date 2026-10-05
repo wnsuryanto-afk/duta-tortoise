@@ -69,7 +69,7 @@ export default function UrgentAlerts() {
   /*
    * Resep diambil untuk tahu barang mana yang DIRACIK, bukan dibeli.
    *
-   * RACIKAN Duta Repro (VIT-REP00) wajib-ada, minimum 3.000 g, stok 0 — jadi
+   * RACIKAN Duta Repro (VIT-REP00) wajib-ada, minimum 6.500 g, stok 0 — jadi
    * ia lolos ke `perluDibeli` dan kartu ini menyuruh membeli barang yang tidak
    * dijual di mana pun. Aturannya sudah ada sejak 01-10-2026 tetapi hanya di
    * kartu Keputusan Hari Ini; kartu ini melewatinya.

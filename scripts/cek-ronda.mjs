@@ -193,8 +193,8 @@ for (const [nama, j, harap] of jadwalUji) {
 /* ── 4. Barang yang diracik sendiri tidak ditawarkan untuk dibeli ──── */
 
 /*
- * VIT-REP00 "RACIKAN Vitamin Reproduksi Betina" dibuat dari 12 bahan,
- * bukan dipesan. Stoknya nol dan batas minimumnya 3.000 g, jadi penilai
+ * VIT-REP00 "RACIKAN Vitamin Reproduksi Betina" DIRACIK, bukan dipesan.
+ * Stoknya nol dan batas minimumnya 6.500 g, jadi penilai
  * stok menandainya gawat dan tombol beranda memasukkannya ke daftar
  * belanja seperti barang biasa.
  *
@@ -379,7 +379,7 @@ if (!(d3Salah > 16 && d3Salah < 17)) {
  */
 const RACIKAN_JADI = "6a50c9c9d70aed0d5b585621";
 const stokUji = [
-  { id: RACIKAN_JADI, name: "RACIKAN Duta Repro v5", current_stock: 0, minimum_stock: 3000, is_mandatory: true },
+  { id: RACIKAN_JADI, name: "RACIKAN Duta Repro v7", current_stock: 0, minimum_stock: 6500, is_mandatory: true },
   { id: "6a50c9c9d70aed0d5b585615", name: "Vitamin E 50% (bahan)", current_stock: 0, minimum_stock: 160, is_mandatory: true },
   { id: "menipis-1", name: "Barang menipis", current_stock: 5, minimum_stock: 10, is_mandatory: true },
   { id: "tanpa-min", name: "Wajib tanpa minimum", current_stock: 0, minimum_stock: 0, is_mandatory: true },
@@ -387,7 +387,7 @@ const stokUji = [
 const nama = (d) => d.map((i) => i.name).sort().join(" | ");
 
 const g1 = S.golonganStok(stokUji, idRacikan);
-if (nama(g1.perluDiracik) !== "RACIKAN Duta Repro v5") {
+if (nama(g1.perluDiracik) !== "RACIKAN Duta Repro v7") {
   temuan.push(`golonganStok: perluDiracik seharusnya hanya barang jadi, terbaca "${nama(g1.perluDiracik)}"`);
 }
 if (nama(g1.habis) !== "Vitamin E 50% (bahan)") {
