@@ -93,3 +93,61 @@ situ ada jalur yang menulis tanpa diperiksa.
 2. **Susu soya:** baris B (`6ac248e4…`) hampir pasti duplikat — baris A punya
    `reference_id`, kategori benar, dan tanggal yang masuk akal. Perlu izin
    untuk menghapus baris B.
+
+---
+
+## Tambahan 5 Okt: aturan "ganda di tanggal yang sama" — tidak ada yang kena
+
+Seluruh 140 baris `FinanceTransaction` diperiksa, dikelompokkan menurut
+**tanggal + nominal yang sama**. Yang ketemu hanya ini:
+
+| Tanggal | Nominal | Jumlah baris | Isinya |
+|---|---|---|---|
+| 16 Jun | Rp 9.000.000 | 2 | Penjualan B18 dan B85 |
+| 21 Jun | Rp 285.000 | 4 | BB-2026006, 008, 009, 011 |
+| 21 Jun | Rp 356.250 | 5 | BB-2026005, 007, 010, 012, 023 |
+| 21 Jun | Rp 403.750 | 15 | BB-2026001 … 027 |
+| 9 Jul | Rp 9.522.500 | 4 | Penjualan B24, B93, B116, B122 |
+| 24 Agu | Rp 475.000 | 2 | BB-2026029 dan BB-2026041 |
+| 25 Agu | Rp 466.666 | 3 | BB-2026034, 040, 042 |
+| 17 Jun | Rp 34.000 | 2 | solar 5 liter dan rokok — barang berbeda |
+
+**Semuanya penjualan kura yang berbeda**, masing-masing punya `reference_id`
+dan kode BB sendiri. Menghapus salah satunya berarti menghapus penjualan yang
+betul-betul terjadi. Jadi tidak ada satu pun baris yang dihapus.
+
+Dua duplikat yang nyata justru **tanggalnya berbeda**, sehingga tidak tertangkap
+aturan itu.
+
+### Kamera Xiaomi — bukti barunya lebih jelas
+
+Pada 4 Oktober ada **tiga** sesi pindai nota berturut-turut:
+
+| Jam | Baris | Toko |
+|---|---|---|
+| 12:39:00 | susu soya Rp 130.700 | Mustika Djamue |
+| 12:39:38 | **kamera Rp 1.298.000** + Proteksi Elektronik Rp 60.000 | Xiaomi Smart Life Official Store |
+| 12:42:10 | kap lampu 199.497 · **kamera 1.298.000** · tulang sotong 90.000 · sulfadiazine 66.884 · cangkul 179.998 | "Multiple" |
+
+Sesi 12:42:10 bertoko **"Multiple"** — itu tangkapan layar **daftar pesanan**
+yang memuat beberapa toko sekaligus. Sesi 12:39:38 adalah tangkapan layar
+**satu pesanan** dari toko Xiaomi, lengkap dengan biaya proteksi
+elektroniknya. Kameranya ada di keduanya.
+
+Jadi ini satu pembelian yang **dipindai dua kali** — sekali dari daftar, sekali
+dari rinciannya. Bukan dua kamera.
+
+**Usul:** hapus baris `6ac249a28211b1ea450b805e` ("Multiple", 13 Sep) dan
+kembalikan tanggal baris yang disimpan ke **13 September 2026** — itu tanggal
+pesanan sebenarnya, yang terbaca dari daftar pesanan. Baris yang disimpan punya
+nama toko yang jelas dan pasangannya (biaya proteksi).
+
+Keduanya perlu izin: yang satu menghapus catatan keuangan, yang satu mengubah
+tanggal yang baru saja diperintahkan jadi 4 Oktober.
+
+### Susu soya — usul: hapus `6ac248e4faaa703aa9999e6b`
+
+Baris satunya (`6aa972fd…`, 15 Sep) punya `reference_id` ke pesanannya,
+kategori `vitamin_suplemen` yang benar, dan dicatat lewat alur pembelian.
+Baris `6ac248e4…` adalah pindai ulang pesanan yang sama: tanpa `reference_id`,
+kategori `lainnya`, tanggal salah dua tahun.

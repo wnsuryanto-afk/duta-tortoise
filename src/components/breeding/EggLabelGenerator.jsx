@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { teksTray } from "@/lib/trayTelur";
+import { labelRingkasHTML, PALET_TERMAL } from "@/components/breeding/labelRingkas";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -89,14 +90,14 @@ function buildLabelHTML(breeding, sizeDef, mode) {
 }
 
 async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
-  if (mode === "color") return renderColorLabelHTML(breeding, sizeDef, tortoises);
+  if (mode === "color") return renderColorLabelHTML(breeding, sizeDef);
   const { wPx, hPx, F, S, qrText } = buildLabelHTML(breeding, sizeDef, mode);
   const qrDataUrl = await QRCode.toDataURL(qrText, {
     width: 400, margin: 1, color: { dark: "#000000", light: "#ffffff" },
   });
 
   const d = breeding.egg_laying_date ? new Date(breeding.egg_laying_date) : null;
-  const tglStr = d ? d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "—";
+  const tglStr = d ? format(d, "d MMM yyyy", { locale: idLocale }) : "—";
   const hs = breeding.estimated_hatch_start ? new Date(breeding.estimated_hatch_start) : null;
   const he = breeding.estimated_hatch_end ? new Date(breeding.estimated_hatch_end) : null;
   const hatchStr = hs && he
@@ -119,6 +120,14 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
   const femaleLine = `${breeding.female_name || "—"}${femaleEnc !== "—" ? ` · ${femaleEnc}` : ""}`;
   const compact = !sizeDef.full;
 
+  // Gulungan yang ada di peternakan cuma 30×15 dan 50×30, jadi INI label termal
+  // yang sebenarnya dicetak — versi 100×50 di bawah hanya hidup kalau nanti ada
+  // gulungan seukuran itu. Tata letaknya milik bersama dengan label warna;
+  // alasan tiap pembuangan dan pembesaran tertulis di labelRingkas.js.
+  if (compact) {
+    return labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, PALET_TERMAL);
+  }
+
   const dotted = (w) => `<span style="display:inline-block;border-bottom:1.5px dotted ${T.border};width:${F(w)}px;height:1em;vertical-align:bottom">&nbsp;</span>`;
   const infoRow = (icon, label, value) => `<div style="display:flex;align-items:center;gap:${F(6)}px;font-size:${F(13)}px;line-height:1.3;color:${T.ink}">
     <span style="flex-shrink:0">${svgIcon(icon, T.icon)}</span>
@@ -127,33 +136,32 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
 
   const pita = `<div style="background:${T.pitaBg};color:${T.pitaFg};text-align:center;font-weight:800;font-size:${F(S.pita)}px;letter-spacing:1px;padding:${F(S.pPad)}px ${F(S.pPad * 2)}px;flex-shrink:0">DUTA TORTOISE — KOTAK TELUR</div>`;
 
-  const mainRow = `<div style="display:flex;align-items:center;gap:${F(compact ? 8 : 12)}px;padding:${F(compact ? 5 : 10)}px ${F(S.pad)}px ${F(compact ? 6 : 14)}px;flex-shrink:0">
+  const mainRow = `<div style="display:flex;align-items:center;gap:${F(12)}px;padding:${F(10)}px ${F(S.pad)}px ${F(14)}px;flex-shrink:0">
     <div style="flex:1 1 auto;font-weight:900;font-size:${F(S.kode)}px;color:${T.ink};line-height:1.12;padding-bottom:${F(Math.round(S.kode * 0.22))}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${parentCode}</div>
-    <div style="border:${F(compact ? 1.5 : 2.5)}px solid ${T.eggBorder};background:${T.eggBg};border-radius:${F(6)}px;padding:${F(compact ? 3 : 5)}px ${F(compact ? 7 : 12)}px;text-align:center;flex-shrink:0">
+    <div style="border:${F(2.5)}px solid ${T.eggBorder};background:${T.eggBg};border-radius:${F(6)}px;padding:${F(5)}px ${F(12)}px;text-align:center;flex-shrink:0">
       <div style="font-weight:900;font-size:${F(S.egg)}px;line-height:1.12;padding-bottom:${F(Math.round(S.egg * 0.2))}px;color:${T.ink}">${eggNum}</div>
       <div style="font-size:${F(S.eggLbl)}px;font-weight:700;letter-spacing:1px;color:${T.ink}">BUTIR</div>
     </div>
   </div>`;
 
-  const candlingBox = `<div style="border:${F(compact ? 2 : 3)}px solid ${T.candBorder};background:${T.candBg};border-radius:${F(6)}px;padding:${F(compact ? 6 : 10)}px ${F(compact ? 7 : 12)}px ${F(compact ? 5 : 10)}px;margin:${F(compact ? 5 : 8)}px ${F(S.pad)}px;flex-shrink:0">
-    <div style="display:flex;align-items:center;gap:${F(compact ? 8 : 12)}px">
+  const candlingBox = `<div style="border:${F(3)}px solid ${T.candBorder};background:${T.candBg};border-radius:${F(6)}px;padding:${F(10)}px ${F(12)}px ${F(10)}px;margin:${F(8)}px ${F(S.pad)}px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:${F(12)}px">
       <div style="flex:1;min-width:0">
         <div style="font-weight:800;font-size:${F(S.cTitle)}px;letter-spacing:0.5px;color:${T.candText}">CANDLING HARI KE-30</div>
         <div style="font-weight:900;font-size:${F(S.cDate)}px;line-height:1.15;padding-bottom:${F(Math.round(S.cDate * 0.24))}px;margin-top:${F(2)}px;color:${T.candText};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cdStr}</div>
       </div>
-      <div style="width:${F(S.cBox)}px;height:${F(S.cBox)}px;border:${F(compact ? 2 : 3)}px solid ${T.candBorder};background:#fff;flex-shrink:0"></div>
+      <div style="width:${F(S.cBox)}px;height:${F(S.cBox)}px;border:${F(3)}px solid ${T.candBorder};background:#fff;flex-shrink:0"></div>
     </div>
   </div>`;
 
-  const lateMargin = compact ? [4, 6, 0] : [4, S.pad, 0];
+  const lateMargin = [4, S.pad, 0];
   const lateRibbon = late
-    ? `<div style="background:${T.lateBg};color:${T.lateFg};text-align:center;font-weight:800;font-size:${F(compact ? 9 : 11)}px;letter-spacing:1px;padding:${F(2)}px ${F(4)}px;margin:${lateMargin.map((n) => F(n)).join("px ")}px;flex-shrink:0">${compact ? "⚠ CANDLING TERLAMBAT" : "⚠ CANDLING TERLAMBAT — periksa segera"}</div>`
+    ? `<div style="background:${T.lateBg};color:${T.lateFg};text-align:center;font-weight:800;font-size:${F(11)}px;letter-spacing:1px;padding:${F(2)}px ${F(4)}px;margin:${lateMargin.map((n) => F(n)).join("px ")}px;flex-shrink:0">⚠ CANDLING TERLAMBAT — periksa segera</div>`
     : "";
 
+  // Hanya versi 100×50 yang sampai ke sini; versi ringkas sudah pulang di atas.
   let leftContent;
-  if (compact) {
-    leftContent = `${mainRow}${candlingBox}${lateRibbon}`;
-  } else {
+  {
     const infoTable = `<div style="border-top:1.5px solid ${T.border};margin:0 ${F(S.pad)}px;flex-shrink:0"></div>
       <div style="display:flex;gap:${F(14)}px;padding:${F(7)}px ${F(S.pad)}px;flex-shrink:0">
         <div style="flex:1;display:flex;flex-direction:column;gap:${F(5)}px">
@@ -175,7 +183,7 @@ async function renderLabelHTML(breeding, sizeDef, mode, tortoises = []) {
     leftContent = `${mainRow}${infoTable}${candlingBox}${lateRibbon}${suhuRow}${footer}`;
   }
 
-  const qrCol = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:${F(compact ? 6 : 8)}px;flex-shrink:0;border-left:1px solid ${T.qrBorder};background:#fff">
+  const qrCol = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:${F(8)}px;flex-shrink:0;border-left:1px solid ${T.qrBorder};background:#fff">
     <img src="${qrDataUrl}" width="${F(S.qr)}" height="${F(S.qr)}" style="display:block" />
     <div style="font-size:${F(S.qrLbl)}px;color:${T.ink};text-align:center;margin-top:${F(3)}px;font-weight:600">Pindai untuk rincian</div>
   </div>`;
@@ -214,17 +222,43 @@ async function renderLabelPng(breeding, sizeDef, mode, tortoises = []) {
   return htmlToPng(html, wPx, hPx);
 }
 
-// Lembar A4 (210×297 mm @ 300 DPI), 2 kolom × 5 baris label 100×50 mm, khusus mode warna
-async function renderA4SheetPng(breedings, tortoises = []) {
+/**
+ * Lembar A4 (210 × 297 mm @ 300 DPI) berisi label sebanyak yang muat.
+ *
+ * ── Kenapa ini ditulis ulang ───────────────────────────────────────────────
+ *
+ * Fungsi ini dulu memaksa ukuran 100×50 mm: `SIZE_DEFS.find(s => s.id ===
+ * "100x50")` ditulis mati di dalamnya. Pilihan ukuran di layar tidak sampai ke
+ * sini sama sekali. Jadi memilih "50 × 30 mm" lalu menekan "Lembar A4" tetap
+ * menghasilkan label 100×50 — pilihan yang kelihatan berpengaruh tapi tidak.
+ *
+ * Label 100×50 mm menutupi hampir seluruh sisi depan kotak telur yang bening,
+ * sehingga telurnya tidak bisa dilihat tanpa membuka kotaknya. Itu persis yang
+ * dikeluhkan 5 Okt 2026, dan jalur inilah yang mencetaknya.
+ *
+ * Sekarang jumlah kolom dan barisnya dihitung dari milimeter ukuran yang
+ * DIPILIH, jadi satu lembar memuat 10 label pada 100×50, 36 pada 50×30, dan 45
+ * pada 40×30 — tanpa satu pun percabangan per ukuran.
+ */
+export function rencanaLembarA4(sizeDef) {
+  const def = sizeDef || SIZE_DEFS.find((s) => s.id === "50x30");
+  const kolom = Math.max(1, Math.floor(200 / def.w));
+  const baris = Math.max(1, Math.floor(281 / def.h));
+  return { kolom, baris, muat: kolom * baris };
+}
+
+async function renderA4SheetPng(breedings, tortoises = [], sizeDef) {
   const dpi = 300;
   const mm = (v) => Math.round((v * dpi) / 25.4);
   const wA4 = mm(210), hA4 = mm(297);
-  const labelDef = SIZE_DEFS.find((s) => s.id === "100x50");
-  const lw = mm(100), lh = mm(50);
-  const marginX = mm(5); // 5mm horizontal agar 2×100mm muat di 210mm
-  const marginY = mm(8);
+  const labelDef = sizeDef || SIZE_DEFS.find((s) => s.id === "50x30");
+  const lw = mm(labelDef.w), lh = mm(labelDef.h);
 
-  const labels = breedings.slice(0, 10);
+  const { kolom, baris } = rencanaLembarA4(labelDef);
+  const marginX = Math.round((wA4 - kolom * lw) / 2);
+  const marginY = Math.round((hA4 - baris * lh) / 2);
+
+  const labels = breedings.slice(0, kolom * baris);
   const labelHtmls = [];
   for (const b of labels) {
     labelHtmls.push(await renderLabelHTML(b, labelDef, "color", tortoises));
@@ -232,19 +266,22 @@ async function renderA4SheetPng(breedings, tortoises = []) {
 
   const cells = [];
   for (let i = 0; i < labels.length; i++) {
-    const col = i % 2, row = Math.floor(i / 2);
+    const col = i % kolom, row = Math.floor(i / kolom);
     const x = marginX + col * lw, y = marginY + row * lh;
     cells.push(`<div style="position:absolute;left:${x}px;top:${y}px;width:${lw}px;height:${lh}px;overflow:hidden">${labelHtmls[i]}</div>`);
   }
-  // Garis potong putus-putus
+
+  // Garis potong putus-putus, satu per sekat kolom dan baris.
   const cuts = [];
-  cuts.push(`<div style="position:absolute;left:${marginX + lw}px;top:${marginY}px;border-left:1px dashed #999;height:${5 * lh}px;width:0"></div>`);
-  for (let j = 1; j < 5; j++) {
-    cuts.push(`<div style="position:absolute;left:${marginX}px;top:${marginY + j * lh}px;border-top:1px dashed #999;width:${2 * lw}px;height:0"></div>`);
+  for (let c = 1; c < kolom; c++) {
+    cuts.push(`<div style="position:absolute;left:${marginX + c * lw}px;top:${marginY}px;border-left:1px dashed #999;height:${baris * lh}px;width:0"></div>`);
+  }
+  for (let r = 1; r < baris; r++) {
+    cuts.push(`<div style="position:absolute;left:${marginX}px;top:${marginY + r * lh}px;border-top:1px dashed #999;width:${kolom * lw}px;height:0"></div>`);
   }
 
   const html = `<div style="width:${wA4}px;height:${hA4}px;background:#fff;position:relative;font-family:Arial,Helvetica,sans-serif;overflow:hidden">${cuts.join("")}${cells.join("")}</div>`;
-  return htmlToPng(html, wA4, hA4);
+  return { dataUrl: await htmlToPng(html, wA4, hA4), muat: kolom * baris, kolom, baris };
 }
 
 function fileStem(b) {
@@ -271,6 +308,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     ? SIZE_DEFS
     : SIZE_DEFS.filter((s) => ADA_GULUNGANNYA.has(s.id));
   const sizeDef = ukuranBoleh.find((s) => s.id === sizeId) || ukuranBoleh[0];
+  const lembarA4 = rencanaLembarA4(sizeDef);
   const colorMode = printerMode === "color";
 
   const handleGenerate = async () => {
@@ -320,7 +358,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     setA4Generating(true);
     setA4Done(false);
     try {
-      const dataUrl = await renderA4SheetPng(allActiveBreedings.length ? allActiveBreedings : breedings, tortoises);
+      const { dataUrl } = await renderA4SheetPng(allActiveBreedings.length ? allActiveBreedings : breedings, tortoises, sizeDef);
       const tag = format(new Date(), "ddMMyyyy", { locale: idLocale });
       triggerDownload(dataUrl, `lembar-A4-label-telur-${tag}.png`);
       setA4Done(true);
@@ -376,8 +414,8 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
             </Select>
             <p className="text-[11px] text-muted-foreground mt-1">
               {sizeDef.full
-                ? "Label lengkap: pita, kode induk, jumlah telur, tabel info, kotak candling, suhu, kaki."
-                : "Versi ringkas: pita, kode induk, jumlah telur, candling, QR."}
+                ? "Lengkap: nama induk, nomor tray, perkiraan menetas besar, jumlah telur, candling, QR."
+                : "Ringkas: nama induk + nomor tray, perkiraan menetas besar, jumlah telur, candling, QR. Muat di kotak telur tanpa menutupi telurnya."}
               {printerMode !== "color" && ukuranBoleh.length < SIZE_DEFS.length && (
                 <> Hanya ukuran yang ada gulungannya yang ditampilkan; ukuran lain dicetak
                 lewat mode warna di kertas A4 lalu dipotong.</>
@@ -408,7 +446,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
           )}
           {colorMode && (
             <p className="text-[11px] text-center text-muted-foreground">
-              A4 tegak (210×297 mm) · 2 kolom × 5 baris = maks. 10 label 100×50 mm · garis putus-putus panduan gunting
+              A4 tegak (210×297 mm) · {lembarA4.kolom} kolom × {lembarA4.baris} baris = maks. {lembarA4.muat} label {sizeDef.w}×{sizeDef.h} mm · garis putus-putus panduan gunting
             </p>
           )}
         </div>
