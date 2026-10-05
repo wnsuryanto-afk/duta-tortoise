@@ -45,11 +45,23 @@ const NADA = {
 function Ubin({ ke, onKlik, ikon: Ikon, label, nilai, sub, nada = "biasa", lebar = false }) {
   const isi = (
     <>
-      <div className="flex items-center gap-1.5 min-w-0">
-        {Ikon && <Ikon className="w-3.5 h-3.5 flex-shrink-0 opacity-80" />}
-        <span className="text-[11px] font-medium opacity-80 truncate">{label}</span>
+      <div className="flex items-start gap-1.5 min-w-0">
+        {Ikon && <Ikon className="w-3.5 h-3.5 flex-shrink-0 opacity-80 mt-px" />}
+        {/*
+          Dulu `truncate`: satu baris, sisanya dipotong. Di kolom sempit itu
+          menyisakan satu huruf — "Nilai stok" jadi "N…", "Pergerakan hari ini"
+          jadi "P…". Label yang tinggal satu huruf bukan label.
+          Sekarang ia boleh turun ke baris kedua; yang dibatasi jumlah
+          barisnya, bukan lebarnya.
+        */}
+        <span className="text-[11px] font-medium opacity-80 leading-tight line-clamp-2">{label}</span>
       </div>
-      <div className={cn("font-bold tabular-nums leading-tight mt-0.5", lebar ? "text-xl" : "text-base")}>
+      {/*
+        Angkanya tidak boleh patah di tengah. "Rp 9.455.201" yang pecah jadi
+        "Rp" lalu "9.455.201", dan "+65 / -0" jadi "+65" lalu "/ -0", terbaca
+        seperti dua hal.
+      */}
+      <div className={cn("font-bold tabular-nums leading-tight mt-1 whitespace-nowrap overflow-hidden text-ellipsis", lebar ? "text-xl" : "text-base")}>
         {nilai}
       </div>
       {sub && <div className="text-[10px] opacity-75 leading-tight mt-0.5 line-clamp-2">{sub}</div>}
@@ -105,7 +117,29 @@ export default function RingkasanAngka({ ubin = [] }) {
   if (terurut.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-4">
+    /*
+      Kolomnya dihitung dari lebar WADAH, bukan dari lebar layar.
+
+      Sebelumnya: grid-cols-2 sm:grid-cols-3 lg:grid-cols-4. Titik henti
+      Tailwind membaca lebar LAYAR, sedangkan ubin ini hidup di dalam kepala
+      halaman yang lebarnya bisa jauh lebih sempit daripada layarnya — di
+      panel pratinjau iPad, layar terbaca "lg" sementara wadahnya hanya
+      selebar ponsel. Hasilnya empat kolom selebar 150px: label terpangkas
+      jadi satu huruf dan angkanya patah dua baris.
+
+      `auto-fit` + `minmax` tidak punya titik henti sama sekali; ia membagi
+      ruang yang BENAR-BENAR ada, berapa pun lebar layarnya.
+
+      `grid-auto-flow: dense` menutup lubangnya. Ubin mendesak memakai dua
+      kolom, jadi pada jumlah kolom ganjil selalu tersisa satu petak yang
+      tidak muat diisi ubin mendesak berikutnya — itulah ruang kosong besar
+      di sebelah "Stok kritis" pada 5 Okt 2026. Dengan `dense`, ubin satu
+      kolom mundur mengisinya.
+    */
+    <div
+      className="grid gap-2 mt-4"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gridAutoFlow: "dense" }}
+    >
       {terurut.map(({ kunci, tingkat, ...sisa }) => (
         <Ubin key={kunci} lebar={tingkat === "mendesak"} {...sisa} />
       ))}

@@ -37,7 +37,7 @@ function MiniCard({ label, value, icon: Icon, urgent = false, href }) {
         <Icon className="w-4 h-4" />
       </div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-xl font-bold mt-0.5 ${urgent ? "text-red-600" : "text-foreground"}`}>{value}</p>
+      <p className={`text-lg font-bold mt-0.5 leading-tight break-words ${urgent ? "text-red-600" : "text-foreground"}`}>{value}</p>
     </div>
   );
   if (href) return <Link to={href}>{inner}</Link>;
@@ -300,7 +300,13 @@ export default function AdminDashboard({ user, role = "admin" }) {
       {/* ── SECTION 2: STATUS HARI INI ── */}
       <div>
         <h2 className="font-semibold text-sm mb-3 text-foreground">Status Hari Ini</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+{/*
+          Kolomnya dari lebar WADAH, bukan lebar layar. `sm:`/`lg:` membaca
+          lebar LAYAR, jadi di dalam kolom sempit — panel sisi, atau aplikasi
+          yang dibuka di panel pratinjau iPad — kartunya tetap dibagi empat
+          dan tulisannya terpotong. Lihat cek-lebar.mjs bagian 2.
+        */}
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
           <MiniCard icon={Users} label="Absensi" value={`${hadirCount}/${totalStaff} hadir`} href="/rekap-poin-gaji?tab=harian" />
           <MiniCard icon={CheckCircle} label="Checklist"
             value={`${submittedCount} submit`}

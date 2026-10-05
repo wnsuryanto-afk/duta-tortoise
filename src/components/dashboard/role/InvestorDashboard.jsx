@@ -148,7 +148,13 @@ export default function InvestorDashboard({ user }) {
         <h2 className="font-heading font-semibold text-[15px] mb-3 flex items-center gap-2">
           <Shell className="w-4 h-4 text-primary" /> Populasi Kura-kura
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+{/*
+          Kolomnya dari lebar WADAH, bukan lebar layar. `sm:`/`lg:` membaca
+          lebar LAYAR, jadi di dalam kolom sempit — panel sisi, atau aplikasi
+          yang dibuka di panel pratinjau iPad — kartunya tetap dibagi empat
+          dan tulisannya terpotong. Lihat cek-lebar.mjs bagian 2.
+        */}
+        <div className="grid gap-3 stagger" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
           <StatCard label="Aktif" value={activeTortoises.length} icon={Shell}
             color="bg-accent/15 text-accent"
             sub="termasuk baby yang belum dijual"

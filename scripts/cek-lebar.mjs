@@ -142,9 +142,6 @@ for (let i = 0; i < nama.length; i++) {
   }
 }
 
-await peramban.close();
-tutup();
-
 if (temuan.length) {
   console.error(
     `${temuan.length} tulisan terpotong pada layar ${LEBAR}px.\n\n` +
@@ -155,7 +152,66 @@ if (temuan.length) {
     `mendatar pada induknya.\n\n` +
     temuan.map((t) => "  " + t).join("\n"),
   );
+  await peramban.close();
+  tutup();
   process.exit(1);
 }
-console.log(`Tidak ada tulisan terpotong (${nama.length} kasus pada layar ${LEBAR}px).`);
+
+/* ── Bagian 2: WADAH sempit di LAYAR lebar ───────────────────────────────
+ *
+ * Bagian di atas menyempitkan LAYARNYA. Itu tidak pernah bisa menangkap cacat
+ * yang dilaporkan 5 Okt 2026, karena di situ layarnya justru LEBAR.
+ *
+ * Titik henti Tailwind (`sm:`, `lg:`) membaca lebar LAYAR. Komponen yang
+ * hidup di dalam kolom sempit — kepala halaman, panel sisi, atau aplikasi
+ * yang dibuka di panel pratinjau iPad — tetap memakai tata letak "lg"
+ * meskipun ruang yang benar-benar ada selebar ponsel. Hasilnya di
+ * RingkasanAngka: empat kolom selebar 150px, "Nilai stok" terpangkas jadi
+ * "N…", "Pergerakan hari ini" jadi "P…", dan "Rp 9.455.201" patah dua baris.
+ *
+ * Layar 360px tidak melihatnya karena di situ titik hentinya memang kecil.
+ * Jadi di sini layarnya dibiarkan lebar, dan WADAHNYA yang disempitkan.
+ */
+const LEBAR_WADAH = [320, 420, 560, 720];
+const halaman2 = await peramban.newPage({ viewport: { width: 1280, height: 1000 } });
+await halaman2.goto(alamat, { waitUntil: "networkidle" });
+await halaman2.waitForTimeout(1500);
+
+const temuan2 = [];
+for (let i = 0; i < nama.length; i++) {
+  await halaman2.evaluate((n) => window.__pindah(n), i);
+  await halaman2.waitForTimeout(300);
+  for (const w of LEBAR_WADAH) {
+    await halaman2.evaluate((w) => {
+      const b = document.getElementById("bingkai");
+      if (b) { b.style.width = w + "px"; b.style.maxWidth = w + "px"; }
+    }, w);
+    await halaman2.waitForTimeout(250);
+    const hasil = await halaman2.evaluate(ukur, 1280);
+    const lihat = new Set();
+    for (const t of hasil) {
+      const kunci = t.jenis + "|" + t.teks;
+      if (lihat.has(kunci)) continue;
+      lihat.add(kunci);
+      temuan2.push(`${nama[i]}  wadah ${w}px  ${t.jenis} +${t.lebih}px  "${t.teks}"`);
+    }
+  }
+}
+
+await peramban.close();
+tutup();
+
+if (temuan2.length) {
+  console.error(
+    `${temuan2.length} tulisan terpotong di WADAH sempit (layar 1280px).\n\n` +
+    `Titik henti Tailwind membaca lebar LAYAR, bukan lebar wadahnya. Komponen\n` +
+    `yang hidup di kolom sempit tetap memakai tata letak layar lebar.\n\n` +
+    `Pakai lebar wadah: grid-template-columns: repeat(auto-fit, minmax(…, 1fr)),\n` +
+    `atau container query — bukan sm:/lg:.\n\n` +
+    temuan2.map((t) => "  " + t).join("\n"),
+  );
+  process.exit(1);
+}
+
+console.log(`Tidak ada tulisan terpotong (${nama.length} kasus pada layar ${LEBAR}px, dan pada wadah ${LEBAR_WADAH.join("/")}px di layar 1280px).`);
 process.exit(0);
