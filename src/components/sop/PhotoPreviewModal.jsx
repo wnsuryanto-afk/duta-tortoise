@@ -1,28 +1,29 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Clock } from "lucide-react";
+import TortoisePhotoLightbox from "@/components/tortoise/TortoisePhotoLightbox";
 
-export default function PhotoPreviewModal({ open, onClose, photoUrl, takenAt, taskTitle }) {
+/**
+ * PhotoPreviewModal — foto bukti SOP, dilihat besar.
+ *
+ * Dulu komponen ini punya dialognya sendiri: `max-w-md` dengan gambar `w-full`.
+ * Akibatnya foto TEGAK — dan foto bukti dari ponsel hampir selalu tegak —
+ * melebihi tinggi layar lalu terpotong, tanpa cara memperbesar atau menggeser.
+ *
+ * Sekarang ia meneruskan ke viewer yang sama dengan seluruh aplikasi:
+ * `object-contain` sehingga foto setinggi apa pun muat utuh, cubit untuk
+ * memperbesar, geser, dan tombol unduh. Nama dan props-nya sengaja tidak
+ * diubah supaya kedua pemanggilnya (SOPApproval, TugasHariIni) tidak ikut
+ * disentuh.
+ */
+export default function PhotoPreviewModal({ open, onClose, photoUrl, taskTitle }) {
+  if (!open || !photoUrl) return null;
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md p-0 overflow-hidden">
-        {taskTitle && (
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="text-sm">{taskTitle}</DialogTitle>
-          </DialogHeader>
-        )}
-        {photoUrl ? (
-          <div className="px-4 pb-4">
-            <img src={photoUrl} alt="Bukti foto" className="w-full rounded-xl" />
-            {takenAt && (
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Foto diambil pukul {takenAt}
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="p-8 text-center text-muted-foreground text-sm">Tidak ada foto</div>
-        )}
-      </DialogContent>
-    </Dialog>
+    <div data-pembesar-foto>
+      <TortoisePhotoLightbox
+        photos={[{ url: photoUrl }]}
+        startIndex={0}
+        tortoiseCode=""
+        tortoiseName={taskTitle || "bukti-foto"}
+        onClose={onClose}
+      />
+    </div>
   );
 }

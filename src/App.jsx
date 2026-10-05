@@ -8,6 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { ViewAsProvider } from '@/lib/ViewAsContext';
 import { TourProvider } from '@/lib/tourContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
+import PembesarFoto from '@/components/common/PembesarFoto';
 import StockPredictionPage from '@/pages/StockPredictionPage';
 import PettyCashPage from '@/pages/PettyCashPage';
 import SupplierPage from '@/pages/SupplierPage';
@@ -277,10 +278,18 @@ function App() {
         <ThemeProvider>
         <ViewAsProvider>
           <TourProvider>
-            <Router>
-              <AuthenticatedApp />
-            </Router>
-            <Toaster />
+            {/*
+              PembesarFoto dipasang SEKALI di sini, bukan di tiap layar: ia
+              mendengarkan klik di tingkat dokumen, jadi setiap gambar di
+              seluruh aplikasi bisa diketuk untuk dilihat besar tanpa 95
+              perubahan terpisah. Aturannya di lib/fotoBisaDiperbesar.js.
+            */}
+            <PembesarFoto>
+              <Router>
+                <AuthenticatedApp />
+              </Router>
+              <Toaster />
+            </PembesarFoto>
           </TourProvider>
         </ViewAsProvider>
         </ThemeProvider>
