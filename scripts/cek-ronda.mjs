@@ -297,6 +297,51 @@ if (!hasilV7) {
   if (!dekat(eMg, 26.8, 0.5)) temuan.push(`periksaResep: vitamin E aktif ${eMg.toFixed(1)} mg/ekor/hari, dokumen v7 menulis 26,8 mg`);
 }
 
+/*
+ * Minimum stok tiap bahan harus menutupi SATU BATCH.
+ *
+ * "Stok di atas minimum" dibaca orang sebagai "aman, bisa jalan". Untuk bahan
+ * racikan itu hanya benar kalau minimumnya sendiri setidaknya sebesar satu
+ * batch. Pada 5 Okt 2026 tidak: resep pindah ke v7 (batch 28 kg) sementara
+ * minimumnya tertinggal di ukuran v5 — tepung hijauan 12.000 g untuk kebutuhan
+ * 18.325 g, kalsium 5.500 g untuk kebutuhan 9.520 g. Peringatannya menyala
+ * terlambat, dan terlambat untuk bahan yang harus dibeli dulu berarti betina
+ * berhenti menerima racikannya.
+ */
+const BARANG_V7 = [
+  { id: "i-hijauan", sku: "VIT-REP20", name: "Tepung hijauan", minimum_stock: 18400 },
+  { id: "i-kalsium", sku: "VIT-REP07", name: "Kalsium karbonat", minimum_stock: 9600 },
+  { id: "i-vite", sku: "VIT-REP01", name: "Vitamin E", minimum_stock: 160 },
+  { id: "i-vitd", sku: "VIT-REP02", name: "Vitamin D3", minimum_stock: 10 },
+];
+const RESEP_V7_BERBARANG = {
+  yield_kg: 28,
+  ingredients: [
+    { item_id: "i-hijauan", item_name: "Tepung hijauan", quantity_kg: 18.3254 },
+    { item_id: "i-kalsium", item_name: "Kalsium karbonat", quantity_kg: 9.52 },
+    { item_id: "i-vite", item_name: "Vitamin E", quantity_kg: 0.15 },
+    { item_id: "i-vitd", item_name: "Vitamin D3", quantity_kg: 0.0046 },
+  ],
+};
+const kurangCukup = R.minimumTidakCukupSebatch(RESEP_V7_BERBARANG, BARANG_V7);
+if (kurangCukup.length > 0) {
+  for (const k of kurangCukup) {
+    temuan.push(`minimumTidakCukupSebatch: ${k.sku} minimum ${k.minimumGram} g < satu batch ${k.butuhGram} g`);
+  }
+}
+// Dan ia harus BISA merah: minimum ukuran v5 pada resep v7.
+const BARANG_V5 = BARANG_V7.map((b) =>
+  b.sku === "VIT-REP20" ? { ...b, minimum_stock: 12000 }
+  : b.sku === "VIT-REP07" ? { ...b, minimum_stock: 5500 } : b);
+const kurangV5 = R.minimumTidakCukupSebatch(RESEP_V7_BERBARANG, BARANG_V5);
+if (kurangV5.length !== 2) {
+  temuan.push(`minimumTidakCukupSebatch: minimum ukuran v5 seharusnya memberi 2 temuan, memberi ${kurangV5.length}`);
+}
+// Bahan yang tidak ada di gudang dilewati, bukan dianggap kurang.
+if (R.minimumTidakCukupSebatch(RESEP_V7_BERBARANG, []).length !== 0) {
+  temuan.push("minimumTidakCukupSebatch: bahan tanpa barang gudang seharusnya dilewati");
+}
+
 // Salah ketik sepuluh kali lipat pada D3: 4,6 g diketik 46 g.
 //
 // Jumlah adonannya hanya bergeser 0,148% — di bawah ambang kewajaran, jadi

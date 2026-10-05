@@ -109,3 +109,52 @@ export function bolehDiracik(resep) {
   if (!resep) return false;
   return resep.is_active !== false;
 }
+
+/**
+ * Bahan yang minimum stoknya TIDAK cukup untuk satu batch.
+ *
+ * ── Kenapa ini perlu diperiksa ─────────────────────────────────────────
+ *
+ * "Stok di atas minimum" dibaca orang sebagai "aman, bisa jalan". Untuk bahan
+ * racikan itu hanya benar kalau minimumnya sendiri setidaknya sebesar satu
+ * batch — kalau tidak, stok bisa berada di atas minimum dan meracik tetap
+ * tidak mungkin, tanpa satu pun peringatan yang menyala.
+ *
+ * Itu keadaannya pada 5 Okt 2026, setelah resep pindah dari v5 (batch 21 kg)
+ * ke v7 (batch 28 kg) sementara minimumnya tertinggal:
+ *
+ *   Tepung hijauan  minimum 12.000 g, satu batch butuh 18.325 g  (kurang 6.325)
+ *   Kalsium         minimum  5.500 g, satu batch butuh  9.520 g  (kurang 4.020)
+ *
+ * Minimum yang lebih kecil daripada satu batch adalah peringatan yang menyala
+ * terlambat — dan terlambat untuk bahan yang harus dibeli lebih dulu berarti
+ * betina berhenti menerima racikannya.
+ *
+ * @param {object} resep  PelletRecipe
+ * @param {Array}  barang daftar WarehouseItem { id, sku, name, minimum_stock }
+ * @returns {Array<{sku, nama, butuhGram, minimumGram, kurangGram}>}
+ */
+export function minimumTidakCukupSebatch(resep, barang = []) {
+  const bahan = Array.isArray(resep?.ingredients) ? resep.ingredients : [];
+  const olehId = new Map((barang || []).map((b) => [String(b?.id), b]));
+  const kurang = [];
+
+  for (const b of bahan) {
+    const item = olehId.get(String(b?.item_id));
+    if (!item) continue;
+    // quantity_kg SELALU kilogram, apa pun isi kolom `unit` — kolom itu hanya
+    // label tampilan. Stok gudang bahan racikan dicatat dalam gram.
+    const butuhGram = (Number(b?.quantity_kg) || 0) * 1000;
+    const minimumGram = Number(item?.minimum_stock) || 0;
+    if (butuhGram > 0 && minimumGram < butuhGram) {
+      kurang.push({
+        sku: item.sku || "",
+        nama: item.name || b.item_name || "",
+        butuhGram,
+        minimumGram,
+        kurangGram: butuhGram - minimumGram,
+      });
+    }
+  }
+  return kurang;
+}
