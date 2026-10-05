@@ -647,23 +647,35 @@ export default function BreedingAndEggs() {
                       </div>
                     </div>
 
-                    {/* Label kotak telur (status bertelur / inkubasi) */}
+                    {/*
+                      Label kotak telur (status bertelur / inkubasi).
+
+                      Seluruh jalurnya satu tombol, bukan cuma "Cetak Label" di
+                      ujung kanan: QR-nya KELIHATAN seperti bisa diklik — ia
+                      gambar desain yang sedang dibicarakan — dan sebelum ini
+                      mengkliknya tidak melakukan apa-apa. Sekarang di mana pun
+                      jalur ini ditekan, layar desain labelnya yang terbuka.
+                    */}
                     {clutchAktif(b) && (
-                      <div className="mt-3 flex items-center gap-3 p-2.5 rounded-xl bg-green-50/60 border border-green-200">
+                      <button
+                        type="button"
+                        onClick={() => { setLabelBreedings([b]); setShowLabelDialog(true); }}
+                        className="mt-3 w-full flex items-center gap-3 p-2.5 rounded-xl bg-green-50/60 border border-green-200 text-left transition hover:bg-green-100/70 hover:border-green-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700"
+                      >
                         <EggQRPreview id={b.id} size={52} />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-green-800">Label kotak telur siap</p>
-                          <p className="text-[11px] text-muted-foreground">Scan QR untuk buka rincian pembiakan</p>
+                          <p className="text-[11px] text-muted-foreground">Ketuk untuk lihat desain &amp; cetak</p>
                           {isCandlingLate(b) && (
                             <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-0.5">
                               <AlertTriangle className="w-3 h-3" /> Candling terlambat
                             </p>
                           )}
                         </div>
-                        <Button size="sm" variant="outline" className="gap-1 flex-shrink-0" onClick={() => { setLabelBreedings([b]); setShowLabelDialog(true); }}>
+                        <span className="inline-flex items-center gap-1 flex-shrink-0 rounded-lg border border-green-300 bg-white px-2.5 py-1.5 text-xs font-medium text-green-800">
                           <Printer className="w-3.5 h-3.5" /> Cetak Label
-                        </Button>
-                      </div>
+                        </span>
+                      </button>
                     )}
 
                     {/* Progress Bar Inkubasi */}
@@ -1095,7 +1107,6 @@ export default function BreedingAndEggs() {
         <EggLabelGenerator
           breedings={labelBreedings}
           allActiveBreedings={breedings.filter(clutchAktif)}
-          tortoises={tortoises}
           open={showLabelDialog}
           onClose={() => setShowLabelDialog(false)}
         />

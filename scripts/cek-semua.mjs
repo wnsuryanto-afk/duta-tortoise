@@ -112,11 +112,11 @@ process.stdout.write(`\n── eslint ${"─".repeat(40)}\n`);
 // `clickable` dan tidak pernah memakainya, dan FinancePage memanggil
 // useQueryClient() yang tidak menyegarkan apa pun.
 //
-// Memperbaiki 102 peringatan sekaligus bukan perbaikan, itu pengeditan massal
+// Memperbaiki 101 peringatan sekaligus bukan perbaikan, itu pengeditan massal
 // pada file yang tidak sedang dikerjakan. Jadi yang dijaga adalah ARAHNYA:
 // angkanya boleh turun, tidak boleh naik. Turunkan BATAS_PERINGATAN setiap
 // kali ada yang dibersihkan — penjaga ini akan memaksanya.
-const BATAS_PERINGATAN = 102;
+const BATAS_PERINGATAN = 101;
 
 let keluaranEslint = "";
 let eslintMelempar = false;

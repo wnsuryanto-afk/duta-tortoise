@@ -16,7 +16,7 @@
  * kembali diam-diam.
  */
 import { execFileSync } from "child_process";
-import { mkdtempSync, writeFileSync, rmSync } from "fs";
+import { mkdtempSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { fileURLToPath } from "url";
@@ -145,6 +145,63 @@ console.log(`  7 bagian wajib ada di ${UKURAN.length * CLUTCH.length} label.`);
 const htmlKosongTgl = labelRingkasHTML(CLUTCH[4].b, u0, QR, PALET_WARNA);
 if (/Invalid Date|NaN/.test(htmlKosongTgl)) salah("clutch tanpa tanggal mencetak Invalid Date/NaN");
 else console.log("Clutch tanpa tanggal: dicetak '—', bukan Invalid Date.");
+
+// ── 7. Lembar A4: angkanya satu, dan lembarnya tidak melewati kertas ──────
+//
+// "Berapa label per lembar" dulu ada dua kali — dihitung di penggambar, dan
+// DITULIS TETAP "2 kolom × 5 baris = 10" di keterangan bawah tombolnya. Yang
+// tertulis tidak ikut berubah saat ukurannya diganti. Sekarang satu fungsi,
+// dan penjaga ini memegang angkanya.
+const keluarLembar = join(tmp, "lembarLabel.cjs");
+execFileSync("npx", [
+  "esbuild", "src/lib/lembarLabel.js", "--bundle", "--format=cjs",
+  "--platform=node", `--alias:@=${akar}/src`, `--outfile=${keluarLembar}`,
+], { cwd: akar, stdio: "pipe" });
+const L = await import(`file://${keluarLembar}`).then((m) => m.default || m);
+
+console.log("Lembar A4:");
+for (const [id, muat] of [["50x30", 36], ["40x30", 45], ["100x50", 10]]) {
+  const def = L.cariUkuranTelur(id);
+  const r = L.rencanaLembarA4(def);
+  if (r.muat !== muat) salah(`${id}: ${r.kolom}×${r.baris} = ${r.muat} per lembar, bukan ${muat}`);
+}
+// Daerah cetak harus MENYISAKAN tepi di dalam A4 yang sebenarnya.
+//
+// Memeriksa `kolom × lebar <= daerah cetak` tidak ada gunanya: kolom memang
+// dihitung sebagai floor(daerah / lebar), jadi pertidaksamaannya benar menurut
+// definisi dan penjaganya tidak akan pernah bisa merah. Yang BISA salah adalah
+// daerah cetaknya sendiri disetel seluas kertas — printer inkjet rumahan tidak
+// mencetak sampai tepi, dan baris terluarnya terpotong.
+const A4_PENUH = { w: 210, h: 297 };
+if (L.A4_PAKAI_MM.w >= A4_PENUH.w || L.A4_PAKAI_MM.h >= A4_PENUH.h) {
+  salah(`daerah cetak ${L.A4_PAKAI_MM.w}×${L.A4_PAKAI_MM.h} mm tidak menyisakan tepi di dalam A4 ${A4_PENUH.w}×${A4_PENUH.h} mm — baris terluar akan terpotong printer`);
+}
+
+// Ukuran bawaan harus yang muat di kotak telur, bukan yang menutupinya.
+if (L.UKURAN_TELUR_BAWAAN !== "50x30") salah(`ukuran bawaan ${L.UKURAN_TELUR_BAWAAN}, bukan 50x30`);
+if (L.cariUkuranTelur("tidak-ada").id !== L.UKURAN_TELUR_BAWAAN) salah("id tak dikenal tidak jatuh ke ukuran bawaan");
+console.log(`  3 ukuran: 36 / 45 / 10 per lembar, tidak ada yang melewati ${L.A4_PAKAI_MM.w}×${L.A4_PAKAI_MM.h} mm.`);
+
+// ── 8. Kanvas lembar A4 harus muat di batas Safari iPad ───────────────────
+//
+// html2canvas dulu memakai scale 2 untuk SEMUANYA. Pada lembar A4 300 DPI
+// (2480×3508) hasilnya 4960×7016 ≈ 35 megapiksel, dan Safari di iPad memotong
+// kanvas di sekitar 16 megapiksel — lembarnya keluar KOSONG di perangkat yang
+// dipakai memesannya. Penjaga ini membaca scale yang benar-benar dioper.
+const BATAS_MP_IPAD = 16.7;
+const sumber = readFileSync(join(akar, "src/components/breeding/EggLabelGenerator.jsx"), "utf8");
+const cocokScale = sumber.match(/return htmlToPng\(html, wA4, hA4(?:, (\d+))?\)/);
+if (!cocokScale) {
+  salah("pemanggilan htmlToPng untuk lembar A4 tidak ditemukan — penjaga ini tidak bisa melihat apa pun");
+} else {
+  const skala = cocokScale[1] ? Number(cocokScale[1]) : 2;
+  const mp = (Math.round((210 * 300) / 25.4) * skala * Math.round((297 * 300) / 25.4) * skala) / 1e6;
+  if (mp > BATAS_MP_IPAD) {
+    salah(`lembar A4 digambar ${mp.toFixed(1)} megapiksel (scale ${skala}) — di atas batas Safari iPad ${BATAS_MP_IPAD} MP, lembarnya keluar kosong`);
+  } else {
+    console.log(`Kanvas lembar A4: ${mp.toFixed(1)} MP (scale ${skala}), di bawah batas Safari iPad ${BATAS_MP_IPAD} MP.`);
+  }
+}
 
 rmSync(tmp, { recursive: true, force: true });
 
