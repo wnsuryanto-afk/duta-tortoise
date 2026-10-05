@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import { daftarTray } from "@/lib/trayTelur";
-import { labelRingkasHTML, PALET_WARNA } from "@/components/breeding/labelRingkas";
+import { labelRingkasHTML, gayaBaris, PALET_WARNA } from "@/components/breeding/labelRingkas";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -74,44 +74,44 @@ export async function renderColorLabelHTML(breeding, sizeDef) {
 
   const kepala = `<div style="background:linear-gradient(90deg,#1B4332,#2D6A4F);padding:10px 16px;display:flex;align-items:center;gap:14px;flex-shrink:0">
     <div style="flex:1;display:flex;align-items:center;gap:11px">${ico("turtle", "#D8F3DC", 26)}
-      <div style="font-weight:800;font-size:26px;color:#fff;letter-spacing:1px;line-height:1.1">DUTA TORTOISE</div>
+      <div style="font-weight:800;color:#fff;letter-spacing:1px;${gayaBaris(26)}">DUTA TORTOISE</div>
     </div>
-    <div style="font-size:13px;color:#D8F3DC">bertelur ${tglShort}</div>
+    <div style="color:#D8F3DC;${gayaBaris(13)}">bertelur ${tglShort}</div>
     <div style="background:${adaTrayFull ? "#fff" : "#DC2626"};border-radius:9px;padding:4px 13px;text-align:center;line-height:1;flex-shrink:0">
-      <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:${adaTrayFull ? "#14532D" : "#fff"};opacity:.85">TRAY</div>
-      <div style="font-size:22px;font-weight:900;color:${adaTrayFull ? "#14532D" : "#fff"};margin-top:1px">${trayTeksFull}</div>
+      <div style="font-weight:800;letter-spacing:1.5px;color:${adaTrayFull ? "#14532D" : "#fff"};${gayaBaris(11)}">TRAY</div>
+      <div style="font-weight:900;color:${adaTrayFull ? "#14532D" : "#fff"};${gayaBaris(22)}">${trayTeksFull}</div>
     </div>
   </div>`;
 
-  const induk = `<div style="display:flex;align-items:stretch;gap:9px;padding:11px 16px 0;flex-shrink:0">
+  const induk = `<div style="display:flex;align-items:stretch;gap:9px;padding:0 16px;flex-shrink:0">
     <div style="flex:1;background:#DBEAFE;border:1.5px solid #3B82F6;border-radius:11px;padding:7px 12px;min-width:0">
-      <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#1D4ED8;letter-spacing:1px">${ico("mars", "#1D4ED8", 14)} JANTAN</div>
-      <div style="font-weight:900;font-size:34px;color:#1E3A8A;line-height:1.1;padding-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${maleName}</div>
+      <div style="display:flex;align-items:center;gap:5px;font-weight:800;color:#1D4ED8;letter-spacing:1px;${gayaBaris(11)}">${ico("mars", "#1D4ED8", 14)} JANTAN</div>
+      <div style="font-weight:900;color:#1E3A8A;${gayaBaris(42)}">${maleName}</div>
     </div>
     <div style="display:flex;align-items:center;flex-shrink:0">${ico("heart", "#E11D48", 18)}</div>
     <div style="flex:1;background:#FCE7F3;border:1.5px solid #EC4899;border-radius:11px;padding:7px 12px;min-width:0">
-      <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#BE185D;letter-spacing:1px">${ico("venus", "#BE185D", 14)} BETINA</div>
-      <div style="font-weight:900;font-size:34px;color:#831843;line-height:1.1;padding-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${femaleName}</div>
+      <div style="display:flex;align-items:center;gap:5px;font-weight:800;color:#BE185D;letter-spacing:1px;${gayaBaris(11)}">${ico("venus", "#BE185D", 14)} BETINA</div>
+      <div style="font-weight:900;color:#831843;${gayaBaris(42)}">${femaleName}</div>
     </div>
   </div>`;
 
-  const menetas = `<div style="display:flex;align-items:center;gap:12px;padding:11px 16px 0;flex-shrink:0;min-width:0">
+  const menetas = `<div style="display:flex;align-items:center;gap:12px;padding:0 16px;flex-shrink:0;min-width:0">
     <div style="flex:1;min-width:0">
-      <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:#2D6A4F;line-height:1">PERKIRAAN MENETAS</div>
-      <div style="font-size:44px;font-weight:900;color:#14532D;line-height:1.08;padding-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hs ? format(hs, "d MMM yyyy", { locale: idLocale }) : "—"}</div>
-      ${he ? `<div style="font-size:20px;font-weight:700;color:#40916C;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">s/d ${format(he, "d MMM yyyy", { locale: idLocale })}</div>` : ""}
+      <div style="font-weight:800;letter-spacing:1.5px;color:#2D6A4F;${gayaBaris(15)}">PERKIRAAN MENETAS</div>
+      <div style="font-weight:900;color:#14532D;${gayaBaris(64)}">${hs ? format(hs, "d MMM yyyy", { locale: idLocale }) : "—"}</div>
+      ${he ? `<div style="font-weight:700;color:#40916C;${gayaBaris(28)}">s/d ${format(he, "d MMM yyyy", { locale: idLocale })}</div>` : ""}
     </div>
     <div style="border:2px solid #166534;background:#DCFCE7;border-radius:11px;padding:7px 14px;text-align:center;flex-shrink:0">
-      <div style="font-weight:900;font-size:34px;color:#14532D;line-height:1.1;padding-bottom:4px">${eggNum}</div>
-      <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:#14532D">BUTIR</div>
+      <div style="font-weight:900;color:#14532D;${gayaBaris(46)}">${eggNum}</div>
+      <div style="font-weight:800;letter-spacing:1.5px;color:#14532D;${gayaBaris(11)}">BUTIR</div>
     </div>
   </div>`;
 
-  const candling = `<div style="margin:11px 16px 13px;background:${late ? "#FEE2E2" : "#FEF3C7"};border:2.5px solid ${late ? "#DC2626" : "#B45309"};border-radius:11px;padding:8px 12px;flex-shrink:0">
+  const candling = `<div style="margin:0 16px;background:${late ? "#FEE2E2" : "#FEF3C7"};border:2.5px solid ${late ? "#DC2626" : "#B45309"};border-radius:11px;padding:8px 12px;flex-shrink:0">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:800;font-size:13px;color:${late ? "#991B1B" : "#78350F"};letter-spacing:0.8px">CANDLING HARI KE-30</span>${late ? ico("alert", "#DC2626", 15) : ""}</div>
-        <div style="font-weight:900;font-size:26px;color:${late ? "#991B1B" : "#1F2937"};line-height:1.12;padding-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cdStr}${late ? " · TERLAMBAT" : ""}</div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:800;color:${late ? "#991B1B" : "#78350F"};letter-spacing:0.8px;display:inline-block;${gayaBaris(13)}">CANDLING HARI KE-30</span>${late ? ico("alert", "#DC2626", 15) : ""}</div>
+        <div style="font-weight:900;color:${late ? "#991B1B" : "#1F2937"};${gayaBaris(32)}">${cdStr}${late ? " · TERLAMBAT" : ""}</div>
       </div>
       <div style="width:34px;height:34px;border:2.5px solid ${late ? "#DC2626" : "#1F2937"};background:#fff;border-radius:5px;flex-shrink:0"></div>
     </div>
@@ -122,11 +122,11 @@ export async function renderColorLabelHTML(breeding, sizeDef) {
   </div>`;
 
   const body = `<div style="flex:1 1 auto;display:flex;flex-direction:row;min-height:0">
-    <div style="flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-between;min-width:0">${induk}${menetas}${candling}</div>
+    <div style="flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-evenly;padding:6px 0;min-width:0">${induk}${menetas}${candling}</div>
     ${qrCol}
   </div>`;
 
-  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;border:2px solid #2D6A4F;border-radius:12px;padding:0;box-sizing:border-box;display:flex;overflow:hidden">
+  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;font-family:Arial, Helvetica, sans-serif;border:2px solid #2D6A4F;border-radius:12px;padding:0;box-sizing:border-box;display:flex;overflow:hidden">
     <div style="flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden">${kepala}${body}</div>
   </div>`;
 }
