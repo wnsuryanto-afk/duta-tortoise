@@ -32,6 +32,7 @@ import { statusBonus } from "@/lib/bonus";
 import { tugasJatuhTempo } from "@/lib/kepatuhanSOP";
 import { masukLaporan } from "@/lib/laporan";
 import { rupiah } from "@/lib/rupiah";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 
 
 /**
@@ -50,14 +51,25 @@ export default function BonusBulanIni({ user, rinciTugas = true }) {
   const today = format(now, "yyyy-MM-dd");
   const monthKey = format(now, "yyyy-MM");
 
-  const { data: settings } = useQuery({
-    queryKey: ["company-settings"],
-    queryFn: async () => {
-      const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
-      return res[0] || null;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
+  /*
+    Dibaca lewat useCompanySettings(), bukan dengan useQuery sendiri.
+
+    Dulu berkas ini memakai queryKey ["company-settings"] dan mengembalikan
+    `res[0] || null` — SATU OBJEK. Enam belas berkas lain memakai kunci yang
+    sama persis dan mengembalikan ARRAY hasil filter. TanStack Query menyimpan
+    per kunci, jadi yang terakhir mengisi cache menentukan bentuknya untuk
+    semua pembaca:
+
+      · bentuk objek menang → `useTestMode` menjalankan `settings[0]` pada
+        objek (undefined, Mode Uji diam-diam mati) atau pada null (layar
+        penuh mati dengan "Cannot read properties of null");
+      · bentuk array menang → berkas ini membaca `settings?.min_poin_bulanan`
+        pada array, dapat undefined, dan jatuh ke angka bawaan tanpa suara.
+
+    Mana yang terjadi tergantung urutan komponen dipasang. useCompanySettings()
+    memakai kunci ["company-settings-main"] dan SELALU mengembalikan objek.
+  */
+  const settings = useCompanySettings();
 
   const { data: checklists = [] } = useQuery({
     queryKey: ["bonus-checklists", user?.email, monthKey],

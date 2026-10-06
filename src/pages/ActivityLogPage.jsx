@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import PageHeader from "@/components/common/PageHeader";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const ACTION_META = {
   create:   { label: "BUAT",      color: "bg-green-100 text-green-700 border-green-300",   icon: "➕" },
@@ -241,7 +242,7 @@ export default function ActivityLogPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid gap-3" style={kisiWadah(140)}>
         {[
           { label: "Total Aktivitas", val: stats.total, color: "text-foreground" },
           { label: "Buat", val: stats.create, color: "text-green-600" },

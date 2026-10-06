@@ -20,6 +20,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import { Link } from "react-router-dom";
 import { UKURAN_LABEL, UKURAN_BAWAAN, cariUkuran } from "@/lib/ukuranLabel";
 import PageHeader from "@/components/common/PageHeader";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 /**
  * Label yang benar-benar bisa dibuka dari suatu layar, beserta ukuran yang
@@ -666,7 +667,7 @@ export default function PrinterConfigPage() {
         <h2 className="font-heading font-semibold text-lg flex items-center gap-2">
           <Settings2 className="w-5 h-5 text-primary" /> Label yang bisa dicetak
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid gap-3" style={kisiWadah(240)}>
           {LABEL_TERSEDIA.map((t) => (
             <Link key={t.ke} to={t.ke}
               className="p-3.5 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors block">

@@ -10,6 +10,7 @@ import { TrendingUp, DollarSign, Package } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { rupiahSingkat } from "@/lib/rupiah";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 /** Bentuk ringkas yang sama dengan kartu stok dan sumbu grafik uang. */
 const ringkas = (n) => rupiahSingkat(n, { denganRp: false });
@@ -118,7 +119,7 @@ export default function LaporanPenjualanTab() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid gap-3" style={kisiWadah(140)}>
         {[
           { label: "Total Penjualan", val: filtered.length, icon: Package, color: "text-primary", sub: "transaksi" },
           { label: "Total Omzet", val: `Rp ${ringkas(totalOmzet)}`, icon: DollarSign, color: "text-primary" },

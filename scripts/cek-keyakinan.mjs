@@ -136,7 +136,86 @@ if (temuan.length) {
   );
 }
 
+// ── Bagian 3: usulan poin AI tidak dipakai mentah, dan tidak menyimpan sendiri ──
+//
+// Cacat yang sama dengan Bagian 1, hanya akibatnya lebih mahal: poin Inisiatif
+// berakhir menjadi uang (bonus poin dibayarkan tiap bulan). Model bahasa akan
+// dengan senang hati menjawab 12 ketika pilihannya 0/5/10/15, menjawab
+// "sepuluh", atau menjawab null — dan `Number(null)` adalah 0, yang BIASANYA
+// ada di daftar pilihan. Karena itu dua hal harus tetap benar:
+//
+//   1. jawaban model selalu lewat `bacaUsul()`, yang menggeser angkanya ke
+//      salah satu pilihan yang sah dan menandai bila digeser;
+//   2. berkas usulan TIDAK pernah menyimpan penilaian — ia hanya mengisi
+//      angka di layar. Yang menyimpan tetap `handleApproveExtra`, lewat
+//      tombol yang ditekan manusia.
+//
+// Pemeriksaan impor DAN pemakaian dua-duanya, bukan salah satu: penjaga foto
+// pernah tetap hijau ketika importnya dihapus, karena tag JSX-nya masih ada.
+const USUL = "src/components/sop/UsulPoinAI.jsx";
+const PEMAKAI = "src/components/sop/TugasHariIni.jsx";
+
+let isiUsul = "";
+try {
+  isiUsul = kupasKomentar(readFileSync(join(AKAR, USUL), "utf8"));
+} catch {
+  gagal++;
+  console.error(`GAGAL  ${USUL} tidak ada — usulan poin AI hilang dari aplikasi.`);
+}
+
+if (isiUsul) {
+  if (!/from\s+"@\/lib\/usulPoinInisiatif"/.test(isiUsul) || !/bacaUsul\s*\(/.test(isiUsul)) {
+    gagal++;
+    console.error(
+      `GAGAL  ${USUL} tidak memanggil bacaUsul() dari src/lib/usulPoinInisiatif.js.\n` +
+      `   Tanpa itu angka dari model dipakai apa adanya, termasuk angka di luar\n` +
+      `   daftar pilihan dan null yang terbaca sebagai 0.`
+    );
+  }
+  // Angka mentah dari model tidak boleh dibaca langsung di luar bacaUsul().
+  const mentah = isiUsul.match(/\bhasil\s*\??\.\s*poin\b/g) || [];
+  if (mentah.length) {
+    gagal++;
+    console.error(
+      `GAGAL  ${USUL} membaca angka poin langsung dari jawaban model ` +
+      `(${mentah.length} tempat).\n   Pakai hasil bacaUsul() saja.`
+    );
+  }
+  // Usulan tidak menyimpan apa pun. Kalau baris ini merah, AI sudah berhenti
+  // mengusulkan dan mulai memutuskan upah orang.
+  const menyimpan = [
+    [/MaintenanceLog/, "menyentuh MaintenanceLog"],
+    [/approval_status/, "menulis approval_status"],
+    [/poin_earned/, "menulis poin_earned"],
+  ].filter(([pola]) => pola.test(isiUsul)).map(([, k]) => k);
+  if (menyimpan.length) {
+    gagal++;
+    console.error(
+      `GAGAL  ${USUL} ${menyimpan.join(" dan ")}.\n` +
+      `   Usulan hanya mengisi angka di layar; yang menyimpan penilaian tetap\n` +
+      `   handleApproveExtra lewat tombol yang ditekan manusia.`
+    );
+  }
+}
+
+try {
+  const isiPemakai = kupasKomentar(readFileSync(join(AKAR, PEMAKAI), "utf8"));
+  const diimpor = /import\s+UsulPoinAI\s+from/.test(isiPemakai);
+  const dipakai = /<UsulPoinAI/.test(isiPemakai);
+  if (!diimpor || !dipakai) {
+    gagal++;
+    console.error(
+      `GAGAL  ${PEMAKAI} ${!diimpor ? "tidak mengimpor" : "mengimpor tetapi tidak memakai"} UsulPoinAI.\n` +
+      `   Baris penilaian Inisiatif kembali kosong, dan ratusan catatan lama\n` +
+      `   tidak pernah dinilai justru karena angkanya harus ditentukan dari nol.`
+    );
+  }
+} catch {
+  gagal++;
+  console.error(`GAGAL  ${PEMAKAI} tidak bisa dibaca.`);
+}
+
 if (gagal === 0) {
-  console.log(`Keyakinan AI terbaca pada skala yang benar (${TERSIMPAN.length} nilai nyata diperiksa, tidak ada perbandingan mentah).`);
+  console.log(`Keyakinan AI terbaca pada skala yang benar (${TERSIMPAN.length} nilai nyata diperiksa, tidak ada perbandingan mentah), dan usulan poin AI tetap usulan.`);
 }
 process.exit(gagal === 0 ? 0 : 1);

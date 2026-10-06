@@ -36,10 +36,12 @@ import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 import { masukLaporan } from "@/lib/laporan";
 import { simpanUkuranSekali, pesanSudahDitimbang } from "@/lib/ukurSekali";
 import { pisahJudulTugas } from "@/lib/judulTugas";
-import { opsiPoin, hitungPemberian, poinTerpakaiHari, maksHarian } from "@/lib/poinInisiatif";
+import { opsiPoin, hitungPemberian, poinTerpakaiHari, maksHarian, inisiatifMenunggu } from "@/lib/poinInisiatif";
+import UsulPoinAI from "@/components/sop/UsulPoinAI";
 import { peranPenyetuju, labelSebab } from "@/lib/persetujuanPoin";
 import InfoHint from "@/components/ui/info-hint";
 import { propsTekan } from "@/lib/a11y";
+import { barisAbsensiSah } from "@/lib/absensi";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
@@ -177,6 +179,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
   const [photoSavedIds, setPhotoSavedIds] = useState(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  // Berapa baris tunggakan Inisiatif yang ditampilkan sekaligus. Dibatasi
+  // karena setiap baris yang tampil meminta satu usulan poin ke AI: membuka
+  // 250 tunggakan sekaligus berarti 250 pemanggilan dalam satu tarikan.
+  const [jumlahTertunggak, setJumlahTertunggak] = useState(5);
 
   // ── Jeda minimum 60 detik antar pencentangan tugas SOP (anti centang beruntun) ──
   // Pengecualian: absensi, baris istirahat, dan tugas tambahan keeper (tidak konsumsi jeda).
@@ -264,7 +270,22 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     queryKey: ["attendance-today", user?.email, today],
     queryFn: async () => {
       const res = await base44.entities.Attendance.filter({ employee_email: user.email, date: today });
-      return res[0] || null;
+      /*
+        `barisAbsensiSah`, bukan `res[0]`.
+
+        Keempat pembaca absensi hari ini memakai kunci cache yang sama persis,
+        ["attendance-today", email, tanggal], jadi yang terakhir mengisi cache
+        menentukan baris mana yang dilihat SEMUA layar. Dua pembaca memakai
+        `barisAbsensiSah` — yang sengaja memilih check-in PALING AWAL ketika
+        satu orang punya baris absensi kembar — dan dua lainnya mengambil
+        `res[0]`, yakni urutan apa pun yang dikirim server.
+
+        Baris absensi kembar bukan kemungkinan teoretis di aplikasi ini; itulah
+        sebab `checkInSekali` dan `barisAbsensiSah` ada. Selama dua pembaca
+        memakai pemilih yang berbeda, jam masuk yang tampil di layar berpindah
+        mengikuti layar mana yang dibuka lebih dulu.
+      */
+      return barisAbsensiSah(res);
     },
     enabled: !!user?.email,
     staleTime: 2 * 60 * 1000,
@@ -949,14 +970,68 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const opsiInisiatif = opsiPoin(companySettings);
   const maksInisiatif = maksHarian(companySettings);
   const bolehMenilaiInisiatif = peranPenyetuju(companySettings).includes(user?.role);
+  // Dua saklar berbeda: `ai_saran_enabled` mengatur catatan AI untuk kiper,
+  // yang ini mengatur usulan poin untuk penilai. Menyatukannya berarti
+  // mematikan catatan kiper juga mematikan pengisian poin — dua hal yang tidak
+  // berhubungan.
+  const usulPoinAIAktif = companySettings.poin_tambahan_usul_ai !== false;
+
+  /*
+    ── Inisiatif yang menunggu dinilai dari hari-hari SEBELUMNYA ──
+
+    Sampai sekarang baris Inisiatif hanya dibangun dari log hari ini. Siapa pun
+    yang mencatat inisiatif hari Sabtu dan tidak kebetulan dilihat penilai hari
+    Sabtu itu juga, pekerjaannya tidak pernah bisa dinilai lagi — bukan karena
+    ditolak, tetapi karena layarnya tidak pernah menampilkannya lagi. Itulah
+    sebab utama ratusan catatan menumpuk dengan nol poin, dan `inisiatifMenunggu`
+    di lib/poinInisiatif.js ditulis untuk ini tetapi tidak pernah dipakai.
+
+    Satu permintaan untuk SELURUH catatan Inisiatif (bukan hanya yang menunggu):
+    kuota harian harus dihitung dari poin yang sudah dinilai pada TANGGAL log
+    itu, dan catatan yang sudah dinilai tidak ikut terbawa bila disaring lebih
+    dulu di server.
+  */
+  const { data: semuaExtra = [], refetch: refetchSemuaExtra } = useQuery({
+    queryKey: ["inisiatif-semua"],
+    queryFn: () => base44.entities.MaintenanceLog.filter({ is_extra: true }, "-period_key", 400),
+    enabled: !!bolehMenilaiInisiatif,
+    staleTime: 60 * 1000,
+  });
+
+  const tertunggak = useMemo(() => {
+    if (!bolehMenilaiInisiatif) return [];
+    return inisiatifMenunggu(semuaExtra).filter((l) => l.period_key !== today);
+  }, [bolehMenilaiInisiatif, semuaExtra, today]);
 
   const handleApproveExtra = async (log, poin, catatan) => {
+    /*
+      Kuota dihitung dari log yang DIAMBIL SEGAR untuk orang dan tanggal itu,
+      bukan dari daftar yang sudah ada di layar.
+
+      Dua alasan. Pertama, sejak tunggakan hari-hari sebelumnya ikut bisa
+      dinilai, `allLogsToday` tidak memuat tanggal log itu sama sekali — kuota
+      akan selalu terbaca penuh, dan batas harian berhenti berlaku untuk semua
+      penilaian tunggakan. Kedua, daftar di layar bisa berumur satu menit;
+      dua penilai yang menilai dua inisiatif orang yang sama pada menit yang
+      sama akan sama-sama melihat kuota yang sama dan melewatinya bersama.
+    */
+    let logsKuota = semuaExtra;
+    try {
+      logsKuota = await base44.entities.MaintenanceLog.filter({
+        done_by_email: log.done_by_email,
+        period_key: log.period_key,
+      });
+    } catch {
+      // Gagal mengambil yang segar bukan alasan menggagalkan penilaian; yang
+      // ada di layar tetap lebih baik daripada tidak menilai sama sekali.
+    }
+
     // Batas harian berlaku pada YANG MENERIMA, bukan pada yang menilai. Kalau
     // kuotanya sudah habis, tugasnya tetap tercatat dinilai — yang berubah
     // hanya poinnya, dan itu DIKATAKAN alih-alih dipotong diam-diam.
     const { diberikan, pesan } = hitungPemberian({
       diminta: poin,
-      logs: allLogsToday,
+      logs: logsKuota,
       email: log.done_by_email,
       tanggal: log.period_key,
       settings: companySettings,
@@ -1008,6 +1083,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     }
     refetchAllLogs();
     refetchLogs();
+    refetchSemuaExtra();
   };
 
   // ── RENDER ──
@@ -1237,18 +1313,65 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       {extraTasks.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1">Inisiatif</p>
-          {extraTasks.map(log => (
-            <ExtraTaskRow
-              key={log.id}
-              log={log}
-              showTeamView={showTeamView}
-              user={user}
-              onApprove={handleApproveExtra}
-              opsi={opsiInisiatif}
-              sisaKuota={Math.max(0, maksInisiatif - poinTerpakaiHari(allLogsToday, log.done_by_email, log.period_key, { kecualikanId: log.id }))}
-              bolehMenilai={bolehMenilaiInisiatif}
-            />
-          ))}
+          {extraTasks.map(log => {
+            const terpakaiHari = poinTerpakaiHari(allLogsToday, log.done_by_email, log.period_key, { kecualikanId: log.id });
+            return (
+              <ExtraTaskRow
+                key={log.id}
+                log={log}
+                showTeamView={showTeamView}
+                user={user}
+                onApprove={handleApproveExtra}
+                opsi={opsiInisiatif}
+                maks={maksInisiatif}
+                terpakaiHari={terpakaiHari}
+                sisaKuota={Math.max(0, maksInisiatif - terpakaiHari)}
+                bolehMenilai={bolehMenilaiInisiatif}
+                usulAIAktif={usulPoinAIAktif}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tunggakan Inisiatif — hanya untuk yang boleh menilai. */}
+      {tertunggak.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1">
+            Inisiatif menunggu dinilai · {tertunggak.length}
+          </p>
+          <p className="text-[11px] text-muted-foreground px-1">
+            Dari hari-hari sebelumnya. Sebelum ini hanya Inisiatif hari ini yang tampil,
+            jadi yang terlewat sehari tidak pernah bisa dinilai lagi.
+          </p>
+          {tertunggak.slice(0, jumlahTertunggak).map(log => {
+            const terpakaiHari = poinTerpakaiHari(semuaExtra, log.done_by_email, log.period_key, { kecualikanId: log.id });
+            return (
+              <ExtraTaskRow
+                key={log.id}
+                log={log}
+                showTeamView={showTeamView}
+                user={user}
+                onApprove={handleApproveExtra}
+                opsi={opsiInisiatif}
+                maks={maksInisiatif}
+                terpakaiHari={terpakaiHari}
+                sisaKuota={Math.max(0, maksInisiatif - terpakaiHari)}
+                bolehMenilai={bolehMenilaiInisiatif}
+                usulAIAktif={usulPoinAIAktif}
+                tampilkanTanggal
+              />
+            );
+          })}
+          {tertunggak.length > jumlahTertunggak && (
+            <button
+              type="button"
+              onClick={() => setJumlahTertunggak((n) => n + 5)}
+              className="w-full py-2 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:bg-muted/50"
+            >
+              Tampilkan 5 lagi ({tertunggak.length - jumlahTertunggak} belum tampil)
+            </button>
+          )}
         </div>
       )}
 
@@ -1667,7 +1790,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
  * `opsi`, `sisaKuota`, dan `bolehMenilai` dihitung di induknya dan diturunkan
  * sebagai prop: komponen ini tidak memegang kueri sendiri.
  */
-function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15], sisaKuota = 30, bolehMenilai = false }) {
+function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15], maks = 30, terpakaiHari = 0, sisaKuota = 30, bolehMenilai = false, usulAIAktif = true, tampilkanTanggal = false }) {
   const [poinPilih, setPoinPilih] = useState(null);
   const [catatan, setCatatan] = useState("");
   const isAdmin = bolehMenilai;
@@ -1690,7 +1813,9 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15
               {isPending && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">Menunggu penilaian</span>}
             </div>
             {log.extra_description && <p className="text-xs text-muted-foreground mt-0.5">{log.extra_description}</p>}
-            <p className="text-xs text-muted-foreground mt-0.5">oleh {log.done_by} · {log.done_at}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              oleh {log.done_by} · {tampilkanTanggal ? `${log.period_key} ` : ""}{log.done_at}
+            </p>
             {log.photo_url && <img src={log.photo_url} alt="Foto" className="w-16 h-12 rounded-lg object-cover border mt-1.5" />}
           </div>
 
@@ -1718,6 +1843,18 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15
             menilai pekerjaannya sendiri. */}
         {isAdmin && isPending && !milikSendiri && (
           <div className="mt-3 pt-3 border-t border-amber-200 space-y-2">
+            {/* Usulan AI di ATAS tombol poin: angkanya terisi sendiri, tetapi
+                alasannya terbaca sebelum penilai menekan simpan. */}
+            {usulAIAktif && (
+              <UsulPoinAI
+                log={log}
+                opsi={opsi}
+                maks={maks}
+                terpakaiHari={terpakaiHari}
+                onUsul={(p) => setPoinPilih((lama) => (lama === null ? p : lama))}
+                onPakai={(p) => setPoinPilih(p)}
+              />
+            )}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs text-muted-foreground mr-0.5">Beri poin:</span>
               {opsi.map((n) => (
@@ -1753,6 +1890,17 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15
                 Sisa kuota hari ini {sisaKuota} poin
               </span>
             </div>
+            {/* Dikatakan apa adanya kepada yang menilai. Poin Inisiatif
+                tersimpan di MaintenanceLog.poin_earned, dan satu-satunya layar
+                yang membacanya adalah "Poin Saya" milik kiper sendiri. Bonus
+                bulanan dan slip gaji menghitung poin dari DailyChecklist, jadi
+                angka yang diberikan di sini TIDAK menambah upah siapa pun
+                sampai jalurnya disambungkan. Penilai berhak tahu itu sebelum
+                menekan simpan. */}
+            <p className="text-[11px] text-muted-foreground">
+              Poin Inisiatif tampil di “Poin Saya” kiper; bonus bulanan dan slip gaji
+              belum menghitungnya.
+            </p>
           </div>
         )}
 

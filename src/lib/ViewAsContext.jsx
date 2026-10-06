@@ -51,6 +51,26 @@ export function ViewAsProvider({ children }) {
   );
 }
 
+/*
+ * Nilai bawaan, bukan null.
+ *
+ * Seluruh pemakai hook ini membongkar hasilnya langsung
+ * (`const { viewAsRole } = useViewAs()`), dan membongkar null melempar
+ * TypeError yang mematikan halaman — bukan menampilkan pesan, benar-benar
+ * halaman kosong. Di aplikasi penyedianya selalu ada di AppLayout, tetapi
+ * "selalu" yang bergantung pada susunan komponen bukan jaminan: satu
+ * halaman yang dirender di luar AppLayout sudah cukup.
+ */
+const TANPA_PENYEDIA = Object.freeze({
+  viewAsRole: null,
+  viewAsLabel: "",
+  viewAsUserEmail: "",
+  testSaveMode: false,
+  isViewingAs: false,
+  activateViewAs: () => {},
+  resetViewAs: () => {},
+});
+
 export function useViewAs() {
-  return useContext(ViewAsContext);
+  return useContext(ViewAsContext) || TANPA_PENYEDIA;
 }

@@ -371,7 +371,10 @@ export default function DeathRecordsPage() {
           </SelectContent>
         </Select>
         <Select value={filterCause} onValueChange={setFilterCause}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Penyebab" /></SelectTrigger>
+          {/* w-40 (160px) kurang 4px untuk "Semua Penyebab" berikut tanda
+              panahnya. Barisnya memang flex-wrap, jadi melebarkan pemicunya
+              tidak mendorong apa pun keluar tepi. */}
+          <SelectTrigger className="w-48"><SelectValue placeholder="Penyebab" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Penyebab</SelectItem>
             {Object.entries(DEATH_CAUSE_LABELS).map(([k, v]) => (
