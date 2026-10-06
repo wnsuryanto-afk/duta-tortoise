@@ -64,7 +64,9 @@ bundel("src/lib/peringkatIndukan.js", "peringkat.cjs");
 bundel("src/lib/rekapTahunan.js", "tahunan.cjs");
 bundel("src/lib/tanggalMasukAkal.js", "tanggal.cjs");
 bundel("src/lib/hasilInkubasi.js", "hasil.cjs");
+bundel("src/lib/hppKura.js", "hpp.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
+const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -340,6 +342,50 @@ if (kurangV5.length !== 2) {
 // Bahan yang tidak ada di gudang dilewati, bukan dianggap kurang.
 if (R.minimumTidakCukupSebatch(RESEP_V7_BERBARANG, []).length !== 0) {
   temuan.push("minimumTidakCukupSebatch: bahan tanpa barang gudang seharusnya dilewati");
+}
+
+/* ── Ongkos kirim: hanya yang ditanggung PENJUAL yang masuk HPP ──────────
+ *
+ * Sebelum 6 Okt 2026 ongkir selalu ditambahkan ke HPP, jadi setiap penjualan
+ * dihitung seolah peternakan yang membayar kurirnya. Padahal sering pembeli
+ * yang menanggung — entah membayar kurir langsung, entah menggantinya ke
+ * peternakan — dan pada kedua cara itu pengaruhnya ke laba NOL.
+ *
+ * Yang diuji di sini termasuk bawaannya: penjualan lama tidak punya kolom
+ * `ongkir_ditanggung`, dan angkanya tidak boleh berubah surut.
+ */
+const ongkirUji = [
+  ["ditanggung penjual", 50000, "penjual", 50000],
+  ["ditanggung pembeli", 50000, "pembeli", 0],
+  ["kolom kosong (penjualan lama)", 50000, undefined, 50000],
+  ["nilai teks", "50000", "penjual", 50000],
+  ["nilai kosong", "", "pembeli", 0],
+  ["nilai tak masuk akal", "abc", "penjual", 0],
+];
+for (const [nama, nilai, ditanggung, harap] of ongkirUji) {
+  const nyata = ditanggung === undefined
+    ? HPP.ongkirUntukHpp(nilai)
+    : HPP.ongkirUntukHpp(nilai, ditanggung);
+  if (nyata !== harap) {
+    temuan.push(`ongkirUntukHpp: ${nama} -> ${nyata}, seharusnya ${harap}`);
+  }
+}
+
+// Dan lewat penghitung HPP yang sesungguhnya: totalnya harus ikut berubah.
+const kuraUji = { id: "k1", purchase_price: 400000, acquisition_date: "2026-01-01" };
+const hppPenjual = HPP.hitungHppKura({ kura: kuraUji, tarifPerBulan: 0, ongkir: 50000, ongkirDitanggung: "penjual", tanggalJual: "2026-01-01" });
+const hppPembeli = HPP.hitungHppKura({ kura: kuraUji, tarifPerBulan: 0, ongkir: 50000, ongkirDitanggung: "pembeli", tanggalJual: "2026-01-01" });
+if (hppPenjual.total - hppPembeli.total !== 50000) {
+  temuan.push(`hitungHppKura: selisih penjual vs pembeli ${hppPenjual.total - hppPembeli.total}, seharusnya 50000`);
+}
+// Nilai aslinya tetap dilaporkan supaya layar bisa menulis "dibayar pembeli".
+if (hppPembeli.ongkirNilai !== 50000 || hppPembeli.ongkir !== 0) {
+  temuan.push(`hitungHppKura: ongkir ditanggung pembeli seharusnya ongkirNilai 50000 & ongkir 0, terbaca ${hppPembeli.ongkirNilai} & ${hppPembeli.ongkir}`);
+}
+// Tanpa kolomnya sama sekali = perilaku lama.
+const hppLama = HPP.hitungHppKura({ kura: kuraUji, tarifPerBulan: 0, ongkir: 50000, tanggalJual: "2026-01-01" });
+if (hppLama.total !== hppPenjual.total) {
+  temuan.push(`hitungHppKura: penjualan tanpa kolom ongkir_ditanggung berubah angkanya (${hppLama.total} vs ${hppPenjual.total})`);
 }
 
 // Salah ketik sepuluh kali lipat pada D3: 4,6 g diketik 46 g.
@@ -1191,6 +1237,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

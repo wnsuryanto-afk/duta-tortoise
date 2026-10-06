@@ -183,12 +183,51 @@ export function cariClutchBayi(breedings = [], kura) {
  * perawatan  — lama di peternakan (bulan pecahan) x tarif per ekor per bulan.
  * ongkir     — biaya kirim penjualan ini.
  */
+/**
+ * Berapa dari ongkos kirim yang benar-benar masuk HPP.
+ *
+ * Satu aturan, satu tempat. Sebelum ini jumlahnya ditulis ulang di tiga
+ * tempat — di dalam hitungHppKura, di pratinjau laba SaleForm, dan sekali lagi
+ * saat SaleForm menyimpan — dan ketiganya menambahkan ongkir tanpa syarat.
+ * Rumus yang disalin adalah rumus yang akan berbeda-beda saat salah satunya
+ * diubah.
+ *
+ * @param {number|string} ongkir
+ * @param {"penjual"|"pembeli"} ditanggung  kosong/tidak dikenal = "penjual",
+ *        karena itulah perilaku sebelum kolomnya ada; penjualan lama tidak
+ *        boleh berubah angkanya surut.
+ * @returns {number}
+ */
+export function ongkirUntukHpp(ongkir, ditanggung = "penjual") {
+  return ditanggung === "pembeli" ? 0 : angka(ongkir);
+}
+
 export function hitungHppKura({
   kura,
   breedings = [],
   tarifPerBulan = 0,
   hargaBeliInput = null,
   ongkir = 0,
+  /**
+   * Siapa yang menanggung ongkos kirim: "penjual" atau "pembeli".
+   *
+   * ── Kenapa ini perlu ada ──────────────────────────────────────────────
+   *
+   * Sebelum ini ongkir SELALU ditambahkan ke HPP, jadi setiap penjualan
+   * dihitung seolah peternakan yang membayar kurirnya. Padahal sering
+   * pembeli yang menanggung — entah membayar kurir langsung, entah
+   * menggantinya ke peternakan.
+   *
+   * Pada kedua cara itu pengaruhnya ke laba NOL:
+   *   pembeli bayar kurir langsung  uang tidak lewat peternakan sama sekali
+   *   pembeli mengganti             masuk +ongkir, keluar -ongkir
+   * Jadi aturannya satu: ongkir masuk HPP HANYA bila ditanggung penjual.
+   *
+   * Bawaannya "penjual" dengan sengaja — itu perilaku sebelum kolom ini
+   * ada, sehingga penjualan lama yang kolomnya kosong tetap dihitung
+   * persis seperti semula dan angkanya tidak berubah surut.
+   */
+  ongkirDitanggung = "penjual",
   tanggalJual = null,
   // Biaya obat & barang gudang yang pernah dibebankan ke kura ini. Dihitung
   // pemanggil lewat biayaBarangKura() di lib/pemakaianBarang.js, dari catatan
@@ -217,7 +256,12 @@ export function hitungHppKura({
 
   const bulan = bulanDiFarm(kura, tanggalJual);
   const perawatan = Math.round(bulan * angka(tarifPerBulan));
-  const biayaKirim = angka(ongkir);
+  const ongkirNilai = angka(ongkir);
+  const ditanggungPembeli = ongkirDitanggung === "pembeli";
+  // Yang dibebankan ke HPP, bukan yang tertulis di nota. Keduanya dikembalikan
+  // terpisah supaya layar bisa menampilkan "Rp 50.000 — ditanggung pembeli"
+  // tanpa angka itu ikut memakan laba.
+  const biayaKirim = ongkirUntukHpp(ongkirNilai, ongkirDitanggung);
   const obat = angka(biayaObat);
 
   return {
@@ -225,6 +269,8 @@ export function hitungHppKura({
     perawatan,
     obat,
     ongkir: biayaKirim,
+    ongkirNilai,
+    ongkirDitanggung: ditanggungPembeli ? "pembeli" : "penjual",
     total: modal + perawatan + obat + biayaKirim,
     bulan,
     dariFarm,

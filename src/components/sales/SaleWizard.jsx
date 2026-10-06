@@ -326,6 +326,40 @@ function StepDetailPenjualan({ form, onChange, errors }) {
         </div>
       </div>
 
+      {/*
+        Siapa yang menanggung ongkirnya — ditanyakan hanya kalau ongkirnya ada.
+        Sebelum pilihan ini ada, ongkir SELALU masuk HPP, jadi setiap penjualan
+        dihitung seolah peternakan yang membayar kurirnya. Padahal sering
+        pembeli yang menanggung, dan pada kasus itu pengaruhnya ke laba NOL.
+      */}
+      {Number(form.shipping_cost) > 0 && (
+        <div className="space-y-1.5">
+          <Label>Ongkos kirim ditanggung <span className="text-red-500">*</span></Label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ["penjual", "Penjual (peternakan)", "Masuk HPP — mengurangi laba"],
+              ["pembeli", "Pembeli", "Tidak masuk HPP — laba tidak berubah"],
+            ].map(([nilai, judul, ket]) => {
+              const dipilih = (form.ongkir_ditanggung || "penjual") === nilai;
+              return (
+                <button
+                  key={nilai}
+                  type="button"
+                  onClick={() => onChange("ongkir_ditanggung", nilai)}
+                  aria-pressed={dipilih}
+                  className={`rounded-xl border p-2.5 text-left transition ${
+                    dipilih ? "border-green-700 bg-green-50 ring-1 ring-green-700" : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <span className="block text-xs font-semibold">{judul}</span>
+                  <span className="block text-[10px] text-muted-foreground mt-0.5 leading-tight">{ket}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>Metode Pengiriman <span className="text-red-500">*</span></Label>
@@ -392,6 +426,7 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
     tarifPerBulan: biayaPerBulan,
     hargaBeliInput: form.purchase_price_input,
     ongkir: form.shipping_cost,
+    ongkirDitanggung: form.ongkir_ditanggung,
     tanggalJual: form.sale_date,
     biayaObat: rincianObat.total,
   });
@@ -491,7 +526,14 @@ function StepReview({ form, tortoise, costData, breedings = [], pergerakanStok =
           />
         )}
 
-        <Row label="Ongkos Kirim" value={`Rp ${angkaRibuan(shippingCost)}`} />
+        <Row
+          label={hppRinci.ongkirDitanggung === "pembeli" ? "Ongkos Kirim (ditanggung pembeli)" : "Ongkos Kirim"}
+          value={
+            hppRinci.ongkirDitanggung === "pembeli"
+              ? `Rp 0  ·  Rp ${angkaRibuan(hppRinci.ongkirNilai)} dibayar pembeli`
+              : `Rp ${angkaRibuan(shippingCost)}`
+          }
+        />
         <div className="border-t mt-2 pt-2">
           <Row label="TOTAL HPP" value={`Rp ${angkaRibuan(totalHpp)}`} bold />
         </div>
@@ -558,7 +600,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
   const [form, setForm] = useState({
     tortoise_id: "", tortoise_name: "",
     buyer_name: "", hp_whatsapp: "", buyer_address: "", buyer_city: "", buyer_profile_id: "",
-    price: "", shipping_cost: 0, payment_status: "lunas", shipping_method: "ambil_sendiri",
+    price: "", shipping_cost: 0, ongkir_ditanggung: "penjual", payment_status: "lunas", shipping_method: "ambil_sendiri",
     platform: "", sale_date: new Date().toISOString().split("T")[0], notes: "", dp_amount: "",
     purchase_price_input: "",
   });
@@ -669,6 +711,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     tarifPerBulan,
     hargaBeliInput: form.purchase_price_input,
     ongkir: form.shipping_cost,
+    ongkirDitanggung: form.ongkir_ditanggung,
     tanggalJual: form.sale_date,
     biayaObat: biayaBarangKura(pergerakanStok, selectedTortoise).total,
   });

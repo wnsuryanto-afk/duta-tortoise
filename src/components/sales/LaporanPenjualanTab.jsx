@@ -81,7 +81,18 @@ export default function LaporanPenjualanTab() {
   const totalOmzet = filtered.reduce((s,i) => s + (i.price||0), 0);
   const totalProfit = filtered.reduce((s,i) => s + ((i.price||0)-(i.hpp||0)), 0);
   const totalHPP = filtered.reduce((s,i) => s + (i.hpp||0), 0);
-  const totalOngkir = filtered.reduce((s,i) => s + (i.shipping_cost||0), 0);
+  /*
+    Ongkir dipisah menurut SIAPA yang menanggungnya.
+
+    Sebelum kolom `ongkir_ditanggung` ada, seluruh ongkir dianggap beban
+    peternakan — satu angka "Ongkir" yang dijumlahkan dari semua penjualan.
+    Sejak pembeli bisa menanggungnya, menjumlahkan keduanya jadi satu angka
+    menyatakan biaya yang sebagian tidak pernah dikeluarkan peternakan.
+
+    Yang memakan laba hanya yang ditanggung penjual; itulah yang ikut masuk HPP.
+  */
+  const ongkirPenjual = filtered.reduce((s,i) => s + ((i.ongkir_ditanggung === "pembeli" ? 0 : (i.shipping_cost||0))), 0);
+  const ongkirPembeli = filtered.reduce((s,i) => s + ((i.ongkir_ditanggung === "pembeli" ? (i.shipping_cost||0) : 0)), 0);
 
   const years = Array.from({length:5},(_,i)=>String(currentYear-i));
 
@@ -111,8 +122,11 @@ export default function LaporanPenjualanTab() {
         {[
           { label: "Total Penjualan", val: filtered.length, icon: Package, color: "text-primary", sub: "transaksi" },
           { label: "Total Omzet", val: `Rp ${ringkas(totalOmzet)}`, icon: DollarSign, color: "text-primary" },
-          { label: "Total HPP+Ongkir", val: `Rp ${ringkas(totalHPP)}`, icon: TrendingUp, color: "text-amber-600" },
-          { label: "Ongkir", val: `Rp ${ringkas(totalOngkir)}`, icon: TrendingUp, color: "text-blue-600" },
+          { label: "Total HPP", val: `Rp ${ringkas(totalHPP)}`, icon: TrendingUp, color: "text-amber-600" },
+          { label: ongkirPembeli > 0 ? "Ongkir ditanggung penjual" : "Ongkir", val: `Rp ${ringkas(ongkirPenjual)}`, icon: TrendingUp, color: "text-blue-600" },
+          ...(ongkirPembeli > 0
+            ? [{ label: "Ongkir ditanggung pembeli", val: `Rp ${ringkas(ongkirPembeli)}`, icon: TrendingUp, color: "text-muted-foreground" }]
+            : []),
           { label: "Margin Bersih", val: `Rp ${ringkas(totalProfit)}`, icon: TrendingUp, color: totalProfit>=0?"text-green-600":"text-red-600" },
         ].map(item => (
           <Card key={item.label}>

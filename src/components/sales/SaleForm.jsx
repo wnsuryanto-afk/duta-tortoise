@@ -11,6 +11,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
+import { ongkirUntukHpp } from "@/lib/hppKura";
 
 export default function SaleForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -28,7 +29,7 @@ export default function SaleForm({ open, onClose, editData }) {
   const [form, setForm] = useState(editData || {
     tortoise_name: "", tortoise_id: "", buyer_name: "", hp_whatsapp: "",
     buyer_address: "", sale_date: new Date().toISOString().split("T")[0],
-    price: "", hpp: "", shipping_cost: 0, payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
+    price: "", hpp: "", shipping_cost: 0, ongkir_ditanggung: "penjual", payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
   });
 
   const handleChange = (field, value) => { setForm((prev) => ({ ...prev, [field]: value })); setErrors(e => ({ ...e, [field]: "" })); };
@@ -49,8 +50,11 @@ export default function SaleForm({ open, onClose, editData }) {
     setForm((prev) => ({ ...prev, tortoise_id: id, tortoise_name: t?.name || "" }));
   };
 
-  // HPP = modal + shipping_cost
-  const totalHpp = (Number(form.hpp) || 0) + (Number(form.shipping_cost) || 0);
+  // HPP = modal + ongkir YANG DITANGGUNG PENJUAL. Aturannya satu, di
+  // lib/hppKura.js — sebelumnya rumus ini ditulis ulang di sini DAN di
+  // handleSubmit, keduanya menambahkan ongkir tanpa syarat.
+  const ongkirHpp = ongkirUntukHpp(form.shipping_cost, form.ongkir_ditanggung);
+  const totalHpp = (Number(form.hpp) || 0) + ongkirHpp;
   const profit = (Number(form.price) || 0) - totalHpp;
 
   const handleSubmit = async (e) => {
@@ -61,7 +65,22 @@ export default function SaleForm({ open, onClose, editData }) {
       ...form,
       price: form.price ? Number(form.price) : 0,
       shipping_cost: Number(form.shipping_cost) || 0,
-      hpp: (Number(form.hpp) || 0) + (Number(form.shipping_cost) || 0),
+      hpp: (Number(form.hpp) || 0) + ongkirUntukHpp(form.shipping_cost, form.ongkir_ditanggung),
+      /*
+        `profit` dan `margin_percent` ikut ditulis ulang.
+
+        Keduanya tersimpan di catatan penjualan, tetapi TIDAK ADA satu layar
+        pun yang membacanya — laporan penjualan maupun laba rugi menghitung
+        sendiri `price - hpp`. Jadi sebelum ini, mengedit penjualan lewat
+        layar ini memperbarui `hpp` sementara `profit` tertinggal di nilai
+        lamanya, dan selisihnya tidak terlihat di mana-mana. Siapa pun yang
+        kelak membaca kolom itu — laporan baru, ekspor, atau pertanyaan
+        langsung ke data — akan mendapat angka yang sudah basi.
+      */
+      profit: (Number(form.price) || 0) - totalHpp,
+      margin_percent: Number(form.price) > 0
+        ? Math.round((((Number(form.price) || 0) - totalHpp) / Number(form.price)) * 100)
+        : 0,
     };
     if (editData?.id) {
       await base44.entities.Sale.update(editData.id, data);
@@ -168,6 +187,34 @@ export default function SaleForm({ open, onClose, editData }) {
               <Input type="number" min="0" value={form.shipping_cost} onChange={(e) => handleChange("shipping_cost", e.target.value)} placeholder="0" />
             </div>
           </div>
+          {/* Ongkir tidak selalu ditanggung peternakan — lihat lib/hppKura.js. */}
+          {Number(form.shipping_cost) > 0 && (
+            <div className="space-y-1.5">
+              <Label>Ongkos kirim ditanggung</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["penjual", "Penjual (peternakan)", "Masuk HPP"],
+                  ["pembeli", "Pembeli", "Tidak masuk HPP"],
+                ].map(([nilai, judul, ket]) => {
+                  const dipilih = (form.ongkir_ditanggung || "penjual") === nilai;
+                  return (
+                    <button
+                      key={nilai}
+                      type="button"
+                      onClick={() => handleChange("ongkir_ditanggung", nilai)}
+                      aria-pressed={dipilih}
+                      className={`rounded-xl border p-2.5 text-left transition ${
+                        dipilih ? "border-green-700 bg-green-50 ring-1 ring-green-700" : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <span className="block text-xs font-semibold">{judul}</span>
+                      <span className="block text-[10px] text-muted-foreground mt-0.5">{ket}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {/* Profit preview */}
           {(form.price || form.hpp) && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${profit >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
