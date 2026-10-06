@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { jadwalBerlaku } from "@/lib/jadwalPerawatan";
 import { useKeadaanJadwal } from "@/lib/useKeadaanJadwal";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 export default function OperationalToday() {
   const navigate = useNavigate();
@@ -124,7 +125,7 @@ export default function OperationalToday() {
   ].filter(card => !card.hide);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid gap-4" style={kisiWadah(200)}>
       {cards.map((card) => {
         const Icon = card.icon;
         return (

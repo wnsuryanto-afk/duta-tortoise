@@ -8,13 +8,14 @@ import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend, CartesianGrid } from "recharts";
 import { Star, TrendingUp, ArrowDown, CalendarDays } from "lucide-react";
 import { rupiah } from "@/lib/rupiah";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const COLORS = ["#2D5016", "#6B9B37", "#8B5E3C", "#3b82f6", "#a855f7", "#ef4444", "#C19A6B"];
 
 export default function PoinGrafik({ barData, empNames, lineData, summary }) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid gap-3" style={kisiWadah(160)}>
         <Card className="p-4">
           <Star className="w-4 h-4 text-amber-500 mb-1.5" />
           <p className="text-xl font-bold">{summary.avgPerDay.toFixed(0)}</p>

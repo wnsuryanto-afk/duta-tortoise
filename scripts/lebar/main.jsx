@@ -18,11 +18,49 @@ const qc = new QueryClient({
   defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 } },
 });
 
-function Satu({ el }) {
+/*
+ * Batas galat — sebab penjaga ini pernah hijau untuk 110 dari 123 kasus.
+ *
+ * Kasus ke-13 ("KeeperDashboard tanpa data") melempar galat setelah query
+ * selesai. Tanpa batas galat, React 18 MELEPAS SELURUH AKAR: `#bingkai`
+ * lenyap dari DOM, `ukur()` mengembalikan daftar kosong karena tidak
+ * menemukan bingkainya, dan 110 kasus sesudahnya dilaporkan "tidak ada
+ * tulisan terpotong" tanpa pernah sekali pun digambar.
+ *
+ * Satu kasus yang pecah tidak boleh membungkam seratus kasus lain. Batas ini
+ * menangkapnya, mencatat namanya di `window.__rusak` supaya penjaga bisa
+ * mengatakannya apa adanya, dan membiarkan kasus berikutnya tetap terukur.
+ *
+ * `key` pada pemakainya yang mengatur penyetelan ulang: ganti kasus berarti
+ * batas baru, jadi galat satu kasus tidak menempel ke kasus sesudahnya.
+ */
+class Batas extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { galat: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { galat: e?.message || String(e) };
+  }
+  componentDidCatch(e) {
+    window.__rusak = window.__rusak || {};
+    window.__rusak[this.props.nama] = e?.message || String(e);
+  }
+  render() {
+    if (this.state.galat) {
+      return <div data-rusak="1">Kasus ini melempar galat: {this.state.galat}</div>;
+    }
+    return this.props.children;
+  }
+}
+
+function Satu({ el, nama }) {
   return (
-    <QueryClientProvider client={qc}>
-      <MemoryRouter>{el}</MemoryRouter>
-    </QueryClientProvider>
+    <Batas nama={nama}>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>{el}</MemoryRouter>
+      </QueryClientProvider>
+    </Batas>
   );
 }
 
@@ -34,7 +72,7 @@ function App() {
   window.__nama = nama;
   return (
     <div id="bingkai" style={{ width: 360, overflow: "visible" }}>
-      {el ? <Satu el={el} /> : null}
+      {el ? <Satu key={i} el={el} nama={nama} /> : null}
     </div>
   );
 }

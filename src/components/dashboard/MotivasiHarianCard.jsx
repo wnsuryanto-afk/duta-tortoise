@@ -11,6 +11,7 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { format } from "date-fns";
 import { X } from "lucide-react";
+import { barisAbsensiSah } from "@/lib/absensi";
 
 const REGULAR_QUOTES = [
   "Hari baru, semangat baru. Ayo buat hari ini berarti! ☀️",
@@ -118,7 +119,22 @@ export default function MotivasiHarianCard() {
     queryKey: ["attendance-today", user?.email, today],
     queryFn: async () => {
       const res = await base44.entities.Attendance.filter({ employee_email: user.email, date: today });
-      return res[0] || null;
+      /*
+        `barisAbsensiSah`, bukan `res[0]`.
+
+        Keempat pembaca absensi hari ini memakai kunci cache yang sama persis,
+        ["attendance-today", email, tanggal], jadi yang terakhir mengisi cache
+        menentukan baris mana yang dilihat SEMUA layar. Dua pembaca memakai
+        `barisAbsensiSah` — yang sengaja memilih check-in PALING AWAL ketika
+        satu orang punya baris absensi kembar — dan dua lainnya mengambil
+        `res[0]`, yakni urutan apa pun yang dikirim server.
+
+        Baris absensi kembar bukan kemungkinan teoretis di aplikasi ini; itulah
+        sebab `checkInSekali` dan `barisAbsensiSah` ada. Selama dua pembaca
+        memakai pemilih yang berbeda, jam masuk yang tampil di layar berpindah
+        mengikuti layar mana yang dibuka lebih dulu.
+      */
+      return barisAbsensiSah(res);
     },
     enabled: !!user?.email,
     staleTime: 60 * 1000,

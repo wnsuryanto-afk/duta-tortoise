@@ -16,6 +16,7 @@ import IsiTanggalKedaluwarsa from "@/components/owner/IsiTanggalKedaluwarsa";
 import PotonganTanpaAlasan from "@/components/owner/PotonganTanpaAlasan";
 import AISaranToggle from "@/components/settings/AISaranToggle";
 import PageHeader from "@/components/common/PageHeader";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 export default function SystemMaintenancePage() {
   const { role } = useCurrentUser();
@@ -109,7 +110,7 @@ export default function SystemMaintenancePage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid gap-4" style={kisiWadah(280)}>
         {/* Migrasi field ShoppingList lama */}
         <Card>
           <CardHeader>

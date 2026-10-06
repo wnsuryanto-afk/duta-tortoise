@@ -15,6 +15,7 @@ import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { rupiah } from "@/lib/rupiah";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
   const d = subMonths(new Date(), i);
@@ -267,7 +268,7 @@ export default function LaporanGajiBulanan() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid gap-4" style={kisiWadah(160)}>
         <Card className="p-4 bg-primary/5 border-primary/20">
           <div className="flex items-center gap-3">
             <Users className="w-7 h-7 text-primary opacity-70" />

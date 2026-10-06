@@ -12,6 +12,7 @@ import { FileDown, Star, Trophy, Gift, CheckCircle2, Clock } from "lucide-react"
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
 import jsPDF from "jspdf";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 // Generate last 12 months options
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
@@ -234,7 +235,7 @@ export default function LaporanBonusReward() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid gap-4" style={kisiWadah(170)}>
         <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
           <div className="flex items-center gap-3">
             <Trophy className="w-8 h-8 text-primary opacity-70" />

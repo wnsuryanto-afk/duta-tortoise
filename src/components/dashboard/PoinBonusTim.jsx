@@ -20,20 +20,24 @@ import { Link } from "react-router-dom";
 import { tingkatanBonus, tingkatTercapai } from "@/lib/bonus";
 import { masukLaporan } from "@/lib/laporan";
 import { rupiah } from "@/lib/rupiah";
+import { useCompanySettings } from "@/lib/useCompanySettings";
 
 const PERAN = ["keeper", "kepala_feeder"];
 
 export default function PoinBonusTim() {
   const monthKey = format(new Date(), "yyyy-MM");
 
-  const { data: settings } = useQuery({
-    queryKey: ["company-settings"],
-    queryFn: async () => {
-      const r = await base44.entities.CompanySettings.filter({ setting_key: "main" });
-      return r[0] || null;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
+  /*
+    useCompanySettings(), bukan useQuery dengan kunci ["company-settings"].
+
+    Kunci itu dipakai belasan berkas yang mengembalikan ARRAY hasil filter,
+    sementara berkas ini mengembalikan `res[0] || null` — satu objek atau
+    null. TanStack Query menyimpan per kunci: yang terakhir mengisi cache
+    menentukan bentuknya untuk semua pembaca, dan `settings[0]` pada null
+    mematikan layar penuh. useCompanySettings() memakai kunci sendiri dan
+    selalu mengembalikan objek.
+  */
+  const settings = useCompanySettings();
 
   const { data: users = [] } = useQuery({
     queryKey: ["poin-bonus-users"],

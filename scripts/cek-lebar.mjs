@@ -60,7 +60,9 @@ const CHROME = process.env.CHROME_UJI ||
 /** Diukur di dalam halaman. Dikirim sebagai teks, jadi mandiri. */
 function ukur(lebarLayar) {
   const bingkai = document.getElementById("bingkai");
-  if (!bingkai) return [];
+  // Bingkai yang HILANG bukan bingkai yang bersih. Dulu keduanya
+  // mengembalikan daftar kosong, dan 110 kasus lulus tanpa pernah digambar.
+  if (!bingkai) return [{ jenis: "bingkai hilang", lebih: 0, teks: "" }];
   const keluar = [];
   const bisaGulung = (g) =>
     ["auto", "scroll"].includes(g.overflowX) || ["auto", "scroll"].includes(g.overflow);
@@ -90,11 +92,17 @@ function ukur(lebarLayar) {
     );
     if (!punyaTeksSendiri) continue;
 
+    // Kelas elemen dan kelas induknya ikut dibawa. Tanpa itu temuan hanya
+    // menyebut tulisannya, dan yang memperbaikinya harus menebak elemen mana
+    // di antara belasan yang berbunyi sama di satu halaman.
+    const kelas = typeof el.className === "string" ? el.className.slice(0, 70) : "";
+    const induk = typeof el.parentElement?.className === "string"
+      ? el.parentElement.className.slice(0, 70) : "";
     const lebih = el.scrollWidth - el.clientWidth;
     if (lebih > 1 && el.clientWidth > 0) {
-      keluar.push({ jenis: "terpotong", lebih, teks: teks.slice(0, 50) });
+      keluar.push({ jenis: "terpotong", lebih, teks: teks.slice(0, 50), kelas, induk });
     } else if (r.right > lebarLayar + 1) {
-      keluar.push({ jenis: "lewat tepi", lebih: Math.round(r.right - lebarLayar), teks: teks.slice(0, 50) });
+      keluar.push({ jenis: "lewat tepi", lebih: Math.round(r.right - lebarLayar), teks: teks.slice(0, 50), kelas, induk });
     }
   }
   return keluar;
@@ -121,6 +129,64 @@ if (!await tunggu(alamat)) {
   tutup(); process.exit(1);
 }
 
+/* ── Mengukur dua kali, bukan sekali ─────────────────────────────────────
+ *
+ * Penjaga ini pernah melaporkan 41 tulisan terpotong di delapan halaman yang
+ * tidak sedang disentuh, lalu hijau sepenuhnya ketika dijalankan sendirian.
+ * Sebabnya bukan tata letaknya: ia dijalankan BERSAMAAN dengan `vite build`,
+ * dan jeda tetap 250–400 ms tidak cukup untuk Chromium yang sedang berebut
+ * prosesor — DOM terukur di tengah penataan, sebelum lebar sebenarnya jadi.
+ *
+ * Penjaga yang berteriak 41 kali tanpa sebab adalah penjaga yang diabaikan
+ * orang, dan itu lebih buruk daripada tidak ada penjaga. Jadi pengukurannya
+ * dilakukan DUA kali dengan satu putaran gambar di antaranya, dan hanya yang
+ * muncul di KEDUA pengukuran dilaporkan. Temuan yang lahir dari penataan yang
+ * belum selesai tidak terulang di pengukuran kedua; tulisan yang benar-benar
+ * terpotong terulang setiap kali.
+ */
+async function tenang(hal) {
+  // `document.fonts.ready` lebih penting daripada jeda mana pun: lebar tulisan
+  // tidak bisa diukur sebelum hurufnya yang benar terpasang.
+  await hal.evaluate(() => document.fonts?.ready ?? Promise.resolve());
+  await hal.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+}
+
+const kunciTemuan = (t) => t.jenis + "|" + t.teks;
+
+/*
+ * Memastikan kasus yang DIUKUR adalah kasus yang DIMINTA.
+ *
+ * Dua kegagalan diam yang pernah terjadi bersamaan: bingkainya lenyap karena
+ * akar React dilepas, dan nama yang tergambar tidak sama dengan nama yang
+ * sedang diukur. Keduanya menghasilkan "tidak ada temuan", yang terbaca
+ * sebagai lulus.
+ */
+async function pastikanTergambar(hal, harap) {
+  for (let i = 0; i < 40; i++) {
+    const k = await hal.evaluate(() => ({
+      nama: window.__nama,
+      ada: !!document.getElementById("bingkai"),
+    }));
+    if (k.ada && k.nama === harap) return "";
+    await hal.waitForTimeout(100);
+  }
+  const k = await hal.evaluate(() => ({
+    nama: window.__nama,
+    ada: !!document.getElementById("bingkai"),
+  }));
+  if (!k.ada) return "bingkai React lenyap — akarnya dilepas, kasus ini tidak pernah digambar";
+  return `yang tergambar "${k.nama}", bukan kasus yang diminta`;
+}
+
+async function ukurMantap(hal, lebar) {
+  await tenang(hal);
+  const satu = await hal.evaluate(ukur, lebar);
+  if (satu.length === 0) return satu;
+  await tenang(hal);
+  const dua = new Set((await hal.evaluate(ukur, lebar)).map(kunciTemuan));
+  return satu.filter((t) => dua.has(kunciTemuan(t)));
+}
+
 const peramban = await chromium.launch({ executablePath: CHROME });
 const halaman = await peramban.newPage({ viewport: { width: LEBAR, height: 900 } });
 await halaman.goto(alamat, { waitUntil: "networkidle" });
@@ -129,16 +195,19 @@ await halaman.waitForTimeout(1500);
 const nama = await halaman.evaluate(() => window.__kasus || []);
 const temuan = [];
 
+const takTerukur = [];
 for (let i = 0; i < nama.length; i++) {
   await halaman.evaluate((n) => window.__pindah(n), i);
   await halaman.waitForTimeout(400);
-  const hasil = await halaman.evaluate(ukur, LEBAR);
+  const salah = await pastikanTergambar(halaman, nama[i]);
+  if (salah) { takTerukur.push(`${nama[i]}  ${salah}`); continue; }
+  const hasil = await ukurMantap(halaman, LEBAR);
   const lihat = new Set();
   for (const t of hasil) {
     const kunci = t.jenis + "|" + t.teks;
     if (lihat.has(kunci)) continue;
     lihat.add(kunci);
-    temuan.push(`${nama[i]}  ${t.jenis} +${t.lebih}px  "${t.teks}"`);
+    temuan.push(`${nama[i]}  ${t.jenis} +${t.lebih}px  "${t.teks}"\n      kelas: ${t.kelas}\n      induk: ${t.induk}`);
   }
 }
 
@@ -181,25 +250,54 @@ const temuan2 = [];
 for (let i = 0; i < nama.length; i++) {
   await halaman2.evaluate((n) => window.__pindah(n), i);
   await halaman2.waitForTimeout(300);
+  const salah2 = await pastikanTergambar(halaman2, nama[i]);
+  if (salah2) { takTerukur.push(`${nama[i]}  (wadah sempit)  ${salah2}`); continue; }
   for (const w of LEBAR_WADAH) {
     await halaman2.evaluate((w) => {
       const b = document.getElementById("bingkai");
       if (b) { b.style.width = w + "px"; b.style.maxWidth = w + "px"; }
     }, w);
     await halaman2.waitForTimeout(250);
-    const hasil = await halaman2.evaluate(ukur, 1280);
+    const hasil = await ukurMantap(halaman2, 1280);
     const lihat = new Set();
     for (const t of hasil) {
       const kunci = t.jenis + "|" + t.teks;
       if (lihat.has(kunci)) continue;
       lihat.add(kunci);
-      temuan2.push(`${nama[i]}  wadah ${w}px  ${t.jenis} +${t.lebih}px  "${t.teks}"`);
+      temuan2.push(`${nama[i]}  wadah ${w}px  ${t.jenis} +${t.lebih}px  "${t.teks}"\n      kelas: ${t.kelas}\n      induk: ${t.induk}`);
     }
   }
 }
 
+const rusak = await halaman2.evaluate(() => window.__rusak || {});
+
 await peramban.close();
 tutup();
+
+/*
+ * Kasus yang MELEMPAR GALAT dilaporkan tersendiri, bukan didiamkan.
+ *
+ * `cek-render` memeriksa hal yang mirip tetapi tidak bisa melihat ini: di sana
+ * query dimatikan, jadi jalur kode yang melempar setelah data datang tidak
+ * pernah berjalan. Di sini query dinyalakan, dan justru itu yang menemukannya.
+ */
+if (Object.keys(rusak).length) {
+  console.error(
+    `${Object.keys(rusak).length} kasus melempar galat saat digambar, jadi lebarnya tidak bisa diukur:\n\n` +
+    Object.entries(rusak).map(([n, m]) => `  ${n}\n      ${m}`).join("\n"),
+  );
+  process.exit(1);
+}
+
+if (takTerukur.length) {
+  console.error(
+    `${takTerukur.length} kasus tidak pernah terukur:\n\n` +
+    `Penjaga yang melaporkan "bersih" untuk kasus yang tidak pernah digambar\n` +
+    `lebih buruk daripada tidak ada penjaga.\n\n` +
+    takTerukur.map((t) => "  " + t).join("\n"),
+  );
+  process.exit(1);
+}
 
 if (temuan2.length) {
   console.error(

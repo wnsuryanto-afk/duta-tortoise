@@ -14,6 +14,7 @@ import BuyerForm from "@/components/crm/BuyerForm";
 import AccessDenied from "@/components/common/AccessDenied";
 import SaleWizard from "@/components/sales/SaleWizard";
 import { rupiah } from "@/lib/rupiah";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const formatDate = d => d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-";
 
@@ -96,7 +97,7 @@ export default function PembeliTab() {
       </div>
 
       {/* Stats mini */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid gap-3" style={kisiWadah(150)}>
         {[
           { label: "Total Pembeli", value: totalPembeli, icon: "👥" },
           { label: "Baru (30 Hari)", value: new30Days.length, icon: "🌱" },

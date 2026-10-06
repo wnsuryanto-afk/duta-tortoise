@@ -137,6 +137,11 @@
       },
       "type": "array"
     },
+    "poin_tambahan_usul_ai": {
+      "default": true,
+      "description": "AI mengusulkan poin untuk tugas Inisiatif (judul + catatan + foto bukti dibaca, lalu satu angka dari poin_tambahan_opsi beserta alasannya diisikan lebih dulu). Usulan saja \u2014 penilai tetap menekan simpan, dan tetap bisa mengubah angkanya. Matikan bila tidak ingin memanggil AI untuk ini.",
+      "type": "boolean"
+    },
     "setting_key": {
       "default": "main",
       "description": "Key unik (selalu 'main') untuk single-record pattern",

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { kisiWadahRapat } from "@/lib/kisiWadah";
 
 /**
  * RingkasanAngka — angka kepala halaman, disusun menurut DESAKANNYA.
@@ -138,7 +139,7 @@ export default function RingkasanAngka({ ubin = [] }) {
     */
     <div
       className="grid gap-2 mt-4"
-      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gridAutoFlow: "dense" }}
+      style={kisiWadahRapat(170)}
     >
       {terurut.map(({ kunci, tingkat, ...sisa }) => (
         <Ubin key={kunci} lebar={tingkat === "mendesak"} {...sisa} />

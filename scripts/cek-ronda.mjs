@@ -65,8 +65,10 @@ bundel("src/lib/rekapTahunan.js", "tahunan.cjs");
 bundel("src/lib/tanggalMasukAkal.js", "tanggal.cjs");
 bundel("src/lib/hasilInkubasi.js", "hasil.cjs");
 bundel("src/lib/hppKura.js", "hpp.cjs");
+bundel("src/lib/usulPoinInisiatif.js", "usulpoin.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
+const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -342,6 +344,49 @@ if (kurangV5.length !== 2) {
 // Bahan yang tidak ada di gudang dilewati, bukan dianggap kurang.
 if (R.minimumTidakCukupSebatch(RESEP_V7_BERBARANG, []).length !== 0) {
   temuan.push("minimumTidakCukupSebatch: bahan tanpa barang gudang seharusnya dilewati");
+}
+
+/* ── Usulan poin Inisiatif dari AI: keluarannya tidak pernah dipercaya ──
+ *
+ * Poin Inisiatif berakhir menjadi UANG lewat bonus poin bulanan. Model bahasa
+ * akan dengan senang hati menjawab 12 ketika pilihannya hanya 0/5/10/15,
+ * menjawab "sepuluh", menjawab 10000, atau menjawab null — dan `Number(null)`
+ * adalah 0, yang biasanya ADA di daftar pilihan. Tanpa pemeriksaan tipe,
+ * jawaban kosong terbaca sebagai "mengusulkan 0 dengan sah".
+ *
+ * Yang dijaga: apa pun yang dijawab model, yang keluar selalu salah satu
+ * pilihan yang benar-benar diizinkan peternakan, DAN layar diberi tahu kalau
+ * angkanya terpaksa dibetulkan.
+ */
+const OPSI_UJI = [0, 5, 10, 15];
+const usulUji = [
+  ["angka sah 10", { poin: 10, alasan: "ok" }, 10, false],
+  ["angka sah 0", { poin: 0, alasan: "ok" }, 0, false],
+  ["di luar daftar 12", { poin: 12, alasan: "ok" }, 10, true],
+  ["jauh di atas", { poin: 10000, alasan: "ok" }, 15, true],
+  ["teks", { poin: "sepuluh", alasan: "ok" }, 0, true],
+  ["null", { poin: null, alasan: "ok" }, 0, true],
+  ["string kosong", { poin: "", alasan: "ok" }, 0, true],
+  ["negatif", { poin: -5, alasan: "ok" }, 0, true],
+  ["hasil kosong", null, 0, true],
+];
+for (const [nama, hasil, poinHarap, betulHarap] of usulUji) {
+  const r = UP.bacaUsul(hasil, OPSI_UJI);
+  if (r.poin !== poinHarap) temuan.push(`bacaUsul: ${nama} -> poin ${r.poin}, seharusnya ${poinHarap}`);
+  if (r.dibetulkan !== betulHarap) temuan.push(`bacaUsul: ${nama} -> dibetulkan ${r.dibetulkan}, seharusnya ${betulHarap}`);
+  if (!OPSI_UJI.includes(r.poin)) temuan.push(`bacaUsul: ${nama} -> ${r.poin} bukan salah satu pilihan yang sah`);
+}
+// Tanpa alasan = keyakinan turun ke rendah, apa pun yang diakui model.
+const tanpaAlasan = UP.bacaUsul({ poin: 5, alasan: "", keyakinan: "tinggi" }, OPSI_UJI);
+if (tanpaAlasan.keyakinan !== "rendah") {
+  temuan.push(`bacaUsul: usulan tanpa alasan seharusnya berkeyakinan rendah, terbaca ${tanpaAlasan.keyakinan}`);
+}
+// Prompt harus MENYEBUT pilihan yang sah — kalau tidak, model menebak sendiri.
+const prompt = UP.promptUsulPoin({ judul: "Nambal kolam azola", opsi: OPSI_UJI, maks: 30, terpakai: 10 });
+for (const harus of ["0, 5, 10, 15", "Nambal kolam azola", "sisa kuota", "Sisa kuota"]) {
+  if (!prompt.toLowerCase().includes(harus.toLowerCase())) {
+    temuan.push(`promptUsulPoin: tidak menyebut "${harus}"`);
+  }
 }
 
 /* ── Ongkos kirim: hanya yang ditanggung PENJUAL yang masuk HPP ──────────
@@ -1237,6 +1282,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

@@ -20,6 +20,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useTestMode } from "@/lib/useTestMode";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
 import { rupiah } from "@/lib/rupiah";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const CATEGORIES = {
   gaji_karyawan: {
@@ -188,7 +189,7 @@ export default function BiayaOperasionalTab() {
       </div>
 
       {/* Total + Poin Widget */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid gap-3" style={kisiWadah(220)}>
         <Card className="p-4 col-span-2">
           <div className="flex items-center justify-between">
             <div>

@@ -306,7 +306,10 @@ export default function PanelKasbon({ tanpaKepala = false }) {
 
       {/* Filter (admin) */}
       {isAdmin && (
-        <div className="flex gap-2 items-center">
+        /* `flex-wrap`: lima tombol saringan selebar 372px di layar 360px,
+           dan yang kelima ("Ditolak") keluar 10px dari tepi tanpa jalan
+           gulung — jadi di ponsel ia tidak bisa ditekan sama sekali. */
+        <div className="flex flex-wrap gap-2 items-center">
           {["all", "pending", "approved", "lunas", "rejected"].map(s => (
             <Button
               key={s}

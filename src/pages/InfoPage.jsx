@@ -14,6 +14,7 @@ import { BookOpen, PlayCircle, ChevronRight, Leaf, Heart, AlertTriangle, Plus, P
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import GenerateVideoTabContent from "@/components/info/GenerateVideoTabContent";
 import PageHeader from "@/components/common/PageHeader";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const CATEGORIES = [
   { id: "all", label: "Semua" },
@@ -338,7 +339,7 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid gap-3" style={kisiWadah(150)}>
         {[
           { icon: BookOpen, label: "Total Artikel", count: allItems.filter(a => a.type === "artikel").length, color: "text-primary bg-primary/10" },
           { icon: PlayCircle, label: "Video Tutorial", count: videos.length, color: "text-red-600 bg-red-50" },
@@ -372,7 +373,7 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid gap-4" style={kisiWadah(260)}>
             {filtered.map(item => (
               <Card key={item.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group" onClick={() => setSelected(item)}>
                 <div className="relative overflow-hidden">
@@ -428,7 +429,7 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
               {isAdmin && <Button size="sm" className="mt-3" onClick={openNew}>Tambah Video</Button>}
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid gap-4" style={kisiWadah(260)}>
               {videos.map(item => (
                 <Card key={item.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group" onClick={() => setSelected(item)}>
                   <div className="relative">

@@ -15,6 +15,7 @@ import { BOBOT, peringkat } from "@/lib/peringkatIndukan";
 import KartuAngka from "@/components/ui/kartu-angka";
 import { Egg as EggIcon, Percent, Baby, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const currentYear = new Date().getFullYear();
 
@@ -323,7 +324,7 @@ export default function PeringkatIndukan() {
         */
         const { persen } = ringkasTelurDicek(filtered);
         return (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid gap-3" style={kisiWadah(150)}>
             <KartuAngka label="Sesi bertelur" nilai={filtered.length} ikon={Baby} nada="netral" />
             <KartuAngka
               label="Total telur"
@@ -391,10 +392,14 @@ export default function PeringkatIndukan() {
         </div>
       ) : (
         <Tabs defaultValue="pasangan">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pasangan">Pasangan Terbaik</TabsTrigger>
-            <TabsTrigger value="jantan">Induk Jantan</TabsTrigger>
-            <TabsTrigger value="betina">Induk Betina</TabsTrigger>
+          {/* `h-auto` + tulisan yang boleh turun baris: sepertiga dari 360px
+              hanya 115px, dan "Pasangan Terbaik" perlu 118px. Kata-katanya
+              dipertahankan, yang berubah barisnya — sama dengan cara ubin
+              ringkasan diperbaiki, bukan dengan memotong tulisannya. */}
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="pasangan" className="text-[11px] whitespace-normal leading-tight px-1 py-1.5">Pasangan Terbaik</TabsTrigger>
+            <TabsTrigger value="jantan" className="text-[11px] whitespace-normal leading-tight px-1 py-1.5">Induk Jantan</TabsTrigger>
+            <TabsTrigger value="betina" className="text-[11px] whitespace-normal leading-tight px-1 py-1.5">Induk Betina</TabsTrigger>
           </TabsList>
           <TabsContent value="pasangan" className="mt-4">
             <RankingList pairs={allPairs} breedings={breedings} />

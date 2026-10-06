@@ -1287,7 +1287,11 @@ export default function PengaturanWhatsAppPage() {
             </div>
             <Switch checked={morningShowPoints} onCheckedChange={setMorningShowPoints} />
           </div>
-          <Button onClick={handleSendMorningNow} disabled={sendingMorning || (!savedToken && !token.trim()) || !morningGroupId.trim()} variant="outline" className="w-full gap-1.5">
+          {/* `whitespace-normal h-auto py-2`: tombol shadcn bawaannya
+              `whitespace-nowrap`, dan label ini 13px lebih lebar daripada
+              kartunya di wadah 320px — jadi tulisannya terpotong di tengah
+              huruf alih-alih turun baris. */}
+          <Button onClick={handleSendMorningNow} disabled={sendingMorning || (!savedToken && !token.trim()) || !morningGroupId.trim()} variant="outline" className="w-full gap-1.5 whitespace-normal h-auto py-2">
             {sendingMorning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             🧪 Kirim Ringkasan Pagi Sekarang
           </Button>

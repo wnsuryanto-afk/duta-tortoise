@@ -30,6 +30,7 @@ import { rupiah } from "@/lib/rupiah";
 import PanelKasbon from "@/components/kasbon/PanelKasbon";
 import CatatanUpahTab from "@/components/salary/CatatanUpahTab";
 import KonfigurasiGajiTab from "@/components/salary/KonfigurasiGajiTab";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 
 export default function RekapPoinGajiPage() {
@@ -425,7 +426,7 @@ export default function RekapPoinGajiPage() {
         </div>
       )}
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid gap-3" style={kisiWadah(150)}>
         <Card className="p-4">
           <Users className="w-5 h-5 text-primary mb-1.5" />
           <p className="text-2xl font-bold">{employees.length}</p>
