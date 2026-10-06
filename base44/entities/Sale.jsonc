@@ -1,81 +1,17 @@
 {
   "name": "Sale",
-  "type": "object",
   "properties": {
-    "tortoise_id": {
-      "type": "string"
-    },
-    "tortoise_name": {
+    "buyer_address": {
       "type": "string"
     },
     "buyer_name": {
       "type": "string"
     },
-    "hp_whatsapp": {
-      "type": "string",
-      "description": "No. HP / WhatsApp pembeli"
-    },
-    "buyer_address": {
+    "buyer_profile_id": {
+      "description": "Link ke BuyerProfile (auto-sync via hp_whatsapp)",
       "type": "string"
     },
-    "buyer_profile_id": {
-      "type": "string",
-      "description": "Link ke BuyerProfile (auto-sync via hp_whatsapp)"
-    },
-    "sale_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "price": {
-      "type": "number"
-    },
-    "hpp": {
-      "type": "number",
-      "description": "HPP = harga modal + shipping_cost"
-    },
-    "shipping_cost": {
-      "type": "number",
-      "default": 0,
-      "description": "Ongkos kirim"
-    },
-    "dp_amount": {
-      "type": "number"
-    },
-    "payment_status": {
-      "type": "string",
-      "enum": [
-        "lunas",
-        "dp",
-        "belum_bayar"
-      ],
-      "default": "lunas"
-    },
-    "payment_proofs": {
-      "type": "array",
-      "description": "Bukti pembayaran",
-      "items": {
-        "type": "object",
-        "properties": {
-          "photo_url": {
-            "type": "string"
-          },
-          "amount": {
-            "type": "number"
-          },
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "notes": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "total_paid": {
-      "type": "number"
-    },
-    "remaining_balance": {
+    "care_cost_estimate": {
       "type": "number"
     },
     "certificate_number": {
@@ -84,23 +20,81 @@
     "certificate_url": {
       "type": "string"
     },
+    "dp_amount": {
+      "type": "number"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "type": "boolean"
+    },
+    "finance_tx_id": {
+      "type": "string"
+    },
+    "hp_whatsapp": {
+      "description": "No. HP / WhatsApp pembeli",
+      "type": "string"
+    },
+    "hpp": {
+      "description": "HPP = modal + perawatan + obat + ongkir YANG DITANGGUNG PENJUAL. Bila ongkir_ditanggung = 'pembeli', ongkos kirim TIDAK masuk ke sini: pada kasus itu pengaruhnya ke laba nol, entah pembeli membayar kurir langsung atau menggantinya ke peternakan.",
+      "type": "number"
+    },
     "invoice_number": {
       "type": "string"
     },
     "invoice_url": {
       "type": "string"
     },
-    "shipping_method": {
-      "type": "string",
+    "is_test_data": {
+      "default": false,
+      "type": "boolean"
+    },
+    "margin_percent": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "ongkir_ditanggung": {
+      "default": "penjual",
+      "description": "Siapa yang menanggung ongkos kirim. 'penjual' = masuk HPP dan memakan laba. 'pembeli' = tidak masuk HPP. Bawaannya 'penjual' karena itulah perilaku sebelum kolom ini ada, sehingga penjualan lama yang kolomnya kosong tetap dihitung persis seperti semula.",
       "enum": [
-        "ambil_sendiri",
-        "kirim_kurir",
-        "cargo"
+        "penjual",
+        "pembeli"
       ],
-      "default": "ambil_sendiri"
+      "type": "string"
+    },
+    "payment_proofs": {
+      "description": "Bukti pembayaran",
+      "items": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "photo_url": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "payment_status": {
+      "default": "lunas",
+      "enum": [
+        "lunas",
+        "dp",
+        "belum_bayar"
+      ],
+      "type": "string"
     },
     "platform": {
-      "type": "string",
       "enum": [
         "Instagram",
         "Tokopedia",
@@ -110,41 +104,46 @@
         "Referral",
         "Langsung",
         "Lainnya"
-      ]
-    },
-    "is_repeat_buyer": {
-      "type": "boolean",
-      "default": false
-    },
-    "after_sale_status": {
-      "type": "string",
-      "enum": [
-        "puas",
-        "komplain",
-        "no_response"
-      ]
-    },
-    "complaint_detail": {
+      ],
       "type": "string"
     },
-    "notes": {
-      "type": "string"
+    "price": {
+      "type": "number"
     },
-    "excluded_from_reports": {
-      "type": "boolean",
-      "default": false,
-      "description": "Dikecualikan dari laporan (owner only)"
-    },
-    "is_test_data": {
-      "type": "boolean",
-      "default": false,
-      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan"
+    "profit": {
+      "type": "number"
     },
     "purchase_price_original": {
-      "type": "number",
-      "description": "Harga beli/kulakan yang diisi saat penjualan"
+      "type": "number"
+    },
+    "remaining_balance": {
+      "type": "number"
+    },
+    "sale_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "shipping_cost": {
+      "default": 0,
+      "description": "Ongkos kirim, apa adanya. Siapa yang menanggungnya ada di ongkir_ditanggung \u2014 angka ini sendiri tidak menentukan apakah ia masuk HPP.",
+      "type": "number"
+    },
+    "shipping_method": {
+      "default": "ambil_sendiri",
+      "enum": [
+        "ambil_sendiri",
+        "kirim_kurir",
+        "cargo"
+      ],
+      "type": "string"
     },
     "tortoise_code": {
+      "type": "string"
+    },
+    "tortoise_id": {
+      "type": "string"
+    },
+    "tortoise_name": {
       "type": "string"
     },
     "tortoise_species": {
@@ -153,26 +152,15 @@
     "tortoise_weight": {
       "type": "number"
     },
-    "profit": {
+    "total_paid": {
       "type": "number"
-    },
-    "margin_percent": {
-      "type": "number"
-    },
-    "care_cost_estimate": {
-      "type": "number"
-    },
-    "finance_tx_id": {
-      "type": "string"
     }
   },
   "required": [
-    "tortoise_name",
+    "tortoise_id",
     "buyer_name",
-    "price",
     "sale_date",
-    "hp_whatsapp",
-    "payment_status",
-    "shipping_method"
-  ]
+    "price"
+  ],
+  "type": "object"
 }
