@@ -220,6 +220,42 @@ if (terdaftar.size > 0) {
   temuan.push(...belum);
 }
 
+/* ── Bagian 3: gaya v4 yang menyegarkan SELURUH cache ─────────────────────
+ *
+ * TanStack Query v4 menerima kunci sebagai argumen pertama:
+ *
+ *     qc.invalidateQueries(["printers"])
+ *
+ * Di v5 — yang dipakai aplikasi ini (^5.84.1) — argumen pertama adalah objek
+ * SARINGAN, dan array yang dikirim ke sana tidak punya `queryKey`. Saringan
+ * tanpa queryKey cocok dengan SEMUA query.
+ *
+ * Diuji langsung dengan pustaka yang terpasang, tiga query di cache:
+ *
+ *     invalidateQueries(["printers"])            → printers:true  tortoises:true  sales:true
+ *     invalidateQueries({ queryKey: ["printers"] }) → printers:true  tortoises:false sales:false
+ *
+ * Jadi satu penyuntingan printer dulu membatalkan seluruh cache aplikasi, dan
+ * setiap query yang terpasang mengambil ulang datanya. Di ponsel dengan paket
+ * data itu belasan permintaan sekaligus, untuk satu baris yang berubah.
+ *
+ * Tidak ada galat, tidak ada peringatan: v5 menerima argumennya dengan diam.
+ */
+const POLA_POSISIONAL = /\b(invalidateQueries|refetchQueries|removeQueries|resetQueries|cancelQueries)\(\s*\[/;
+for (const p of berkasJs(join(AKAR, "src"))) {
+  const rel = relative(AKAR, p);
+  const baris = kupasKomentar(readFileSync(p, "utf8")).split("\n");
+  baris.forEach((b, i) => {
+    if (!POLA_POSISIONAL.test(b)) return;
+    temuan.push(
+      `  ${rel}:${i + 1} memanggil dengan gaya v4 (kunci sebagai argumen pertama).\n` +
+      `      Di v5 itu saringan tanpa queryKey, yang cocok dengan SEMUA query —\n` +
+      `      seluruh cache ikut dibatalkan. Pakai { queryKey: [...] }.\n` +
+      `      ${b.trim().slice(0, 90)}`,
+    );
+  });
+}
+
 if (temuan.length) {
   console.error(
     `${temuan.length} temuan kunci cache.\n\n` +
@@ -241,6 +277,7 @@ if (temuan.length) {
 
 console.log(
   `Setiap kunci cache satu bentuk (${peta.size} kunci literal diperiksa), ` +
-  `dan ${terdaftar.size} kunci CompanySettings disegarkan dari satu tempat.`,
+  `${terdaftar.size} kunci CompanySettings disegarkan dari satu tempat, ` +
+  `dan tidak ada penyegaran gaya v4 yang membatalkan seluruh cache.`,
 );
 process.exit(0);

@@ -237,7 +237,7 @@ function PrinterFormDialog({ open, onClose, editPrinter }) {
       ? base44.entities.PrinterConfig.update(editPrinter.id, data)
       : base44.entities.PrinterConfig.create(data),
     onSuccess: () => {
-      qc.invalidateQueries(["printers"]);
+      qc.invalidateQueries({ queryKey: ["printer-config"] });
       toast.success(isEdit ? "Printer diperbarui" : "Printer berhasil ditambahkan");
       onClose();
     },
@@ -547,14 +547,24 @@ export default function PrinterConfigPage() {
   const [editPrinter, setEditPrinter] = useState(null);
   const [testPrinter, setTestPrinter] = useState(null);
 
+  /*
+    Kuncinya ["printer-config"], sama dengan yang dipakai PemilihUkuranLabel.
+
+    Dulu halaman ini memakai ["printers"] dan pemilih ukuran label memakai
+    ["printer-config"] — dua kunci untuk satu tabel yang dibaca tanpa saringan.
+    Akibatnya: ganti ukuran gulungan di sini, lalu buka dialog cetak dalam lima
+    menit berikutnya (staleTime pemilih itu), dan labelnya masih dicetak dengan
+    ukuran gulungan yang LAMA. Yang terbuang bukan satu permintaan jaringan,
+    tetapi satu lembar label yang ukurannya salah.
+  */
   const { data: printers = [], isLoading } = useQuery({
-    queryKey: ["printers"],
+    queryKey: ["printer-config"],
     queryFn: () => base44.entities.PrinterConfig.list(),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.PrinterConfig.delete(id),
-    onSuccess: () => { qc.invalidateQueries(["printers"]); toast.success("Printer dihapus"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["printer-config"] }); toast.success("Printer dihapus"); },
   });
 
   const setDefaultMutation = useMutation({
@@ -566,7 +576,7 @@ export default function PrinterConfigPage() {
       );
       return base44.entities.PrinterConfig.update(printer.id, { is_default: true });
     },
-    onSuccess: () => { qc.invalidateQueries(["printers"]); toast.success("Printer default diperbarui"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["printer-config"] }); toast.success("Printer default diperbarui"); },
   });
 
   if (!["owner", "admin"].includes(role)) {

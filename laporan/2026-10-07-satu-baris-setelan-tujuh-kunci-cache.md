@@ -153,6 +153,83 @@ lolos penjaga statis dengan mulus, dan tidak menyegarkan apa pun.
 
 ---
 
+# Bagian kedua: satu penyuntingan printer yang membatalkan seluruh cache
+
+Setelah CompanySettings dibereskan, saya menyapu kunci cache lainnya untuk
+melihat apakah polanya berulang. Hasilnya dua temuan di satu halaman, dan satu
+kesimpulan yang juga perlu dikatakan: sapuan menyeluruhnya **tidak** bisa
+dijadikan penjaga.
+
+## 5. `invalidateQueries(["printers"])` — gaya v4 di aplikasi v5
+
+Tiga pemanggilan di PrinterConfigPage memakai bentuk lama:
+
+```js
+qc.invalidateQueries(["printers"]);        // simpan, hapus, jadikan default
+```
+
+Di TanStack Query **v4** argumen pertama memang kuncinya. Di **v5** — yang
+dipakai aplikasi ini (`^5.84.1`) — argumen pertama adalah objek **saringan**,
+dan array yang dikirim ke sana tidak punya `queryKey`. Saringan tanpa
+`queryKey` cocok dengan **semua** query.
+
+Diuji langsung dengan pustaka yang terpasang, tiga query di cache:
+
+```
+invalidateQueries(["printers"])                → printers:true  tortoises:true  sales:true
+invalidateQueries({ queryKey: ["printers"] })  → printers:true  tortoises:false sales:false
+```
+
+Jadi satu penyuntingan printer membatalkan **seluruh cache aplikasi**, dan
+setiap query yang terpasang mengambil ulang datanya. Di ponsel dengan paket
+data itu belasan permintaan sekaligus untuk satu baris yang berubah — dan data
+segar di layar lain ikut dibuang.
+
+Tidak ada galat dan tidak ada peringatan: v5 menerima argumen itu dengan diam.
+
+## 6. Dua kunci untuk satu tabel printer — dan satu lembar label yang salah ukuran
+
+Halaman Printer & Label membaca `PrinterConfig` lewat `["printers"]`.
+`PemilihUkuranLabel` — yang menentukan ukuran label saat mencetak — membacanya
+lewat `["printer-config"]`, dengan `staleTime` lima menit.
+
+Dua kunci, satu tabel, dibaca tanpa saringan oleh keduanya. Jadi: ganti ukuran
+gulungan di halaman printer, lalu buka dialog cetak dalam lima menit
+berikutnya, dan labelnya masih dicetak dengan **ukuran gulungan yang lama**.
+Yang terbuang di sini bukan satu permintaan jaringan, tetapi satu lembar label
+yang ukurannya salah — pada printer yang gulungannya memang cuma satu jenis.
+
+Diperbaiki dengan menyatukan kuncinya menjadi `["printer-config"]` di kedua
+tempat. Tidak perlu daftar kunci seperti CompanySettings: dua pembaca tanpa
+saringan memang seharusnya satu kunci.
+
+## 7. Penjaga baru, dan satu penjaga yang SENGAJA tidak dibuat
+
+`cek-kunci` bagian 3: tidak ada `invalidateQueries` / `refetchQueries` /
+`removeQueries` / `resetQueries` / `cancelQueries` yang dipanggil dengan array
+sebagai argumen pertama. Diuji-merah: satu pemanggilan dikembalikan ke gaya v4
+→ merah, menyebut berkas, baris, dan potongan kodenya.
+
+**Yang tidak dibuat, dan kenapa.** Godaannya besar: buat penjaga umum yang
+mencari "tabel yang ditulis di satu layar tetapi kunci pembacanya tidak pernah
+disegarkan". Saya mengukurnya dulu sebelum menulisnya — dan hasilnya **45 dari
+64 tabel** kena, sekitar 200 kunci. Hampir semuanya tidak bercacat: layar di
+halaman lain memang mengambil ulang datanya saat dibuka, dan itulah perilaku
+bawaan TanStack Query.
+
+Penjaga yang menyalakan 200 temuan untuk beberapa cacat nyata akan diabaikan
+dalam seminggu, dan sesudah itu ia lebih buruk daripada tidak ada. Dua temuan
+di atas ditemukan dengan **membaca** — satu per satu, memeriksa apakah layar
+yang menyimpan benar-benar menampilkan nilai yang baru disimpannya.
+
+Yang membedakan kasus CompanySettings sehingga ia LAYAK dijaga: nama-nama
+kuncinya tampak bertingkat padahal tidak, sehingga penulisnya wajar mengira
+sudah tercakup; `staleTime`-nya panjang dan pengambilan ulangnya dimatikan; dan
+yang ditampilkan adalah nama perusahaan dan nilai uang di layar yang sama
+tempat orang baru saja menyimpannya.
+
+---
+
 ## Yang masih menunggu keputusan pemilik
 
 Tidak berubah dari 6 Oktober:
@@ -166,6 +243,11 @@ Tidak berubah dari 6 Oktober:
    menyentuh 20 berkas.
 
 ---
+
+**Judul laporan ini menyebut setelan saja, tetapi isinya tiga cacat cache**
+— CompanySettings (bagian 1–4), gaya v4 yang membatalkan seluruh cache
+(bagian 5), dan dua kunci printer (bagian 6). Ketiganya satu keluarga: cache
+yang dikira satu tempat padahal beberapa, atau sebaliknya.
 
 **Pemeriksaan akhir:** 27 penjaga lolos (`node scripts/cek-semua.mjs` → "Semua
 penjaga lolos"), eslint 0 error / 101 peringatan (batas tidak naik), `npx vite
