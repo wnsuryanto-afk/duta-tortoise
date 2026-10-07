@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Camera, Loader2, Plus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
+import { pesanMirip, tugasMirip } from "@/lib/miripTugas";
 
-export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
+export default function ExtraTaskForm({ open, onClose, user, today, onSaved, tugasChecklist = [] }) {
   const [form, setForm] = useState({ title: "", description: "" });
   const [photo, setPhoto] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -23,6 +24,21 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
     enabled: open,
     staleTime: 30 * 1000,
   });
+
+  /*
+    Pekerjaan yang sebenarnya sudah ada di checklist.
+
+    Ini yang paling merugikan kiper, dan tidak ada yang pernah memberitahunya:
+    "Siram tanaman" adalah tugas SOP HARIAN seharga 5 poin, tetapi tercatat 8
+    kali di sini sebagai Inisiatif — dan Inisiatif masuk dengan poin NOL.
+    Bukan dibayar dua kali: dibayar nol kali. Dua tombol yang sama-sama berarti
+    "sudah saya kerjakan", dan yang satu kebetulan bernilai nol.
+
+    Peringatan, bukan penghalang: judulnya boleh kebetulan mirip sementara
+    pekerjaannya memang berbeda, dan yang tahu bedanya orang yang baru saja
+    mengerjakannya. Tombol simpannya tetap hidup.
+  */
+  const mirip = tugasMirip(form.title, tugasChecklist);
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
@@ -103,6 +119,13 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved }) {
               placeholder="cth: Perbaiki pipa air"
             />
           </div>
+          {mirip && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-700 mt-0.5 shrink-0" />
+              <p className="text-xs text-amber-900">{pesanMirip(mirip)}</p>
+            </div>
+          )}
+
           <div>
             <Label>Deskripsi (opsional)</Label>
             <Textarea

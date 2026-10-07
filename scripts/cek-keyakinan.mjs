@@ -198,8 +198,94 @@ if (isiUsul) {
   }
 }
 
+/*
+ * Pekerjaan yang sudah ada di checklist ikut diberitahukan — ke kiper, ke
+ * penilai, DAN ke modelnya.
+ *
+ * "Siram tanaman" adalah tugas SOP harian seharga 5 poin, dan tercatat 8 kali
+ * sebagai Inisiatif yang bernilai nol. Pencocoknya ada di lib/miripTugas.js;
+ * yang diperiksa di sini pemasangannya, karena daftar tugas yang LUPA DIKIRIM
+ * membuat `tugasChecklist` jatuh ke `[]` dan peringatannya hilang tanpa suara —
+ * tidak ada galat, tidak ada peringatan eslint, hanya tidak pernah muncul.
+ */
+const PENCATAT = "src/components/sop/ExtraTaskForm.jsx";
+try {
+  const isiPencatat = kupasKomentar(readFileSync(join(AKAR, PENCATAT), "utf8"));
+  if (!/from\s+"@\/lib\/miripTugas"/.test(isiPencatat) || !/tugasMirip\s*\(/.test(isiPencatat)) {
+    gagal++;
+    console.error(
+      `GAGAL  ${PENCATAT} tidak memakai tugasMirip() dari src/lib/miripTugas.js.\n` +
+      `   Kiper kembali bisa mencatat tugas checklist sebagai Inisiatif tanpa\n` +
+      `   diberi tahu, dan Inisiatif masuk dengan nol poin.`
+    );
+  }
+} catch {
+  gagal++;
+  console.error(`GAGAL  ${PENCATAT} tidak bisa dibaca.`);
+}
+
 try {
   const isiPemakai = kupasKomentar(readFileSync(join(AKAR, PEMAKAI), "utf8"));
+  const kirimDaftar = /tugasChecklist=\{/.test(isiPemakai);
+  /*
+    Dihitung per TAG, bukan dengan menghitung kemunculan "mirip={" di berkas.
+    Versi pertama memeriksa "sekurangnya dua kemunculan" dan tetap hijau ketika
+    satu baris Inisiatif kehilangan propnya — karena kemunculan ketiganya ada
+    pada <UsulPoinAI>, dan dua yang tersisa sudah memenuhi syaratnya. Penjaga
+    yang dipenuhi oleh tag yang salah tidak menjaga apa pun.
+  */
+  const tagTanpaMirip = (nama) => {
+    const kurang = [];
+    const pola = new RegExp(`<${nama}\\b`, "g");
+    let m;
+    while ((m = pola.exec(isiPemakai)) !== null) {
+      const tutup = isiPemakai.indexOf("/>", m.index);
+      const isiTag = tutup === -1 ? isiPemakai.slice(m.index) : isiPemakai.slice(m.index, tutup);
+      if (!/\bmirip=\{/.test(isiTag)) {
+        kurang.push(isiPemakai.slice(0, m.index).split("\n").length);
+      }
+    }
+    return kurang;
+  };
+  const kurangMirip = [
+    ...tagTanpaMirip("ExtraTaskRow").map((b) => `ExtraTaskRow baris ${b}`),
+    ...tagTanpaMirip("UsulPoinAI").map((b) => `UsulPoinAI baris ${b}`),
+  ];
+  if (!kirimDaftar) {
+    gagal++;
+    console.error(
+      `GAGAL  ${PEMAKAI} tidak mengirim tugasChecklist ke ExtraTaskForm.\n` +
+      `   Tanpa daftar tugas, pencocoknya tidak punya apa pun untuk dicocokkan\n` +
+      `   dan peringatannya tidak pernah muncul.`
+    );
+  }
+  // Setiap tag harus menerimanya: baris Inisiatif hari ini, baris tunggakan,
+  // dan usulan AI. Yang satu terlewat berarti sebagian baris kehilangan
+  // peringatannya, atau modelnya mengusulkan poin penuh untuk pekerjaan yang
+  // poinnya sudah ada di checklist.
+  if (kurangMirip.length) {
+    gagal++;
+    console.error(
+      `GAGAL  ${PEMAKAI}: ${kurangMirip.length} tag tanpa prop mirip={...}.\n` +
+      kurangMirip.map((t) => `      ${t}`).join("\n")
+    );
+  }
+  /*
+    Poin yang dinilai harus DITULISKAN ke checklist tanggal itu.
+    Tanpa pemanggilan ini, penilaian hanya mengubah MaintenanceLog.poin_earned —
+    dibaca satu layar, tidak dibaca slip gaji — dan sejak 28 Juli 2026 itu
+    berarti pekerjaan Inisiatif dibayar nol. Yang hilang bukan galat: angkanya
+    tampil di layar kiper, dan tidak muncul di klaim poin hari itu.
+  */
+  if (!/tulisPoinInisiatif\s*\(/.test(isiPemakai) || !/poinJudulHari\s*\(/.test(isiPemakai)) {
+    gagal++;
+    console.error(
+      `GAGAL  ${PEMAKAI} tidak menuliskan poin Inisiatif ke checklist.\n` +
+      `   Harus memanggil tulisPoinInisiatif() dengan poinJudulHari() — yang\n` +
+      `   kedua menjumlahkan judul yang sama di hari yang sama, supaya\n` +
+      `   penilaian kedua tidak menimpa yang pertama.`
+    );
+  }
   const diimpor = /import\s+UsulPoinAI\s+from/.test(isiPemakai);
   const dipakai = /<UsulPoinAI/.test(isiPemakai);
   if (!diimpor || !dipakai) {
@@ -216,6 +302,6 @@ try {
 }
 
 if (gagal === 0) {
-  console.log(`Keyakinan AI terbaca pada skala yang benar (${TERSIMPAN.length} nilai nyata diperiksa, tidak ada perbandingan mentah), dan usulan poin AI tetap usulan.`);
+  console.log(`Keyakinan AI terbaca pada skala yang benar (${TERSIMPAN.length} nilai nyata diperiksa, tidak ada perbandingan mentah), usulan poin AI tetap usulan, dan tugas checklist yang mirip tetap diberitahukan.`);
 }
 process.exit(gagal === 0 ? 0 : 1);

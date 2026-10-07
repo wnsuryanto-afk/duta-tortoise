@@ -38,6 +38,8 @@ import { simpanUkuranSekali, pesanSudahDitimbang } from "@/lib/ukurSekali";
 import { pisahJudulTugas } from "@/lib/judulTugas";
 import { opsiPoin, hitungPemberian, poinTerpakaiHari, maksHarian, inisiatifMenunggu } from "@/lib/poinInisiatif";
 import UsulPoinAI from "@/components/sop/UsulPoinAI";
+import { tugasMirip } from "@/lib/miripTugas";
+import { pesanStatus, poinJudulHari, tulisPoinInisiatif } from "@/lib/poinKeChecklist";
 import { peranPenyetuju, labelSebab } from "@/lib/persetujuanPoin";
 import InfoHint from "@/components/ui/info-hint";
 import { propsTekan } from "@/lib/a11y";
@@ -1038,6 +1040,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       kecualikanId: log.id,
     });
 
+    let hasilChecklist = null;
     try {
       await base44.entities.MaintenanceLog.update(log.id, {
         // Nol yang DIPUTUSKAN ditandai "rejected" supaya bisa dibedakan dari
@@ -1052,6 +1055,42 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         ...(catatan ? { penilaian_note: String(catatan).trim() } : {}),
       });
 
+      /*
+        Poinnya dituliskan juga ke baris checklist tanggal itu.
+
+        Tanpa ini penilaian hanya mengubah MaintenanceLog.poin_earned — yang
+        dibaca satu layar, "Poin Saya" milik kiper — sementara slip gaji dan
+        bonus bulanan menghitung dari DailyChecklist, tempat barisnya masuk
+        bernilai NOL dan tidak pernah diperbarui (`onMaintenanceDone` hanya
+        menambah baris yang belum ada).
+
+        `hasilChecklist.status` dikatakan apa adanya kepada penilai: untuk hari
+        yang checklist-nya sudah disetujui, barisnya dibetulkan tetapi angka
+        yang sudah dibayar TIDAK disentuh.
+      */
+      /*
+        Yang dituliskan JUMLAH poin untuk judul itu hari itu, bukan poin
+        catatan ini saja.
+
+        Kiper bisa mencatat judul yang sama dua kali sehari — pada 23 Juni 2026
+        "Cari rumput" tercatat dua kali. Di checklist keduanya mengenai SATU
+        baris, karena `onMaintenanceDone` menyatukan baris berjudul sama. Jadi
+        menuliskan poin satu catatan saja berarti penilaian kedua MENIMPA yang
+        pertama, dan kiper kehilangan poin yang sudah diberikan penilai.
+      */
+      hasilChecklist = await tulisPoinInisiatif({
+        email: log.done_by_email,
+        tanggal: log.period_key,
+        judul: log.item_label,
+        kandang: log.enclosure_name,
+        poin: poinJudulHari(logsKuota, {
+          judul: log.item_label,
+          email: log.done_by_email,
+          tanggal: log.period_key,
+          tambahan: { log, poin: diberikan },
+        }),
+      });
+
       // Kabari yang mengerjakan — inilah yang selama ini tidak pernah ada.
       try {
         await base44.entities.Notification.create({
@@ -1060,6 +1099,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           message: [
             catatan ? String(catatan).trim() : "",
             pesan,
+            pesanStatus(hasilChecklist),
             `Dinilai oleh ${user.full_name || user.email}.`,
           ].filter(Boolean).join("\n\n"),
           type: diberikan > 0 ? "success" : "info",
@@ -1075,7 +1115,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         // Penilaiannya sudah tersimpan; hanya kabarnya yang gagal.
       }
 
-      if (pesan) toast.warning(pesan);
+      const catatanChecklist = pesanStatus(hasilChecklist);
+      if (pesan) toast.warning(pesan, catatanChecklist ? { description: catatanChecklist } : undefined);
+      else if (catatanChecklist) toast.warning(`Inisiatif dinilai ${diberikan} poin`, { description: catatanChecklist });
       else toast.success(`Inisiatif dinilai ${diberikan} poin`);
     } catch (e) {
       toast.error("Gagal menyimpan penilaian: " + (e?.message || e));
@@ -1084,6 +1126,14 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     refetchAllLogs();
     refetchLogs();
     refetchSemuaExtra();
+    /*
+      Layar Approval Poin membaca checklist lewat ["checklists-all"] dan
+      ["checklists-pending-count"]. Poin Inisiatif yang baru dituliskan ke
+      checklist tidak akan terlihat di sana sampai keduanya disegarkan —
+      pemilik akan menyetujui angka klaim yang lama.
+    */
+    qc.invalidateQueries({ queryKey: ["checklists-all"] });
+    qc.invalidateQueries({ queryKey: ["checklists-pending-count"] });
   };
 
   // ── RENDER ──
@@ -1315,6 +1365,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1">Inisiatif</p>
           {extraTasks.map(log => {
             const terpakaiHari = poinTerpakaiHari(allLogsToday, log.done_by_email, log.period_key, { kecualikanId: log.id });
+            const mirip = tugasMirip(log.item_label, sopTasks);
             return (
               <ExtraTaskRow
                 key={log.id}
@@ -1328,6 +1379,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
                 sisaKuota={Math.max(0, maksInisiatif - terpakaiHari)}
                 bolehMenilai={bolehMenilaiInisiatif}
                 usulAIAktif={usulPoinAIAktif}
+                mirip={mirip}
               />
             );
           })}
@@ -1346,6 +1398,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
           </p>
           {tertunggak.slice(0, jumlahTertunggak).map(log => {
             const terpakaiHari = poinTerpakaiHari(semuaExtra, log.done_by_email, log.period_key, { kecualikanId: log.id });
+            const mirip = tugasMirip(log.item_label, sopTasks);
             return (
               <ExtraTaskRow
                 key={log.id}
@@ -1359,6 +1412,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
                 sisaKuota={Math.max(0, maksInisiatif - terpakaiHari)}
                 bolehMenilai={bolehMenilaiInisiatif}
                 usulAIAktif={usulPoinAIAktif}
+                mirip={mirip}
                 tampilkanTanggal
               />
             );
@@ -1380,6 +1434,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         onClose={() => setShowExtraForm(false)}
         user={user}
         today={today}
+        tugasChecklist={sopTasks}
         onSaved={() => { refetchLogs(); refetchAllLogs(); }}
       />
 
@@ -1790,7 +1845,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
  * `opsi`, `sisaKuota`, dan `bolehMenilai` dihitung di induknya dan diturunkan
  * sebagai prop: komponen ini tidak memegang kueri sendiri.
  */
-function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15], maks = 30, terpakaiHari = 0, sisaKuota = 30, bolehMenilai = false, usulAIAktif = true, tampilkanTanggal = false }) {
+function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15], maks = 30, terpakaiHari = 0, sisaKuota = 30, bolehMenilai = false, usulAIAktif = true, mirip = null, tampilkanTanggal = false }) {
   const [poinPilih, setPoinPilih] = useState(null);
   const [catatan, setCatatan] = useState("");
   const isAdmin = bolehMenilai;
@@ -1813,6 +1868,18 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15
               {isPending && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">Menunggu penilaian</span>}
             </div>
             {log.extra_description && <p className="text-xs text-muted-foreground mt-0.5">{log.extra_description}</p>}
+            {/* Pekerjaan yang sebenarnya sudah ada di checklist. Ditampilkan
+                kepada SIAPA PUN yang melihat baris ini, bukan hanya penilai:
+                yang paling perlu tahu justru yang mengerjakannya, karena ia
+                yang bisa memakai tombol yang benar besok. "Siram tanaman" ada
+                di checklist harian seharga 5 poin, dan tercatat 8 kali sebagai
+                Inisiatif bernilai nol. */}
+            {mirip && (
+              <p className="text-[11px] text-amber-800 bg-amber-100/70 border border-amber-200 rounded-lg px-2 py-1 mt-1">
+                Sudah ada di checklist {mirip.frekuensi}: <span className="font-semibold">{mirip.judul}</span>
+                {mirip.poin > 0 && <> — {mirip.poin} poin di sana</>}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground mt-0.5">
               oleh {log.done_by} · {tampilkanTanggal ? `${log.period_key} ` : ""}{log.done_at}
             </p>
@@ -1851,6 +1918,7 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15
                 opsi={opsi}
                 maks={maks}
                 terpakaiHari={terpakaiHari}
+                mirip={mirip}
                 onUsul={(p) => setPoinPilih((lama) => (lama === null ? p : lama))}
                 onPakai={(p) => setPoinPilih(p)}
               />
@@ -1890,16 +1958,14 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15
                 Sisa kuota hari ini {sisaKuota} poin
               </span>
             </div>
-            {/* Dikatakan apa adanya kepada yang menilai. Poin Inisiatif
-                tersimpan di MaintenanceLog.poin_earned, dan satu-satunya layar
-                yang membacanya adalah "Poin Saya" milik kiper sendiri. Bonus
-                bulanan dan slip gaji menghitung poin dari DailyChecklist, jadi
-                angka yang diberikan di sini TIDAK menambah upah siapa pun
-                sampai jalurnya disambungkan. Penilai berhak tahu itu sebelum
-                menekan simpan. */}
+            {/* Dikatakan apa adanya kepada yang menilai. Sejak 7 Okt 2026
+                poin yang disimpan di sini ikut dituliskan ke baris checklist
+                tanggal itu, jadi ia masuk hitungan klaim poin yang disetujui
+                pemilik. Satu pengecualian yang harus disebut: hari yang
+                checklist-nya SUDAH disetujui tidak diubah angka bayarnya. */}
             <p className="text-[11px] text-muted-foreground">
-              Poin Inisiatif tampil di “Poin Saya” kiper; bonus bulanan dan slip gaji
-              belum menghitungnya.
+              Poin ini ikut ditulis ke checklist tanggal tersebut. Bila checklist hari itu
+              sudah disetujui, angkanya baru terhitung setelah disetujui ulang.
             </p>
           </div>
         )}

@@ -1,13 +1,7 @@
 import { base44 } from "@/api/base44Client";
 import { persenKeyakinan } from "@/lib/keyakinanAI";
+import { cariTugas } from "@/lib/kunciTugas";
 
-const PH_ENC = new Set(["", "tugas harian", "suplemen", "tugas_harian"]);
-const normEnc = (e) => {
-  const v = (e || "").toString().trim().toLowerCase();
-  return PH_ENC.has(v) ? "" : v;
-};
-const normTitle = (t) => (t || "").toString().trim().toLowerCase();
-const dedupKey = (title, enc) => `${normTitle(title)}__${normEnc(enc)}`;
 
 /**
  * Deteksi usia foto dari file.lastModified (pengganti ringan EXIF DateTimeOriginal).
@@ -129,14 +123,13 @@ Jawab HANYA dengan JSON.`,
  * Retry dengan jeda jika entry belum ada (automation belum selesai).
  */
 export async function syncAIVerification({ employeeEmail, date, taskTitle, enclosure, aiResult, ageWarning, timeWarning, aiStatus, aiError }) {
-  const key = dedupKey(taskTitle, enclosure);
-
+  
   const trySync = async () => {
     const lists = await base44.entities.DailyChecklist.filter({ employee_email: employeeEmail, date });
     if (!lists.length) return false;
     const checklist = lists[0];
     const tasks = (checklist.completed_tasks || []).slice();
-    const idx = tasks.findIndex(t => dedupKey(t.task_title, t.notes) === key);
+    const idx = cariTugas(tasks, taskTitle, enclosure);
     if (idx === -1) return false;
     const updated = { ...tasks[idx] };
     if (aiResult) {

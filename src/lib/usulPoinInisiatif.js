@@ -46,7 +46,7 @@ export const SKEMA_USUL = {
  * Prompt penilai. Pilihan poin dan batasnya ikut dikirim supaya model menilai
  * dengan aturan peternakan ini, bukan dengan aturan yang dikarangnya sendiri.
  */
-export function promptUsulPoin({ judul, catatan = "", opsi = [], maks = 0, terpakai = 0, adaFoto = false }) {
+export function promptUsulPoin({ judul, catatan = "", opsi = [], maks = 0, terpakai = 0, adaFoto = false, tugasChecklist = null }) {
   const daftar = (opsi || []).join(", ");
   const sisa = Math.max(0, Number(maks) - Number(terpakai));
   return [
@@ -68,6 +68,12 @@ export function promptUsulPoin({ judul, catatan = "", opsi = [], maks = 0, terpa
     "- 30 menit sampai 2 jam, atau perlu tenaga/keahlian: poin menengah.",
     "- Di atas 2 jam, berat, atau memperbaiki sesuatu yang rusak: poin terbesar.",
     "",
+    tugasChecklist
+      ? `PENTING: pekerjaan ini sepertinya sudah ada di checklist ${tugasChecklist.frekuensi || "rutin"} ` +
+        `dengan judul "${tugasChecklist.judul}"${tugasChecklist.poin ? ` dan bernilai ${tugasChecklist.poin} poin di sana` : ""}. ` +
+        "Bila memang pekerjaan yang sama, usulkan poin TERKECIL dan katakan di alasan bahwa " +
+        "pekerjaan ini semestinya dicentang di checklist, bukan dicatat sebagai Inisiatif."
+      : "",
     "Pekerjaan perbaikan (menambal bocor, memperbaiki kran, menguras kolam) biasanya",
     "lebih berharga daripada pekerjaan mengangkut atau merapikan dengan durasi sama,",
     "karena menghindarkan kerusakan yang lebih besar.",
