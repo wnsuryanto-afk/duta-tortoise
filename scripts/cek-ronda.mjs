@@ -70,6 +70,7 @@ bundel("src/lib/kunciSetelan.js", "kunci.cjs");
 bundel("src/lib/miripTugas.js", "mirip.cjs");
 bundel("src/lib/kunciTugas.js", "kuncitugas.cjs");
 bundel("src/lib/poinBarisChecklist.js", "poinchecklist.cjs");
+bundel("base44/shared/bayarSurut.ts", "bayarsurut.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -77,6 +78,7 @@ const KS = await import("file://" + join(dir, "kunci.cjs")).then((m) => m.defaul
 const MT = await import("file://" + join(dir, "mirip.cjs")).then((m) => m.default || m);
 const KT = await import("file://" + join(dir, "kuncitugas.cjs")).then((m) => m.default || m);
 const PK = await import("file://" + join(dir, "poinchecklist.cjs")).then((m) => m.default || m);
+const BS = await import("file://" + join(dir, "bayarsurut.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -622,6 +624,135 @@ for (const harus of ["sudah disetujui", "2026-10-03"]) {
 }
 if (PK.pesanStatus({ status: PK.STATUS.TERSIMPAN }) !== "") {
   temuan.push("pesanStatus(tersimpan) seharusnya kosong — tidak ada yang perlu dikatakan");
+}
+
+/* ── Pembayaran surut Inisiatif: hitungan UANG, sekali jalan ─────────────
+ *
+ * Fungsi bayarInisiatifSurut dijalankan SEKALI untuk 210 catatan dua orang.
+ * Sekali jalan berarti tidak ada kesempatan kedua untuk memperhatikan bahwa
+ * angkanya keliru: slip sudah dicetak, orang sudah dibayar, dan yang tersisa
+ * hanya menelusuri ke belakang. Jadi keputusannya diuji di sini lebih dulu,
+ * dengan bentuk-bentuk hari yang benar-benar ada di data peternakan ini.
+ */
+const barisSOP = (judul, poin, penanda) => ({ task_title: judul, notes: penanda || "Tugas Harian", points: poin });
+const logInisiatif = (id, judul, jam) => ({ id, item_label: judul, enclosure_name: "Inisiatif", done_at: jam });
+
+const hariUji = [
+  {
+    nama: "hari biasa: dua Inisiatif, keduanya dibayar penuh",
+    masuk: {
+      logs: [logInisiatif("a", "Cari rumput", "08:00"), logInisiatif("b", "Pakan adabra", "09:00")],
+      baris: [barisSOP("Cari rumput", 0, "Inisiatif"), barisSOP("Pakan adabra", 0, "Inisiatif"), barisSOP("Kebersihan W1", 23, "W1")],
+    },
+    poin: [5, 5], sebab: ["dibayar", "dibayar"], totalBaru: 10 + 23, selisih: 10,
+  },
+  {
+    nama: "judul yang sama sudah berpoin di baris tugas SOP → nol",
+    masuk: {
+      logs: [logInisiatif("a", "Siram tanaman", "16:00")],
+      baris: [barisSOP("Siram tanaman", 5, "Tugas Harian"), barisSOP("Siram tanaman", 0, "Inisiatif")],
+    },
+    poin: [0], sebab: ["sudah-dibayar"], totalBaru: 5, selisih: 0,
+  },
+  {
+    nama: "judul sama TAPI baris SOP-nya belum berpoin → tetap dibayar",
+    masuk: {
+      logs: [logInisiatif("a", "Siram tanaman", "16:00")],
+      baris: [barisSOP("Siram tanaman", 0, "Tugas Harian"), barisSOP("Siram tanaman", 0, "Inisiatif")],
+    },
+    poin: [5], sebab: ["dibayar"], totalBaru: 5, selisih: 5,
+  },
+  {
+    nama: "satu judul dicatat dua kali sehari → barisnya dapat JUMLAHNYA",
+    masuk: {
+      logs: [logInisiatif("a", "Cari rumput", "08:00"), logInisiatif("b", "Cari rumput", "15:00")],
+      baris: [barisSOP("Cari rumput", 0, "Inisiatif")],
+    },
+    poin: [5, 5], sebab: ["dibayar", "dibayar"], totalBaru: 10, selisih: 10,
+  },
+  {
+    nama: "enam Inisiatif sehari: 30 poin, tepat di batas",
+    masuk: {
+      logs: ["a", "b", "c", "d", "e", "f"].map((id, i) => logInisiatif(id, `Kerja ${id}`, `0${i}:00`)),
+      baris: ["a", "b", "c", "d", "e", "f"].map((id) => barisSOP(`Kerja ${id}`, 0, "Inisiatif")),
+    },
+    poin: [5, 5, 5, 5, 5, 5], sebab: Array(6).fill("dibayar"), totalBaru: 30, selisih: 30,
+  },
+  {
+    nama: "tujuh Inisiatif sehari: yang ketujuh kehabisan kuota",
+    masuk: {
+      logs: ["a", "b", "c", "d", "e", "f", "g"].map((id, i) => logInisiatif(id, `Kerja ${id}`, `0${i}:00`)),
+      baris: ["a", "b", "c", "d", "e", "f", "g"].map((id) => barisSOP(`Kerja ${id}`, 0, "Inisiatif")),
+    },
+    poin: [5, 5, 5, 5, 5, 5, 0], sebab: [...Array(6).fill("dibayar"), "kuota-habis"], totalBaru: 30, selisih: 30,
+  },
+  {
+    nama: "kuota sudah terpakai 28 poin → yang berikutnya terpotong jadi 2",
+    masuk: {
+      logs: [logInisiatif("a", "Cari rumput", "08:00"), logInisiatif("b", "Pakan adabra", "09:00")],
+      baris: [barisSOP("Cari rumput", 0, "Inisiatif"), barisSOP("Pakan adabra", 0, "Inisiatif")],
+      terpakai: 28,
+    },
+    poin: [2, 0], sebab: ["kuota-terpotong", "kuota-habis"], totalBaru: 2, selisih: 2,
+  },
+  {
+    nama: "barisnya tidak ada di checklist → poin diputuskan, baris dilaporkan hilang",
+    masuk: { logs: [logInisiatif("a", "Cari rumput", "08:00")], baris: [barisSOP("Kebersihan W1", 23, "W1")] },
+    poin: [5], sebab: ["dibayar"], totalBaru: 23, selisih: 0, tanpaBaris: 1,
+  },
+  {
+    nama: "checklist kosong",
+    masuk: { logs: [logInisiatif("a", "Cari rumput", "08:00")], baris: [] },
+    poin: [5], sebab: ["dibayar"], totalBaru: 0, selisih: 0, tanpaBaris: 1,
+  },
+  {
+    nama: "tidak ada catatan: tidak ada yang berubah",
+    masuk: { logs: [], baris: [barisSOP("Kebersihan W1", 23, "W1")] },
+    poin: [], sebab: [], totalBaru: 23, selisih: 0,
+  },
+];
+
+for (const kasus of hariUji) {
+  /*
+    Potret daftar barisnya diambil SEBELUM fungsi apa pun dipanggil.
+
+    Versi pertama pemeriksaan ini mengambilnya SESUDAH pasangKeBaris dipanggil
+    sekali, lalu memanggilnya lagi dan membandingkan. Kalau pemanggilan pertama
+    sudah merusak daftarnya, potretnya memuat kerusakan itu dan pemanggilan
+    kedua tidak mengubah apa-apa lagi — hijau. Diuji-merah dengan menghapus
+    `.slice()` dan penjaganya memang tetap hijau; pemeriksaan yang mengukur
+    sesudah kerusakan tidak mengukur apa pun.
+  */
+  const aslinya = JSON.stringify(kasus.masuk.baris || []);
+  const { keputusan, perJudul } = BS.rencanaHari({ maks: 30, poinSatuan: 5, ...kasus.masuk });
+  const poin = keputusan.map((k) => k.poin);
+  const sebab = keputusan.map((k) => k.sebab);
+  if (JSON.stringify(poin) !== JSON.stringify(kasus.poin)) {
+    temuan.push(`bayarSurut [${kasus.nama}]: poin ${JSON.stringify(poin)}, seharusnya ${JSON.stringify(kasus.poin)}`);
+  }
+  if (JSON.stringify(sebab) !== JSON.stringify(kasus.sebab)) {
+    temuan.push(`bayarSurut [${kasus.nama}]: sebab ${JSON.stringify(sebab)}, seharusnya ${JSON.stringify(kasus.sebab)}`);
+  }
+  const hasil = BS.pasangKeBaris(kasus.masuk.baris || [], perJudul);
+  if (hasil.total !== kasus.totalBaru) {
+    temuan.push(`bayarSurut [${kasus.nama}]: total baru ${hasil.total}, seharusnya ${kasus.totalBaru}`);
+  }
+  if (hasil.selisih !== kasus.selisih) {
+    temuan.push(`bayarSurut [${kasus.nama}]: selisih ${hasil.selisih}, seharusnya ${kasus.selisih}`);
+  }
+  if ((kasus.tanpaBaris || 0) !== hasil.tanpaBaris) {
+    temuan.push(`bayarSurut [${kasus.nama}]: baris hilang ${hasil.tanpaBaris}, seharusnya ${kasus.tanpaBaris || 0}`);
+  }
+  // Daftar baris aslinya tidak boleh ikut berubah: fungsi ini dipanggil saat
+  // laporan kering disusun, SEBELUM ada keputusan menulis apa pun.
+  if (JSON.stringify(kasus.masuk.baris || []) !== aslinya) {
+    temuan.push(`bayarSurut [${kasus.nama}]: daftar baris aslinya ikut diubah`);
+  }
+  // Jumlah poin yang diberikan tidak boleh melewati batas harian.
+  const diberikan = poin.reduce((j, p) => j + p, 0);
+  if (diberikan + (kasus.masuk.terpakai || 0) > 30) {
+    temuan.push(`bayarSurut [${kasus.nama}]: total ${diberikan + (kasus.masuk.terpakai || 0)} poin melewati batas 30`);
+  }
 }
 
 /* ── Satu baris setelan, tujuh kunci cache, satu penyegaran ─────────────
@@ -1547,6 +1678,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length} judul mirip tugas + ${barisUji.length} kunci baris checklist + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length} judul mirip tugas + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);
