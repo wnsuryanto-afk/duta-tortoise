@@ -58,7 +58,7 @@ export function terpakai() {
  * Minta usulan untuk satu log. Memakai simpanan bila sudah ada.
  * @returns {Promise<{poin:number, alasan:string, keyakinan:string, dibetulkan:boolean}>}
  */
-export async function mintaUsul(log, { opsi, maks, terpakaiHari, paksa = false }) {
+export async function mintaUsul(log, { opsi, maks, terpakaiHari, mirip = null, paksa = false }) {
   const id = log?.id;
   if (!paksa && id && simpanan.has(id)) return simpanan.get(id);
   if (!paksa && id && sedangJalan.has(id)) return sedangJalan.get(id);
@@ -74,6 +74,7 @@ export async function mintaUsul(log, { opsi, maks, terpakaiHari, paksa = false }
     maks,
     terpakai: terpakaiHari,
     adaFoto: !!foto,
+    tugasChecklist: mirip,
   });
 
   const jalan = (async () => {
@@ -109,7 +110,7 @@ const WARNA_KEYAKINAN = {
  * @param {function} props.onUsul        dipanggil dengan angka usulan begitu siap
  * @param {function} props.onPakai       dipanggil saat penilai menekan "Pakai"
  */
-export default function UsulPoinAI({ log, opsi = [], maks = 0, terpakaiHari = 0, onUsul, onPakai }) {
+export default function UsulPoinAI({ log, opsi = [], maks = 0, terpakaiHari = 0, mirip = null, onUsul, onPakai }) {
   const [usul, setUsul] = useState(() => simpanan.get(log?.id) || null);
   const [memuat, setMemuat] = useState(false);
   const [gagal, setGagal] = useState("");
@@ -124,7 +125,7 @@ export default function UsulPoinAI({ log, opsi = [], maks = 0, terpakaiHari = 0,
       // Namanya bukan `hasil`: di berkas ini `hasil` berarti jawaban MENTAH
       // dari model, dan penjaga cek-keyakinan menolak `hasil.poin` dibaca di
       // mana pun supaya angka mentah tidak pernah sampai ke layar.
-      const usulBaru = await mintaUsul(log, { opsi, maks, terpakaiHari, paksa });
+      const usulBaru = await mintaUsul(log, { opsi, maks, terpakaiHari, mirip, paksa });
       setUsul(usulBaru);
       if (!sudahMengisi.current || paksa) {
         sudahMengisi.current = true;

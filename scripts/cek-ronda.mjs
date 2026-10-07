@@ -67,10 +67,16 @@ bundel("src/lib/hasilInkubasi.js", "hasil.cjs");
 bundel("src/lib/hppKura.js", "hpp.cjs");
 bundel("src/lib/usulPoinInisiatif.js", "usulpoin.cjs");
 bundel("src/lib/kunciSetelan.js", "kunci.cjs");
+bundel("src/lib/miripTugas.js", "mirip.cjs");
+bundel("src/lib/kunciTugas.js", "kuncitugas.cjs");
+bundel("src/lib/poinBarisChecklist.js", "poinchecklist.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
 const KS = await import("file://" + join(dir, "kunci.cjs")).then((m) => m.default || m);
+const MT = await import("file://" + join(dir, "mirip.cjs")).then((m) => m.default || m);
+const KT = await import("file://" + join(dir, "kuncitugas.cjs")).then((m) => m.default || m);
+const PK = await import("file://" + join(dir, "poinchecklist.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -389,6 +395,233 @@ for (const harus of ["0, 5, 10, 15", "Nambal kolam azola", "sisa kuota", "Sisa k
   if (!prompt.toLowerCase().includes(harus.toLowerCase())) {
     temuan.push(`promptUsulPoin: tidak menyebut "${harus}"`);
   }
+}
+// Bila pekerjaannya sudah ada di checklist, model HARUS diberi tahu — kalau
+// tidak, ia mengusulkan poin penuh untuk pekerjaan yang poinnya sudah ada di
+// tempat lain, dan penilai menyetujuinya tanpa tahu.
+const promptMirip = UP.promptUsulPoin({
+  judul: "Siram tanaman", opsi: OPSI_UJI, maks: 30, terpakai: 0,
+  tugasChecklist: { judul: "Siram tanaman", poin: 5, frekuensi: "harian" },
+});
+for (const harus of ["checklist", "harian", "5 poin", "TERKECIL"]) {
+  if (!promptMirip.includes(harus)) temuan.push(`promptUsulPoin (mirip checklist): tidak menyebut "${harus}"`);
+}
+if (prompt.includes("TERKECIL")) {
+  temuan.push("promptUsulPoin: menyuruh poin TERKECIL padahal tidak ada tugas checklist yang mirip");
+}
+
+/* ── Inisiatif yang sebenarnya sudah ada di checklist ────────────────────
+ *
+ * "Siram tanaman" adalah tugas SOP HARIAN bernilai 5 poin, dan ada 8 catatan
+ * Inisiatif berjudul persis itu — masing-masing bernilai NOL, karena Inisiatif
+ * masuk dengan poin_earned 0. Bukan dibayar dua kali: dibayar nol kali.
+ *
+ * Judul-judul di bawah ini SELURUHNYA dari data nyata 6 Okt 2026, termasuk
+ * empat yang versi pertama pencocok ini SALAH anggap mirip. Keempatnya ada di
+ * sini justru supaya tidak kembali: pencocok yang memperingatkan kiper tentang
+ * pekerjaan yang sebenarnya berbeda akan diabaikan, termasuk ketika ia benar.
+ */
+const SOP_UJI = [
+  { title: "Siram tanaman", points: 5, frequency: "harian" },
+  { title: "Pembersihan kandang (all kandang)", points: 8, frequency: "mingguan" },
+  { title: "Kebersihan jalan area kandang (2 bulan sekali, bulan ganjil)", points: 15, frequency: "bulanan" },
+  { title: "Bersihkan rumput di pagar (1 bulan sekali)", points: 15, frequency: "bulanan" },
+  { title: "Potong bunga sepatu & rumput liar + tambahan (Minggu)", points: 15, frequency: "mingguan" },
+  { title: "Pupuk pohon buah (1 bulan sekali)", points: 10, frequency: "bulanan" },
+  { title: "Cari kaktus untuk pakan kura (Minggu)", points: 15, frequency: "mingguan" },
+  { title: "Cuci rumput / sayuran rempesan (pagi)", points: 10, frequency: "mingguan" },
+  { title: "Pemberian pakan kura (siang)", points: 10, frequency: "mingguan" },
+  { title: "Perawatan tanaman detail (pangkas & rapikan)", points: 10, frequency: "mingguan" },
+  { title: "Kebersihan lingkungan & jalan (sapu area, Senin-Sabtu)", points: 5, frequency: "mingguan" },
+  { title: "Perawatan kolam azolla (cek air, buang kotoran)", points: 5, frequency: "mingguan" },
+];
+
+// [judul Inisiatif nyata, judul tugas yang harus cocok atau null]
+const miripUji = [
+  ["Siram tanaman", "Siram tanaman"],
+  ["Bersihkan kandang pagi", "Pembersihan kandang (all kandang)"],
+  ["Bersihkan kandang bonsai", "Pembersihan kandang (all kandang)"],
+  // Empat kecocokan SALAH dari versi pertama:
+  ["Bersihkan tempat cuci rumput", null],
+  ["Pangkas pohon buah juwet", null],
+  ["Cabut rumput liar", null],
+  ["Nyabuti rumput liar", null],
+  // Pekerjaan harian yang memang TIDAK ada di checklist mana pun:
+  ["Cari rumput", null],
+  ["Pakan adabra", null],
+  ["Kasik pakan adabra", null],
+  ["Bersihkan tempat tamu", null],
+  ["Siram odot", null],
+  ["Nambal kolam azola", null],
+  ["Rapikan tanaman angrek", null],
+  ["Bersihkan aquarium dan kasibo", null],
+  ["Nambal tempat minum yg bocor w1w2 e5", null],
+  // Judul kosong tidak boleh cocok dengan apa pun.
+  ["", null],
+  ["   ", null],
+];
+
+for (const [judul, harap] of miripUji) {
+  const cocok = MT.tugasMirip(judul, SOP_UJI);
+  const dapat = cocok ? cocok.judul : null;
+  if (dapat !== harap) {
+    temuan.push(`tugasMirip("${judul}") -> ${dapat === null ? "tidak cocok" : `"${dapat}"`}, seharusnya ${harap === null ? "tidak cocok" : `"${harap}"`}`);
+  }
+  if (cocok && !(cocok.skor >= MT.AMBANG_MIRIP)) {
+    temuan.push(`tugasMirip("${judul}") -> skor ${cocok.skor} di bawah ambang ${MT.AMBANG_MIRIP}`);
+  }
+}
+
+// Pesannya harus MENYEBUT tugas penggantinya dan poinnya — peringatan tanpa
+// jalan keluar hanya membuat orang bingung di tempat yang sama.
+const pesanCocok = MT.pesanMirip(MT.tugasMirip("Siram tanaman", SOP_UJI));
+for (const harus of ["Siram tanaman", "5 poin", "checklist"]) {
+  if (!pesanCocok.includes(harus)) temuan.push(`pesanMirip: tidak menyebut "${harus}"`);
+}
+if (MT.pesanMirip(null) !== "") temuan.push("pesanMirip(null) seharusnya kosong");
+
+// Daftar tugas kosong atau tak bernama tidak boleh melempar.
+try {
+  MT.tugasMirip("Siram tanaman", []);
+  MT.tugasMirip("Siram tanaman", null);
+  MT.tugasMirip("Siram tanaman", [{}, { title: "" }, null]);
+} catch (e) {
+  temuan.push(`tugasMirip: melempar pada daftar tugas kosong (${e?.message || e})`);
+}
+
+/* ── Poin Inisiatif yang dinilai harus mengenai baris yang benar ─────────
+ *
+ * `terapkanPoin` tidak diuji di sini karena ia butuh base44; yang diuji adalah
+ * kunci pencocokannya, yang menentukan baris mana yang kena. Barisnya salah =
+ * poin dituliskan ke pekerjaan lain, atau tidak dituliskan sama sekali.
+ *
+ * Kolom `notes` dipakai dua arti sekaligus: nama kandang untuk tugas
+ * berkandang, dan penanda jenis untuk yang tidak. Penanda jenis Inisiatif
+ * sendiri sudah berubah sekali — dari "Tugas Tambahan" menjadi "Inisiatif" —
+ * dan bila penanda ikut dihitung sebagai kandang, satu pekerjaan yang sama
+ * terbaca sebagai dua baris berbeda.
+ */
+const tugasUji = [
+  // Satu hari nyata: tugas SOP "Siram tanaman" DAN Inisiatif berjudul sama.
+  { task_title: "Siram tanaman", notes: "Tugas Harian", points: 5 },
+  { task_title: "Siram tanaman", notes: "Inisiatif", points: 0 },
+  { task_title: "Kebersihan W1", notes: "W1", points: 23 },
+  { task_title: "Cari rumput", notes: "Tugas Tambahan", points: 0 },
+];
+const barisUji = [
+  // [judul, kandang/penanda, indeks baris yang harus ketemu]
+  ["Kebersihan W1", "W1", 2],
+  ["Kebersihan W1", "W2", -1],                 // kandang beda = tugas beda
+  ["Siram tanaman", "Tugas Harian", 0],        // tugas SOP-nya
+  ["Siram tanaman", "", 0],                    // penanda jenis = kandang kosong
+  ["Siram tanaman", "Suplemen", 0],
+  // INI yang paling penting: Inisiatif berjudul sama dengan tugas SOP harus
+  // mengenai BARISNYA SENDIRI. Bila penanda "Inisiatif" ikut dinormalkan
+  // menjadi kosong, poin Inisiatif akan dituliskan ke baris tugas SOP —
+  // menimpa 5 poin yang sudah sah di sana.
+  ["Siram tanaman", "Inisiatif", 1],
+  ["siram tanaman", "inisiatif", 1],
+  ["  Siram tanaman  ", "Inisiatif", 1],
+  ["Cari rumput", "Tugas Tambahan", 3],
+  ["Cari rumput", "Inisiatif", -1],            // penanda lama vs baru = baris beda
+  ["Cari rumput", "W1", -1],
+  ["Siram odot", "Inisiatif", -1],
+  ["", "", -1],
+];
+for (const [judul, kandang, harap] of barisUji) {
+  const dapat = KT.cariTugas(tugasUji, judul, kandang);
+  if (dapat !== harap) {
+    temuan.push(`cariTugas("${judul}", "${kandang}") -> ${dapat}, seharusnya ${harap}`);
+  }
+}
+// Penanda "Inisiatif" TIDAK boleh dinormalkan menjadi kandang kosong: kalau ia
+// kosong, kunci Inisiatif "Siram tanaman" sama dengan kunci tugas SOP "Siram
+// tanaman", dan poin Inisiatif menimpa poin tugas SOP.
+if (KT.normalKandang("Inisiatif") === "") {
+  temuan.push('normalKandang: penanda "Inisiatif" dikosongkan — kunci Inisiatif jadi sama dengan kunci tugas SOP berjudul sama');
+}
+if (KT.normalKandang("Tugas Harian") !== "" || KT.normalKandang("Suplemen") !== "") {
+  temuan.push("normalKandang: penanda tugas harian/suplemen seharusnya menjadi kandang kosong");
+}
+if (KT.normalKandang("W1") !== "w1") {
+  temuan.push("normalKandang: nama kandang sungguhan tidak boleh dikosongkan");
+}
+
+/* ── Poin yang disetujui untuk satu judul di satu hari dijumlahkan ───────
+ *
+ * Kiper bisa mencatat judul yang sama dua kali sehari — "Cari rumput" pagi dan
+ * sore. Di checklist keduanya mengenai SATU baris, karena `onMaintenanceDone`
+ * menyatukan baris berjudul sama. Jadi yang dituliskan ke baris itu harus
+ * JUMLAH poin yang disetujui untuk judul itu hari itu; menuliskan poin satu
+ * catatan saja berarti penilaian kedua menimpa yang pertama.
+ */
+const logUji = [
+  { is_extra: true, item_label: "Cari rumput", done_by_email: "a@x.id", period_key: "2026-10-06", approval_status: "approved", poin_earned: 5 },
+  { is_extra: true, item_label: "cari rumput ", done_by_email: "a@x.id", period_key: "2026-10-06", approval_status: "approved", poin_earned: 10 },
+  // Nilai yang BELUM disetujui tidak boleh ikut, meski angkanya sudah terisi:
+  // yang menentukan status persetujuannya, bukan ada tidaknya angka.
+  { id: "menunggu", is_extra: true, item_label: "Cari rumput", done_by_email: "a@x.id", period_key: "2026-10-06", approval_status: "pending", poin_earned: 7 },
+  { is_extra: true, item_label: "Cari rumput", done_by_email: "a@x.id", period_key: "2026-10-06", approval_status: "rejected", poin_earned: 5 },
+  { is_extra: true, item_label: "Cari rumput", done_by_email: "b@x.id", period_key: "2026-10-06", approval_status: "approved", poin_earned: 15 },
+  { is_extra: true, item_label: "Cari rumput", done_by_email: "a@x.id", period_key: "2026-10-05", approval_status: "approved", poin_earned: 15 },
+  { is_extra: true, item_label: "Cari rumput", done_by_email: "a@x.id", period_key: "2026-10-06", approval_status: "approved", poin_earned: 5, is_test_data: true },
+  { is_extra: false, item_label: "Cari rumput", done_by_email: "a@x.id", period_key: "2026-10-06", approval_status: "approved", poin_earned: 99 },
+];
+const jumlahUji = [
+  // [judul, email, tanggal, tambahan {id,poin}, jumlah yang diharapkan]
+  ["Cari rumput", "a@x.id", "2026-10-06", null, 15],      // 5 + 10, bukan yang pending/orang lain/hari lain/uji
+  ["Siram tanaman", "a@x.id", "2026-10-06", null, 0],
+  ["Cari rumput", "a@x.id", "2026-10-07", null, 0],
+];
+for (const [judul, email, tanggal, , harap] of jumlahUji) {
+  const dapat = PK.poinJudulHari(logUji, { judul, email, tanggal });
+  if (dapat !== harap) {
+    temuan.push(`poinJudulHari("${judul}", ${tanggal}) -> ${dapat}, seharusnya ${harap}`);
+  }
+}
+// Catatan yang SEDANG dinilai harus ikut dihitung dengan angka barunya, bukan
+// dengan angka lamanya yang masih nol di dalam daftar.
+const denganBaru = PK.poinJudulHari(logUji, {
+  judul: "Cari rumput", email: "a@x.id", tanggal: "2026-10-06",
+  tambahan: { log: { id: "menunggu" }, poin: 10 },
+});
+if (denganBaru !== 25) {
+  temuan.push(`poinJudulHari dengan catatan yang sedang dinilai -> ${denganBaru}, seharusnya 25`);
+}
+
+/* ── terapkanPoin: barisnya berubah, DAN totalnya ikut berubah ───────────
+ *
+ * `total_points_claimed` adalah angka yang dilihat pemilik di layar Approval
+ * Poin dan yang ia setujui. Kalau barisnya diubah tetapi totalnya dihitung dari
+ * daftar yang LAMA, yang disetujui bukan yang tertulis — dan tidak ada yang
+ * memberi tahu, karena keduanya tampak wajar.
+ */
+const terap1 = PK.terapkanPoin(tugasUji, { judul: "Siram tanaman", kandang: "Inisiatif", poin: 10 });
+if (!terap1.ketemu || !terap1.berubah) temuan.push("terapkanPoin: baris Inisiatif tidak ditemukan atau tidak berubah");
+if (terap1.tugas[1]?.points !== 10) temuan.push(`terapkanPoin: baris Inisiatif bernilai ${terap1.tugas[1]?.points}, seharusnya 10`);
+if (terap1.tugas[0]?.points !== 5) temuan.push("terapkanPoin: baris tugas SOP berjudul sama ikut berubah");
+if (terap1.totalBaru !== PK.totalPoinTugas(terap1.tugas)) {
+  temuan.push(`terapkanPoin: totalBaru ${terap1.totalBaru} tidak sama dengan jumlah barisnya ${PK.totalPoinTugas(terap1.tugas)}`);
+}
+if (terap1.totalBaru !== 38) temuan.push(`terapkanPoin: totalBaru ${terap1.totalBaru}, seharusnya 38 (5+10+23+0)`);
+if (tugasUji[1].points !== 0) temuan.push("terapkanPoin: daftar aslinya ikut diubah (harus salinan)");
+
+const terap2 = PK.terapkanPoin(tugasUji, { judul: "Siram tanaman", kandang: "Inisiatif", poin: 0 });
+if (terap2.berubah) temuan.push("terapkanPoin: nilai yang sama seharusnya tidak dianggap berubah");
+
+const terap3 = PK.terapkanPoin(tugasUji, { judul: "Tidak ada ini", kandang: "Inisiatif", poin: 10 });
+if (terap3.ketemu || terap3.berubah) temuan.push("terapkanPoin: baris yang tidak ada seharusnya ketemu=false");
+
+const terap4 = PK.terapkanPoin(tugasUji, { judul: "Siram tanaman", kandang: "Inisiatif", poin: -5 });
+if (terap4.tugas[1]?.points !== 0) temuan.push("terapkanPoin: poin negatif seharusnya menjadi 0");
+
+// Pesan status: yang penting hari yang sudah disetujui DIKATAKAN, bukan didiamkan.
+const pesanSudah = PK.pesanStatus({ status: PK.STATUS.SUDAH_DISETUJUI, tanggal: "2026-10-03" });
+for (const harus of ["sudah disetujui", "2026-10-03"]) {
+  if (!pesanSudah.includes(harus)) temuan.push(`pesanStatus(sudah-disetujui): tidak menyebut "${harus}"`);
+}
+if (PK.pesanStatus({ status: PK.STATUS.TERSIMPAN }) !== "") {
+  temuan.push("pesanStatus(tersimpan) seharusnya kosong — tidak ada yang perlu dikatakan");
 }
 
 /* ── Satu baris setelan, tujuh kunci cache, satu penyegaran ─────────────
@@ -1314,6 +1547,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length} judul mirip tugas + ${barisUji.length} kunci baris checklist + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

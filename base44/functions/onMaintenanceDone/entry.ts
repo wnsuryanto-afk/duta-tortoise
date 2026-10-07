@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { kunciTugas as dedupKey } from "../../shared/kunciTugas.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -29,18 +30,12 @@ Deno.serve(async (req) => {
       employee_name: log.done_by,
     }, null, BATAS_AMBIL);
 
-    // ── Normalisasi kunci deduplikasi: trim(judul) + kandang ──
-    // null/undefined/"" dan placeholder kandang ("Tugas Harian", "Suplemen",
-    // "tugas_harian") dianggap SAMA (kandang kosong). Mencegah dobel pada task
-    // TANPA kandang yang sebelumnya bocor karena task_id memakai log.id (unik
-    // per record) sehingga tidak pernah cocok.
-    const PH_ENC = new Set(["", "tugas harian", "suplemen", "tugas_harian"]);
-    const normEnc = (e) => {
-      const v = (e || "").toString().trim().toLowerCase();
-      return PH_ENC.has(v) ? "" : v;
-    };
-    const normTitle = (t) => (t || "").toString().trim().toLowerCase();
-    const dedupKey = (title, enc) => `${normTitle(title)}__${normEnc(enc)}`;
+    // Kunci deduplikasi: trim(judul) + kandang. Aturannya di shared/kunciTugas.ts,
+    // kembarannya di src/lib/kunciTugas.js — penulis di sisi frontend
+    // (syncPhotoToChecklist, poinKeChecklist) harus menemukan baris yang SAMA
+    // dengan yang dibuat di sini. Placeholder kandang ("Tugas Harian",
+    // "Suplemen") dianggap kandang kosong, supaya satu tugas tanpa kandang
+    // tidak terbaca sebagai dua.
 
     const taskEntry = {
       task_id: log.check_key || log.id, // check_key stabil per (user, task, hari)

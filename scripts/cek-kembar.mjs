@@ -49,6 +49,14 @@ const PASANGAN = [
   // berbeda menghasilkan SKU kembar, dan SKU kembar membuat pemotongan
   // stok mengenai barang yang keliru.
   ["src/lib/skuBarang.js",     "base44/shared/sku.ts",           ["skuBerikutnya", "skuPakanBaru", "skuGudangBaru"]],
+  // Kunci "tugas yang sama" di DailyChecklist.completed_tasks. Sampai
+  // 07-10-2026 aturan ini ditulis TIGA kali — dua di src/lib, satu di dalam
+  // onMaintenanceDone — dan ketiganya identik, yang justru berbahaya: bila
+  // satu digeser, yang terjadi bukan galat. Sisi backend menganggap tugasnya
+  // belum tercatat lalu menambahkannya lagi (poin yang diklaim membengkak),
+  // sementara penulis di sisi frontend tidak menemukan barisnya dan melewati
+  // penulisan dengan diam — foto bukti atau poin Inisiatif tidak pernah sampai.
+  ["src/lib/kunciTugas.js",    "base44/shared/kunciTugas.ts",    ["normalKandang", "normalJudul", "kunciTugas", "cariTugas"]],
 ];
 
 // Perbandingan sengaja "buta" terhadap hal yang memang boleh beda antara
