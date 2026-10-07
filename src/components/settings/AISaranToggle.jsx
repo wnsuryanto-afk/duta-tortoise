@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Switch } from "@/components/ui/switch";
 import { Sparkles, ScanEye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 /**
  * AISaranToggle — pengaturan AI Vision untuk owner.
@@ -32,8 +33,7 @@ export default function AISaranToggle() {
       if (setting) {
         await base44.entities.CompanySettings.update(setting.id, { ai_vision_enabled: checked });
       }
-      qc.invalidateQueries({ queryKey: ["company-settings"] });
-      qc.invalidateQueries({ queryKey: ["company-settings-main"] });
+      segarkanSetelan(qc);
       toast.success(checked ? "AI Vision diaktifkan" : "AI Vision dinonaktifkan — foto tidak dianalisis");
     } catch (e) {
       toast.error("Gagal: " + (e.message || e));
@@ -47,8 +47,7 @@ export default function AISaranToggle() {
       if (setting) {
         await base44.entities.CompanySettings.update(setting.id, { ai_saran_enabled: checked });
       }
-      qc.invalidateQueries({ queryKey: ["company-settings"] });
-      qc.invalidateQueries({ queryKey: ["company-settings-main"] });
+      segarkanSetelan(qc);
       toast.success(checked ? "Saran AI diaktifkan untuk keeper" : "Saran AI dinonaktifkan untuk keeper");
     } catch (e) {
       toast.error("Gagal: " + (e.message || e));

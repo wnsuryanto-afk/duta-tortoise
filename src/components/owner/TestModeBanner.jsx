@@ -4,6 +4,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 export default function TestModeBanner() {
   const { user, role } = useCurrentUser();
@@ -23,7 +24,7 @@ export default function TestModeBanner() {
     if (role !== "owner") return;
     setTurning(true);
     await base44.entities.CompanySettings.update(setting.id, { test_mode_active: false });
-    qc.invalidateQueries({ queryKey: ["company-settings"] });
+    segarkanSetelan(qc);
     toast.success("✅ Test Mode dimatikan");
     setTurning(false);
   };

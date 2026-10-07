@@ -31,6 +31,7 @@ import PoinTabelSimulasi from "@/components/settings/poin/PoinTabelSimulasi";
 import PoinRiwayatPerubahan from "@/components/settings/poin/PoinRiwayatPerubahan";
 import { rupiah } from "@/lib/rupiah";
 import PageHeader from "@/components/common/PageHeader";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 
 export default function PengaturanPoinPage() {
@@ -182,8 +183,7 @@ export default function PengaturanPoinPage() {
         changed_by_email: user?.email,
         changed_by_name: user?.full_name,
       });
-      qc.invalidateQueries({ queryKey: ["company-settings-main"] });
-      qc.invalidateQueries({ queryKey: ["company-settings-main-all"] });
+      segarkanSetelan(qc);
       qc.invalidateQueries({ queryKey: ["nilai-poin-history"] });
       const jam = format(new Date(), "HH:mm");
       toast.success(`Tersimpan. Nilai per poin sekarang ${rupiah(n)} (${jam})`);

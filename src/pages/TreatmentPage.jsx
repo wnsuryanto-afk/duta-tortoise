@@ -25,6 +25,7 @@ import KeadaanKosong from "@/components/common/KeadaanKosong";
 import PageHeader from "@/components/common/PageHeader";
 import { HealthArt } from "@/components/common/Illustration";
 import { iramaTakCocok } from "@/lib/jadwalPerawatan";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 const FREQ_LABELS = {
   harian:       "Harian",
@@ -97,8 +98,7 @@ function SakelarMusimBertelur({ canEdit }) {
     setMenyimpan(true);
     try {
       await base44.entities.CompanySettings.update(settings.id, { musim_bertelur_aktif: nilai });
-      qc.invalidateQueries({ queryKey: ["company-settings-musim"] });
-      qc.invalidateQueries({ queryKey: ["company-settings"] });
+      segarkanSetelan(qc);
       toast.success(nilai ? "Musim bertelur dinyalakan - jadwal musiman mulai muncul di layar kiper" : "Musim bertelur dimatikan");
     } catch {
       toast.error("Gagal menyimpan");

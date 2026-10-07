@@ -9,6 +9,7 @@ import { FlaskConical, Trash2, Eye, ChevronDown, ChevronUp, Loader2 } from "luci
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 const TEST_ENTITIES = [
   { key: "DailyChecklist", label: "Checklist Harian" },
@@ -72,7 +73,7 @@ export default function TestModeSettings() {
     } else {
       await base44.entities.CompanySettings.create({ setting_key: "main", ...updateData });
     }
-    qc.invalidateQueries({ queryKey: ["company-settings"] });
+    segarkanSetelan(qc);
     toast.success(val ? "🧪 Test Mode diaktifkan" : "✅ Test Mode dimatikan");
     setToggling(false);
   };
