@@ -191,6 +191,66 @@ for (const rel of PENYEDIA_AKAR) {
   }
 }
 
+/*
+ * ── Ubin "Anakan" di beranda: angkanya bisa ditelusuri ───────────────
+ *
+ * Aturan yang sama dengan chip kepala halaman, satu lapis lebih dalam.
+ * Ubin ringkasan beranda SUDAH punya `ke`, dan yang dijaga di sini bukan
+ * keberadaannya melainkan SAMBUNGANNYA: ubin "Anakan" menautkan ke
+ * /tortoise?status=baby, dan halaman itu harus benar-benar membaca
+ * parameter `status`. Kalau salah satunya hilang, tautannya tetap bisa
+ * diklik dan tetap membuka daftar — hanya daftar yang salah, tanpa galat
+ * dan tanpa tanda apa pun.
+ *
+ * Cacat persis itu sudah ada di repo ini: /tortoise?tab=kandang bekerja,
+ * tetapi tidak ada yang pernah membaca `?edit=` di halaman yang sama
+ * (lihat catatan di TortoiseList baris ~343).
+ */
+const BERANDA = "src/components/dashboard/role/OwnerDashboard.jsx";
+const DAFTAR_KURA = "src/pages/TortoiseList.jsx";
+const isiBeranda = kupasKomentar(readFileSync(join(AKAR, BERANDA), "utf8"));
+const isiDaftar = kupasKomentar(readFileSync(join(AKAR, DAFTAR_KURA), "utf8"));
+
+if (!/kunci:\s*"anakan"/.test(isiBeranda)) {
+  temuan.push(`${BERANDA}  tidak punya ubin "anakan". Jumlah anakan hilang dari beranda.`);
+} else if (!/ke:\s*"\/tortoise\?status=baby"/.test(isiBeranda)) {
+  temuan.push(
+    `${BERANDA}  ubin "anakan" tidak menautkan ke /tortoise?status=baby. ` +
+    `Angka yang menimbulkan pertanyaan tetapi tidak bisa ditelusuri adalah pekerjaan yang dipindahkan.`,
+  );
+}
+if (!/searchParams\.get\("status"\)/.test(isiDaftar)) {
+  temuan.push(
+    `${DAFTAR_KURA}  tidak membaca ?status= dari alamat. Tautan ubin "Anakan" akan ` +
+    `membuka daftar LENGKAP tanpa saringan — tetap terbuka, tetap tanpa galat, tetapi salah daftar.`,
+  );
+}
+if (!/from\s+"@\/lib\/anakanKura"/.test(isiDaftar)) {
+  temuan.push(`${DAFTAR_KURA}  tidak memakai aturan anakan bersama dari lib/anakanKura.js.`);
+}
+
+/*
+ * ── Tukik baru: satu bentuk data, dua pintu penetasan ────────────────
+ *
+ * `status: "baby"` sudah dimigrasikan keluar oleh migrateBabyStatus, dan
+ * kura berstatus "baby" tidak terbaca sebagai kura aktif oleh layar
+ * penjualan maupun aktifSehat(). Sampai 7 Okt 2026 HatchDialog masih
+ * menuliskannya sementara EggGrid sudah memakai bentuk baru.
+ */
+const PINTU_TETAS = ["src/components/breeding/HatchDialog.jsx", "src/components/breeding/EggGrid.jsx"];
+for (const rel of PINTU_TETAS) {
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  if (/status:\s*"baby"/.test(isi)) {
+    temuan.push(
+      `${rel}  membuat tukik dengan status: "baby". Status itu sudah dimigrasikan keluar; ` +
+      `pakai TANDA_ANAKAN dari lib/anakanKura.js.`,
+    );
+  }
+  if (!/TANDA_ANAKAN/.test(isi)) {
+    temuan.push(`${rel}  tidak memakai TANDA_ANAKAN, jadi dua pintu penetasan bisa menulis bentuk berbeda lagi.`);
+  }
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah tata letak kepala halaman.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
@@ -198,6 +258,7 @@ if (temuan.length) {
 console.log(
   `Kepala halaman: ${chipDiperiksa} chip punya tujuan, ` +
   `${pakaiH1Sendiri.length} dari ${halaman.length} halaman memakai <h1> sendiri ` +
-  `(batas ${BATAS_H1_SENDIRI}), ${DIKECUALIKAN.size} dikecualikan dengan alasan tertulis.`,
+  `(batas ${BATAS_H1_SENDIRI}), ${DIKECUALIKAN.size} dikecualikan dengan alasan tertulis. ` +
+  `Ubin Anakan tersambung ke daftarnya, dan kedua pintu penetasan satu bentuk.`,
 );
 process.exit(0);

@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { hatchRateClutch } from "@/lib/hasilInkubasi";
 import { hitungIsiKandang } from "@/lib/kandang";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
+import { TANDA_ANAKAN } from "@/lib/anakanKura";
 
 function generateBreedingCode(maleN, femaleN, date) {
   const m = (maleN || "JT").substring(0, 3).toUpperCase().replace(/\s/g, "");
@@ -230,7 +231,20 @@ export default function HatchDialog({ open, onClose, breeding }) {
       const babyData = babies.map(b => ({
         name: b.name,
         source: "hasil_sendiri",
-        status: "baby",
+        /*
+          `TANDA_ANAKAN`, bukan `status: "baby"` yang ditulis di sini sampai
+          7 Okt 2026.
+
+          Status "baby" sudah dimigrasikan keluar oleh fungsi
+          migrateBabyStatus — seluruh tukik lama sekarang berstatus "aktif"
+          dengan `age_category: "baby"`. Pintu penetasan yang satu lagi
+          (EggGrid) sudah menulis bentuk yang baru; yang ini masih menulis
+          bentuk yang lama, jadi tukik yang dicatat dari sini tidak terbaca
+          sebagai kura aktif oleh layar penjualan maupun `aktifSehat()`, dan
+          tidak terbaca sebagai anakan oleh saringan yang memakai
+          `age_category`.
+        */
+        ...TANDA_ANAKAN,
         gender: b.gender || "belum_diketahui",
         birth_date: hatchDate,
         // `breeding.male_id || null` menghapus tautannya sama sekali bila

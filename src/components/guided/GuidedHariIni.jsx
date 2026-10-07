@@ -1,7 +1,7 @@
 import { catatLogSekali } from "@/lib/logSekali";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { BATAS_AMBIL, base44 } from "@/api/base44Client";
 import { catatTidakMakan } from "@/lib/laporMakan";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -37,6 +37,7 @@ import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
 import { masukLaporan } from "@/lib/laporan";
 import { useCompanySettings } from "@/lib/useCompanySettings";
+import { SARINGAN_ANAKAN, hanyaAnakan } from "@/lib/anakanKura";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -402,11 +403,25 @@ export default function GuidedHariIni({ user }) {
 
   // Suplemen dari TreatmentSchedule (sumber tunggal — TugasHariIni tidak injeksi treatment)
   const todayDayOfWeek = new Date().getDay();
+  /*
+    Hitungan anakan ini MENYEMBUNYIKAN tugas, jadi nolnya tidak kelihatan
+    sebagai kesalahan.
+
+    Sampai 7 Okt 2026 ia menyaring `status: "baby"` — status yang sudah
+    dimigrasikan keluar oleh `migrateBabyStatus`, sehingga jawabannya nol
+    untuk SELURUH data. Lima belas tukik berumur tiga bulan ada di kandang
+    Baby 1, dan beberapa baris di bawah ini angka nol itu dipakai untuk
+    membuang jadwal "Jemur matahari pagi — SEMUA BABY" dari layar kiper.
+
+    Sekarang: saringan kasar di server (`age_category`), lalu aturan yang
+    sebenarnya di sini — `hanyaAnakan` membuang yang sudah terjual, mati,
+    dan yang umurnya sudah lewat setahun.
+  */
   const { data: babyCount = 0 } = useQuery({
-    queryKey: ["baby-count-active"],
+    queryKey: ["anakan-di-peternakan"],
     queryFn: async () => {
-      const res = await base44.entities.Tortoise.filter({ status: "baby" });
-      return res.length;
+      const res = await base44.entities.Tortoise.filter(SARINGAN_ANAKAN, null, BATAS_AMBIL);
+      return hanyaAnakan(res).length;
     },
     staleTime: 5 * 60 * 1000,
   });

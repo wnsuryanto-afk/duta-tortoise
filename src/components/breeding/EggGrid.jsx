@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { hatchRateClutch, ringkasDariBarisTelur } from "@/lib/hasilInkubasi";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
+import { TANDA_ANAKAN } from "@/lib/anakanKura";
 
 const EGG_STATUS = [
   { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-muted",  border: "border-gray-400",  text: "text-foreground" },
@@ -384,8 +385,9 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
       gender: form.gender,
       species: femaleTortoise?.species || "sulcata",
       source: "hasil_sendiri",
-      status: "aktif",
-      age_category: "baby",
+      // Tetapan yang sama dengan HatchDialog — dua pintu penetasan, satu
+      // bentuk data. Sampai 7 Okt 2026 keduanya menulis bentuk yang berbeda.
+      ...TANDA_ANAKAN,
       enclosure: form.enclosure,
       // ID induk, bukan namanya. Nama ikut berubah saat kura diganti nama dan
       // sambungan silsilahnya lepas tanpa peringatan; ID tidak. Bila induknya
