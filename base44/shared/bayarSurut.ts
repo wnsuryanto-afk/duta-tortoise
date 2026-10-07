@@ -26,6 +26,54 @@ export interface Keputusan {
 }
 
 /**
+ * Jendela cacatnya, dan kenapa ia punya UJUNG ATAS.
+ *
+ * Bawahnya 28 Juli 2026: hari `||` menjadi `??` dan nilai Inisiatif menjadi
+ * nol. Atasnya 6 Oktober 2026: hari terakhir sebelum layar penilaian Inisiatif
+ * berfungsi dan sebelum empat pekerjaan yang paling sering dicatat sebagai
+ * Inisiatif punya barisnya sendiri di checklist.
+ *
+ * Tanpa ujung atas, tombol ini membayar rata 5 poin untuk SETIAP catatan
+ * Inisiatif yang masih "pending" pada saat ia ditekan — termasuk yang dicatat
+ * hari ini dan besok. Dua akibatnya sama-sama salah:
+ *
+ *   · penilaian yang sekarang bisa dilakukan pemilik lewat layar Inisiatif
+ *     didahului oleh angka rata yang tidak pernah ia putuskan;
+ *   · pekerjaan yang sejak 7 Oktober punya baris SOP sendiri dibayar dua kali
+ *     — sekali lewat barisnya, sekali lewat catatan Inisiatifnya. Uji
+ *     dobel-bayar di `rencanaHari` tidak menangkapnya, karena judulnya tidak
+ *     sama persis: "Cari rumput" bukan "Cari rumput untuk pakan".
+ *
+ * Angka 210 yang pemilik setujui adalah jumlah catatan di dalam jendela ini,
+ * bukan jumlah yang "pending" pada hari tombolnya ditekan. Keduanya sama hanya
+ * pada hari pertama.
+ */
+export const JENDELA = { dari: "2026-07-28", sampai: "2026-10-06" };
+
+/**
+ * Catatan Inisiatif mana yang ikut dibayar surut.
+ *
+ * Ini keputusan "siapa yang dapat", yang sama menentukannya dengan "berapa",
+ * jadi ia ada di sini bersama hitungan uangnya dan diuji penjaga — bukan di
+ * dalam fungsi yang menulis.
+ */
+export function saringSasaran(
+  logs: Array<Record<string, unknown>> = [],
+  { dari = JENDELA.dari, sampai = JENDELA.sampai }: { dari?: string; sampai?: string } = {},
+) {
+  return (logs || []).filter((log) => {
+    if (!log.is_extra) return false;
+    if (log.is_test_data || log.excluded_from_reports) return false;
+    if (!log.done_by_email || !log.period_key) return false;
+    const hari = String(log.period_key);
+    if (dari && hari < dari) return false;
+    if (sampai && hari > sampai) return false;
+    const status = log.approval_status;
+    return !status || status === "pending";
+  });
+}
+
+/**
  * Hitung pembayaran surut untuk SATU orang pada SATU hari.
  *
  * @param logs        catatan Inisiatif yang belum dinilai, urut waktu

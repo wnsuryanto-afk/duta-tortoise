@@ -71,6 +71,13 @@ export default function BayarInisiatifSurut() {
           nol, bukan karena keputusan siapa pun. Tombol ini menilainya 5 poin, tarif yang dulu
           berlaku, dengan batas harian tetap dihormati dan pekerjaan yang sudah berpoin di
           checklist tidak dibayar dua kali.
+          <br />
+          <span className="block mt-1.5">
+            Hanya <strong>28 Juli – 6 Oktober 2026</strong>. Catatan sejak 7 Oktober Anda nilai
+            sendiri di layar Inisiatif yang sekarang berfungsi — dan empat pekerjaan yang paling
+            sering dicatat sebagai Inisiatif sudah punya barisnya sendiri di checklist sejak hari
+            itu, jadi membayarnya di sini berarti membayarnya dua kali.
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -106,7 +113,9 @@ export default function BayarInisiatifSurut() {
               {tampil.kering ? "Laporan kering — belum ada yang ditulis" : "Sudah ditulis"}
             </p>
             <ul className="text-xs space-y-1">
-              <li>{tampil.catatan.diperiksa} catatan diperiksa sejak {tampil.dari}</li>
+              <li>
+                {tampil.catatan.diperiksa} catatan diperiksa, {tampil.dari} sampai {tampil.sampai}
+              </li>
               <li><strong>{tampil.catatan.dibayar} dibayar</strong> @ {tampil.poinSatuan} poin</li>
               {tampil.catatan.terpotongKuota > 0 && (
                 <li>{tampil.catatan.terpotongKuota} terpotong batas harian {tampil.maksHarian} poin</li>
