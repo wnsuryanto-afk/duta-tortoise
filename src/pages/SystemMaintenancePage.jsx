@@ -14,6 +14,7 @@ import TransaksiKembar from "@/components/owner/TransaksiKembar";
 import BarangKembar from "@/components/owner/BarangKembar";
 import IsiTanggalKedaluwarsa from "@/components/owner/IsiTanggalKedaluwarsa";
 import PotonganTanpaAlasan from "@/components/owner/PotonganTanpaAlasan";
+import BayarInisiatifSurut from "@/components/owner/BayarInisiatifSurut";
 import AISaranToggle from "@/components/settings/AISaranToggle";
 import PageHeader from "@/components/common/PageHeader";
 import { kisiWadah } from "@/lib/kisiWadah";
@@ -88,6 +89,8 @@ export default function SystemMaintenancePage() {
       {/* Laporan saja — pemotongan poin yang terjadi sebelum alasan diwajibkan.
           Tidak mengubah data apa pun; keputusannya di tangan pemilik. */}
       <PotonganTanpaAlasan />
+
+      <BayarInisiatifSurut />
 
       {/* Mode Testing */}
       <div>
