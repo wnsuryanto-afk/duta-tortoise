@@ -46,13 +46,19 @@
  * terjadi. Kirim `{ "kering": false }` untuk benar-benar menulis. Aman
  * dijalankan dua kali: yang sudah dinilai tidak diambil lagi, karena
  * saringannya `approval_status: "pending"`.
+ *
+ * JENDELANYA BERUJUNG: 28 Juli sampai 6 Oktober 2026, bukan "semua yang masih
+ * pending". Catatan sejak 7 Oktober dinilai pemilik lewat layar Inisiatif yang
+ * sekarang berfungsi, dan empat pekerjaan yang paling sering dicatat sebagai
+ * Inisiatif sudah punya baris SOP sendiri sejak hari itu — membayarnya rata di
+ * sini berarti membayarnya dua kali. Alasan lengkapnya di JENDELA
+ * (shared/bayarSurut.ts).
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { kunciTugas } from "../../shared/kunciTugas.ts";
-import { pasangKeBaris, rencanaHari } from "../../shared/bayarSurut.ts";
+import { JENDELA, pasangKeBaris, rencanaHari, saringSasaran } from "../../shared/bayarSurut.ts";
 
-const DARI_BAWAAN = "2026-07-28";   // hari `||` menjadi `??`
 const POIN_BAWAAN = 5;              // tarif yang dulu benar-benar dibayarkan
 const MAKS_HARIAN_BAWAAN = 30;
 
@@ -64,7 +70,17 @@ Deno.serve(async (req) => {
 
     const badan = await req.json().catch(() => ({}));
     const kering = badan?.kering !== false;          // bawaan: tidak menulis
-    const dari = badan?.dari || DARI_BAWAAN;
+    const dari = badan?.dari || JENDELA.dari;
+    /*
+      Jendelanya BERUJUNG. `sampai` bawaannya 6 Oktober 2026 — hari terakhir
+      sebelum layar penilaian Inisiatif berfungsi dan sebelum empat pekerjaan
+      yang paling sering dicatat sebagai Inisiatif punya baris SOP sendiri.
+      Alasan lengkapnya ada di JENDELA (shared/bayarSurut.ts); singkatnya: tanpa
+      ujung atas, tombol ini membayar rata catatan yang sekarang sudah bisa
+      dinilai pemilik sendiri, dan membayar dua kali pekerjaan yang sejak
+      7 Oktober punya barisnya sendiri.
+    */
+    const sampai = badan?.sampai || JENDELA.sampai;
     const poinSatuan = Number(badan?.poin) > 0 ? Number(badan.poin) : POIN_BAWAAN;
 
     // Batas harian dibaca dari pengaturan, sama dengan yang dipakai layar.
@@ -74,11 +90,7 @@ Deno.serve(async (req) => {
 
     // ── 1. Catatan Inisiatif yang belum dinilai ──
     const semua = await base44.asServiceRole.entities.MaintenanceLog.filter({ is_extra: true }, "period_key", BATAS_AMBIL);
-    const sasaran = (semua || [])
-      .filter((l) => !l.is_test_data && !l.excluded_from_reports)
-      .filter((l) => (l.period_key || "") >= dari)
-      .filter((l) => !l.approval_status || l.approval_status === "pending")
-      .filter((l) => l.done_by_email && l.period_key);
+    const sasaran = saringSasaran(semua || [], { dari, sampai });
 
     // Poin Inisiatif yang SUDAH disetujui, untuk mengurangi kuota hari itu.
     const terpakai = new Map<string, number>();
@@ -102,6 +114,7 @@ Deno.serve(async (req) => {
     const laporan = {
       kering,
       dari,
+      sampai,
       poinSatuan,
       maksHarian: maks,
       catatan: { diperiksa: sasaran.length, dibayar: 0, nolKarenaSudahDibayar: 0, nolKarenaKuota: 0, terpotongKuota: 0 },

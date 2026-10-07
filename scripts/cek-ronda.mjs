@@ -476,6 +476,53 @@ for (const [judul, harap] of miripUji) {
   }
 }
 
+/*
+  Empat tugas baru, dan enam cara kiper menuliskannya.
+
+  Sejak 7 Oktober 2026 keempat pekerjaan yang paling sering dicatat sebagai
+  Inisiatif punya barisnya sendiri di checklist. Kedua kiper belum tentu
+  langsung memakai barisnya: pada hari pertama keduanya masih mencatat
+  "Cari rumput" dan "Pakan adabra" lewat tombol Inisiatif seperti biasa.
+
+  Yang menjaga pemilik dari membayarnya dua kali adalah peringatan di layar
+  penilaian — "mirip tugas checklist X, 5 poin". Kalau pencocoknya meleset,
+  peringatannya tidak muncul, dan pekerjaan yang sudah punya barisnya dibayar
+  sekali lagi tanpa ada yang tahu. Judul-judul di sebelah kiri seluruhnya
+  tulisan kiper yang nyata.
+
+  Tandanya halus: "Pakan adabra" hanya cocok dengan "Pakan adabra (Aldabra) -
+  pagi" karena bagian dalam tanda kurung dan kata waktunya memang dibuang
+  pencocoknya. Kalau pembuangan itu hilang, skornya jatuh ke 0,5 — di bawah
+  ambang — dan peringatannya diam.
+*/
+const SOP_BARU = [
+  { title: "Cari rumput untuk pakan", points: 5, frequency: "mingguan" },
+  { title: "Pakan adabra (Aldabra) - pagi", points: 5, frequency: "harian" },
+  { title: "Bersihkan tempat cuci rumput", points: 5, frequency: "mingguan" },
+  { title: "Bersihkan tempat tamu", points: 5, frequency: "mingguan" },
+];
+
+const miripBaruUji = [
+  ["Cari rumput", "Cari rumput untuk pakan"],
+  ["Cari pakan", "Cari rumput untuk pakan"],
+  ["Pakan adabra", "Pakan adabra (Aldabra) - pagi"],
+  ["Kasik pakan adabra", "Pakan adabra (Aldabra) - pagi"],
+  ["Bersihkan tempat cuci rumput", "Bersihkan tempat cuci rumput"],
+  ["Bersihkan tempat tamu", "Bersihkan tempat tamu"],
+  // Pekerjaan lain yang tetap tidak boleh ikut tertuduh:
+  ["Siram tanaman", null],
+  ["Bersihkan kandang bonsai", null],
+  ["Nambal kolam azola", null],
+];
+
+for (const [judul, harap] of miripBaruUji) {
+  const cocok = MT.tugasMirip(judul, SOP_BARU);
+  const dapat = cocok ? cocok.judul : null;
+  if (dapat !== harap) {
+    temuan.push(`tugasMirip baru ("${judul}") -> ${dapat === null ? "tidak cocok" : `"${dapat}"`}, seharusnya ${harap === null ? "tidak cocok" : `"${harap}"`}`);
+  }
+}
+
 // Pesannya harus MENYEBUT tugas penggantinya dan poinnya — peringatan tanpa
 // jalan keluar hanya membuat orang bingung di tempat yang sama.
 const pesanCocok = MT.pesanMirip(MT.tugasMirip("Siram tanaman", SOP_UJI));
@@ -827,6 +874,60 @@ for (const kasus of hariUji) {
   if (diberikan + (kasus.masuk.terpakai || 0) > 30) {
     temuan.push(`bayarSurut [${kasus.nama}]: total ${diberikan + (kasus.masuk.terpakai || 0)} poin melewati batas 30`);
   }
+}
+
+/* ── Jendela pembayaran surut: siapa yang ikut dibayar ───────────────────
+ *
+ * Keputusan "berapa" diuji di atas. Yang diuji di sini keputusan "siapa", yang
+ * sama menentukannya — dan yang paling mudah salah justru di UJUNG ATASNYA.
+ *
+ * Versi pertama fungsinya tidak punya ujung atas: ia membayar rata 5 poin
+ * setiap catatan Inisiatif yang masih "pending" pada saat tombolnya ditekan.
+ * Pemilik menyetujui 210 catatan, yaitu yang ada di dalam jendela 28 Juli –
+ * 6 Oktober; "yang masih pending" sama dengan 210 hanya pada hari pertama.
+ * Sehari kemudian ia sudah 212, dan dua yang baru itu justru pekerjaan yang
+ * sejak 7 Oktober punya baris SOP sendiri — dibayar sekali lewat barisnya,
+ * sekali lewat catatan Inisiatifnya. Uji dobel-bayar di `rencanaHari` tidak
+ * menangkapnya: "Cari rumput" bukan "Cari rumput untuk pakan".
+ */
+const logSurut = (id, hari, lain) => ({
+  id, is_extra: true, period_key: hari, done_by_email: "kiper@contoh.id",
+  item_label: "Cari rumput", approval_status: "pending", ...(lain || {}),
+});
+
+const jendelaUji = [
+  { nama: "di dalam jendela", log: logSurut("a", "2026-08-15"), ikut: true },
+  { nama: "hari pertama jendela", log: logSurut("b", "2026-07-28"), ikut: true },
+  { nama: "hari terakhir jendela", log: logSurut("c", "2026-10-06"), ikut: true },
+  { nama: "sehari sebelum cacatnya", log: logSurut("d", "2026-07-27"), ikut: false },
+  { nama: "HARI INI, sesudah layar penilaian berfungsi", log: logSurut("e", "2026-10-07"), ikut: false },
+  { nama: "besok", log: logSurut("f", "2026-10-08"), ikut: false },
+  { nama: "belum punya approval_status", log: logSurut("g", "2026-09-01", { approval_status: null }), ikut: true },
+  { nama: "sudah disetujui", log: logSurut("h", "2026-09-01", { approval_status: "approved" }), ikut: false },
+  { nama: "sudah ditolak", log: logSurut("i", "2026-09-01", { approval_status: "rejected" }), ikut: false },
+  { nama: "data uji", log: logSurut("j", "2026-09-01", { is_test_data: true }), ikut: false },
+  { nama: "dikecualikan dari laporan", log: logSurut("k", "2026-09-01", { excluded_from_reports: true }), ikut: false },
+  { nama: "tanpa email pelaku", log: logSurut("l", "2026-09-01", { done_by_email: "" }), ikut: false },
+  { nama: "tanpa tanggal", log: logSurut("m", "", {}), ikut: false },
+  { nama: "bukan Inisiatif (tugas SOP biasa)", log: logSurut("n", "2026-09-01", { is_extra: false }), ikut: false },
+];
+
+const lolos = new Set(BS.saringSasaran(jendelaUji.map((u) => u.log)).map((l) => l.id));
+for (const uji of jendelaUji) {
+  const ikut = lolos.has(uji.log.id);
+  if (ikut !== uji.ikut) {
+    temuan.push(
+      `saringSasaran [${uji.nama}]: ${ikut ? "ikut dibayar" : "tidak ikut"}, seharusnya ${uji.ikut ? "ikut" : "tidak ikut"}`,
+    );
+  }
+}
+
+// Jendelanya sendiri: kalau ujung atasnya hilang, yang di atas ikut terbawa.
+if (BS.JENDELA.dari !== "2026-07-28" || BS.JENDELA.sampai !== "2026-10-06") {
+  temuan.push(`JENDELA pembayaran surut berubah: ${BS.JENDELA.dari} s/d ${BS.JENDELA.sampai}`);
+}
+if (!BS.JENDELA.sampai) {
+  temuan.push("JENDELA tanpa ujung atas: tombol bayar surut akan membayar rata catatan yang sekarang dinilai pemilik sendiri");
 }
 
 /* ── Satu baris setelan, tujuh kunci cache, satu penyegaran ─────────────
@@ -1752,6 +1853,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);
