@@ -71,6 +71,7 @@ bundel("src/lib/miripTugas.js", "mirip.cjs");
 bundel("src/lib/kunciTugas.js", "kuncitugas.cjs");
 bundel("src/lib/poinBarisChecklist.js", "poinchecklist.cjs");
 bundel("base44/shared/bayarSurut.ts", "bayarsurut.cjs");
+bundel("src/lib/anakanKura.js", "anakan.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -79,6 +80,7 @@ const MT = await import("file://" + join(dir, "mirip.cjs")).then((m) => m.defaul
 const KT = await import("file://" + join(dir, "kuncitugas.cjs")).then((m) => m.default || m);
 const PK = await import("file://" + join(dir, "poinchecklist.cjs")).then((m) => m.default || m);
 const BS = await import("file://" + join(dir, "bayarsurut.cjs")).then((m) => m.default || m);
+const AN = await import("file://" + join(dir, "anakan.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -624,6 +626,78 @@ for (const harus of ["sudah disetujui", "2026-10-03"]) {
 }
 if (PK.pesanStatus({ status: PK.STATUS.TERSIMPAN }) !== "") {
   temuan.push("pesanStatus(tersimpan) seharusnya kosong — tidak ada yang perlu dikatakan");
+}
+
+/* ── Anakan: satu aturan, dan umurnya yang menentukan ────────────────────
+ *
+ * Sampai 7 Okt 2026 "apakah kura ini anakan" dijawab tiga cara di tiga
+ * berkas, dan yang ketiga menjawab NOL untuk seluruh data — ia menyaring
+ * `status: "baby"`, status yang sudah dimigrasikan keluar. Nol itu dipakai
+ * untuk menyembunyikan tugas "Jemur matahari pagi — SEMUA BABY", jadi lima
+ * belas tukik berumur tiga bulan tidak punya tugas menjemur di layar kiper.
+ *
+ * Bentuk-bentuk kura di bawah ini seluruhnya ada di data peternakan: tukik
+ * 8 Juli 2026 (EggGrid), bentuk lama HatchDialog, indukan 2010 tanpa
+ * age_category, dan tukik yang sudah terjual.
+ */
+const HARI_UJI = new Date("2026-10-07T00:00:00Z");
+const anakanUji = [
+  // [nama kasus, kura, apakah anakan]
+  ["tukik EggGrid 8 Juli 2026", { status: "aktif", age_category: "baby", birth_date: "2026-07-08" }, true],
+  ["tukik bentuk lama HatchDialog", { status: "baby", birth_date: "2026-07-08" }, true],
+  ["tukik tanpa tanggal lahir, kolomnya baby", { status: "aktif", age_category: "baby" }, true],
+  ["tukik yang sudah terjual", { status: "terjual", age_category: "baby", birth_date: "2026-07-08" }, false],
+  ["tukik yang mati", { status: "mati", age_category: "baby", birth_date: "2026-07-08" }, false],
+  ["tukik yang diarsipkan", { status: "aktif", age_category: "baby", birth_date: "2026-07-08", is_archived: true }, false],
+  // Umurnya yang menentukan, bukan kolomnya: kolom age_category tidak pernah
+  // dihitung ulang sejak ditulis saat menetas.
+  ["kura 2 tahun yang kolomnya masih baby", { status: "aktif", age_category: "baby", birth_date: "2024-07-08" }, false],
+  ["indukan 2010 tanpa age_category", { status: "aktif", birth_date: "2010-01-01" }, false],
+  ["kura 2021 (remaja)", { status: "aktif", birth_date: "2021-01-01" }, false],
+  ["kura sakit yang masih tukik", { status: "sakit", birth_date: "2026-07-08" }, true],
+  ["tanpa data apa pun", { status: "aktif" }, false],
+  ["null", null, false],
+];
+for (const [nama, kura, harap] of anakanUji) {
+  const dapat = AN.anakan(kura, HARI_UJI);
+  if (dapat !== harap) temuan.push(`anakan [${nama}] -> ${dapat}, seharusnya ${harap}`);
+}
+
+// Komposisi: bentuk nyata peternakan pada 7 Okt 2026 (135 di kebun).
+const kebunUji = [
+  ...Array(112).fill(null).map(() => ({ status: "aktif", birth_date: "2010-01-01" })),
+  ...Array(8).fill(null).map(() => ({ status: "aktif", birth_date: "2021-01-01" })),
+  ...Array(15).fill(null).map(() => ({ status: "aktif", age_category: "baby", birth_date: "2026-07-08" })),
+  ...Array(43).fill(null).map(() => ({ status: "terjual", birth_date: "2010-01-01" })),
+  { status: "aktif" },   // tanpa tanggal lahir dan tanpa kolom umur
+];
+const ringkas = AN.ringkasUmur(kebunUji, HARI_UJI);
+const ringkasHarap = { total: 136, anakan: 15, remaja: 8, dewasa: 112, takDiketahui: 1 };
+for (const [kunci, nilai] of Object.entries(ringkasHarap)) {
+  if (ringkas[kunci] !== nilai) temuan.push(`ringkasUmur.${kunci} -> ${ringkas[kunci]}, seharusnya ${nilai}`);
+}
+if (ringkas.anakan + ringkas.remaja + ringkas.dewasa + ringkas.takDiketahui !== ringkas.total) {
+  temuan.push("ringkasUmur: bagian-bagiannya tidak berjumlah sama dengan totalnya");
+}
+// Yang sudah terjual tidak boleh ikut: 43 di daftar, nol di hitungan.
+if (ringkas.total !== 136) temuan.push(`ringkasUmur: total ${ringkas.total} memuat kura yang sudah keluar`);
+
+const kalimat = AN.kalimatKomposisi(ringkas);
+for (const harus of ["112 dewasa", "8 remaja", "15 anakan"]) {
+  if (!kalimat.includes(harus)) temuan.push(`kalimatKomposisi: tidak menyebut "${harus}" (${kalimat})`);
+}
+// Bagian yang nol dibuang — baris ubinnya sempit.
+const tanpaRemaja = AN.kalimatKomposisi({ total: 3, dewasa: 3, remaja: 0, anakan: 0, takDiketahui: 0 });
+if (tanpaRemaja.includes("0 ")) temuan.push(`kalimatKomposisi: bagian nol ikut ditulis (${tanpaRemaja})`);
+if (AN.kalimatKomposisi({ total: 0 }) !== "") temuan.push("kalimatKomposisi: peternakan kosong seharusnya tanpa kalimat");
+
+// Tetapan pembuatan tukik: dipakai KEDUA pintu penetasan, jadi bentuknya harus
+// yang baru — status "baby" membuat tukik tidak terbaca sebagai kura aktif.
+if (AN.TANDA_ANAKAN.status !== "aktif" || AN.TANDA_ANAKAN.age_category !== "baby") {
+  temuan.push(`TANDA_ANAKAN salah bentuk: ${JSON.stringify(AN.TANDA_ANAKAN)}`);
+}
+if (!AN.anakan({ ...AN.TANDA_ANAKAN, birth_date: "2026-10-01" }, HARI_UJI)) {
+  temuan.push("TANDA_ANAKAN: tukik yang baru dibuat dengan tetapan ini tidak terbaca sebagai anakan");
 }
 
 /* ── Pembayaran surut Inisiatif: hitungan UANG, sekali jalan ─────────────
@@ -1678,6 +1752,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length} judul mirip tugas + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

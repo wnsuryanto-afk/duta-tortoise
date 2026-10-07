@@ -33,6 +33,7 @@ import SilsilahTab from "@/components/tortoise/SilsilahTab";
 import { diPeternakan } from "@/lib/populasiKura";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { recalcEnclosureCountsAman, recalcEnclosureCounts } from "@/lib/enclosureCount";
+import { anakan, hanyaAnakan } from "@/lib/anakanKura";
 
 /**
  * Status kepenuhan kandang, dihitung dari ISI NYATA.
@@ -109,7 +110,22 @@ export default function TortoiseList() {
   const [renameEnclosure, setRenameEnclosure] = useState(null);
   const [syncingKandang, setSyncingKandang] = useState(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("semua");
+  /*
+    Saringan status dibaca dari ALAMAT, bukan selalu mulai dari "semua".
+
+    Ubin "Anakan" di beranda menautkan ke /tortoise?status=baby. Tanpa ini,
+    tautan itu membuka daftar lengkap 178 kura dan orang harus mencari sendiri
+    saringan mana yang tadi ia tekan — angka yang bisa diklik tetapi tidak
+    membawa ke mana-mana sama saja dengan angka yang tidak bisa diklik.
+
+    Nilai yang tidak dikenal diabaikan: alamat yang diketik asal tidak boleh
+    menghasilkan daftar kosong tanpa keterangan.
+  */
+  const STATUS_SAH = ["semua", "baby", "aktif", "sakit", "breeding", "karantina", "mati", "terjual", "diarsipkan"];
+  const statusDariUrl = searchParams.get("status");
+  const [statusFilter, setStatusFilter] = useState(
+    STATUS_SAH.includes(statusDariUrl) ? statusDariUrl : "semua",
+  );
   const [genderFilter, setGenderFilter] = useState("semua");
   const [morphFilter, setMorphFilter] = useState("semua");
   const [shellTypeFilter, setShellTypeFilter] = useState("semua");
@@ -215,7 +231,11 @@ export default function TortoiseList() {
     const matchSearch = !search || t.name?.toLowerCase().includes(search.toLowerCase()) || t.code?.toLowerCase().includes(search.toLowerCase());
     let matchStatus;
     if (statusFilter === "semua") matchStatus = true;
-    else if (statusFilter === "baby") matchStatus = t.age_category === "baby" && t.status === "aktif";
+    // Aturan anakan ada di lib/anakanKura.js — umurnya, bukan kolomnya.
+    // Bentuk lama di sini (`age_category === "baby" && status === "aktif"`)
+    // tidak melihat tukik yang dicatat lewat HatchDialog, dan tetap
+    // menghitung tukik yang sudah berumur dua tahun.
+    else if (statusFilter === "baby") matchStatus = anakan(t);
     // "Sakit" dibaca lewat kedua penandanya, sama seperti lencana penghitungnya
     // di atas. Membandingkan status saja membuat tombol menyebut satu angka dan
     // menampilkan isi yang lain — dan kura yang penandanya berselisih tidak
@@ -457,7 +477,7 @@ export default function TortoiseList() {
               <SelectContent>
                 <SelectItem value="semua">Semua Status ({tortoises.length})</SelectItem>
                 <SelectItem value="aktif">Aktif ({tortoises.filter(t => t.status === "aktif").length})</SelectItem>
-                <SelectItem value="baby">🐣 Baby ({tortoises.filter(t => t.age_category === "baby" && t.status === "aktif").length})</SelectItem>
+                <SelectItem value="baby">🐣 Anakan ({hanyaAnakan(tortoises).length})</SelectItem>
                 <SelectItem value="sakit">Sakit ({tortoises.filter((t) => sedangSakitLengkap(t, sickTortoiseIds)).length})</SelectItem>
                 <SelectItem value="breeding">Breeding ({tortoises.filter(t => t.status === "breeding").length})</SelectItem>
                 <SelectItem value="terjual">Terjual ({tortoises.filter(t => t.status === "terjual").length})</SelectItem>

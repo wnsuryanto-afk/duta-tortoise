@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 // useState & useEffect diperlukan untuk phase2Ready / phase3Ready
 import {
-  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, ChevronRight, ChevronDown, ShieldAlert, ListChecks, StickyNote, Timer
+  TrendingUp, TrendingDown, DollarSign, Percent, Package, Shell, Egg, Heart, AlertTriangle, BarChart2, ChevronRight, ChevronDown, ShieldAlert, ListChecks, StickyNote, Timer, Baby
 } from "lucide-react";
 import ExcludedDataWidget from "@/components/owner/ExcludedDataWidget";
 import ShoppingListWidget from "@/components/dashboard/ShoppingListWidget";
@@ -48,6 +48,7 @@ import { clutchAktif } from "@/lib/breedingUtils";
 import { clutchMendesak, HARI_SEGERA } from "@/lib/hitungMundur";
 import RingkasanAngka from "@/components/common/RingkasanAngka";
 import { rupiah } from "@/lib/rupiah";
+import { kalimatKomposisi, ringkasUmur } from "@/lib/anakanKura";
 
 // ─── Helpers ───────────────────────────────────────
 const pct = (a, b) => (b ? ((a / b) * 100).toFixed(1) : "0.0");
@@ -407,6 +408,15 @@ export default function OwnerDashboard({ user }) {
   // persis untuk masalah ini, dan beranda ini salah satu dari lima tempat yang
   // disebut di catatannya — tapi salinan tangannya masih di sini.
   const kuraDiPeternakan = hanyaDiPeternakan(tortoises);
+  /*
+    Komposisi umurnya, bukan hanya jumlahnya.
+
+    Angka "Kura di peternakan" mencakup SEMUA yang masih ada — termasuk tukik
+    yang baru menetas. Tanpa rinciannya, angka itu mudah dibaca sebagai jumlah
+    indukan, dan pada 7 Okt 2026 selisihnya 23 ekor: 135 di peternakan, tetapi
+    hanya 112 dewasa.
+  */
+  const komposisiUmur = ringkasUmur(tortoises);
   const activeTortoises = tortoises.filter(aktifSehat);
   const sickTortoises = tortoises.filter(sedangSakit);
   const soldThisMonth = tortoises.filter(t => t.status === "terjual" && !t.is_archived && (t.last_status_change || "").startsWith(thisMonthKey));
@@ -785,6 +795,18 @@ export default function OwnerDashboard({ user }) {
       ikon: Shell,
       label: "Kura di peternakan",
       nilai: kuraDiPeternakan.length,
+      sub: kalimatKomposisi(komposisiUmur),
+      tingkat: "biasa",
+    },
+    {
+      kunci: "anakan",
+      // Membuka daftar kura yang SUDAH tersaring anakan. Angka di beranda yang
+      // tidak bisa ditelusuri hanya memindahkan pekerjaan ke yang membacanya.
+      ke: "/tortoise?status=baby",
+      ikon: Baby,
+      label: "Anakan",
+      nilai: komposisiUmur.anakan,
+      sub: komposisiUmur.anakan > 0 ? "umur di bawah 1 tahun" : "belum ada yang menetas",
       tingkat: "biasa",
     },
     {
