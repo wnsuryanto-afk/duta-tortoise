@@ -10,6 +10,7 @@ import { diPeternakan } from "@/lib/populasiKura";
 import { Info, Save, Loader2, Settings } from "lucide-react";
 import { masukLaporan } from "@/lib/laporan";
 import { angkaRibuan } from "@/lib/rupiah";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 
 export default function PengaturanHPP() {
@@ -82,8 +83,7 @@ export default function PengaturanHPP() {
       if (settings.length > 0) {
         await base44.entities.CompanySettings.update(settings[0].id, { hpp_fallback_per_ekor: val });
       }
-      qc.invalidateQueries({ queryKey: ["company-settings-hpp"] });
-      qc.invalidateQueries({ queryKey: ["company-settings-cost"] });
+      segarkanSetelan(qc);
       setSuccess("Pengaturan disimpan ✓");
       setFallback(null);
     } catch (_) { setSuccess("Gagal menyimpan"); }

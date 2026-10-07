@@ -144,30 +144,103 @@ for (const p of berkasJs(join(AKAR, "src"))) {
   }
 }
 
+const pemakaiRingkas = (pemakai) =>
+  pemakai.map((x) => `      ${x.bentuk.padEnd(5)} ${x.rel}:${x.baris}`).join("\n");
+
 const temuan = [];
 for (const [kunci, pemakai] of peta) {
   const bentuk = new Set(pemakai.map((x) => x.bentuk).filter((b) => b !== "lain"));
   if (bentuk.size < 2) continue;
   temuan.push(
-    `  ["${kunci}"] dipakai dengan ${bentuk.size} bentuk berbeda:\n` +
-    pemakai.map((x) => `      ${x.bentuk.padEnd(5)} ${x.rel}:${x.baris}`).join("\n"),
+    `  ["${kunci}"] dipakai dengan ${bentuk.size} bentuk berbeda:\n` + pemakaiRingkas(pemakai),
   );
+}
+
+/* ── Bagian 2: setiap penulis CompanySettings menyegarkan SEMUA kuncinya ──
+ *
+ * Satu baris CompanySettings diambil lewat tujuh kunci cache berbeda, dan
+ * nama-namanya TAMPAK bertingkat — `company-settings`, `company-settings-main`,
+ * `company-settings-hpp`. Di situ jebakannya: TanStack Query mencocokkan kunci
+ * per BAGIAN, bukan per awalan teks, jadi menyegarkan `["company-settings"]`
+ * tidak menyentuh `["company-settings-main"]` sama sekali.
+ *
+ * Pada 6 Oktober 2026 delapan layar menyimpan baris itu dan tidak satu pun
+ * menyegarkan ketujuh kunci. HRPage menyimpan nama dan logo perusahaan lalu
+ * menyegarkan satu kunci; KOP surat dan slip gaji membaca kunci yang lain, dan
+ * tetap menampilkan nama yang lama. Tidak ada galat — hanya angka dan nama
+ * yang sudah diganti tetap tampil seperti sebelum diganti.
+ *
+ * Dua yang diperiksa:
+ *   1. setiap berkas yang MENULIS CompanySettings memanggil segarkanSetelan();
+ *   2. setiap kunci ["company-settings…"] yang ada di kode terdaftar di
+ *      KUNCI_SETELAN — kunci baru yang lupa didaftarkan membuat penjaga merah,
+ *      bukan membuat satu layar diam-diam tertinggal.
+ */
+const BERKAS_KUNCI = "src/lib/kunciSetelan.js";
+const isiKunci = kupasKomentar(readFileSync(join(AKAR, BERKAS_KUNCI), "utf8"));
+const blokDaftar = isiKunci.match(/KUNCI_SETELAN\s*=\s*\[([^\]]*)\]/);
+const terdaftar = new Set(
+  (blokDaftar?.[1] || "").match(/"([^"]+)"/g)?.map((t) => t.slice(1, -1)) || [],
+);
+if (terdaftar.size === 0) {
+  temuan.push(`  KUNCI_SETELAN di ${BERKAS_KUNCI} tidak terbaca — daftar kuncinya hilang atau bentuknya berubah.`);
+}
+
+// 1. Penulis tanpa segarkanSetelan, dan invalidasi yang disusun sendiri.
+for (const p of berkasJs(join(AKAR, "src"))) {
+  const rel = relative(AKAR, p);
+  if (rel === BERKAS_KUNCI) continue;
+  const isi = kupasKomentar(readFileSync(p, "utf8"));
+  const menulis = /CompanySettings\.(update|create)\s*\(/.test(isi);
+  if (menulis && !/segarkanSetelan\s*\(/.test(isi)) {
+    temuan.push(
+      `  ${rel} menulis CompanySettings tanpa memanggil segarkanSetelan().\n` +
+      `      Sebagian pembaca akan tetap menampilkan nilai yang lama.`,
+    );
+  }
+  const sendiri = isi.match(/invalidateQueries\(\s*\{\s*queryKey:\s*\[\s*"company-settings[^"]*"/g);
+  if (sendiri) {
+    temuan.push(
+      `  ${rel} menyusun ${sendiri.length} invalidasi company-settings sendiri.\n` +
+      `      Pakai segarkanSetelan(qc) dari ${BERKAS_KUNCI}; daftar yang disusun\n` +
+      `      sendiri selalu ketinggalan satu kunci.`,
+    );
+  }
+}
+
+// 2. Kunci yang dipakai tetapi tidak terdaftar.
+if (terdaftar.size > 0) {
+  const belum = [];
+  for (const kunci of peta.keys()) {
+    if (!kunci.startsWith("company-settings")) continue;
+    if (terdaftar.has(kunci)) continue;
+    belum.push(`  ["${kunci}"] dipakai di kode tetapi tidak ada di KUNCI_SETELAN.\n` +
+      pemakaiRingkas(peta.get(kunci)));
+  }
+  temuan.push(...belum);
 }
 
 if (temuan.length) {
   console.error(
-    `${temuan.length} kunci cache dipakai dengan lebih dari satu bentuk data.\n\n` +
-    `TanStack Query menyimpan per KUNCI. Pembaca yang mengira array dan\n` +
-    `pembaca yang mengira objek membaca tempat yang sama, dan yang terakhir\n` +
-    `mengisi cache menentukan bentuknya untuk keduanya — jadi salah satu\n` +
-    `pembaca selalu salah, dan mana yang salah berubah menurut urutan\n` +
-    `komponen dipasang.\n\n` +
-    `Satukan lewat satu hook (lihat src/lib/useCompanySettings.js), atau beri\n` +
-    `kunci yang berbeda bila bentuknya memang harus berbeda.\n\n` +
+    `${temuan.length} temuan kunci cache.\n\n` +
+    `TanStack Query menyimpan per KUNCI, dan mencocokkannya per BAGIAN —\n` +
+    `bukan per awalan teks. Dua akibatnya:\n\n` +
+    `  · dua bentuk data di bawah satu kunci: pembaca yang mengira array dan\n` +
+    `    pembaca yang mengira objek membaca tempat yang sama, dan yang\n` +
+    `    terakhir mengisi cache menentukan bentuknya untuk keduanya;\n` +
+    `  · menyegarkan ["company-settings"] TIDAK menyentuh\n` +
+    `    ["company-settings-main"], jadi layar yang membaca kunci lain tetap\n` +
+    `    menampilkan nilai yang lama tanpa galat apa pun.\n\n` +
+    `Bentuk: satukan lewat satu hook (src/lib/useCompanySettings.js), atau beri\n` +
+    `kunci berbeda bila bentuknya memang harus berbeda.\n` +
+    `Penyegaran: pakai segarkanSetelan(qc) dari src/lib/kunciSetelan.js.\n\n` +
     temuan.join("\n"),
   );
   process.exit(1);
 }
 
-console.log(`Setiap kunci cache satu bentuk (${peta.size} kunci literal diperiksa).`);
+console.log(
+  `Setiap kunci cache satu bentuk (${peta.size} kunci literal diperiksa), ` +
+  `dan ${terdaftar.size} kunci CompanySettings disegarkan dari satu tempat.`,
+);
 process.exit(0);

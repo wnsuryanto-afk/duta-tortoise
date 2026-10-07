@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { KUNCI_UTAMA } from "@/lib/kunciSetelan";
 
 /**
  * Selalu return record CompanySettings yang valid (setting_key = "main").
@@ -9,7 +10,10 @@ import { base44 } from "@/api/base44Client";
  */
 export function useCompanySettings() {
   const { data } = useQuery({
-    queryKey: ["company-settings-main"],
+    // Kuncinya diambil dari kunciSetelan.js, tempat daftar SEMUA kunci
+    // CompanySettings disimpan. Menulisnya sebagai teks di sini berarti kunci
+    // ini bisa berubah tanpa ikut berubah di daftar yang menyegarkannya.
+    queryKey: [KUNCI_UTAMA],
     queryFn: async () => {
       const res = await base44.entities.CompanySettings.filter({ setting_key: "main" });
       return res[0] || {};

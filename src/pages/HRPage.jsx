@@ -18,6 +18,7 @@ import TargetPoinSettings from "@/components/settings/TargetPoinSettings";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PageHeader from "@/components/common/PageHeader";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 const fmt = (d) => d ? format(new Date(d), "d MMM yyyy", { locale: id }) : "-";
 
@@ -324,7 +325,7 @@ function CompanySettingsTab() {
     } else {
       await base44.entities.CompanySettings.create({ ...currentForm, setting_key: "main" });
     }
-    qc.invalidateQueries({ queryKey: ["company-settings"] });
+    segarkanSetelan(qc);
     setSaving(false);
   };
 

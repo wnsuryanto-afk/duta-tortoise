@@ -31,6 +31,7 @@ import ExcludeToggle from "@/components/owner/ExcludeToggle";
 import { masukLaporan } from "@/lib/laporan";
 import { useTestMode } from "@/lib/useTestMode";
 import KeadaanKosong from "@/components/common/KeadaanKosong";
+import { segarkanSetelan } from "@/lib/kunciSetelan";
 
 const CATEGORIES = {
   penjualan_tortoise: { label: "Penjualan Tortoise",     color: "bg-green-100 text-green-700",   type: "pemasukan"    },
@@ -603,7 +604,7 @@ function PengaturanHPP() {
     if (!current) return;
     setSaving(true);
     await base44.entities.CompanySettings.update(current.id, { hpp_fallback_per_ekor: Number(fallback) });
-    qc.invalidateQueries({ queryKey: ["company-settings"] });
+    segarkanSetelan(qc);
     setSaving(false);
   };
 

@@ -66,9 +66,11 @@ bundel("src/lib/tanggalMasukAkal.js", "tanggal.cjs");
 bundel("src/lib/hasilInkubasi.js", "hasil.cjs");
 bundel("src/lib/hppKura.js", "hpp.cjs");
 bundel("src/lib/usulPoinInisiatif.js", "usulpoin.cjs");
+bundel("src/lib/kunciSetelan.js", "kunci.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
+const KS = await import("file://" + join(dir, "kunci.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -388,6 +390,36 @@ for (const harus of ["0, 5, 10, 15", "Nambal kolam azola", "sisa kuota", "Sisa k
     temuan.push(`promptUsulPoin: tidak menyebut "${harus}"`);
   }
 }
+
+/* ── Satu baris setelan, tujuh kunci cache, satu penyegaran ─────────────
+ *
+ * `segarkanSetelan` harus menyentuh SETIAP kunci, bukan sebagian. Yang diuji
+ * di sini perilakunya, bukan bentuknya: penjaga cek-kunci memastikan semua
+ * penulis memanggilnya, dan uji ini memastikan yang dipanggil itu benar-benar
+ * menyegarkan ketujuhnya. Tanpa uji ini, fungsi yang tubuhnya kosong akan
+ * lolos pemeriksaan bentuk dengan mulus.
+ */
+const dicatat = [];
+KS.segarkanSetelan({ invalidateQueries: ({ queryKey }) => dicatat.push(queryKey[0]) });
+for (const kunci of KS.KUNCI_SETELAN) {
+  if (!dicatat.includes(kunci)) temuan.push(`segarkanSetelan: kunci "${kunci}" tidak disegarkan`);
+}
+if (dicatat.length !== KS.KUNCI_SETELAN.length) {
+  temuan.push(`segarkanSetelan: ${dicatat.length} penyegaran untuk ${KS.KUNCI_SETELAN.length} kunci`);
+}
+if (!KS.KUNCI_SETELAN.includes(KS.KUNCI_UTAMA)) {
+  temuan.push(`segarkanSetelan: KUNCI_UTAMA "${KS.KUNCI_UTAMA}" tidak ada di KUNCI_SETELAN — hook utama tidak akan ikut disegarkan`);
+}
+// Dipanggil tanpa QueryClient (misal dari fungsi latar) tidak boleh melempar:
+// penyimpanannya sudah berhasil, dan penyegaran yang gagal bukan alasan
+// menggagalkannya.
+try {
+  KS.segarkanSetelan(undefined);
+  KS.segarkanSetelan({});
+} catch (e) {
+  temuan.push(`segarkanSetelan: melempar saat dipanggil tanpa QueryClient (${e?.message || e})`);
+}
+const setelanUji = KS.KUNCI_SETELAN;
 
 /* ── Ongkos kirim: hanya yang ditanggung PENJUAL yang masuk HPP ──────────
  *
@@ -1282,6 +1314,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);
