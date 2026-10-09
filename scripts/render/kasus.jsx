@@ -47,6 +47,7 @@ import TermConditionSOPPage from "@/pages/TermConditionSOPPage";
 import RiwayatKlusterPage from "@/pages/RiwayatKlusterPage";
 import HubPage from "@/pages/HubPage";
 import BreedingDetailPage from "@/pages/BreedingDetailPage";
+import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
 import PanduanPakanPage from "@/pages/PanduanPakanPage";
 import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
 import WhatsAppLogPage from "@/pages/WhatsAppLogPage";
@@ -93,6 +94,56 @@ import DosisKalkulator from "@/components/health/DosisKalkulator";
 */
 
 const U = { id: "1", email: "a@b.c", full_name: "Sholeh" };
+
+/*
+  Satu kebun kecil yang bentuknya sama dengan data nyata: kandang satu jantan
+  yang berproduksi, kandang tiga jantan yang nol, kandang tanpa jantan dewasa,
+  indukan yang berhenti, dan betina yang baru datang.
+*/
+const ayahSatu = (n) => ({ pasti: true, jumlah: 1, kandidat: [n], ayah: n, muda: [], hanyaMuda: false });
+const ayahBanyak = (d) => ({ pasti: false, jumlah: d.length, kandidat: d, ayah: null, muda: [], hanyaMuda: false });
+const ayahMuda = (n) => ({ pasti: false, jumlah: 0, kandidat: [], ayah: null, muda: [n], hanyaMuda: true });
+
+const NAIKKAN = {
+  hariIni: new Date("2026-10-09T12:00:00Z"),
+  umurMinimal: 6.44,
+  baris: [
+    { id: "c23", nama: "C23", kandang: "W1", umur: 16, clutch: 3, purchaseDate: "2025-05-07",
+      tanggalClutch: ["2026-08-12", "2026-09-09", "2026-10-02"], ayah: ayahSatu("A40") },
+    { id: "c22", nama: "C22", kandang: "W2", umur: 16, clutch: 1, purchaseDate: "2025-05-07",
+      tanggalClutch: ["2026-09-14"], ayah: ayahSatu("A37") },
+    { id: "c24", nama: "C24", kandang: "W3", umur: 16, clutch: 2, purchaseDate: "2025-05-07",
+      tanggalClutch: ["2026-03-09", "2026-04-08"], ayah: ayahSatu("A36") },
+    { id: "a31", nama: "A31", kandang: "W3", umur: 18, clutch: 2, purchaseDate: "2019-01-01",
+      tanggalClutch: ["2026-09-04", "2026-10-01"], ayah: ayahSatu("A36") },
+    ...["B30", "B44", "B84", "B42", "B46", "C19"].map((nama) => ({
+      id: nama, nama, kandang: "Bonsai 3", umur: 16, clutch: 0, purchaseDate: "2024-12-26",
+      tanggalClutch: [], ayah: ayahBanyak(["A30", "B11", "A33"]),
+    })),
+    ...["F27", "F29", "F28"].map((nama) => ({
+      id: nama, nama, kandang: "E1", umur: 6.5, clutch: 0, purchaseDate: null,
+      tanggalClutch: [], ayah: ayahMuda("Yuwono"),
+    })),
+    { id: "a45", nama: "A45", kandang: "W4", umur: 18, clutch: 0, purchaseDate: "2019-01-01",
+      proven: true, tanggalClutch: [], ayah: ayahSatu("A32") },
+    { id: "b1", nama: "B1", kandang: "W4", umur: 16, clutch: 0, purchaseDate: "2026-08-01",
+      tanggalClutch: [], ayah: ayahSatu("A32") },
+    { id: "b2", nama: "B2", kandang: "W4", umur: 16, clutch: 0, purchaseDate: "2024-12-26",
+      tanggalClutch: [], ayah: ayahSatu("A32") },
+  ],
+  breedings: [
+    ["C23", "2026-08-12", "A40"], ["C23", "2026-09-09", "A40"], ["C23", "2026-10-02", "A40"],
+    ["C22", "2026-09-14", "A37"], ["C24", "2026-03-09", "A36"], ["C24", "2026-04-08", "A36"],
+    ["A31", "2026-09-04", "A36"], ["A31", "2026-10-01", "A36"],
+  ].map(([f, d, m]) => ({ female_id: f.toLowerCase(), female_name: f, egg_laying_date: d, male_name: m })),
+  tortoises: [
+    { id: "jA40", name: "A40", gender: "jantan", birth_date: "2018-05-01" },
+    { id: "jA30", name: "A30", gender: "jantan", birth_date: "2012-05-01" },
+    { id: "jB11", name: "B11", gender: "jantan", birth_date: "2010-01-01" },
+    { id: "jA33", name: "A33", gender: "jantan", birth_date: "2010-01-01" },
+    { id: "fc23", name: "C23", gender: "betina", purchase_date: "2025-05-07" },
+  ],
+};
 
 export default [
   // Data user belum termuat — keadaan paling sering terlewat, dan yang paling
@@ -441,6 +492,18 @@ export default [
   ["RiwayatKlusterPage tanpa data", <RiwayatKlusterPage />],
   ["HubPage tanpa data", <HubPage />],
   ["BreedingDetailPage tanpa data", <BreedingDetailPage />],
+
+  /*
+    Tab "Naikkan produksi" DENGAN data, bukan hanya kosong.
+
+    Dibangun 9 Okt 2026 dan sama sekali tidak masuk daftar ini, jadi tidak satu
+    pun penjaga pernah menggambarnya: tulisan yang terpotong, kalimat yang
+    berulang belasan kali, dan kalimat yang dipecah flex jadi kolom — ketiganya
+    hanya terlihat sesudah komponennya benar-benar digambar dengan isi.
+    Versi kosong tidak cukup; yang berulang hanya muncul kalau barisnya banyak.
+  */
+  ["NaikkanProduksi tanpa data", <NaikkanProduksi baris={[]} breedings={[]} tortoises={[]} hariIni={new Date("2026-10-09T12:00:00Z")} />],
+  ["NaikkanProduksi dengan data", <NaikkanProduksi {...NAIKKAN} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
   ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],
   ["WhatsAppLogPage tanpa data", <WhatsAppLogPage />],

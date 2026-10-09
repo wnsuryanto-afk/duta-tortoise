@@ -108,6 +108,80 @@ function ukur(lebarLayar) {
   return keluar;
 }
 
+/*
+ * Dua cacat yang diukur di dalam peramban yang sama, karena keduanya hanya
+ * terlihat SESUDAH digambar — bukan dari membaca JSX.
+ *
+ * 1. KALIMAT YANG SAMA BERULANG DI SATU LAYAR.
+ *
+ *    9 Okt 2026, dipotret di lebar telepon: tab "Naikkan produksi" menulis
+ *    "betina pernah bertelur" enam belas kali berturut-turut, dan halaman
+ *    Otomatisasi menaruh kalimat "Memanggil fungsinya sekali dan menampilkan
+ *    jawabannya apa adanya" di samping SEMBILAN BELAS tombol — satu halaman,
+ *    11,5 layar telepon, 8.371 huruf.
+ *
+ *    Penjelasan yang sama untuk semua baris adalah judul kolom atau catatan
+ *    kaki, bukan isi baris. Yang diperiksa di sini bukan selera: sebuah baris
+ *    teks yang SAMA PERSIS, cukup panjang untuk jadi kalimat, muncul berkali
+ *    -kali di satu layar. Nama kura yang berulang tidak kena — terlalu pendek.
+ *
+ * 2. KALIMAT YANG DIPECAH FLEX MENJADI KOLOM.
+ *
+ *    `<p className="flex items-start gap-1.5">Sesudah <b>14 jantan</b> ...</p>`
+ *    menjadikan TIAP potongan teks satu item flex, jadi kalimatnya tergambar
+ *    sebagai kolom-kolom sempit yang bertumpuk ke bawah. Tidak ada yang
+ *    terpotong, jadi pemeriksaan lebar tidak melihatnya — tetapi kalimatnya
+ *    tidak bisa dibaca.
+ */
+function cacatTeks() {
+  const bingkai = document.getElementById("bingkai");
+  if (!bingkai) return null;
+  const keluar = [];
+
+  // (1) Baris identik yang berulang.
+  const hitung = new Map();
+  for (const baris of (bingkai.innerText || "").split("\n")) {
+    const s = baris.trim();
+    if (s.length < 25) continue;
+    hitung.set(s, (hitung.get(s) || 0) + 1);
+  }
+  for (const [s, n] of hitung) {
+    if (n >= 4) keluar.push({ jenis: "kalimat berulang", n, teks: s.slice(0, 70) });
+  }
+
+  // (2) Wadah flex mendatar yang isinya teks telanjang BERSAMA elemen lain.
+  for (const el of bingkai.querySelectorAll("p, span, div")) {
+    const g = getComputedStyle(el);
+    if (g.display !== "flex" && g.display !== "inline-flex") continue;
+    if (g.flexDirection !== "row" && g.flexDirection !== "row-reverse") continue;
+    if (g.flexWrap === "wrap") continue;
+    const anak = [...el.childNodes];
+    const teksTelanjang = anak.filter((n) => n.nodeType === 3 && n.textContent.trim().length > 12);
+    const elemen = anak.filter((n) => n.nodeType === 1);
+    /*
+      DUA potongan teks telanjang atau lebih, bukan satu.
+
+      Versi pertama menandai "teks telanjang BERSAMA elemen" dan langsung
+      berbunyi 40-an kali untuk `<h3 className="flex items-center gap-2">
+      <Icon/> Judul</h3>` — ikon di samping label, idiom yang benar dan
+      tergambar persis seperti yang dimaksud. Satu potongan teks di samping
+      satu ikon memang duduk berdampingan; itu gunanya flex.
+
+      Yang merusak kalimat adalah potongan teks KEDUA: begitu sebuah kalimat
+      dipotong oleh <b> di tengahnya, potongan sebelum dan sesudahnya menjadi
+      dua kolom terpisah, dan kalimatnya tergambar bertumpuk.
+    */
+    if (teksTelanjang.length >= 2) {
+      keluar.push({
+        jenis: "kalimat dipecah flex",
+        n: teksTelanjang.length + elemen.length,
+        teks: (el.textContent || "").trim().slice(0, 70),
+      });
+    }
+  }
+  return keluar;
+}
+
 const server = spawn(
   "npx", ["vite", "--config", path.join(SINI, "lebar/vite.config.js")],
   { cwd: AKAR, env: { ...process.env, PORT_UJI: String(PORT) }, stdio: "ignore" },
@@ -194,6 +268,7 @@ await halaman.waitForTimeout(1500);
 
 const nama = await halaman.evaluate(() => window.__kasus || []);
 const temuan = [];
+const temuanTeks = [];
 
 const takTerukur = [];
 for (let i = 0; i < nama.length; i++) {
@@ -201,6 +276,14 @@ for (let i = 0; i < nama.length; i++) {
   await halaman.waitForTimeout(400);
   const salah = await pastikanTergambar(halaman, nama[i]);
   if (salah) { takTerukur.push(`${nama[i]}  ${salah}`); continue; }
+  const cacat = await halaman.evaluate(cacatTeks);
+  for (const c of cacat || []) {
+    if (c.jenis === "kalimat berulang") {
+      temuanTeks.push(`${nama[i]}  kalimat yang sama ${c.n}×: "${c.teks}"`);
+    } else {
+      temuanTeks.push(`${nama[i]}  kalimat dipecah flex jadi ${c.n} kolom: "${c.teks}"`);
+    }
+  }
   const hasil = await ukurMantap(halaman, LEBAR);
   const lihat = new Set();
   for (const t of hasil) {
@@ -209,6 +292,21 @@ for (let i = 0; i < nama.length; i++) {
     lihat.add(kunci);
     temuan.push(`${nama[i]}  ${t.jenis} +${t.lebih}px  "${t.teks}"\n      kelas: ${t.kelas}\n      induk: ${t.induk}`);
   }
+}
+
+if (temuanTeks.length) {
+  console.error(
+    `${temuanTeks.length} masalah tulisan.\n\n` +
+    `"Kalimat yang sama Nx" — penjelasan yang berlaku untuk semua baris adalah\n` +
+    `judul kolom atau catatan kaki, bukan isi tiap baris.\n\n` +
+    `"Kalimat dipecah flex" — wadah flex mendatar menjadikan tiap potongan teks\n` +
+    `satu kolom, jadi kalimatnya tergambar bertumpuk ke bawah. Bungkus teksnya\n` +
+    `dalam satu <span>, atau pakai flex-wrap.\n\n` +
+    temuanTeks.map((t) => "  " + t).join("\n"),
+  );
+  await peramban.close();
+  tutup();
+  process.exit(1);
 }
 
 if (temuan.length) {

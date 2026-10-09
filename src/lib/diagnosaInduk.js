@@ -178,7 +178,15 @@ export function diagnosaBetina(r, { kandang, bulanAdaptasi = BULAN_ADAPTASI_BAWA
       teks: `${ayah.jumlah} jantan di satu kandang (${(ayah.kandidat || []).join(", ")}), dan kandang ini belum pernah menghasilkan satu clutch pun dari ${k.betina} betinanya.`,
     });
   }
-  if (k.nolProduksi && (ayah.jumlah || 0) <= 1) {
+  /*
+    "Kandang ini belum pernah menghasilkan" TIDAK ditulis bila sudah ada sebab
+    pasti tentang jantannya. Kalau kandang tidak punya jantan dewasa, tentu saja
+    ia belum pernah menghasilkan — menuliskan keduanya berarti menyebut satu
+    kenyataan dua kali. Pada data 9 Okt 2026 itu enam baris E1 yang seluruhnya
+    berbunyi sama persis dua baris.
+  */
+  const sebabJantan = sebab.some((s) => s.kode === "tanpa-jantan" || s.kode === "jantan-belum-cukup-umur");
+  if (k.nolProduksi && (ayah.jumlah || 0) <= 1 && !sebabJantan) {
     usulan.push({
       kode: "kandang-nol",
       teks: `Kandang ini belum pernah menghasilkan clutch dari ${k.betina} betinanya. Jantannya${ayah.ayah ? ` (${ayah.ayah})` : ""} perlu diperiksa, atau dicoba diganti.`,

@@ -425,6 +425,15 @@ export default function OtomatisasiPage() {
               Urutan menyalakan yang disarankan: {URUTAN_SARAN.join(" → ")} — dari yang paling tidak berisiko
               (tidak menyentuh uang maupun poin) ke yang paling perlu diawasi.
             </p>
+            {/*
+              Dulu kalimat ini berdiri di samping SETIAP tombol "Uji sekarang"
+              — sembilan belas kali di satu halaman, berbunyi sama persis.
+              Penjelasan tombol yang sama untuk semua tombol ditulis sekali.
+            */}
+            <p className="text-amber-800 dark:text-amber-300">
+              Tombol <strong>Uji sekarang</strong> di tiap kartu memanggil fungsinya sekali dan menampilkan
+              jawabannya apa adanya.
+            </p>
           </div>
         </div>
       </Card>
@@ -462,7 +471,10 @@ export default function OtomatisasiPage() {
 
                       <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground">
                         <Clock className="w-3 h-3" />
-                        <span>Jadwal disarankan: <strong>{item.jadwal}</strong></span>
+                        {/* Label "Jadwal disarankan:" dibuang — ikon jam di
+                            sebelahnya sudah mengatakan hal yang sama, sembilan
+                            belas kali lebih singkat. */}
+                        <strong>{item.jadwal}</strong>
                         <span className="font-mono ml-1 px-1.5 py-0.5 rounded bg-muted">{item.fn}</span>
                       </div>
 
@@ -553,9 +565,6 @@ export default function OtomatisasiPage() {
                         <><Play className="w-3.5 h-3.5 mr-1.5" /> Uji sekarang</>
                       )}
                     </Button>
-                    <span className="text-[11px] text-muted-foreground">
-                      Memanggil fungsinya sekali dan menampilkan jawabannya apa adanya.
-                    </span>
                   </div>
 
                   {hasil && (
