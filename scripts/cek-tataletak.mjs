@@ -251,6 +251,36 @@ for (const rel of PINTU_TETAS) {
   }
 }
 
+/* ── Tab "Naikkan produksi" tersambung ujung ke ujung ───────────────
+ *
+ * Cacat yang sama pernah ada dua kali di aplikasi ini: tautan yang bisa
+ * diklik, membuka halaman, tidak melempar galat — dan menampilkan isi yang
+ * salah, karena salah satu ujungnya tidak pernah dibaca (`?edit=` dan
+ * `?status=`). Tab disimpan di alamat lewat `?tab=`, jadi ia punya ujung
+ * yang sama persis: nilai tab harus ada di daftar yang sah, tombolnya harus
+ * ada, DAN isinya harus benar-benar dirender.
+ *
+ * Satu ujung putus berarti `?tab=naikkan` diam-diam mendarat di tab lain.
+ */
+{
+  const rel = "src/pages/BreedingPlannerPage.jsx";
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  const ujung = [
+    [/TAB_SAH\s*=\s*\[[^\]]*"naikkan"/, 'nilai "naikkan" tidak ada di TAB_SAH, jadi ?tab=naikkan mendarat di tab lain'],
+    [/<TabsTrigger\s+value="naikkan"/, "tombol tabnya tidak ada"],
+    [/<TabsContent\s+value="naikkan"/, "isi tabnya tidak pernah dirender"],
+    [/<NaikkanProduksi/, "komponen NaikkanProduksi tidak dipasang"],
+  ];
+  for (const [pola, pesan] of ujung) {
+    if (!pola.test(isi)) temuan.push(`${rel}  tab "Naikkan produksi": ${pesan}.`);
+  }
+  // Ketiga tab harus muat di barisnya. grid-cols-2 dengan tiga tab memotong
+  // tab ketiga keluar layar pada lebar telepon.
+  if (/TabsList[^>]*grid-cols-2/.test(isi)) {
+    temuan.push(`${rel}  TabsList masih grid-cols-2 padahal tabnya tiga — tab ketiga terpotong.`);
+  }
+}
+
 /* ── Setiap pintu pembuat DailyChecklist menandai data uji ──────────
  *
  * Satu centang pemilik pada 5 Oktober 2026 melahirkan dua catatan:
@@ -394,6 +424,7 @@ console.log(
   `${pakaiH1Sendiri.length} dari ${halaman.length} halaman memakai <h1> sendiri ` +
   `(batas ${BATAS_H1_SENDIRI}), ${DIKECUALIKAN.size} dikecualikan dengan alasan tertulis. ` +
   `Ubin Anakan tersambung ke daftarnya, kedua pintu penetasan satu bentuk, ` +
-  `${pintuChecklist.length} pintu checklist menandai data uji, dan ${kueriDiperiksa} kueri menunggu di ${LAYAR_MENUNGGU.length} layar menyaringnya.`,
+  `${pintuChecklist.length} pintu checklist menandai data uji, ${kueriDiperiksa} kueri menunggu di ${LAYAR_MENUNGGU.length} layar menyaringnya, ` +
+  `dan tab "Naikkan produksi" tersambung ujung ke ujung.`,
 );
 process.exit(0);

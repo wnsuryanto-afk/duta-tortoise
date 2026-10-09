@@ -213,6 +213,25 @@ export function produksiBetina(tortoises = [], breedings = [], enclosures = [], 
         nama: t.name,
         kandang: kdg,
         umur: umurTahun(t.birth_date, acuan),
+        /*
+          Tiga kolom di bawah ini ditambahkan 9 Oktober 2026 untuk menjawab
+          pertanyaan pemilik: "mana yang paling lama kita pelihara", dan
+          "bulan depan dia bertelur lagi atau tidak".
+
+          `purchaseDate` dibawa apa adanya, termasuk saat kosong. Betina tanpa
+          tanggal beli bukan betina yang baru datang — ia betina yang tidak
+          diketahui kapan datangnya, dan dua hal itu tidak boleh dijadikan satu
+          angka. lib/diagnosaInduk.js menghitung `lamaBulan` null untuknya.
+        */
+        purchaseDate: t.purchase_date || null,
+        sakit: !!t.is_currently_sick || !!t.in_quarantine,
+        // Ditandai pernah berproduksi, tetapi nol catatan di aplikasi ini.
+        // Itu pertentangan yang berarti, bukan kolom hiasan — lihat
+        // lib/diagnosaInduk.js (sebab "proven-tanpa-catatan").
+        proven: !!t.is_proven,
+        // Tanggal bertelur, urut. Dipakai lib/siklusBertelur.js untuk
+        // menghitung jarak antar clutch betina ini sendiri.
+        tanggalClutch: tanggal,
         clutch: clutch.length,
         clutchTahunIni: clutch.filter((b) => String(b.egg_laying_date).startsWith(String(tahunIni))).length,
         terakhirBertelur: terakhir,

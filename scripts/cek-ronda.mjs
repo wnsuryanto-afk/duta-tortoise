@@ -73,6 +73,8 @@ bundel("src/lib/poinBarisChecklist.js", "poinchecklist.cjs");
 bundel("base44/shared/bayarSurut.ts", "bayarsurut.cjs");
 bundel("src/lib/anakanKura.js", "anakan.cjs");
 bundel("src/lib/laporan.js", "laporan.cjs");
+bundel("src/lib/siklusBertelur.js", "siklus.cjs");
+bundel("src/lib/diagnosaInduk.js", "diagnosa.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -83,6 +85,8 @@ const PK = await import("file://" + join(dir, "poinchecklist.cjs")).then((m) => 
 const BS = await import("file://" + join(dir, "bayarsurut.cjs")).then((m) => m.default || m);
 const AN = await import("file://" + join(dir, "anakan.cjs")).then((m) => m.default || m);
 const LP = await import("file://" + join(dir, "laporan.cjs")).then((m) => m.default || m);
+const SB = await import("file://" + join(dir, "siklus.cjs")).then((m) => m.default || m);
+const DI = await import("file://" + join(dir, "diagnosa.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -875,6 +879,303 @@ for (const kasus of hariUji) {
   const diberikan = poin.reduce((j, p) => j + p, 0);
   if (diberikan + (kasus.masuk.terpakai || 0) > 30) {
     temuan.push(`bayarSurut [${kasus.nama}]: total ${diberikan + (kasus.masuk.terpakai || 0)} poin melewati batas 30`);
+  }
+}
+
+/* ── Siklus bertelur: perkiraan yang harus mengaku tebakan ──────────────
+ *
+ * Pemilik menyebut polanya lebih dulu: "yang sudah bertelur cenderung
+ * bertelur lagi bulan berikutnya, tapi tidak selalu". Data kebun ini
+ * mendukungnya — lima jarak antar-clutch yang terukur, semuanya 23–30
+ * hari, median 28.
+ *
+ * LIMA. Itu pengamatan, bukan statistik, dan seluruh layar hitung mundur
+ * berdiri di atasnya. Maka yang diuji di sini bukan hanya angkanya, tetapi
+ * juga KEJUJURANNYA: betina yang baru sekali bertelur tidak punya jarak
+ * sendiri, dan layarnya harus mengatakan angkanya pinjaman dari kebun.
+ * Perkiraan yang menyamarkan dari mana angkanya datang membuat orang
+ * menyiapkan sarang untuk tanggal yang tidak pernah dijanjikan siapa pun.
+ *
+ * Tanggal di bawah ini seluruhnya catatan nyata kebun ini per 9 Okt 2026.
+ */
+const siklusUji = [
+  {
+    nama: "C23 — tiga clutch, punya jarak sendiri",
+    tanggal: ["2026-08-12", "2026-09-09", "2026-10-02"],
+    status: "menunggu", jarak: 26, sumber: "sendiri", keyakinan: "kuat",
+  },
+  {
+    nama: "A31 — dua clutch, jaraknya baru sekali terukur",
+    tanggal: ["2026-09-04", "2026-10-01"],
+    status: "menunggu", jarak: 27, sumber: "sendiri-sekali", keyakinan: "sedang",
+  },
+  {
+    nama: "C22 — sekali bertelur, meminjam median kebun",
+    tanggal: ["2026-09-14"],
+    status: "jendela", jarak: 28, sumber: "kebun", keyakinan: "lemah",
+  },
+  {
+    nama: "A47 — di dalam jendela, sudah lewat perkiraan 5 hari",
+    tanggal: ["2026-09-06"],
+    status: "jendela", jarak: 28, sumber: "kebun", keyakinan: "lemah",
+  },
+  {
+    nama: "C24 — indukan terbukti yang BERHENTI (184 hari)",
+    tanggal: ["2026-03-09", "2026-04-08"],
+    status: "berhenti", jarak: 30, sumber: "sendiri-sekali", keyakinan: "sedang",
+  },
+  {
+    nama: "C14 — berhenti 207 hari, jaraknya pinjaman",
+    tanggal: ["2026-03-16"],
+    status: "berhenti", jarak: 28, sumber: "kebun", keyakinan: "lemah",
+  },
+  {
+    nama: "tepat di tepi jendela (7 hari lagi) masih jendela",
+    tanggal: ["2026-09-18"], status: "jendela", jarak: 28, sumber: "kebun", keyakinan: "lemah",
+  },
+  {
+    nama: "delapan hari lagi sudah menunggu, bukan jendela",
+    tanggal: ["2026-09-19"], status: "menunggu", jarak: 28, sumber: "kebun", keyakinan: "lemah",
+  },
+  {
+    nama: "lewat 8 hari: telat, belum berhenti",
+    tanggal: ["2026-09-03"], status: "telat", jarak: 28, sumber: "kebun", keyakinan: "lemah",
+  },
+  {
+    nama: "belum pernah bertelur",
+    tanggal: [], status: "belum-pernah", jarak: null, sumber: null, keyakinan: null,
+  },
+  {
+    nama: "tanggal ganda dan tidak urut tetap dihitung sekali",
+    tanggal: ["2026-10-02", "2026-08-12", "2026-09-09", "2026-10-02"],
+    status: "menunggu", jarak: 26, sumber: "sendiri", keyakinan: "kuat",
+  },
+];
+
+const HARI_INDUK = "2026-10-09";
+for (const u of siklusUji) {
+  const s = SB.siklusBetina(u.tanggal, { hariIni: HARI_INDUK, jarakKebun: 28 });
+  if (s.status !== u.status) temuan.push(`siklusBetina [${u.nama}]: status ${s.status}, seharusnya ${u.status}`);
+  if (s.jarakDipakai !== u.jarak) temuan.push(`siklusBetina [${u.nama}]: jarak ${s.jarakDipakai}, seharusnya ${u.jarak}`);
+  if (s.sumberJarak !== u.sumber) temuan.push(`siklusBetina [${u.nama}]: sumber ${s.sumberJarak}, seharusnya ${u.sumber}`);
+  if (s.keyakinan !== u.keyakinan) temuan.push(`siklusBetina [${u.nama}]: keyakinan ${s.keyakinan}, seharusnya ${u.keyakinan}`);
+  /*
+    Kejujuran sumbernya, diuji terpisah dari status: betina yang jaraknya
+    DIPINJAM tidak boleh menyebutnya milik sendiri. Ini pemeriksaan yang
+    paling mudah lolos tanpa sadar, karena angka perkiraannya tetap benar.
+  */
+  if (u.tanggal.length <= 1 && s.sumberJarak && s.sumberJarak.startsWith("sendiri")) {
+    temuan.push(`siklusBetina [${u.nama}]: mengaku jarak sendiri padahal baru ${u.tanggal.length} clutch`);
+  }
+  if (s.perkiraan && (s.jendelaAwal >= s.perkiraan || s.jendelaAkhir <= s.perkiraan)) {
+    temuan.push(`siklusBetina [${u.nama}]: jendela ${s.jendelaAwal}..${s.jendelaAkhir} tidak mengurung perkiraan ${s.perkiraan}`);
+  }
+}
+
+/*
+  Median kebun dihitung PER BETINA lebih dulu.
+
+  Kalau seluruh tanggal dicampur jadi satu lalu diselisihkan, jarak antara
+  clutch C23 dan clutch A46 akan terhitung sebagai sebuah siklus — padahal
+  itu dua ekor berbeda. Pada data kebun ini campuran itu menghasilkan belasan
+  jarak pendek palsu (beberapa nol dan satu hari), dan mediannya jatuh dari
+  28 ke sekitar 2. Perkiraannya lalu menyuruh kiper menyiapkan sarang
+  setiap dua hari.
+*/
+const brUji = [
+  ["C6", "2026-10-09"], ["A46", "2026-10-04"], ["C23", "2026-10-02"], ["A31", "2026-10-01"],
+  ["B108", "2026-09-30"], ["A48", "2026-09-26"], ["C22", "2026-09-14"], ["C23", "2026-09-09"],
+  ["A47", "2026-09-06"], ["A31", "2026-09-04"], ["A46", "2026-09-04"], ["C23", "2026-08-12"],
+  ["C24", "2026-04-08"], ["C14", "2026-03-16"], ["C24", "2026-03-09"],
+].map(([f, d]) => ({ female_id: f, female_name: f, egg_laying_date: d }));
+
+const kebunUjiInd = SB.jarakKebun(brUji);
+if (JSON.stringify(kebunUjiInd.jarak) !== JSON.stringify([23, 27, 28, 30, 30])) {
+  temuan.push(`jarakKebun: ${JSON.stringify(kebunUjiInd.jarak)}, seharusnya [23,27,28,30,30] — jarak dihitung antar betina yang berbeda?`);
+}
+if (kebunUjiInd.median !== 28) temuan.push(`jarakKebun: median ${kebunUjiInd.median}, seharusnya 28`);
+
+// Urutan tampil: yang perlu disiapkan dulu, yang berhenti tidak menyelinap ke atas.
+const urutUji = SB.urutkanSiklus([
+  { nama: "berhenti", siklus: SB.siklusBetina(["2026-03-16"], { hariIni: HARI_INDUK, jarakKebun: 28 }) },
+  { nama: "menunggu", siklus: SB.siklusBetina(["2026-09-25"], { hariIni: HARI_INDUK, jarakKebun: 28 }) },
+  { nama: "jendela", siklus: SB.siklusBetina(["2026-09-14"], { hariIni: HARI_INDUK, jarakKebun: 28 }) },
+]).map((r) => r.nama);
+if (JSON.stringify(urutUji) !== JSON.stringify(["jendela", "menunggu", "berhenti"])) {
+  temuan.push(`urutkanSiklus: ${JSON.stringify(urutUji)}, seharusnya ["jendela","menunggu","berhenti"]`);
+}
+
+/* ── Diagnosa indukan: rekam kandang, dan siapa yang dipertahankan ───────
+ *
+ * Satu pemindahan jantan menyentuh belasan betina; satu betina hanya
+ * dirinya. Jadi keputusan "jantan mana yang dipertahankan di kandang
+ * berisi banyak jantan" adalah keputusan paling berdampak di layar ini.
+ *
+ * Versi pertama memilihnya dengan `Set` berisi "pernah punya clutch" lalu
+ * umur sebagai pemutus. Di kandang N — tujuh jantan — A35 (4 clutch dari 3
+ * betina) dan A43 (1 clutch) sama-sama "pernah", jadi umur yang memutuskan,
+ * dan usulannya memindahkan A35 KELUAR: jantan paling produktif kedua di
+ * kebun ini. Jumlah clutch bukti yang jauh lebih kuat daripada umur.
+ */
+const barisKandangUji = [
+  // N: 14 betina, 3 produktif, 7 jantan
+  ...Array.from({ length: 14 }, (_, i) => ({
+    id: `N${i}`, nama: `N${i}`, kandang: "N", umur: 10, clutch: i < 3 ? 1 : 0, purchaseDate: "2024-12-26",
+    ayah: { jumlah: 7, kandidat: ["A43", "A35", "B10", "A34", "B1", "A49", "B45"], muda: [], hanyaMuda: false },
+  })),
+  // Bonsai 1: 9 betina, 0 produktif, 3 jantan
+  ...Array.from({ length: 9 }, (_, i) => ({
+    id: `BS${i}`, nama: `BS${i}`, kandang: "Bonsai 1", umur: 16, clutch: 0, purchaseDate: "2024-12-26",
+    ayah: { jumlah: 3, kandidat: ["B6", "A23", "B9"], muda: [], hanyaMuda: false },
+  })),
+  // E1: 6 betina, jantannya ada tapi belum cukup umur
+  ...Array.from({ length: 6 }, (_, i) => ({
+    id: `E1${i}`, nama: `E1${i}`, kandang: "E1", umur: 6.5, clutch: 0, purchaseDate: null,
+    ayah: { jumlah: 0, kandidat: [], muda: ["Yuwono"], hanyaMuda: true },
+  })),
+  // W3: 3 betina, 3 produktif, 1 jantan — kandang yang berhasil
+  ...Array.from({ length: 3 }, (_, i) => ({
+    id: `W3${i}`, nama: `W3${i}`, kandang: "W3", umur: 16, clutch: 2, purchaseDate: "2025-05-07",
+    ayah: { jumlah: 1, kandidat: ["A36"], ayah: "A36", muda: [], hanyaMuda: false },
+  })),
+  // Satu betina sendirian: TIDAK boleh dipakai menilai kandangnya
+  {
+    id: "S1", nama: "S1", kandang: "Sendirian", umur: 16, clutch: 0, purchaseDate: "2024-12-26",
+    ayah: { jumlah: 1, kandidat: ["X1"], ayah: "X1", muda: [], hanyaMuda: false },
+  },
+];
+
+const rekamUji = DI.rekamKandang(barisKandangUji);
+const cekKandang = [
+  ["N", { betina: 14, produktif: 3, nolProduksi: false, bisaDinilai: true }],
+  ["Bonsai 1", { betina: 9, produktif: 0, nolProduksi: true, bisaDinilai: true }],
+  ["E1", { betina: 6, produktif: 0, nolProduksi: true, bisaDinilai: true }],
+  ["W3", { betina: 3, produktif: 3, nolProduksi: false, bisaDinilai: true }],
+  // Satu ekor bukan bukti tentang kandangnya.
+  ["Sendirian", { betina: 1, produktif: 0, nolProduksi: false, bisaDinilai: false }],
+];
+for (const [nama, harap] of cekKandang) {
+  const k = rekamUji.get(nama) || {};
+  for (const [kolom, nilai] of Object.entries(harap)) {
+    if (k[kolom] !== nilai) temuan.push(`rekamKandang [${nama}].${kolom}: ${k[kolom]}, seharusnya ${nilai}`);
+  }
+}
+
+const usulUjiInd = DI.usulanJantan(rekamUji, {
+  clutchJantan: new Map([["A35", 4], ["A43", 1], ["A36", 5]]),
+  umurJantan: new Map([["A43", 8.4], ["A35", 16.8], ["B10", 16.8], ["B6", 16.8], ["A23", 18.8], ["B9", 16.8]]),
+});
+/*
+  Fixture ini sengaja membuat UMUR dan JUMLAH CLUTCH berbeda pendapat.
+
+  Versi pertama uji ini memakai umur kandang N yang sebenarnya — A35 paling
+  tua DAN paling banyak clutch-nya — sehingga kedua aturan menunjuk ekor yang
+  sama. Diuji-merah dengan menghapus perbandingan jumlah clutch, dan
+  penjaganya tetap hijau: fixture yang membiarkan dua aturan berbeda memberi
+  jawaban sama tidak menguji satu pun di antaranya.
+*/
+const usulBedaInd = DI.usulanJantan(
+  DI.rekamKandang([
+    { id: "x1", nama: "x1", kandang: "X", umur: 16, clutch: 0, purchaseDate: "2024-01-01",
+      ayah: { jumlah: 2, kandidat: ["Tua", "Muda"], muda: [], hanyaMuda: false } },
+    { id: "x2", nama: "x2", kandang: "X", umur: 16, clutch: 0, purchaseDate: "2024-01-01",
+      ayah: { jumlah: 2, kandidat: ["Tua", "Muda"], muda: [], hanyaMuda: false } },
+    { id: "x3", nama: "x3", kandang: "X", umur: 16, clutch: 0, purchaseDate: "2024-01-01",
+      ayah: { jumlah: 2, kandidat: ["Tua", "Muda"], muda: [], hanyaMuda: false } },
+  ]),
+  { clutchJantan: new Map([["Muda", 4], ["Tua", 0]]), umurJantan: new Map([["Tua", 20], ["Muda", 7]]) },
+);
+const pertahankanBeda = usulBedaInd.berlebih.find((b) => b.kandang === "X")?.pertahankan;
+if (pertahankanBeda !== "Muda") {
+  temuan.push(
+    `usulanJantan [umur vs clutch]: mempertahankan ${pertahankanBeda}, seharusnya "Muda" — ` +
+    `4 clutch tercatat mengalahkan umur 20 tahun tanpa satu pun clutch`,
+  );
+}
+
+const nUsul = usulUjiInd.berlebih.find((b) => b.kandang === "N");
+if (nUsul?.pertahankan !== "A35") {
+  temuan.push(`usulanJantan [N]: mempertahankan ${nUsul?.pertahankan}, seharusnya A35 — jantan dengan clutch terbanyak`);
+}
+if (nUsul && nUsul.pindahkan.includes("A35")) {
+  temuan.push("usulanJantan [N]: mengusulkan memindahkan A35, jantan paling produktif di kandang itu");
+}
+const e1Usul = usulUjiInd.kurang.find((k) => k.kandang === "E1");
+if (!e1Usul) temuan.push("usulanJantan: E1 tidak terdaftar sebagai kandang tanpa jantan dewasa");
+if (e1Usul && e1Usul.alasan !== "jantannya belum cukup umur") {
+  temuan.push(`usulanJantan [E1]: alasan "${e1Usul.alasan}" — jantannya ADA, hanya belum cukup umur; dua keadaan itu menuntut tindakan berbeda`);
+}
+if (usulUjiInd.berlebih.some((b) => b.kandang === "W3")) {
+  temuan.push("usulanJantan: W3 berisi satu jantan dan 3/3 betinanya bertelur — tidak boleh ikut diusulkan diubah");
+}
+// 6+2 jantan berlebih, 1 kandang kurang -> 7 tidak punya tujuan.
+if (usulUjiInd.tanpaTujuan !== 7) {
+  temuan.push(`usulanJantan: tanpaTujuan ${usulUjiInd.tanpaTujuan}, seharusnya 7 — angka inilah yang mengakui usulannya tidak bisa dijalankan sampai habis`);
+}
+
+// Batas "baru datang" dihitung dari kebun ini sendiri, bukan dari buku.
+const adaptasiUji = DI.bulanAdaptasiTercepat(
+  [{ id: "f1", purchase_date: "2025-05-07" }, { id: "f2", purchase_date: "2024-12-26" }],
+  [{ female_id: "f1", egg_laying_date: "2026-03-09" }, { female_id: "f2", egg_laying_date: "2026-09-30" }],
+);
+if (adaptasiUji !== 10) temuan.push(`bulanAdaptasiTercepat: ${adaptasiUji}, seharusnya 10 bulan`);
+
+/*
+  Antrean: betina yang BARU datang tidak boleh naik ke atas hanya karena
+  kandangnya nol. Menagih betina tiga bulan sesudah tiba adalah cara
+  tercepat membuat seluruh daftarnya diabaikan.
+*/
+const antreanUji = DI.antreanPerbaikan(
+  [
+    { id: "lama", nama: "lama", kandang: "Bonsai 1", umur: 16, clutch: 0, purchaseDate: "2019-01-01",
+      ayah: { jumlah: 3, kandidat: ["B6", "A23", "B9"], muda: [], hanyaMuda: false } },
+    // Betina ketiga: tanpa dia, Bonsai 1 belum cukup untuk DINILAI sebagai
+    // kandang (batasnya 3 ekor), jadi "jantan berdesakan" tidak pernah
+    // berlaku dan separuh bobot prioritas tidak ikut teruji.
+    { id: "lama2", nama: "lama2", kandang: "Bonsai 1", umur: 16, clutch: 0, purchaseDate: "2024-12-26",
+      ayah: { jumlah: 3, kandidat: ["B6", "A23", "B9"], muda: [], hanyaMuda: false } },
+    { id: "baru", nama: "baru", kandang: "Bonsai 1", umur: 16, clutch: 0, purchaseDate: "2026-08-01",
+      ayah: { jumlah: 3, kandidat: ["B6", "A23", "B9"], muda: [], hanyaMuda: false } },
+    { id: "tanpaJantan", nama: "tanpaJantan", kandang: "E1", umur: 16, clutch: 0, purchaseDate: "2025-01-01",
+      ayah: { jumlah: 0, kandidat: [], muda: [], hanyaMuda: false } },
+    { id: "sudah", nama: "sudah", kandang: "W3", umur: 16, clutch: 2, purchaseDate: "2019-01-01",
+      ayah: { jumlah: 1, kandidat: ["A36"], ayah: "A36", muda: [], hanyaMuda: false } },
+  ],
+  { bulanAdaptasi: 10, hariIni: HARI_INDUK },
+);
+const urutAntrean = antreanUji.map((r) => r.nama);
+if (JSON.stringify(urutAntrean) !== JSON.stringify(["tanpaJantan", "lama", "lama2", "baru"])) {
+  temuan.push(`antreanPerbaikan: urutan ${JSON.stringify(urutAntrean)}, seharusnya ["tanpaJantan","lama","lama2","baru"]`);
+}
+if (antreanUji.some((r) => r.nama === "sudah")) {
+  temuan.push("antreanPerbaikan: betina yang SUDAH bertelur ikut masuk antrean perbaikan");
+}
+const diagBaru = antreanUji.find((r) => r.nama === "baru")?.diagnosa;
+const diagLama = antreanUji.find((r) => r.nama === "lama")?.diagnosa;
+if (!diagBaru?.usulan.some((u) => u.kode === "baru-datang")) {
+  temuan.push("antreanPerbaikan: betina yang baru 2 bulan datang tidak ditandai baru-datang");
+}
+/*
+  Bobotnya diperiksa sebagai ANGKA, bukan lewat urutan daftar.
+
+  Versi pertama hanya membandingkan urutan "lama" dan "baru". Keduanya di
+  kandang yang sama, jadi "lama" menang karena lamanya saja (393 lawan 302) —
+  dan uji itu tetap hijau ketika keringanan untuk yang baru datang dihapus
+  seluruhnya. Urutan yang kebetulan benar bukan bukti bobotnya bekerja.
+*/
+if (diagLama?.prioritas !== 393) {
+  temuan.push(`diagnosaBetina [lama]: prioritas ${diagLama?.prioritas}, seharusnya 393 (berdesakan 300 + 93 bulan)`);
+}
+if (diagBaru?.prioritas !== -98) {
+  temuan.push(
+    `diagnosaBetina [baru]: prioritas ${diagBaru?.prioritas}, seharusnya -98 (berdesakan 300 + 2 bulan - 400 keringanan baru datang). ` +
+    `Tanpa keringanan itu, betina yang baru dua bulan tiba ikut ditagih bersama yang sudah tujuh tahun di sini.`,
+  );
+}
+// Kemungkinan "bertelur tanpa tercatat" tidak boleh hilang dari satu pun baris.
+for (const r of antreanUji) {
+  if (!r.diagnosa.usulan.some((u) => u.kode === "mungkin-tidak-tercatat")) {
+    temuan.push(`antreanPerbaikan [${r.nama}]: kemungkinan "bertelur tanpa tercatat" hilang dari diagnosanya`);
   }
 }
 
@@ -1937,6 +2238,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);
