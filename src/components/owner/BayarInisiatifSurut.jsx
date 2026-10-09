@@ -22,17 +22,48 @@
  * terambil lagi.
  */
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { base44, BATAS_AMBIL } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Coins, Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { rupiah } from "@/lib/rupiah";
+import { JENDELA_SURUT } from "@/lib/jendelaSurut";
+import KartuPemeliharaan from "@/components/owner/KartuPemeliharaan";
 
 export default function BayarInisiatifSurut() {
   const [memuat, setMemuat] = useState("");
   const [kering, setKering] = useState(null);
   const [hasil, setHasil] = useState(null);
+
+  /*
+    Kartu ini ALAT SEKALI PAKAI, dan sampai sekarang ia tidak tahu kapan
+    pekerjaannya selesai: sesudah tombolnya ditekan ia tetap berdiri sebagai
+    kartu kuning mencolok yang menawarkan pekerjaan yang sudah tidak ada —
+    selamanya. Menekannya lagi memang aman (saringannya "pending"), tetapi
+    kartu yang terus meminta perhatian untuk sesuatu yang sudah beres adalah
+    cara mengajari orang mengabaikan kartu.
+
+    Jadi ia menghitung sendiri berapa catatan yang masih tersisa di dalam
+    jendelanya. Nol berarti selesai, dan ia menyusut jadi satu baris seperti
+    alat pemeliharaan lain di halaman ini.
+  */
+  const { data: tersisa = null } = useQuery({
+    queryKey: ["inisiatif-surut-tersisa", JENDELA_SURUT.dari, JENDELA_SURUT.sampai],
+    queryFn: async () => {
+      const semua = await base44.entities.MaintenanceLog.filter(
+        { is_extra: true, approval_status: "pending" },
+        "-period_key",
+        BATAS_AMBIL,
+      );
+      return (semua || []).filter((l) => {
+        const hari = String(l?.period_key || "");
+        return hari >= JENDELA_SURUT.dari && hari <= JENDELA_SURUT.sampai;
+      }).length;
+    },
+    staleTime: 60 * 1000,
+  });
 
   const jalankan = async (modeKering) => {
     setMemuat(modeKering ? "kering" : "tulis");
@@ -57,6 +88,24 @@ export default function BayarInisiatifSurut() {
 
   const tampil = hasil || kering;
   const nilaiPoin = 50; // Rp per poin; hanya untuk perkiraan di layar
+
+  // Sudah tidak ada yang tersisa, dan belum ada laporan yang sedang dilihat.
+  if (tersisa === 0 && !tampil) {
+    return (
+      <KartuPemeliharaan
+        ikon={Coins}
+        judul="Bayar poin Inisiatif surut"
+        kicker={`Sekali jalan · ${JENDELA_SURUT.dari} s/d ${JENDELA_SURUT.sampai}`}
+        beres
+        ringkas="Tidak ada catatan tersisa di jendela itu"
+      >
+        <p className="text-xs text-muted-foreground">
+          Seluruh catatan Inisiatif {JENDELA_SURUT.dari} – {JENDELA_SURUT.sampai} sudah dinilai.
+          Catatan sesudahnya dinilai di layar Inisiatif, bukan di sini.
+        </p>
+      </KartuPemeliharaan>
+    );
+  }
 
   return (
     <Card className="border-amber-300">
