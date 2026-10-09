@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import PageHeader from "@/components/common/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PeringkatIndukan from "@/components/breeding/PeringkatIndukan";
+import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
 import KartuAngka from "@/components/ui/kartu-angka";
 import {
   Egg, AlertTriangle, HelpCircle, Home, ChevronLeft, ChevronRight,
@@ -141,7 +142,7 @@ export default function BreedingPlannerPage() {
   /* Tab disimpan di ALAMAT supaya `/breeder-ranking` punya tempat mendarat
      dan tautan lama tetap membuka isi yang dicari orang. */
   const [tabParams, setTabParams] = useSearchParams();
-  const TAB_SAH = ["produksi", "peringkat"];
+  const TAB_SAH = ["produksi", "peringkat", "naikkan"];
   const t = tabParams.get("tab");
   const tab = TAB_SAH.includes(t) ? t : "produksi";
   const setTab = (nilai) => {
@@ -219,10 +220,25 @@ export default function BreedingPlannerPage() {
       />
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-auto gap-1 mb-4">
-          <TabsTrigger value="produksi">Produksi per betina</TabsTrigger>
-          <TabsTrigger value="peringkat">Peringkat indukan</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 h-auto gap-1 mb-4">
+          <TabsTrigger value="produksi" className="whitespace-normal">Produksi per betina</TabsTrigger>
+          <TabsTrigger value="naikkan" className="whitespace-normal">Naikkan produksi</TabsTrigger>
+          <TabsTrigger value="peringkat" className="whitespace-normal">Peringkat indukan</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="naikkan" className="mt-0">
+          {/* Dua tab lain menjawab "siapa yang berproduksi" dan "siapa yang
+              terbaik". Yang ini menjawab pertanyaan berikutnya: apa yang harus
+              diubah supaya yang 72 ikut berproduksi, dan siapa yang bertelur
+              lagi bulan depan. */}
+          <NaikkanProduksi
+            baris={baris}
+            breedings={breedings}
+            tortoises={tortoises}
+            umurMinimal={umurMinimal}
+            hariIni={hariIni}
+          />
+        </TabsContent>
 
         <TabsContent value="peringkat" className="mt-0">
           {/* Dulu halaman /breeder-ranking. Sudut pandang berbeda atas
