@@ -251,6 +251,46 @@ for (const rel of PINTU_TETAS) {
   }
 }
 
+/* ── Alat sekali pakai harus meninggalkan jejak ─────────────────────
+ *
+ * 9 Oktober 2026 pemilik menekan tombol bayar surut dan mengabarkan sudah
+ * membayar. Datanya tidak berubah sama sekali: 210 catatan tetap
+ * `pending`, nol catatan bertanda "Pemilik (pembayaran surut)".
+ *
+ * Yang terjadi di layarnya tidak bisa ditelusuri lagi — satu-satunya
+ * tempat kegagalan diberitahukan adalah toast, yang hilang beberapa detik
+ * kemudian dan tidak meninggalkan apa pun. Untuk perhitungan uang yang
+ * dijalankan SEKALI, itu tempat yang salah: yang gagal diam-diam terlihat
+ * persis sama dengan yang berhasil.
+ *
+ * Dua hal yang dijaga di sini, keduanya tentang bisa-tidaknya ditelusuri:
+ *
+ *   1. galatnya DISIMPAN dan digambar di kartunya, bukan cuma dilempar
+ *      ke toast;
+ *   2. jumlah catatan yang tersisa DIHITUNG dari data, bukan ditulis
+ *      sebagai angka tetap. Angka yang dipaku akan tetap menyebut 210
+ *      sesudah dibayar, dan tidak ada apa pun di layar yang bisa
+ *      membantahnya.
+ */
+{
+  const rel = "src/components/owner/BayarInisiatifSurut.jsx";
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  if (!/setGalat\(/.test(isi) || !/\{galat\s*&&/.test(isi)) {
+    temuan.push(
+      `${rel}  galat pembayaran surut tidak digambar di kartunya. Toast hilang beberapa detik ` +
+      `kemudian; untuk hitungan uang sekali jalan, yang gagal lalu tidak terlihat bedanya dengan yang berhasil.`,
+    );
+  }
+  if (/\b210 catatan\b/.test(isi)) {
+    temuan.push(
+      `${rel}  jumlah catatan ditulis sebagai angka tetap. Ia akan tetap menyebut 210 sesudah dibayar.`,
+    );
+  }
+  if (!/tersisa/.test(isi)) {
+    temuan.push(`${rel}  tidak menghitung sisa catatan, jadi kartunya tidak bisa tahu kapan pekerjaannya selesai.`);
+  }
+}
+
 /* ── Tab "Naikkan produksi" tersambung ujung ke ujung ───────────────
  *
  * Cacat yang sama pernah ada dua kali di aplikasi ini: tautan yang bisa
@@ -425,6 +465,6 @@ console.log(
   `(batas ${BATAS_H1_SENDIRI}), ${DIKECUALIKAN.size} dikecualikan dengan alasan tertulis. ` +
   `Ubin Anakan tersambung ke daftarnya, kedua pintu penetasan satu bentuk, ` +
   `${pintuChecklist.length} pintu checklist menandai data uji, ${kueriDiperiksa} kueri menunggu di ${LAYAR_MENUNGGU.length} layar menyaringnya, ` +
-  `dan tab "Naikkan produksi" tersambung ujung ke ujung.`,
+  `tab "Naikkan produksi" tersambung ujung ke ujung, dan alat sekali pakai meninggalkan jejak.`,
 );
 process.exit(0);
