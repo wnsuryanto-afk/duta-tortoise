@@ -872,6 +872,14 @@ export default function GuidedHariIni({ user }) {
       const prev = existing[0].notes ? existing[0].notes + "\n" + note : note;
       await base44.entities.DailyChecklist.update(existing[0].id, { notes: prev });
     } else {
+      // Mode Uji SAJA tidak cukup: aturan akun pemilik juga berlaku di sini.
+      // Sampai 9 Oktober pintu ini hanya memakai testModeTag.
+      //
+      // Dihitung di luar objeknya, bukan di dalam: penjaga cek-kolom-hantu
+      // membaca kunci objek yang bersarang di dalam `create({…})` sebagai nama
+      // kolom, jadi `{ email, modeUji }` di dalam sana terbaca sebagai dua
+      // kolom DailyChecklist yang tidak ada di skema.
+      const penandaChecklist = tandaChecklistBaru({ email: user.email, modeUji: !!testModeTag.is_test_data });
       await base44.entities.DailyChecklist.create({
         employee_email: user.email,
         employee_name: user.full_name || user.email,
@@ -879,9 +887,7 @@ export default function GuidedHariIni({ user }) {
         completed_tasks: [],
         status: "draft",
         notes: note,
-        // Mode Uji SAJA tidak cukup: aturan akun pemilik juga berlaku di sini.
-        // Sampai 9 Oktober pintu ini hanya memakai testModeTag.
-        ...tandaChecklistBaru({ email: user.email, modeUji: !!testModeTag.is_test_data }),
+        ...penandaChecklist,
       });
     }
     setCatatan("");

@@ -73,6 +73,18 @@ export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhoto
       });
     }
   } else {
+    // Pintu ini sampai 9 Oktober 2026 tidak memberi tanda apa pun. Mode Uji
+    // tidak terbaca di sini (fungsi ini bukan komponen, tidak punya hook),
+    // tetapi aturan akun pemilik berlaku dan itu yang bocor selama ini.
+    //
+    // Dihitung di luar objeknya: penjaga cek-kolom-hantu membaca kunci objek
+    // yang bersarang di dalam `create({…})` sebagai nama kolom.
+    //
+    // Namanya BUKAN `tandaUji`: penjaga cek-modeuji memakai kata itu untuk
+    // mengenali fungsi di src/lib yang MENERUSKAN penanda Mode Uji dari
+    // pemanggilnya, lalu menuntut setiap pemanggil mengirimkannya. Fungsi ini
+    // tidak meneruskan apa pun — ia memutuskan sendiri dari email pemakainya.
+    const penandaChecklist = tandaChecklistBaru({ email: user.email });
     const created = await base44.entities.DailyChecklist.create({
       date: today,
       employee_id: user.id,
@@ -81,10 +93,7 @@ export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhoto
       completed_tasks: [taskEntry],
       total_points_claimed: task.points || 0,
       status: "submitted",
-      // Pintu ini sampai 9 Oktober 2026 tidak memberi tanda apa pun. Mode Uji
-      // tidak terbaca di sini (fungsi ini bukan komponen, tidak punya hook),
-      // tetapi aturan akun pemilik berlaku dan itu yang bocor selama ini.
-      ...tandaChecklistBaru({ email: user.email }),
+      ...penandaChecklist,
     });
     dailyChecklistId = created.id;
   }
