@@ -38,7 +38,7 @@ import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { diPeternakan, hanyaDiPeternakan, aktifSehat, sedangSakit } from "@/lib/populasiKura";
 import { targetPoinBulanan } from "@/lib/bonus";
 import { cariKandang } from "@/lib/kandang";
-import { masukLaporan } from "@/lib/laporan";
+import { masukLaporan, hanyaLaporan } from "@/lib/laporan";
 import { hitungOmzet, rentangTahun } from "@/lib/omzet";
 import { kueriUang } from "@/lib/kueriUang";
 import { piutangPerPembeli } from "@/lib/piutang";
@@ -247,7 +247,12 @@ export default function OwnerDashboard({ user }) {
 
   const { data: pendingApproval = [] } = useQuery({
     queryKey: ["owner-pending-approval"],
-    queryFn: () => base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500),
+    // Data uji tidak ikut dihitung menunggu: ia tidak pernah masuk KPI
+    // maupun slip gaji, jadi tidak ada yang perlu diputuskan — dan
+    // checklist percobaan pemilik tidak bisa disetujui olehnya sendiri,
+    // sehingga lencananya menyala terus tanpa ada yang bisa mematikannya.
+    queryFn: () =>
+      base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500).then(hanyaLaporan),
     enabled: phase2Ready,
     staleTime: 60 * 1000,
     refetchInterval: false,

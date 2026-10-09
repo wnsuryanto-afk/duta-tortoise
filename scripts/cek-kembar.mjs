@@ -19,7 +19,7 @@ import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 const PASANGAN = [
   ["src/lib/stokMenipis.js",   "base44/shared/stok.ts",          ["stokHabis", "stokMenipis", "perluDiperhatikan", "dilacak", "golonganStok", "idBarangRacikan", "diracikSendiri"]],
-  ["src/lib/laporan.js",       "base44/shared/laporan.ts",       ["masukLaporan"]],
+  ["src/lib/laporan.js",       "base44/shared/laporan.ts",       ["masukLaporan", "tandaLaporan"]],
   ["src/lib/populasiKura.js",  "base44/shared/kura.ts",          ["diPeternakan"]],
   ["src/lib/breedingUtils.js", "base44/shared/kura.ts",          ["clutchAktif"]],
   // `selisihHari` sengaja TIDAK diperiksa di sini, dan itu bukan kelalaian.

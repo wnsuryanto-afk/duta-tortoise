@@ -33,7 +33,7 @@ import PhotoPreviewModal from "./PhotoPreviewModal";
 import UkurFormDialog from "./UkurFormDialog";
 import TimbangBabyDialog from "./TimbangBabyDialog";
 import PakanHarianForm from "@/components/pakan/PakanHarianForm";
-import { masukLaporan } from "@/lib/laporan";
+import { masukLaporan, tandaChecklistBaru } from "@/lib/laporan";
 import { simpanUkuranSekali, pesanSudahDitimbang } from "@/lib/ukurSekali";
 import { pisahJudulTugas } from "@/lib/judulTugas";
 import { opsiPoin, hitungPemberian, poinTerpakaiHari, maksHarian, inisiatifMenunggu } from "@/lib/poinInisiatif";
@@ -155,13 +155,16 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { isOwnerTestSave } = useCurrentUser();
-  // Checklist milik pemilik selalu data uji. Dia memakai layar keeper untuk
-  // mencoba aplikasinya, bukan untuk bekerja di kandang — tanpa aturan ini
-  // percobaannya ikut terhitung sebagai poin dan kehadiran tim.
-  const akunUji = (user?.email || "").toLowerCase() === "wnsuryanto@gmail.com";
-  const testTag = (isOwnerTestSave || akunUji)
-    ? { is_test_data: true, excluded_from_reports: true }
-    : {};
+  /*
+    Checklist milik pemilik selalu data uji. Dia memakai layar kiper untuk
+    mencoba aplikasinya, bukan untuk bekerja di kandang.
+
+    Aturannya pindah ke lib/laporan.js pada 9 Oktober 2026, karena dulu ia hanya
+    ada DI SINI sementara tiga pintu lain juga membuat DailyChecklist. Yang
+    lewat pintu lain lolos tanpa tanda — dan yang tanpa tanda itulah yang masuk
+    KPI, slip gaji, dan antrean persetujuan.
+  */
+  const testTag = tandaChecklistBaru({ email: user?.email, modeUji: isOwnerTestSave });
   const today = format(new Date(), "yyyy-MM-dd");
   const now = new Date();
   const dow = now.getDay();

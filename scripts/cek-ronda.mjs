@@ -72,6 +72,7 @@ bundel("src/lib/kunciTugas.js", "kuncitugas.cjs");
 bundel("src/lib/poinBarisChecklist.js", "poinchecklist.cjs");
 bundel("base44/shared/bayarSurut.ts", "bayarsurut.cjs");
 bundel("src/lib/anakanKura.js", "anakan.cjs");
+bundel("src/lib/laporan.js", "laporan.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -81,6 +82,7 @@ const KT = await import("file://" + join(dir, "kuncitugas.cjs")).then((m) => m.d
 const PK = await import("file://" + join(dir, "poinchecklist.cjs")).then((m) => m.default || m);
 const BS = await import("file://" + join(dir, "bayarsurut.cjs")).then((m) => m.default || m);
 const AN = await import("file://" + join(dir, "anakan.cjs")).then((m) => m.default || m);
+const LP = await import("file://" + join(dir, "laporan.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
 const B = await import("file://" + join(dir, "belanja.cjs")).then((m) => m.default || m);
@@ -873,6 +875,88 @@ for (const kasus of hariUji) {
   const diberikan = poin.reduce((j, p) => j + p, 0);
   if (diberikan + (kasus.masuk.terpakai || 0) > 30) {
     temuan.push(`bayarSurut [${kasus.nama}]: total ${diberikan + (kasus.masuk.terpakai || 0)} poin melewati batas 30`);
+  }
+}
+
+/* ── Satu centang, dua catatan, satu kenyataan ──────────────────────────
+ *
+ * 5 Oktober 2026, 19.30. Pemilik mencentang "Kalibrasi sendok takar Duta
+ * Repro" di layar kiper. Dua catatan lahir dari satu centang:
+ *
+ *   MaintenanceLog   is_test_data: true,  excluded_from_reports: true   ✓
+ *   DailyChecklist   is_test_data: false, excluded_from_reports: false  ✗
+ *
+ * Yang kedua dibuat onMaintenanceDone DARI yang pertama, lalu membuang
+ * tandanya. Dan yang tanpa tanda itulah yang dipakai: KPI, slip gaji,
+ * hitungan milestone, dan antrean Approval Poin — tempat ia tidak bisa
+ * dikeluarkan oleh siapa pun, karena checklist milik sendiri harus disetujui
+ * orang lain dan pemiliknya satu-satunya orang yang membuka layar itu.
+ *
+ * Empat pintu menjawab pertanyaan yang sama dengan empat cara berbeda; yang
+ * diuji di sini jawaban bersamanya. Bahwa setiap pintu benar-benar memakainya
+ * dijaga cek-tataletak — fungsi yang benar tetapi tidak dipanggil sama saja
+ * akibatnya dengan fungsi yang keliru.
+ */
+const tandaUjiKasus = [
+  { nama: "catatan sumber data uji → turunannya ikut", sumber: { is_test_data: true }, harap: { is_test_data: true, excluded_from_reports: false } },
+  { nama: "sumber dikecualikan manual → turunannya ikut", sumber: { excluded_from_reports: true }, harap: { is_test_data: false, excluded_from_reports: true } },
+  { nama: "sumber bertanda keduanya", sumber: { is_test_data: true, excluded_from_reports: true }, harap: { is_test_data: true, excluded_from_reports: true } },
+  { nama: "sumber sungguhan", sumber: { is_test_data: false, excluded_from_reports: false }, harap: { is_test_data: false, excluded_from_reports: false } },
+  { nama: "sumber tanpa kolom sama sekali", sumber: {}, harap: { is_test_data: false, excluded_from_reports: false } },
+  { nama: "sumber kosong", sumber: null, harap: { is_test_data: false, excluded_from_reports: false } },
+  // Kolomnya berisi string "true"/"false", bukan boolean — sama seperti alasan
+  // masukLaporan memakai `!== true` dan bukan `!nilai`.
+  { nama: 'kolomnya string "false"', sumber: { is_test_data: "false" }, harap: { is_test_data: false, excluded_from_reports: false } },
+];
+for (const kasus of tandaUjiKasus) {
+  const dapat = LP.tandaLaporan(kasus.sumber);
+  if (JSON.stringify(dapat) !== JSON.stringify(kasus.harap)) {
+    temuan.push(`tandaLaporan [${kasus.nama}]: ${JSON.stringify(dapat)}, seharusnya ${JSON.stringify(kasus.harap)}`);
+  }
+}
+
+/*
+  Checklist BARU: dua sebab terpisah, dan keduanya harus berlaku sendiri-sendiri.
+
+  Sampai 9 Oktober 2026 GuidedHariIni hanya memeriksa Mode Uji dan
+  claimIncidentalTask tidak memeriksa apa pun — jadi checklist pemilik yang
+  lahir lewat pintu-pintu itu keluar tanpa tanda meski Mode Uji mati. Dua kasus
+  pertama di bawah ini persis itu.
+*/
+const checklistBaruKasus = [
+  { nama: "pemilik, Mode Uji MATI", masuk: { email: "wnsuryanto@gmail.com", modeUji: false }, harap: true },
+  { nama: "pemilik, huruf besar dan spasi", masuk: { email: "  WNSuryanto@Gmail.com " }, harap: true },
+  { nama: "kiper, Mode Uji HIDUP", masuk: { email: "ssholehuddin15@gmail.com", modeUji: true }, harap: true },
+  { nama: "kiper, Mode Uji mati", masuk: { email: "ssholehuddin15@gmail.com", modeUji: false }, harap: false },
+  { nama: "kepala feeder biasa", masuk: { email: "angsolo98@gmail.com" }, harap: false },
+  { nama: "pemilik LAIN tidak ikut aturan akun", masuk: { email: "dverdinand@gmail.com" }, harap: false },
+  { nama: "tanpa email", masuk: {}, harap: false },
+  { nama: "tanpa argumen", masuk: undefined, harap: false },
+];
+for (const kasus of checklistBaruKasus) {
+  const dapat = LP.tandaChecklistBaru(kasus.masuk);
+  const bertanda = dapat.is_test_data === true && dapat.excluded_from_reports === true;
+  if (bertanda !== kasus.harap) {
+    temuan.push(
+      `tandaChecklistBaru [${kasus.nama}]: ${bertanda ? "ditandai data uji" : "tanpa tanda"}, ` +
+      `seharusnya ${kasus.harap ? "ditandai data uji" : "tanpa tanda"}`,
+    );
+  }
+  // Separuh tanda lebih berbahaya daripada tanpa tanda: layar yang memeriksa
+  // penanda yang lain akan tetap menghitungnya sebagai pekerjaan sungguhan.
+  if (dapat.is_test_data !== dapat.excluded_from_reports) {
+    temuan.push(`tandaChecklistBaru [${kasus.nama}]: hanya separuh penanda dipasang — ${JSON.stringify(dapat)}`);
+  }
+}
+
+// Checklist yang bertanda tidak boleh lolos ke laporan, dan yang bersih harus lolos.
+for (const kasus of checklistBaruKasus) {
+  const checklist = { date: "2026-10-05", ...LP.tandaChecklistBaru(kasus.masuk) };
+  if (LP.masukLaporan(checklist) === kasus.harap) {
+    temuan.push(
+      `tandaChecklistBaru [${kasus.nama}]: hasil tandanya ${kasus.harap ? "masih" : "tidak"} lolos masukLaporan — ` +
+      `tanda dan saringan tidak sepakat.`,
+    );
   }
 }
 
@@ -1853,6 +1937,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
 );
 process.exit(0);

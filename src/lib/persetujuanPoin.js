@@ -35,10 +35,20 @@
  *    bisa menilai pekerjaannya sendiri.
  *
  * 3. Checklist milik kepala_feeder hanya bisa disetujui manajer atau owner.
- *    Catatan penting untuk pemilik: di data saat ini TIDAK ADA satu pun user
- *    berperan `manajer`, jadi praktisnya checklist Angsolo hanya bisa
- *    disetujui owner. Itu memang yang diminta; disebut di sini supaya tidak
- *    terlihat seperti kerusakan saat admin mendapati dirinya tidak bisa.
+ *    Saat aturan ini ditulis (20 September 2026) belum ada satu pun user
+ *    berperan `manajer`, jadi praktisnya hanya owner yang bisa. Sejak
+ *    5 September 2026 ada satu — Hanif Ihsan Alim Akbar — jadi kalimat itu
+ *    tidak berlaku lagi dan dicatat di sini supaya tidak menyesatkan.
+ *
+ * 4. Akibat aturan 2 yang perlu diketahui: bila SATU-SATUNYA orang yang
+ *    membuka layar persetujuan adalah pemilik checklistnya sendiri, barisnya
+ *    tidak bisa diputuskan siapa pun dan lencana "menunggu" menyala terus.
+ *    Itulah yang terjadi pada 5 Oktober 2026 — lihat lib/laporan.js
+ *    (tandaChecklistBaru): checklist percobaan pemilik lolos tanpa tanda data
+ *    uji lewat pintu yang tidak memakai aturan itu. Penyaringan data uji di
+ *    layar persetujuan sekarang membuangnya; kalau sebuah checklist SUNGGUHAN
+ *    pernah tersangkut begitu, penyelesaiannya adalah orang lain yang berhak
+ *    (owner lain atau manajer) membukanya.
  *
  * Daftar peran penyetuju disimpan di CompanySettings (`approver_roles`)
  * supaya bisa diubah lewat MCP tanpa membangun ulang aplikasi. Tetapi aturan

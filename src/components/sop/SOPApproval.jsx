@@ -1,4 +1,5 @@
 import { persenKeyakinan } from "@/lib/keyakinanAI";
+import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -192,7 +193,7 @@ export default function SOPApproval() {
     }
   };
 
-  const { data: checklists = [], isLoading } = useQuery({
+  const { data: checklistMentah = [], isLoading } = useQuery({
     queryKey: ["checklists-all", filterStatus],
     queryFn: () =>
       filterStatus === "all"
@@ -200,12 +201,27 @@ export default function SOPApproval() {
         : base44.entities.DailyChecklist.filter({ status: filterStatus }, "-date", 200),
   });
 
-  const { data: pendingList = [] } = useQuery({
+  const { data: pendingMentah = [] } = useQuery({
     queryKey: ["checklists-pending-count"],
     queryFn: () => base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500),
     staleTime: 30 * 1000,
   });
-  const pendingCount = pendingList.length;
+
+  /*
+    Checklist data uji tidak pernah masuk KPI maupun slip gaji — layar ini
+    mengatakannya sendiri di kepalanya — jadi ia juga bukan pekerjaan yang
+    perlu disetujui. Sampai 9 Oktober 2026 layar ini tidak menyaringnya sama
+    sekali, dan satu checklist percobaan pemilik tertanggal 5 Oktober duduk di
+    antrean sebagai "1 menunggu" yang tidak bisa dimatikan siapa pun: checklist
+    milik sendiri harus disetujui orang lain, dan yang punya adalah satu-satunya
+    orang yang membuka layar ini.
+
+    Jumlah yang disembunyikan tetap ditulis di bawah. Menghilangkan baris tanpa
+    jejak membuat orang mencari-cari sesuatu yang tidak akan ia temukan.
+  */
+  const checklists = useMemo(() => hanyaLaporan(checklistMentah), [checklistMentah]);
+  const ujiDisembunyikan = checklistMentah.length - checklists.length;
+  const pendingCount = useMemo(() => hanyaLaporan(pendingMentah).length, [pendingMentah]);
 
   const { data: sopTasksAll = [] } = useQuery({
     queryKey: ["sop-tasks-require-photo"],
@@ -487,6 +503,11 @@ export default function SOPApproval() {
           <Sparkles className="w-3.5 h-3.5" />
           {filterNeedsReview ? "✓ Hanya perlu diperiksa" : "Hanya perlu diperiksa"}
         </Button>
+        {ujiDisembunyikan > 0 && (
+          <span className="text-[11px] text-muted-foreground">
+            {ujiDisembunyikan} checklist data uji disembunyikan
+          </span>
+        )}
         {isOwner && pendingAIPhotos > 0 && (
           <Button
             variant="outline"

@@ -35,7 +35,7 @@ import { terjadwalPada } from "@/lib/kepatuhanSOP";
 import { jadwalBerlaku, sesuaikanMundurRacikan } from "@/lib/jadwalPerawatan";
 import AmbilBarangScan from "@/components/stok/AmbilBarangScan";
 import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
-import { masukLaporan } from "@/lib/laporan";
+import { masukLaporan, tandaChecklistBaru } from "@/lib/laporan";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { SARINGAN_ANAKAN, hanyaAnakan } from "@/lib/anakanKura";
 
@@ -879,7 +879,9 @@ export default function GuidedHariIni({ user }) {
         completed_tasks: [],
         status: "draft",
         notes: note,
-        ...testModeTag,
+        // Mode Uji SAJA tidak cukup: aturan akun pemilik juga berlaku di sini.
+        // Sampai 9 Oktober pintu ini hanya memakai testModeTag.
+        ...tandaChecklistBaru({ email: user.email, modeUji: !!testModeTag.is_test_data }),
       });
     }
     setCatatan("");

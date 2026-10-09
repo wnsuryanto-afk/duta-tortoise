@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ChevronRight, AlertTriangle, Check } from "lucide-react";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
+import { hanyaLaporan } from "@/lib/laporan";
 
 /**
  * AlurGaji — penanda tahap untuk rangkaian penggajian.
@@ -62,7 +63,12 @@ export default function AlurGaji({ aktif, periode }) {
   // Sisanya tidak diambil supaya penanda ini tidak menambah beban halaman.
   const { data: menunggu = [] } = useQuery({
     queryKey: ["owner-pending-approval"],
-    queryFn: () => base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500),
+    // Data uji tidak ikut dihitung menunggu: ia tidak pernah masuk KPI
+    // maupun slip gaji, jadi tidak ada yang perlu diputuskan — dan
+    // checklist percobaan pemilik tidak bisa disetujui olehnya sendiri,
+    // sehingga lencananya menyala terus tanpa ada yang bisa mematikannya.
+    queryFn: () =>
+      base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500).then(hanyaLaporan),
     staleTime: 60 * 1000,
   });
 
