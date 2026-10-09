@@ -28,9 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
-  AlertTriangle, Save, Play, Loader2, Clock, CheckCircle2,
-  Zap, ClipboardCheck, Package, HeartPulse, Wallet, MessageSquare, Sparkles,
-} from "lucide-react";
+  AlertTriangle, Save, Play, Loader2, Clock,
+  Zap, ClipboardCheck, Package, HeartPulse, Wallet, MessageSquare, Sparkles, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import AccessDenied from "@/components/common/AccessDenied";
@@ -296,6 +295,25 @@ export default function OtomatisasiPage() {
   const [saving, setSaving] = useState(false);
   const [ujiId, setUjiId] = useState(null);
   const [hasilUji, setHasilUji] = useState({});
+  /*
+    Tiap otomatisasi bisa ditutup.
+
+    Diukur 9 Okt 2026 di lebar telepon: 6.857 huruf, 10,2 layar — dua kali
+    halaman terpanjang berikutnya. Isinya sembilan belas otomatisasi yang
+    masing-masing menggambar keterangan penuh, jadwal, prasyarat, parameter,
+    tombol uji, dan hasilnya. Padahal yang dicari orang yang membuka halaman
+    ini hampir selalu satu hal: MANA YANG MENYALA.
+
+    Jadi barisnya kini kode, nama, jadwal, dan sakelarnya — yang tetap bisa
+    ditekan tanpa membuka apa pun. Sisanya satu ketukan di bawahnya.
+  */
+  const [bukaItem, setBukaItem] = useState(() => new Set());
+  const alihItem = (fn) =>
+    setBukaItem((lama) => {
+      const baru = new Set(lama);
+      if (baru.has(fn)) baru.delete(fn); else baru.add(fn);
+      return baru;
+    });
 
   /*
    * Kesiapan prasyarat A6, dihitung dari data — bukan sekadar dituliskan
@@ -452,35 +470,51 @@ export default function OtomatisasiPage() {
               const nyala = item.saklar ? draft[item.saklar] === true : null;
               const jejak = item.jejak ? draft[item.jejak] : null;
               const hasil = hasilUji[item.fn];
+              const terbuka = bukaItem.has(item.fn);
               return (
-                <Card key={item.fn} className={`p-4 ${nyala ? "border-green-300" : ""}`}>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {item.kode}
+                <Card key={item.fn} className={`p-3 ${nyala ? "border-green-300" : ""}`}>
+                  {/* Kepala: selalu terlihat. Sakelarnya DI LUAR tombol buka,
+                      supaya menyalakan otomatisasi tidak ikut membuka kartunya. */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => alihItem(item.fn)}
+                      aria-expanded={terbuka}
+                      className="flex-1 min-w-0 flex items-center gap-2 text-left whitespace-normal"
+                    >
+                      <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground flex-shrink-0">
+                        {item.kode}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold text-[15px] leading-tight">{item.nama}</span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {item.jadwal}
+                          {jejak ? ` · terakhir ${jejak}` : ""}
                         </span>
-                        <h3 className="font-semibold text-[15px]">{item.nama}</h3>
-                        {nyala && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                            <CheckCircle2 className="w-3 h-3" /> Menyala
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1.5">{item.isi}</p>
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 flex-shrink-0 text-muted-foreground transition-transform ${terbuka ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {item.saklar && (
+                      <Switch
+                        checked={nyala}
+                        onCheckedChange={(v) => set(item.saklar, v)}
+                        className="flex-shrink-0"
+                      />
+                    )}
+                  </div>
+
+                  {terbuka && (
+                  <>
+                  <div className="mt-3 flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-muted-foreground">{item.isi}</p>
 
                       <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground">
                         <Clock className="w-3 h-3" />
-                        {/* Label "Jadwal disarankan:" dibuang — ikon jam di
-                            sebelahnya sudah mengatakan hal yang sama, sembilan
-                            belas kali lebih singkat. */}
-                        <strong>{item.jadwal}</strong>
-                        <span className="font-mono ml-1 px-1.5 py-0.5 rounded bg-muted">{item.fn}</span>
+                        <span className="font-mono px-1.5 py-0.5 rounded bg-muted">{item.fn}</span>
                       </div>
-
-                      {jejak && (
-                        <p className="text-[11px] text-muted-foreground mt-1">Terakhir jalan: {jejak}</p>
-                      )}
 
                       {item.prasyarat && (
                         <div className="mt-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 text-[12px] text-blue-800 dark:text-blue-300">
@@ -504,13 +538,6 @@ export default function OtomatisasiPage() {
                       )}
                     </div>
 
-                    {item.saklar && (
-                      <Switch
-                        checked={nyala}
-                        onCheckedChange={(v) => set(item.saklar, v)}
-                        className="flex-shrink-0 mt-1"
-                      />
-                    )}
                   </div>
 
                   {/* Parameter */}
@@ -571,6 +598,8 @@ export default function OtomatisasiPage() {
                     <pre className="mt-2 p-2.5 rounded-lg bg-muted text-[11px] overflow-x-auto max-h-56 font-mono">
                       {JSON.stringify(hasil, null, 2)}
                     </pre>
+                  )}
+                  </>
                   )}
                 </Card>
               );

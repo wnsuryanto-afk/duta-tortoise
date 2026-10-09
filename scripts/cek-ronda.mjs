@@ -74,6 +74,7 @@ bundel("base44/shared/bayarSurut.ts", "bayarsurut.cjs");
 bundel("src/lib/anakanKura.js", "anakan.cjs");
 bundel("src/lib/laporan.js", "laporan.cjs");
 bundel("src/lib/siklusBertelur.js", "siklus.cjs");
+bundel("src/lib/jendelaSurut.js", "jendelasurut.cjs");
 bundel("src/lib/diagnosaInduk.js", "diagnosa.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
@@ -86,6 +87,7 @@ const BS = await import("file://" + join(dir, "bayarsurut.cjs")).then((m) => m.d
 const AN = await import("file://" + join(dir, "anakan.cjs")).then((m) => m.default || m);
 const LP = await import("file://" + join(dir, "laporan.cjs")).then((m) => m.default || m);
 const SB = await import("file://" + join(dir, "siklus.cjs")).then((m) => m.default || m);
+const JS = await import("file://" + join(dir, "jendelasurut.cjs")).then((m) => m.default || m);
 const DI = await import("file://" + join(dir, "diagnosa.cjs")).then((m) => m.default || m);
 const V = await import("file://" + join(dir, "versi.cjs")).then((m) => m.default || m);
 const J = await import("file://" + join(dir, "jadwal.cjs")).then((m) => m.default || m);
@@ -1305,6 +1307,22 @@ for (const uji of jendelaUji) {
       `saringSasaran [${uji.nama}]: ${ikut ? "ikut dibayar" : "tidak ikut"}, seharusnya ${uji.ikut ? "ikut" : "tidak ikut"}`,
     );
   }
+}
+
+/*
+  Jendela di LAYAR harus sama persis dengan jendela di FUNGSI.
+
+  Angkanya memang ditulis dua kali — Deno tidak bisa mengimpor src/ — tetapi
+  di sini keduanya benar-benar dibandingkan, bukan dipercaya lewat komentar.
+  Kalau yang satu digeser dan yang lain tidak, kartu di Pemeliharaan Sistem
+  akan menghitung catatan yang berbeda dari yang dibayar fungsinya: ia
+  menyatakan pekerjaannya selesai padahal masih ada yang tertinggal, atau
+  terus menawarkan pekerjaan yang sudah tidak ada.
+*/
+if (JSON.stringify(JS.JENDELA_SURUT) !== JSON.stringify(BS.JENDELA)) {
+  temuan.push(
+    `JENDELA_SURUT di layar ${JSON.stringify(JS.JENDELA_SURUT)} tidak sama dengan JENDELA di fungsi ${JSON.stringify(BS.JENDELA)}`,
+  );
 }
 
 // Jendelanya sendiri: kalau ujung atasnya hilang, yang di atas ikut terbawa.
