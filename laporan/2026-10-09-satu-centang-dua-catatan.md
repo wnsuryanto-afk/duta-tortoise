@@ -153,6 +153,46 @@ pemeriksaannya sendiri — kalau bentuk kuerinya berubah sehingga pencariannya
 tidak lagi menemukan kelimanya, penjaganya berbunyi bahwa ia **sudah buta**,
 bukan diam-diam melaporkan bersih. Ketiganya diuji-merah.
 
+## 6. Tiga penjaga yang berbunyi atas perbaikan ini sendiri
+
+Ketiganya benar, dan ketiganya layak dicatat karena tidak satu pun saya duga.
+
+**`cek-kolom-hantu`.** Penjaga ini membaca kunci objek yang bersarang di dalam
+`Entity.create({…})` sebagai nama kolom. Panggilan `tandaChecklistBaru({ email,
+modeUji })` saya taruh DI DALAM payloadnya — jadi `email` dan `modeUji` terbaca
+sebagai dua kolom DailyChecklist yang tidak ada di skema. Bukan tulisan hantu
+sungguhan, tetapi penjaga yang tidak bisa membedakan keduanya lebih baik
+dibiarkan tidak ambigu daripada diajari menyipitkan mata. Panggilannya
+dinaikkan ke baris sendiri — bentuk yang memang sudah dipakai `TugasHariIni`,
+dan itu sebabnya berkas itu tidak ikut berbunyi.
+
+**`cek-modeuji`, bagian 2.** Variabel hasil naik itu saya namai `tandaUji` —
+dan `tandaUji` persis kata yang dipakai penjaga ini untuk mengenali fungsi di
+`src/lib` yang MENERUSKAN penanda Mode Uji dari pemanggilnya. Seketika
+`claimIncidentalTask` dianggap penerus, dan kedua pemanggilnya dituntut
+mengirim sesuatu yang tidak pernah mereka punya. Namanya diganti
+`penandaChecklist`, dengan alasannya ditulis di tempatnya supaya tidak ada yang
+mengembalikannya.
+
+**`cek-modeuji`, bagian 1.** Begitu panggilannya naik ke baris sendiri,
+payloadnya tinggal `...penandaChecklist` — dan penjaga ini hanya membaca
+payloadnya sendiri, jadi ia melaporkan payload yang penandanya benar sebagai
+"tanpa penanda". Sekarang setiap `...spread` dilacak ke deklarasinya, dan
+kosakata penandanya ditambah `tandaChecklistBaru`/`tandaLaporan`. Diuji-merah
+empat kali: penandanya dibuang dari payload; variabelnya tetap disebar tetapi
+isinya dikosongkan; penanda lama dibuang dari layar penjualan; dan penanda lama
+lewat variabel. Keempatnya merah.
+
+Satu catatan tentang uji-merah ketiga: percobaan pertamanya **tidak berbunyi**,
+dan sempat terbaca seolah penjaganya buta. Ternyata suntingannya sendiri yang
+tidak mengenai apa pun — teks yang saya cari bertanda koma, yang di berkas
+tidak. Uji-merah yang tidak mengubah apa-apa selalu lolos.
+
+Alasan pengecualian `claimIncidentalTask` di `cek-modeuji` juga diperbarui:
+tertulis "bukan mencatat kejadian baru", padahal fungsi itu MEMBUAT
+DailyChecklist bila hari itu belum punya. Separuh benar, dan separuh itu yang
+menutupi kebocorannya selama ini.
+
 ---
 
 **Pemeriksaan akhir:** 27 penjaga lolos, eslint 0 error / 101 peringatan,

@@ -61,7 +61,14 @@ const AKAR = process.cwd();
 const DIKECUALIKAN = new Map([
   ["src/lib/pemakaianObat.js", "menerima tandaUji dari pemanggilnya dan meneruskannya"],
   ["src/lib/transaksiPenjualan.js", "menyalin penanda dari penjualan asalnya, bukan dari mode saat ini"],
-  ["src/lib/claimIncidentalTask.js", "mengubah kepemilikan tugas yang sudah ada, bukan mencatat kejadian baru"],
+  // 9 Okt 2026: fungsi ini TERNYATA membuat DailyChecklist baru bila hari itu
+  // belum punya — jadi alasan lamanya ("bukan mencatat kejadian baru") hanya
+  // benar separuh. Ia tetap dikecualikan dari bagian 1 karena penandanya tidak
+  // datang dari Mode Uji melainkan dari aturan akun di lib/laporan.js
+  // (tandaChecklistBaru), yang berlaku juga ketika Mode Uji mati. Bahwa ia
+  // benar-benar memasangnya dijaga cek-tataletak, yang menyisir setiap
+  // DailyChecklist.create.
+  ["src/lib/claimIncidentalTask.js", "penandanya dari aturan akun (lib/laporan.js), bukan dari Mode Uji; dijaga cek-tataletak"],
 ]);
 
 function entityBerpenanda() {
@@ -127,6 +134,39 @@ function deklarasiMap(s, nama, sebelum) {
   return buka === -1 ? null : payloadDari(s, buka);
 }
 
+/**
+ * Kata-kata yang dihitung sebagai penanda Mode Uji di dalam sebuah payload.
+ *
+ * `tandaChecklistBaru` menyusul pada 9 Oktober 2026: aturan "checklist milik
+ * pemilik selalu data uji" pindah ke lib/laporan.js dan berlaku JUGA ketika
+ * Mode Uji mati, jadi ia penanda yang sah meski bukan `testModeTag`.
+ */
+const PENANDA = /testModeTag|tandaUji|is_test_data|tandaChecklistBaru|tandaLaporan/;
+
+/**
+ * Apakah payload ini membawa penanda — langsung atau lewat variabel?
+ *
+ * Penandanya sering dihitung di baris sendiri lalu disebar: `...penanda`.
+ * Itu bukan gaya, melainkan keharusan — penjaga cek-kolom-hantu membaca kunci
+ * objek yang BERSARANG di dalam `create({…})` sebagai nama kolom, jadi
+ * `tandaChecklistBaru({ email })` di dalam payload memunculkan kolom hantu
+ * `email`. Maka setiap spread dilacak ke deklarasinya.
+ *
+ * Versi pertama pemeriksaan ini hanya membaca payloadnya sendiri, dan
+ * melaporkan payload yang penandanya benar sebagai "tanpa penanda".
+ */
+function berpenanda(s, payload, sebelum) {
+  if (PENANDA.test(payload)) return true;
+  for (const m of payload.matchAll(/\.\.\.([\w$]+)/g)) {
+    const re = new RegExp(`(?:const|let)\\s+${m[1]}\\s*=\\s*([^;\n]*)`, "g");
+    let awal;
+    while ((awal = re.exec(s))) {
+      if (awal.index < sebelum && PENANDA.test(awal[1])) return true;
+    }
+  }
+  return false;
+}
+
 const BERPENANDA = entityBerpenanda();
 const temuan = [];
 let diperiksa = 0;
@@ -142,7 +182,7 @@ for (const p of berkas(path.join(AKAR, "src"))) {
     diperiksa++;
     const payload = payloadDari(s, m.index + m[0].length - 1);
     if (payload === null) continue;
-    if (/testModeTag|tandaUji|is_test_data/.test(payload)) continue;
+    if (berpenanda(s, payload, m.index)) continue;
     const baris = s.slice(0, m.index).split("\n").length;
     temuan.push(`${rel}:${baris}  ${ent}.create() tanpa penanda Mode Uji`);
   }
@@ -175,7 +215,7 @@ for (const p of berkas(path.join(AKAR, "src"))) {
       temuan.push(`${rel}:${baris}  ${ent}.bulkCreate(${m[2]}) — isi payloadnya tidak terbaca, penanda Mode Uji tidak bisa dipastikan`);
       continue;
     }
-    if (/testModeTag|tandaUji|is_test_data/.test(blok)) continue;
+    if (berpenanda(s, blok, 0)) continue;
     temuan.push(`${rel}:${baris}  ${ent}.bulkCreate() tanpa penanda Mode Uji`);
   }
 }
