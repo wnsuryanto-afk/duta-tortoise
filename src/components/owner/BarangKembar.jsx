@@ -6,6 +6,7 @@ import { Package, AlertTriangle, Check, Loader2, HelpCircle, Merge, Tag } from "
 import { Button } from "@/components/ui/button";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
+import KartuPemeliharaan from "@/components/owner/KartuPemeliharaan";
 
 /**
  * BarangKembar — menyatukan barang gudang & pakan yang terdaftar dua kali.
@@ -79,27 +80,22 @@ export default function BarangKembar() {
   const totalKerja = akanGabung + akanHapusBertanda;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="w-8 h-8 rounded-lg bg-primary/12 text-primary flex items-center justify-center flex-shrink-0">
-          <Package className="w-4 h-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-heading font-semibold text-[15px] leading-tight flex items-center gap-1">
-            Satukan barang kembar
-            <InfoHint title="Kenapa bisa kembar" variant="info" size={13}>
-              Penerimaan barang dulu mencocokkan barang lewat <b>namanya</b>. Nama yang beda
-              satu spasi atau satu huruf besar dianggap barang lain, lalu dibuatkan barang
-              baru berstok 0 sementara stok yang lama tidak pernah bertambah. Pencocokannya
-              sekarang memakai id, jadi yang baru tidak lagi kembar. Alat ini membereskan
-              data lama.
-            </InfoHint>
-          </h3>
-          <p className="text-[11px] text-muted-foreground">
-            Membereskan data lama · aman diulang · dijalankan di server
-          </p>
-        </div>
-      </div>
+    <KartuPemeliharaan
+      ikon={Package}
+      judul="Satukan barang kembar"
+      kicker="Membereskan data lama · aman diulang · dijalankan di server"
+      beres={totalKerja === 0 && ragu === 0 && bertanda.length === 0}
+      ringkas={"Tidak ada barang kembar"}
+      bantuan={
+        <InfoHint title="Kenapa bisa kembar" variant="info" size={13}>
+                Penerimaan barang dulu mencocokkan barang lewat <b>namanya</b>. Nama yang beda
+                satu spasi atau satu huruf besar dianggap barang lain, lalu dibuatkan barang
+                baru berstok 0 sementara stok yang lama tidak pernah bertambah. Pencocokannya
+                sekarang memakai id, jadi yang baru tidak lagi kembar. Alat ini membereskan
+                data lama.
+              </InfoHint>
+      }
+    >
 
       <div className="rounded-lg bg-muted/40 border border-border px-3 py-1.5 divide-y divide-border/60">
         {totalKerja === 0 && ragu === 0 && bertanda.length === 0 && (
@@ -231,6 +227,6 @@ export default function BarangKembar() {
           `Bereskan ${totalKerja} barang`
         )}
       </Button>
-    </div>
+    </KartuPemeliharaan>
   );
 }

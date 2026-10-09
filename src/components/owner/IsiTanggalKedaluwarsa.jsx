@@ -91,13 +91,15 @@ export default function IsiTanggalKedaluwarsa() {
 
   if (antre.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 flex items-start gap-3">
-        <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="font-semibold text-sm">Tanggal kedaluwarsa lengkap</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Semua obat &amp; vitamin yang ada stoknya sudah punya tanggal. Peringatan
-            kedaluwarsa di beranda dan Dashboard Stok bekerja dengan sendirinya.
+      /* Satu baris, sebentuk dengan KartuPemeliharaan yang tertutup: keadaan
+         "tidak ada yang perlu dikerjakan" adalah keadaan normal halaman ini,
+         dan tidak pantas memakan satu kartu penuh. */
+      <div className="rounded-xl border border-border bg-card px-3 py-2 flex items-center gap-2.5">
+        <Check className="w-4 h-4 text-accent flex-shrink-0" />
+        <div className="min-w-0">
+          <p className="font-medium text-sm">Tanggal kedaluwarsa lengkap</p>
+          <p className="text-[11px] text-muted-foreground">
+            Semua obat &amp; vitamin yang ada stoknya sudah punya tanggal.
           </p>
         </div>
       </div>

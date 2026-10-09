@@ -1,6 +1,27 @@
+/**
+ * PanduanPakanPage — referensi pakan, bukan layar kerja.
+ *
+ * Diukur 9 Okt 2026 di lebar telepon: 3.382 huruf, 3,5 layar penuh. Tetapi
+ * halaman ini BERBEDA dari halaman panjang lainnya: tulisannya bukan
+ * penjelasan yang menumpuk di sekitar angka, tulisannya ADALAH isinya. Daftar
+ * rumput yang boleh diberikan tidak bisa dipendekkan tanpa menghapus
+ * jawabannya.
+ *
+ * Jadi yang diperbaiki bukan panjangnya, melainkan CARA MENCAPAINYA: lima
+ * bagian sekarang bisa ditutup, dan halaman terbuka sebagai daftar isi lima
+ * baris. Orang yang bertanya "boleh tidak kasih kangkung" membuka satu bagian,
+ * bukan menggulung tiga setengah layar.
+ *
+ * SATU BAGIAN TETAP TERBUKA: "MAKANAN DILARANG". Di bagian lain, tidak melihat
+ * isinya berarti harus membuka satu ketukan lagi; di bagian itu, tidak melihat
+ * isinya berarti kura memakan sesuatu yang membahayakannya. Keduanya tidak
+ * setara, jadi tidak diperlakukan sama.
+ */
+import { useState } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { AlertTriangle, Leaf } from "lucide-react";
+import { AlertTriangle, ChevronDown, Leaf } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
+import { kisiWadah } from "@/lib/kisiWadah";
 
 const CARDS = [
   {
@@ -68,6 +89,8 @@ const CARDS = [
     emoji: "🚫",
     title: "MAKANAN DILARANG",
     subtitle: "Jangan Diberikan Sama Sekali",
+    // Tetap terbuka: lihat alasannya di kepala berkas.
+    selaluBuka: true,
     color: "border-red-600 bg-red-50",
     headerColor: "bg-red-600 text-white",
     tagColor: "bg-red-100 text-red-800 border-red-300",
@@ -112,6 +135,13 @@ const CARDS = [
 export default function PanduanPakanPage() {
   const { role } = useCurrentUser();
   const isEditable = ["owner", "admin"].includes(role);
+  const [buka, setBuka] = useState(() => new Set(CARDS.filter((c) => c.selaluBuka).map((c) => c.id)));
+  const alihkan = (id) =>
+    setBuka((lama) => {
+      const baru = new Set(lama);
+      if (baru.has(id)) baru.delete(id); else baru.add(id);
+      return baru;
+    });
 
   return (
     <div className="space-y-6 pb-10">
@@ -129,21 +159,41 @@ export default function PanduanPakanPage() {
       />
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {CARDS.map(card => (
-          <div key={card.id} className={`rounded-2xl border-2 overflow-hidden shadow-sm ${card.color}`}>
-            {/* Card Header */}
-            <div className={`px-5 py-4 ${card.headerColor}`}>
+      {/*
+        `md:grid-cols-2` membaca lebar LAYAR, bukan lebar wadahnya. Di dalam
+        kolom 320px pada layar 1280px ia tetap membuat dua kolom selebar
+        ~150px, dan judul sependek "Jadwal & Porsi" pun terpotong. kisiWadah
+        membaca ruang yang benar-benar ada.
+      */}
+      <div className="grid gap-5" style={{ gridTemplateColumns: kisiWadah(300) }}>
+        {CARDS.map(card => {
+          const terbuka = buka.has(card.id);
+          return (
+          <div
+            key={card.id}
+            className={`rounded-2xl border-2 overflow-hidden shadow-sm ${card.color} ${terbuka ? "" : "self-start"}`}
+          >
+            {/* Kepala bagian — sekaligus tombol buka/tutup */}
+            <button
+              type="button"
+              onClick={() => alihkan(card.id)}
+              aria-expanded={terbuka}
+              className={`w-full px-5 py-3 text-left whitespace-normal ${card.headerColor}`}
+            >
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{card.emoji}</span>
-                <div>
+                <div className="min-w-0 flex-1">
                   <h2 className="font-bold text-base leading-tight">{card.title}</h2>
-                  <p className="text-xs opacity-80 mt-0.5">{card.subtitle}</p>
+                  <p className="text-xs opacity-80 mt-0.5">
+                    {card.subtitle} · {card.items.length} butir
+                  </p>
                 </div>
+                <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${terbuka ? "rotate-180" : ""}`} />
               </div>
-            </div>
+            </button>
 
-            {/* Card Body */}
+            {/* Isi bagian */}
+            {terbuka && (
             <div className="px-5 py-4 space-y-3">
               <ul className="space-y-1.5">
                 {card.items.map((item, i) => (
@@ -172,8 +222,10 @@ export default function PanduanPakanPage() {
                 </div>
               )}
             </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Warning Banner */}

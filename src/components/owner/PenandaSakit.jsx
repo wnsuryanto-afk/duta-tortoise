@@ -8,6 +8,7 @@ import InfoHint from "@/components/ui/info-hint";
 import { periksaTandaSakit, perubahanSakit } from "@/lib/statusKura";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
+import KartuPemeliharaan from "@/components/owner/KartuPemeliharaan";
 
 /**
  * PenandaSakit — menyelaraskan dua penanda sakit pada data kura.
@@ -136,26 +137,21 @@ export default function PenandaSakit() {
   const beres = laporan.perbaikan.length === 0 && laporan.ragu.length === 0;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="w-8 h-8 rounded-lg bg-primary/12 text-primary flex items-center justify-center flex-shrink-0">
-          <HeartPulse className="w-4 h-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-heading font-semibold text-[15px] leading-tight flex items-center gap-1">
-            Selaraskan penanda kura sakit
-            <InfoHint title="Kenapa perlu" variant="info" size={13}>
-              Sakit ditandai dua kali di data kura: lewat <b>status</b> dan lewat
-              centang <b>Sedang Sakit</b>. Bila keduanya berselisih, kura itu
-              terhitung sakit di sebagian layar dan sehat di sebagian lainnya —
-              termasuk hilang dari daftar perawatan harian keeper.
-            </InfoHint>
-          </h3>
-          <p className="text-[11px] text-muted-foreground">
-            Membereskan data lama · aman diulang · tidak wajib
-          </p>
-        </div>
-      </div>
+    <KartuPemeliharaan
+      ikon={HeartPulse}
+      judul="Selaraskan penanda kura sakit"
+      kicker="Membereskan data lama · aman diulang · tidak wajib"
+      beres={beres}
+      ringkas={`${laporan.selaras} dari ${tortoises.length} kura penandanya selaras`}
+      bantuan={
+        <InfoHint title="Kenapa perlu" variant="info" size={13}>
+                Sakit ditandai dua kali di data kura: lewat <b>status</b> dan lewat
+                centang <b>Sedang Sakit</b>. Bila keduanya berselisih, kura itu
+                terhitung sakit di sebagian layar dan sehat di sebagian lainnya —
+                termasuk hilang dari daftar perawatan harian keeper.
+              </InfoHint>
+      }
+    >
 
       <div className="rounded-lg bg-muted/40 border border-border px-3 py-1.5 divide-y divide-border/60">
         <div className="flex items-start gap-2.5 py-1.5">
@@ -292,6 +288,6 @@ export default function PenandaSakit() {
           ))}
         </div>
       )}
-    </div>
+    </KartuPemeliharaan>
   );
 }

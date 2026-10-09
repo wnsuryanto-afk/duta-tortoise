@@ -276,6 +276,30 @@ for (let i = 0; i < nama.length; i++) {
   await halaman.waitForTimeout(400);
   const salah = await pastikanTergambar(halaman, nama[i]);
   if (salah) { takTerukur.push(`${nama[i]}  ${salah}`); continue; }
+  /*
+    Buka dulu semua bagian yang tertutup.
+
+    Sejak 9 Okt 2026 beberapa halaman panjang menutup bagiannya sendiri —
+    Panduan Pakan, Pengaturan WhatsApp, kartu Pemeliharaan Sistem. Isinya
+    tetap ada, hanya tidak tergambar; dan yang tidak tergambar TIDAK DIUKUR.
+    Tanpa langkah ini, memasang penutup pada sebuah bagian akan membuat
+    seluruh tulisan di dalamnya lolos pemeriksaan tanpa pernah dilihat —
+    penjaga yang hijau karena layarnya kosong, pola yang sudah menggigit
+    berkas ini sekali (110 kasus yang tidak pernah digambar).
+
+    Hanya `button[aria-expanded="false"]`: atribut itu menandai pembuka
+    bagian, bukan tombol yang mengirim atau menghapus sesuatu.
+  */
+  for (let putaran = 0; putaran < 3; putaran++) {
+    const dibuka = await halaman.evaluate(() => {
+      const tombol = [...document.querySelectorAll('#bingkai button[aria-expanded="false"]')];
+      tombol.forEach((b) => b.click());
+      return tombol.length;
+    });
+    if (!dibuka) break;
+    await halaman.waitForTimeout(220);
+  }
+
   const cacat = await halaman.evaluate(cacatTeks);
   for (const c of cacat || []) {
     if (c.jenis === "kalimat berulang") {
