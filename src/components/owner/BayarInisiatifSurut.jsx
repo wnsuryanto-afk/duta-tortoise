@@ -22,7 +22,7 @@
  * terambil lagi.
  */
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44, BATAS_AMBIL } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,21 @@ export default function BayarInisiatifSurut() {
   const [memuat, setMemuat] = useState("");
   const [kering, setKering] = useState(null);
   const [hasil, setHasil] = useState(null);
+  /*
+    Galat disimpan, bukan sekadar dilempar ke toast.
+
+    9 Okt 2026 pemilik menekan tombolnya dan mengabarkan sudah membayar —
+    tetapi datanya tidak berubah sama sekali: 210 catatan tetap `pending`,
+    nol catatan bertanda "Pemilik (pembayaran surut)". Apa yang terjadi di
+    layarnya tidak bisa ditelusuri lagi, karena satu-satunya tempat
+    kegagalan diberitahukan adalah toast — yang hilang beberapa detik
+    kemudian dan tidak meninggalkan apa pun.
+
+    Untuk perhitungan uang yang dijalankan sekali, itu tempat yang salah.
+    Galatnya sekarang tinggal di kartunya sampai ada tombol ditekan lagi.
+  */
+  const [galat, setGalat] = useState("");
+  const qc = useQueryClient();
 
   /*
     Kartu ini ALAT SEKALI PAKAI, dan sampai sekarang ia tidak tahu kapan
@@ -67,6 +82,7 @@ export default function BayarInisiatifSurut() {
 
   const jalankan = async (modeKering) => {
     setMemuat(modeKering ? "kering" : "tulis");
+    setGalat("");
     try {
       const jawab = await base44.functions.invoke("bayarInisiatifSurut", { kering: modeKering });
       const data = jawab?.data;
@@ -77,10 +93,15 @@ export default function BayarInisiatifSurut() {
         toast.success(`Laporan kering siap — ${data.catatan.dibayar} catatan akan dibayar`);
       } else {
         setHasil(data);
+        // Hitungan sisa harus ikut berubah, kalau tidak kartunya tetap
+        // mengatakan 210 padahal sudah nol.
+        qc.invalidateQueries({ queryKey: ["inisiatif-surut-tersisa"] });
         toast.success(`Selesai — ${data.catatan.dibayar} catatan dibayar`);
       }
     } catch (e) {
-      toast.error(`Gagal: ${e?.message || e}`);
+      const pesan = e?.message || String(e);
+      setGalat(pesan);
+      toast.error(`Gagal: ${pesan}`);
     } finally {
       setMemuat("");
     }
@@ -118,9 +139,13 @@ export default function BayarInisiatifSurut() {
           {/* Riwayat lengkapnya ada di laporan 7 Okt 2026. Di layar cukup: apa yang
               dibayar, berapa, dan rentang mana — sisanya membuat tombolnya
               tenggelam di bawah dua paragraf. */}
-          210 catatan Inisiatif <strong>28 Juli – 6 Oktober 2026</strong> dibayar nol karena cacat
-          kode. Tombol ini menilainya 5 poin — tarif yang dulu berlaku — dengan batas harian tetap
-          dihormati dan tanpa membayar dua kali pekerjaan yang sudah berpoin di checklist.
+          {/* Angkanya DIHITUNG, bukan dipaku. Versi pertama menulis "210" apa adanya,
+              jadi kartunya akan tetap menyebut 210 setelah dibayar — dan tidak ada
+              satu pun angka di layar ini yang bisa membantah kalimat itu. */}
+          {tersisa === null ? "Catatan" : <strong>{tersisa} catatan</strong>} Inisiatif{" "}
+          <strong>{JENDELA_SURUT.dari} – {JENDELA_SURUT.sampai}</strong> masih bernilai nol karena
+          cacat kode. Tombol ini menilainya 5 poin — tarif yang dulu berlaku — dengan batas harian
+          tetap dihormati dan tanpa membayar dua kali pekerjaan yang sudah berpoin di checklist.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -144,17 +169,43 @@ export default function BayarInisiatifSurut() {
           </Button>
         </div>
 
-        {!kering && !hasil && (
+        {galat && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3">
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">Gagal — tidak ada yang ditulis</p>
+            <p className="text-xs text-red-700/90 dark:text-red-400/90 mt-0.5 break-words font-mono">{galat}</p>
+          </div>
+        )}
+
+        {!kering && !hasil && !galat && (
           <p className="text-xs text-muted-foreground">
             Tekan “Lihat dulu” lebih dahulu. Tombol bayar baru hidup sesudah laporannya terlihat.
           </p>
         )}
 
         {tampil && (
-          <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-2 text-sm">
+          <div
+            className={`rounded-xl border p-3 space-y-2 text-sm ${
+              tampil.kering ? "border-amber-500/40 bg-amber-500/10" : "border-emerald-500/40 bg-emerald-500/10"
+            }`}
+          >
+            {/*
+              Laporan kering dan laporan sesudah menulis dulu terlihat NYARIS SAMA —
+              kotak abu-abu yang sama, angka yang sama, hanya judulnya berbeda satu
+              baris. Laporan kering berbunyi "210 dibayar @ 5 poin", dan itu persis
+              kalimat yang dibaca orang sebagai "sudah dibayar". Sekarang yang kering
+              kuning dan menagih langkah berikutnya; yang sudah ditulis hijau.
+            */}
             <p className="font-semibold">
-              {tampil.kering ? "Laporan kering — belum ada yang ditulis" : "Sudah ditulis"}
+              {tampil.kering
+                ? "Laporan percobaan — BELUM ada yang ditulis"
+                : "Selesai — sudah ditulis ke data"}
             </p>
+            {tampil.kering && (
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                Angka di bawah ini belum terjadi. Tekan <strong>Bayarkan sekarang</strong> untuk
+                benar-benar membayarkannya.
+              </p>
+            )}
             <ul className="text-xs space-y-1">
               <li>
                 {tampil.catatan.diperiksa} catatan diperiksa, {tampil.dari} sampai {tampil.sampai}
