@@ -32,3 +32,36 @@ export function masukLaporan(rec: CatatanLaporan | null | undefined): boolean {
 export function hanyaLaporan<T extends CatatanLaporan>(records: T[] = []): T[] {
   return (records || []).filter(masukLaporan);
 }
+
+/**
+ * Penanda yang HARUS ikut ketika satu catatan menurunkan catatan lain.
+ *
+ * ── Satu centang, dua catatan, dua jawaban berbeda ──────────────────────────
+ *
+ * Pada 5 Oktober 2026 pukul 19.30 pemilik mencentang "Kalibrasi sendok takar
+ * Duta Repro" di layar kiper. Dua catatan lahir dari satu centang itu:
+ *
+ *   MaintenanceLog   is_test_data: true,  excluded_from_reports: true   ✓
+ *   DailyChecklist   is_test_data: false, excluded_from_reports: false  ✗
+ *
+ * Yang pertama benar: `TugasHariIni` tahu checklist milik pemilik selalu data
+ * uji — dia memakai layar kiper untuk mencoba aplikasinya, bukan untuk bekerja
+ * di kandang. Yang kedua dibuat `onMaintenanceDone` DARI catatan pertama itu,
+ * dan membuangnya.
+ *
+ * Yang tidak bertanda justru yang dipakai: ia masuk antrean Approval Poin, ikut
+ * hitungan KPI, ikut slip gaji, dan ikut hitungan milestone poin. Dan di antrean
+ * itu ia tidak bisa dihapus dari sana oleh pemiliknya sendiri — "checklist milik
+ * sendiri harus disetujui orang lain" — jadi lencana "1 menunggu" menyala terus
+ * tanpa ada yang bisa mematikannya.
+ *
+ * Aturannya satu kalimat: catatan turunan mewarisi kenyataan catatan sumbernya.
+ * Tidak ada keputusan baru di sini; yang ada hanya penolakan untuk melupakan
+ * keputusan yang sudah diambil di hulu.
+ */
+export function tandaLaporan(sumber: CatatanLaporan | null | undefined) {
+  return {
+    is_test_data: sumber?.is_test_data === true,
+    excluded_from_reports: sumber?.excluded_from_reports === true,
+  };
+}

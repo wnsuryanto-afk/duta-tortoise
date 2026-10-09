@@ -251,6 +251,140 @@ for (const rel of PINTU_TETAS) {
   }
 }
 
+/* ── Setiap pintu pembuat DailyChecklist menandai data uji ──────────
+ *
+ * Satu centang pemilik pada 5 Oktober 2026 melahirkan dua catatan:
+ * MaintenanceLog bertanda `is_test_data: true` dan DailyChecklist tanpa
+ * tanda, karena yang kedua dibuat DARI yang pertama lalu membuangnya.
+ * Yang tanpa tanda itulah yang masuk KPI, slip gaji, dan antrean
+ * persetujuan — dan di antrean itu pemiliknya sendiri tidak boleh
+ * menyetujuinya, jadi "1 menunggu" menyala tanpa ada yang bisa mematikan.
+ *
+ * Sebabnya bukan satu baris yang salah, melainkan beberapa pintu yang
+ * masing-masing menjawab sendiri pertanyaan yang sama. Jadi daftar
+ * pintunya TIDAK ditulis tangan di sini: ia dicari. Daftar tulisan tangan
+ * akan tetap hijau pada hari seseorang menambah pintu kelima, dan hari
+ * itulah penjaga ini paling dibutuhkan.
+ *
+ * Yang diuji di sini bukan logikanya — itu tugas cek-ronda — melainkan
+ * bahwa setiap pintu benar-benar MEMANGGILNYA. Fungsi yang benar tetapi
+ * tidak dipakai salah satu pintu persis sama akibatnya dengan fungsi yang
+ * keliru.
+ */
+function berkasSumber(dir, hasil = []) {
+  for (const nama of readdirSync(join(AKAR, dir), { withFileTypes: true })) {
+    const rel = `${dir}/${nama.name}`;
+    if (nama.isDirectory()) {
+      if (nama.name === "node_modules" || nama.name === "dist") continue;
+      berkasSumber(rel, hasil);
+    } else if (/\.(jsx?|tsx?)$/.test(nama.name)) {
+      hasil.push(rel);
+    }
+  }
+  return hasil;
+}
+
+const SEMUA_SUMBER = [...berkasSumber("src"), ...berkasSumber("base44")];
+const pintuChecklist = [];
+for (const rel of SEMUA_SUMBER) {
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  if (!/DailyChecklist\.create\(/.test(isi)) continue;
+  pintuChecklist.push(rel);
+  if (!/tandaChecklistBaru|tandaLaporan/.test(isi)) {
+    temuan.push(
+      `${rel}  membuat DailyChecklist tanpa tandaChecklistBaru()/tandaLaporan(). Checklist yang lahir ` +
+      `tanpa tanda data uji masuk KPI, slip gaji, dan antrean persetujuan yang tidak bisa dikosongkan ` +
+      `pemiliknya sendiri.`,
+    );
+  }
+}
+if (pintuChecklist.length === 0) {
+  temuan.push("Tidak ada satu pun DailyChecklist.create ditemukan — pencarian pintunya rusak, bukan kodenya bersih.");
+}
+
+/* Hulunya: TugasHariIni tidak membuat checklist sendiri, ia menulis
+ * MaintenanceLog yang kemudian DITURUNKAN onMaintenanceDone menjadi
+ * checklist. Tandanya harus dipasang di sana, kalau tidak yang diwarisi
+ * backend adalah ketiadaan tanda. */
+{
+  const rel = "src/components/sop/TugasHariIni.jsx";
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  if (!/tandaChecklistBaru/.test(isi)) {
+    temuan.push(
+      `${rel}  menulis MaintenanceLog tanpa tandaChecklistBaru(). Checklist yang diturunkan ` +
+      `onMaintenanceDone dari log itu akan ikut tanpa tanda.`,
+    );
+  }
+}
+
+/* ── Layar persetujuan menyaring data uji ───────────────────────────
+ *
+ * Kepala layarnya berjanji "hanya poin yang disetujui yang masuk hitungan
+ * KPI dan slip gaji". Data uji tidak pernah masuk keduanya, jadi ia juga
+ * bukan pekerjaan yang perlu diputuskan — tetapi sampai 9 Oktober 2026
+ * lima layar memuatnya tanpa saringan apa pun, termasuk ke dalam
+ * "Ringkasan Beban Periode Berjalan", yang karenanya memajang percobaan
+ * pemilik sebagai 100% beban kerja tim.
+ *
+ * ── Versi pertama pemeriksaan ini TIDAK MENANGKAP apa-apa ───────────
+ *
+ * Ia mencari kata "hanyaLaporan" atau "masukLaporan" DI SELURUH BERKAS.
+ * Diuji-merah dengan membuang saringan dari kueri di RingkasanPagi, dan
+ * ia tetap hijau: berkas itu memakai `masukLaporan` untuk keperluan lain
+ * beberapa puluh baris di bawahnya, jadi syaratnya terpenuhi oleh baris
+ * yang sama sekali tidak ada hubungannya.
+ *
+ * Yang diperiksa sekarang TEMPAT PEMANGGILANNYA, bukan berkasnya: tiap
+ * kueri checklist menunggu harus disaring di sana juga. Pemeriksaan yang
+ * mengukur keberadaan sebuah kata tidak mengukur apa pun.
+ */
+const KUERI_MENUNGGU = /DailyChecklist\.filter\(\{ status: "submitted" \}/g;
+const LAYAR_MENUNGGU = [
+  "src/components/salary/AlurGaji.jsx",
+  "src/components/dashboard/role/OwnerDashboard.jsx",
+  "src/components/dashboard/RingkasanPagi.jsx",
+  "src/components/dashboard/KeputusanHariIni.jsx",
+  "src/components/sop/SOPApproval.jsx",
+];
+let kueriDiperiksa = 0;
+for (const rel of LAYAR_MENUNGGU) {
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  for (const cocok of isi.matchAll(KUERI_MENUNGGU)) {
+    kueriDiperiksa++;
+    // Jendela sesudah pemanggilannya, bukan seluruh berkas.
+    const jendela = isi.slice(cocok.index, cocok.index + 180);
+    if (!/hanyaLaporan/.test(jendela)) {
+      temuan.push(
+        `${rel}:${isi.slice(0, cocok.index).split("\n").length}  kueri checklist "menunggu" tidak disaring ` +
+        `hanyaLaporan di tempat pemanggilannya. Checklist percobaan ikut terhitung menunggu, dan lencananya ` +
+        `tidak bisa dimatikan oleh pemilik checklist itu sendiri.`,
+      );
+    }
+  }
+}
+if (kueriDiperiksa < LAYAR_MENUNGGU.length) {
+  temuan.push(
+    `Hanya ${kueriDiperiksa} kueri "menunggu" ditemukan di ${LAYAR_MENUNGGU.length} layar — ` +
+    `bentuk kuerinya berubah dan pencariannya tidak lagi menemukannya. Perbarui KUERI_MENUNGGU.`,
+  );
+}
+
+/* SOPApproval memuat daftarnya sendiri (bukan hanya lencana), dan kedua
+ * daftar itu disaring di tempat lain, bukan di kuerinya. Keduanya disebut
+ * namanya supaya penghapusan salah satu berbunyi. */
+{
+  const rel = "src/components/sop/SOPApproval.jsx";
+  const isi = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  for (const wajib of ["hanyaLaporan(checklistMentah)", "hanyaLaporan(pendingMentah)"]) {
+    if (!isi.includes(wajib)) {
+      temuan.push(
+        `${rel}  kehilangan ${wajib}. Daftar persetujuan dan Ringkasan Beban memuat checklist data uji, ` +
+        `dan ringkasannya memajang percobaan pemilik sebagai beban kerja tim.`,
+      );
+    }
+  }
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah tata letak kepala halaman.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
@@ -259,6 +393,7 @@ console.log(
   `Kepala halaman: ${chipDiperiksa} chip punya tujuan, ` +
   `${pakaiH1Sendiri.length} dari ${halaman.length} halaman memakai <h1> sendiri ` +
   `(batas ${BATAS_H1_SENDIRI}), ${DIKECUALIKAN.size} dikecualikan dengan alasan tertulis. ` +
-  `Ubin Anakan tersambung ke daftarnya, dan kedua pintu penetasan satu bentuk.`,
+  `Ubin Anakan tersambung ke daftarnya, kedua pintu penetasan satu bentuk, ` +
+  `${pintuChecklist.length} pintu checklist menandai data uji, dan ${kueriDiperiksa} kueri menunggu di ${LAYAR_MENUNGGU.length} layar menyaringnya.`,
 );
 process.exit(0);

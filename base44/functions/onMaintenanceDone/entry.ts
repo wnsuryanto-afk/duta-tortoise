@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { kunciTugas as dedupKey } from "../../shared/kunciTugas.ts";
+import { masukLaporan, tandaLaporan } from "../../shared/laporan.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -85,7 +86,20 @@ Deno.serve(async (req) => {
         });
       }
     } else {
-      // Buat DailyChecklist baru
+      /*
+        Buat DailyChecklist baru — DENGAN penanda laporan dari catatan asalnya.
+
+        Checklist ini turunan dari `log`; kalau `log` data uji, checklist ini
+        data uji juga. Tanpa baris itu satu centang melahirkan dua catatan yang
+        menjawab berbeda tentang kenyataan yang sama, dan yang dipakai KPI,
+        slip gaji, serta antrean persetujuan justru yang kehilangan tandanya.
+        Alasan lengkapnya di shared/laporan.ts (tandaLaporan).
+
+        Hanya saat MEMBUAT. Checklist yang sudah ada tidak diubah tandanya oleh
+        log yang datang kemudian: menghapus tanda "data uji" dari catatan yang
+        sudah bertanda adalah menjadikannya uang sungguhan, dan itu keputusan
+        pemilik, bukan akibat sampingan sebuah centang.
+      */
       await base44.asServiceRole.entities.DailyChecklist.create({
         date: taskDate,
         employee_name: log.done_by,
@@ -94,6 +108,7 @@ Deno.serve(async (req) => {
         total_points_claimed: poinEarned,
         approved_points: 0,
         status: "submitted",
+        ...tandaLaporan(log),
       });
     }
 
@@ -103,7 +118,10 @@ Deno.serve(async (req) => {
     if (log.done_by_email) {
       const monthKey = taskDate.substring(0, 7);
       const allThisMonth = await base44.asServiceRole.entities.DailyChecklist.filter({}, null, BATAS_AMBIL);
+      // Data uji tidak ikut: milestone "300 Poin" yang dirayakan karena
+      // percobaan pemilik adalah kabar gembira tentang pekerjaan yang tidak ada.
       const monthlyTotal = allThisMonth
+        .filter(masukLaporan)
         .filter(cl => cl.employee_email === log.done_by_email && (cl.date || "").startsWith(monthKey))
         .reduce((sum, cl) => sum + (cl.approved_points || cl.total_points_claimed || 0), 0);
 

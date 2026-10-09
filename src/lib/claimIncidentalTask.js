@@ -12,6 +12,7 @@ import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 
 import { checklistSah } from "@/lib/poinChecklist";
+import { tandaChecklistBaru } from "@/lib/laporan";
 
 export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhotoReason } = {}) {
   // Re-fetch untuk race condition protection (dua orang klaim bersamaan)
@@ -80,6 +81,10 @@ export async function claimIncidentalTask(task, user, { photoUrl, notes, noPhoto
       completed_tasks: [taskEntry],
       total_points_claimed: task.points || 0,
       status: "submitted",
+      // Pintu ini sampai 9 Oktober 2026 tidak memberi tanda apa pun. Mode Uji
+      // tidak terbaca di sini (fungsi ini bukan komponen, tidak punya hook),
+      // tetapi aturan akun pemilik berlaku dan itu yang bocor selama ini.
+      ...tandaChecklistBaru({ email: user.email }),
     });
     dailyChecklistId = created.id;
   }

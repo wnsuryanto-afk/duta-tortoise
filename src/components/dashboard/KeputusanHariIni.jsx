@@ -16,6 +16,7 @@ import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/l
 import { penandaMenunggu, sudahDidaftar, barisDariBarang, idBarangRacikan, diracikSendiri } from "@/lib/daftarBelanja";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
+import { hanyaLaporan } from "@/lib/laporan";
 
 /**
  * KeputusanHariIni — lapis paling atas beranda: hal yang perlu DIPUTUSKAN,
@@ -102,7 +103,12 @@ export default function KeputusanHariIni() {
   });
   const { data: menungguApproval = [] } = useQuery({
     queryKey: ["owner-pending-approval"],
-    queryFn: () => base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500),
+    // Data uji tidak ikut dihitung menunggu: ia tidak pernah masuk KPI
+    // maupun slip gaji, jadi tidak ada yang perlu diputuskan — dan
+    // checklist percobaan pemilik tidak bisa disetujui olehnya sendiri,
+    // sehingga lencananya menyala terus tanpa ada yang bisa mematikannya.
+    queryFn: () =>
+      base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500).then(hanyaLaporan),
     staleTime: 60 * 1000,
   });
   const { data: daftarBelanja = [] } = useQuery({

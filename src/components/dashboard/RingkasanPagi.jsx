@@ -17,7 +17,7 @@ import ToolLoanWidget from "@/components/dashboard/ToolLoanWidget";
 import ToolRequestWidget from "@/components/dashboard/ToolRequestWidget";
 import KeputusanHariIni from "@/components/dashboard/KeputusanHariIni";
 import ArahMingguIni from "@/components/dashboard/ArahMingguIni";
-import { masukLaporan } from "@/lib/laporan";
+import { masukLaporan, hanyaLaporan } from "@/lib/laporan";
 import KomposisiKawanan from "@/components/dashboard/KomposisiKawanan";
 import { saldoTerkini } from "@/lib/kasKecil";
 import { clutchAktif } from "@/lib/breedingUtils";
@@ -67,7 +67,12 @@ export default function RingkasanPagi({ bagian = "semua" }) {
   });
   const { data: pendingApproval = [] } = useQuery({
     queryKey: ["owner-pending-approval"],
-    queryFn: () => base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500),
+    // Data uji tidak ikut dihitung menunggu: ia tidak pernah masuk KPI
+    // maupun slip gaji, jadi tidak ada yang perlu diputuskan — dan
+    // checklist percobaan pemilik tidak bisa disetujui olehnya sendiri,
+    // sehingga lencananya menyala terus tanpa ada yang bisa mematikannya.
+    queryFn: () =>
+      base44.entities.DailyChecklist.filter({ status: "submitted" }, "-date", 500).then(hanyaLaporan),
     staleTime: 60 * 1000,
   });
   const { data: attendances = [] } = useQuery({
