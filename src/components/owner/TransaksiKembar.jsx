@@ -9,6 +9,7 @@ import { periksaTransaksiKembar } from "@/lib/transaksiKembar";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
 import { rupiah } from "@/lib/rupiah";
+import KartuPemeliharaan from "@/components/owner/KartuPemeliharaan";
 
 
 /** Sebanyak ini catatan yang ditarik sekali jalan. */
@@ -78,26 +79,21 @@ export default function TransaksiKembar() {
   const bersih = laporan.totalHapus === 0 && laporan.ragu.length === 0;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="w-8 h-8 rounded-lg bg-primary/12 text-primary flex items-center justify-center flex-shrink-0">
-          <Copy className="w-4 h-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-heading font-semibold text-[15px] leading-tight flex items-center gap-1">
-            Sapu catatan keuangan kembar
-            <InfoHint title="Kenapa bisa kembar" variant="info" size={13}>
-              Pemasukan penjualan dulu ditulis oleh <b>dua pihak</b> yang tidak saling
-              tahu — otomatisasi server dan layar penjualan — sehingga satu penjualan
-              bisa tercatat dua kali. Penulisannya sudah disatukan, jadi yang baru
-              tidak lagi kembar. Alat ini membereskan catatan lama.
-            </InfoHint>
-          </h3>
-          <p className="text-[11px] text-muted-foreground">
-            Membereskan data lama · aman diulang · {laporan.diperiksa} catatan diperiksa
-          </p>
-        </div>
-      </div>
+    <KartuPemeliharaan
+      ikon={Copy}
+      judul="Sapu catatan keuangan kembar"
+      kicker="Membereskan data lama · aman diulang · {laporan.diperiksa} catatan diperiksa"
+      beres={bersih}
+      ringkas={`${laporan.diperiksa} catatan diperiksa, tidak ada yang kembar`}
+      bantuan={
+        <InfoHint title="Kenapa bisa kembar" variant="info" size={13}>
+                Pemasukan penjualan dulu ditulis oleh <b>dua pihak</b> yang tidak saling
+                tahu — otomatisasi server dan layar penjualan — sehingga satu penjualan
+                bisa tercatat dua kali. Penulisannya sudah disatukan, jadi yang baru
+                tidak lagi kembar. Alat ini membereskan catatan lama.
+              </InfoHint>
+      }
+    >
 
       <div className="rounded-lg bg-muted/40 border border-border px-3 py-1.5 divide-y divide-border/60">
         {/* "Tidak ada masalah" akan terlalu percaya diri: jumlah ini juga memuat
@@ -270,6 +266,6 @@ export default function TransaksiKembar() {
           ))}
         </div>
       )}
-    </div>
+    </KartuPemeliharaan>
   );
 }

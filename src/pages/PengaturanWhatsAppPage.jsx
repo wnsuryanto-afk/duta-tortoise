@@ -20,8 +20,7 @@ import PageHeader from "@/components/common/PageHeader";
 import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
   AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy, Sunrise,
-  Smartphone, WifiOff, ExternalLink,
-} from "lucide-react";
+  Smartphone, WifiOff, ExternalLink, ChevronDown } from "lucide-react";
 
 const NOTIF_CONFIG = [
   { key: "notif_daily_approval", label: "⏰ Pengingat Harian Approval", desc: "Jumlah checklist menunggu approval → Owner", timeKey: "daily_approval_time", timeDefault: "17:30" },
@@ -92,6 +91,20 @@ export default function PengaturanWhatsAppPage() {
   const [recipients, setRecipients] = useState({});
   const [summaryResults, setSummaryResults] = useState(null);
   // Morning summary
+  /*
+    Dua kartu ringkasan bisa ditutup.
+
+    Diukur 9 Okt 2026 di lebar telepon: halaman ini 4,3 layar, dan "Ringkasan
+    Harian" SENDIRIAN 1.459px — empat puluh persen seluruh halaman — ditambah
+    "Ringkasan Pagi" 708px. Keduanya pengaturan yang disetel sekali lalu
+    jarang disentuh lagi, sementara token dan nomor di atasnya justru yang
+    sering dibuka.
+
+    Tidak ada yang dihapus: barisnya tetap menyebut keadaannya (menyala jam
+    berapa, atau mati), dan satu ketukan membukanya kembali.
+  */
+  const [bukaHarian, setBukaHarian] = useState(false);
+  const [bukaPagi, setBukaPagi] = useState(false);
   const [morningEnabled, setMorningEnabled] = useState(false);
   const [morningTime, setMorningTime] = useState("07:00");
   const [approvalTime, setApprovalTime] = useState("17:30");
@@ -926,12 +939,23 @@ export default function PengaturanWhatsAppPage() {
 
       {/* Ringkasan Harian */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="w-4 h-4 text-green-600" />
-            Ringkasan Harian
-          </CardTitle>
-        </CardHeader>
+        <button
+          type="button"
+          onClick={() => setBukaHarian((v) => !v)}
+          aria-expanded={bukaHarian}
+          className="w-full text-left px-6 py-4 flex items-center gap-2 whitespace-normal"
+        >
+          <Users className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-base leading-tight">Ringkasan Harian</span>
+            <span className="block text-xs text-muted-foreground">
+              {summaryEnabled ? `menyala · ${summaryTime} WIB` : "mati"}
+              {weeklyEnabled ? " · mingguan Sabtu" : ""}
+            </span>
+          </span>
+          <ChevronDown className={`w-4 h-4 flex-shrink-0 text-muted-foreground transition-transform ${bukaHarian ? "rotate-180" : ""}`} />
+        </button>
+        {bukaHarian && (
         <CardContent className="space-y-3">
           {/* Tujuan Pengiriman */}
           <div>
@@ -1231,16 +1255,27 @@ export default function PengaturanWhatsAppPage() {
             🧪 Kirim Ringkasan Sekarang
           </Button>
         </CardContent>
+        )}
       </Card>
 
       {/* Ringkasan Pagi */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Sunrise className="w-4 h-4 text-amber-600" />
-            Ringkasan Pagi (Perintah Kerja)
-          </CardTitle>
-        </CardHeader>
+        <button
+          type="button"
+          onClick={() => setBukaPagi((v) => !v)}
+          aria-expanded={bukaPagi}
+          className="w-full text-left px-6 py-4 flex items-center gap-2 whitespace-normal"
+        >
+          <Sunrise className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-base leading-tight">Ringkasan Pagi (Perintah Kerja)</span>
+            <span className="block text-xs text-muted-foreground">
+              {morningEnabled ? `menyala · ${morningTime} WIB` : "mati"}
+            </span>
+          </span>
+          <ChevronDown className={`w-4 h-4 flex-shrink-0 text-muted-foreground transition-transform ${bukaPagi ? "rotate-180" : ""}`} />
+        </button>
+        {bukaPagi && (
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between gap-3 py-2 border-b">
             <div className="flex-1">
@@ -1296,6 +1331,7 @@ export default function PengaturanWhatsAppPage() {
             🧪 Kirim Ringkasan Pagi Sekarang
           </Button>
         </CardContent>
+        )}
       </Card>
 
       {/* Actions */}

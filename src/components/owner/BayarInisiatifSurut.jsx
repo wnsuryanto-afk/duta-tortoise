@@ -66,18 +66,12 @@ export default function BayarInisiatifSurut() {
           Bayar poin Inisiatif surut
         </CardTitle>
         <CardDescription>
-          Sampai 27 Juli 2026 setiap Inisiatif masuk bernilai 5 poin dan dibayar. Pada 28 Juli
-          satu baris kode berubah dan nilainya menjadi nol — 210 catatan sejak hari itu dibayar
-          nol, bukan karena keputusan siapa pun. Tombol ini menilainya 5 poin, tarif yang dulu
-          berlaku, dengan batas harian tetap dihormati dan pekerjaan yang sudah berpoin di
-          checklist tidak dibayar dua kali.
-          <br />
-          <span className="block mt-1.5">
-            Hanya <strong>28 Juli – 6 Oktober 2026</strong>. Catatan sejak 7 Oktober Anda nilai
-            sendiri di layar Inisiatif yang sekarang berfungsi — dan empat pekerjaan yang paling
-            sering dicatat sebagai Inisiatif sudah punya barisnya sendiri di checklist sejak hari
-            itu, jadi membayarnya di sini berarti membayarnya dua kali.
-          </span>
+          {/* Riwayat lengkapnya ada di laporan 7 Okt 2026. Di layar cukup: apa yang
+              dibayar, berapa, dan rentang mana — sisanya membuat tombolnya
+              tenggelam di bawah dua paragraf. */}
+          210 catatan Inisiatif <strong>28 Juli – 6 Oktober 2026</strong> dibayar nol karena cacat
+          kode. Tombol ini menilainya 5 poin — tarif yang dulu berlaku — dengan batas harian tetap
+          dihormati dan tanpa membayar dua kali pekerjaan yang sudah berpoin di checklist.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

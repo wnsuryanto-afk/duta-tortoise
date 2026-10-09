@@ -9,6 +9,7 @@ import { periksaPemindahan, tulisKandang } from "@/lib/kandang";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
+import KartuPemeliharaan from "@/components/owner/KartuPemeliharaan";
 
 /**
  * PemindahanKandang — mengisi nomor kandang pada kura yang belum punya.
@@ -94,25 +95,20 @@ export default function PemindahanKandang() {
   );
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="w-8 h-8 rounded-lg bg-primary/12 text-primary flex items-center justify-center flex-shrink-0">
-          <Link2 className="w-4 h-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-heading font-semibold text-[15px] leading-tight flex items-center gap-1">
-            Sambungkan kura ke nomor kandang
-            <InfoHint title="Kenapa perlu" variant="info" size={13}>
-              Kura menunjuk kandangnya lewat <b>nama</b>. Begitu kandang diganti nama,
-              sambungannya lepas tanpa peringatan. Nomor kandang tidak ikut berubah,
-              jadi sambungannya bertahan. Nama tetap disimpan sebagai keterangan.
-            </InfoHint>
-          </h3>
-          <p className="text-[11px] text-muted-foreground">
-            Sekali jalan · aman diulang · tidak wajib
-          </p>
-        </div>
-      </div>
+    <KartuPemeliharaan
+      ikon={Link2}
+      judul="Sambungkan kura ke nomor kandang"
+      kicker="Sekali jalan · aman diulang · tidak wajib"
+      beres={laporan.siap.length === 0 && laporan.ganda.length === 0}
+      ringkas={`${laporan.sudah.length}/${total} kura tersambung ke nomor kandang`}
+      bantuan={
+        <InfoHint title="Kenapa perlu" variant="info" size={13}>
+                Kura menunjuk kandangnya lewat <b>nama</b>. Begitu kandang diganti nama,
+                sambungannya lepas tanpa peringatan. Nomor kandang tidak ikut berubah,
+                jadi sambungannya bertahan. Nama tetap disimpan sebagai keterangan.
+              </InfoHint>
+      }
+    >
 
       <div className="rounded-lg bg-muted/40 border border-border px-3 py-1.5 divide-y divide-border/60">
         <Baris
@@ -217,6 +213,6 @@ export default function PemindahanKandang() {
           </span>
         )}
       </div>
-    </div>
+    </KartuPemeliharaan>
   );
 }
