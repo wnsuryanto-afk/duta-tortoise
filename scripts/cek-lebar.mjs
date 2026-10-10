@@ -63,13 +63,34 @@ function ukur(lebarLayar) {
   // Bingkai yang HILANG bukan bingkai yang bersih. Dulu keduanya
   // mengembalikan daftar kosong, dan 110 kasus lulus tanpa pernah digambar.
   if (!bingkai) return [{ jenis: "bingkai hilang", lebih: 0, teks: "" }];
+
+  // Dialog digambar Radix ke dalam document.body lewat portal, DI LUAR
+  // bingkai. Mengukur bingkai saja berarti setiap dialog lolos tanpa pernah
+  // dilihat — kasus yang isinya cuma dialog akan terbaca sebagai halaman
+  // kosong, dan penjaga ini melaporkannya hijau justru karena tidak ada yang
+  // terukur. Akar portalnya karena itu ikut diukur.
+  const akar = [bingkai, ...document.querySelectorAll('[role="dialog"]')];
+
   const keluar = [];
   const bisaGulung = (g) =>
     ["auto", "scroll"].includes(g.overflowX) || ["auto", "scroll"].includes(g.overflow);
 
-  for (const el of bingkai.querySelectorAll("*")) {
+  // Set, bukan `Array.includes`: dedup lewat `includes` di dalam lingkaran
+  // elemen adalah O(n²), dan pada halaman beberapa ribu elemen — dikali 125
+  // kasus, dua pengukuran, dan lima lebar wadah — ia membuat penjaga ini
+  // berjalan bermenit-menit tanpa alasan.
+  const terlihat = new Set();
+  for (const a of akar) for (const el of a.querySelectorAll("*")) terlihat.add(el);
+
+  for (const el of terlihat) {
     const r = el.getBoundingClientRect();
-    if (r.width === 0 || r.height === 0) continue;
+    // Kotak setipis satu piksel bukan tulisan yang terlihat. Bentuk yang
+    // dipakai di mana-mana adalah `sr-only` — 1 × 1 piksel, `overflow:hidden`,
+    // isinya hanya untuk pembaca layar. Tulisannya MEMANG meluap kotaknya,
+    // sesuai rancangan, dan melaporkannya sebagai "terpotong" membuat penjaga
+    // ini menuduh setiap dialog Radix. Diukur dari ukurannya, bukan dari nama
+    // kelasnya, supaya cara menyembunyikan yang lain ikut tertangani.
+    if (r.width <= 1 || r.height <= 1) continue;
     if (el.ownerSVGElement || el.tagName === "svg") continue;      // (3)
     const teks = (el.textContent || "").trim();
     if (!teks) continue;                                            // (2)

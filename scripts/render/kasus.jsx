@@ -48,6 +48,7 @@ import RiwayatKlusterPage from "@/pages/RiwayatKlusterPage";
 import HubPage from "@/pages/HubPage";
 import BreedingDetailPage from "@/pages/BreedingDetailPage";
 import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
+import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
 import PanduanPakanPage from "@/pages/PanduanPakanPage";
 import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
 import WhatsAppLogPage from "@/pages/WhatsAppLogPage";
@@ -144,6 +145,27 @@ const NAIKKAN = {
     { id: "fc23", name: "C23", gender: "betina", purchase_date: "2025-05-07" },
   ],
 };
+
+/*
+  Dialog "Cetak Label Kotak Telur" dengan DUA BELAS clutch — jumlah yang
+  benar-benar aktif saat pemiliknya mengirim foto lembar A4-nya 10 Okt 2026.
+
+  Daftar centangnya ditambahkan hari itu juga dan belum pernah diukur di lebar
+  telepon: tiap barisnya berisi kotak centang, dua baris tulisan, dan ikon
+  peringatan di kanan. Versi kosong tidak cukup — yang bisa terpotong baru
+  muncul kalau barisnya banyak dan namanya panjang.
+*/
+const LABEL12 = Array.from({ length: 12 }, (_, i) => ({
+  id: `k${i}`,
+  male_name: ["A36", "A35", "A40", "A37", "A43"][i % 5],
+  female_name: ["C6", "A46", "C23", "C22", "B108"][i % 5],
+  egg_count: 13 + i,
+  egg_laying_date: `2026-09-${String(1 + i).padStart(2, "0")}`,
+  estimated_hatch_start: "2026-12-20",
+  estimated_hatch_end: "2027-01-14",
+  tray_number: i % 4 === 0 ? null : i,
+  candling_day_30_done: false,
+}));
 
 export default [
   // Data user belum termuat — keadaan paling sering terlewat, dan yang paling
@@ -504,6 +526,7 @@ export default [
   */
   ["NaikkanProduksi tanpa data", <NaikkanProduksi baris={[]} breedings={[]} tortoises={[]} hariIni={new Date("2026-10-09T12:00:00Z")} />],
   ["NaikkanProduksi dengan data", <NaikkanProduksi {...NAIKKAN} />],
+  ["EggLabelGenerator 12 clutch", <EggLabelGenerator breedings={LABEL12} allActiveBreedings={LABEL12} open onClose={() => {}} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
   ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],
   ["WhatsAppLogPage tanpa data", <WhatsAppLogPage />],
