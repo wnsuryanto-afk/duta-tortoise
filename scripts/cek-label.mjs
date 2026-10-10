@@ -32,6 +32,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { fileURLToPath } from "url";
+import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 import { dirname, resolve } from "path";
 
 const akar = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -575,6 +576,95 @@ if (!existsSync(CHROMIUM)) {
     }
   }
 }
+
+// ── 11. Lembar A4 memuat label yang DIPILIH, bukan semua yang aktif ───────
+//
+// 10 Okt 2026 pemiliknya mengirim foto lembar A4: dua belas label, lalu dua
+// pertiga halaman kotak kosong bergaris potong. Ia memilih satu clutch; yang
+// keluar seluruh clutch aktif.
+//
+// Sebabnya satu baris di dalam komponen React:
+//
+//   const daftar = allActiveBreedings.length ? allActiveBreedings : breedings;
+//
+// Halaman clutch selalu mengoper allActiveBreedings, jadi cabang pertamanya
+// selalu menang. Tidak ada penjaga yang bisa melihatnya: ia terkunci di dalam
+// berkas yang menarik Radix, dan satu-satunya hal yang pernah diperiksa
+// tentang lembar A4 adalah jumlah megapikselnya — bukan berapa label yang
+// benar-benar mendarat di kertas.
+//
+// Keputusannya sekarang di lib/lembarLabel.js dan murni, jadi dihitung di sini.
+console.log("Lembar A4 — isi yang dipilih:");
+const CLUTCH12 = Array.from({ length: 12 }, (_, i) => ({
+  id: `c${i}`, male_name: `A${30 + i}`, female_name: `B${i}`, egg_count: 20 + i,
+  egg_laying_date: "2026-10-02", estimated_hatch_start: "2026-12-21",
+  estimated_hatch_end: "2027-01-15", tray_number: i + 1,
+}));
+const def50 = L.cariUkuranTelur("50x30");
+
+// Satu clutch diketuk, dua belas aktif — yang tercetak harus SATU.
+const satu = L.kandidatLabel([CLUTCH12[3]], CLUTCH12)
+  .filter((b) => L.centangAwal([CLUTCH12[3]]).has(L.kunciClutch(b)));
+if (satu.length !== 1) salah(`mengetuk satu clutch menyiapkan ${satu.length} label, bukan 1`);
+else if (satu[0].id !== "c3") salah(`yang disiapkan ${satu[0].id}, bukan clutch yang diketuk`);
+
+// Semuanya tetap terdaftar supaya bisa ditambahkan tanpa menutup layar.
+const semuaKandidat = L.kandidatLabel([CLUTCH12[3]], CLUTCH12);
+if (semuaKandidat.length !== 12) salah(`daftar pilihan berisi ${semuaKandidat.length}, bukan 12 — ada yang terduplikat atau hilang`);
+if (L.kunciClutch(semuaKandidat[0]) !== "c3") salah("clutch yang diketuk tidak di urutan pertama daftar");
+
+// "Unduh Label Aktif" mencentang semuanya.
+if (L.centangAwal(CLUTCH12).size !== 12) salah(`"Unduh Label Aktif" mencentang ${L.centangAwal(CLUTCH12).size}, bukan 12`);
+
+// Sel di lembarnya SAMA BANYAK dengan yang dicentang — dihitung dari HTML-nya.
+const hitungSel = (html) => (html.match(/position:absolute;left:\d+px;top:\d+px;width:\d+px;height:\d+px;overflow:hidden/g) || []).length;
+const hitungPotong = (html) => (html.match(/border-(?:left|top):1px dashed/g) || []).length;
+
+for (const [n, harap] of [[1, 1], [5, 5], [12, 12], [36, 36], [40, 36]]) {
+  const isi = Array.from({ length: n }, (_, i) => `<i>label ${i}</i>`);
+  const lembar = L.susunLembarA4HTML(isi, def50);
+  const sel = hitungSel(lembar.html);
+  if (sel !== harap) salah(`${n} label dicentang → ${sel} sel di lembar, bukan ${harap}`);
+  if (lembar.dipakai !== harap) salah(`${n} label dicentang → dipakai ${lembar.dipakai}, bukan ${harap}`);
+  if (lembar.terbuang !== n - harap) salah(`${n} label dicentang → terbuang ${lembar.terbuang}, bukan ${n - harap}`);
+}
+
+// Garis potong tidak boleh memandu pemotongan kotak yang kosong. Inilah dua
+// pertiga halaman di foto itu: kisi penuh digambar walau isinya cuma 12.
+const lembar1 = L.susunLembarA4HTML(["<i>a</i>"], def50);
+if (hitungPotong(lembar1.html) !== 0) salah(`satu label menggambar ${hitungPotong(lembar1.html)} garis potong — seharusnya tidak ada sekat sama sekali`);
+const lembar12 = L.susunLembarA4HTML(Array.from({ length: 12 }, () => "<i>a</i>"), def50);
+const penuh = L.susunLembarA4HTML(Array.from({ length: 36 }, () => "<i>a</i>"), def50);
+if (hitungPotong(lembar12.html) >= hitungPotong(penuh.html)) {
+  salah(`12 label menggambar ${hitungPotong(lembar12.html)} garis potong, sama banyak dengan lembar penuh (${hitungPotong(penuh.html)}) — kisinya digambar untuk kotak kosong juga`);
+}
+// Sekat tegak pada lembar 12 (3 baris penuh dari 9) hanya setinggi 3 baris.
+const tinggiSekat = [...lembar12.html.matchAll(/border-left:1px dashed #999;height:(\d+)px/g)].map((m) => Number(m[1]));
+const lhPx = L.mmKePx(def50.h);
+if (tinggiSekat.some((t) => t > 3 * lhPx)) {
+  salah(`sekat tegak setinggi ${Math.max(...tinggiSekat)}px, melewati 3 baris berisi (${3 * lhPx}px)`);
+}
+console.log("  1 dicentang → 1 label; 12 → 12; 40 → 36 + 4 dikatakan tidak muat.");
+console.log(`  garis potong: ${hitungPotong(lembar1.html)} untuk 1 label, ${hitungPotong(lembar12.html)} untuk 12, ${hitungPotong(penuh.html)} untuk lembar penuh.`);
+
+// Komponennya benar-benar MEMAKAI keputusan itu. Fungsi murni yang benar
+// tidak ada gunanya kalau layarnya memilih sendiri daftarnya.
+//
+// Komentarnya DIKUPAS dulu. Berkas itu menjelaskan baris lama dengan
+// mengutipnya utuh, dan pemeriksaan yang membaca komentar akan menuduh
+// penjelasan sebagai cacat — persis yang terjadi saat bagian ini ditulis.
+const sumberGen = kupasKomentar(readFileSync(join(akar, "src/components/breeding/EggLabelGenerator.jsx"), "utf8"));
+let salahPakai = 0;
+for (const [pola, ada, pesan] of [
+  [/allActiveBreedings\s*\.\s*length\s*\?/, false, "EggLabelGenerator masih memilih daftarnya sendiri lewat `allActiveBreedings.length ?` — centangnya diabaikan"],
+  [/renderA4SheetPng\(\s*dipilih\s*,/, true, "lembar A4 tidak disusun dari `dipilih` — yang dicentang tidak sampai ke kertas"],
+  [/centangAwal\(\s*breedings\s*\)/, true, "centang awal tidak diambil dari `breedings` — clutch yang diketuk tidak menentukan apa pun"],
+]) {
+  if (pola.test(sumberGen) !== ada) { salah(pesan); salahPakai += 1; }
+}
+console.log(salahPakai
+  ? `  ${salahPakai} dari 3 pemeriksaan pemakaian GAGAL.`
+  : "  layarnya memakai keputusan itu, bukan memilih sendiri.");
 
 rmSync(tmp, { recursive: true, force: true });
 
