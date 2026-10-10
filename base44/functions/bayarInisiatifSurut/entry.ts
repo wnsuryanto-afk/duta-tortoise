@@ -2,57 +2,14 @@
  * bayarInisiatifSurut — sekali pakai: membayar poin Inisiatif yang berhenti
  * dibayar pada 28 Juli 2026.
  *
- * ── Apa yang terjadi ────────────────────────────────────────────────────────
+ * Dokumentasi lengkapnya ada di repo:
+ * base44/functions/bayarInisiatifSurut/entry.ts
  *
- * `onMaintenanceDone` menyalin setiap MaintenanceLog menjadi satu baris di
- * `DailyChecklist.completed_tasks` — struktur yang dibaca slip gaji. Nilainya
- * diambil dari `poin_earned`, dan Inisiatif dibuat dengan nol. Sampai 12 Juli
- * baris itu berbunyi `log.poin_earned || 5`, jadi nol menjadi 5 dan DIBAYAR;
- * pada 28 Juli `||` diganti `??` — perbaikan yang benar, karena `||` membuat
- * nol yang DIPUTUSKAN penilai ikut tertimpa 5. Tetapi tidak ada yang
- * menggantikan 5 itu dengan penilaian sungguhan, karena tombol penilaiannya
- * tidak pernah dipakai satu kali pun. Sejak hari itu pekerjaan Inisiatif
- * dibayar nol: 210 catatan, dua orang.
- *
- * Pemilik memutuskan pada 7 Oktober 2026 untuk membayarkannya surut.
- *
- * ── Keputusan yang dipakai, dan alasannya ───────────────────────────────────
- *
- * TARIFNYA 5 POIN, bukan penilaian baru. Itu persis yang dibayarkan sistem ini
- * sendiri sampai 27 Juli. Menilai 210 catatan dengan angka baru berarti
- * mengarang 210 keputusan yang tidak pernah diambil siapa pun; memulihkan
- * tarif yang dulu berlaku tidak mengarang apa pun. Penilai tetap bisa
- * menaikkan catatan mana pun lewat layar Inisiatif, yang sekarang berfungsi.
- *
- * BATAS HARIAN TETAP BERLAKU. `poin_tambahan_maks_harian` (bawaan 30) dihitung
- * per orang per hari, dan poin Inisiatif yang SUDAH disetujui pada hari itu
- * ikut mengurangi kuota. Yang melewati batas tetap tercatat dinilai, dengan
- * poin yang terpotong dan alasannya tertulis.
- *
- * PEKERJAAN YANG SUDAH DIBAYAR LEWAT CHECKLIST TIDAK DIBAYAR DUA KALI.
- * Ujinya exact, bukan tebakan: bila checklist hari itu sudah punya baris LAIN
- * dengan judul yang sama persis (sesudah dinormalkan) dan poinnya di atas nol,
- * pekerjaannya sudah dibayar — catatan Inisiatifnya dinilai nol dengan alasan
- * yang tertulis. Contohnya "Siram tanaman", yang juga tugas SOP harian.
- *
- * `approved_points` DINAIKKAN pada checklist yang sudah disetujui, dan hanya
- * karena pemilik memerintahkannya. Itu angka yang sudah dibayar; menaikkannya
- * adalah pembayaran surut, bukan pembetulan catatan. Kenaikannya dilaporkan
- * per orang per bulan supaya bisa dicocokkan dengan slip.
- *
- * ── Cara pakai ──────────────────────────────────────────────────────────────
- *
- * Bawaannya KERING: tidak menulis apa pun, hanya melaporkan apa yang akan
- * terjadi. Kirim `{ "kering": false }` untuk benar-benar menulis. Aman
- * dijalankan dua kali: yang sudah dinilai tidak diambil lagi, karena
- * saringannya `approval_status: "pending"`.
- *
- * JENDELANYA BERUJUNG: 28 Juli sampai 6 Oktober 2026, bukan "semua yang masih
- * pending". Catatan sejak 7 Oktober dinilai pemilik lewat layar Inisiatif yang
- * sekarang berfungsi, dan empat pekerjaan yang paling sering dicatat sebagai
- * Inisiatif sudah punya baris SOP sendiri sejak hari itu — membayarnya rata di
- * sini berarti membayarnya dua kali. Alasan lengkapnya di JENDELA
- * (shared/bayarSurut.ts).
+ * TARIFNYA 5 POIN, bukan penilaian baru — persis yang dibayarkan sistem ini
+ * sendiri sampai 27 Juli. BATAS HARIAN TETAP BERLAKU. Pekerjaan yang sudah
+ * dibayar lewat checklist tidak dibayar dua kali. Bawaannya KERING: tidak
+ * menulis apa pun. Kirim { "kering": false } untuk benar-benar menulis.
+ * JENDELANYA BERUJUNG: 28 Juli sampai 6 Oktober 2026.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
@@ -71,15 +28,6 @@ Deno.serve(async (req) => {
     const badan = await req.json().catch(() => ({}));
     const kering = badan?.kering !== false;          // bawaan: tidak menulis
     const dari = badan?.dari || JENDELA.dari;
-    /*
-      Jendelanya BERUJUNG. `sampai` bawaannya 6 Oktober 2026 — hari terakhir
-      sebelum layar penilaian Inisiatif berfungsi dan sebelum empat pekerjaan
-      yang paling sering dicatat sebagai Inisiatif punya baris SOP sendiri.
-      Alasan lengkapnya ada di JENDELA (shared/bayarSurut.ts); singkatnya: tanpa
-      ujung atas, tombol ini membayar rata catatan yang sekarang sudah bisa
-      dinilai pemilik sendiri, dan membayar dua kali pekerjaan yang sejak
-      7 Oktober punya barisnya sendiri.
-    */
     const sampai = badan?.sampai || JENDELA.sampai;
     const poinSatuan = Number(badan?.poin) > 0 ? Number(badan.poin) : POIN_BAWAAN;
 
@@ -147,10 +95,6 @@ Deno.serve(async (req) => {
         ? checklist.completed_tasks as Array<Record<string, unknown>>
         : [];
 
-      /*
-        Seluruh keputusan uangnya ada di shared/bayarSurut.ts — tanpa jaringan,
-        dan diuji penjaga dengan kasus nyata. Yang ada di sini hanya penulisan.
-      */
       const { keputusan, perJudul } = rencanaHari({
         logs,
         baris: barisAwal,
@@ -194,9 +138,6 @@ Deno.serve(async (req) => {
       if (berubah === 0) continue;
 
       const perubahan: Record<string, unknown> = { completed_tasks: baris, total_points_claimed: total };
-      // Checklist yang sudah disetujui: `approved_points` adalah angka yang
-      // dibayar, jadi ia dinaikkan sebesar selisihnya — ini pembayaran surut
-      // yang diperintahkan pemilik, bukan pembetulan catatan.
       if (checklist.status === "approved") {
         perubahan.approved_points = (Number(checklist.approved_points) || 0) + selisih;
         laporan.checklist.approvedDinaikkan++;
@@ -212,8 +153,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Rincian yang tidak dibayar dipotong supaya jawabannya tetap terbaca;
-    // jumlahnya tetap utuh di `catatan`.
     if (laporan.rincianTidakDibayar.length > 40) {
       laporan.rincianTidakDibayar = laporan.rincianTidakDibayar.slice(0, 40);
     }
