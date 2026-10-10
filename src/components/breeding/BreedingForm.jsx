@@ -11,7 +11,8 @@ import { logActivity } from "@/lib/logActivity";
 import { Loader2, Camera, X, ImagePlus, AlertTriangle, Download } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { downloadLabel, generateKodeLabel } from "@/lib/labelUtils";
+import { downloadLabel, generateKodeLabel, LEBAR_CETAK_MM } from "@/lib/labelUtils";
+import { toast } from "sonner";
 import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
 import { recoveryDaysAgo } from "@/lib/parentHealthUtils";
 import { selaraskanEggRecords } from "@/lib/hasilInkubasi";
@@ -540,19 +541,23 @@ export default function BreedingForm({ open, onClose, editData }) {
                 <div className="px-3 pb-3">
                   <Button
                     type="button"
-                    onClick={() => downloadLabel({
-                      maleCode: form.male_name,
-                      femaleCode: form.female_name,
-                      maleEnclosure: male?.enclosure || "",
-                      femaleEnclosure: female?.enclosure || "",
-                      tglBertelur: form.egg_laying_date,
-                      eggCount: form.egg_count,
-                      inkubatorName: form.incubator_name,
-                    })}
+                    onClick={async () => {
+                      const hasil = await downloadLabel({
+                        maleCode: form.male_name,
+                        femaleCode: form.female_name,
+                        maleEnclosure: male?.enclosure || "",
+                        femaleEnclosure: female?.enclosure || "",
+                        tglBertelur: form.egg_laying_date,
+                        eggCount: form.egg_count,
+                        inkubatorName: form.incubator_name,
+                      });
+                      if (hasil?.ok) toast.success(`Label terunduh — cetak ${hasil.lebarMm} × ${hasil.tinggiMm} mm`);
+                      else toast.error(`Label gagal diunduh: ${hasil?.pesan || "sebab tidak diketahui"}`);
+                    }}
                     className="w-full bg-green-700 hover:bg-green-600 text-white text-sm"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Download Label (PNG)
+                    Download Label ({LEBAR_CETAK_MM} mm)
                   </Button>
                 </div>
               </div>
