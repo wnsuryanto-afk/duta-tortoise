@@ -126,7 +126,19 @@ export async function renderColorLabelHTML(breeding, sizeDef) {
     ${qrCol}
   </div>`;
 
-  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;font-family:Arial, Helvetica, sans-serif-webkit-text-size-adjust:100%;text-size-adjust:100%;border:2px solid #2D6A4F;border-radius:12px;padding:0;box-sizing:border-box;display:flex;overflow:hidden">
+  /*
+    Tata letak penuh ini DIRANCANG pada 100 × 50 mm: ukuran huruf, QR, dan
+    jarak di dalamnya ditulis sebagai piksel tetap untuk kanvas 1181 × 591.
+    Menggambarnya langsung ke kanvas yang lebih kecil membuat isinya meluber
+    dan terpotong `overflow:hidden` — bukan mengecil.
+
+    Jadi ia tetap digambar pada ukuran rancangannya, lalu SELURUHNYA
+    diperkecil. Perbandingan sisinya sama (2:1) di tiap ukuran penuh, jadi
+    penyusutannya seragam dan tidak ada yang gepeng.
+  */
+  const skala = wPx / P(100);
+  const isi = `<div style="width:${P(100)}px;height:${P(50)}px;background:#fff;font-family:Arial, Helvetica, sans-serif;-webkit-text-size-adjust:100%;text-size-adjust:100%;border:2px solid #2D6A4F;border-radius:12px;padding:0;box-sizing:border-box;display:flex;overflow:hidden;transform:scale(${skala});transform-origin:top left">
     <div style="flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden">${kepala}${body}</div>
   </div>`;
+  return `<div style="width:${wPx}px;height:${hPx}px;background:#fff;overflow:hidden">${isi}</div>`;
 }

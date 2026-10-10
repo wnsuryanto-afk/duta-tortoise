@@ -14,6 +14,18 @@
  * lalu memeriksa hasilnya: tingginya pas, tulisan terbesar adalah perkiraan
  * menetas, nomor tray tercetak, dan keterangan yang sengaja dibuang tidak
  * kembali diam-diam.
+ *
+ * ── Penggambar yang sempat tidak dilihat penjaga ini ───────────────────────
+ *
+ * Keluhan "labelnya terlalu besar" datang LAGI 10 Okt 2026, dengan foto label
+ * yang masih 98 × 58 mm. Penjaga ini hijau sepanjang waktu itu — karena ia
+ * hanya memeriksa penggambar BARU (`labelRingkas.js`), sementara tombol yang
+ * ditekan kiper tiap kali mencatat clutch memakai yang LAMA
+ * (`src/lib/labelUtils.js`). Penjaga yang ditulis untuk sebuah keluhan, lalu
+ * tidak bisa melihat keluhan itu terulang, adalah penjaga yang hijau palsu.
+ *
+ * Bagian 10 di bawah menutup itu: ia menjalankan unduhan yang sesungguhnya —
+ * html2canvas, PNG, pHYs — lalu MENGUKUR berkas yang keluar dalam milimeter.
  */
 import { execFileSync } from "child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "fs";
@@ -247,15 +259,31 @@ if (!existsSync(CHROMIUM)) {
   // Tanggal yang HARUS jadi tulisan terbesar, ditulis sama persis seperti
   // labelnya menulisnya.
   const tglMenetas = "21 Des 2026";   // CLUTCH[1] = A40×C23, 2 Okt 2026
+  // Label formulir clutch ikut diukur pemotongannya, tetapi TIDAK dituntut
+  // menjadikan perkiraan menetas tulisan terbesarnya: tata letaknya memang
+  // berpusat pada kode induknya, dan itu keputusan terpisah dari ukuran.
+  const keluarLU = join(tmp, "labelUtils.cjs");
+  execFileSync("npx", [
+    "esbuild", "src/lib/labelUtils.js", "--bundle", "--format=cjs",
+    "--platform=node", `--alias:@=${akar}/src`, `--outfile=${keluarLU}`,
+  ], { cwd: akar, stdio: "pipe" });
+  const LU = await import(`file://${keluarLU}`).then((m) => m.default || m);
+  const bFormulir = {
+    maleCode: "A40", femaleCode: "C23", maleEnclosure: "W3",
+    femaleEnclosure: "Showcase 2pintu", tglBertelur: "2026-10-02",
+    eggCount: 28, inkubatorName: "Inkubator 1",
+  };
+
   const HALAMAN = [
-    ["50×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[0], QR, PALET_WARNA)],
-    ["40×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[1], QR, PALET_WARNA)],
-    ["50×30 termal", labelRingkasHTML(CLUTCH[1].b, UKURAN[2], QR, PALET_TERMAL)],
-    ["100×50 penuh", await CE.renderColorLabelHTML(CLUTCH[1].b, { w: 100, h: 50, full: true })],
+    ["50×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[0], QR, PALET_WARNA), true],
+    ["40×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[1], QR, PALET_WARNA), true],
+    ["50×30 termal", labelRingkasHTML(CLUTCH[1].b, UKURAN[2], QR, PALET_TERMAL), true],
+    ["100×50 penuh", await CE.renderColorLabelHTML(CLUTCH[1].b, { w: 100, h: 50, full: true }), true],
+    ["formulir clutch", LU.buildLabelHTML({ ...bFormulir, kode: LU.generateKodeLabel("A40", "C23", "2026-10-02"), qrDataUrl: QR }), false],
   ];
 
-  let diukur = 0, terbesarOK = 0;
-  for (const [nama, htmlAsli] of HALAMAN) {
+  let diukur = 0, diukurMenetas = 0, terbesarOK = 0;
+  for (const [nama, htmlAsli, wajibMenetas] of HALAMAN) {
    for (const k of PEMBESARAN) {
     const html = besarkan(htmlAsli, k);
     for (const font of FONT) {
@@ -318,6 +346,8 @@ if (!existsSync(CHROMIUM)) {
       for (const b of buruk.hasil) {
         salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: "${b.teks}" ${b.fs} terpotong ${b.lewat}px oleh ${b.sebab}`);
       }
+      if (!wajibMenetas) continue;
+      diukurMenetas++;
       if (!buruk.besarMenetas) {
         salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: tanggal menetas "${tglMenetas}" tidak ketemu di label`);
       } else if (buruk.besarMenetas < buruk.maks) {
@@ -328,9 +358,222 @@ if (!existsSync(CHROMIUM)) {
     }
    }
   }
-  await browser.close();
   console.log(`  ${diukur} gabungan ukuran × tumpukan huruf × pembesaran diukur, tidak ada yang terpotong.`);
-  console.log(`Tulisan terbesar:\n  perkiraan menetas yang terbesar pada ${terbesarOK} dari ${diukur} gabungan.`);
+  console.log(`Tulisan terbesar:\n  perkiraan menetas yang terbesar pada ${terbesarOK} dari ${diukurMenetas} gabungan.`);
+
+  // ── 9b. Tidak ada gaya yang DIBUANG diam-diam oleh parser ───────────────
+  //
+  // Label 100 × 50 mm sempat tercetak dengan huruf serif bawaan browser,
+  // bukan Arial. Sebabnya satu titik koma yang hilang:
+  //
+  //   font-family:Arial, Helvetica, sans-serif-webkit-text-size-adjust:100%
+  //
+  // Nilainya jadi memuat tanda titik dua, parser CSS menilainya tidak sah,
+  // dan SELURUH deklarasi `font-family` dibuang tanpa suara. Tidak ada
+  // pemeriksaan lain yang bisa melihat itu: labelnya tetap tergambar, tetap
+  // utuh, tetap lulus pengukuran tinggi — hanya hurufnya yang bukan huruf
+  // yang dipilih. Dan di label yang sudah keluar dari printer, huruf yang
+  // berbeda berarti lebar teks yang berbeda dari yang dihitung di sini.
+  //
+  // Jadi tiap deklarasi di atribut `style` dicocokkan dengan apa yang
+  // sungguh-sungguh tersimpan. Properti yang memang tidak dikenal browsernya
+  // dilewati — itu bukan salah tulis, dan `CSS.supports(prop, "inherit")`
+  // memisahkan keduanya: nama properti yang salah tulis juga tidak dikenal,
+  // tetapi yang dicari di sini adalah NILAI tidak sah pada properti yang
+  // dikenal, yang justru lolos semua pemeriksaan lain.
+  console.log("Gaya yang dibuang parser:");
+  let deklarasi = 0, dibuang = 0;
+  for (const [nama, html] of HALAMAN) {
+    const buang = await page.evaluate((html) => {
+      const c = document.createElement("div");
+      c.innerHTML = html;
+      const hasil = [];
+      let n = 0;
+      for (const el of c.querySelectorAll("*")) {
+        const atribut = el.getAttribute("style");
+        if (!atribut) continue;
+        // Nilai di label ini tidak pernah memuat titik koma (gradien dan
+        // url() tidak dipakai dengan koma bertitik), jadi memecah di ";"
+        // sudah cukup. Kalau suatu saat dipakai, pemecahan ini perlu diganti.
+        for (const bagian of atribut.split(";")) {
+          const potong = bagian.indexOf(":");
+          if (potong < 0) continue;
+          const prop = bagian.slice(0, potong).trim();
+          if (!prop) continue;
+          n += 1;
+          if (!CSS.supports(prop, "inherit")) continue;   // propertinya tidak dikenal browser ini
+          if (el.style.getPropertyValue(prop) === "") {
+            hasil.push({ prop, nilai: bagian.slice(potong + 1).trim().slice(0, 48),
+              teks: (el.textContent || "").trim().slice(0, 20) });
+          }
+        }
+      }
+      return { hasil, n };
+    }, html);
+    deklarasi += buang.n;
+    for (const b of buang.hasil) {
+      salah(`${nama}: deklarasi "${b.prop}: ${b.nilai}" dibuang parser CSS — nilainya tidak sah (dekat "${b.teks}")`);
+      dibuang += 1;
+    }
+  }
+  // Laporan yang gagal tidak boleh terbaca seperti laporan yang lulus.
+  console.log(dibuang
+    ? `  ${dibuang} dari ${deklarasi} deklarasi gaya TIDAK terpasang.`
+    : `  ${deklarasi} deklarasi gaya di ${HALAMAN.length} label, semuanya benar-benar terpasang.`);
+
+  // ── 10. Label formulir clutch: diunduh sungguhan, lalu diukur dalam mm ──
+  //
+  // Diukur dari BERKAS yang keluar, bukan dari angka di kode. Ukuran cetak
+  // sebuah PNG adalah dua hal sekaligus — jumlah piksel DAN pernyataan
+  // `pHYs` — dan membaca salah satunya saja tidak memberi tahu apa pun
+  // tentang apa yang keluar dari printer. Itulah sebabnya label ini bisa
+  // dikeluhkan dua kali: tidak ada yang pernah mengukur hasilnya.
+  //
+  // Batasnya satu tingkat di bawah yang dikeluhkan (98 × 58 mm), dan di atas
+  // ukuran yang benar-benar disetel. Jadi angka ini BISA merah: menaikkan
+  // LEBAR_CETAK_MM kembali ke 98 — atau menghapus penyisipan pHYs sehingga
+  // ukurannya kembali ditentukan aplikasi pencetak — membuat bagian ini gagal.
+  //
+  // Lebarnya DISETEL (LEBAR_CETAK_MM); tingginya tidak — ia mengikuti tata
+  // letaknya. Jadi batas tinggi di sini diberi ruang 3 mm di atas 49 mm yang
+  // sekarang: perbaikan sebaris seperti `line-height` emoji menambah 2 mm dan
+  // tidak boleh membuat penjaga ini merah tanpa sebab, sementara penambahan
+  // isi yang sesungguhnya — satu baris keterangan ≈ 4 mm — tetap tertangkap.
+  const BATAS_MM = { w: 80, h: 52 };
+
+  const keluarDpi = join(tmp, "dpiPng.cjs");
+  const keluarLUBrowser = join(tmp, "labelUtils.browser.js");
+  execFileSync("npx", ["esbuild", "src/lib/dpiPng.js", "--bundle", "--format=cjs",
+    "--platform=node", `--alias:@=${akar}/src`, `--outfile=${keluarDpi}`], { cwd: akar, stdio: "pipe" });
+  execFileSync("npx", ["esbuild", "src/lib/labelUtils.js", "--bundle", "--format=iife",
+    "--global-name=LUB", "--platform=browser", `--alias:@=${akar}/src`,
+    `--outfile=${keluarLUBrowser}`], { cwd: akar, stdio: "pipe" });
+  const DP = await import(`file://${keluarDpi}`).then((m) => m.default || m);
+
+  const halamanLU = await browser.newPage();
+  await halamanLU.setContent("<html><body style='margin:0'></body></html>");
+  await halamanLU.addScriptTag({ path: keluarLUBrowser });
+  const unduh = await halamanLU.evaluate(async (b) => {
+    const jejak = [];
+    const klikAsli = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () { jejak.push({ href: this.href, nama: this.download }); };
+    let hasil, gagalTanpaTanggal, gagalDiTengah;
+    const blobAsli = HTMLCanvasElement.prototype.toBlob;
+    try {
+      hasil = await window.LUB.downloadLabel(b);
+      // Tombol yang gagal harus MENGATAKAN gagal. Sebelumnya kesalahannya
+      // hanya masuk console, dan yang menekannya tidak dapat kabar apa pun.
+      //
+      // DUA jalur kegagalan, dan keduanya perlu diuji sendiri: isian yang
+      // belum lengkap keluar lewat `return` di awal, sedangkan yang meledak
+      // di tengah jalan keluar lewat `catch`. Memeriksa yang pertama saja
+      // tidak memberi tahu apa pun tentang yang kedua — jalur `catch` sempat
+      // bisa dikembalikan jadi `return undefined` tanpa penjaga ini bergerak.
+      gagalTanpaTanggal = await window.LUB.downloadLabel({ ...b, tglBertelur: "" });
+      HTMLCanvasElement.prototype.toBlob = function (cb) { cb(null); };
+      gagalDiTengah = await window.LUB.downloadLabel(b);
+    } finally {
+      HTMLAnchorElement.prototype.click = klikAsli;
+      HTMLCanvasElement.prototype.toBlob = blobAsli;
+    }
+    if (!jejak.length) return { hasil, gagalTanpaTanggal, gagalDiTengah, bytes: null };
+    const buf = await (await fetch(jejak[0].href)).arrayBuffer();
+    // Berkasnya harus masih bisa DIBUKA sesudah pHYs disisipkan. Yang
+    // ditangkap di sini adalah kerusakan STRUKTUR — panjang potongan yang
+    // salah, potongan yang terpotong, urutan yang tidak sah. BUKAN CRC:
+    // libpng hanya memperingatkan untuk potongan tambahan yang CRC-nya
+    // salah, jadi Chromium tetap membuka berkas seperti itu dengan senang
+    // hati. CRC-nya dihitung ulang di sisi Node; lihat bagian 10.
+    const bisaDibuka = await new Promise((res) => {
+      const im = new Image();
+      im.onload = () => res(im.naturalWidth);
+      im.onerror = () => res(0);
+      im.src = jejak[0].href;
+    });
+    return { hasil, gagalTanpaTanggal, gagalDiTengah, nama: jejak[0].nama, bisaDibuka, bytes: [...new Uint8Array(buf)] };
+  }, bFormulir);
+  await browser.close();
+
+  console.log("Label formulir clutch:");
+  if (!unduh.bytes) {
+    salah(`unduhan tidak menghasilkan berkas apa pun: ${unduh.hasil?.pesan || "tanpa sebab"}`);
+  } else {
+    const png = Uint8Array.from(unduh.bytes);
+    const u32 = (i) => ((png[i] << 24) | (png[i + 1] << 16) | (png[i + 2] << 8) | png[i + 3]) >>> 0;
+    const lebarPx = u32(16), tinggiPx = u32(20);   // IHDR
+    const fisik = DP.bacaDpiPng(png);
+    if (!unduh.bisaDibuka) {
+      salah("PNG tidak bisa dibuka lagi sesudah pHYs disisipkan — strukturnya rusak");
+    }
+    // CRC-nya DIHITUNG ULANG, karena `bisaDibuka` di atas tidak bisa
+    // melihatnya: libpng hanya memperingatkan — tidak menolak — potongan
+    // tambahan yang CRC-nya salah, jadi Chromium tetap membuka berkasnya.
+    // Pembaca lain berhak menolaknya, dan label yang tidak bisa dibuka di
+    // komputer yang dipakai mencetak adalah kegagalan yang lebih buruk
+    // daripada ukuran yang salah.
+    {
+      let i = 8, potongan = 0, pHYsAda = false;
+      while (i + 12 <= png.length) {
+        const panjang = u32(i);
+        const tipe = String.fromCharCode(png[i + 4], png[i + 5], png[i + 6], png[i + 7]);
+        if (i + 12 + panjang > png.length) { salah(`potongan ${tipe} melewati akhir berkas`); break; }
+        const seharusnya = DP.crc32(png.subarray(i + 4, i + 8 + panjang));
+        if (u32(i + 8 + panjang) !== seharusnya) salah(`CRC potongan ${tipe} salah — berkasnya tidak sah`);
+        if (tipe === "pHYs") { pHYsAda = true; potongan += 1; }
+        if (tipe === "IEND") break;
+        i += 12 + panjang;
+      }
+      if (!pHYsAda) salah("tidak ada potongan pHYs di berkasnya");
+      if (potongan > 1) salah(`${potongan} potongan pHYs — berkas yang punya dua jadi tidak sah, dan pembaca berbeda memilih yang berbeda`);
+      else if (pHYsAda) console.log("  CRC seluruh potongan benar, dan pHYs-nya tepat satu.");
+
+      // Distempel DUA KALI dengan sengaja. Yang dijaga di sini adalah
+      // penggantian pHYs lama, dan itu tidak bisa dilihat dari berkas yang
+      // baru distempel sekali — ia terlihat sama baik yang lama dibuang
+      // maupun tidak. Jalur ini nyata: label yang sudah pernah distempel
+      // lewat sini lagi (ukurannya diubah, atau berkasnya diolah ulang).
+      const dua = DP.setelDpiPng(DP.setelDpiPng(png, 300), 203);
+      let j = 8, n = 0, dpiAkhir = null;
+      while (j + 12 <= dua.length) {
+        const L = ((dua[j] << 24) | (dua[j + 1] << 16) | (dua[j + 2] << 8) | dua[j + 3]) >>> 0;
+        const t = String.fromCharCode(dua[j + 4], dua[j + 5], dua[j + 6], dua[j + 7]);
+        if (t === "pHYs") n += 1;
+        if (t === "IEND") break;
+        j += 12 + L;
+      }
+      dpiAkhir = DP.bacaDpiPng(dua)?.x ?? null;
+      if (n !== 1) salah(`distempel dua kali menghasilkan ${n} potongan pHYs, bukan 1 — pHYs lama tidak diganti`);
+      else if (dpiAkhir !== 203) salah(`distempel ulang ke 203 DPI, tetapi yang terbaca ${dpiAkhir} DPI — yang dibaca adalah stempel yang lama`);
+      else console.log("  distempel ulang: pHYs lama diganti, bukan ditumpuk.");
+    }
+    if (!fisik) {
+      salah(`PNG ${lebarPx}×${tinggiPx} tidak menyatakan ukuran cetaknya (pHYs) — yang keluar dari printer ditentukan aplikasi pencetaknya, bukan oleh aplikasi ini`);
+    } else if (!fisik.satuanMeter) {
+      salah("pHYs tertulis tanpa satuan meter — angkanya jadi perbandingan belaka, bukan ukuran");
+    } else {
+      const mmW = (lebarPx / fisik.x) * 25.4;
+      const mmH = (tinggiPx / fisik.y) * 25.4;
+      let lewat = 0;
+      if (mmW > BATAS_MM.w + 1) { salah(`cetak ${mmW.toFixed(0)} mm lebar, di atas batas ${BATAS_MM.w} mm — label sebesar itu menutupi telurnya`); lewat++; }
+      if (mmH > BATAS_MM.h + 1) { salah(`cetak ${mmH.toFixed(0)} mm tinggi, di atas batas ${BATAS_MM.h} mm`); lewat++; }
+      if (Math.abs(mmW - LU.LEBAR_CETAK_MM) > 1) {
+        salah(`LEBAR_CETAK_MM menjanjikan ${LU.LEBAR_CETAK_MM} mm, tetapi berkasnya keluar ${mmW.toFixed(1)} mm`);
+      }
+      if (unduh.hasil?.lebarMm !== Math.round(LU.LEBAR_CETAK_MM)) {
+        salah(`yang dilaporkan ke tombolnya ${unduh.hasil?.lebarMm} mm, bukan ${Math.round(LU.LEBAR_CETAK_MM)} mm`);
+      }
+      console.log(lewat
+        ? `  terukur ${lebarPx}×${tinggiPx} px @ ${fisik.x} DPI = ${mmW.toFixed(0)} × ${mmH.toFixed(0)} mm — DI ATAS batas ${BATAS_MM.w} × ${BATAS_MM.h} mm.`
+        : `  ${lebarPx}×${tinggiPx} px @ ${fisik.x} DPI = ${mmW.toFixed(0)} × ${mmH.toFixed(0)} mm, di bawah batas ${BATAS_MM.w} × ${BATAS_MM.h} mm.`);
+    }
+    for (const [jalur, r] of [["isian belum lengkap", unduh.gagalTanpaTanggal], ["gagal di tengah jalan", unduh.gagalDiTengah]]) {
+      if (r?.ok !== false || !r?.pesan) {
+        salah(`${jalur}: unduhan tidak mengembalikan kegagalan berikut sebabnya — tombolnya akan diam saja`);
+      } else {
+        console.log(`  ${jalur}: unduhan mengatakan gagal ("${r.pesan}"), bukan diam.`);
+      }
+    }
+  }
 }
 
 rmSync(tmp, { recursive: true, force: true });
