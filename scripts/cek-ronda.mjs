@@ -74,6 +74,7 @@ bundel("base44/shared/bayarSurut.ts", "bayarsurut.cjs");
 bundel("src/lib/anakanKura.js", "anakan.cjs");
 bundel("src/lib/laporan.js", "laporan.cjs");
 bundel("src/lib/siklusBertelur.js", "siklus.cjs");
+bundel("src/lib/targetTahunan.js", "target.cjs");
 bundel("src/lib/jendelaSurut.js", "jendelasurut.cjs");
 bundel("src/lib/diagnosaInduk.js", "diagnosa.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
@@ -1885,6 +1886,79 @@ if (I.angkaPembacaan({ temperature: 30.5 }).suhu !== null) {
   temuan.push("angkaPembacaan: kolom lama `temperature` seharusnya TIDAK dibaca — kolomnya tidak ada di skema");
 }
 
+/* ── Target tahunan: kemajuan SELALU dibandingkan dengan waktu ─────────────
+ *
+ * Bilah kemajuan yang hanya menghitung `capai / target` menyesatkan dengan
+ * cara yang halus. Omzet 2026 ada di 21% pada 11 Oktober; seperlima bilah
+ * terbaca seperti "baru mulai", padahal 78% tahunnya sudah lewat.
+ *
+ * Yang diuji di sini karena itu bukan persentasenya saja, melainkan
+ * perbandingannya dengan waktu — dan hitungan "perlu berapa per hari", yang
+ * merupakan satu-satunya angka di panel itu yang bisa dikerjakan orang.
+ */
+const TGT = await import(`file://${join(dir, "target.cjs")}`).then((m) => m.default || m);
+const GOAL = { year: 2026, egg_production_target: 500, revenue_target: 300000000 };
+const hari = (t) => new Date(`${t}T00:00:00Z`);
+
+const targetUji = [
+  // [nama, telur, omzet, tanggal, harap]
+  ["angka nyata 11 Okt 2026", 343, 61821248, "2026-10-11",
+    { persenWaktu: 78, sisaHari: 81, telurPersen: 69, telurStatus: "waspada", omzetPersen: 21, omzetStatus: "tertinggal" }],
+  // Tepat di laju: separuh target pada separuh tahun = aman, bukan "baru separuh".
+  ["tepat di laju", 250, 150000000, "2026-07-02",
+    { persenWaktu: 50, telurPersen: 50, telurStatus: "aman", omzetPersen: 50, omzetStatus: "aman" }],
+  // Awal tahun: nol pada 1 Januari belum tertinggal apa pun.
+  ["hari pertama", 0, 0, "2026-01-01",
+    { persenWaktu: 0, telurStatus: "aman", omzetStatus: "aman" }],
+  // Hari terakhir: waktunya 100%, jadi yang belum selesai memang tertinggal.
+  ["hari terakhir", 500, 0, "2026-12-31",
+    { persenWaktu: 100, sisaHari: 0, telurStatus: "aman", omzetStatus: "tertinggal" }],
+];
+
+for (const [nama, telur, omzet, tgl, harap] of targetUji) {
+  const k = TGT.kemajuanTarget({ goal: GOAL, telur, omzet, hariIni: hari(tgl) });
+  if (!k) { temuan.push(`target ${nama}: tidak menghasilkan apa-apa`); continue; }
+  for (const [kunci, nilai] of Object.entries(harap)) {
+    const dapat =
+      kunci === "persenWaktu" ? k.persenWaktu :
+      kunci === "sisaHari" ? k.sisaHari :
+      kunci === "telurPersen" ? k.telur.persen :
+      kunci === "telurStatus" ? k.telur.status :
+      kunci === "omzetPersen" ? k.omzet.persen : k.omzet.status;
+    if (dapat !== nilai) temuan.push(`target ${nama}: ${kunci} = ${dapat}, bukan ${nilai}`);
+  }
+}
+
+// Tanpa target: NULL, bukan nol. Bilah kosong terbaca "belum tercapai",
+// padahal yang benar "belum ditetapkan" — dua keadaan yang berbeda tindakannya.
+if (TGT.kemajuanTarget({ goal: null, telur: 10, omzet: 10 }) !== null) {
+  temuan.push("target tanpa AnnualGoal: menghasilkan angka, seharusnya null");
+}
+
+// Melampaui target tidak dibulatkan jadi "pas".
+{
+  const k = TGT.kemajuanTarget({ goal: GOAL, telur: 600, omzet: 0, hariIni: hari("2026-10-11") });
+  if (k.telur.persenAsli !== 120) temuan.push(`target lampaui: persenAsli ${k.telur.persenAsli}, bukan 120`);
+  if (k.telur.persen !== 100) temuan.push(`target lampaui: bilahnya ${k.telur.persen}%, seharusnya dipotong di 100`);
+}
+
+// "Perlu per hari" adalah sisa dibagi hari yang BENAR-BENAR tersisa.
+{
+  const k = TGT.kemajuanTarget({ goal: GOAL, telur: 343, omzet: 0, hariIni: hari("2026-10-11") });
+  const benar = (500 - 343) / 81;
+  if (Math.abs(k.telur.perluPerHari - benar) > 1e-9) {
+    temuan.push(`target perluPerHari: ${k.telur.perluPerHari}, bukan ${benar}`);
+  }
+  if (TGT.kalimatSasaran(k.telur, " telur") !== "perlu 1,9 telur/hari") {
+    temuan.push(`target kalimat: "${TGT.kalimatSasaran(k.telur, " telur")}"`);
+  }
+}
+
+// Tahun kabisat punya 366 hari — kalau tidak, persenWaktu meleset sepanjang tahun.
+if (TGT.hariSetahun(2024) !== 366 || TGT.hariSetahun(2026) !== 365 || TGT.hariSetahun(2100) !== 365) {
+  temuan.push("hariSetahun: kabisat salah");
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 /* ── Clutch yang perlu dipantau di beranda ─────────────────────────── */
@@ -2256,6 +2330,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target diuji.`,
 );
 process.exit(0);

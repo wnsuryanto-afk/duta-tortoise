@@ -49,6 +49,8 @@ import HubPage from "@/pages/HubPage";
 import BreedingDetailPage from "@/pages/BreedingDetailPage";
 import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
 import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
+import { PanelTarget } from "@/components/dashboard/TargetTahunanRingkas";
+import { kemajuanTarget } from "@/lib/targetTahunan";
 import PanduanPakanPage from "@/pages/PanduanPakanPage";
 import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
 import WhatsAppLogPage from "@/pages/WhatsAppLogPage";
@@ -166,6 +168,21 @@ const LABEL12 = Array.from({ length: 12 }, (_, i) => ({
   tray_number: i % 4 === 0 ? null : i,
   candling_day_30_done: false,
 }));
+
+/*
+  Panel target tahunan, dengan angka PETERNAKAN SUNGGUHAN per 11 Okt 2026:
+  343 dari 500 telur, dan omzet Rp 61.821.248 dari Rp 300 juta.
+
+  Angka aslinya dipakai, bukan angka bulat, karena yang paling mungkin
+  terpotong justru yang paling panjang — "Rp 61,8 jt / Rp 300 jt" di panel
+  selebar 208px.
+*/
+const TARGET_NYATA = kemajuanTarget({
+  goal: { year: 2026, egg_production_target: 500, revenue_target: 300000000 },
+  telur: 343,
+  omzet: 61821248,
+  hariIni: new Date("2026-10-11T00:00:00Z"),
+});
 
 export default [
   // Data user belum termuat — keadaan paling sering terlewat, dan yang paling
@@ -526,6 +543,8 @@ export default [
   */
   ["NaikkanProduksi tanpa data", <NaikkanProduksi baris={[]} breedings={[]} tortoises={[]} hariIni={new Date("2026-10-09T12:00:00Z")} />],
   ["NaikkanProduksi dengan data", <NaikkanProduksi {...NAIKKAN} />],
+  ["PanelTarget dengan angka nyata", <PanelTarget kemajuan={TARGET_NYATA} />],
+  ["PanelTarget tanpa target", <PanelTarget kemajuan={null} />],
   ["EggLabelGenerator 12 clutch", <EggLabelGenerator breedings={LABEL12} allActiveBreedings={LABEL12} open onClose={() => {}} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
   ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],

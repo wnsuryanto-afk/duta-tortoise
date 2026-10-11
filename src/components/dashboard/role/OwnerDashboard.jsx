@@ -4,6 +4,7 @@ import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import MonthlySalesSummary from "@/components/dashboard/MonthlySalesSummary";
 import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
+import TargetTahunanRingkas from "@/components/dashboard/TargetTahunanRingkas";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -891,6 +892,14 @@ export default function OwnerDashboard({ user }) {
         title={greeting(user?.full_name)}
         subtitle={today}
         art={<TortoiseArt size="md" />}
+        /*
+          Kolom kanan kepala ini dulu berhenti sesudah tombol dan ilustrasi,
+          lalu kosong sampai dasar kartu. Target tahunannya SUDAH ada sejak
+          21 Mei 2026 — hanya tergambar di baris 1332, sesudah seluruh
+          halaman. Dipindahkan ke atas supaya pertanyaan "cukup cepat atau
+          tidak" terjawab sebelum satu widget pun digulir.
+        */
+        samping={<TargetTahunanRingkas />}
         actions={
           <Link to="/finance"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 hover-lift transition-colors">
@@ -1329,7 +1338,7 @@ export default function OwnerDashboard({ user }) {
           yang bisa menetapkannya. Editornya sudah lama ada di AnnualGoalWidget,
           hanya tidak pernah dipasang di mana-mana. Dipasang di sini, sekaligus
           menghapus salinan read-only-nya. */}
-      <AnnualGoalWidget breedings={breedings} />
+      <AnnualGoalWidget />
 
       {/* ── GRAFIK PENJUALAN & KEHADIRAN (widget yang sebelumnya menganggur) ── */}
       <MonthlySalesSummary sales={sales} />
