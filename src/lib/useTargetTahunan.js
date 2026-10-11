@@ -74,6 +74,25 @@ export function useTargetTahunan({ hariIni = new Date() } = {}) {
   });
 
   const telur = telurBaris.reduce((j, b) => j + (Number(b.egg_count) || 0), 0);
+
+  /*
+    Telur per bulan, dua belas angka.
+
+    Dipotong dari baris yang SUDAH diambil, bukan kueri kedua: hook ini
+    memang sudah menarik seluruh clutch tahun ini untuk menjumlahkannya.
+    Dipakai tren mungil di kepala beranda, yang menjawab pertanyaan
+    berikutnya sesudah "perlu 1,9 telur/hari": apakah lajunya sedang naik
+    atau sedang mati.
+
+    Bulan kosong tetap nol dan tetap digambar — Mei sampai Juli 2026 memang
+    tidak ada satu butir pun, dan lubang itu adalah musimnya, bukan data
+    yang hilang.
+  */
+  const perBulan = Array(12).fill(0);
+  for (const b of telurBaris) {
+    const bl = Number(String(b.egg_laying_date || "").slice(5, 7)) - 1;
+    if (bl >= 0 && bl < 12) perBulan[bl] += Number(b.egg_count) || 0;
+  }
   const omzet = jualBaris.reduce((j, s) => j + (Number(s.price) || 0), 0);
   const goal = goals.find((g) => Number(g.year) === tahun) || null;
 
@@ -81,6 +100,8 @@ export function useTargetTahunan({ hariIni = new Date() } = {}) {
     goal,
     telur,
     omzet,
+    perBulan,
+    bulanIni: hariIni.getMonth(),
     kemajuan: kemajuanTarget({ goal, telur, omzet, hariIni }),
     memuat: goalLoading || telurLoading || jualLoading,
   };

@@ -177,6 +177,10 @@ const LABEL12 = Array.from({ length: 12 }, (_, i) => ({
   terpotong justru yang paling panjang — "Rp 61,8 jt / Rp 300 jt" di panel
   selebar 208px.
 */
+// Telur per bulan 2026 yang sebenarnya: musim berhenti Mei-Juli, lalu mulai
+// lagi September. Angka nyata dipakai supaya batang nol ikut teruji.
+const TELUR_PER_BULAN = [0, 0, 48, 24, 0, 0, 0, 22, 136, 113, 0, 0];
+
 const TARGET_NYATA = kemajuanTarget({
   goal: { year: 2026, egg_production_target: 500, revenue_target: 300000000 },
   telur: 343,
@@ -543,7 +547,7 @@ export default [
   */
   ["NaikkanProduksi tanpa data", <NaikkanProduksi baris={[]} breedings={[]} tortoises={[]} hariIni={new Date("2026-10-09T12:00:00Z")} />],
   ["NaikkanProduksi dengan data", <NaikkanProduksi {...NAIKKAN} />],
-  ["PanelTarget dengan angka nyata", <PanelTarget kemajuan={TARGET_NYATA} />],
+  ["PanelTarget dengan angka nyata", <PanelTarget kemajuan={TARGET_NYATA} perBulan={TELUR_PER_BULAN} bulanIni={9} />],
   ["PanelTarget tanpa target", <PanelTarget kemajuan={null} />],
   ["EggLabelGenerator 12 clutch", <EggLabelGenerator breedings={LABEL12} allActiveBreedings={LABEL12} open onClose={() => {}} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
