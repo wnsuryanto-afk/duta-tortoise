@@ -329,9 +329,15 @@ export default function KeeperDashboard() {
             key: "absen", icon: Clock, label: "Absen",
             value: hasCheckedOut ? "Selesai" : hasCheckedIn ? `Masuk ${todayAttendance.check_in}` : "Belum",
             tone: hasCheckedIn ? "good" : "warn",
+            // Kartu absensinya ada tepat di bawah, lengkap dengan tombolnya.
+            // Membawa orang KELUAR untuk sesuatu yang ada di layar yang sama
+            // adalah perjalanan yang sia-sia.
+            ke: "#absensi",
           },
-          { key: "poin", icon: Star, label: "Poin disetujui", value: approvedPoints },
-          { key: "hari", icon: CheckCircle2, label: "Hari disetujui", value: approvedDays },
+          // Poin dan hari yang disetujui berakhir di slip — di sanalah
+          // angkanya jadi uang, dan di sanalah pertanyaannya terjawab.
+          { key: "poin", icon: Star, label: "Poin disetujui", value: approvedPoints, ke: "/salary-slip" },
+          { key: "hari", icon: CheckCircle2, label: "Hari disetujui", value: approvedDays, ke: "/salary-slip" },
         ]}
       />
 
@@ -344,7 +350,7 @@ export default function KeeperDashboard() {
       <AmbilBarangScan trigger="card" />
 
       {/* ── 1. CHECK-IN ── */}
-      <Card className={`p-5 border-2 ${hasCheckedOut ? "border-green-200 bg-green-50" : hasCheckedIn ? "border-primary/30 bg-primary/5" : "border-dashed border-muted-foreground/30"}`}>
+      <Card id="absensi" className={`scroll-mt-20 p-5 border-2 ${hasCheckedOut ? "border-green-200 bg-green-50" : hasCheckedIn ? "border-primary/30 bg-primary/5" : "border-dashed border-muted-foreground/30"}`}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className={`w-11 h-11 rounded-full flex items-center justify-center ${hasCheckedOut ? "bg-green-100" : "bg-primary/15"}`}>

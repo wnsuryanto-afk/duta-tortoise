@@ -5,6 +5,7 @@ import MonthlySalesSummary from "@/components/dashboard/MonthlySalesSummary";
 import AttendanceChartCard from "@/components/dashboard/AttendanceChartCard";
 import AnnualGoalWidget from "@/components/dashboard/AnnualGoalWidget";
 import TargetTahunanRingkas from "@/components/dashboard/TargetTahunanRingkas";
+import MenungguPemilik from "@/components/dashboard/MenungguPemilik";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -899,7 +900,21 @@ export default function OwnerDashboard({ user }) {
           halaman. Dipindahkan ke atas supaya pertanyaan "cukup cepat atau
           tidak" terjawab sebelum satu widget pun digulir.
         */
-        samping={<TargetTahunanRingkas />}
+        samping={
+          <div className="flex flex-col gap-3">
+            <TargetTahunanRingkas />
+            {/*
+              Di BAWAH target, bukan di atasnya.
+
+              Target menjawab "ke mana tahun ini menuju", panel ini menjawab
+              "apa yang macet menunggu saya". Yang kedua lebih mendesak tapi
+              hampir selalu kosong; menaruhnya di atas berarti pada hari-hari
+              tenang targetnya melompat-lompat posisi setiap kali panel ini
+              muncul dan hilang.
+            */}
+            <MenungguPemilik />
+          </div>
+        }
         actions={
           <Link to="/finance"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 hover-lift transition-colors">

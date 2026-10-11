@@ -251,13 +251,15 @@ export default function KepalaFeederDashboard({ user }) {
         subtitle={todayLabel}
         art={<TeamArt size="md" />}
         chips={[
+          // Ketiganya terjawab di layar ini juga: "Tim Kamu" memecah kedua
+          // angka pertama per orang, "Tugasku Sendiri" memecah yang ketiga.
           { key: "hadir", icon: Users, label: "Keeper hadir",
-            value: `${hadirHariIni}/${keepers.length}`,
+            value: `${hadirHariIni}/${keepers.length}`, ke: "#status-tim",
             tone: keepers.length > 0 && hadirHariIni >= keepers.length ? "good" : "warn" },
           { key: "checklist", icon: CheckCircle, label: "Checklist masuk",
-            value: `${checklistMasuk}/${keepers.length}`,
+            value: `${checklistMasuk}/${keepers.length}`, ke: "#status-tim",
             tone: keepers.length > 0 && checklistMasuk >= keepers.length ? "good" : "warn" },
-          { key: "poin", icon: Star, label: "Poin saya hari ini", value: myTodayPoin },
+          { key: "poin", icon: Star, label: "Poin saya hari ini", value: myTodayPoin, ke: "#tugasku" },
         ]}
       />
 
@@ -276,7 +278,7 @@ export default function KepalaFeederDashboard({ user }) {
       <MotivasiHarianCard />
 
       {/* ── SECTION 1: STATUS TIM ── */}
-      <div className="bg-card rounded-xl border border-border p-4">
+      <div id="status-tim" className="scroll-mt-20 bg-card rounded-xl border border-border p-4">
         <h2 className="font-semibold text-sm mb-3 text-foreground">Tim Kamu — {todayLabel}</h2>
         {keepers.length === 0 ? (
           <p className="text-sm text-muted-foreground">Belum ada keeper terdaftar</p>
@@ -508,7 +510,7 @@ export default function KepalaFeederDashboard({ user }) {
       <KeeperAttentionWidget />
 
       {/* ── SECTION 4: TUGASKU ── */}
-      <div className="bg-card rounded-xl border border-border p-4">
+      <div id="tugasku" className="scroll-mt-20 bg-card rounded-xl border border-border p-4">
         <h2 className="font-semibold text-sm mb-3 text-foreground">Tugasku Sendiri</h2>
         {myTodayCL ? (
           <div className="space-y-2">

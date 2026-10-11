@@ -50,6 +50,7 @@ import BreedingDetailPage from "@/pages/BreedingDetailPage";
 import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
 import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
 import { PanelTarget } from "@/components/dashboard/TargetTahunanRingkas";
+import { PanelMenunggu, susunAntrean } from "@/components/dashboard/MenungguPemilik";
 import { kemajuanTarget } from "@/lib/targetTahunan";
 import PanduanPakanPage from "@/pages/PanduanPakanPage";
 import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
@@ -549,6 +550,21 @@ export default [
   ["NaikkanProduksi dengan data", <NaikkanProduksi {...NAIKKAN} />],
   ["PanelTarget dengan angka nyata", <PanelTarget kemajuan={TARGET_NYATA} perBulan={TELUR_PER_BULAN} bulanIni={9} />],
   ["PanelTarget tanpa target", <PanelTarget kemajuan={null} />],
+  /*
+    Angkanya angka 11 Okt 2026 yang sebenarnya: 210 catatan Inisiatif dan
+    dua slip September yang masih draft. Angka karangan yang pendek
+    ("3 catatan") akan memberi panel ini lebar yang tidak pernah terjadi.
+  */
+  ["PanelMenunggu — nyata 11 Okt", <PanelMenunggu antrean={susunAntrean({
+    inisiatif: 210,
+    slip: [{ status: "draft" }, { status: "draft" }],
+    checklist: [],
+  })} />],
+  ["PanelMenunggu — keempat barisnya sekaligus", <PanelMenunggu antrean={susunAntrean({
+    inisiatif: 1250,
+    slip: [{ status: "draft" }, { status: "approved" }, { status: "approved" }],
+    checklist: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+  })} />],
   ["EggLabelGenerator 12 clutch", <EggLabelGenerator breedings={LABEL12} allActiveBreedings={LABEL12} open onClose={() => {}} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
   ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],

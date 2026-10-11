@@ -203,13 +203,16 @@ export default function AdminDashboard({ user, role = "admin" }) {
         subtitle={`${todayDate} · Update: ${lastUpdate}`}
         art={<TeamArt size="md" />}
         chips={[
-          { key: "hadir", icon: Users, label: "Hadir", value: `${hadirCount}/${totalStaff}`,
+          { key: "hadir", icon: Users, label: "Hadir", value: `${hadirCount}/${totalStaff}`, ke: "/hr",
             tone: hadirCount >= totalStaff ? "good" : "warn" },
-          { key: "approve", icon: CheckCircle, label: "Perlu approval", value: pendingApprovalCount,
+          // Panel di bawah memecah angka ini per jenis — checklist, stok,
+          // kasbon — masing-masing dengan tautannya sendiri. Satu tautan ke
+          // luar akan membuang pemecahan itu.
+          { key: "approve", icon: CheckCircle, label: "Perlu approval", value: pendingApprovalCount, ke: "#butuh-tindakan",
             tone: pendingApprovalCount > 0 ? "warn" : "good" },
-          { key: "sakit", icon: Heart, label: "Kura sakit", value: sickTortoises.length,
+          { key: "sakit", icon: Heart, label: "Kura sakit", value: sickTortoises.length, ke: "/health",
             tone: sickTortoises.length > 0 ? "warn" : "good" },
-          { key: "stok", icon: Package, label: "Stok kritis", value: totalCritical,
+          { key: "stok", icon: Package, label: "Stok kritis", value: totalCritical, ke: "/stok-unified",
             tone: totalCritical > 0 ? "bad" : "good" },
         ]}
       />
@@ -227,7 +230,7 @@ export default function AdminDashboard({ user, role = "admin" }) {
       <DiseaseClusterWarningCard canDismiss={role === "owner"} />
 
       {/* ── SECTION 1: BUTUH TINDAKAN ── */}
-      <div className={`rounded-xl border p-4 ${pendingApprovalCount === 0 ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-300"}`}>
+      <div id="butuh-tindakan" className={`scroll-mt-20 rounded-xl border p-4 ${pendingApprovalCount === 0 ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-300"}`}>
         {pendingApprovalCount === 0 ? (
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
@@ -243,7 +246,10 @@ export default function AdminDashboard({ user, role = "admin" }) {
               {pendingChecklists.length > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-amber-800">• {pendingChecklists.length} checklist belum diapprove</span>
-                  <Link to="/" className="text-xs font-medium text-amber-700 underline">Approve</Link>
+                  {/* Dulu `to="/"` — yaitu halaman yang sedang dibuka. Tombol
+                      "Approve" yang mengembalikan orang ke tempatnya berdiri
+                      terbaca sebagai aplikasi yang macet. */}
+                  <Link to="/approval-poin" className="text-xs font-medium text-amber-700 underline">Approve</Link>
                 </div>
               )}
               {stockMovements.length > 0 && (
