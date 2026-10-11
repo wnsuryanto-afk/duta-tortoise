@@ -78,7 +78,55 @@ function Bilah({ label, s, persenWaktu, nilai, satuan, format }) {
  * penjaga lebar — tidak ada backend di sana — jadi ia akan lolos pemeriksaan
  * tanpa satu huruf pun pernah diukur.
  */
-export function PanelTarget({ kemajuan: k }) {
+const BULAN = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+const BULAN_PANJANG = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+/**
+ * Tren telur per bulan — batang, bukan garis.
+ *
+ * Garis menyambung antar titik, dan sambungan itu berbohong di sini: Mei
+ * sampai Juli 2026 benar-benar NOL butir, dan garis yang melandai melewatinya
+ * terbaca seperti produksi yang menurun pelan. Yang sebenarnya terjadi adalah
+ * musim berhenti lalu mulai lagi. Batang nol menggambarkan itu apa adanya.
+ *
+ * Ia menjawab pertanyaan yang muncul tepat sesudah "perlu 1,9 telur/hari" di
+ * atasnya: apakah lajunya sedang naik atau sedang mati. Pada Oktober 2026
+ * jawabannya terlihat tanpa satu angka pun — dua batang terakhir jauh lebih
+ * tinggi daripada seluruh paruh pertama tahun.
+ */
+function TrenBulanan({ perBulan = [], bulanIni = 0 }) {
+  const maks = Math.max(...perBulan, 1);
+  const bulanAktif = perBulan[bulanIni] || 0;
+  return (
+    <div className="mt-2.5 pt-2.5 border-t border-border/60">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[11px] font-medium text-muted-foreground">Telur per bulan</span>
+        <span className="text-[10px] font-semibold text-foreground tabular-nums">
+          {BULAN_PANJANG[bulanIni]} {bulanAktif.toLocaleString("id-ID")}
+        </span>
+      </div>
+      <div className="flex items-end gap-[3px] h-8 mt-1.5" aria-hidden="true">
+        {perBulan.map((n, i) => (
+          <span
+            key={i}
+            title={`${BULAN_PANJANG[i]}: ${n}`}
+            className={`flex-1 rounded-sm ${i === bulanIni ? "bg-primary" : n > 0 ? "bg-primary/35" : "bg-muted"}`}
+            /* Batang nol tetap punya tinggi 2px: nol yang TIDAK digambar sama
+               sekali tidak bisa dibedakan dari bulan yang belum tiba. */
+            style={{ height: `${n > 0 ? Math.max(12, (n / maks) * 100) : 6}%` }}
+          />
+        ))}
+      </div>
+      <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5 tabular-nums">
+        {BULAN.map((b, i) => (
+          <span key={i} className={`flex-1 text-center ${i === bulanIni ? "font-bold text-foreground" : ""}`}>{b}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function PanelTarget({ kemajuan: k, perBulan, bulanIni = 0 }) {
   /*
     Tanpa target, panel ini TIDAK menggambar bilah nol — bilah kosong terbaca
     sebagai "belum tercapai" padahal yang benar adalah "belum ditetapkan".
@@ -132,6 +180,8 @@ export function PanelTarget({ kemajuan: k }) {
       <p className="text-[9px] text-muted-foreground mt-2 leading-tight">
         Garis tipis = posisi waktu ({k.persenWaktu}% tahun berjalan)
       </p>
+
+      {perBulan?.length === 12 && <TrenBulanan perBulan={perBulan} bulanIni={bulanIni} />}
     </a>
   );
 }
@@ -144,11 +194,11 @@ export function PanelTarget({ kemajuan: k }) {
  * menyaring data uji — alasan lengkapnya di lib/useTargetTahunan.js.
  */
 export default function TargetTahunanRingkas({ hariIni }) {
-  const { kemajuan, memuat } = useTargetTahunan(hariIni ? { hariIni } : undefined);
+  const { kemajuan, perBulan, bulanIni, memuat } = useTargetTahunan(hariIni ? { hariIni } : undefined);
 
   // Selagi dimuat panel ini TIDAK menggambar apa pun: bilah nol yang muncul
   // sekejap lalu melompat ke 69% terbaca sebagai angka yang berubah sendiri.
   if (memuat) return null;
 
-  return <PanelTarget kemajuan={kemajuan} />;
+  return <PanelTarget kemajuan={kemajuan} perBulan={perBulan} bulanIni={bulanIni} />;
 }
