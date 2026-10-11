@@ -56,6 +56,13 @@ export const NAV_ACCESS = {
     "vet-contacts", "maintenance", "printer-config", "layar-tim",
     "activity-log", "help", "supplier", "pellet-recipe", "operational-costs",
     "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
+    // Admin & manajer memakai dasbor yang SAMA (AdminDashboard), dan dasbor
+    // itu berbunyi "{n} hal menunggu persetujuanmu" lalu menawarkan tombol
+    // Approve. Tombolnya dulu menuju "/" — halaman yang sedang dibuka —
+    // karena halaman yang benar tidak ada di menu keduanya. Tombolnya sudah
+    // diarahkan ke /approval-poin; tanpa baris ini halamannya tetap tidak
+    // bisa ditemukan lewat menu, hanya lewat tombol itu.
+    "approval-poin",
     "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja", "temuan-foto",
   ],
   manajer: [
@@ -68,6 +75,13 @@ export const NAV_ACCESS = {
     "vet-contacts", "maintenance", "activity-log", "layar-tim",
     "help", "petty-cash", "supplier", "pellet-recipe", "operational-costs",
     "kritik-saran", "stock-gudang", "salary-slip", "stock-prediction", "pakan-harian", "panduan-pakan", "panduan-penyakit",
+    // Admin & manajer memakai dasbor yang SAMA (AdminDashboard), dan dasbor
+    // itu berbunyi "{n} hal menunggu persetujuanmu" lalu menawarkan tombol
+    // Approve. Tombolnya dulu menuju "/" — halaman yang sedang dibuka —
+    // karena halaman yang benar tidak ada di menu keduanya. Tombolnya sudah
+    // diarahkan ke /approval-poin; tanpa baris ini halamannya tetap tidak
+    // bisa ditemukan lewat menu, hanya lewat tombol itu.
+    "approval-poin",
     "tugas-insidentil", "daftar-belanja", "kura-diam", "breeding-calendar", "label-telur", "harus-dibeli", "alat-kerja", "temuan-foto",
   ],
   kepala_feeder: [
