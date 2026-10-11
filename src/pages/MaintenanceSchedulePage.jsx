@@ -327,11 +327,16 @@ export default function MaintenanceSchedulePage() {
 
       {/* Grid */}
       {enclosures.length === 0 ? (
+        /* Tombolnya dulu menuju "/kandang" — rute yang tidak pernah ada.
+           Ia hanya muncul saat daftar kandang KOSONG, yaitu persis saat
+           orang paling butuh ia bekerja, jadi tidak ada yang sempat
+           melaporkannya. "/enclosure" pun cuma pengalihan ke alamat di
+           bawah; ini tujuan sebenarnya. */
         <KeadaanKosong
           gambar="kura"
           judul="Belum ada kandang"
           keterangan="Checklist kebersihan mengikuti daftar kandang. Daftarkan kandangnya dulu, checklist harian akan muncul sendiri."
-          aksi={<Button asChild><Link to="/kandang">Buka Daftar Kandang</Link></Button>}
+          aksi={<Button asChild><Link to="/tortoise?tab=kandang">Buka Daftar Kandang</Link></Button>}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

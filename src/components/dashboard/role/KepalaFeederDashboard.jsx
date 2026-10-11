@@ -525,9 +525,13 @@ export default function KepalaFeederDashboard({ user }) {
         ) : (
           <p className="text-sm text-muted-foreground mb-2">Belum ada progress hari ini</p>
         )}
-        <Link to="/"
+        {/* Dulu to="/" — beranda, yaitu layar yang sedang dibuka. Tautan
+            berbunyi "Buka Panduan Lengkap" yang mengembalikan orang ke
+            tempatnya berdiri terbaca sebagai aplikasi yang macet. Tugas
+            hariannya ada di /sop, dan /sop ada di menu kepala feeder. */}
+        <Link to="/sop"
           className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-          Buka Panduan Lengkap <ChevronRight className="w-4 h-4" />
+          Buka Tugas Lengkap <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
     </div>
