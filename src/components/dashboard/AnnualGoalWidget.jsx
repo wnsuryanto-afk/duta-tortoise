@@ -1,6 +1,5 @@
-import { hanyaLaporan } from "@/lib/laporan";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Target, Pencil, Egg, Timer, TrendingUp } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useTargetTahunan } from "@/lib/useTargetTahunan";
 
-export default function AnnualGoalWidget({ breedings = [] }) {
+/*
+  Prop `breedings` DIHAPUS. Ia dulu satu-satunya sumber jumlah telur di sini,
+  dan sumber itulah yang salah: daftar 50 baris terakhir milik beranda Owner.
+  Membiarkannya sebagai prop yang diterima lalu diabaikan hanya menyiapkan
+  orang berikutnya untuk mengirim data dan mengira data itu dipakai.
+*/
+export default function AnnualGoalWidget() {
   const { role } = useCurrentUser();
   const qc = useQueryClient();
   const canEdit = ["owner", "admin", "manajer"].includes(role);
@@ -20,39 +26,28 @@ export default function AnnualGoalWidget({ breedings = [] }) {
   const [notesInput, setNotesInput] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { data: goals = [] } = useQuery({
-    queryKey: ["annual-goals"],
-    queryFn: () => base44.entities.AnnualGoal.list("-year", 5),
-  });
+  /*
+    ── Angkanya tidak lagi dihitung di sini (11 Okt 2026) ────────────────────
 
-  const currentGoal = goals.find(g => g.year === currentYear);
+    Dua cacat yang diperbaiki sekaligus, keduanya diuraikan di
+    lib/useTargetTahunan.js:
 
-  // Hitung total telur tahun ini dari breeding
-  // Dibatasi dan diurutkan. `Sale.filter({})` menarik seluruh riwayat penjualan
-  // tanpa batas setiap kali beranda dibuka, hanya untuk menjumlahkan tahun ini.
-  const { data: salesToday = [] } = useQuery({
-    queryKey: ["sales-for-goal"],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 500).then(hanyaLaporan),
-    staleTime: 5 * 60 * 1000,
-  });
-  const currentYearRevenue = salesToday
-    .filter(s => s.sale_date && s.sale_date.startsWith(String(currentYear)))
-    .reduce((sum, s) => sum + (s.price || 0), 0);
+      · telurnya dulu dijumlahkan dari prop `breedings` — daftar milik beranda
+        Owner yang dipotong 50 baris terakhir menurut TANGGAL PEMBUATAN, bukan
+        tanggal bertelur;
+      · telurnya tidak menyaring data uji, sementara omzetnya menyaring.
 
-  const currentYearEggs = breedings
-    .filter(b => b.egg_laying_date && b.egg_laying_date.startsWith(String(currentYear)))
-    .reduce((sum, b) => sum + (b.egg_count || 0), 0);
+    Sekarang keduanya datang dari satu hook yang menanyakan tahunnya langsung
+    dengan rentang tanggal, dan panel ringkas di kepala beranda membaca hook
+    yang sama — jadi dua tempat itu tidak bisa berselisih angka.
+  */
+  const { goal: currentGoal, telur: currentYearEggs, omzet: currentYearRevenue, kemajuan } = useTargetTahunan();
 
   const target = currentGoal?.egg_production_target || 0;
   const revenueTarget = currentGoal?.revenue_target || 0;
-  const progress = target > 0 ? Math.min(100, Math.round((currentYearEggs / target) * 100)) : 0;
-  const revenueProgress = revenueTarget > 0 ? Math.min(100, Math.round((currentYearRevenue / revenueTarget) * 100)) : 0;
-
-  // Countdown ke akhir tahun
-  const endOfYear = new Date(currentYear, 11, 31);
-  const today = new Date();
-  const diffMs = endOfYear - today;
-  const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  const progress = kemajuan?.telur?.persen || 0;
+  const revenueProgress = kemajuan?.omzet?.persen || 0;
+  const daysLeft = kemajuan?.sisaHari ?? 0;
 
   const openForm = () => {
     setGoalInput(currentGoal?.egg_production_target || "");
@@ -76,14 +71,17 @@ export default function AnnualGoalWidget({ breedings = [] }) {
     } else {
       await base44.entities.AnnualGoal.create(data);
     }
-    qc.invalidateQueries({ queryKey: ["annual-goals"] });
+    // Kunci hook bersama, bukan ["annual-goals"] yang sudah tidak dipakai
+    // siapa pun — menyegarkan kunci yang salah membuat target baru tersimpan
+    // tetapi tidak muncul sampai halamannya dimuat ulang.
+    qc.invalidateQueries({ queryKey: ["target-tahunan-goal"] });
     setSaving(false);
     setShowForm(false);
   };
 
   return (
     <>
-      <Card className="p-5 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+      <Card id="target-tahunan" className="p-5 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 scroll-mt-20">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">

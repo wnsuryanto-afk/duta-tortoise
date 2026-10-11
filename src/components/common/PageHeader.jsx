@@ -97,6 +97,17 @@ export default function PageHeader({
   description,
   icon: Icon,
   art,
+  /*
+    `samping` — kolom kanan kepala halaman, DI BAWAH tombol dan ilustrasi.
+
+    Ruang itu selama ini kosong sampai dasar kartu: tombolnya setinggi 40px,
+    ilustrasinya 90px, sedangkan kolom kiri yang berisi angka ringkasan bisa
+    setinggi 500px. Pada 11 Okt 2026 pemiliknya melingkari kekosongan itu.
+
+    Opsional dan tidak dipakai halaman mana pun kecuali yang mengisinya, jadi
+    kesembilan halaman lain tergambar persis seperti sebelumnya.
+  */
+  samping,
   chips,
   actions,
   children,
@@ -201,6 +212,7 @@ export default function PageHeader({
           {art && (
             <div className="hidden md:block opacity-90 animate-float">{art}</div>
           )}
+          {samping && <div className="w-full sm:w-auto">{samping}</div>}
         </div>
       </div>
     </div>
