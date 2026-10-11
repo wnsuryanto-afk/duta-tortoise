@@ -13,23 +13,38 @@
 # padahal fungsinya memang TIDAK ADA di produksi. 210 catatan Inisiatif
 # tertahan selama itu.
 #
-# Cara MEMERIKSA apakah sebuah fungsi terpasang — aman, tanpa menjalankannya
-# sampai menulis, tetapi tetap MENYENTUH handler-nya:
+# Cara MEMERIKSA apakah sebuah fungsi terpasang — TANPA menjalankannya:
 #
-#   curl -s -o /dev/null -w "%{http_code}" -X HEAD \
-#     "https://base44.app/api/apps/$BASE44_APP_ID/functions/<nama>"
+#   GET /api/apps/{app_id}/backend-functions
 #
-#   404 = tidak terpasang.   Selain itu = terpasang.
+# Ia mengembalikan setiap fungsi yang terpasang beserta KODE-nya dan otomasi
+# yang memanggilnya. Itu satu-satunya cara memeriksa yang tidak menyentuh
+# handler mana pun. (Lewat MCP jawabannya terpotong — 80 fungsi dengan
+# sumbernya utuh — jadi yang dibaca cukup `functions[].name`.)
 #
-# JANGAN menyapu seluruh daftar fungsi dengan POST untuk memeriksanya. Banyak
-# fungsi tidak punya penjaga `auth.me()` di awal — mereka memang dipanggil
-# penjadwal, bukan orang — jadi POST kosong BENAR-BENAR MENJALANKANNYA.
-# Sapuan seperti itu pada 10 Okt 2026 membuat `higieneData` mengirim 4
-# notifikasi "1 alarm tidak bisa berbunyi, 18 kelompok kembar" di luar
-# jadwalnya. Hanya itu yang terjadi — Attendance, IncidentalTask,
-# StockMovement, ShoppingList, DailyChecklist, SOPTask, OvertimeLog dan
-# WarehouseItem diperiksa, tidak satu pun berubah — tetapi lain kali bisa
-# lebih mahal.
+# ── JANGAN memeriksa dengan memanggil. HEAD pun MENJALANKAN (11 Okt 2026) ──
+#
+# Catatan di berkas ini sebelumnya menyebut HEAD "aman". ITU SALAH, dan
+# dibuktikan salah: HEAD ke `higieneData` menjawab 200, lalu lognya berbunyi
+#
+#   2026-10-11T03:29:21  info  POST → 200
+#
+# "POST", untuk permintaan yang dikirim sebagai HEAD. Platformnya meneruskan
+# apa pun verb-nya ke handler. Fungsi yang membaca badan permintaan jatuh ke
+# `catch` dan menjawab 500 — itu yang membuat HEAD TERLIHAT tidak berbahaya —
+# tetapi fungsi yang TIDAK membaca badan permintaan, yaitu semua yang memang
+# dipanggil penjadwal, berjalan sampai habis. Tidak ada penjaga `auth.me()`
+# di awalnya karena yang memanggilnya bukan orang.
+#
+# Sapuan POST pada 10 Okt membuat `higieneData` mengirim 4 notifikasi
+# "1 alarm tidak bisa berbunyi, 18 kelompok kembar" di luar jadwalnya.
+# HEAD pada 11 Okt menjalankannya sekali lagi; kali ini tidak menulis apa-apa
+# karena deduplikasinya sendiri menahan, bukan karena HEAD-nya jinak.
+#
+# 404 memang berarti "tidak terpasang", dan itu benar — tetapi harganya
+# adalah satu eksekusi sungguhan. Bayar harga itu hanya untuk SATU fungsi
+# yang sudah diketahui aman dipanggil ulang, pernah dibaca kodenya, dan
+# memang sedang diselidiki. Tidak pernah untuk mendaftar.
 #
 # ── Cara MEMASANG tanpa login CLI ───────────────────────────────────────
 #
@@ -43,7 +58,12 @@
 #   POST /api/apps/{app_id}/coding/redeploy-function/{function_name}
 #   body: { "code": "<seluruh isi entry.ts>" }
 #
-# Itu yang dipakai memasang `bayarInisiatifSurut` pada 10 Okt 2026. Ia
+# Itu yang dipakai memasang `bayarInisiatifSurut` pada 10 Okt 2026, dan
+# `onMaintenanceDone` pada 11 Okt 2026 — perbaikan `tandaLaporan` 7 Okt ikut
+# terkubur jalur yang sama, dan baru hidup setelah dipasang lewat endpoint
+# ini. Sebelum mengirim, SELALU transkripsikan ke berkas lalu `diff` terhadap
+# entry.ts aslinya: badan permintaannya diketik ulang, dan satu tanda `!`
+# yang hilang tetap bisa dikompilasi. `md5sum` keduanya harus sama. Ia
 # menunggu kompilasinya selesai dan mengembalikan diagnostik kompiler bila
 # kodenya tidak bisa dibangun, jadi jawaban sukses berarti benar-benar
 # terpasang. Impor `../../shared/*.ts` tetap bekerja seperti biasa.
