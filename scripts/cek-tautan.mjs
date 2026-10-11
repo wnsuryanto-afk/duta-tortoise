@@ -262,13 +262,74 @@ for (const [dari, ke] of alih) {
   periksaTab(ke, `src/App.jsx\n    pengalihan ${dari} →`, galat);
 }
 
+/* ── 6. SETIAP tautan, bukan hanya angka ringkasan ─────────────────────── */
+
+/*
+  Bagian 1–5 hanya melihat objek chip/ubin. Tetapi tombol "Approve" yang
+  menuju "/" di dasbor Admin adalah <Link> BIASA, dan ia lolos — ditemukan
+  11 Okt 2026 dengan mata, bukan oleh penjaga ini.
+
+  Sapuan di bawah menutup jarak itu: setiap `to="/…"` dan `navigate("/…")`
+  di seluruh src diperiksa dengan aturan yang sama. Pada sapuan pertama ia
+  menemukan dua lagi yang tidak terlihat dari layar mana pun:
+
+    · `/kandang` di layar Kebersihan Kandang — rute yang tidak pernah ada.
+      Tombolnya hanya muncul saat daftar kandang KOSONG, yaitu persis saat
+      orang paling butuh ia bekerja.
+    · `Buka Panduan Lengkap` di dasbor Kepala Feeder, menuju "/".
+
+  Tautan dinamis (`to={`/breeding/${id}`}`) dilewati: tujuannya baru ada
+  saat dijalankan. Yang diperiksa hanya yang tertulis utuh.
+*/
+
+const TAUTAN = /(?:<Link\s[^>]*?\bto=|\bnavigate\()\s*["'`](\/[^"'`${}\s>]*)["'`]/g;
+
+/**
+ * Komponen di src/components/dashboard/ hanya tergambar di beranda, yaitu
+ * rute "/". Jadi `to="/"` di sana selalu mengembalikan orang ke layar yang
+ * sedang dibukanya — tidak ada keadaan di mana itu yang dimaksud.
+ *
+ * Di luar folder itu `to="/"` sah dan banyak dipakai: logo di bilah samping,
+ * dan tombol "Kembali" di halaman penuh seperti Riwayat Kluster.
+ */
+const HANYA_DI_BERANDA = "src/components/dashboard/";
+
+let tautanDisapu = 0;
+
+for (const f of berkasJsx(AKAR)) {
+  const s2 = readFileSync(f, "utf8");
+  for (const m of s2.matchAll(TAUTAN)) {
+    const tujuan = m[1];
+    const baris = s2.slice(0, m.index).split("\n").length;
+    const sebut = `${f}:${baris}`;
+
+    if (tujuan === "/") {
+      if (f.startsWith(HANYA_DI_BERANDA)) {
+        galat.push(
+          `${sebut}\n    tautan menuju "/" dari dalam beranda itu sendiri — ` +
+          `menekannya mengembalikan orang ke layar yang sedang dibuka`,
+        );
+      }
+      continue;
+    }
+
+    tautanDisapu++;
+    const [path] = tujuan.split("?");
+    if (!ruteAda(path)) {
+      galat.push(`${sebut}\n    tautan menuju ${path} — rute itu tidak ada`);
+      continue;
+    }
+    periksaTab(tujuan, `${sebut}\n    tautan`, galat);
+  }
+}
+
 /* ── Laporan ───────────────────────────────────────────────────────────── */
 
 const bisaDiklik = semua.filter((u) => u.ke || u.keDinamis || u.klik).length;
 const beralasan = semua.filter((u) => !u.ke && !u.keDinamis && !u.klik && u.alasan).length;
 
 if (galat.length) {
-  console.error(`\nTautan angka ringkasan bermasalah (${galat.length}):\n`);
+  console.error(`\nTautan bermasalah (${galat.length}):\n`);
   for (const g of galat) console.error(`  ${g}\n`);
   console.error(
     `Angka ringkasan yang tidak bisa diklik hanya memindahkan pekerjaan ke\n` +
@@ -279,7 +340,7 @@ if (galat.length) {
 }
 
 console.log(
-  `Setiap angka ringkasan punya tujuan: ${bisaDiklik}/${semua.length} bisa diklik, ` +
-  `${beralasan} menuliskan alasannya tidak. ${alih.size} pengalihan diperiksa, dan ` +
-  `setiap ?tab= diterima halaman tujuannya.`,
+  `Angka ringkasan: ${bisaDiklik}/${semua.length} bisa diklik, ${beralasan} menuliskan ` +
+  `alasannya tidak. Tautan: ${tautanDisapu} tertulis utuh + ${alih.size} pengalihan — ` +
+  `semuanya menuju rute yang ada, dan setiap ?tab= diterima halaman tujuannya.`,
 );

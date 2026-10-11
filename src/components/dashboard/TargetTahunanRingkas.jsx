@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Target } from "lucide-react";
 import { rupiahSingkat } from "@/lib/rupiah";
 import { kalimatSasaran } from "@/lib/targetTahunan";
@@ -134,15 +133,20 @@ export function PanelTarget({ kemajuan: k, perBulan, bulanIni = 0 }) {
   */
   if (!k) {
     return (
-      <Link
-        to="/#target-tahunan"
+      /* <a>, bukan <Link>: React Router tidak menggulir ke jangkar — ia
+         hanya mengubah alamat dan halamannya diam di tempat. Aturan itu
+         sudah ditulis di RingkasanAngka, lalu saya langgar sendiri di baris
+         ini. Cabang satunya di bawah memakai <a> dengan benar, jadi dua
+         cabang komponen yang sama berperilaku berbeda. */
+      <a
+        href="#target-tahunan"
         className="block w-full md:w-52 rounded-xl border border-dashed border-border bg-card/60 p-3 text-left hover:border-primary/40 transition-colors"
       >
         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
           <Target className="w-3.5 h-3.5 text-primary" /> Target tahun ini
         </span>
         <span className="block text-[10px] text-muted-foreground mt-1">Belum ditetapkan — pasang di sini</span>
-      </Link>
+      </a>
     );
   }
 
