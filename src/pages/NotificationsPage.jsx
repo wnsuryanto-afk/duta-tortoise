@@ -165,8 +165,17 @@ export default function NotificationsPage() {
         subtitle="Peringatan dan pengumuman untuk tim"
         icon={Bell}
         chips={[
-          { key: "belum", label: "Belum dibaca", value: unreadCount, tanpaTujuan: "daftarnya tepat di bawah chip ini", tone: unreadCount > 0 ? "warn" : "good" },
-          { key: "total", label: "Di kotak", value: aktif.length, tanpaTujuan: "daftarnya tepat di bawah chip ini" },
+          /*
+            Kedua angka ini MENYARING daftarnya, bukan sekadar menyebutkannya.
+
+            Sebelumnya keduanya diam dengan alasan "daftarnya tepat di bawah".
+            Itu benar, tapi daftar di bawah memuat semua notifikasi: untuk
+            melihat tiga yang belum dibaca di antara enam puluh, orang masih
+            harus turun ke penyaring dan memilihnya sendiri. Penyaringnya
+            sudah ada (filterRead); yang kurang cuma menghubungkannya.
+          */
+          { key: "belum", label: "Belum dibaca", value: unreadCount, onClick: () => setFilterRead("belum"), tone: unreadCount > 0 ? "warn" : "good" },
+          { key: "total", label: "Di kotak", value: aktif.length, onClick: () => setFilterRead("semua") },
         ]}
         actions={
           <>

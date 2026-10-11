@@ -39,7 +39,6 @@ export default function RekapPoinGajiPage() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
   const [generating, setGenerating] = useState(null);
   const [viewSlip, setViewSlip] = useState(null);
-  const [laporan, setLaporan] = useState("bulanan");
   // Sama dengan syarat lama di /payroll-gaji untuk tab Konfigurasi & Lembur.
   const bolehKelola = ["owner", "admin", "manajer"].includes(role);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -72,6 +71,30 @@ export default function RekapPoinGajiPage() {
     const next = new URLSearchParams(searchParams);
     if (nilai === "terbitkan") next.delete("tab");
     else next.set("tab", nilai);
+    setSearchParams(next, { replace: true });
+  };
+
+  /*
+    Pilihan laporan ikut disimpan di ALAMAT, sama seperti tabnya.
+
+    Dulu ia `useState("bulanan")` — tidak terlihat di URL sama sekali — dan
+    tiga pengalihan lama menabraknya: /payroll, /daily-payroll dan /salary
+    masing-masing menuju `?tab=bonus`, `?tab=harian` dan `?tab=bulanan`.
+    Ketiganya bukan tab. Tab sah halaman ini hanya terbitkan/kasbon/catatan/
+    laporan/pengaturan, jadi ketiganya jatuh ke cadangan "terbitkan": menu
+    "Bonus & Reward" membuka "Terbitkan Slip", tanpa satu pun tanda bahwa
+    ada yang meleset.
+
+    Sekarang ketiganya menuju `?tab=laporan&laporan=<pilihan>`, dan baris di
+    bawah inilah yang membuat bagian `&laporan=` benar-benar sampai.
+  */
+  const LAPORAN_SAH = ["bulanan", "harian", "bonus"];
+  const laporanDariUrl = searchParams.get("laporan");
+  const laporan = LAPORAN_SAH.includes(laporanDariUrl) ? laporanDariUrl : "bulanan";
+  const setLaporan = (nilai) => {
+    const next = new URLSearchParams(searchParams);
+    if (nilai === "bulanan") next.delete("laporan");
+    else next.set("laporan", nilai);
     setSearchParams(next, { replace: true });
   };
 

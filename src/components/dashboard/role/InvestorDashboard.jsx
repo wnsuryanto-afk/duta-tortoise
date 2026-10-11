@@ -125,12 +125,15 @@ export default function InvestorDashboard({ user }) {
         subtitle={todayLabel}
         art={<ChartArt size="md" />}
         chips={[
-          { key: "laba", icon: DollarSign, label: "Laba bulan ini", value: rupiah(profit),
+          // Investor "Hanya Lihat", tetapi melihat tetap perlu bisa
+          // ditelusuri: keempat angka ini menuju halaman yang memang ada di
+          // menunya (finance, tortoise, breeding).
+          { key: "laba", icon: DollarSign, label: "Laba bulan ini", value: rupiah(profit), ke: "/finance?tab=laba-rugi",
             tone: profit >= 0 ? "good" : "bad" },
-          { key: "margin", icon: TrendingUp, label: "Margin", value: `${margin}%`,
+          { key: "margin", icon: TrendingUp, label: "Margin", value: `${margin}%`, ke: "/finance?tab=laba-rugi",
             tone: Number(margin) >= 15 ? "good" : "warn" },
-          { key: "kura", icon: Shell, label: "Populasi aktif", value: activeTortoises.length },
-          { key: "telur", icon: Egg, label: "Telur diinkubasi", value: eggsInProgress },
+          { key: "kura", icon: Shell, label: "Populasi aktif", value: activeTortoises.length, ke: "/tortoise" },
+          { key: "telur", icon: Egg, label: "Telur diinkubasi", value: eggsInProgress, ke: "/breeding?tab=telur" },
         ]}
         actions={
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border">
