@@ -36,6 +36,26 @@ export default function SystemMaintenancePage() {
     );
   }
 
+  /*
+    Pesan dari SERVER, bukan pesan axios.
+
+    `error.message` pada kegagalan HTTP hanya berbunyi "Request failed with
+    status code 500" — kalimat yang sama untuk setiap sebab, sehingga yang
+    terlihat pemilik tidak pernah menyebutkan apa yang sebenarnya salah.
+    Fungsi-fungsi ini SELALU menjawab `{ error: "..." }`, dan kalimat itulah
+    yang berguna. Dilaporkan 12 Okt 2026: tiga tombol gagal, dan dua di
+    antaranya (403) baru bisa dijelaskan setelah kodenya dibaca satu per
+    satu — padahal fungsinya sudah mengirimkan alasannya.
+
+    Kode statusnya tetap dibawa: 403 dan 500 menuntut tindakan yang berbeda.
+  */
+  const pesanGagal = (error) => {
+    const dari = error?.response?.data;
+    const pesan = (typeof dari === "string" ? dari : dari?.error || dari?.message) || error?.message || "galat tidak dikenal";
+    const kode = error?.response?.status;
+    return kode ? `${pesan} (HTTP ${kode})` : pesan;
+  };
+
   const handleRecalculate = async (type, functionName) => {
     setLoading(prev => ({ ...prev, [type]: true }));
     try {
@@ -44,8 +64,9 @@ export default function SystemMaintenancePage() {
       toast.success(`✅ ${getSuccessMessage(type)}`);
     } catch (error) {
       console.error("Recalculation error:", error);
-      toast.error(`❌ Gagal: ${error.message}`);
-      setResults(prev => ({ ...prev, [type]: { error: error.message } }));
+      const pesan = pesanGagal(error);
+      toast.error(`❌ Gagal: ${pesan}`);
+      setResults(prev => ({ ...prev, [type]: { error: pesan } }));
     } finally {
       setLoading(prev => ({ ...prev, [type]: false }));
     }
