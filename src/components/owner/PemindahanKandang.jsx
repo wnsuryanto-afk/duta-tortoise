@@ -10,6 +10,7 @@ import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 import KartuPemeliharaan from "@/components/owner/KartuPemeliharaan";
+import { TOMBOL_PANJANG } from "@/lib/tombolPanjang";
 
 /**
  * PemindahanKandang — mengisi nomor kandang pada kura yang belum punya.
@@ -199,7 +200,7 @@ export default function PemindahanKandang() {
         <Button
           onClick={jalankan}
           disabled={laporan.siap.length === 0 || !!sibuk}
-          className="gap-1.5"
+          className={`gap-1.5 ${TOMBOL_PANJANG}`}
           size="sm"
         >
           <Link2 className="w-3.5 h-3.5" />

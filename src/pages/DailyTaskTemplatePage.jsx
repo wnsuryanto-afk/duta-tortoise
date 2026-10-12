@@ -137,9 +137,12 @@ export default function DailyTaskTemplatePage() {
         subtitle={`${templates.length} template terdaftar`}
         icon={ListTodo}
         actions={
-        <div className="flex items-center gap-2">
+        /* flex-wrap: penyaring selebar 144px dan tombol "Tambah Template"
+           selebar 160px berdampingan menuntut 312px, sementara layar luar HP
+           lipat hanya 280px — tombolnya terdorong 80px keluar tepi. */
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={filterRole} onValueChange={setFilterRole}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Filter Role" /></SelectTrigger>
+            <SelectTrigger className="w-36 max-w-full"><SelectValue placeholder="Filter Role" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="semua">Semua Role</SelectItem>
               {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
