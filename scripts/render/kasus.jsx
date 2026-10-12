@@ -51,6 +51,7 @@ import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
 import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
 import { PanelTarget } from "@/components/dashboard/TargetTahunanRingkas";
 import { PanelMenunggu, susunAntrean } from "@/components/dashboard/MenungguPemilik";
+import NilaiInisiatifSekaligus from "@/components/sop/NilaiInisiatifSekaligus";
 import { kemajuanTarget } from "@/lib/targetTahunan";
 import PanduanPakanPage from "@/pages/PanduanPakanPage";
 import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
@@ -555,6 +556,21 @@ export default [
     dua slip September yang masih draft. Angka karangan yang pendek
     ("3 catatan") akan memberi panel ini lebar yang tidak pernah terjadi.
   */
+  /*
+    Angkanya angka antrean 12 Okt 2026 yang sebenarnya — 83 "Cari rumput",
+    62 "Pakan adabra" yang disatukan dengan "Kasik pakan adabra", dan judul
+    terpanjang yang benar-benar ada. Kelompok karangan yang judulnya pendek
+    akan memberi panel ini lebar yang tidak pernah terjadi.
+  */
+  ["NilaiInisiatifSekaligus — antrean nyata", <NilaiInisiatifSekaligus
+    settings={{ poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] }}
+    logs={[
+      ...Array.from({ length: 83 }, (_, i) => ({ id: "r" + i, item_label: "Cari rumput", period_key: "2026-0" + (7 + (i % 3)) + "-" + String((i % 28) + 1).padStart(2, "0"), done_by: "sholehuddin sholeh", done_by_email: "s@x", is_extra: true, approval_status: "pending" })),
+      ...Array.from({ length: 40 }, (_, i) => ({ id: "p" + i, item_label: "Pakan adabra", period_key: "2026-08-" + String((i % 28) + 1).padStart(2, "0"), done_by: "sholehuddin sholeh", done_by_email: "s@x", is_extra: true, approval_status: "pending" })),
+      ...Array.from({ length: 22 }, (_, i) => ({ id: "q" + i, item_label: "Kasik pakan adabra", period_key: "2026-09-" + String((i % 28) + 1).padStart(2, "0"), done_by: "Angsolo", done_by_email: "a@x", is_extra: true, approval_status: "pending" })),
+      { id: "z1", item_label: "Nambal tempat minum yg bocor w1w2 e5", period_key: "2026-09-15", done_by: "sholehuddin sholeh", done_by_email: "s@x", is_extra: true, approval_status: "pending" },
+    ]}
+  />],
   ["PanelMenunggu — nyata 12 Okt", <PanelMenunggu antrean={susunAntrean({
     inisiatif: 210,
     slip: [{ status: "draft" }, { status: "draft" }],
