@@ -77,6 +77,7 @@ bundel("src/lib/siklusBertelur.js", "siklus.cjs");
 bundel("src/lib/targetTahunan.js", "target.cjs");
 bundel("src/lib/jendelaSurut.js", "jendelasurut.cjs");
 bundel("src/lib/diagnosaInduk.js", "diagnosa.cjs");
+bundel("src/lib/diseaseClusterUtils.js", "kluster.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1929,6 +1930,46 @@ for (const [nama, telur, omzet, tgl, harap] of targetUji) {
   }
 }
 
+/*
+  ── KLUSTER PENYAKIT: yang lama berhenti meminta tindakan ──────────────────
+
+  Kartu kluster di beranda berbunyi "Periksa pergantian pakan, cuaca, atau
+  kualitas air pada tanggal 22 Jul 2026". Dideteksi tanpa batas waktu sama
+  sekali, jadi pada 12 Okt 2026 ia masih meminta sesuatu yang mustahil — dan
+  satu-satunya cara menghilangkannya adalah × yang disimpan per peramban.
+
+  Yang diuji di sini: batasnya dihitung dari tanggal TERAKHIR kluster, bukan
+  tanggal pertamanya. Kluster yang MULAI 20 hari lalu tetapi kasus terakhirnya
+  kemarin masih berjalan, dan menyembunyikannya justru kebalikan dari yang
+  dimaksud.
+*/
+const KL = await import(`file://${join(dir, "kluster.cjs")}`).then((m) => m.default || m);
+const KINI = new Date("2026-10-12T00:00:00Z");
+const klusterUji = [
+  ["kluster Juli yang nyata (82 hari)", { end_date: "2026-07-22" }, false],
+  ["tepat di batas 14 hari", { end_date: "2026-09-28" }, true],
+  ["sehari lewat batas", { end_date: "2026-09-27" }, false],
+  ["kemarin", { end_date: "2026-10-11" }, true],
+  // Mulai lama, kasus terakhirnya kemarin: MASIH berjalan.
+  ["mulai 20 hari lalu, kasus terakhir kemarin", { start_date: "2026-09-22", end_date: "2026-10-11" }, true],
+  // Tanggal di masa depan (salah ketik) tetap tampil: itu justru perlu dilihat.
+  ["tanggal besok", { end_date: "2026-10-13" }, true],
+  ["tanpa tanggal", {}, false],
+];
+for (const [nama, k, harap] of klusterUji) {
+  const lolos = KL.klusterAktif([k], { hariIni: KINI }).length === 1;
+  if (lolos !== harap) {
+    temuan.push(`kluster "${nama}": ${lolos ? "tampil" : "disembunyikan"}, seharusnya ${harap ? "tampil" : "disembunyikan"}`);
+  }
+}
+// Ambangnya harus bisa diatur dari pemanggil, bukan dipatok mati.
+if (KL.klusterAktif([{ end_date: "2026-07-22" }], { hariIni: KINI, hari: 365 }).length !== 1) {
+  temuan.push("kluster: parameter `hari` tidak dipakai");
+}
+if (KL.HARI_KLUSTER_AKTIF !== 14) {
+  temuan.push(`kluster: HARI_KLUSTER_AKTIF = ${KL.HARI_KLUSTER_AKTIF}, bukan 14`);
+}
+
 // Tanpa target: NULL, bukan nol. Bilah kosong terbaca "belum tercapai",
 // padahal yang benar "belum ditetapkan" — dua keadaan yang berbeda tindakannya.
 if (TGT.kemajuanTarget({ goal: null, telur: 10, omzet: 10 }) !== null) {
@@ -2330,6 +2371,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit diuji.`,
 );
 process.exit(0);
