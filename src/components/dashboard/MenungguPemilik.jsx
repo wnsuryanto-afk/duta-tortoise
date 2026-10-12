@@ -52,8 +52,7 @@ export function susunAntrean({ slip = [], inisiatif = 0, checklist = [] } = {}) 
       kunci: "surut",
       ke: "/system-maintenance",
       jumlah: inisiatif,
-      satuan: "catatan Inisiatif",
-      kata: "belum dinilai — masih bernilai nol poin",
+      kata: "Inisiatif belum dinilai",
     });
   }
 
@@ -65,10 +64,10 @@ export function susunAntrean({ slip = [], inisiatif = 0, checklist = [] } = {}) 
   const draft = slip.filter((s) => s.status === "draft").length;
   const disetujui = slip.filter((s) => s.status === "approved").length;
   if (draft > 0) {
-    baris.push({ kunci: "draft", ke: "/salary-slip", jumlah: draft, satuan: "slip gaji", kata: "masih draft — belum terbit" });
+    baris.push({ kunci: "draft", ke: "/salary-slip", jumlah: draft, kata: "slip gaji belum terbit" });
   }
   if (disetujui > 0) {
-    baris.push({ kunci: "bayar", ke: "/salary-slip", jumlah: disetujui, satuan: "slip gaji", kata: "sudah disetujui — belum dibayar" });
+    baris.push({ kunci: "bayar", ke: "/salary-slip", jumlah: disetujui, kata: "slip gaji belum dibayar" });
   }
 
   if (checklist.length > 0) {
@@ -76,8 +75,7 @@ export function susunAntrean({ slip = [], inisiatif = 0, checklist = [] } = {}) 
       kunci: "poin",
       ke: "/approval-poin",
       jumlah: checklist.length,
-      satuan: "checklist",
-      kata: "menunggu persetujuan poin",
+      kata: "checklist belum disetujui",
     });
   }
 
@@ -94,27 +92,44 @@ export function susunAntrean({ slip = [], inisiatif = 0, checklist = [] } = {}) 
 export function PanelMenunggu({ antrean = [] }) {
   if (antrean.length === 0) return null;
 
+  /*
+    Satu baris per antrean, bukan dua.
+
+    Bentuk pertamanya menumpuk "210 catatan Inisiatif" di atas "belum dinilai
+    — masih bernilai nol poin". Baris kedua itu sebagian besar mengulang yang
+    pertama, dan tiga antrean × dua baris membuat panelnya setinggi separuh
+    kepala beranda — pemiliknya melingkari ruang kosong yang tersisa di
+    sebelahnya pada 12 Okt 2026.
+
+    Yang dipertahankan dua hal yang benar-benar dibaca: ANGKANYA, tebal dan
+    rata-angka, dan satu kalimat pendek yang menyebut keadaannya. Yang dibuang
+    pengulangannya.
+
+    Kalimatnya tetap menyebut KEADAAN, bukan perintah: "Bayarkan sekarang" di
+    sini akan berbohong, karena tombolnya ada di halaman tujuan dan baris ini
+    hanya mengantar.
+  */
   return (
-    <div className="w-full md:w-52 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 backdrop-blur-sm">
+    <div className="w-full md:w-52 rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 backdrop-blur-sm">
       <div className="flex items-center gap-1.5">
-        <PenLine className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 flex-shrink-0" />
-        <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">Menunggu Anda</span>
+        <PenLine className="w-3 h-3 text-amber-700 dark:text-amber-400 flex-shrink-0" />
+        <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-300">Menunggu Anda</span>
       </div>
 
-      <div className="mt-2 space-y-1.5">
+      <div className="mt-1.5 space-y-1">
         {antrean.map((b) => (
           <Link
             key={b.kunci}
             to={b.ke}
-            className="block rounded-lg bg-card/70 px-2 py-1.5 hover:bg-card transition-colors"
+            className="flex items-baseline gap-1.5 rounded-md bg-card/70 px-2 py-1 hover:bg-card transition-colors min-w-0"
           >
-            <span className="block text-[11px] font-bold text-foreground tabular-nums leading-tight">
-              {b.jumlah.toLocaleString("id-ID")} {b.satuan}
+            <span className="text-[11px] font-bold text-foreground tabular-nums leading-tight flex-shrink-0">
+              {b.jumlah.toLocaleString("id-ID")}
             </span>
-            {/* Kalimatnya menyebut KEADAANNYA, bukan perintah. "Bayarkan
-                sekarang" di sini akan berbohong: tombolnya ada di halaman
-                tujuan, dan baris ini hanya mengantar. */}
-            <span className="block text-[10px] text-muted-foreground leading-tight mt-0.5">{b.kata}</span>
+            {/* `truncate`, bukan melipat: panel ini lebarnya tetap 208px, dan
+                kalimat yang melipat mengembalikan tinggi dua baris yang baru
+                saja dibuang. Kalimatnya sengaja dipendekkan supaya muat. */}
+            <span className="text-[10px] text-muted-foreground leading-tight truncate">{b.kata}</span>
           </Link>
         ))}
       </div>
