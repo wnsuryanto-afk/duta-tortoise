@@ -44,6 +44,55 @@ const DIAGNOSIS_LABELS = {
   lainnya: "Lainnya",
 };
 
+/**
+ * Berapa hari sebuah kluster masih pantas MEMINTA TINDAKAN di beranda.
+ *
+ * ── Kenapa batas ini ada ────────────────────────────────────────────────
+ *
+ * Kartu kluster di beranda berbunyi "Periksa: pergantian jenis pakan, cuaca,
+ * atau kualitas air pada tanggal 22 Jul 2026". Pada 12 Okt 2026 kalimat itu
+ * meminta sesuatu yang MUSTAHIL — tidak ada yang bisa memeriksa kualitas air
+ * bulan Juli di bulan Oktober.
+ *
+ * Deteksi di bawah tidak pernah punya batas waktu sama sekali, dan kartunya
+ * menarik seribu catatan terakhir, jadi dua kluster Juli duduk di beranda
+ * selama 82 hari. Satu-satunya cara menghilangkannya adalah menekan ×, dan
+ * tanda itu disimpan di localStorage PER PERAMBAN — ditutup di laptop, muncul
+ * lagi di HP.
+ *
+ * Peringatan yang tidak bisa dikerjakan mengajari orang berhenti membaca
+ * kartunya, dan ia akan tetap tidak terbaca pada hari kluster sungguhan
+ * muncul. Itu harga yang jauh lebih mahal daripada melewatkan satu kluster
+ * lama.
+ *
+ * Empat belas hari: satu kluster membentang paling lama 3 hari, dan dua
+ * minggu memberi ruang untuk episodenya mereda lalu ditindaklanjuti —
+ * sementara pertanyaan "pakan apa yang berganti dua minggu lalu" masih bisa
+ * dijawab catatan stok dan ingatan orang.
+ *
+ * Yang lama TIDAK hilang: /riwayat-kluster memakai detectDiseaseClusters
+ * tanpa saringan ini, jadi seluruh riwayatnya tetap utuh di sana.
+ */
+export const HARI_KLUSTER_AKTIF = 14;
+
+/**
+ * Kluster yang masih pantas meminta tindakan hari ini.
+ *
+ * Dihitung dari tanggal TERAKHIR kluster, bukan tanggal pertamanya: kluster
+ * yang mulai 15 hari lalu tetapi kasus terakhirnya kemarin masih berjalan.
+ *
+ * `hariIni` disuntikkan supaya bisa diuji.
+ */
+export function klusterAktif(clusters = [], { hariIni = new Date(), hari = HARI_KLUSTER_AKTIF } = {}) {
+  return clusters.filter((c) => {
+    if (!c?.end_date) return false;
+    const umur = differenceInCalendarDays(hariIni, parseISO(c.end_date));
+    // Umur negatif = tanggal di masa depan (salah ketik). Dibiarkan tampil:
+    // catatan bertanggal besok adalah hal yang perlu dilihat orang.
+    return umur <= hari;
+  });
+}
+
 export function diagnosisLabel(code) {
   return DIAGNOSIS_LABELS[code] || code || "—";
 }

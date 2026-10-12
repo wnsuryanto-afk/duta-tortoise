@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import { detectDiseaseClusters } from "@/lib/diseaseClusterUtils";
+import { detectDiseaseClusters, klusterAktif, HARI_KLUSTER_AKTIF } from "@/lib/diseaseClusterUtils";
 import DiseaseClusterCard from "@/components/health/DiseaseClusterCard";
 
 const STORAGE_KEY = "dismissed_disease_clusters";
@@ -53,7 +53,13 @@ export default function DiseaseClusterWarningCard({ canDismiss = false, maxShow 
     tortoises.forEach((t) => {
       if (t.id) enclosureMap[t.id] = t.enclosure || "";
     });
-    return detectDiseaseClusters(healthRecords, enclosureMap);
+    /*
+      Hanya kluster yang masih bisa DITINDAKLANJUTI yang muncul di beranda.
+      Alasan angkanya di lib/diseaseClusterUtils.js (HARI_KLUSTER_AKTIF);
+      seluruh riwayatnya tetap utuh di /riwayat-kluster, yang memanggil
+      detectDiseaseClusters tanpa saringan ini.
+    */
+    return klusterAktif(detectDiseaseClusters(healthRecords, enclosureMap));
   }, [healthRecords, tortoises]);
 
   const visible = clusters.filter((c) => !dismissed.has(c.key)).slice(0, maxShow);
@@ -80,7 +86,7 @@ export default function DiseaseClusterWarningCard({ canDismiss = false, maxShow 
         to="/riwayat-kluster"
         className="text-xs text-primary hover:underline flex items-center gap-1 px-1"
       >
-        Lihat riwayat kluster <ChevronRight className="w-3 h-3" />
+        Lihat riwayat kluster (termasuk yang lebih dari {HARI_KLUSTER_AKTIF} hari) <ChevronRight className="w-3 h-3" />
       </Link>
     </div>
   );
