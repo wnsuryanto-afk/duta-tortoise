@@ -154,6 +154,13 @@ if (temuan.length) {
 // pernah tetap hijau ketika importnya dihapus, karena tag JSX-nya masih ada.
 const USUL = "src/components/sop/UsulPoinAI.jsx";
 const PEMAKAI = "src/components/sop/TugasHariIni.jsx";
+/*
+  Urutan simpannya pindah ke sini pada 12 Okt 2026, saat penilaian sekaligus
+  per kelompok pekerjaan jadi pemanggil kedua. Penjaga ini ikut pindah alih-
+  alih dilemahkan: yang dijaga tetap sama — poin yang dinilai harus DITULIS
+  ke checklist, dan jumlahnya harus jumlah per judul per hari.
+*/
+const PENYIMPAN = "src/lib/simpanPenilaianInisiatif.js";
 
 let isiUsul = "";
 try {
@@ -277,10 +284,19 @@ try {
     berarti pekerjaan Inisiatif dibayar nol. Yang hilang bukan galat: angkanya
     tampil di layar kiper, dan tidak muncul di klaim poin hari itu.
   */
-  if (!/tulisPoinInisiatif\s*\(/.test(isiPemakai) || !/poinJudulHari\s*\(/.test(isiPemakai)) {
+  let isiPenyimpan = "";
+  try {
+    isiPenyimpan = kupasKomentar(readFileSync(join(AKAR, PENYIMPAN), "utf8"));
+  } catch {
+    isiPenyimpan = "";
+  }
+  // Pemanggilnya boleh di berkas layar ATAU di modul penyimpan bersama —
+  // yang tidak boleh adalah tidak ada di keduanya.
+  const menulisChecklist = (teks) => /tulisPoinInisiatif\s*\(/.test(teks) && /poinJudulHari\s*\(/.test(teks);
+  if (!menulisChecklist(isiPemakai) && !menulisChecklist(isiPenyimpan)) {
     gagal++;
     console.error(
-      `GAGAL  ${PEMAKAI} tidak menuliskan poin Inisiatif ke checklist.\n` +
+      `GAGAL  ${PEMAKAI} maupun ${PENYIMPAN} tidak menuliskan poin Inisiatif ke checklist.\n` +
       `   Harus memanggil tulisPoinInisiatif() dengan poinJudulHari() — yang\n` +
       `   kedua menjumlahkan judul yang sama di hari yang sama, supaya\n` +
       `   penilaian kedua tidak menimpa yang pertama.`

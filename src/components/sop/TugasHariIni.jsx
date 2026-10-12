@@ -36,10 +36,12 @@ import PakanHarianForm from "@/components/pakan/PakanHarianForm";
 import { masukLaporan, tandaChecklistBaru } from "@/lib/laporan";
 import { simpanUkuranSekali, pesanSudahDitimbang } from "@/lib/ukurSekali";
 import { pisahJudulTugas } from "@/lib/judulTugas";
-import { opsiPoin, hitungPemberian, poinTerpakaiHari, maksHarian, inisiatifMenunggu } from "@/lib/poinInisiatif";
+import { opsiPoin, poinTerpakaiHari, maksHarian, inisiatifMenunggu } from "@/lib/poinInisiatif";
 import UsulPoinAI from "@/components/sop/UsulPoinAI";
 import { tugasMirip } from "@/lib/miripTugas";
-import { pesanStatus, poinJudulHari, tulisPoinInisiatif } from "@/lib/poinKeChecklist";
+import { pesanStatus } from "@/lib/poinKeChecklist";
+import { simpanPenilaianInisiatif } from "@/lib/simpanPenilaianInisiatif";
+import NilaiInisiatifSekaligus from "@/components/sop/NilaiInisiatifSekaligus";
 import { peranPenyetuju, labelSebab } from "@/lib/persetujuanPoin";
 import InfoHint from "@/components/ui/info-hint";
 import { propsTekan } from "@/lib/a11y";
@@ -1031,93 +1033,22 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       // ada di layar tetap lebih baik daripada tidak menilai sama sekali.
     }
 
-    // Batas harian berlaku pada YANG MENERIMA, bukan pada yang menilai. Kalau
-    // kuotanya sudah habis, tugasnya tetap tercatat dinilai — yang berubah
-    // hanya poinnya, dan itu DIKATAKAN alih-alih dipotong diam-diam.
-    const { diberikan, pesan } = hitungPemberian({
-      diminta: poin,
-      logs: logsKuota,
-      email: log.done_by_email,
-      tanggal: log.period_key,
-      settings: companySettings,
-      kecualikanId: log.id,
-    });
+    /*
+      Urutannya ada di lib/simpanPenilaianInisiatif.js, bukan di sini.
 
+      Tiga tempat harus bergerak bersama — MaintenanceLog, baris checklist
+      tanggal itu, dan kabar untuk yang mengerjakan — dan sejak 12 Okt 2026
+      ada pemanggil kedua: penilaian sekaligus per kelompok pekerjaan.
+      Menyalin urutan yang mengurus UANG ke dua tempat berarti yang satu akan
+      diperbaiki tanpa yang lain.
+    */
+    let diberikan = 0;
+    let pesan = "";
     let hasilChecklist = null;
     try {
-      await base44.entities.MaintenanceLog.update(log.id, {
-        // Nol yang DIPUTUSKAN ditandai "rejected" supaya bisa dibedakan dari
-        // nol yang belum pernah dilihat siapa pun — 234 catatan lama semuanya
-        // nol jenis kedua.
-        approval_status: diberikan > 0 ? "approved" : "rejected",
-        menunggu_penilaian: false,
-        approved_by: user.full_name || user.email,
-        poin_dinilai_oleh: user.email || "",
-        approved_at: new Date().toISOString(), // ISO, sama dengan empat penulis persetujuan lain
-        poin_earned: diberikan,
-        ...(catatan ? { penilaian_note: String(catatan).trim() } : {}),
-      });
-
-      /*
-        Poinnya dituliskan juga ke baris checklist tanggal itu.
-
-        Tanpa ini penilaian hanya mengubah MaintenanceLog.poin_earned — yang
-        dibaca satu layar, "Poin Saya" milik kiper — sementara slip gaji dan
-        bonus bulanan menghitung dari DailyChecklist, tempat barisnya masuk
-        bernilai NOL dan tidak pernah diperbarui (`onMaintenanceDone` hanya
-        menambah baris yang belum ada).
-
-        `hasilChecklist.status` dikatakan apa adanya kepada penilai: untuk hari
-        yang checklist-nya sudah disetujui, barisnya dibetulkan tetapi angka
-        yang sudah dibayar TIDAK disentuh.
-      */
-      /*
-        Yang dituliskan JUMLAH poin untuk judul itu hari itu, bukan poin
-        catatan ini saja.
-
-        Kiper bisa mencatat judul yang sama dua kali sehari — pada 23 Juni 2026
-        "Cari rumput" tercatat dua kali. Di checklist keduanya mengenai SATU
-        baris, karena `onMaintenanceDone` menyatukan baris berjudul sama. Jadi
-        menuliskan poin satu catatan saja berarti penilaian kedua MENIMPA yang
-        pertama, dan kiper kehilangan poin yang sudah diberikan penilai.
-      */
-      hasilChecklist = await tulisPoinInisiatif({
-        email: log.done_by_email,
-        tanggal: log.period_key,
-        judul: log.item_label,
-        kandang: log.enclosure_name,
-        poin: poinJudulHari(logsKuota, {
-          judul: log.item_label,
-          email: log.done_by_email,
-          tanggal: log.period_key,
-          tambahan: { log, poin: diberikan },
-        }),
-      });
-
-      // Kabari yang mengerjakan — inilah yang selama ini tidak pernah ada.
-      try {
-        await base44.entities.Notification.create({
-          recipient_email: log.done_by_email,
-          title: `Inisiatif "${log.item_label}" dinilai ${diberikan} poin`,
-          message: [
-            catatan ? String(catatan).trim() : "",
-            pesan,
-            pesanStatus(hasilChecklist),
-            `Dinilai oleh ${user.full_name || user.email}.`,
-          ].filter(Boolean).join("\n\n"),
-          type: diberikan > 0 ? "success" : "info",
-          priority: "rendah",
-          category: "lainnya",
-          action_url: "/sop",
-          action_label: "Lihat",
-          related_entity_id: log.id,
-          related_entity_type: "MaintenanceLog",
-          created_at: new Date().toISOString(),
-        });
-      } catch {
-        // Penilaiannya sudah tersimpan; hanya kabarnya yang gagal.
-      }
-
+      ({ diberikan, pesan, hasilChecklist } = await simpanPenilaianInisiatif({
+        log, poin, catatan, user, settings: companySettings, logsKuota,
+      }));
       const catatanChecklist = pesanStatus(hasilChecklist);
       if (pesan) toast.warning(pesan, catatanChecklist ? { description: catatanChecklist } : undefined);
       else if (catatanChecklist) toast.warning(`Inisiatif dinilai ${diberikan} poin`, { description: catatanChecklist });
@@ -1399,6 +1330,16 @@ export default function TugasHariIni({ user, showTeamView = false }) {
             Dari hari-hari sebelumnya. Sebelum ini hanya Inisiatif hari ini yang tampil,
             jadi yang terlewat sehari tidak pernah bisa dinilai lagi.
           </p>
+
+          {/* Dipasang DI ATAS daftarnya, bukan di bawah: dengan 303 catatan,
+              yang di bawah tidak akan pernah terlihat. */}
+          <NilaiInisiatifSekaligus
+            logs={tertunggak}
+            logsSemua={semuaExtra}
+            settings={companySettings}
+            user={user}
+            onSelesai={() => { refetchAllLogs(); refetchLogs(); refetchSemuaExtra(); }}
+          />
           {tertunggak.slice(0, jumlahTertunggak).map(log => {
             const terpakaiHari = poinTerpakaiHari(semuaExtra, log.done_by_email, log.period_key, { kecualikanId: log.id });
             const mirip = tugasMirip(log.item_label, sopTasks);

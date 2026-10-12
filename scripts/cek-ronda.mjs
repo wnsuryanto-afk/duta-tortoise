@@ -78,6 +78,7 @@ bundel("src/lib/targetTahunan.js", "target.cjs");
 bundel("src/lib/jendelaSurut.js", "jendelasurut.cjs");
 bundel("src/lib/diagnosaInduk.js", "diagnosa.cjs");
 bundel("src/lib/diseaseClusterUtils.js", "kluster.cjs");
+bundel("src/lib/kelompokInisiatif.js", "kelompok.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1931,6 +1932,103 @@ for (const [nama, telur, omzet, tgl, harap] of targetUji) {
 }
 
 /*
+  ── INISIATIF DIKELOMPOKKAN: satu keputusan untuk banyak catatan ───────────
+
+  Antrean 12 Okt 2026 berisi 303 catatan tetapi hanya 79 judul, dari dua
+  orang, sepanjang 94 hari. Yang diuji di sini dua hal yang paling mudah
+  salah:
+
+  1. Pengelompokannya menyatukan pekerjaan yang sama ditulis beda ("Pakan
+     adabra" / "Kasik pakan adabra" — 62 catatan) tanpa menyatukan pekerjaan
+     yang berbeda.
+
+  2. Kuota harian menumpuk SAMBIL BERJALAN. Batasnya berlaku per orang per
+     tanggal; menghitung tiap catatan terhadap potret kuota yang sama membuat
+     dua catatan sehari masing-masing melihat kuota penuh lalu bersama-sama
+     melewatinya. Pada data sungguhan ini bukan kasus teori: 4 kelompok
+     teratas @15 poin meminta 3.075 dan hanya 2.670 yang boleh keluar.
+*/
+const KI = await import(`file://${join(dir, "kelompok.cjs")}`).then((m) => m.default || m);
+const SET_INI = { poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] };
+const log = (id, judul, tgl, email = "a@x") => ({
+  id, item_label: judul, period_key: tgl, done_by_email: email, done_by: email,
+  is_extra: true, approval_status: "pending",
+});
+
+const kelUji = KI.kelompokkanInisiatif([
+  log("1", "Pakan adabra", "2026-10-01"),
+  log("2", "Kasik pakan adabra", "2026-10-02"),
+  log("3", "Cari rumput", "2026-10-03"),
+]);
+if (kelUji.length !== 2) temuan.push(`kelompok inisiatif: ${kelUji.length} kelompok, seharusnya 2`);
+const kPakan = kelUji.find((k) => k.judul.some((j) => j.includes("adabra")));
+if (!kPakan || kPakan.jumlah !== 2) temuan.push("kelompok inisiatif: 'Pakan adabra' dan 'Kasik pakan adabra' tidak disatukan");
+if (kPakan && kPakan.judul.length !== 2) temuan.push("kelompok inisiatif: judul anggotanya tidak dibawa keluar semua");
+
+/*
+  Pekerjaan yang NYARIS tertukar harus tetap terpisah.
+
+  Pasangan ini bukan karangan: lib/miripTugas.js mencatatnya sebagai salah
+  satu dari empat kecocokan salah yang membuat ambangnya dinaikkan ke 0,6 —
+  "Bersihkan tempat cuci rumput" (30 catatan) sempat tercocokkan dengan
+  "Bersihkan rumput di pagar". Tanpa kasus ini, melonggarkan ambang sampai
+  0,2 pun tidak menjatuhkan satu uji pun: "Cari rumput" dan "Pakan adabra"
+  memang tidak punya satu kata pun yang sama, jadi ia bukan penjaga ambang.
+  Ditemukan lewat uji merah, 12 Okt 2026.
+*/
+const kelDekat = KI.kelompokkanInisiatif([
+  log("x", "Bersihkan tempat cuci rumput", "2026-10-01"),
+  log("y", "Bersihkan rumput di pagar", "2026-10-02"),
+]);
+if (kelDekat.length !== 2) {
+  temuan.push(`kelompok inisiatif: "cuci rumput" dan "rumput di pagar" disatukan — ambang kemiripannya terlalu longgar`);
+}
+
+/* Dua catatan sehari, 15 poin, batas 30 → keduanya penuh. */
+const satuHari = KI.kelompokkanInisiatif([log("a", "Cari rumput", "2026-10-01"), log("b", "Cari rumput", "2026-10-01")]);
+const r2 = KI.rencanaPemberian({ kelompok: satuHari, pilihan: { [satuHari[0].kunci]: 15 }, logsLain: [], settings: SET_INI });
+if (r2.totalDiberikan !== 30) temuan.push(`kelompok inisiatif: 2 catatan sehari @15 memberi ${r2.totalDiberikan}, seharusnya 30`);
+
+/* TIGA catatan sehari → yang ketiga kena batas. Ini yang membedakan rencana
+   yang menumpuk dari rencana yang membaca potret kuota yang sama. */
+const tigaHari = KI.kelompokkanInisiatif([
+  log("a", "Cari rumput", "2026-10-01"), log("b", "Cari rumput", "2026-10-01"), log("c", "Cari rumput", "2026-10-01"),
+]);
+const r3 = KI.rencanaPemberian({ kelompok: tigaHari, pilihan: { [tigaHari[0].kunci]: 15 }, logsLain: [], settings: SET_INI });
+if (r3.totalDiberikan !== 30) temuan.push(`kelompok inisiatif: 3 catatan sehari @15 memberi ${r3.totalDiberikan}, seharusnya 30 (yang ketiga kena batas)`);
+if (r3.jumlahTerpotong !== 1) temuan.push(`kelompok inisiatif: ${r3.jumlahTerpotong} baris terpotong, seharusnya 1`);
+
+/* Hari berbeda → masing-masing dapat kuota sendiri. */
+const beda = KI.kelompokkanInisiatif([log("a", "Cari rumput", "2026-10-01"), log("b", "Cari rumput", "2026-10-02"), log("c", "Cari rumput", "2026-10-03")]);
+const r4 = KI.rencanaPemberian({ kelompok: beda, pilihan: { [beda[0].kunci]: 15 }, logsLain: [], settings: SET_INI });
+if (r4.totalDiberikan !== 45) temuan.push(`kelompok inisiatif: 3 hari berbeda @15 memberi ${r4.totalDiberikan}, seharusnya 45`);
+
+/* Orang berbeda pada hari yang sama → kuota masing-masing. */
+const duaOrang = KI.kelompokkanInisiatif([
+  log("a", "Cari rumput", "2026-10-01", "a@x"), log("b", "Cari rumput", "2026-10-01", "a@x"),
+  log("c", "Cari rumput", "2026-10-01", "b@x"), log("d", "Cari rumput", "2026-10-01", "b@x"),
+]);
+const r5 = KI.rencanaPemberian({ kelompok: duaOrang, pilihan: { [duaOrang[0].kunci]: 15 }, logsLain: [], settings: SET_INI });
+if (r5.totalDiberikan !== 60) temuan.push(`kelompok inisiatif: 2 orang × 2 catatan @15 memberi ${r5.totalDiberikan}, seharusnya 60`);
+
+/* Poin yang SUDAH disetujui hari itu ikut memakan kuota. */
+const r6 = KI.rencanaPemberian({
+  kelompok: satuHari, pilihan: { [satuHari[0].kunci]: 15 },
+  logsLain: [{ id: "lama", is_extra: true, approval_status: "approved", done_by_email: "a@x", period_key: "2026-10-01", poin_earned: 20 }],
+  settings: SET_INI,
+});
+if (r6.totalDiberikan !== 10) temuan.push(`kelompok inisiatif: dengan 20 poin terpakai, 2 catatan @15 memberi ${r6.totalDiberikan}, seharusnya 10`);
+
+/* Kelompok tanpa angka TIDAK ikut direncanakan — penilai belum memutuskan. */
+const r7 = KI.rencanaPemberian({ kelompok: kelUji, pilihan: {}, logsLain: [], settings: SET_INI });
+if (r7.jumlahCatatan !== 0) temuan.push(`kelompok inisiatif: kelompok tanpa pilihan ikut direncanakan (${r7.jumlahCatatan} baris)`);
+
+/* Nol yang DIPILIH tetap direncanakan: "nol poin" adalah keputusan,
+   berbeda dari "belum diputuskan". */
+const r8 = KI.rencanaPemberian({ kelompok: satuHari, pilihan: { [satuHari[0].kunci]: 0 }, logsLain: [], settings: SET_INI });
+if (r8.jumlahCatatan !== 2) temuan.push(`kelompok inisiatif: pilihan 0 poin tidak direncanakan (${r8.jumlahCatatan} baris)`);
+
+/*
   ── KLUSTER PENYAKIT: yang lama berhenti meminta tindakan ──────────────────
 
   Kartu kluster di beranda berbunyi "Periksa pergantian pakan, cuaca, atau
@@ -2371,6 +2469,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif diuji.`,
 );
 process.exit(0);
