@@ -555,10 +555,10 @@ export default [
     dua slip September yang masih draft. Angka karangan yang pendek
     ("3 catatan") akan memberi panel ini lebar yang tidak pernah terjadi.
   */
-  ["PanelMenunggu — nyata 11 Okt", <PanelMenunggu antrean={susunAntrean({
+  ["PanelMenunggu — nyata 12 Okt", <PanelMenunggu antrean={susunAntrean({
     inisiatif: 210,
     slip: [{ status: "draft" }, { status: "draft" }],
-    checklist: [],
+    checklist: [{}, {}],
   })} />],
   ["PanelMenunggu — keempat barisnya sekaligus", <PanelMenunggu antrean={susunAntrean({
     inisiatif: 1250,
