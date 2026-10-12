@@ -78,6 +78,16 @@
  *                   membaca tempat yang sama; yang terakhir mengisi cache
  *                   menentukan bentuknya, jadi salah satu selalu salah.
  *                   Ditemukan 06-10-2026: tiga layar mati total.
+ *   cek-lipat       elemen yang lebih lebar daripada LAYARNYA, sehingga seluruh
+ *                   halaman bisa digeser ke samping → cek-lebar menyempitkan
+ *                   wadah tetapi layarnya tetap 1280px, jadi setiap `sm:` dan
+ *                   `md:` membaca 1280 dan susunan yang benar-benar dipakai HP
+ *                   tidak pernah digambar. Diukur 12-10-2026 pada lebar
+ *                   sungguhan: 15 luapan di 9 layar pada 280px (layar luar HP
+ *                   lipat saat terlipat), 3 pada 320px, nol dari 360px ke atas.
+ *                   673px — layar dalam HP lipat, di antara sm: dan md: —
+ *                   menangkap cacat yang tidak terlihat dari lebar mana pun
+ *                   yang lain.
  *   cek-tautan      angka ringkasan yang tidak membawa ke mana pun, dan yang
  *                   membawa ke tempat yang salah tanpa terlihat rusak →
  *                   disurvei 11-10-2026: 24 angka di sembilan berkas tidak
@@ -106,7 +116,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

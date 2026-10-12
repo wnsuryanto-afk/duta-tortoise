@@ -825,7 +825,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
           onGenerateSKU={handleGenerateSKU}
           generatingSKU={generatingSKU}
         />
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
           <Button variant="outline" className="gap-1.5 h-9 text-sm" onClick={() => setShowScanner(true)}>
             <QrCode className="w-4 h-4" /> Scan Barang
           </Button>

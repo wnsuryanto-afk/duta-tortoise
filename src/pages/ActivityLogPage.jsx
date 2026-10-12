@@ -328,10 +328,14 @@ export default function ActivityLogPage() {
         )}
 
         {/* Date range */}
-        <div className="flex items-center gap-1.5">
-          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-36" title="Dari tanggal" />
-          <span className="text-muted-foreground text-xs">–</span>
-          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-36" title="Sampai tanggal" />
+        {/* min-w-0 pada kedua kotak: anggota flex punya min-width:auto,
+            yaitu lebar intrinsik kotak tanggal, sehingga `w-36` tidak pernah
+            benar-benar boleh mengecil. Dua kotak 144px + pemisah meluap 26px
+            di layar 280px. */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-36 min-w-0" title="Dari tanggal" />
+          <span className="text-muted-foreground text-xs flex-shrink-0">–</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-36 min-w-0" title="Sampai tanggal" />
         </div>
 
         {hasAnyFilter && (

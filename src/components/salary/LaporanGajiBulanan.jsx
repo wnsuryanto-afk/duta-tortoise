@@ -250,9 +250,9 @@ export default function LaporanGajiBulanan() {
             Kalkulasi otomatis: gaji pokok + KPI + lembur + sayur - absen - kasbon
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-48 max-w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
