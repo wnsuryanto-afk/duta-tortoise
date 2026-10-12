@@ -18,6 +18,7 @@ import BayarInisiatifSurut from "@/components/owner/BayarInisiatifSurut";
 import AISaranToggle from "@/components/settings/AISaranToggle";
 import PageHeader from "@/components/common/PageHeader";
 import { kisiWadah } from "@/lib/kisiWadah";
+import { TOMBOL_PANJANG } from "@/lib/tombolPanjang";
 
 export default function SystemMaintenancePage() {
   const { role } = useCurrentUser();
@@ -276,7 +277,7 @@ export default function SystemMaintenancePage() {
               variant="outline"
               onClick={() => handleRecalculate("tagLegacy", "tagLegacyTestData")}
               disabled={loading.tagLegacy}
-              className="w-full gap-2 border-purple-300 text-purple-800 hover:bg-purple-50"
+              className={`w-full gap-2 border-purple-300 text-purple-800 hover:bg-purple-50 ${TOMBOL_PANJANG}`}
             >
               <RefreshCw className={`w-4 h-4 ${loading.tagLegacy ? 'animate-spin' : ''}`} />
               {loading.tagLegacy ? "Memproses..." : "Jalankan Tagging Data Test Lama"}

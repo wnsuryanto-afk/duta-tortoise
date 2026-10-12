@@ -485,9 +485,20 @@ export default function OtomatisasiPage() {
                       <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground flex-shrink-0">
                         {item.kode}
                       </span>
+                      {/*
+                        `break-words` pada judulnya, bukan sekadar melipat baris.
+
+                        Melipat sudah diizinkan di sini (white-space normal),
+                        tetapi pada layar 280px kotak ini tinggal 114px
+                        sementara satu KATA di dalamnya butuh 122px —
+                        "menyesuaikan", "penyimpangan". Kata yang lebih lebar
+                        daripada kotaknya tidak bisa diselamatkan dengan
+                        pindah baris; tanpa izin memutus kata, ia dipotong di
+                        tengah huruf tanpa elipsis. Diukur 12 Okt 2026.
+                      */}
                       <span className="min-w-0 flex-1">
-                        <span className="block font-semibold text-[15px] leading-tight">{item.nama}</span>
-                        <span className="block text-[11px] text-muted-foreground">
+                        <span className="block font-semibold text-[15px] leading-tight break-words">{item.nama}</span>
+                        <span className="block text-[11px] text-muted-foreground break-words">
                           {item.jadwal}
                           {jejak ? ` · terakhir ${jejak}` : ""}
                         </span>

@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { nilaiPoinBentrok } from "@/lib/nilaiPoin";
 import { rupiah } from "@/lib/rupiah";
+import { TOMBOL_PANJANG } from "@/lib/tombolPanjang";
 
 
 export default function TargetPoinSettings() {
@@ -123,7 +124,7 @@ export default function TargetPoinSettings() {
           </p>
         </div>
 
-        <Button asChild variant="outline" className="gap-2 w-full sm:w-auto">
+        <Button asChild variant="outline" className={`gap-2 w-full sm:w-auto ${TOMBOL_PANJANG}`}>
           <Link to="/pengaturan-poin">
             <ArrowRight className="w-4 h-4" /> Buka Pengaturan Poin & Simulasi
           </Link>

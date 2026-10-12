@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import AccessDenied from "@/components/common/AccessDenied";
 import { propsTekan } from "@/lib/a11y";
 import PageHeader from "@/components/common/PageHeader";
+import { TOMBOL_PANJANG } from "@/lib/tombolPanjang";
 import {
   ShieldCheck, Eye, EyeOff, Send, Save, Loader2, CheckCircle2,
   AlertCircle, MessageCircle, Phone, Users, RefreshCw, Copy, Sunrise,
@@ -1249,7 +1250,7 @@ export default function PengaturanWhatsAppPage() {
             onClick={handleSendSummaryNow}
             disabled={sendingSummary || (!savedToken && !token.trim()) || !canSendSummary}
             variant="outline"
-            className="w-full gap-1.5"
+            className={`w-full gap-1.5 ${TOMBOL_PANJANG}`}
           >
             {sendingSummary ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             🧪 Kirim Ringkasan Sekarang

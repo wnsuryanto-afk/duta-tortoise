@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ukur } from "./lebar/ukur.mjs";
 
 /**
  * cek-lipat.mjs — tidak ada yang meluap keluar layar, di lebar HP yang nyata.
@@ -64,6 +65,22 @@ const LEBAR = [280, 320, 412, 673, 768];
 
 /** Berapa kasus paling sedikit yang harus tergambar supaya hasilnya dipercaya. */
 const MINIMAL_KASUS = 100;
+
+/**
+ * Lebar yang juga diperiksa TULISAN TERPOTONG-nya, bukan cuma luapannya.
+ *
+ * cek-lebar sudah melakukannya di 360px dengan pengukur yang sama
+ * (lebar/ukur.mjs — satu salinan, dipakai dua penjaga). Tetapi bingkainya
+ * dipatok 360, jadi 280px tidak pernah terjangkau. Diukur 12 Okt 2026 pada
+ * lebar itu: 8 tulisan terpotong di 6 layar — enam di antaranya label tombol
+ * yang berupa kalimat, dan dua judul yang satu KATA-nya (122px) lebih lebar
+ * daripada kotaknya (114px), sehingga melipat baris pun tidak menolong.
+ *
+ * Hanya 280px: lebar lain sudah dijaga cek-lebar lewat wadah sempitnya, dan
+ * memeriksa kelimanya akan melipatgandakan waktu jalan tanpa menambah cacat
+ * yang bisa ditemukan.
+ */
+const LEBAR_PERIKSA_TEKS = new Set([280]);
 
 /** Diukur di dalam halaman; dikirim sebagai teks, jadi harus mandiri. */
 function luapan(lebarLayar) {
@@ -161,6 +178,20 @@ for (const w of LEBAR) {
         `      kelas: ${t.kelas}`,
       );
     }
+    if (LEBAR_PERIKSA_TEKS.has(w)) {
+      const lihat = new Set();
+      for (const t of (await hal.evaluate(ukur, w)) || []) {
+        if (t.jenis !== "terpotong") continue; // "lewat tepi" sudah dijawab luapan()
+        const k = t.teks + "|" + t.kelas;
+        if (lihat.has(k)) continue;
+        lihat.add(k);
+        galat.push(
+          `layar ${w}px — ${nama[i]}\n` +
+          `      tulisan terpotong +${t.lebih}px  "${t.teks}"\n` +
+          `      kelas: ${t.kelas}\n      induk: ${t.induk}`,
+        );
+      }
+    }
   }
   await hal.close();
 }
@@ -183,7 +214,8 @@ if (galat.length) {
 }
 
 console.log(
-  `Tidak ada yang keluar layar: ${totalDiukur} pengukuran pada layar ` +
-  `${LEBAR.join("/")}px — termasuk 280px (HP lipat saat terlipat) dan 673px ` +
-  `(saat dibuka, di antara titik henti sm: dan md:).`,
+  `Tidak ada yang keluar layar dan tidak ada tulisan terpotong: ${totalDiukur} ` +
+  `pengukuran pada layar ${LEBAR.join("/")}px — termasuk 280px (HP lipat saat ` +
+  `terlipat, tulisannya ikut diperiksa) dan 673px (saat dibuka, di antara ` +
+  `titik henti sm: dan md:).`,
 );

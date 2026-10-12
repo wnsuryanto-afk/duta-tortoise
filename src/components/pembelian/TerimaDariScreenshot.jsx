@@ -52,6 +52,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { KATEGORI_PEMBELIAN } from "@/lib/kategoriBarang";
 import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
 import { rupiah } from "@/lib/rupiah";
+import { TOMBOL_PANJANG } from "@/lib/tombolPanjang";
 
 const hariIni = () => new Date().toISOString().split("T")[0];
 
@@ -264,7 +265,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
 
   return (
     <>
-      <Button type="button" variant="outline" className="gap-1.5" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" className={`gap-1.5 ${TOMBOL_PANJANG}`} onClick={() => setOpen(true)}>
         <ScanLine className="w-4 h-4" /> Catat pesanan dari screenshot
       </Button>
 
