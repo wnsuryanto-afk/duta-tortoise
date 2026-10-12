@@ -172,7 +172,10 @@ export default function LabaRugiWidget() {
 
       {/* Satu-satunya angka bulanan yang tersisa di kartu ini, dan labelnya
           menyebutkan itu — biaya per ekor memang hanya berarti per bulan. */}
-      <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+      {/* flex-wrap: labelnya flex-shrink-0 — ia menolak mengecil — jadi di
+          layar sempit "Rp 100.000 (estimasi)" di sebelahnya yang terdorong
+          keluar. Dengan wrap, angkanya turun ke baris berikutnya. */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
         <span className="flex-shrink-0">Biaya per ekor bulan ini</span>
         <span className="font-semibold tabular-nums text-right">
           {rupiah(costData?.biayaPerEkor || 0)}

@@ -216,9 +216,9 @@ export default function LaporanBonusReward() {
             Untuk gaji rutin bulanan (termasuk bonus poin KPI), lihat tab <span className="font-semibold">Terbitkan Slip</span>.
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-48 max-w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

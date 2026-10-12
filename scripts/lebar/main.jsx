@@ -66,12 +66,23 @@ function Satu({ el, nama }) {
 
 function App() {
   const [i, setI] = useState(0);
+  /*
+    Lebar bingkai bisa diganti saat berjalan, bawaannya tetap 360.
+
+    cek-lebar menyempitkan WADAH di layar lebar; itu tidak pernah bisa
+    melihat cacat yang muncul karena titik henti Tailwind, sebab `sm:` dan
+    `md:` membaca lebar LAYAR. cek-lipat menyempitkan layarnya sungguhan
+    lalu menyuruh bingkai ini mengikutinya dengan __lebarBingkai(null),
+    sehingga yang diukur adalah susunan yang benar-benar dipakai HP itu.
+  */
+  const [lebar, setLebar] = useState(360);
   useEffect(() => { window.__kasus = kasus.map(([n]) => n); window.__i = i; }, [i]);
   window.__pindah = (n) => setI(n);
+  window.__lebarBingkai = (px) => setLebar(px == null ? "100%" : px);
   const [nama, el] = kasus[i] || ["—", null];
   window.__nama = nama;
   return (
-    <div id="bingkai" style={{ width: 360, overflow: "visible" }}>
+    <div id="bingkai" style={{ width: lebar, overflow: "visible" }}>
       {el ? <Satu key={i} el={el} nama={nama} /> : null}
     </div>
   );

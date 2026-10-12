@@ -182,7 +182,7 @@ export default function UserManagement() {
           { r: "investor",       emoji: "👁", desc: "Investor" },
         ].map(({ r, emoji, desc }) => (
           <Card key={r} className="p-3 text-center cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setRoleFilter(roleFilter === r ? "semua" : r)}>
-            <div className="flex items-center justify-center gap-1 mb-1">
+            <div className="flex flex-wrap items-center justify-center gap-1 mb-1">
               <span className="text-lg">{emoji}</span>
               <Badge variant="outline" className={`text-xs ${ROLE_COLORS[r]}`}>{desc}</Badge>
             </div>

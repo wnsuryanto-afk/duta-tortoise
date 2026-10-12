@@ -54,7 +54,12 @@ export default function TombolStokCepat({ threshold = 500000 }) {
     <>
       <Card className="p-3">
         <p className="text-xs text-muted-foreground mb-2">Catat pergerakan barang</p>
-        <div className="flex gap-2">
+        {/* flex-wrap: kedua tombol lebar minimumnya 157px (teksnya
+            whitespace-nowrap), jadi di layar 280px — layar luar HP lipat —
+            keduanya berdampingan meluap 56px keluar kartu. Yang mengatur
+            adalah lebar WADAH, bukan titik henti layar, jadi ia juga benar
+            saat kartu ini dipakai di kolom sempit. */}
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             className="flex-1 gap-2 h-11 border-green-300 text-green-800 hover:bg-green-50"
