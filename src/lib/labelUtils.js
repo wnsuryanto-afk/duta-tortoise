@@ -75,6 +75,24 @@ export function buildLabelHTML({ maleCode, femaleCode, maleEnclosure, femaleEncl
   const tglStr = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
   const hatchD = new Date(d.getTime() + 90 * 86400000);
   const hatch = hatchD.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  /*
+    Nama spesies, generasi, dan alamat situs — tiga yang diperbaiki 12 Okt 2026.
+
+    Yang tercetak sebelumnya "Sulcata geochelone sulcata": bukan nama sah
+    dalam aturan mana pun — genusnya huruf kecil, urutannya terbalik, dan
+    kata terakhirnya ditulis dua kali. Yang benar Centrochelys sulcata.
+    labelRingkas.js sudah menulisnya benar sejak 5 Okt, jadi dua label untuk
+    kotak yang sama selama ini menyebut dua nama berbeda.
+
+    Lencana generasi dan baris domainnya dihapus atas keputusan pemilik;
+    alasan masing-masing ada di scripts/cek-label.mjs bagian 4b, yang juga
+    menjaganya supaya tidak kembali tanpa disadari.
+
+    Penjelasan ini SENGAJA komentar JS, bukan komentar HTML di dalam
+    template di bawah: komentar HTML ikut terbawa ke markup tiap label,
+    sehingga kata "geochelone" tetap ada di berkas yang dikirim ke printer
+    meski tidak tergambar. Penjaganya menangkap itu, dan benar.
+  */
   const qrImg = qrDataUrl ? `<img src="${qrDataUrl}" width="78" height="78" style="display:block" />` : "";
   return `
 <div style="width:380px;-webkit-text-size-adjust:100%;text-size-adjust:100%;font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,#f0fdf4,#fefce8);border-radius:14px;border:2px solid #16a34a;overflow:hidden">
@@ -117,13 +135,11 @@ export function buildLabelHTML({ maleCode, femaleCode, maleEnclosure, femaleEncl
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
       <div style="background:#fff;border-radius:9px;padding:4px;border:2px solid #16a34a">${qrImg}</div>
-      <div style="background:#15803d;color:#fff;border-radius:20px;padding:2px 7px;font-size:7px;font-weight:700">F2 · Captive-bred</div>
       <div style="font-size:6px;color:#6b7280;text-align:center;line-height:1.3">Scan untuk<br>info kura</div>
     </div>
   </div>
   <div style="background:linear-gradient(90deg,#15803d,#16a34a);padding:4px 13px;display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:7px;color:#bbf7d0">🌿 Sulcata geochelone sulcata</div>
-    <div style="font-size:7px;color:#bbf7d0">dutatortoises.com</div>
+    <div style="font-size:7px;color:#bbf7d0">🌿 Centrochelys sulcata</div>
   </div>
 </div>`;
 }
