@@ -112,6 +112,50 @@ for (const u of UKURAN) {
 }
 if (kembali === 0) console.log(`  ${DIBUANG.length} keterangan tetap tidak ada di ${UKURAN.length * CLUTCH.length} label.`);
 
+// ── 4b. Label FORMULIR CLUTCH: klaim yang tidak didukung data ─────────────
+//
+// Bagian 4 di atas menjaga labelRingkas. Tetapi tombol yang benar-benar
+// ditekan kiper tiap mencatat clutch menggambar dari src/lib/labelUtils.js,
+// dan berkas itu tidak pernah ikut dijaga — ia masih mencetak tiga hal yang
+// keliru sampai 12 Okt 2026:
+//
+//   "Sulcata geochelone sulcata"  bukan nama sah dalam aturan mana pun:
+//                                 genusnya huruf kecil, urutannya terbalik,
+//                                 dan "sulcata" ditulis dua kali. Yang benar
+//                                 Centrochelys sulcata.
+//   "F2 · Captive-bred"           dipatok di kode untuk SEMUA clutch, padahal
+//                                 entitas Tortoise tidak punya kolom generasi
+//                                 sama sekali — jadi tidak ada data yang bisa
+//                                 membenarkan atau menyalahkannya. labelRingkas
+//                                 bahkan menyebut F1. Sulcata masuk CITES
+//                                 Appendix II; klaim asal-usul yang tidak
+//                                 didukung apa pun lebih berisiko daripada
+//                                 tidak ada klaim. Dihapus atas keputusan
+//                                 pemilik, 12 Okt 2026.
+//   "dutatortoises.com"           tidak muncul di mana pun lagi di repo ini;
+//                                 alamat yang benar-benar dipakai aplikasi
+//                                 adalah dutatortoise.base44.app dan surelnya
+//                                 dutatortoise@gmail.com — keduanya tunggal.
+//                                 Dihapus; QR-nya sudah membawa alamat yang
+//                                 benar.
+//
+// Komentar dikupas dulu: alasan di atas menyebut kata-kata itu, dan penjaga
+// yang membaca komentarnya sendiri akan menuduh berkas yang sudah benar.
+const sumberLU = kupasKomentar(readFileSync(join(akar, "src/lib/labelUtils.js"), "utf8"));
+const TERLARANG_LU = ["geochelone", "Captive-bred", "dutatortoises.com"];
+console.log("Label formulir clutch — klaim:");
+let klaimSalah = 0;
+for (const kata of TERLARANG_LU) {
+  if (sumberLU.includes(kata)) { salah(`labelUtils.js masih mencetak "${kata}"`); klaimSalah++; }
+}
+if (!sumberLU.includes("Centrochelys sulcata")) {
+  salah('labelUtils.js tidak lagi mencetak nama spesies "Centrochelys sulcata"');
+  klaimSalah++;
+}
+if (klaimSalah === 0) {
+  console.log("  nama spesiesnya Centrochelys sulcata; tidak ada klaim generasi maupun domain.");
+}
+
 // ── 5. Yang HARUS ada, ada ────────────────────────────────────────────────
 console.log("Isi wajib:");
 for (const u of UKURAN) {
