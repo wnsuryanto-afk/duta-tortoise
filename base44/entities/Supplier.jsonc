@@ -1,42 +1,63 @@
 {
   "name": "Supplier",
-  "type": "object",
   "properties": {
-    "name": {
+    "address": {
+      "type": "string"
+    },
+    "catatan_kirim": {
+      "description": "Syarat kirimnya apa adanya: minimum order, ongkir, hari yang bisa, area yang dijangkau.",
+      "type": "string"
+    },
+    "city": {
       "type": "string"
     },
     "contact_person": {
       "type": "string"
     },
     "hp_whatsapp": {
-      "type": "string",
-      "description": "Nomor HP/WhatsApp"
-    },
-    "address": {
+      "description": "Nomor HP/WhatsApp",
       "type": "string"
     },
-    "city": {
+    "irama_kirim": {
+      "description": "Seberapa sering sanggup kirim. Hanya berarti bila rutin_kirim true.",
+      "enum": [
+        "harian",
+        "2_hari",
+        "mingguan",
+        "2_minggu",
+        "bulanan",
+        "sesuai_pesanan"
+      ],
       "type": "string"
     },
-    "specialty": {
-      "type": "string",
-      "description": "e.g. Pakan & Vitamin, Alat Kerja"
+    "is_preferred": {
+      "default": false,
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string"
     },
     "notes": {
       "type": "string"
     },
-    "is_preferred": {
-      "type": "boolean",
-      "default": false
-    },
     "rating": {
-      "type": "number",
+      "maximum": 5,
       "minimum": 1,
-      "maximum": 5
+      "type": "number"
+    },
+    "rutin_kirim": {
+      "default": false,
+      "description": "Sanggup mengirim rutin, bukan hanya sekali saat ditanya. Ditambahkan 17 Okt 2026: pemiliknya mencari supplier sayur yang bisa kirim rutin, dan sebelum ini tidak ada tempat mencatatnya sama sekali.",
+      "type": "boolean"
+    },
+    "specialty": {
+      "description": "e.g. Pakan & Vitamin, Alat Kerja",
+      "type": "string"
     }
   },
   "required": [
     "name",
     "hp_whatsapp"
-  ]
+  ],
+  "type": "object"
 }

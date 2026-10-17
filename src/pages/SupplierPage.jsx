@@ -14,6 +14,7 @@ import { isManagerLevel } from "@/lib/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { normalizePhone } from "@/lib/normalizePhone";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
+import PasarSayurTab from "@/components/supplier/PasarSayurTab";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import PageHeader from "@/components/common/PageHeader";
 
@@ -28,7 +29,7 @@ function StarRating({ rating }) {
 }
 
 function SupplierForm({ supplier, onClose, onSaved }) {
-  const [form, setForm] = useState(supplier || { name: "", contact_person: "", hp_whatsapp: "", address: "", city: "", specialty: "", rating: 5, is_preferred: false, notes: "" });
+  const [form, setForm] = useState(supplier || { name: "", contact_person: "", hp_whatsapp: "", address: "", city: "", specialty: "", rating: 5, is_preferred: false, notes: "", rutin_kirim: false, irama_kirim: "mingguan", catatan_kirim: "" });
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -66,6 +67,53 @@ function SupplierForm({ supplier, onClose, onSaved }) {
       <div>
         <Label className="text-xs">Rating (1-5)</Label>
         <Input type="number" min={1} max={5} value={form.rating || 5} onChange={e => setForm(p=>({...p,rating:Number(e.target.value)}))} className="mt-1 w-24" />
+      </div>
+      {/*
+        Sanggup kirim RUTIN, dan seberapa sering.
+
+        Ditambahkan 17 Okt 2026: yang dicari pemiliknya supplier sayur yang
+        bisa kirim berulang, bukan yang menjual sekali saat ditanya — dan
+        sebelum ini tidak ada tempat mencatatnya sama sekali, jadi tidak ada
+        cara membedakan keduanya di daftar.
+      */}
+      <div className="rounded-lg border border-border p-2.5 space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!!form.rutin_kirim}
+            onChange={e => setForm(p=>({...p, rutin_kirim: e.target.checked}))}
+            className="w-4 h-4 accent-primary"
+          />
+          <span className="text-xs font-medium">Sanggup kirim rutin</span>
+        </label>
+        {form.rutin_kirim && (
+          <>
+            <div>
+              <Label className="text-xs">Seberapa sering</Label>
+              <select
+                value={form.irama_kirim || "mingguan"}
+                onChange={e => setForm(p=>({...p, irama_kirim: e.target.value}))}
+                className="mt-1 w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="harian">Tiap hari</option>
+                <option value="2_hari">Tiap 2 hari</option>
+                <option value="mingguan">Tiap minggu</option>
+                <option value="2_minggu">Tiap 2 minggu</option>
+                <option value="bulanan">Tiap bulan</option>
+                <option value="sesuai_pesanan">Sesuai pesanan</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Syarat kirim</Label>
+              <Input
+                value={form.catatan_kirim || ""}
+                onChange={e => setForm(p=>({...p, catatan_kirim: e.target.value}))}
+                placeholder="minimum order, ongkir, hari yang bisa, area"
+                className="mt-1"
+              />
+            </div>
+          </>
+        )}
       </div>
       <div>
         <Label className="text-xs">Catatan</Label>
@@ -193,10 +241,17 @@ export default function SupplierPage() {
       />
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-sm">
+        <TabsList className="grid w-full grid-cols-3 max-w-md">
           <TabsTrigger value="supplier">Supplier</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
+          {/* "Harga & sayur" terpotong 5px di layar 280px — layar luar HP lipat.
+              Tiga tab di lebar itu tidak memberi ruang untuk judul sepanjang itu. */}
+          <TabsTrigger value="pasar">Harga</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="pasar" className="mt-4">
+          <PasarSayurTab />
+        </TabsContent>
 
         <TabsContent value="supplier" className="mt-4 space-y-6">
       <div className="relative max-w-sm">
@@ -223,6 +278,10 @@ export default function SupplierPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm">{s.name}</span>
                     {s.is_preferred && <Badge className="bg-amber-100 text-amber-700 text-[10px]">⭐ Preferred</Badge>}
+                    {/* Yang dicari pemiliknya supplier yang bisa kirim BERULANG,
+                        jadi penandanya harus terbaca dari daftar — bukan hanya
+                        sesudah kartunya dibuka. */}
+                    {s.rutin_kirim && <Badge className="bg-accent/15 text-accent text-[10px]">🔁 Kirim rutin</Badge>}
                   </div>
                   {s.specialty && <p className="text-xs text-muted-foreground mt-0.5">{s.specialty}</p>}
                   <div className="flex items-center gap-3 mt-1.5">

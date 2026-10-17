@@ -79,6 +79,7 @@ bundel("src/lib/jendelaSurut.js", "jendelasurut.cjs");
 bundel("src/lib/diagnosaInduk.js", "diagnosa.cjs");
 bundel("src/lib/diseaseClusterUtils.js", "kluster.cjs");
 bundel("src/lib/kelompokInisiatif.js", "kelompok.cjs");
+bundel("src/lib/hargaSupplier.js", "harga.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1932,6 +1933,58 @@ for (const [nama, telur, omzet, tgl, harap] of targetUji) {
 }
 
 /*
+  ── HARGA SUPPLIER: kalimat dari screenshot jadi angka per kilogram ────────
+
+  Harga lead masuk sebagai kalimat yang ditulis penjual, bukan angka. Yang
+  diuji di sini keempat bentuk yang BENAR-BENAR ada di tujuh lead pertama
+  (17 Okt 2026), ditambah dua jebakan:
+
+  · "nego" dan "Obral" tidak boleh terbaca sebagai NOL. Kalau terbaca nol,
+    penjual yang tidak menyebut harga akan selalu menang sebagai termurah —
+    peringkat yang tegas dan salah.
+  · Satuan yang tidak bisa ditimbang ("ikat") tidak boleh ditebak beratnya.
+*/
+const HS = await import(`file://${join(dir, "harga.cjs")}`).then((m) => m.default || m);
+const hargaUji = [
+  // [teks, harga terendah per kg yang diharapkan, berapa penawaran terbaca]
+  ["10.000/3kg, 8.000/3kg, 6.000/3kg, 5.000/2kg", 2000, 4],
+  ["4rb per kg", 4000, 1],
+  ["15k/kg", 15000, 1],
+  ["1,5jt/kg", 1500000, 1],
+  ["nego", null, 1],
+  ["Obral", null, 1],
+  ["", null, 0],
+  ["5.000/ikat", null, 1],
+  ["10.000/ons", 100000, 1],
+];
+for (const [teks, harap, jml] of hargaUji) {
+  const dapat = HS.hargaTerendahPerKg(teks);
+  if (dapat !== harap) temuan.push(`harga supplier ${JSON.stringify(teks)}: terendah ${dapat}, seharusnya ${harap}`);
+  const n = HS.bacaHarga(teks).length;
+  if (n !== jml) temuan.push(`harga supplier ${JSON.stringify(teks)}: ${n} penawaran terbaca, seharusnya ${jml}`);
+}
+/* Titik SELALU pemisah ribuan: "10.000" sepuluh ribu, bukan sepuluh. */
+if (HS.bacaAngka("10.000") !== 10000) temuan.push(`harga supplier: "10.000" terbaca ${HS.bacaAngka("10.000")}, seharusnya 10000`);
+if (HS.bacaAngka("1,5") !== 1.5) temuan.push(`harga supplier: "1,5" terbaca ${HS.bacaAngka("1,5")}, seharusnya 1.5`);
+/* Yang tidak bisa dibanding tetap DILAPORKAN, bukan dibuang diam-diam. */
+const nego = HS.bacaHarga("nego")[0];
+if (nego.bisaDibanding !== false || !nego.sebab) temuan.push("harga supplier: 'nego' tidak menyebutkan sebab tidak bisa dibanding");
+
+const barangUji = [
+  ["Sayur (tomat, jagung manis, terong, gondes)", 4],
+  ["sayur (kyuri, zucchini, kabocca, kentang, dll)", 4],   // "dll" dibuang
+  // "A atau B" = satu barang dua nama, bukan dua barang.
+  ["Waluh atau labu kuning", 1],
+  ["tomat dan terong", 2],
+  ["Semangka", 1],
+  ["", 0],
+];
+for (const [teks, harap] of barangUji) {
+  const n = HS.bacaBarang(teks).length;
+  if (n !== harap) temuan.push(`barang supplier ${JSON.stringify(teks)}: ${n} nama, seharusnya ${harap}`);
+}
+
+/*
   ── INISIATIF DIKELOMPOKKAN: satu keputusan untuk banyak catatan ───────────
 
   Antrean 12 Okt 2026 berisi 303 catatan tetapi hanya 79 judul, dari dua
@@ -2469,6 +2522,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier diuji.`,
 );
 process.exit(0);
