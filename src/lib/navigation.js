@@ -161,7 +161,7 @@ export const EXTRA_DESTINATIONS = [
    * Halamannya tidak dihapus dan datanya tidak disentuh — kalau pemasok mulai
    * didaftarkan, pintunya tinggal dikembalikan ke daftar di atas.
    */
-  { path: "/supplier",       section: "supplier",      label: "Pemasok (belum dipakai)", group: "Stok" },
+  { path: "/supplier",       section: "supplier",      label: "Pemasok & harga sayur", group: "Stok" },
   { path: "/passport",           section: "tortoise",  label: "Paspor Kura (cetak)",  group: "Kura" },
   { path: "/incomplete-data",    section: "dashboard", label: "Data Belum Lengkap",   group: "Laporan" },
   { path: "/info",               section: "info",      label: "Info & Pengumuman",    group: "Laporan" },

@@ -52,6 +52,7 @@ import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
 import { PanelTarget } from "@/components/dashboard/TargetTahunanRingkas";
 import { PanelMenunggu, susunAntrean } from "@/components/dashboard/MenungguPemilik";
 import NilaiInisiatifSekaligus from "@/components/sop/NilaiInisiatifSekaligus";
+import { kumpulkanPenawaran, barangTersedia, barangSerumpun, penjualTermurah } from "@/lib/pasarSupplier";
 import { kemajuanTarget } from "@/lib/targetTahunan";
 import PanduanPakanPage from "@/pages/PanduanPakanPage";
 import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
@@ -562,6 +563,46 @@ export default [
     terpanjang yang benar-benar ada. Kelompok karangan yang judulnya pendek
     akan memberi panel ini lebar yang tidak pernah terjadi.
   */
+  /*
+    Tujuh lead NYATA, lengkap dengan kalimat harga yang benar-benar ditulis
+    penjual di media sosial — termasuk "10.000/3kg, 8.000/3kg, 6.000/3kg,
+    5.000/2kg" yang panjang, "nego", dan nama barang asing seperti "kabocca".
+    Data karangan yang pendek akan memberi lebar yang tidak pernah terjadi.
+  */
+  ["Pasar sayur — tujuh lead nyata", (() => {
+    const leads = [
+      { id: "1", nama: "Max Cliink", yang_dijual: "Semangka", harga_disebut: "", status: "baru", sumber: "Info Jual Beli Buah Nganjuk Kediri Jombang" },
+      { id: "2", nama: "Adinda", yang_dijual: "Sayur (tomat, jagung manis, terong, gondes)", harga_disebut: "10.000/3kg, 8.000/3kg, 6.000/3kg, 5.000/2kg", status: "baru", sumber: "Info Jual Beli Buah Nganjuk Kediri Jombang" },
+      { id: "3", nama: "", yang_dijual: "sayur (kyuri, zucchini, kabocca, kentang, dll)", harga_disebut: "nego", status: "baru" },
+      { id: "4", nama: "Budi Nuryanto", yang_dijual: "Waluh atau labu kuning", harga_disebut: "4rb per kg", status: "baru" },
+      { id: "6", nama: "Bayu Prasetyo", yang_dijual: "Labu Madu", harga_disebut: "Obral", status: "baru" },
+      { id: "7", nama: "Riska", yang_dijual: "Semangka", harga_disebut: "", status: "baru" },
+    ];
+    const pen = kumpulkanPenawaran({ leads });
+    const barang = barangSerumpun(barangTersedia(pen));
+    const penjual = penjualTermurah(pen);
+    return (
+      <div className="space-y-2">
+        {penjual.map((p) => (
+          <div key={p.dari} className="rounded-xl border border-border bg-card p-3">
+            <p className="text-sm font-semibold text-foreground">{p.dari}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {p.jumlahBarang} barang · termurah Rp {p.termurah.toLocaleString("id-ID")}/kg · rata-rata Rp {p.rataRata.toLocaleString("id-ID")}/kg
+            </p>
+          </div>
+        ))}
+        {barang.map((b) => (
+          <div key={b.nama.join("|")} className="rounded-xl border border-border bg-card p-3">
+            <p className="text-sm font-semibold text-foreground capitalize">{b.nama.join(", ")}</p>
+            <p className="text-[11px] text-muted-foreground">
+              dari {b.penawaran.map((p) => p.dari).filter((v, i, a) => a.indexOf(v) === i).join(", ")}
+              {b.termurah ? ` · mulai Rp ${b.termurah.perKg.toLocaleString("id-ID")}/kg` : ""}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  })()],
   ["NilaiInisiatifSekaligus — antrean nyata", <NilaiInisiatifSekaligus
     settings={{ poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] }}
     logs={[
