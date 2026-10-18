@@ -284,7 +284,16 @@ function ItemDetailDialog({ item, onClose, onEdit, onUploadPhoto, canEdit }) {
                   <span className={`font-semibold ${m.type === "masuk" ? "text-green-700" : "text-red-700"}`}>
                     {m.type === "masuk" ? "+" : "-"}{m.quantity} {m.unit}
                   </span>
-                  <span className="text-muted-foreground flex-1 truncate">{m.notes || m.by_name || "-"}</span>
+                  {/* Supplier disebut DULUAN pada barang masuk, dan hanya di
+                      situ. Sejak 18 Okt 2026 formulir barang masuk menanyakan
+                      supplier terdaftar, dan tanpa baris ini pilihan itu tidak
+                      pernah terlihat lagi sesudah disimpan — salah pilih jadi
+                      mustahil dikenali, padahal angka keandalan supplier
+                      dihitung dari sini. */}
+                  <span className="text-muted-foreground flex-1 truncate">
+                    {[m.type === "masuk" && m.supplier ? `dari ${m.supplier}` : "", m.notes]
+                      .filter(Boolean).join(" · ") || m.by_name || "-"}
+                  </span>
                   <span className="text-muted-foreground flex-shrink-0 flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{m.date}</span>
                 </div>
               ))}

@@ -1,66 +1,76 @@
 {
   "name": "StockMovement",
-  "type": "object",
   "properties": {
+    "approved_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "batch_id": {
+      "description": "BatchBarang yang ikut berkurang saat pengambilan lewat Ambil Barang. Diisi supaya pembatalan bisa mengembalikan sisa batch, bukan hanya stok barangnya. Tanpa kolom ini, membatalkan satu pengambilan mengembalikan stok gudang tapi meninggalkan batch tetap berkurang - dua angka untuk satu barang yang sama.",
+      "type": "string"
+    },
+    "by_email": {
+      "description": "Email user yang melakukan",
+      "type": "string"
+    },
+    "by_name": {
+      "description": "Nama user yang melakukan",
+      "type": "string"
+    },
+    "date": {
+      "format": "date",
+      "type": "string"
+    },
+    "enclosure_name": {
+      "description": "Kandang tujuan (opsional, untuk barang keluar)",
+      "type": "string"
+    },
+    "excluded_from_reports": {
+      "default": false,
+      "description": "Dikecualikan dari laporan (owner only)",
+      "type": "boolean"
+    },
+    "feed_source": {
+      "description": "Sumber pakan masuk (untuk feedstock masuk)",
+      "enum": [
+        "beli_pasar",
+        "kebun_sendiri",
+        "panen_azola",
+        "kiriman_supplier",
+        "lainnya"
+      ],
+      "type": "string"
+    },
+    "is_test_data": {
+      "default": false,
+      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan",
+      "type": "boolean"
+    },
     "item_id": {
-      "type": "string",
-      "description": "ID item (FeedStock atau WarehouseItem)"
+      "description": "ID item (FeedStock atau WarehouseItem)",
+      "type": "string"
+    },
+    "item_name": {
+      "description": "Nama item",
+      "type": "string"
+    },
+    "item_sku": {
+      "description": "SKU item",
+      "type": "string"
     },
     "item_type": {
-      "type": "string",
+      "description": "Jenis entitas",
       "enum": [
         "feedstock",
         "warehouse"
       ],
-      "description": "Jenis entitas"
-    },
-    "item_name": {
-      "type": "string",
-      "description": "Nama item"
-    },
-    "item_sku": {
-      "type": "string",
-      "description": "SKU item"
-    },
-    "type": {
-      "type": "string",
-      "enum": [
-        "masuk",
-        "keluar"
-      ],
-      "description": "Jenis pergerakan stok"
-    },
-    "quantity": {
-      "type": "number",
-      "description": "Jumlah"
-    },
-    "unit": {
       "type": "string"
     },
-    "unit_price": {
-      "type": "number",
-      "default": 0
-    },
-    "total_value": {
-      "type": "number",
-      "default": 0,
-      "description": "Nilai total (qty x harga)"
-    },
-    "total_purchase_price": {
-      "type": "number",
-      "default": 0,
-      "description": "Harga beli total (untuk barang masuk)"
-    },
-    "stock_after": {
-      "type": "number",
-      "description": "Sisa stok setelah transaksi ini"
-    },
-    "batch_id": {
-      "type": "string",
-      "description": "BatchBarang yang ikut berkurang saat pengambilan lewat Ambil Barang. Diisi supaya pembatalan bisa mengembalikan sisa batch, bukan hanya stok barangnya. Tanpa kolom ini, membatalkan satu pengambilan mengembalikan stok gudang tapi meninggalkan batch tetap berkurang - dua angka untuk satu barang yang sama."
-    },
     "keperluan": {
-      "type": "string",
+      "description": "Keperluan pengambilan (untuk barang keluar)",
       "enum": [
         "pemberian_pakan",
         "pakan_pagi",
@@ -73,93 +83,86 @@
         "dibuang_kedaluwarsa",
         "lainnya"
       ],
-      "description": "Keperluan pengambilan (untuk barang keluar)"
-    },
-    "feed_source": {
-      "type": "string",
-      "enum": [
-        "beli_pasar",
-        "kebun_sendiri",
-        "panen_azola",
-        "kiriman_supplier",
-        "lainnya"
-      ],
-      "description": "Sumber pakan masuk (untuk feedstock masuk)"
-    },
-    "supplier": {
-      "type": "string",
-      "description": "Sumber/supplier barang (untuk barang masuk)"
-    },
-    "enclosure_name": {
-      "type": "string",
-      "description": "Kandang tujuan (opsional, untuk barang keluar)"
-    },
-    "tortoise_code": {
-      "type": "string",
-      "description": "Kode kura tujuan (opsional, untuk barang keluar)"
+      "type": "string"
     },
     "linked_pakan_harian_id": {
-      "type": "string",
-      "description": "ID PakanHarian jika transaksi ini auto-generated dari pencatatan pakan harian (anti-dobel)"
+      "description": "ID PakanHarian jika transaksi ini auto-generated dari pencatatan pakan harian (anti-dobel)",
+      "type": "string"
     },
-    "by_email": {
-      "type": "string",
-      "description": "Email user yang melakukan"
-    },
-    "by_name": {
-      "type": "string",
-      "description": "Nama user yang melakukan"
+    "migrated_from_item_usage": {
+      "default": false,
+      "description": "Data dimigrasikan dari ItemUsage lama",
+      "type": "boolean"
     },
     "notes": {
-      "type": "string",
-      "description": "Keterangan"
+      "description": "Keterangan",
+      "type": "string"
     },
-    "date": {
-      "type": "string",
-      "format": "date"
+    "photo_urls": {
+      "description": "Foto nota/bukti transaksi",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "quantity": {
+      "description": "Jumlah",
+      "type": "number"
+    },
+    "rejected_reason": {
+      "type": "string"
     },
     "status": {
-      "type": "string",
+      "default": "selesai",
+      "description": "Status transaksi",
       "enum": [
         "selesai",
         "menunggu_approval",
         "disetujui",
         "ditolak"
       ],
-      "default": "selesai",
-      "description": "Status transaksi"
-    },
-    "approved_by": {
       "type": "string"
     },
-    "approved_at": {
-      "type": "string",
-      "format": "date-time"
+    "stock_after": {
+      "description": "Sisa stok setelah transaksi ini",
+      "type": "number"
     },
-    "rejected_reason": {
+    "supplier": {
+      "description": "Sumber/supplier barang (untuk barang masuk). Teks bebas \u2014 tetap dipakai untuk sumber yang bukan supplier terdaftar (beli pasar, kebun sendiri). Bila supplier_id terisi, kolom ini diisi namanya supaya catatan lama tetap terbaca sama.",
       "type": "string"
     },
-    "photo_urls": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Foto nota/bukti transaksi"
+    "supplier_id": {
+      "description": "Supplier terdaftar yang mengirim barang ini. Ditambahkan 18 Okt 2026: sebelum ini supplier hanya teks bebas, jadi tidak ada satu pun barang masuk yang menunjuk balik ke entitas Supplier \u2014 dan tanpa itu peringkat keandalan supplier tidak bisa dihitung dari kenyataan, hanya dari bintang yang diketik sendiri. Kosong untuk sumber yang memang bukan supplier terdaftar.",
+      "type": "string"
     },
-    "migrated_from_item_usage": {
-      "type": "boolean",
-      "default": false,
-      "description": "Data dimigrasikan dari ItemUsage lama"
+    "tortoise_code": {
+      "description": "Kode kura tujuan (opsional, untuk barang keluar)",
+      "type": "string"
     },
-    "excluded_from_reports": {
-      "type": "boolean",
-      "default": false,
-      "description": "Dikecualikan dari laporan (owner only)"
+    "total_purchase_price": {
+      "default": 0,
+      "description": "Harga beli total (untuk barang masuk)",
+      "type": "number"
     },
-    "is_test_data": {
-      "type": "boolean",
-      "default": false,
-      "description": "Ditandai sebagai data test \u2014 tidak masuk laporan"
+    "total_value": {
+      "default": 0,
+      "description": "Nilai total (qty x harga)",
+      "type": "number"
+    },
+    "type": {
+      "description": "Jenis pergerakan stok",
+      "enum": [
+        "masuk",
+        "keluar"
+      ],
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "unit_price": {
+      "default": 0,
+      "type": "number"
     }
   },
   "required": [
@@ -169,5 +172,6 @@
     "type",
     "by_email",
     "date"
-  ]
+  ],
+  "type": "object"
 }

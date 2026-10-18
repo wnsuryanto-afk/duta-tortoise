@@ -52,7 +52,7 @@ import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
 import { PanelTarget } from "@/components/dashboard/TargetTahunanRingkas";
 import { PanelMenunggu, susunAntrean } from "@/components/dashboard/MenungguPemilik";
 import NilaiInisiatifSekaligus from "@/components/sop/NilaiInisiatifSekaligus";
-import { kumpulkanPenawaran, barangTersedia, barangSerumpun, penjualTermurah } from "@/lib/pasarSupplier";
+import { kumpulkanPenawaran, barangTersedia, barangSerumpun, penjualTermurah, keandalanSupplier } from "@/lib/pasarSupplier";
 import { kemajuanTarget } from "@/lib/targetTahunan";
 import PanduanPakanPage from "@/pages/PanduanPakanPage";
 import DailyTaskTemplatePage from "@/pages/DailyTaskTemplatePage";
@@ -597,6 +597,73 @@ export default [
             <p className="text-[11px] text-muted-foreground">
               dari {b.penawaran.map((p) => p.dari).filter((v, i, a) => a.indexOf(v) === i).join(", ")}
               {b.termurah ? ` · mulai Rp ${b.termurah.perKg.toLocaleString("id-ID")}/kg` : ""}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  })()],
+  /*
+    Baris keandalan, dengan kalimat TERPANJANG yang bisa dihasilkannya:
+    supplier yang menjanjikan "tiap 2 minggu" (nama irama terpanjang) tetapi
+    datangnya lebih jarang, jadi ketiga potongan kalimat muncul sekaligus —
+    "Terakhir N hari lalu · rata-rata tiap N hari · lebih jarang dari
+    janjinya (tiap 2 minggu)".
+
+    Kalimat itu tidak pernah terlihat pada data hari ini: nol pengiriman
+    tercatat, jadi layarnya baru menampilkan baris "belum pernah kirim".
+    Justru karena itu ia diuji di sini — bentuk yang paling panjang akan
+    muncul pertama kali di HP pemiliknya, bukan di layar ini, kecuali
+    diperiksa sekarang.
+  */
+  ["Keandalan supplier — kalimat terpanjang", (() => {
+    const suppliers = [
+      { id: "s1", name: "Budi Nuryanto Sayur Mayur Nganjuk", hp_whatsapp: "0812", rutin_kirim: true, irama_kirim: "2_minggu" },
+      { id: "s2", name: "Adinda", hp_whatsapp: "0813", rutin_kirim: true, irama_kirim: "harian" },
+      { id: "s3", name: "Max Cliink", hp_whatsapp: "0814", rutin_kirim: true, irama_kirim: "mingguan" },
+      { id: "s4", name: "Bayu Prasetyo", hp_whatsapp: "0815", rutin_kirim: false, irama_kirim: "" },
+    ];
+    const movements = [
+      // s1: dijanjikan 14 hari, nyatanya 45 → kalimat lengkap bertiga.
+      { type: "masuk", supplier_id: "s1", date: "2026-07-20", total_value: 100 },
+      { type: "masuk", supplier_id: "s1", date: "2026-09-03", total_value: 100 },
+      { type: "masuk", supplier_id: "s1", date: "2026-10-18", total_value: 100 },
+      // s2: harian dan memang harian → "sesuai janji".
+      { type: "masuk", supplier_id: "s2", date: "2026-10-16", total_value: 100 },
+      { type: "masuk", supplier_id: "s2", date: "2026-10-17", total_value: 100 },
+      // s3: baru sekali datang — belum boleh dinilai.
+      { type: "masuk", supplier_id: "s3", date: "2026-10-05", total_value: 100 },
+      // s4: belum pernah sama sekali.
+    ];
+    const IR = { harian: "tiap hari", "2_hari": "tiap 2 hari", mingguan: "tiap minggu", "2_minggu": "tiap 2 minggu", bulanan: "tiap bulan", sesuai_pesanan: "sesuai pesanan" };
+    const keandalan = keandalanSupplier({ movements, suppliers, hariIni: new Date("2026-10-18T00:00:00Z") });
+    return (
+      <div className="space-y-2">
+        {keandalan.map((k) => (
+          <div key={k.id} className="rounded-xl border border-border bg-card p-3">
+            <div className="flex items-baseline justify-between gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-foreground">{k.nama}</p>
+              <p className="text-[11px] tabular-nums text-muted-foreground">
+                {k.pengiriman === 0 ? "belum pernah kirim" : `${k.pengiriman}× kirim`}
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              {k.pengiriman === 0 ? (
+                <>
+                  Belum ada barang masuk yang menunjuk ke sini
+                  {k.rutin && k.irama ? `, padahal ia menyanggupi kirim ${IR[k.irama] || k.irama}` : ""}.
+                </>
+              ) : (
+                <>
+                  Terakhir {k.hariSejakTerakhir === 0 ? "hari ini" : `${k.hariSejakTerakhir} hari lalu`}
+                  {k.rataJeda != null && <> &middot; rata-rata tiap {k.rataJeda} hari</>}
+                  {k.tepatJanji === true && <> &middot; <span className="font-semibold text-accent">sesuai janji {IR[k.irama] || k.irama}</span></>}
+                  {k.tepatJanji === false && <> &middot; <span className="font-semibold text-amber-700 dark:text-amber-400">lebih jarang dari janjinya ({IR[k.irama] || k.irama})</span></>}
+                  {k.tepatJanji === null && k.rutin && k.irama && k.pengiriman === 1 && (
+                    <> &middot; menjanjikan {IR[k.irama] || k.irama}, baru sekali datang</>
+                  )}
+                </>
+              )}
             </p>
           </div>
         ))}

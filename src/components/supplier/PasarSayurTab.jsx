@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Carrot, Info, Repeat, TrendingDown } from "lucide-react";
+import { Carrot, Info, Repeat, ShieldCheck, TrendingDown } from "lucide-react";
 import { base44, BATAS_AMBIL } from "@/api/base44Client";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
-import { kumpulkanPenawaran, barangTersedia, barangSerumpun, penjualTermurah } from "@/lib/pasarSupplier";
+import { kumpulkanPenawaran, barangTersedia, barangSerumpun, penjualTermurah, keandalanSupplier } from "@/lib/pasarSupplier";
 import { rupiah } from "@/lib/rupiah";
 
 /**
@@ -15,11 +15,18 @@ import { rupiah } from "@/lib/rupiah";
  * harga yang paling ideal dan sayur apa yang ada".
  *
  * Tiga bisa dijawab sekarang dari tujuh lead yang sudah masuk lewat tangkapan
- * layar: sayur apa, dari siapa, dan berapa per kilogram. Yang keempat —
- * supplier mana yang TERBAIK — tidak, dan layarnya mengatakan itu alih-alih
- * mengarang peringkat. Alasannya ditulis lengkap di lib/pasarSupplier.js:
- * tidak ada satu pun catatan barang masuk yang menunjuk balik ke supplier,
- * jadi tidak ada riwayat untuk diperingkat.
+ * layar: sayur apa, dari siapa, dan berapa per kilogram.
+ *
+ * Yang keempat — supplier mana yang TERBAIK — dulu tidak bisa, karena barang
+ * masuk tidak menyimpan supplier-nya sama sekali. 18 Okt 2026 `supplier_id`
+ * ditambahkan ke StockMovement dan form barang masuk mulai menanyakannya,
+ * jadi jalurnya sekarang ADA. Yang belum ada adalah isinya: peringkat
+ * keandalan di bawah dihitung dari pengiriman yang benar-benar tercatat, dan
+ * sampai beberapa pengiriman terkumpul ia akan jujur mengatakan kosong.
+ *
+ * Kosong yang jujur lebih berguna daripada peringkat yang dikarang dari
+ * `rating` 1-5 yang diketik sendiri saat supplier dibuat — yang bawaannya 5,
+ * jadi semua supplier "bintang lima" sebelum satu pun mengirim apa pun.
  *
  * Harga yang tidak bisa dibandingkan ("nego", "Obral", "5.000/ikat") TETAP
  * ditampilkan, dengan sebabnya. Menyembunyikannya membuat pilihan terlihat
@@ -52,6 +59,11 @@ export default function PasarSayurTab() {
     queryFn: () => base44.entities.Supplier.list("-created_date", BATAS_AMBIL),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: movements = [] } = useQuery({
+    queryKey: ["pasar-barang-masuk"],
+    queryFn: () => base44.entities.StockMovement.list("-date", BATAS_AMBIL),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const penawaran = useMemo(
     () => kumpulkanPenawaran({ leads, items, suppliers }),
@@ -62,6 +74,8 @@ export default function PasarSayurTab() {
   const barang = useMemo(() => barangSerumpun(barangTersedia(penawaran)), [penawaran]);
   const penjual = useMemo(() => penjualTermurah(penawaran), [penawaran]);
   const rutin = useMemo(() => suppliers.filter((s) => s.rutin_kirim), [suppliers]);
+  const keandalan = useMemo(() => keandalanSupplier({ movements, suppliers }), [movements, suppliers]);
+  const sudahKirim = useMemo(() => keandalan.filter((k) => k.pengiriman > 0), [keandalan]);
 
   if (penawaran.length === 0) {
     return (
@@ -90,24 +104,104 @@ export default function PasarSayurTab() {
           <p className="text-[11px] text-muted-foreground">Sanggup kirim rutin</p>
           <p className="text-xl font-bold text-foreground tabular-nums">{rutin.length}</p>
         </div>
+        {/* Ubin keempat adalah yang membedakan janji dari kenyataan: ubin di
+            sebelahnya menghitung siapa yang MENGATAKAN sanggup kirim rutin,
+            yang ini menghitung siapa yang benar-benar pernah datang. Keduanya
+            berdampingan supaya selisihnya terbaca sekali lihat. */}
+        <div className="rounded-xl border border-border bg-card p-3">
+          <p className="text-[11px] text-muted-foreground">Pernah benar-benar kirim</p>
+          <p className="text-xl font-bold text-foreground tabular-nums">
+            {sudahKirim.length}
+            <span className="text-xs font-normal text-muted-foreground"> / {keandalan.length}</span>
+          </p>
+        </div>
       </div>
 
       {/*
-        Yang belum bisa dijawab dikatakan di muka, bukan disembunyikan.
-        Peringkat "supplier terbaik" yang dikarang dari rating ketikan sendiri
-        akan terlihat tegas dan tidak berdasar apa pun.
+        Dua daftar di halaman ini menjawab dua pertanyaan yang berbeda, dan
+        menyamakannya adalah kesalahan yang paling mudah dibuat di sini:
+        yang murah belum tentu yang datang. Jadi catatan ini berdiri di antara
+        keduanya dan menyebutkan mana yang mana.
+
+        Isinya berubah sendiri begitu pengiriman pertama tercatat — sebelum
+        itu ia mengatakan daftar keandalannya memang masih kosong, bukan
+        menyembunyikan daftarnya.
       */}
       <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
-        <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5 flex-shrink-0" /> Yang diurutkan di sini HARGA, bukan keandalan
+        <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-start gap-1.5">
+          <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <span>Yang murah dan yang andal dihitung terpisah</span>
         </p>
         <p className="text-[11px] text-amber-900/80 dark:text-amber-200/80 mt-1 leading-relaxed">
-          Peringkat "supplier terbaik" perlu riwayat: siapa yang benar-benar mengirim, tepat waktu,
-          dengan harga yang dijanjikan. Hari ini barang masuk belum menyimpan supplier-nya, jadi
-          riwayat itu belum ada. Yang tampil di bawah murni perbandingan harga dari apa yang mereka
-          sebut sendiri.
+          {sudahKirim.length === 0 ? (
+            <>
+              Keandalan dihitung dari barang masuk yang menunjuk supplier-nya, dan belum ada satu pun
+              yang tercatat. Mulai sekarang form Barang Masuk menanyakan supplier-nya &mdash; pilih di
+              sana, dan daftar keandalan di bawah akan terisi sendiri. Harga di bawahnya berasal dari
+              apa yang penjual sebut sendiri di postingannya, bukan dari pengiriman.
+            </>
+          ) : (
+            <>
+              Daftar keandalan dihitung dari {sudahKirim.length} supplier yang barang masuknya benar-benar
+              tercatat. Daftar harga di bawahnya berasal dari apa yang penjual sebut sendiri di
+              postingannya &mdash; penjual termurah di sana belum tentu yang paling sering datang.
+            </>
+          )}
         </p>
       </div>
+
+      {/*
+        ── Keandalan ────────────────────────────────────────────────────────
+
+        Pertanyaan pemiliknya yang paling sulit ("supplier mana yang terbaik")
+        dijawab di sini, dan hanya dengan yang terekam: berapa kali datang,
+        kapan terakhir, dan apakah jedanya sesuai irama yang ia janjikan.
+
+        Mutu barang dan ketepatan jam TIDAK ikut, karena tidak ada yang
+        mencatatnya. Supplier yang sudah didaftarkan tetapi belum pernah
+        datang tetap ditampilkan di urutan terakhir: itu justru baris yang
+        paling perlu dilihat.
+      */}
+      {keandalan.length > 0 && (
+        <div>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" /> Keandalan &middot; dari pengiriman tercatat
+          </p>
+          <div className="space-y-2">
+            {keandalan.map((k) => (
+              <div key={k.id} className="rounded-xl border border-border bg-card p-3">
+                <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                  <p className="text-sm font-semibold text-foreground">{k.nama}</p>
+                  <p className="text-[11px] tabular-nums text-muted-foreground">
+                    {k.pengiriman === 0 ? "belum pernah kirim" : `${k.pengiriman}× kirim`}
+                  </p>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  {k.pengiriman === 0 ? (
+                    <>
+                      Belum ada barang masuk yang menunjuk ke sini
+                      {k.rutin && k.irama ? `, padahal ia menyanggupi kirim ${IRAMA[k.irama] || k.irama}` : ""}.
+                    </>
+                  ) : (
+                    <>
+                      Terakhir {k.hariSejakTerakhir === 0 ? "hari ini" : `${k.hariSejakTerakhir} hari lalu`}
+                      {k.rataJeda != null && <> &middot; rata-rata tiap {k.rataJeda} hari</>}
+                      {/* Janji hanya disebut bila memang ada yang dijanjikan DAN
+                          cukup pengiriman untuk membandingkannya. Satu kedatangan
+                          tidak membuktikan irama apa pun. */}
+                      {k.tepatJanji === true && <> &middot; <span className="font-semibold text-accent">sesuai janji {IRAMA[k.irama] || k.irama}</span></>}
+                      {k.tepatJanji === false && <> &middot; <span className="font-semibold text-amber-700 dark:text-amber-400">lebih jarang dari janjinya ({IRAMA[k.irama] || k.irama})</span></>}
+                      {k.tepatJanji === null && k.rutin && k.irama && k.pengiriman === 1 && (
+                        <> &middot; menjanjikan {IRAMA[k.irama] || k.irama}, baru sekali datang</>
+                      )}
+                    </>
+                  )}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">

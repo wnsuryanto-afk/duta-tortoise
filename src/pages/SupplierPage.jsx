@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import PasarSayurTab from "@/components/supplier/PasarSayurTab";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import PageHeader from "@/components/common/PageHeader";
+import { keandalanSupplier } from "@/lib/pasarSupplier";
 
 function StarRating({ rating }) {
   return (
@@ -190,6 +191,28 @@ export default function SupplierPage() {
     queryKey: ["supplier-items"],
     queryFn: () => base44.entities.SupplierItem.list("-created_date", 500),
   });
+  /*
+    Barang masuk, untuk menaruh KENYATAAN di sebelah bintang.
+
+    Bintang 1–5 di kartu ini diketik sendiri saat supplier dibuat dan
+    bawaannya 5 — jadi setiap supplier tampil bintang lima sebelum mengirim
+    apa pun, dan daftarnya terbaca seakan semuanya sudah terbukti. Sejak
+    18 Okt 2026 barang masuk menyimpan `supplier_id`, jadi jumlah pengiriman
+    yang benar-benar tercatat bisa berdiri di sebelahnya dan berbicara
+    sendiri. Bintangnya tidak dibuang: ia penilaian pemiliknya, dan itu sah
+    — yang tidak sah adalah membiarkannya berdiri sendirian seolah ia
+    riwayat.
+  */
+  const { data: movements = [] } = useQuery({
+    queryKey: ["supplier-barang-masuk"],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
+    staleTime: 5 * 60 * 1000,
+  });
+  const kirimPer = useMemo(() => {
+    const m = new Map();
+    for (const k of keandalanSupplier({ movements, suppliers })) m.set(k.id, k);
+    return m;
+  }, [movements, suppliers]);
 
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("supplier");
@@ -284,8 +307,15 @@ export default function SupplierPage() {
                     {s.rutin_kirim && <Badge className="bg-accent/15 text-accent text-[10px]">🔁 Kirim rutin</Badge>}
                   </div>
                   {s.specialty && <p className="text-xs text-muted-foreground mt-0.5">{s.specialty}</p>}
-                  <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                     <StarRating rating={s.rating} />
+                    {/* Dibaca "dinilai sekian bintang, dan sekian kali
+                        benar-benar datang" — dua hal berbeda, bersebelahan. */}
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {(kirimPer.get(s.id)?.pengiriman || 0) === 0
+                        ? "belum ada kiriman tercatat"
+                        : `${kirimPer.get(s.id).pengiriman}× kirim · terakhir ${kirimPer.get(s.id).hariSejakTerakhir} hari lalu`}
+                    </span>
                     {s.city && <span className="text-xs text-muted-foreground">📍 {s.city}</span>}
                     {/* Dulu membaca s.phone — kolom yang TIDAK ADA di skema
                         Supplier, jadi nomornya tidak pernah tampil sekali pun.
