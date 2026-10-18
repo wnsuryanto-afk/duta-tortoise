@@ -80,6 +80,7 @@ bundel("src/lib/diagnosaInduk.js", "diagnosa.cjs");
 bundel("src/lib/diseaseClusterUtils.js", "kluster.cjs");
 bundel("src/lib/kelompokInisiatif.js", "kelompok.cjs");
 bundel("src/lib/hargaSupplier.js", "harga.cjs");
+bundel("src/lib/pasarSupplier.js", "pasar.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1985,6 +1986,90 @@ for (const [teks, harap] of barangUji) {
 }
 
 /*
+  ── KEANDALAN SUPPLIER: peringkat dari pengiriman yang BENAR-BENAR tercatat ─
+
+  Sampai 18 Okt 2026 tidak ada satu pun barang masuk yang menunjuk balik ke
+  entitas Supplier — kolomnya teks bebas dan nol baris terisi. Layar Harga
+  karena itu mengatakan terus terang bahwa yang diurutkannya HARGA, bukan
+  keandalan. `supplier_id` di StockMovement menutup jarak itu.
+
+  Yang dijaga di sini adalah hal-hal yang membuat peringkat semacam ini
+  berbohong dengan rapi:
+
+  · Supplier yang BELUM pernah mengirim harus tetap muncul. Menyaringnya
+    membuat daftar terbaca seperti semua supplier pernah datang — padahal
+    yang paling perlu dilihat pemiliknya justru yang didaftarkan lalu
+    menghilang.
+  · Satu pengiriman tidak membuktikan irama apa pun. Menyebut supplier
+    "tidak tepat janji" karena baru sekali datang adalah tuduhan yang tidak
+    dimiliki datanya — jawabannya harus `null`, bukan `false`.
+  · Barang keluar, data uji, dan baris yang dikecualikan dari laporan tidak
+    boleh terhitung sebagai pengiriman.
+*/
+const PS = await import(`file://${join(dir, "pasar.cjs")}`).then((m) => m.default || m);
+const KINI_PS = new Date("2026-10-18T00:00:00Z");
+const sup = (id, nama, rutin, irama) => ({ id, name: nama, hp_whatsapp: "0812", rutin_kirim: rutin, irama_kirim: irama });
+const gerak = (supplier_id, date, lain = {}) => ({ type: "masuk", supplier_id, date, total_value: 100, ...lain });
+
+const SUP_UJI = [
+  sup("s1", "Mingguan Tepat", true, "mingguan"),
+  sup("s2", "Mingguan Molor", true, "mingguan"),
+  sup("s3", "Baru Sekali", true, "mingguan"),
+  sup("s4", "Tanpa Janji", false, ""),
+  sup("s5", "Belum Pernah", true, "harian"),
+];
+const GERAK_UJI = [
+  // s1: tiap 7 hari persis → rata-rata 7, janji 7 → tepat.
+  gerak("s1", "2026-10-01"), gerak("s1", "2026-10-08"), gerak("s1", "2026-10-15"),
+  // s2: tiap 20 hari, janji 7 → di luar toleransi 1,5×.
+  gerak("s2", "2026-08-29"), gerak("s2", "2026-09-18"), gerak("s2", "2026-10-08"),
+  // s3: sekali saja — tidak cukup untuk menilai irama.
+  gerak("s3", "2026-10-10"),
+  // s4: dua kali, tanpa janji → tidak ada yang bisa dibandingkan.
+  gerak("s4", "2026-10-01"), gerak("s4", "2026-10-05"),
+  // Yang TIDAK boleh terhitung:
+  { type: "keluar", supplier_id: "s5", date: "2026-10-17", total_value: 100 },
+  gerak("s5", "2026-10-17", { is_test_data: true }),
+  gerak("s5", "2026-10-16", { excluded_from_reports: true }),
+  gerak("", "2026-10-17"),
+  gerak("s99", "2026-10-17"),
+  // Dua baris pada TANGGAL yang sama = satu pengiriman: satu kedatangan
+  // sering berisi beberapa jenis barang, dan menghitungnya dua kali membuat
+  // supplier terlihat dua kali lebih sering datang daripada kenyataannya.
+  gerak("s1", "2026-10-15", { total_value: 50 }),
+];
+const andal = PS.keandalanSupplier({ movements: GERAK_UJI, suppliers: SUP_UJI, hariIni: KINI_PS });
+const cari = (id) => andal.find((a) => a.id === id);
+
+const andalUji = [
+  // [id, pengiriman, rataJeda, tepatJanji, hariSejakTerakhir]
+  ["s1", 3, 7, true, 3],
+  ["s2", 3, 20, false, 10],
+  ["s3", 1, null, null, 8],
+  ["s4", 2, 4, null, 13],
+  ["s5", 0, null, null, null],
+];
+for (const [id, kirim, jeda, janji, sejak] of andalUji) {
+  const a = cari(id);
+  if (!a) { temuan.push(`keandalan supplier: ${id} tidak ada di hasil`); continue; }
+  if (a.pengiriman !== kirim) temuan.push(`keandalan ${a.nama}: ${a.pengiriman} pengiriman, seharusnya ${kirim}`);
+  if (a.rataJeda !== jeda) temuan.push(`keandalan ${a.nama}: rata-rata jeda ${a.rataJeda}, seharusnya ${jeda}`);
+  if (a.tepatJanji !== janji) temuan.push(`keandalan ${a.nama}: tepatJanji ${a.tepatJanji}, seharusnya ${janji}`);
+  if (a.hariSejakTerakhir !== sejak) temuan.push(`keandalan ${a.nama}: ${a.hariSejakTerakhir} hari sejak terakhir, seharusnya ${sejak}`);
+}
+/* Semua supplier terdaftar ikut, termasuk yang nol pengiriman. */
+if (andal.length !== SUP_UJI.length) temuan.push(`keandalan supplier: ${andal.length} baris, seharusnya ${SUP_UJI.length} (yang belum pernah kirim ikut)`);
+/* Nilai yang dijumlahkan hanya dari baris yang sah: 100+100+100+50. */
+if (cari("s1")?.nilai !== 350) temuan.push(`keandalan s1: nilai ${cari("s1")?.nilai}, seharusnya 350`);
+/* Baris yang ditolak tidak menyumbang nilai sepeser pun. */
+if (cari("s5")?.nilai !== 0) temuan.push(`keandalan s5: nilai ${cari("s5")?.nilai}, seharusnya 0 — barang keluar/data uji ikut terhitung`);
+/* Yang paling sering kirim di atas; yang belum pernah di bawah. */
+if (andal[0].pengiriman < andal[andal.length - 1].pengiriman) temuan.push("keandalan supplier: urutannya tidak dari yang paling sering kirim");
+if (andal[andal.length - 1].id !== "s5") temuan.push(`keandalan supplier: baris terakhir ${andal[andal.length - 1].id}, seharusnya s5 (belum pernah kirim)`);
+/* Tanpa data sama sekali: daftar kosong, bukan error. */
+if (PS.keandalanSupplier().length !== 0) temuan.push("keandalan supplier: tanpa argumen tidak mengembalikan daftar kosong");
+
+/*
   ── INISIATIF DIKELOMPOKKAN: satu keputusan untuk banyak catatan ───────────
 
   Antrean 12 Okt 2026 berisi 303 catatan tetapi hanya 79 judul, dari dua
@@ -2522,6 +2607,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier diuji.`,
 );
 process.exit(0);

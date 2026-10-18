@@ -8,26 +8,30 @@ import { bacaBarang, bacaHarga } from "@/lib/hargaSupplier";
  * Pemiliknya (17 Okt 2026) meminta "laporan supplier mana yang terbaik atau
  * ranking dan harga yang paling ideal dan sayur apa yang ada".
  *
- * Tiga dari empat bisa dijawab dari data yang ADA hari ini — sayur apa,
- * dari siapa, berapa harganya. Yang KEEMPAT tidak, dan itu harus dikatakan
- * alih-alih dikarang:
+ * Tiga dari empat dijawab dari apa yang penjual TULIS — sayur apa, dari
+ * siapa, berapa harganya. Yang keempat, "supplier mana yang terbaik", tidak
+ * bisa dijawab dari tulisan sama sekali, dan itu dua hal yang berbeda.
  *
- * ── Kenapa "supplier terbaik" belum bisa dihitung ───────────────────────────
+ * ── Dua sumber yang tidak boleh dicampur ────────────────────────────────────
  *
- * Peringkat yang berarti dibangun dari riwayat: siapa yang benar-benar
- * mengirim, tepat waktu, dengan harga yang dijanjikan. Hari ini tidak ada
- * satu pun catatan semacam itu — `FeedStock.supplier`, `WarehouseItem.supplier`
- * dan `StockMovement.supplier` semuanya TEKS BEBAS, tanpa `supplier_id`, dan
- * nol baris terisi. Jadi tidak ada barang masuk yang menunjuk balik ke
- * supplier mana pun.
+ * HARGA berasal dari postingan: apa yang penjual sebut sendiri sebelum
+ * mengirim apa pun. `kumpulkanPenawaran` dan `penjualTermurah` di bawah
+ * bekerja dengan itu, dan tidak lebih.
  *
- * Satu-satunya angka "peringkat" yang ada adalah `rating` 1–5 yang diketik
- * sendiri saat supplier dibuat, dan bawaannya 5. Mengurutkan dengan itu
- * menghasilkan peringkat yang terlihat tegas dan tidak berdasar apa pun.
+ * KEANDALAN hanya bisa berasal dari riwayat: siapa yang benar-benar datang,
+ * dan seberapa sering. Sampai 17 Okt 2026 riwayat itu tidak ada tempatnya —
+ * `FeedStock.supplier`, `WarehouseItem.supplier` dan `StockMovement.supplier`
+ * semuanya TEKS BEBAS, tanpa `supplier_id`, dan nol baris terisi. Tanggal 18
+ * `supplier_id` ditambahkan ke StockMovement dan form barang masuk mulai
+ * menanyakannya; `keandalanSupplier` di bawah memakainya.
  *
- * Yang bisa diperingkat dengan jujur hari ini adalah HARGA — dan itu yang
- * dilakukan di sini. Peringkat keandalan menunggu sambungan ke barang masuk;
- * sampai itu ada, layarnya mengatakan apa yang belum bisa dijawabnya.
+ * Mencampur keduanya adalah kesalahan yang paling mudah dibuat di sini:
+ * penjual termurah di daftar harga belum tentu yang pernah datang sekali pun.
+ *
+ * Yang TIDAK dipakai sebagai peringkat, kemarin maupun hari ini, adalah
+ * `rating` 1–5 yang diketik sendiri saat supplier dibuat — bawaannya 5, jadi
+ * setiap supplier "bintang lima" sebelum mengirim apa pun. Mengurutkan dengan
+ * itu menghasilkan peringkat yang terlihat tegas dan tidak berdasar apa pun.
  */
 
 /** Satu penawaran untuk satu barang, dari satu pihak. */
@@ -241,4 +245,90 @@ export function barangSerumpun(barangList = []) {
     if (b.termurah && (!e.termurah || b.termurah.perKg < e.termurah.perKg)) e.termurah = b.termurah;
   }
   return [...per.values()].sort((a, b) => b.jumlahPenjual - a.jumlahPenjual || b.nama.length - a.nama.length);
+}
+
+/** Jeda hari antara dua tanggal ISO. */
+function jedaHari(a, b) {
+  const t1 = Date.parse(`${a}T00:00:00Z`);
+  const t2 = Date.parse(`${b}T00:00:00Z`);
+  if (!Number.isFinite(t1) || !Number.isFinite(t2)) return null;
+  return Math.round((t2 - t1) / 86400000);
+}
+
+/** Irama yang dijanjikan, dalam hari. `null` bila tidak menjanjikan irama. */
+const HARI_IRAMA = { harian: 1, "2_hari": 2, mingguan: 7, "2_minggu": 14, bulanan: 30 };
+
+/**
+ * Keandalan supplier DARI PENGIRIMAN YANG BENAR-BENAR TERCATAT.
+ *
+ * ── Kenapa ini baru mungkin sekarang ────────────────────────────────────────
+ *
+ * Sampai 18 Okt 2026 kolom supplier di StockMovement hanya teks bebas, dan
+ * nol baris terisi — jadi tidak ada satu pun barang masuk yang menunjuk balik
+ * ke entitas Supplier. `supplier_id` menutup jarak itu; fungsi ini yang
+ * memakainya.
+ *
+ * ── Apa yang disebut "andal" di sini, dan apa yang TIDAK ────────────────────
+ *
+ * Yang diukur hanya yang benar-benar terekam: berapa kali ia mengirim, kapan
+ * terakhir, dan berapa rata-rata jeda antar pengiriman. Bila ia menjanjikan
+ * irama tertentu (irama_kirim), jeda nyata itu dibandingkan dengan janjinya.
+ *
+ * Yang TIDAK diukur: mutu barang, ketepatan jam, dan kesesuaian harga dengan
+ * yang disebut di postingan. Tidak ada satu pun dari ketiganya yang tercatat
+ * di mana pun, dan mengarang angka untuknya akan membuat peringkat yang
+ * terlihat lengkap padahal menilai satu hal saja.
+ *
+ * Supplier yang BELUM pernah mengirim tetap dikembalikan, dengan
+ * `pengiriman: 0`. Menyembunyikannya membuat daftar terbaca seperti semua
+ * supplier pernah mengirim — dan yang paling perlu dilihat pemiliknya justru
+ * yang sudah didaftarkan tetapi tidak pernah datang.
+ */
+export function keandalanSupplier({ movements = [], suppliers = [], hariIni = new Date() } = {}) {
+  const per = new Map(suppliers.map((s) => [s.id, { supplier: s, tanggal: [], nilai: 0 }]));
+
+  for (const m of movements) {
+    if (m?.type !== "masuk") continue;
+    if (!m.supplier_id || !per.has(m.supplier_id)) continue;
+    if (m.excluded_from_reports || m.is_test_data) continue;
+    const e = per.get(m.supplier_id);
+    if (m.date) e.tanggal.push(String(m.date));
+    e.nilai += Number(m.total_value || m.total_purchase_price || 0);
+  }
+
+  const hariIniStr = hariIni.toISOString().slice(0, 10);
+
+  return [...per.values()]
+    .map(({ supplier: s, tanggal, nilai }) => {
+      const urut = [...new Set(tanggal)].sort();
+      const jeda = [];
+      for (let i = 1; i < urut.length; i++) {
+        const d = jedaHari(urut[i - 1], urut[i]);
+        if (d != null) jeda.push(d);
+      }
+      const rataJeda = jeda.length ? Math.round(jeda.reduce((t, n) => t + n, 0) / jeda.length) : null;
+      const dijanjikan = s.rutin_kirim ? HARI_IRAMA[s.irama_kirim] ?? null : null;
+
+      return {
+        id: s.id,
+        nama: s.name,
+        hp: s.hp_whatsapp || "",
+        rutin: !!s.rutin_kirim,
+        irama: s.irama_kirim || "",
+        pengiriman: urut.length,
+        terakhir: urut[urut.length - 1] || "",
+        hariSejakTerakhir: urut.length ? jedaHari(urut[urut.length - 1], hariIniStr) : null,
+        rataJeda,
+        dijanjikan,
+        /*
+          Hanya dinilai bila ADA janji DAN ada cukup pengiriman untuk punya
+          jeda. Satu pengiriman tidak membuktikan irama apa pun, dan menyebut
+          supplier "tidak tepat janji" karena baru sekali datang adalah
+          tuduhan yang tidak dimiliki datanya.
+        */
+        tepatJanji: dijanjikan != null && rataJeda != null ? rataJeda <= dijanjikan * 1.5 : null,
+        nilai,
+      };
+    })
+    .sort((a, b) => b.pengiriman - a.pengiriman || String(b.terakhir).localeCompare(String(a.terakhir)) || a.nama.localeCompare(b.nama));
 }

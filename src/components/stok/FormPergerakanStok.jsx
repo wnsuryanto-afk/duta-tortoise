@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { base44, BATAS_AMBIL } from "@/api/base44Client";
 import { useTestMode } from "@/lib/useTestMode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +32,24 @@ import { rupiah } from "@/lib/rupiah";
 export default function FormPergerakanStok({ feedstocks, warehouseItems, onClose, threshold, tipeAwal = "masuk" }) {
   const { testModeTag } = useTestMode();
   const qc = useQueryClient();
+
+  /*
+    Supplier terdaftar, untuk barang MASUK.
+
+    Sebelum 18 Okt 2026 kolom `supplier` di StockMovement hanya teks bebas dan
+    formulir ini tidak mengisinya sama sekali — jadi nol baris pernah menunjuk
+    balik ke entitas Supplier, dan peringkat keandalan supplier tidak bisa
+    dihitung dari kenyataan. Yang dipilih di sini menulis `supplier_id`
+    SEKALIGUS `supplier` (namanya), supaya pembaca lama yang hanya tahu kolom
+    teks tetap membaca hal yang sama.
+  */
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["form-stok-suppliers"],
+    queryFn: () => base44.entities.Supplier.list("-name", BATAS_AMBIL),
+    staleTime: 10 * 60 * 1000,
+  });
   const { user } = useCurrentUser();
-  const [form, setForm] = useState({ type: tipeAwal === "keluar" ? "keluar" : "masuk", item_id: "", item_type: "feedstock", quantity: "", unit_price: "", notes: "", date: format(new Date(), "yyyy-MM-dd") });
+  const [form, setForm] = useState({ type: tipeAwal === "keluar" ? "keluar" : "masuk", item_id: "", item_type: "feedstock", quantity: "", unit_price: "", supplier_id: "", notes: "", date: format(new Date(), "yyyy-MM-dd") });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -52,6 +68,7 @@ export default function FormPergerakanStok({ feedstocks, warehouseItems, onClose
     e.preventDefault();
     if (!form.item_id || !form.quantity) return;
     setSaving(true);
+    const pemasok = suppliers.find((x) => x.id === form.supplier_id) || null;
     const total = Number(form.quantity) * Number(form.unit_price || 0);
     const needsApproval = form.type === "keluar" && total >= threshold;
     const status = needsApproval ? "menunggu_approval" : "selesai";
@@ -70,6 +87,15 @@ export default function FormPergerakanStok({ feedstocks, warehouseItems, onClose
       by_name: user?.full_name || user?.email || "",
       notes: form.notes,
       status,
+      /*
+        Hanya untuk barang MASUK, dan hanya bila supplier terdaftar dipilih.
+        Barang keluar tidak punya supplier, dan sumber yang memang bukan
+        supplier terdaftar (beli pasar, kebun sendiri) dibiarkan kosong
+        alih-alih diisi tebakan.
+      */
+      ...(form.type === "masuk" && pemasok
+        ? { supplier_id: pemasok.id, supplier: pemasok.name || "" }
+        : {}),
       ...testModeTag,
     });
 
@@ -138,6 +164,26 @@ export default function FormPergerakanStok({ feedstocks, warehouseItems, onClose
           {Number(form.quantity) * Number(form.unit_price) >= threshold && form.type === "keluar" && (
             <span className="ml-2 font-semibold">⚠️ Butuh Approval</span>
           )}
+        </div>
+      )}
+      {form.type === "masuk" && suppliers.length > 0 && (
+        <div>
+          <Label className="text-xs">Dari supplier</Label>
+          <Select value={form.supplier_id || "—"} onValueChange={(v) => set("supplier_id", v === "—" ? "" : v)}>
+            <SelectTrigger className="mt-0.5"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {/* Pilihan bawaannya BUKAN supplier terdaftar: sebagian besar
+                  barang masuk memang dari pasar atau kebun sendiri, dan
+                  memilihkan satu nama secara bawaan akan mengisi riwayat
+                  dengan pengiriman yang tidak pernah terjadi. */}
+              <SelectItem value="—">— bukan supplier terdaftar —</SelectItem>
+              {suppliers.map((x) => (
+                <SelectItem key={x.id} value={x.id}>
+                  {x.name}{x.rutin_kirim ? " · kirim rutin" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
       <div>
