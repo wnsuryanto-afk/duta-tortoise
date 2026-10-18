@@ -85,6 +85,7 @@ bundel("src/lib/bersihkanKura.js", "bersihkura.cjs");
 bundel("src/lib/incompleteChecks.js", "lengkap.cjs");
 bundel("src/lib/pitaUkuran.js", "pita.cjs");
 bundel("src/lib/hargaEstimasi.js", "hargaest.cjs");
+bundel("src/lib/hargaBarang.js", "hargabrg.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1990,6 +1991,68 @@ for (const [teks, harap] of barangUji) {
 }
 
 /*
+  ── HARGA BARANG GUDANG: 53 barang berstok tanpa harga beli ────────────────
+
+  18 Okt 2026: 53 dari 87 barang bergudang punya stok tetapi harga belinya
+  Rp 0 — 18 di antaranya alat kerja (cangkul, clurit, palu, mesin giling).
+  Modal alat di beranda karena itu praktis hanya lampu UVB, dan tidak ada
+  satu pun layar yang menyebutkannya.
+
+  Dua hal yang dijaga, dan keduanya pernah salah saya kira:
+
+  · BARANG HABIS dianggap LENGKAP. Ia tidak menyumbang modal apa pun hari
+    ini; memintanya diberi harga menambah puluhan baris kerja yang tidak
+    mengubah satu angka pun. Harganya ditanyakan saat dibeli lagi.
+  · Rp 0 dianggap BELUM DIISI di sini — berbeda dari harga beli KURA, yang
+    nol-nya sah (hadiah, warisan, anakan sendiri). Bedanya: kolom harga
+    barang bawaannya 0 di skema, jadi nol adalah apa yang tertulis ketika
+    tidak ada yang mengisi, bukan pernyataan siapa pun.
+
+  Dan aturannya satu untuk DUA pemakai — layar isian massal dan saringan
+  Data Belum Lengkap. Dua salinan yang sedikit berbeda membuat barang
+  muncul di satu daftar tetapi tidak di daftar lain, tanpa error apa pun.
+*/
+const LG = await import(`file://${join(dir, "lengkap.cjs")}`).then((m) => m.default || m);
+const HB = await import(`file://${join(dir, "hargabrg.cjs")}`).then((m) => m.default || m);
+const cekHargaBarang = LG.INCOMPLETE_CHECKS.warehouseItem.fields.find((f) => f.key === "purchase_price");
+if (!cekHargaBarang) temuan.push("harga barang: pemeriksa kelengkapan tidak punya kolom purchase_price");
+
+const brgUji = [
+  // [nama, barang, dianggap lengkap?]
+  ["alat kerja berstok tanpa harga (18 nyata)", { current_stock: 2, purchase_price: 0 }, false],
+  ["harga null, stok ada", { current_stock: 1, purchase_price: null }, false],
+  ["kolom harga tidak ada sama sekali", { current_stock: 1 }, false],
+  ["berstok dan berharga", { current_stock: 2, purchase_price: 425000 }, true],
+  // Barang habis tidak menyumbang modal, jadi tidak ditagih harganya.
+  ["habis, tanpa harga", { current_stock: 0, purchase_price: 0 }, true],
+  ["habis, berharga", { current_stock: 0, purchase_price: 10000 }, true],
+];
+for (const [nama, brg, lengkap] of brgUji) {
+  const dapat = cekHargaBarang ? !!cekHargaBarang.check(brg) : false;
+  if (dapat !== lengkap) {
+    temuan.push(`harga barang "${nama}": ${dapat ? "lengkap" : "belum lengkap"}, seharusnya ${lengkap ? "lengkap" : "belum lengkap"}`);
+  }
+  /* Saringan dan pemeriksa kelengkapan HARUS sepakat — kalau berpisah,
+     barang muncul di satu daftar dan hilang dari daftar yang lain. */
+  const diDaftarMassal = HB.barangTanpaHarga([brg]).length === 1;
+  if (diDaftarMassal === dapat) {
+    temuan.push(`harga barang "${nama}": layar isian massal dan Data Belum Lengkap tidak sepakat`);
+  }
+}
+
+/* Ringkasan kelengkapan dipakai beranda; angkanya harus utuh. */
+const ringkasBrg = HB.kelengkapanHargaBarang([
+  { current_stock: 2, purchase_price: 425000 },
+  { current_stock: 1, purchase_price: 0 },
+  { current_stock: 3, purchase_price: null },
+  { current_stock: 0, purchase_price: 0 },   // habis: di luar hitungan
+]);
+if (ringkasBrg.berstok !== 3) temuan.push(`harga barang: ${ringkasBrg.berstok} barang berstok, seharusnya 3 (yang habis tidak ikut)`);
+if (ringkasBrg.berharga !== 1) temuan.push(`harga barang: ${ringkasBrg.berharga} berharga, seharusnya 1`);
+if (ringkasBrg.kosong !== 2) temuan.push(`harga barang: ${ringkasBrg.kosong} kosong, seharusnya 2`);
+if (ringkasBrg.persen !== 33) temuan.push(`harga barang: ${ringkasBrg.persen}% lengkap, seharusnya 33`);
+
+/*
   ── PITA UKURAN & NILAI ASET: perkiraan harga jual kawanan ─────────────────
 
   Diminta pemiliknya 18 Okt 2026, untuk kolom "estimasi total aset" di
@@ -2123,7 +2186,6 @@ if (HE.hargaBasi("", KINI_HE)) temuan.push("harga basi: tanggal kosong dianggap 
   oleh layar yang menghitung modalnya — dan selisih itu tidak akan terlihat
   sampai ada yang menjual kura tersebut.
 */
-const LG = await import(`file://${join(dir, "lengkap.cjs")}`).then((m) => m.default || m);
 const HPPK = await import(`file://${join(dir, "hpp.cjs")}`).then((m) => m.default || m);
 const cekHarga = LG.INCOMPLETE_CHECKS.tortoise.fields.find((f) => f.key === "purchase_price");
 if (!cekHarga) temuan.push("harga beli: pemeriksa kelengkapan tidak punya kolom purchase_price");
@@ -2872,6 +2934,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang diuji.`,
 );
 process.exit(0);

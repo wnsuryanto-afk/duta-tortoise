@@ -165,6 +165,7 @@ export const EXTRA_DESTINATIONS = [
   /* Section "finance", bukan "tortoise": harga estimasi menentukan nilai
      aset dan margin penjualan, dan kiper tidak punya urusan dengannya. */
   { path: "/harga-kura",     section: "finance",       label: "Harga Estimasi Kura",  group: "Kura" },
+  { path: "/isi-harga-barang", section: "stock-gudang", label: "Isi Harga Barang",  group: "Stok" },
   { path: "/passport",           section: "tortoise",  label: "Paspor Kura (cetak)",  group: "Kura" },
   { path: "/incomplete-data",    section: "dashboard", label: "Data Belum Lengkap",   group: "Laporan" },
   { path: "/info",               section: "info",      label: "Info & Pengumuman",    group: "Laporan" },

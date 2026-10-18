@@ -1,6 +1,7 @@
 // Utility: cek kelengkapan data per entity
 
 import { lahirDiFarm } from "@/lib/hppKura";
+import { adaHargaBarang } from "@/lib/hargaBarang";
 
 export const INCOMPLETE_CHECKS = {
   tortoise: {
@@ -83,6 +84,24 @@ export const INCOMPLETE_CHECKS = {
       { key: "supplier", label: "Supplier", check: (d) => !!d.supplier },
       { key: "expired_date", label: "Tgl kadaluarsa", check: (d) => !["obat","vitamin"].includes(d.category) || !!d.expired_date },
       { key: "location", label: "Lokasi penyimpanan", check: (d) => !!d.location },
+      /*
+        Harga beli — hanya untuk barang yang MASIH ADA STOKNYA.
+
+        Ditambahkan 18 Okt 2026, bersama layar isian massalnya. Saat itu 53
+        dari 87 barang bergudang punya stok tetapi harganya Rp 0, termasuk
+        18 dari 21 alat kerja — dan tidak ada satu pun layar yang
+        menyebutkannya, sehingga modal alat di beranda praktis hanya lampu
+        UVB tanpa ada yang tahu kenapa.
+
+        Barang habis sengaja dianggap lengkap: ia tidak menyumbang modal
+        apa pun hari ini, dan harganya akan ditanyakan saat dibeli lagi.
+        Aturan "belum ada harganya" diambil dari lib/hargaBarang.js, yang
+        sama dengan yang dipakai layar isian massal.
+      */
+      { key: "purchase_price", label: "Harga beli", check: (d) => {
+          if (!(Number(d?.current_stock) > 0)) return true;
+          return adaHargaBarang(d);
+        }},
     ],
   },
   feedStock: {

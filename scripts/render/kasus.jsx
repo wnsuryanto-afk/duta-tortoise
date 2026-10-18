@@ -716,6 +716,29 @@ export default [
       <p className="text-xs text-muted-foreground tabular-nums">Rp 0 &mdash; dicatat bermodal nol (hadiah/warisan)</p>
     </div>
   ))()],
+  /*
+    Satu baris layar Isi Harga Barang, dengan nama barang TERPANJANG yang
+    benar-benar ada di gudang: "Moringa / kelor bubuk (TIDAK dipakai Duta
+    Repro v7 — habiskan, jangan dibeli lagi)". Nama sepanjang itu bukan
+    karangan — ia keterangan yang ditulis pemiliknya sendiri ke dalam nama
+    barang, dan ia harus membungkus, bukan terpotong, di layar terlipat.
+  */
+  ["Isi Harga Barang — nama terpanjang", (() => (
+    <div className="rounded-xl border border-border bg-card p-3">
+      <p className="text-sm font-medium text-foreground break-words">
+        Moringa / kelor bubuk (TIDAK dipakai Duta Repro v7 &mdash; habiskan, jangan dibeli lagi)
+      </p>
+      <div className="flex items-end gap-2 mt-2 flex-wrap">
+        <div className="min-w-0 flex-1" style={{ minWidth: "128px" }}>
+          <p className="text-[11px] text-muted-foreground">Harga per gram</p>
+          <div className="h-9 mt-0.5 rounded-md border border-border bg-card px-3 flex items-center text-sm text-muted-foreground">19.6</div>
+        </div>
+        <p className="text-[11px] text-muted-foreground tabular-nums pb-2 flex-shrink-0">
+          &times; 16000 gram = <b className="text-foreground">Rp 313.600</b>
+        </p>
+      </div>
+    </div>
+  ))()],
   ["NilaiInisiatifSekaligus — antrean nyata", <NilaiInisiatifSekaligus
     settings={{ poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] }}
     logs={[
