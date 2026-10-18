@@ -10,6 +10,15 @@
       ],
       "type": "string"
     },
+    "asal_genetik": {
+      "description": "Asal-usul kura: captive bred, wild caught, atau long term captive. TERPISAH dari `source`, yang mencampur dua hal berbeda \u2014 cara datangnya (import, beli_lokal, hasil_sendiri) dan asal-usulnya (cb, wc, ltc). Ditambahkan 18 Okt 2026 karena 79 kura tercatat `source: import`, yang menyebut cara datang dan BUKAN cb atau wc, sehingga hanya 21 dari 135 ekor asalnya terbaca \u2014 dan harga indukan cb berbeda dari wc. Kolom ini dipakai daftar harga estimasi. Kosong berarti belum diketahui, bukan cb.",
+      "enum": [
+        "cb",
+        "wc",
+        "ltc"
+      ],
+      "type": "string"
+    },
     "birth_date": {
       "format": "date",
       "type": "string"
