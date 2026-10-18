@@ -180,6 +180,35 @@ export function nilaiAsetKura({ kura = [], harga = [] } = {}) {
   };
 }
 
+/**
+ * Baris ber-asal "?" yang KEMBAR dengan baris lain — bedanya cuma asalnya.
+ *
+ * ── Kenapa ini perlu ditunjukkan ────────────────────────────────────────────
+ *
+ * Ditemukan 18 Okt 2026 saat pustaka ini dijalankan terhadap kawanan yang
+ * sebenarnya untuk pertama kali. 36 kura belum punya asal_genetik, dan
+ * karena "belum diketahui" adalah kelompok tersendiri (memang harus —
+ * kosong bukan cb), mereka membentuk barisnya sendiri. Delapan di antaranya
+ * berdampingan dengan baris yang isinya sama persis kecuali asalnya:
+ *
+ *     55–60 cm jantan · asal?  4 ekor
+ *     55–60 cm jantan · WC     4 ekor
+ *
+ * Yang mengisi harus memberi harga pada keduanya, untuk hal yang sama.
+ * Begitu ke-36 kura itu ditentukan asalnya, pasangan ini menyatu sendiri
+ * dan 45 baris turun jadi 37.
+ *
+ * Jadi yang benar bukan menggabungkan paksa — itu akan menghargai kura yang
+ * asalnya belum diketahui sebagai WC tanpa ada yang memutuskannya. Yang
+ * benar adalah MENGATAKANNYA, supaya yang mengisi tahu pekerjaan ini bisa
+ * mengecil dulu sebelum dimulai.
+ */
+export function barisKembarAsal(baris = []) {
+  const tanpaAsal = (b) => [b.species, b.morph, b.pitaMin, b.gender, b.proven].join("|");
+  const sudahBerasal = new Set((baris || []).filter((b) => b.asal).map(tanpaAsal));
+  return (baris || []).filter((b) => !b.asal && sudahBerasal.has(tanpaAsal(b)));
+}
+
 /** Umur sebuah harga dalam hari — dasar peringatan "harga ini sudah lama". */
 export const HARI_HARGA_BASI = 180;
 

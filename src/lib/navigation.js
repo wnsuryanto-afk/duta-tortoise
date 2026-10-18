@@ -166,6 +166,7 @@ export const EXTRA_DESTINATIONS = [
      aset dan margin penjualan, dan kiper tidak punya urusan dengannya. */
   { path: "/harga-kura",     section: "finance",       label: "Harga Estimasi Kura",  group: "Kura" },
   { path: "/isi-harga-barang", section: "stock-gudang", label: "Isi Harga Barang",  group: "Stok" },
+  { path: "/isi-asal-kura",  section: "finance",       label: "Asal Kura (CB/WC)",    group: "Kura" },
   { path: "/passport",           section: "tortoise",  label: "Paspor Kura (cetak)",  group: "Kura" },
   { path: "/incomplete-data",    section: "dashboard", label: "Data Belum Lengkap",   group: "Laporan" },
   { path: "/info",               section: "info",      label: "Info & Pengumuman",    group: "Laporan" },

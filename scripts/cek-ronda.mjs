@@ -2161,6 +2161,40 @@ if (baris.length !== 2) temuan.push(`baris harga: ${baris.length} baris, seharus
 if (baris[0].ekor < baris[baris.length - 1].ekor) temuan.push("baris harga: tidak diurutkan dari yang paling banyak ekornya");
 if (!baris[0].terisi) temuan.push("baris harga: baris yang sudah berharga tidak ditandai terisi");
 
+/*
+  Baris yang kembar HANYA karena asalnya belum ditentukan.
+
+  Ditemukan 18 Okt 2026 dengan menjalankan pustaka ini terhadap kawanan yang
+  sebenarnya untuk pertama kali: 36 kura tanpa asal_genetik membentuk 24
+  baris sendiri, dan 8 di antaranya berdampingan dengan baris yang isinya
+  sama persis kecuali asalnya — "55-60 cm jantan asal? 4 ekor" tepat di
+  sebelah "55-60 cm jantan WC 4 ekor". Yang mengisi harga harus memberi
+  angka dua kali untuk hal yang sama.
+
+  Yang dijaga: hanya pasangan yang BENAR-BENAR kembar yang dilaporkan.
+  Melaporkan semua baris ber-asal kosong akan menyuruh pemiliknya
+  mengerjakan 24 baris padahal yang menyatu cuma 8.
+*/
+const asalUji = [
+  { species: "sulcata", morph: "normal", shell_length_cm: 57, gender: "jantan", asal_genetik: "wc", status: "aktif" },
+  { species: "sulcata", morph: "normal", shell_length_cm: 58, gender: "jantan", status: "aktif" },            // kembar dgn di atas
+  { species: "sulcata", morph: "normal", shell_length_cm: 22, gender: "betina", status: "aktif" },            // tidak ada pasangannya
+  { species: "sulcata", morph: "normal", shell_length_cm: 57, gender: "betina", asal_genetik: "cb", status: "aktif" },
+];
+const barisAsal = HE.barisHarga({ kura: asalUji, harga: [] }).baris;
+const kembarAsal = HE.barisKembarAsal(barisAsal);
+if (barisAsal.length !== 4) temuan.push(`baris kembar: ${barisAsal.length} baris dibuat, seharusnya 4`);
+if (kembarAsal.length !== 1) temuan.push(`baris kembar: ${kembarAsal.length} dilaporkan kembar, seharusnya 1`);
+if (kembarAsal[0] && kembarAsal[0].gender !== "jantan") temuan.push("baris kembar: yang dilaporkan bukan pasangan jantan 55-60");
+/* Yang SUDAH berasal tidak boleh ikut dilaporkan. */
+if (kembarAsal.some((b) => b.asal)) temuan.push("baris kembar: baris yang sudah punya asal ikut dilaporkan");
+/* Beda proven bukan kembar — itu memang dua harga yang berbeda. */
+const bedaProven = HE.barisKembarAsal(HE.barisHarga({ kura: [
+  { species: "sulcata", morph: "normal", shell_length_cm: 57, gender: "jantan", asal_genetik: "wc", is_proven: true, status: "aktif" },
+  { species: "sulcata", morph: "normal", shell_length_cm: 58, gender: "jantan", status: "aktif" },
+], harga: [] }).baris);
+if (bedaProven.length !== 0) temuan.push("baris kembar: beda status proven dianggap kembar");
+
 /* Harga yang sudah lama tidak disentuh ditandai. */
 const KINI_HE = new Date("2026-10-18T00:00:00Z");
 if (HE.hargaBasi("2026-10-01", KINI_HE)) temuan.push("harga basi: harga 17 hari lalu dianggap basi");
@@ -2934,6 +2968,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal diuji.`,
 );
 process.exit(0);
