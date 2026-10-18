@@ -1,5 +1,7 @@
 // Utility: cek kelengkapan data per entity
 
+import { lahirDiFarm } from "@/lib/hppKura";
+
 export const INCOMPLETE_CHECKS = {
   tortoise: {
     label: "Kura-kura",
@@ -15,6 +17,28 @@ export const INCOMPLETE_CHECKS = {
         }},
       { key: "enclosure",      label: "Kandang",        check: (d) => !!d.enclosure },
       { key: "species",        label: "Spesies",        check: (d) => !!d.species },
+      /*
+        Harga beli — hanya untuk kura yang DIBELI.
+
+        Ditambahkan 18 Okt 2026. Saat itu 47 kura beli tidak punya harga beli
+        sama sekali, dan saringan "Data Belum Lengkap" menghitungnya NOL:
+        kolomnya memang tidak pernah diperiksa. Akibatnya HPP mereka baru
+        ketahuan hilang saat kura itu dijual, dan angkanya harus diingat
+        kembali di layar penjualan — kadang bertahun sesudah pembeliannya.
+
+        Kura hasil tetasan sendiri sengaja dianggap LENGKAP tanpa kolom ini:
+        modalnya biaya induk selama mengerami, dihitung lib/hppKura.js dari
+        clutch-nya. Aturan "lahir di sini" diambil dari sana juga, supaya
+        tidak ada kura yang ditandai kurang lengkap di layar ini tetapi
+        dianggap hasil sendiri oleh perhitungan HPP.
+
+        Nol adalah jawaban yang SAH (hadiah/warisan), jadi yang diperiksa
+        "sudah diisi atau belum", bukan "lebih besar dari nol".
+      */
+      { key: "purchase_price", label: "Harga beli", check: (d) => {
+          if (lahirDiFarm(d)) return true;
+          return d.purchase_price !== null && d.purchase_price !== undefined && d.purchase_price !== "";
+        }},
     ],
   },
   breeding: {

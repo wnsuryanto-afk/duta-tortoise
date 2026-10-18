@@ -82,6 +82,7 @@ bundel("src/lib/kelompokInisiatif.js", "kelompok.cjs");
 bundel("src/lib/hargaSupplier.js", "harga.cjs");
 bundel("src/lib/pasarSupplier.js", "pasar.cjs");
 bundel("src/lib/bersihkanKura.js", "bersihkura.cjs");
+bundel("src/lib/incompleteChecks.js", "lengkap.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1987,6 +1988,62 @@ for (const [teks, harap] of barangUji) {
 }
 
 /*
+  ── HARGA BELI: kura yang DIBELI harus punya modalnya ──────────────────────
+
+  Diminta pemiliknya 18 Okt 2026: "kalau kita membeli bukan dari anakan
+  sendiri, saat memasukkan data perlu mencantumkan harga beli supaya bisa
+  menentukan HPP saat nanti dijual".
+
+  Keadaan saat itu: 47 kura beli tanpa harga beli sama sekali — termasuk
+  tiga Sulcata Albino yang baru saja dimasukkan — dan saringan "Data Belum
+  Lengkap" menghitungnya NOL, karena kolom itu memang tidak pernah
+  diperiksa. Satu-satunya tempat mengisinya adalah SaleWizard, saat menjual:
+  berbulan-bulan sesudah pembeliannya, dari ingatan.
+
+  Yang dijaga di sini: aturan "dibeli" di pemeriksa kelengkapan SAMA dengan
+  aturan yang dipakai perhitungan HPP (lahirDiFarm). Kalau keduanya berpisah,
+  ada kura yang diminta harganya di satu layar tetapi dianggap hasil sendiri
+  oleh layar yang menghitung modalnya — dan selisih itu tidak akan terlihat
+  sampai ada yang menjual kura tersebut.
+*/
+const LG = await import(`file://${join(dir, "lengkap.cjs")}`).then((m) => m.default || m);
+const HPPK = await import(`file://${join(dir, "hpp.cjs")}`).then((m) => m.default || m);
+const cekHarga = LG.INCOMPLETE_CHECKS.tortoise.fields.find((f) => f.key === "purchase_price");
+if (!cekHarga) temuan.push("harga beli: pemeriksa kelengkapan tidak punya kolom purchase_price");
+
+const hargaUjiKura = [
+  // [nama, kura, lengkap?]
+  ["beli lokal tanpa harga (47 kura nyata)", { source: "beli_lokal", code: "A40", purchase_price: null }, false],
+  ["Sulcata Albino yang baru dimasukkan", { source: "beli_lokal", code: "SA01", purchase_price: null }, false],
+  ["beli lokal dengan harga", { source: "beli_lokal", code: "A40", purchase_price: 2500000 }, true],
+  // Nol adalah jawaban yang SAH: hadiah dan warisan memang bermodal nol.
+  // Memeriksanya dengan `!!` akan menandainya belum lengkap selamanya.
+  ["hadiah, dicatat nol", { source: "beli_lokal", code: "X1", purchase_price: 0 }, true],
+  ["impor dengan harga", { source: "import", code: "B106", purchase_price: 8000000 }, true],
+  ["impor tanpa harga", { source: "import", code: "B106", purchase_price: null }, false],
+  // Hasil tetasan sendiri: modalnya biaya induk, bukan harga beli.
+  ["hasil sendiri", { source: "hasil_sendiri", code: "BB-2026049", purchase_price: null }, true],
+  // Kode BB- tetap terbaca hasil sendiri walau source-nya tidak diisi —
+  // aturan yang sama dipakai hppKura.
+  ["kode BB- tanpa source", { source: "", code: "BB-2026001", purchase_price: null }, true],
+  ["teks kosong sama dengan belum diisi", { source: "wc", code: "A45", purchase_price: "" }, false],
+];
+for (const [nama, kura, lengkap] of hargaUjiKura) {
+  const dapat = cekHarga ? !!cekHarga.check(kura) : false;
+  if (dapat !== lengkap) {
+    temuan.push(`harga beli "${nama}": ${dapat ? "lengkap" : "belum lengkap"}, seharusnya ${lengkap ? "lengkap" : "belum lengkap"}`);
+  }
+}
+/* Aturannya harus BENAR-BENAR fungsi yang sama, bukan salinan yang mirip. */
+for (const [nama, kura] of hargaUjiKura.map((x) => [x[0], x[1]])) {
+  const kelengkapanBilangDibeli = cekHarga && !cekHarga.check({ ...kura, purchase_price: null });
+  const hppBilangDibeli = !HPPK.lahirDiFarm(kura);
+  if (kelengkapanBilangDibeli !== hppBilangDibeli) {
+    temuan.push(`harga beli "${nama}": kelengkapan dan hitungan HPP tidak sepakat kura ini dibeli atau hasil sendiri`);
+  }
+}
+
+/*
   ── KURA BARU: teks kosong tidak boleh masuk kolom angka ───────────────────
 
   18 Okt 2026 pemiliknya tidak bisa memasukkan Sulcata Albino yang baru
@@ -2698,6 +2755,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura diuji.`,
 );
 process.exit(0);
