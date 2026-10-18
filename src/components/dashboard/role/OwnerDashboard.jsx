@@ -52,6 +52,7 @@ import RingkasanAngka from "@/components/common/RingkasanAngka";
 import { rupiah } from "@/lib/rupiah";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
 import { modalKerja, totalAset } from "@/lib/modalKerja";
+import { kelengkapanHargaBarang } from "@/lib/hargaBarang";
 import { kalimatKomposisi, ringkasUmur } from "@/lib/anakanKura";
 
 // ─── Helpers ───────────────────────────────────────
@@ -536,6 +537,7 @@ export default function OwnerDashboard({ user }) {
   });
   const asetKura = nilaiAsetKura({ kura: tortoises, harga: hargaKura });
   const aset = totalAset({ asetKura, modal });
+  const hargaBarangLengkap = kelengkapanHargaBarang(warehouseItems);
 
   const nilaiPerPoin = settings.nilai_per_poin || 0;
   // Tanpa angka cadangan: 300 adalah sepersebelas target sebenarnya (3.500),
@@ -1235,6 +1237,13 @@ export default function OwnerDashboard({ user }) {
                 ? <>, <span className="text-amber-700 dark:text-amber-400 font-semibold">kandang belum diisi</span></>
                 : <>, kandang {rupiah(modal.bagian[2].nilai)}</>}
             </p>
+            {/* Jalurnya disebut, bukan dibiarkan dicari sendiri: barang tanpa
+                harga adalah sebab terbesar modal alat tampak kecil. */}
+            {hargaBarangLengkap.kosong > 0 && (
+              <Link to="/isi-harga-barang" className="text-[11px] text-primary hover:underline mt-1 inline-block">
+                {hargaBarangLengkap.kosong} barang berstok belum ada harganya — isi sekaligus
+              </Link>
+            )}
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
