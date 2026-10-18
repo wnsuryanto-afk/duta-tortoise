@@ -86,6 +86,7 @@ bundel("src/lib/incompleteChecks.js", "lengkap.cjs");
 bundel("src/lib/pitaUkuran.js", "pita.cjs");
 bundel("src/lib/hargaEstimasi.js", "hargaest.cjs");
 bundel("src/lib/hargaBarang.js", "hargabrg.cjs");
+bundel("src/lib/namaMirip.js", "namamirip.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1991,6 +1992,91 @@ for (const [teks, harap] of barangUji) {
 }
 
 /*
+  ── NAMA MIRIP: salah ketik yang melahirkan stok tandingan ─────────────────
+
+  18 Okt 2026, stok pakan punya dua baris rumput: "Rumput" 658,97 kg dan
+  "Reumput" 30 kg. Keduanya dicatat Angsolo pada hari yang sama, berselang
+  detik — ia mengetik nama pakan di Pakan Harian, tidak ada yang cocok
+  persis, dan formulir itu membuat baris FeedStock baru tanpa bertanya.
+
+  Yang dijaga di sini adalah hal yang SUDAH membuat saya salah sekali:
+  kemiripan() di miripTugas.js terlihat seperti alat yang tepat dan ternyata
+  kebalikannya. Diuji terhadap pasangan yang sebenarnya:
+
+      kemiripan("Reumput", "Rumput")  = 0,00   typo-nya LOLOS
+      kemiripan("Melon", "Melon BS")  = 1,00   barang SAH diblokir
+
+  Ia membandingkan KATA, bukan huruf. Jadi kedua kasus itu diuji di sini
+  secara tegas — supaya tidak ada yang "menyederhanakan" berkas ini dengan
+  memanggil kemiripan() dan memblokir pencatatan pakan harian yang benar.
+*/
+const NM = await import(`file://${join(dir, "namamirip.cjs")}`).then((m) => m.default || m);
+
+/* Keempat belas nama pakan yang BENAR-BENAR ada, 18 Okt 2026. */
+const PAKAN_NYATA = [
+  "Reumput", "Melon", "Melon BS", "Rumput", "Pakan Lainnya", "Labu ",
+  "Pelet Reptil", "Hay / Jerami Kering", "Kaktus / Opuntia", "Wortel",
+  "Labu Siam", "Daun Pepaya", "Rumput Gajah / Sudan", "Mentimun",
+];
+
+const namaMiripUji = [
+  // [nama yang diketik, kembaran yang diharapkan atau null, keterangan]
+  ["Reumput", "Rumput", "typo nyata yang sudah terjadi"],
+  ["Wortle", "Wortel", "huruf tertukar"],
+  ["Mentimum", "Mentimun", "huruf terakhir salah"],
+  ["Melon BT", "Melon BS", "satu huruf pada mutu"],
+  // Yang TIDAK boleh dituduh:
+  ["Melon BS", null, "nama yang memang sudah ada persis"],
+  ["Kangkung", null, "pakan baru yang sah"],
+  ["Rumput Odot", null, "perincian dari Rumput, bukan typo"],
+  ["Melon BS Grade A", null, "perincian lebih jauh"],
+  ["Sawi Hijau", null, "pakan baru yang sah"],
+  /*
+    Dua kasus yang DITEMUKAN lewat uji merah, bukan dipikirkan di muka.
+
+    Tanpa keduanya, melepas pengecualian perincian dan melonggarkan ambang
+    jarak sampai 4 sama-sama tidak menjatuhkan satu uji pun:
+
+    · "Rumput A" — penjaga panjang (selisih > 2) sudah menangkap semua
+      perincian panjang seperti "Melon BS" dan "Rumput Odot", jadi
+      perincianDari() hanya benar-benar menentukan pada akhiran PENDEK.
+      Di situlah ia harus diuji, bukan pada pasangan yang lolos duluan.
+    · "Melati" — berjarak 3 huruf dari "Melon" dengan panjang hampir sama.
+      Pada ambang 2 ia lolos (benar: bunga, bukan salah ketik melon); pada
+      ambang 4 ia dituduh. Satu-satunya kasus di daftar ini yang memisahkan
+      kedua ambang itu.
+  */
+  ["Rumput A", null, "akhiran mutu pendek, bukan salah ketik"],
+  ["Melati", null, "jarak 3 dari Melon — terlalu jauh untuk salah ketik"],
+];
+for (const [ketik, harap, ket] of namaMiripUji) {
+  const dapat = NM.namaKembar(ketik, PAKAN_NYATA);
+  if (dapat !== harap) {
+    temuan.push(`nama mirip ${JSON.stringify(ketik)} (${ket}): dapat ${JSON.stringify(dapat)}, seharusnya ${JSON.stringify(harap)}`);
+  }
+}
+
+/* Tidak satu pun dari 14 nama nyata boleh menuduh yang lain, KECUALI
+   pasangan Reumput/Rumput yang memang kembar. */
+{
+  const tuduhan = [];
+  for (const n of PAKAN_NYATA) {
+    const k = NM.namaKembar(n, PAKAN_NYATA.filter((x) => x !== n));
+    if (k) tuduhan.push(`${n}~${k}`);
+  }
+  if (tuduhan.length !== 2) {
+    temuan.push(`nama mirip: ${tuduhan.length} tuduhan di antara nama nyata (${tuduhan.join(", ")}), seharusnya 2 (Reumput/Rumput dua arah)`);
+  }
+}
+
+/* Jarak hurufnya sendiri, supaya kesalahan di sini terbaca langsung. */
+if (NM.jarakHuruf("Reumput", "Rumput") !== 1) temuan.push(`nama mirip: jarak Reumput-Rumput ${NM.jarakHuruf("Reumput", "Rumput")}, seharusnya 1`);
+if (NM.jarakHuruf("abc", "abc") !== 0) temuan.push("nama mirip: jarak nama identik bukan 0");
+/* Perincian dikenali dari batas KATA, bukan potongan huruf. */
+if (!NM.perincianDari("Melon", "Melon BS")) temuan.push("nama mirip: 'Melon BS' tidak dikenali sebagai perincian 'Melon'");
+if (NM.perincianDari("Rum", "Rumput")) temuan.push("nama mirip: potongan kata 'Rum' dianggap perincian 'Rumput'");
+
+/*
   ── HARGA BARANG GUDANG: 53 barang berstok tanpa harga beli ────────────────
 
   18 Okt 2026: 53 dari 87 barang bergudang punya stok tetapi harga belinya
@@ -2968,6 +3054,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${namaMiripUji.length} nama mirip diuji.`,
 );
 process.exit(0);
