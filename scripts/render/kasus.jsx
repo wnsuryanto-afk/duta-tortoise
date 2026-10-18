@@ -696,6 +696,26 @@ export default [
       </div>
     );
   })()],
+  /*
+    Isian Harga Beli di formulir Tambah Tortoise, dengan pesan kesalahannya
+    yang panjang. Formulir itu sendiri belum diukur di sini (ia butuh dialog
+    dan beberapa kueri), tetapi bagian yang BARU bisa — dan pesan wajibnya
+    adalah kalimat terpanjang yang bisa muncul di kolom selebar setengah
+    layar pada HP terlipat.
+  */
+  ["Harga beli kura — pesan wajibnya", (() => (
+    <div className="space-y-1.5">
+      <p className="text-sm font-medium">Harga Beli <span className="text-red-500">*</span></p>
+      <div className="h-9 rounded-md border border-border bg-card px-3 flex items-center text-sm text-muted-foreground">8000000</div>
+      <p className="text-xs text-muted-foreground tabular-nums">Rp 8.000.000</p>
+      <p className="text-xs text-red-600">
+        Harga beli wajib diisi untuk kura yang dibeli &mdash; HPP saat dijual dihitung dari sini.
+        Isi 0 bila hadiah/warisan.
+      </p>
+      <p className="text-xs text-muted-foreground">Dipakai menghitung HPP dan margin saat kura ini dijual nanti.</p>
+      <p className="text-xs text-muted-foreground tabular-nums">Rp 0 &mdash; dicatat bermodal nol (hadiah/warisan)</p>
+    </div>
+  ))()],
   ["NilaiInisiatifSekaligus — antrean nyata", <NilaiInisiatifSekaligus
     settings={{ poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] }}
     logs={[

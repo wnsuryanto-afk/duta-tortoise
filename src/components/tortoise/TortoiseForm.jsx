@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { bersihkanKura } from "@/lib/bersihkanKura";
+import { lahirDiFarm } from "@/lib/hppKura";
+import { rupiah } from "@/lib/rupiah";
 import { useTestMode } from "@/lib/useTestMode";
 import { simpanUkuranSekali } from "@/lib/ukurSekali";
 import { kandangDariNama, kandangBisaDipilih } from "@/lib/kandang";
@@ -155,7 +157,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
     name: "", code: "", gender: "", morph: "normal",
     species: "sulcata", species_params: SPECIES_PARAMS["sulcata"],
     source: "",
-    is_proven: false, proven_year: "", birth_date: "", purchase_date: "", weight_grams: "", shell_length_cm: "",
+    is_proven: false, proven_year: "", birth_date: "", purchase_date: "", purchase_price: "", weight_grams: "", shell_length_cm: "",
     status: "aktif", enclosure: "", notes: "",
   });
 
@@ -204,6 +206,26 @@ export default function TortoiseForm({ open, onClose, editData }) {
     if (!form.weight_grams) e.weight_grams = "Berat wajib diisi";
     if (!form.shell_length_cm) e.shell_length_cm = "Panjang cangkang wajib diisi";
     if (!form.purchase_date && !form.birth_date) e.purchase_date = "Tanggal masuk/lahir wajib diisi";
+    /*
+      Harga beli wajib untuk kura yang DIBELI, karena HPP saat ia dijual
+      nanti dihitung dari sini (lib/hppKura.js). Tanpa angka ini, margin
+      penjualannya tidak bisa dihitung — dan satu-satunya tempat mengisinya
+      dulu adalah SaleWizard, saat menjual: berbulan-bulan atau bertahun
+      kemudian, dari ingatan.
+
+      Aturan "dibeli" diambil dari lahirDiFarm() yang sama dengan yang
+      dipakai perhitungan HPP. Kalau formulir ini memakai aturannya sendiri,
+      ada kura yang dimintai harga tetapi HPP-nya menganggapnya hasil
+      sendiri, atau sebaliknya.
+
+      Nol DIPERBOLEHKAN — hadiah dan warisan memang bermodal nol — tetapi
+      harus diketik. Yang tidak diperbolehkan adalah dikosongkan, karena
+      kosong berarti "belum diputuskan", dan itu yang selama ini terbawa
+      sampai ke layar penjualan.
+    */
+    if (!lahirDiFarm(form) && String(form.purchase_price ?? "").trim() === "") {
+      e.purchase_price = "Harga beli wajib diisi untuk kura yang dibeli — HPP saat dijual dihitung dari sini. Isi 0 bila hadiah/warisan.";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -799,6 +821,38 @@ export default function TortoiseForm({ open, onClose, editData }) {
               {errors.purchase_date && <p className="text-xs text-red-600">{errors.purchase_date}</p>}
             </div>
           </div>
+          {/*
+            Harga beli hanya ditanyakan pada kura yang DIBELI. Kura hasil
+            tetasan sendiri tidak punya harga beli — modalnya biaya induk
+            selama mengerami, dan itu dihitung lib/hppKura.js dari clutch-nya,
+            bukan diketik di sini.
+          */}
+          {!lahirDiFarm(form) && (
+            <div className="space-y-1.5">
+              <Label>Harga Beli <span className="text-red-500">*</span></Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                placeholder="contoh: 8000000"
+                value={form.purchase_price ?? ""}
+                onChange={(e) => set("purchase_price", e.target.value)}
+                className={errors.purchase_price ? "border-red-500 ring-1 ring-red-400" : ""}
+              />
+              {/* Angkanya dibacakan kembali: "8000000" dan "800000" terlihat
+                  nyaris sama saat diketik terburu-buru, dan selisihnya
+                  sepuluh kali lipat pada HPP. */}
+              {String(form.purchase_price ?? "").trim() !== "" && Number.isFinite(Number(form.purchase_price)) && (
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {rupiah(Number(form.purchase_price))}
+                  {Number(form.purchase_price) === 0 && " — dicatat bermodal nol (hadiah/warisan)"}
+                </p>
+              )}
+              {errors.purchase_price
+                ? <p className="text-xs text-red-600">{errors.purchase_price}</p>
+                : <p className="text-xs text-muted-foreground">Dipakai menghitung HPP dan margin saat kura ini dijual nanti.</p>}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Panjang Cangkang (cm) <span className="text-red-500">*</span></Label>
