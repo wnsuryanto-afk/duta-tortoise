@@ -204,9 +204,8 @@ export default function SupplierPage() {
     riwayat.
   */
   const { data: movements = [] } = useQuery({
-    queryKey: ["supplier-barang-masuk"],
+    queryKey: ["stock-movements", "-date", 500],
     queryFn: () => base44.entities.StockMovement.list("-date", 500),
-    staleTime: 5 * 60 * 1000,
   });
   const kirimPer = useMemo(() => {
     const m = new Map();

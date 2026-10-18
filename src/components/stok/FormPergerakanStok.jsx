@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { base44, BATAS_AMBIL } from "@/api/base44Client";
+import { base44 } from "@/api/base44Client";
 import { useTestMode } from "@/lib/useTestMode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,11 +43,17 @@ export default function FormPergerakanStok({ feedstocks, warehouseItems, onClose
     SEKALIGUS `supplier` (namanya), supaya pembaca lama yang hanya tahu kolom
     teks tetap membaca hal yang sama.
   */
-  const { data: suppliers = [] } = useQuery({
-    queryKey: ["form-stok-suppliers"],
-    queryFn: () => base44.entities.Supplier.list("-name", BATAS_AMBIL),
-    staleTime: 10 * 60 * 1000,
+  const { data: daftarSupplier = [] } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: () => base44.entities.Supplier.list("-created_date"),
   });
+  /* Diurutkan menurut nama DI SINI, bukan lewat kunci cache sendiri:
+     memilih dari daftar memang lebih enak urut abjad, tetapi kunci kedua
+     untuk data yang sama membuat salah satunya selalu basi. */
+  const suppliers = useMemo(
+    () => [...daftarSupplier].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))),
+    [daftarSupplier],
+  );
   const { user } = useCurrentUser();
   const [form, setForm] = useState({ type: tipeAwal === "keluar" ? "keluar" : "masuk", item_id: "", item_type: "feedstock", quantity: "", unit_price: "", supplier_id: "", notes: "", date: format(new Date(), "yyyy-MM-dd") });
   const [saving, setSaving] = useState(false);
@@ -165,6 +171,20 @@ export default function FormPergerakanStok({ feedstocks, warehouseItems, onClose
             <span className="ml-2 font-semibold">⚠️ Butuh Approval</span>
           )}
         </div>
+      )}
+      {/*
+        Nol supplier terdaftar bukan alasan menyembunyikan isiannya tanpa
+        sepatah kata pun. 18 Okt 2026 memang nol — tujuh lead sudah masuk
+        tetapi belum satu pun dijadikan supplier — jadi tanpa baris ini
+        pemiliknya membuka Barang Masuk, tidak melihat isian supplier,
+        dan tidak punya cara tahu kenapa atau ke mana harus pergi.
+      */}
+      {form.type === "masuk" && suppliers.length === 0 && (
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Belum ada supplier terdaftar, jadi barang masuk ini belum bisa menunjuk ke siapa pun.
+          Daftarkan dulu lewat halaman Supplier &mdash; lead dari tangkapan layar bisa langsung
+          dijadikan supplier di sana.
+        </p>
       )}
       {form.type === "masuk" && suppliers.length > 0 && (
         <div>

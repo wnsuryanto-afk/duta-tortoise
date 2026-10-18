@@ -208,6 +208,18 @@ export default function LeadsSupplierTab({ onJadiSupplier }) {
       toast.error("Lead ini belum punya nomor WhatsApp yang sah — lengkapi dulu.");
       return;
     }
+    /*
+      Nama WAJIB di skema Supplier, dan sebagian lead memang tidak punya:
+      penjual yang postingannya tidak menyebut nama tersimpan dengan `nama`
+      kosong (satu dari tujuh lead pertama begitu — penjual Surabaya). Tanpa
+      penjagaan ini Base44 menolak pembuatannya dengan pesan validasi mentah
+      yang tidak menyebut lead mana dan kolom apa, jadi tombolnya terlihat
+      rusak alih-alih meminta satu isian.
+    */
+    if (!String(lead.nama || "").trim()) {
+      toast.error("Lead ini belum punya nama — isi dulu namanya, karena nama supplier wajib.");
+      return;
+    }
     try {
       const baru = await base44.entities.Supplier.create({
         name: lead.nama,
@@ -216,7 +228,18 @@ export default function LeadsSupplierTab({ onJadiSupplier }) {
         specialty: labelKategori(lead.kategori),
         notes: [lead.yang_dijual, lead.harga_disebut, lead.catatan].filter(Boolean).join(" · "),
         is_preferred: false,
-        rating: 5,
+        /*
+          Bintangnya sengaja TIDAK diisi.
+
+          Sebelum ini tiap lead yang dijadikan supplier langsung diberi
+          `rating: 5` — bintang lima untuk seseorang yang baru saja pindah
+          dari sebuah postingan Facebook dan belum mengirim apa pun. Daftar
+          supplier jadi terbaca seakan semuanya sudah terbukti.
+
+          Dibiarkan kosong, bintangnya tampil abu-abu semua: belum dinilai.
+          Pemiliknya bisa mengisinya sendiri kapan saja, dan angka pengiriman
+          yang benar-benar tercatat berdiri di sebelahnya.
+        */
       });
       await base44.entities.SupplierLead.update(lead.id, {
         status: "jadi_supplier",
