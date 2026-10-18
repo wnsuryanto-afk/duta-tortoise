@@ -9,6 +9,7 @@ import PageHeader from "@/components/common/PageHeader";
 import { rupiah } from "@/lib/rupiah";
 import { nilaiAsetKura, hargaBasi, HARI_HARGA_BASI, barisKembarAsal } from "@/lib/hargaEstimasi";
 import { Link } from "react-router-dom";
+import { LABEL_SPESIES, LABEL_MORPH, LABEL_KELAMIN, LABEL_ASAL, judulKura } from "@/lib/labelKura";
 
 /**
  * HargaKuraPage — perkiraan harga jual per kelompok, untuk nilai aset.
@@ -41,20 +42,6 @@ import { Link } from "react-router-dom";
  * kawanan sebenarnya belum dinilai.
  */
 
-const LABEL_MORPH = {
-  normal: "Normal", albino: "Albino", ivory: "Ivory", hypo: "Hypo",
-  het_albino: "Het Albino", het_caramel_albino: "Het Caramel Albino",
-  het_hypo: "Het Hypo", het_ivory: "Het Ivory", double_het: "Double Het",
-  caramel_albino: "Caramel Albino", piebald: "Piebald", mix: "Mix", unknown: "Tidak diketahui",
-};
-const LABEL_SPESIES = {
-  sulcata: "Sulcata", red_foot: "Red Foot", leopard: "Leopard", aldabra: "Aldabra",
-  russian: "Russian", hermann: "Hermann", greek: "Greek", indian_star: "Indian Star", lainnya: "Lainnya",
-};
-const LABEL_KELAMIN = { jantan: "Jantan", betina: "Betina", belum_diketahui: "Belum diketahui" };
-const LABEL_ASAL = { cb: "CB", wc: "WC", ltc: "LTC" };
-
-const judul = (peta, k) => peta[k] || k || "—";
 const angkaAtauKosong = (v) => (v === null || v === undefined ? "" : String(v));
 
 export default function HargaKuraPage() {
@@ -251,12 +238,12 @@ export default function HargaKuraPage() {
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-foreground">
-                          {judul(LABEL_SPESIES, b.species)} · {judul(LABEL_MORPH, b.morph)} · {b.pitaLabel}
+                          {judulKura(LABEL_SPESIES, b.species)} · {judulKura(LABEL_MORPH, b.morph)} · {b.pitaLabel}
                         </p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {judul(LABEL_KELAMIN, b.gender)}
+                          {judulKura(LABEL_KELAMIN, b.gender)}
                           {b.proven && <> · <span className="font-semibold text-accent">proven</span></>}
-                          {b.asal ? <> · {judul(LABEL_ASAL, b.asal)}</> : <> · <span className="text-amber-700 dark:text-amber-400">asal belum ditentukan</span></>}
+                          {b.asal ? <> · {judulKura(LABEL_ASAL, b.asal)}</> : <> · <span className="text-amber-700 dark:text-amber-400">asal belum ditentukan</span></>}
                         </p>
                       </div>
                       <p className="text-[11px] tabular-nums text-muted-foreground flex-shrink-0">{b.ekor} ekor</p>

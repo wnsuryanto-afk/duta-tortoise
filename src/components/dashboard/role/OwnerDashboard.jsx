@@ -52,6 +52,7 @@ import RingkasanAngka from "@/components/common/RingkasanAngka";
 import { rupiah } from "@/lib/rupiah";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
 import { modalKerja, totalAset } from "@/lib/modalKerja";
+import RincianAset from "@/components/dashboard/RincianAset";
 import { kelengkapanHargaBarang } from "@/lib/hargaBarang";
 import { kalimatKomposisi, ringkasUmur } from "@/lib/anakanKura";
 
@@ -1269,6 +1270,11 @@ export default function OwnerDashboard({ user }) {
             </p>
           </div>
         </div>
+
+        {/* Rinciannya satu kartu di bawah angkanya, bukan di halaman lain:
+            rentang Rp 1,27–1,63 miliar tidak bisa ditindaklanjuti sampai
+            terlihat bahwa tiga Aldabra memegang 14,6% di dalamnya. */}
+        <RincianAset kura={tortoises} harga={hargaKura} asetKura={asetKura} modal={modal} />
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <KpiCard icon={Package} label="Nilai Stok Total" href="/stok-unified"

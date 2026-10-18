@@ -9,9 +9,9 @@ import { Shell, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { angkaRibuan } from "@/lib/rupiah";
+import { LABEL_SPESIES } from "@/lib/labelKura";
 
 
-const speciesLabel = { sulcata:"Sulcata", red_foot:"Red Foot", leopard:"Leopard", aldabra:"Aldabra", russian:"Russian", lainnya:"Lainnya" };
 const morphLabel = { normal:"Normal", het_albino:"Het Albino", albino:"Albino", ivory:"Ivory", hypo:"Hypo", unknown:"Unknown" };
 
 export default function TortoiseTerjualTab({ tortoises, isOwner }) {
@@ -79,7 +79,7 @@ export default function TortoiseTerjualTab({ tortoises, isOwner }) {
                     <Badge className="bg-green-100 text-green-800 border-green-300 text-[10px]">✓ TERJUAL</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {speciesLabel[t.species] || t.species} · {morphLabel[t.morph] || t.morph}
+                    {LABEL_SPESIES[t.species] || t.species} · {morphLabel[t.morph] || t.morph}
                   </p>
 
                   {sale ? (

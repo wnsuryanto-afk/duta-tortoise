@@ -87,6 +87,7 @@ bundel("src/lib/pitaUkuran.js", "pita.cjs");
 bundel("src/lib/hargaEstimasi.js", "hargaest.cjs");
 bundel("src/lib/hargaBarang.js", "hargabrg.cjs");
 bundel("src/lib/namaMirip.js", "namamirip.cjs");
+bundel("src/lib/modalKerja.js", "modal.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -2288,6 +2289,258 @@ if (!HE.hargaBasi("2026-01-01", KINI_HE)) temuan.push("harga basi: harga 290 har
 if (HE.hargaBasi("", KINI_HE)) temuan.push("harga basi: tanggal kosong dianggap basi");
 
 /*
+  ── SUSUNAN NILAI: DI MANA UANGNYA, BUKAN DI MANA EKORNYA ──────────────────
+
+  Diminta pemiliknya 18 Okt 2026: "apakah estimasi aset yang ada saat ini
+  bisa ditampilkan? Mungkin bisa dibuat lebih detail di dashboard."
+
+  Yang dijaga adalah satu perbedaan yang mudah hilang dalam penyalinan:
+  layar isian mengurutkan baris dari JUMLAH EKOR (mengisi dari situ memberi
+  cakupan tercepat), sementara beranda mengurutkan dari NILAI (yang
+  ditanyakan di sana adalah di mana uangnya). Pada kawanan sebenarnya kedua
+  urutan itu benar-benar berlawanan: 130 Sulcata memegang 84,8% nilai,
+  sedangkan TIGA Aldabra memegang 14,6% — satu Aldabra setara dua puluh
+  Sulcata dewasa. Kalau beranda ikut mengurutkan dari ekor, ketiga Aldabra
+  itu jatuh ke dasar daftar dan kartunya kehilangan satu-satunya kabar yang
+  dibawanya.
+*/
+const SUSUN_KURA = [
+  ...Array.from({ length: 10 }, (_, i) => kura({ code: "S" + i, shell_length_cm: 52, asal_genetik: "wc" })),
+  kura({ code: "AL1", species: "aldabra", shell_length_cm: 76, asal_genetik: "" }),
+  /* Belum berharga: tidak boleh ikut, dan tidak boleh dihitung nol. */
+  ...Array.from({ length: 3 }, (_, i) => kura({ code: "LP" + i, species: "leopard", shell_length_cm: 36, asal_genetik: "" })),
+];
+const SUSUN_HARGA = [
+  { kunci: "sulcata|normal|50|betina|-|wc", harga_min: 1_000_000, harga_maks: 1_500_000 },
+  { kunci: "aldabra|normal|75|betina|-|?", harga_min: 50_000_000 },   // maks kosong: ikut yang min
+];
+const susunBaris = HE.barisHarga({ kura: SUSUN_KURA, harga: SUSUN_HARGA }).baris;
+const komposisi = HE.komposisiNilai(susunBaris);
+
+const susunUji = [
+  ["jumlah kelompok spesies", komposisi.length, 2],
+  ["spesies teratas", komposisi[0]?.kunci, "aldabra"],
+  ["nilai min aldabra", komposisi[0]?.min, 50_000_000],
+  ["nilai maks aldabra (maks kosong ikut min)", komposisi[0]?.maks, 50_000_000],
+  ["ekor aldabra", komposisi[0]?.ekor, 1],
+  ["spesies kedua", komposisi[1]?.kunci, "sulcata"],
+  ["nilai min sulcata", komposisi[1]?.min, 10_000_000],
+  ["nilai maks sulcata", komposisi[1]?.maks, 15_000_000],
+  ["ekor sulcata", komposisi[1]?.ekor, 10],
+];
+for (const [nama, dapat, harap] of susunUji) {
+  if (dapat !== harap) temuan.push(`susunan nilai ${nama}: ${dapat}, seharusnya ${harap}`);
+}
+/* Porsi dari batas BAWAH, dan totalnya genap 100% — kalau yang belum
+   berharga ikut sebagai nol, kedua porsi ini mengecil tanpa ada yang
+   mengatakannya. */
+if (Math.round(komposisi[0].persen * 10) / 10 !== 83.3) temuan.push(`susunan nilai: porsi aldabra ${komposisi[0].persen}%, seharusnya 83,3%`);
+if (Math.round(komposisi.reduce((t, k) => t + k.persen, 0)) !== 100) temuan.push("susunan nilai: porsinya tidak berjumlah 100%");
+/* Leopard yang belum berharga tidak muncul sebagai baris 0% — baris itu
+   akan terbaca "tidak berharga" padahal yang benar "belum dihargai". */
+if (komposisi.some((k) => k.kunci === "leopard")) temuan.push("susunan nilai: kelompok yang belum berharga ikut ditampilkan");
+
+/* Pengelompokan lain memakai fungsi yang SAMA — kalau tidak, pita dan
+   spesies akan menghitung porsi dengan dua aturan berbeda. */
+const perPita = HE.komposisiNilai(susunBaris, (b) => b.pitaLabel);
+if (perPita.length !== 2 || perPita[0].kunci !== "75–80 cm") {
+  temuan.push(`susunan per pita: ${perPita.length} kelompok, teratas "${perPita[0]?.kunci}"`);
+}
+
+/* Seluruh harga nol: porsinya 0, BUKAN NaN — pembagian nol yang lolos akan
+   mencetak "NaN%" di beranda pemilik. */
+const nolSemua = HE.komposisiNilai(HE.barisHarga({
+  kura: [kura({ code: "N1", shell_length_cm: 52, asal_genetik: "wc" })],
+  harga: [{ kunci: "sulcata|normal|50|betina|-|wc", harga_min: 0, harga_maks: 0 }],
+}).baris);
+if (!Number.isFinite(nolSemua[0]?.persen)) temuan.push(`susunan nilai: harga nol memberi porsi ${nolSemua[0]?.persen}, bukan angka`);
+
+/*
+  Baris yang `hargaMaks`-nya KOSONG dipakai pada `hargaMin`.
+
+  barisHarga sudah mengisinya lebih dulu, jadi jalur ini tidak pernah
+  tersentuh lewat sana — dan itu justru sebabnya diuji langsung: keduanya
+  fungsi yang diekspor, dan yang kedua bisa dipanggil dengan baris dari
+  tempat lain. Tanpa uji ini, cadangan `?? hargaMin` di dalamnya adalah kode
+  yang tidak pernah dijalankan siapa pun, dan kode semacam itu rusak tanpa
+  ada yang tahu.
+*/
+const barisTanpaMaks = [{ kunci: "x", species: "sulcata", morph: "normal", pitaMin: 50, pitaLabel: "50–55 cm",
+  gender: "betina", proven: false, asal: "wc", ekor: 2, terisi: true, hargaMin: 3_000_000, hargaMaks: null }];
+const kompTanpaMaks = HE.komposisiNilai(barisTanpaMaks);
+if (kompTanpaMaks[0]?.maks !== 6_000_000) {
+  temuan.push(`susunan nilai: hargaMaks kosong memberi maks ${kompTanpaMaks[0]?.maks}, seharusnya ikut min (6.000.000)`);
+}
+const teratasTanpaMaks = HE.kelompokTeratas(barisTanpaMaks, 3);
+if (teratasTanpaMaks[0]?.nilaiMaks !== 6_000_000) {
+  temuan.push(`kelompok teratas: hargaMaks kosong memberi nilai maks ${teratasTanpaMaks[0]?.nilaiMaks}, seharusnya ikut min`);
+}
+
+/* ── Kelompok teratas: diurutkan dari NILAI, bukan dari ekor ───────────── */
+const teratas = HE.kelompokTeratas(susunBaris, 5);
+const teratasUji = [
+  ["jumlah", teratas.length, 2],
+  ["teratas spesies", teratas[0]?.species, "aldabra"],
+  ["teratas nilai min", teratas[0]?.nilaiMin, 50_000_000],
+  ["teratas nilai maks", teratas[0]?.nilaiMaks, 50_000_000],
+  ["kedua nilai min", teratas[1]?.nilaiMin, 10_000_000],
+  ["kedua nilai maks", teratas[1]?.nilaiMaks, 15_000_000],
+];
+for (const [nama, dapat, harap] of teratasUji) {
+  if (dapat !== harap) temuan.push(`kelompok teratas ${nama}: ${dapat}, seharusnya ${harap}`);
+}
+/*
+  Inilah inti penjaganya: barisHarga mengurutkan dari EKOR dan menaruh
+  Sulcata lebih dulu; kelompokTeratas mengurutkan dari NILAI dan menaruh
+  Aldabra lebih dulu. Kalau keduanya pernah jadi urutan yang sama, uji ini
+  tidak lagi membuktikan apa pun.
+*/
+if (susunBaris[0].species !== "sulcata") temuan.push("kelompok teratas: barisHarga tidak lagi mengurutkan dari ekor — ujinya kehilangan dasarnya");
+if (teratas[0].species === susunBaris[0].species) temuan.push("kelompok teratas: urutannya sama dengan urutan ekor, padahal nilainya berlawanan");
+/* Batas dihormati, dan batas 0 berarti kosong — bukan seluruh daftar. */
+if (HE.kelompokTeratas(susunBaris, 1).length !== 1) temuan.push("kelompok teratas: batas 1 tidak dihormati");
+if (HE.kelompokTeratas(susunBaris, 0).length !== 0) temuan.push("kelompok teratas: batas 0 mengembalikan isi");
+/* Yang belum berharga tidak ikut — kelompok tanpa harga bukan kelompok
+   bernilai nol. */
+if (teratas.some((b) => !b.terisi)) temuan.push("kelompok teratas: kelompok yang belum berharga ikut masuk");
+
+/*
+  ── MODAL KERJA, DAN SELISIH YANG TIDAK BOLEH DIHITUNG SEMBARANGAN ────────
+
+  Diminta pemiliknya 18 Okt 2026: "di dashboard saya membutuhkan kolom modal
+  kerja dan estimasi total aset".
+
+  Tiga hal yang dijaga di sini, dan ketiganya pernah salah di tempat lain:
+
+  1. KOSONG BUKAN NOL. Kura tanpa harga beli tidak bermodal nol — ia belum
+     diketahui, dan kedua keadaan itu menggeser angka modal ke arah yang
+     berlawanan. Nol sendiri adalah jawaban yang SAH: hadiah memang bermodal
+     nol, dan menolaknya membuat kolomnya tidak pernah bisa selesai diisi.
+
+  2. KURA TIDAK DIHITUNG DUA KALI. Estimasi total aset memakai harga JUAL
+     kura; menambahkan modal belinya ke angka yang sama menghitung kawanan
+     dua kali. Barang dan kandang justru sebaliknya — keduanya hanya punya
+     harga modal, dan itu yang dipakai.
+
+  3. SELISIH HANYA DARI KURA YANG PUNYA DUA ANGKA. Ini yang paling mudah
+     keliru dan paling sulit terlihat. Pada hari pustaka ini dijalankan
+     terhadap kawanan sebenarnya, seluruh 135 ekor sudah berharga tetapi
+     modalnya tercatat untuk 91 — mengurangkan keduanya memberi selisih
+     Rp 636–991 juta, yang menghitung nilai empat puluh empat ekor tanpa
+     menghitung biayanya. Kesalahan semacam itu tidak pernah terbaca sebagai
+     kesalahan; ia terbaca sebagai kabar baik.
+*/
+const MK = await import(`file://${join(dir, "modal.cjs")}`).then((m) => m.default || m);
+
+const MODAL_KURA = [
+  kura({ code: "A", purchase_price: 2_000_000 }),
+  kura({ code: "B", purchase_price: 0 }),                              // hadiah: nol itu SAH
+  kura({ code: "C", purchase_price: null }),                           // belum diketahui
+  kura({ code: "D", purchase_price: "" }),                             // teks kosong = belum diketahui
+  kura({ code: "E", purchase_price: 5_000_000, status: "terjual" }),    // bukan aset lagi
+];
+const MODAL_BARANG = [
+  { name: "Cangkul", current_stock: 2, purchase_price: 150_000 },
+  { name: "Vitamin", current_stock: 10, purchase_price: 0 },            // berstok, harga belum diisi
+  { name: "Selang habis", current_stock: 0, purchase_price: 90_000 },   // tak berstok: bukan modal
+];
+const modalPenuh = MK.modalKerja({ kura: MODAL_KURA, warehouse: MODAL_BARANG, modalKandang: 25_000_000 });
+const bagianDari = (k) => modalPenuh.bagian.find((b) => b.kunci === k) || {};
+
+const modalUji = [
+  ["nilai kura", bagianDari("kura").nilai, 2_000_000],
+  ["kura berharga", bagianDari("kura").ada, 2],
+  ["kura seluruhnya", bagianDari("kura").dari, 4],
+  ["nilai barang", bagianDari("barang").nilai, 300_000],
+  ["barang berharga", bagianDari("barang").ada, 1],
+  ["barang berstok", bagianDari("barang").dari, 2],
+  ["nilai kandang", bagianDari("kandang").nilai, 25_000_000],
+  ["total", modalPenuh.total, 27_300_000],
+  ["kelengkapan ada", modalPenuh.lengkapAda, 4],
+  ["kelengkapan dari", modalPenuh.lengkapDari, 7],
+  ["persen lengkap", modalPenuh.persenLengkap, 57],
+];
+for (const [nama, dapat, harap] of modalUji) {
+  if (dapat !== harap) temuan.push(`modal kerja ${nama}: ${dapat}, seharusnya ${harap}`);
+}
+if (modalPenuh.kandangBelumDiisi) temuan.push("modal kerja: kandang berisi 25 juta dibilang belum diisi");
+
+/* Kandang belum diisi: nol rupiah, dan DIKATAKAN belum diisi — bukan
+   diam-diam dihitung nol sebagai kebenaran. */
+const tanpaKandang = MK.modalKerja({ kura: MODAL_KURA, warehouse: MODAL_BARANG, modalKandang: null });
+if (!tanpaKandang.kandangBelumDiisi) temuan.push("modal kerja: kandang kosong tidak dilaporkan belum diisi");
+if (tanpaKandang.total !== 2_300_000) temuan.push(`modal kerja tanpa kandang: total ${tanpaKandang.total}, seharusnya 2.300.000`);
+/* Nol yang SENGAJA diisi berbeda dari kosong — kandang warisan memang
+   bermodal nol, dan layarnya tidak boleh terus menagihnya. */
+const kandangNol = MK.modalKerja({ kura: [], warehouse: [], modalKandang: 0 });
+if (kandangNol.kandangBelumDiisi) temuan.push("modal kerja: kandang yang sengaja diisi 0 dibilang belum diisi");
+
+/* ── Estimasi total aset ───────────────────────────────────────────────── */
+const asetPasar = { min: 100_000_000, maks: 140_000_000, ekorTernilai: 10 };
+const totalPenuh = MK.totalAset({ asetKura: asetPasar, modal: modalPenuh });
+if (totalPenuh.min !== 125_300_000) temuan.push(`total aset min: ${totalPenuh.min}, seharusnya 125.300.000`);
+if (totalPenuh.maks !== 165_300_000) temuan.push(`total aset maks: ${totalPenuh.maks}, seharusnya 165.300.000`);
+/* Yang dijaga: modal beli kura TIDAK ikut ditambahkan. Kalau ikut, kawanan
+   terhitung dua kali — sekali pada harga jualnya, sekali pada harga belinya. */
+if (totalPenuh.tetap !== 25_300_000) temuan.push(`total aset: bagian tetap ${totalPenuh.tetap}, seharusnya 25.300.000 (modal kura tidak boleh ikut)`);
+/* Tanpa satu pun kura ternilai, rentangnya ditandai tidak ada — supaya
+   layarnya tidak memamerkan "Rp 25 juta" sebagai nilai peternakan. */
+const tanpaRentang = MK.totalAset({ asetKura: { min: 0, maks: 0, ekorTernilai: 0 }, modal: modalPenuh });
+if (tanpaRentang.adaRentang) temuan.push("total aset: nol kura ternilai masih dibilang punya rentang");
+
+/* ── Selisih yang sebanding ────────────────────────────────────────────── */
+const HARGA_SEB = [{ kunci: "sulcata|normal|50|betina|-|wc", harga_min: 10_000_000, harga_maks: 14_000_000 }];
+const SEB_KURA = [
+  kura({ code: "A", shell_length_cm: 52, asal_genetik: "wc", purchase_price: 2_000_000 }),   // punya KEDUANYA
+  kura({ code: "B", shell_length_cm: 52, asal_genetik: "wc", purchase_price: null }),        // berharga, modalnya tidak tercatat
+  kura({ code: "C", shell_length_cm: 57, asal_genetik: "wc", purchase_price: 7_000_000 }),   // bermodal, kelompoknya belum berharga
+  kura({ code: "D", shell_length_cm: null, asal_genetik: "wc", purchase_price: 3_500_000 }), // tanpa ukuran: tanpa kelompok
+  kura({ code: "E", shell_length_cm: 52, asal_genetik: "wc", purchase_price: 9_000_000, status: "terjual" }),
+];
+const seb = MK.selisihSebanding({ kura: SEB_KURA, harga: HARGA_SEB });
+const sebandingUji = [
+  ["ekor", seb.ekor, 1],
+  ["modal", seb.modal, 2_000_000],
+  ["nilai min", seb.nilaiMin, 10_000_000],
+  ["nilai maks", seb.nilaiMaks, 14_000_000],
+  ["selisih min", seb.selisihMin, 8_000_000],
+  ["selisih maks", seb.selisihMaks, 12_000_000],
+];
+for (const [nama, dapat, harap] of sebandingUji) {
+  if (dapat !== harap) temuan.push(`selisih sebanding ${nama}: ${dapat}, seharusnya ${harap}`);
+}
+/*
+  Dan inilah sebabnya fungsinya ada: hitungan yang naif — seluruh nilai aset
+  dikurangi seluruh modal kura — memberi angka LAIN pada data yang sama,
+  karena pembilang dan penyebutnya mencakup kura yang berbeda.
+*/
+const naifNilai = HE.nilaiAsetKura({ kura: SEB_KURA, harga: HARGA_SEB }).min;
+const naifModal = MK.modalKerja({ kura: SEB_KURA, warehouse: [], modalKandang: null }).bagian
+  .find((b) => b.kunci === "kura").nilai;
+if (naifNilai - naifModal === seb.selisihMin) {
+  temuan.push("selisih sebanding: hasilnya sama dengan hitungan naif — ujinya tidak membuktikan apa pun, ganti angkanya");
+}
+
+/* Harga tertinggi yang tidak diisi mengikuti terendah, bukan jadi nol —
+   selisih maks yang lebih kecil dari selisih min adalah angka mustahil. */
+const sebSatuHarga = MK.selisihSebanding({
+  kura: [kura({ code: "A", shell_length_cm: 52, asal_genetik: "wc", purchase_price: 2_000_000 })],
+  harga: [{ kunci: "sulcata|normal|50|betina|-|wc", harga_min: 9_000_000 }],
+});
+if (sebSatuHarga.selisihMaks !== sebSatuHarga.selisihMin) {
+  temuan.push(`selisih sebanding: hanya harga_min diisi memberi selisih maks ${sebSatuHarga.selisihMaks}, seharusnya ikut yang min`);
+}
+/* Modal nol yang SAH tetap ikut dibandingkan — kalau tidak, kura hadiah
+   hilang dari selisih justru karena ia paling menguntungkan. */
+const sebNol = MK.selisihSebanding({
+  kura: [kura({ code: "H", shell_length_cm: 52, asal_genetik: "wc", purchase_price: 0 })],
+  harga: HARGA_SEB,
+});
+if (sebNol.ekor !== 1 || sebNol.selisihMin !== 10_000_000) {
+  temuan.push(`selisih sebanding: kura hadiah (modal 0) dikeluarkan — ${sebNol.ekor} ekor, selisih ${sebNol.selisihMin}`);
+}
+
+/*
   ── HARGA BELI: kura yang DIBELI harus punya modalnya ──────────────────────
 
   Diminta pemiliknya 18 Okt 2026: "kalau kita membeli bukan dari anakan
@@ -3054,6 +3307,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${namaMiripUji.length} nama mirip diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
 );
 process.exit(0);

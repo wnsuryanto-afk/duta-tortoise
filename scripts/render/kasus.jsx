@@ -37,6 +37,9 @@ import OperationalToday from "@/components/dashboard/OperationalToday";
 import VetContactPage from "@/pages/VetContactPage";
 import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
+import RincianAset from "@/components/dashboard/RincianAset";
+import { nilaiAsetKura } from "@/lib/hargaEstimasi";
+import { modalKerja } from "@/lib/modalKerja";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
 import TombolStokCepat from "@/components/stok/TombolStokCepat";
 import BulanBertelur from "@/components/breeding/BulanBertelur";
@@ -739,6 +742,55 @@ export default [
       </div>
     </div>
   ))()],
+  /*
+    Kartu Rincian Estimasi Aset dengan bentuk kawanan yang SEBENARNYA
+    (18 Okt 2026): Sulcata menumpuk di pita 50–55, tiga Aldabra memegang
+    seperenam nilainya, dan satu kelompok bernama panjang — "Sulcata · Het
+    Caramel Albino · 75–80 cm · Belum diketahui · proven · WC" — yang
+    memaksa baris "kelompok teratas" membungkus di HP terlipat.
+
+    Angka ekornya dibuat mendekati kenyataan supaya persentasenya tidak
+    bulat: porsi 84,8% / 14,6% / 0,4% / 0,2% jauh lebih mudah membuat baris
+    melimpah daripada 50% / 50%.
+  */
+  ["RincianAset — kawanan nyata 18 Okt", (() => {
+    const ekor = (n, o) => Array.from({ length: n }, (_, i) => ({
+      id: `${o.species}${o.shell_length_cm}${o.gender}${i}`, code: `K${i}`, status: "aktif",
+      morph: "normal", asal_genetik: "wc", is_proven: false, ...o,
+    }));
+    const kura = [
+      ...ekor(31, { species: "sulcata", shell_length_cm: 52, gender: "betina", purchase_price: 8000000 }),
+      ...ekor(13, { species: "sulcata", shell_length_cm: 57, gender: "betina", purchase_price: 8000000 }),
+      ...ekor(7, { species: "sulcata", shell_length_cm: 56, gender: "betina", is_proven: true, purchase_price: 8000000 }),
+      ...ekor(8, { species: "sulcata", shell_length_cm: 62, gender: "jantan", purchase_price: null }),
+      /* Kelompok bernama terpanjang yang bisa terbentuk dari skema ini. */
+      ...ekor(1, { species: "sulcata", morph: "het_caramel_albino", shell_length_cm: 76,
+        gender: "belum_diketahui", is_proven: true, purchase_price: null }),
+      ...ekor(1, { species: "aldabra", shell_length_cm: 76, gender: "betina", asal_genetik: "", purchase_price: null }),
+      ...ekor(2, { species: "aldabra", shell_length_cm: 68, gender: "jantan", asal_genetik: "", purchase_price: null }),
+      ...ekor(1, { species: "leopard", shell_length_cm: 39.5, gender: "betina", asal_genetik: "", purchase_price: 5000000 }),
+      ...ekor(1, { species: "red_foot", shell_length_cm: 23, gender: "betina", asal_genetik: "", purchase_price: null }),
+    ];
+    const harga = [
+      { kunci: "sulcata|normal|50|betina|-|wc", harga_min: 10000000, harga_maks: 12500000 },
+      { kunci: "sulcata|normal|55|betina|-|wc", harga_min: 12500000, harga_maks: 15000000 },
+      { kunci: "sulcata|normal|55|betina|proven|wc", harga_min: 15000000, harga_maks: 17500000 },
+      { kunci: "sulcata|normal|60|jantan|-|wc", harga_min: 9000000, harga_maks: 12000000 },
+      { kunci: "sulcata|het_caramel_albino|75|belum_diketahui|proven|wc", harga_min: 95000000, harga_maks: 140000000 },
+      { kunci: "aldabra|normal|75|betina|-|?", harga_min: 75000000, harga_maks: 100000000 },
+      { kunci: "aldabra|normal|65|jantan|-|?", harga_min: 60000000, harga_maks: 90000000 },
+      { kunci: "leopard|normal|35|betina|-|?", harga_min: 5000000, harga_maks: 7000000 },
+      { kunci: "red_foot|normal|20|betina|-|?", harga_min: 2500000, harga_maks: 3500000 },
+    ];
+    return (
+      <RincianAset
+        kura={kura}
+        harga={harga}
+        asetKura={nilaiAsetKura({ kura, harga })}
+        modal={modalKerja({ kura, warehouse: [], modalKandang: null })}
+      />
+    );
+  })()],
   ["NilaiInisiatifSekaligus — antrean nyata", <NilaiInisiatifSekaligus
     settings={{ poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] }}
     logs={[

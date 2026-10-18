@@ -9,6 +9,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { isManagerLevel } from "@/lib/permissions";
 import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { LABEL_SPESIES } from "@/lib/labelKura";
 
 const GROUPS = [
   { key: "merah",  label: "Diam >90hr (baby >30hr)",        dot: "bg-red-500",    card: "border-red-200 bg-red-50",     text: "text-red-700",    badge: "bg-red-100 text-red-700" },
@@ -16,11 +17,6 @@ const GROUPS = [
   { key: "hijau",  label: "Terpantau (<60hr / baby <15hr)", dot: "bg-green-500",  card: "border-green-200 bg-green-50", text: "text-green-700",  badge: "bg-green-100 text-green-700" },
   { key: "abu",    label: "Belum pernah tercatat",          dot: "bg-slate-400",  card: "border-slate-200 bg-slate-50", text: "text-slate-600",  badge: "bg-slate-100 text-slate-600" },
 ];
-
-const SPECIES_LABEL = {
-  sulcata: "Sulcata", red_foot: "Red Foot", leopard: "Leopard", aldabra: "Aldabra",
-  russian: "Russian", hermann: "Hermann", greek: "Greek", indian_star: "Indian Star", lainnya: "Lainnya",
-};
 
 function fmtDate(d) {
   if (!d) return "-";
@@ -153,7 +149,7 @@ export default function KuraDiamTab() {
                         <div className="flex items-center gap-2">
                           <Shell className="w-4 h-4 shrink-0" />
                           <span className="font-semibold text-sm truncate">{t.code}</span>
-                          {t.species && <span className="text-[10px] text-muted-foreground">{SPECIES_LABEL[t.species] || t.species}</span>}
+                          {t.species && <span className="text-[10px] text-muted-foreground">{LABEL_SPESIES[t.species] || t.species}</span>}
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground flex-wrap">
                           <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {t.enclosure}</span>
