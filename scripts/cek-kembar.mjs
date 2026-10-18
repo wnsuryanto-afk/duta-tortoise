@@ -149,5 +149,63 @@ for (const [fe, be, fns] of PASANGAN) {
     }
   }
 }
-if (gagal === 0) console.log(`Semua kembaran cocok (${diperiksa} fungsi diperiksa).`);
+/*
+  ── SALINAN KETIGA: definisi populasi yang ditulis ulang di dalam src/ ─────
+
+  Bagian di atas menjaga kembaran frontend–backend. Yang ini menjaga hal
+  lain: definisi "kura ini masih di peternakan" yang ditulis ulang di
+  sebuah berkas src/ yang baru.
+
+  Terjadi 18 Okt 2026. lib/hargaEstimasi.js menulis sendiri
+
+      const STATUS_BUKAN_ASET = ["mati", "terjual", "diarsipkan"];
+
+  padahal lib/populasiKura.js sudah mengekspor daftar yang sama persis, dan
+  kepala berkas itu secara harfiah berjudul "SATU definisi". Salinannya
+  identik hari itu, jadi tidak ada satu pun angka yang salah dan tidak ada
+  penjaga yang merah — persis bentuk cacat yang populasiKura.js dibuat untuk
+  mencegah. Ia baru akan terlihat pada perubahan status berikutnya, saat
+  beranda menyebut dua jumlah kura yang berbeda di dua kartu bersebelahan.
+
+  Yang diperiksa: tidak ada berkas selain populasiKura.js (dan kembarannya
+  di backend) yang menyusun daftar status-keluar sendiri.
+*/
+const BOLEH_PUNYA_DAFTAR = new Set([
+  "src/lib/populasiKura.js",
+  "base44/shared/kura.ts",
+]);
+
+function berkasSumber(dir) {
+  const hasil = [];
+  for (const nama of fs.readdirSync(dir)) {
+    if (nama === "node_modules" || nama === "dist" || nama.startsWith(".")) continue;
+    const jalur = `${dir}/${nama}`;
+    if (fs.statSync(jalur).isDirectory()) hasil.push(...berkasSumber(jalur));
+    else if (/\.(js|jsx|ts)$/.test(nama)) hasil.push(jalur);
+  }
+  return hasil;
+}
+
+/* Daftar status-keluar, dalam urutan apa pun, sebagai larik literal. */
+const POLA_DAFTAR = /\[\s*"(mati|terjual|diarsipkan)"\s*,\s*"(mati|terjual|diarsipkan)"\s*,\s*"(mati|terjual|diarsipkan)"\s*\]/;
+
+let salinan = 0;
+for (const jalur of [...berkasSumber("src"), ...berkasSumber("base44")]) {
+  if (BOLEH_PUNYA_DAFTAR.has(jalur)) continue;
+  const isi = kupasKomentar(fs.readFileSync(jalur, "utf8"));
+  if (POLA_DAFTAR.test(isi)) {
+    console.error(
+      `SALINAN     ${jalur} menyusun daftar status-keluar sendiri.\n` +
+      `            Pakai STATUS_KELUAR / diPeternakan / hanyaDiPeternakan dari\n` +
+      `            src/lib/populasiKura.js — berkas itu ada justru supaya\n` +
+      `            "berapa kura yang ada" hanya punya satu jawaban.`,
+    );
+    gagal++;
+    salinan++;
+  }
+}
+
+if (gagal === 0) {
+  console.log(`Semua kembaran cocok (${diperiksa} fungsi diperiksa), dan definisi populasi hanya ditulis di satu tempat.`);
+}
 process.exit(gagal ? 1 : 0);
