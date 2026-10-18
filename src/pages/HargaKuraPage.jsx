@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/common/PageHeader";
 import { rupiah } from "@/lib/rupiah";
-import { nilaiAsetKura, hargaBasi, HARI_HARGA_BASI } from "@/lib/hargaEstimasi";
+import { nilaiAsetKura, hargaBasi, HARI_HARGA_BASI, barisKembarAsal } from "@/lib/hargaEstimasi";
+import { Link } from "react-router-dom";
 
 /**
  * HargaKuraPage — perkiraan harga jual per kelompok, untuk nilai aset.
@@ -72,6 +73,9 @@ export default function HargaKuraPage() {
 
   const aset = useMemo(() => nilaiAsetKura({ kura, harga }), [kura, harga]);
   const hariIni = useMemo(() => new Date(), []);
+  /* Baris yang kembar hanya karena asalnya belum ditentukan — pekerjaan
+     yang bisa mengecil sebelum dimulai. */
+  const kembar = useMemo(() => barisKembarAsal(aset.baris), [aset.baris]);
 
   const nilaiDraf = (b, kolom) => {
     const d = draf[b.kunci];
@@ -172,6 +176,27 @@ export default function HargaKuraPage() {
               </p>
             </div>
           </div>
+
+          {/*
+            Pekerjaan yang bisa mengecil disebut SEBELUM daftarnya, bukan
+            sesudah — gunanya hilang kalau baru terbaca setelah separuh
+            baris diisi.
+          */}
+          {kembar.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-3">
+              <p className="text-xs font-semibold text-foreground">
+                {kembar.length} baris di bawah kembar — bedanya cuma asal CB/WC
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                Kura yang asalnya belum ditentukan membentuk barisnya sendiri, berdampingan dengan baris
+                yang isinya sama persis. Menentukan asalnya dulu membuat {kembar.length} baris ini menyatu,
+                jadi harganya cukup diisi sekali.
+              </p>
+              <Link to="/isi-asal-kura" className="text-[11px] text-primary hover:underline mt-1.5 inline-block">
+                Tentukan asal kura dulu &rarr;
+              </Link>
+            </div>
+          )}
 
           {/*
             Yang belum terhitung disebut di muka. Nilai aset yang tampil tegas
