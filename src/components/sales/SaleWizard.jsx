@@ -18,10 +18,10 @@ import { hitungHppKura, marginPersen } from "@/lib/hppKura";
 import { biayaBarangKura } from "@/lib/pemakaianBarang";
 import { differenceInMonths } from "date-fns";
 import { angkaRibuan } from "@/lib/rupiah";
+import { LABEL_SPESIES } from "@/lib/labelKura";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
 
-const speciesLabel = { sulcata:"Sulcata", red_foot:"Red Foot", leopard:"Leopard", aldabra:"Aldabra", russian:"Russian", hermann:"Hermann", greek:"Greek", indian_star:"Indian Star", lainnya:"Lainnya" };
 const genderLabel = { jantan:"♂ Jantan", betina:"♀ Betina", belum_diketahui:"?" };
 const morphLabel = { normal:"Normal", het_albino:"Het Albino", albino:"Albino", ivory:"Ivory", hypo:"Hypo", caramel_albino:"Caramel Albino", high_yellow:"High Yellow", unknown:"Unknown" };
 
@@ -90,7 +90,7 @@ function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
                 <Badge className="bg-green-100 text-green-800 text-xs">✓ Dipilih</Badge>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
-                <span><span className="text-muted-foreground">Spesies:</span> {speciesLabel[selected.species] || selected.species || "-"}</span>
+                <span><span className="text-muted-foreground">Spesies:</span> {LABEL_SPESIES[selected.species] || selected.species || "-"}</span>
                 <span><span className="text-muted-foreground">Gender:</span> {genderLabel[selected.gender] || selected.gender || "-"}</span>
                 <span><span className="text-muted-foreground">Morph:</span> {morphLabel[selected.morph] || selected.morph || "-"}</span>
                 <span><span className="text-muted-foreground">Kandang:</span> {selected.enclosure || "-"}</span>
@@ -133,7 +133,7 @@ function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{t.name} {t.code && <span className="font-mono text-xs text-muted-foreground">({t.code})</span>}</p>
-                    <p className="text-xs text-muted-foreground">{speciesLabel[t.species] || t.species} · {t.gender} · {t.enclosure || "Tanpa Kandang"}</p>
+                    <p className="text-xs text-muted-foreground">{LABEL_SPESIES[t.species] || t.species} · {t.gender} · {t.enclosure || "Tanpa Kandang"}</p>
                   </div>
                   {isSelected && <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />}
                 </button>

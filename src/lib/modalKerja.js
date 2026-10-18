@@ -1,4 +1,5 @@
 import { hanyaDiPeternakan } from "@/lib/populasiKura";
+import { kunciHarga } from "@/lib/hargaEstimasi";
 
 /**
  * modalKerja.js — berapa yang SUDAH dikeluarkan untuk aset yang dipegang.
@@ -114,5 +115,62 @@ export function totalAset({ asetKura, modal }) {
     maks: angka(asetKura?.maks) + tetap,
     tetap,
     adaRentang: angka(asetKura?.ekorTernilai) > 0,
+  };
+}
+
+/**
+ * Selisih nilai yang BISA dibandingkan — hanya kura yang punya DUA angka.
+ *
+ * ── Kenapa bukan sekadar aset dikurangi modal ───────────────────────────────
+ *
+ * Pada 18 Okt 2026 estimasi nilai mencakup 135 ekor (seluruh kawanan sudah
+ * berharga), sementara modal kura hanya tercatat untuk 91 — empat puluh empat
+ * ekor belum ada harga belinya. Mengurangkan keduanya memberi selisih
+ * Rp 636–991 juta, dan angka itu salah ke satu arah: ia menghitung nilai
+ * empat puluh empat ekor tanpa menghitung biayanya.
+ *
+ * Kesalahan semacam ini tidak pernah terlihat sebagai kesalahan. Ia hanya
+ * terbaca sebagai kabar baik.
+ *
+ * Jadi yang dibandingkan di sini hanya kura yang punya KEDUANYA: harga beli
+ * yang tercatat DAN kelompok harga yang sudah diisi. Berapa ekor yang ikut
+ * selalu dikembalikan bersama angkanya, supaya layarnya bisa menyebut atas
+ * dasar berapa ekor selisih itu dihitung.
+ */
+export function selisihSebanding({ kura = [], harga = [] } = {}) {
+  const pasar = new Map();
+  for (const h of harga || []) {
+    const k = String(h?.kunci || "");
+    if (k) pasar.set(k, h);
+  }
+
+  let modal = 0, nilaiMin = 0, nilaiMaks = 0, ekor = 0;
+
+  for (const k of hanyaDiPeternakan(kura)) {
+    const beli = k?.purchase_price;
+    if (beli === null || beli === undefined || beli === "") continue;
+    const hargaBeli = Number(beli);
+    if (!Number.isFinite(hargaBeli)) continue;
+
+    const kunci = kunciHarga(k);
+    if (!kunci) continue;
+    const baris = pasar.get(kunci);
+    const min = Number(baris?.harga_min);
+    if (!Number.isFinite(min) || min < 0) continue;
+    const maks = Number(baris?.harga_maks);
+
+    modal += hargaBeli;
+    nilaiMin += min;
+    nilaiMaks += Number.isFinite(maks) && maks >= min ? maks : min;
+    ekor += 1;
+  }
+
+  return {
+    ekor,
+    modal,
+    nilaiMin,
+    nilaiMaks,
+    selisihMin: nilaiMin - modal,
+    selisihMaks: nilaiMaks - modal,
   };
 }

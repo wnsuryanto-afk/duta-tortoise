@@ -219,3 +219,61 @@ export function hargaBasi(diperbarui, hariIni = new Date()) {
   const selisih = Math.round((hariIni.getTime() - t) / 86400000);
   return selisih > HARI_HARGA_BASI;
 }
+
+/**
+ * Nilai aset dipecah per kelompok — "siapa yang memegang nilainya".
+ *
+ * ── Kenapa ini diminta ──────────────────────────────────────────────────────
+ *
+ * Pemiliknya (18 Okt 2026): "apakah estimasi aset yang ada saat ini bisa
+ * ditampilkan? Mungkin bisa dibuat lebih detail di dashboard."
+ *
+ * Satu rentang Rp 1,27–1,63 miliar tidak bisa ditindaklanjuti. Yang bisa
+ * adalah mengetahui bahwa 3 ekor Aldabra memegang 15,9% dari nilai itu
+ * sementara 130 Sulcata memegang 83,4% — karena kedua angka itu menuntun ke
+ * keputusan yang berbeda tentang kandang mana yang paling perlu dijaga.
+ *
+ * ── Persentase dihitung dari BATAS BAWAH ────────────────────────────────────
+ *
+ * Bukan dari rata-rata atau batas atas. Batas bawah adalah satu-satunya
+ * angka dalam rentang ini yang tidak bergantung pada seberapa berani yang
+ * mengisi harganya: kelompok yang rentangnya lebar akan tampak lebih besar
+ * porsinya kalau diukur dari batas atas, padahal yang berubah cuma
+ * ketidakpastiannya.
+ *
+ * Baris yang BELUM berharga tidak ikut — ia tidak punya nilai untuk
+ * dibagikan, dan memasukkannya sebagai nol akan membuat porsi kelompok lain
+ * terlihat lebih besar daripada yang sebenarnya diketahui.
+ */
+export function komposisiNilai(baris = [], ambil = (b) => b.species) {
+  const per = new Map();
+  for (const b of baris || []) {
+    if (!b?.terisi) continue;
+    const k = teks(ambil(b)) || "lainnya";
+    if (!per.has(k)) per.set(k, { kunci: k, min: 0, maks: 0, ekor: 0 });
+    const e = per.get(k);
+    e.min += b.hargaMin * b.ekor;
+    e.maks += (b.hargaMaks ?? b.hargaMin) * b.ekor;
+    e.ekor += b.ekor;
+  }
+  const totalMin = [...per.values()].reduce((s, e) => s + e.min, 0);
+  return [...per.values()]
+    .map((e) => ({ ...e, persen: totalMin > 0 ? (e.min / totalMin) * 100 : 0 }))
+    .sort((a, b) => b.min - a.min || a.kunci.localeCompare(b.kunci));
+}
+
+/**
+ * Kelompok harga yang memegang nilai terbesar, teratas lebih dulu.
+ *
+ * Diurutkan dari NILAI, bukan dari jumlah ekor seperti `barisHarga` —
+ * keduanya pertanyaan yang berbeda. Layar isian mengurutkan dari ekor karena
+ * mengisi dari situ memberi cakupan tercepat; beranda mengurutkan dari nilai
+ * karena yang ditanyakan di sana adalah di mana uangnya.
+ */
+export function kelompokTeratas(baris = [], batas = 5) {
+  return (baris || [])
+    .filter((b) => b.terisi)
+    .map((b) => ({ ...b, nilaiMin: b.hargaMin * b.ekor, nilaiMaks: (b.hargaMaks ?? b.hargaMin) * b.ekor }))
+    .sort((a, b) => b.nilaiMin - a.nilaiMin || a.kunci.localeCompare(b.kunci))
+    .slice(0, Math.max(0, batas));
+}
