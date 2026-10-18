@@ -54,15 +54,16 @@ export default function PasarSayurTab() {
     queryFn: () => base44.entities.SupplierItem.list("-created_date", BATAS_AMBIL),
     staleTime: 5 * 60 * 1000,
   });
+  /* Kunci yang SUDAH dipakai halaman Supplier dan tujuh layar stok lainnya.
+     Kunci baru untuk data yang sama berarti daftar ini tetap basi sesudah
+     sebuah lead dijadikan supplier — sampai staleTime-nya sendiri habis. */
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["pasar-suppliers"],
-    queryFn: () => base44.entities.Supplier.list("-created_date", BATAS_AMBIL),
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["suppliers"],
+    queryFn: () => base44.entities.Supplier.list("-created_date"),
   });
   const { data: movements = [] } = useQuery({
-    queryKey: ["pasar-barang-masuk"],
-    queryFn: () => base44.entities.StockMovement.list("-date", BATAS_AMBIL),
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["stock-movements", "-date", 500],
+    queryFn: () => base44.entities.StockMovement.list("-date", 500),
   });
 
   const penawaran = useMemo(
@@ -111,8 +112,14 @@ export default function PasarSayurTab() {
         <div className="rounded-xl border border-border bg-card p-3">
           <p className="text-[11px] text-muted-foreground">Pernah benar-benar kirim</p>
           <p className="text-xl font-bold text-foreground tabular-nums">
-            {sudahKirim.length}
-            <span className="text-xs font-normal text-muted-foreground"> / {keandalan.length}</span>
+            {keandalan.length === 0 ? (
+              <span className="text-sm font-normal text-muted-foreground">belum ada supplier</span>
+            ) : (
+              <>
+                {sudahKirim.length}
+                <span className="text-xs font-normal text-muted-foreground"> / {keandalan.length}</span>
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -162,11 +169,27 @@ export default function PasarSayurTab() {
         datang tetap ditampilkan di urutan terakhir: itu justru baris yang
         paling perlu dilihat.
       */}
-      {keandalan.length > 0 && (
-        <div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" /> Keandalan &middot; dari pengiriman tercatat
-          </p>
+      <div>
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5" /> Keandalan &middot; dari pengiriman tercatat
+        </p>
+        {/*
+          Nol supplier terdaftar adalah keadaan 18 Okt 2026: tujuh lead sudah
+          masuk, belum satu pun dijadikan supplier. Bagian ini tetap berdiri
+          dan mengatakan apa yang kurang — kalau ia hilang begitu saja,
+          pemiliknya tidak pernah tahu peringkat yang ia minta sudah ada
+          tempatnya dan hanya menunggu satu langkah.
+        */}
+        {keandalan.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-card/50 p-3">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Belum ada supplier terdaftar, jadi belum ada yang bisa diperingkat. Lead di tab
+              Leads bisa dijadikan supplier lewat tombol &quot;Jadikan Supplier&quot;; sesudah itu
+              setiap barang masuk bisa menunjuk ke sana, dan peringkat ini terisi sendiri dari
+              pengiriman yang benar-benar terjadi.
+            </p>
+          </div>
+        ) : (
           <div className="space-y-2">
             {keandalan.map((k) => (
               <div key={k.id} className="rounded-xl border border-border bg-card p-3">
@@ -200,8 +223,8 @@ export default function PasarSayurTab() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
