@@ -83,6 +83,8 @@ bundel("src/lib/hargaSupplier.js", "harga.cjs");
 bundel("src/lib/pasarSupplier.js", "pasar.cjs");
 bundel("src/lib/bersihkanKura.js", "bersihkura.cjs");
 bundel("src/lib/incompleteChecks.js", "lengkap.cjs");
+bundel("src/lib/pitaUkuran.js", "pita.cjs");
+bundel("src/lib/hargaEstimasi.js", "hargaest.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1988,6 +1990,121 @@ for (const [teks, harap] of barangUji) {
 }
 
 /*
+  ── PITA UKURAN & NILAI ASET: perkiraan harga jual kawanan ─────────────────
+
+  Diminta pemiliknya 18 Okt 2026, untuk kolom "estimasi total aset" di
+  beranda. Aturan pitanya kata-katanya sendiri: "jika baby rentangnya lebih
+  kecil — lima, enam, tujuh, delapan, sembilan, sepuluh juga akan berbeda;
+  tapi kalau untuk indukan rentangnya semakin lebar, biasanya per lima senti".
+
+  Jadi dua aturan dalam satu fungsi, dan di situlah yang paling mudah salah:
+
+  · BATAS PITA TERBUKA DI ATAS. Kura 55,0 cm harus masuk pita 55 dan BUKAN
+    pita 50–55. Kalau batasnya tertutup di kedua ujung, kura di titik batas
+    jatuh ke dua pita sekaligus tergantung urutan pemeriksaan, dan nilainya
+    berubah-ubah tanpa sebab yang terlihat.
+  · KELOMPOK YANG BELUM BERHARGA BUKAN NOL. Menghitungnya nol membuat nilai
+    aset terlihat utuh padahal separuh kawanan tidak dihargai — angka yang
+    lebih berbahaya daripada tidak ada angka sama sekali.
+*/
+const PU = await import(`file://${join(dir, "pita.cjs")}`).then((m) => m.default || m);
+const HE = await import(`file://${join(dir, "hargaest.cjs")}`).then((m) => m.default || m);
+
+const pitaUji = [
+  // [cm, batas bawah yang diharapkan, label]
+  [5.3, 5, "5 cm"],          // anakan: per 1 cm
+  [6, 6, "6 cm"],
+  [7, 7, "7 cm"],
+  [9.9, 9, "9 cm"],
+  [10, 10, "10–15 cm"],      // tepat di batas aturan: sudah per 5 cm
+  [15, 15, "15–20 cm"],
+  [54.9, 50, "50–55 cm"],
+  // Titik batas yang menentukan: 55,0 masuk pita 55, BUKAN 50–55.
+  [55, 55, "55–60 cm"],
+  [76, 75, "75–80 cm"],
+];
+for (const [cm, min, label] of pitaUji) {
+  const p = PU.pitaUkuran(cm);
+  if (!p || p.min !== min) temuan.push(`pita ${cm} cm: batas bawah ${p ? p.min : "null"}, seharusnya ${min}`);
+  if (p && p.label !== label) temuan.push(`pita ${cm} cm: label "${p.label}", seharusnya "${label}"`);
+  if (p && !PU.didalamPita(cm, min)) temuan.push(`pita ${cm} cm: didalamPita menolak pitanya sendiri`);
+  if (p && PU.labelPita(min) !== label) temuan.push(`pita ${cm} cm: labelPita("${min}") = "${PU.labelPita(min)}", seharusnya "${label}"`);
+}
+/* Tanpa ukuran TIDAK boleh jatuh ke pita mana pun. */
+for (const kosong of [0, null, undefined, -3, "", "abc"]) {
+  if (PU.pitaUkuran(kosong) !== null) temuan.push(`pita ${JSON.stringify(kosong)}: dapat pita, seharusnya null`);
+}
+
+/* ── Kunci harga ───────────────────────────────────────────────────────── */
+const kura = (o) => ({ status: "aktif", species: "sulcata", morph: "normal", gender: "betina", ...o });
+const kB = HE.kunciHarga(kura({ code: "B1", shell_length_cm: 52, asal_genetik: "wc" }));
+if (kB !== "sulcata|normal|50|betina|-|wc") temuan.push(`kunci harga: "${kB}", seharusnya "sulcata|normal|50|betina|-|wc"`);
+const kP = HE.kunciHarga(kura({ code: "P1", shell_length_cm: 57, is_proven: true, asal_genetik: "cb" }));
+if (kP !== "sulcata|normal|55|betina|proven|cb") temuan.push(`kunci harga proven: "${kP}"`);
+/* Asal kosong jadi "?", BUKAN cb — kura yang asalnya belum ditentukan tidak
+   boleh diam-diam dihargai sebagai captive bred. */
+const kQ = HE.kunciHarga(kura({ code: "Q1", shell_length_cm: 52 }));
+if (!kQ.endsWith("|?")) temuan.push(`kunci harga tanpa asal: "${kQ}", seharusnya berakhir "|?"`);
+/* Tanpa ukuran: tidak punya kunci sama sekali. */
+if (HE.kunciHarga(kura({ code: "X" })) !== null) temuan.push("kunci harga tanpa ukuran: seharusnya null");
+
+/* ── Nilai aset ────────────────────────────────────────────────────────── */
+const KAWANAN = [
+  kura({ code: "A", shell_length_cm: 52, asal_genetik: "wc" }),
+  kura({ code: "B", shell_length_cm: 53, asal_genetik: "wc" }),
+  kura({ code: "C", shell_length_cm: 57, asal_genetik: "wc" }),   // pita lain, belum berharga
+  kura({ code: "D", shell_length_cm: null, asal_genetik: "wc" }), // tanpa ukuran
+  kura({ code: "E", shell_length_cm: 52, asal_genetik: "wc", status: "terjual" }),
+  kura({ code: "F", shell_length_cm: 52, asal_genetik: "wc", status: "mati" }),
+  kura({ code: "G", shell_length_cm: 52, asal_genetik: "wc", is_archived: true }),
+];
+const HARGA = [{ kunci: "sulcata|normal|50|betina|-|wc", harga_min: 10_000_000, harga_maks: 14_000_000, diperbarui: "2026-10-01" }];
+const aset = HE.nilaiAsetKura({ kura: KAWANAN, harga: HARGA });
+
+const asetUji = [
+  ["min", aset.min, 20_000_000],
+  ["maks", aset.maks, 28_000_000],
+  ["ekor ternilai", aset.ekorTernilai, 2],
+  ["ekor belum ternilai", aset.ekorBelum, 1],
+  ["tanpa ukuran", aset.tanpaUkuran, 1],
+  ["total ekor", aset.totalEkor, 4],
+  ["persen ternilai", aset.persenTernilai, 50],
+];
+for (const [nama, dapat, harap] of asetUji) {
+  if (dapat !== harap) temuan.push(`nilai aset ${nama}: ${dapat}, seharusnya ${harap}`);
+}
+/* Terjual, mati, dan diarsipkan BUKAN aset lagi. */
+if (aset.totalEkor !== 4) temuan.push(`nilai aset: ${aset.totalEkor} ekor dihitung, seharusnya 4 (terjual/mati/arsip dikeluarkan)`);
+/* Baris yang belum berharga disebut, bukan disembunyikan. */
+if (aset.barisKosong.length !== 1) temuan.push(`nilai aset: ${aset.barisKosong.length} baris kosong dilaporkan, seharusnya 1`);
+
+/* Hanya harga terendah yang diisi → tertinggi mengikuti, bukan nol. */
+const satuHarga = HE.nilaiAsetKura({
+  kura: [kura({ code: "A", shell_length_cm: 52, asal_genetik: "wc" })],
+  harga: [{ kunci: "sulcata|normal|50|betina|-|wc", harga_min: 9_000_000 }],
+});
+if (satuHarga.maks !== 9_000_000) temuan.push(`nilai aset: hanya harga_min diisi memberi maks ${satuHarga.maks}, seharusnya ikut 9.000.000`);
+
+/* Nol adalah harga yang SAH dan berbeda dari kosong. */
+const nolHarga = HE.nilaiAsetKura({
+  kura: [kura({ code: "A", shell_length_cm: 52, asal_genetik: "wc" })],
+  harga: [{ kunci: "sulcata|normal|50|betina|-|wc", harga_min: 0, harga_maks: 0 }],
+});
+if (nolHarga.ekorTernilai !== 1) temuan.push("nilai aset: harga 0 dianggap belum diisi, seharusnya sah");
+
+/* Baris lahir dari kura, diurutkan dari yang paling banyak ekornya. */
+const { baris } = HE.barisHarga({ kura: KAWANAN, harga: HARGA });
+if (baris.length !== 2) temuan.push(`baris harga: ${baris.length} baris, seharusnya 2`);
+if (baris[0].ekor < baris[baris.length - 1].ekor) temuan.push("baris harga: tidak diurutkan dari yang paling banyak ekornya");
+if (!baris[0].terisi) temuan.push("baris harga: baris yang sudah berharga tidak ditandai terisi");
+
+/* Harga yang sudah lama tidak disentuh ditandai. */
+const KINI_HE = new Date("2026-10-18T00:00:00Z");
+if (HE.hargaBasi("2026-10-01", KINI_HE)) temuan.push("harga basi: harga 17 hari lalu dianggap basi");
+if (!HE.hargaBasi("2026-01-01", KINI_HE)) temuan.push("harga basi: harga 290 hari lalu tidak ditandai basi");
+if (HE.hargaBasi("", KINI_HE)) temuan.push("harga basi: tanggal kosong dianggap basi");
+
+/*
   ── HARGA BELI: kura yang DIBELI harus punya modalnya ──────────────────────
 
   Diminta pemiliknya 18 Okt 2026: "kalau kita membeli bukan dari anakan
@@ -2755,6 +2872,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset diuji.`,
 );
 process.exit(0);

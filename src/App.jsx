@@ -12,6 +12,7 @@ import PembesarFoto from '@/components/common/PembesarFoto';
 import StockPredictionPage from '@/pages/StockPredictionPage';
 import PettyCashPage from '@/pages/PettyCashPage';
 import SupplierPage from '@/pages/SupplierPage';
+import HargaKuraPage from '@/pages/HargaKuraPage';
 import SalarySlipPage from '@/pages/SalarySlipPage';
 import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
 import DaftarBelanjaPage from '@/pages/DaftarBelanjaPage';
@@ -157,6 +158,7 @@ const AuthenticatedApp = () => {
         <Route path="/stock-prediction" element={<Navigate to="/pembelian" replace />} />
         <Route path="/petty-cash" element={<PettyCashPage />} />
         <Route path="/supplier" element={<SupplierPage />} />
+        <Route path="/harga-kura" element={<HargaKuraPage />} />
         {/*
           * /pellet-recipe dihapus 17-09-2026, dialihkan seperti /warehouse dan
           * /feed-stock sebelumnya.
