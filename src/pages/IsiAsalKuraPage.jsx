@@ -6,7 +6,7 @@ import { base44, BATAS_AMBIL } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/common/PageHeader";
-import { kuraAset } from "@/lib/hargaEstimasi";
+import { hanyaDiPeternakan } from "@/lib/populasiKura";
 
 /**
  * IsiAsalKuraPage — menentukan CB / WC / LTC untuk kura yang asalnya kosong.
@@ -55,7 +55,7 @@ export default function IsiAsalKuraPage() {
     queryFn: () => base44.entities.Tortoise.list("-created_date", BATAS_AMBIL),
   });
 
-  const hidup = useMemo(() => kuraAset(kura), [kura]);
+  const hidup = useMemo(() => hanyaDiPeternakan(kura), [kura]);
   const kosong = useMemo(
     () => hidup.filter((k) => !String(k?.asal_genetik || "").trim()),
     [hidup],

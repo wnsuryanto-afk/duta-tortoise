@@ -1,4 +1,5 @@
 import { pitaUkuran, labelPita } from "@/lib/pitaUkuran";
+import { hanyaDiPeternakan } from "@/lib/populasiKura";
 
 /**
  * hargaEstimasi.js — perkiraan harga jual seekor kura, dan nilai aset kawanan.
@@ -32,6 +33,15 @@ import { pitaUkuran, labelPita } from "@/lib/pitaUkuran";
  * siapa pun. Jadi tiap baris memuat harga terendah dan tertinggi, dan nilai
  * aset kawanan ikut berupa rentang.
  *
+ * ── Siapa yang jadi aset ────────────────────────────────────────────────────
+ *
+ * Yang dihitung adalah kura yang MASIH DI PETERNAKAN, dan definisinya diambil
+ * dari lib/populasiKura.js — bukan ditulis ulang di sini. Berkas itu ada
+ * justru karena pertanyaan "berapa kura yang ada" pernah dijawab berbeda di
+ * lima tempat. Salinan keenam yang hari ini kebetulan sama persis akan
+ * berpisah pada perubahan skema berikutnya, dan selisihnya hanya terlihat
+ * kalau ada yang membandingkan dua angka di beranda baris demi baris.
+ *
  * ── Yang TIDAK dilakukan di sini ────────────────────────────────────────────
  *
  * Tidak ada tebakan. Kura yang kelompoknya belum berharga tidak dinilai nol
@@ -41,15 +51,6 @@ import { pitaUkuran, labelPita } from "@/lib/pitaUkuran";
  * yang lebih berbahaya daripada tidak ada angka sama sekali.
  */
 
-/** Kura yang tidak lagi jadi aset: sudah dijual, mati, atau diarsipkan. */
-const STATUS_BUKAN_ASET = ["mati", "terjual", "diarsipkan"];
-
-/** Hanya kura yang masih dipelihara yang menjadi aset. */
-export function kuraAset(daftar = []) {
-  return (daftar || []).filter(
-    (k) => k && !k.is_archived && !STATUS_BUKAN_ASET.includes(k.status),
-  );
-}
 
 const teks = (v) => String(v ?? "").trim();
 
@@ -112,7 +113,7 @@ export function barisHarga({ kura = [], harga = [] } = {}) {
   const per = new Map();
   let tanpaUkuran = 0;
 
-  for (const k of kuraAset(kura)) {
+  for (const k of hanyaDiPeternakan(kura)) {
     const kunci = kunciHarga(k);
     if (!kunci) { tanpaUkuran += 1; continue; }
     if (!per.has(kunci)) {

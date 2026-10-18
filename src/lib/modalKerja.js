@@ -1,4 +1,4 @@
-import { kuraAset } from "@/lib/hargaEstimasi";
+import { hanyaDiPeternakan } from "@/lib/populasiKura";
 
 /**
  * modalKerja.js — berapa yang SUDAH dikeluarkan untuk aset yang dipegang.
@@ -47,7 +47,7 @@ function barangBerstok(items = []) {
  * @param {number|null} modalKandang  CompanySettings.modal_kandang_total
  */
 export function modalKerja({ kura = [], warehouse = [], modalKandang = null } = {}) {
-  const hidup = kuraAset(kura);
+  const hidup = hanyaDiPeternakan(kura);
 
   /* Kura: harga beli yang TERCATAT. Yang kosong tidak dianggap nol — ia
      dihitung terpisah, karena nol berarti "gratis" dan kosong berarti
