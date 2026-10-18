@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { PERAN_BERGAJI } from "@/lib/hitungGaji";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
@@ -25,6 +26,29 @@ export default function SOPKPI() {
     queryFn: () => base44.entities.BonusReward.list("-period", 200),
   });
 
+  /*
+    Daftar peran dipakai untuk MENGELUARKAN yang bukan karyawan bergaji.
+
+    Layar ini daftar pembayaran bonus: nama, poin, kotak rupiah, tombol
+    "Dibayar". Pemilik muncul di situ dengan 205 poin Mei — ia memang punya
+    baris BonusReward karena ikut mengerjakan checklist, tetapi ia tidak
+    membayar bonus kepada dirinya sendiri, dan barisnya hanya menambah satu
+    kartu yang tidak pernah ditindak.
+
+    Aturannya diambil dari PERAN_BERGAJI di lib/hitungGaji.js — definisi yang
+    sama dengan yang dipakai ketiga layar gaji, bukan daftar baru di sini.
+    Artinya admin dan manajer juga tidak tampil, dan itu memang dimaksud:
+    daftar itu menyebut siapa yang bisa DIBAYAR lewat aplikasi ini, dan
+    tombol "Dibayar" di bawah tiap kartu adalah jalur pembayaran yang sama.
+    Bila kelak manajer memang dibayar dari sini, yang berubah lebih dulu
+    adalah penerbit slipnya — bukan saringan di layar ini sendirian.
+  */
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => base44.entities.User.list("-created_date", 100),
+    enabled: isAdmin,
+  });
+
   const myRewards = isAdmin ? rewards : rewards.filter((r) => r.employee_email === user?.email);
 
   const handleUpdateBonus = async (reward, bonusAmount) => {
@@ -43,8 +67,22 @@ export default function SOPKPI() {
   const myTotalPoints = myCurrentPeriod?.total_points || 0;
 
   // Group by employee for admin
+  /*
+    Yang disembunyikan HANYA email yang benar-benar dikenali sebagai bukan
+    karyawan bergaji. Email yang tidak ada di daftar pengguna dibiarkan
+    tampil: itu biasanya mantan karyawan yang akunnya sudah dihapus, dan
+    riwayat bonusnya tetap perlu terlihat. Menyaring dengan "hanya yang ada
+    di daftar bergaji" akan menghapus mereka diam-diam.
+  */
+  const emailBukanBergaji = new Set(
+    (users || [])
+      .filter((u) => u?.email && u?.role && !PERAN_BERGAJI.includes(u.role))
+      .map((u) => String(u.email).toLowerCase()),
+  );
+
   const grouped = isAdmin
     ? rewards.reduce((acc, r) => {
+        if (emailBukanBergaji.has(String(r.employee_email || "").toLowerCase())) return acc;
         if (!acc[r.employee_email]) acc[r.employee_email] = { name: r.employee_name, email: r.employee_email, records: [] };
         acc[r.employee_email].records.push(r);
         return acc;
