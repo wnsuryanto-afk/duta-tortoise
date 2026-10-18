@@ -104,6 +104,10 @@
       "description": "Target minimum poin per bulan per karyawan. Dipakai sebagai tingkat DASAR bila target bertingkat belum diisi.",
       "type": "number"
     },
+    "modal_kandang_total": {
+      "description": "Total investasi SELURUH kandang, rupiah. Satu angka, bukan per kandang \u2014 dipilih pemiliknya 18 Okt 2026 karena Enclosure tidak punya kolom biaya sama sekali dan memecahnya ke 20 kandang berarti 20 isian untuk angka yang ia pegang sebagai satu nilai. Dipakai kolom Modal Kerja dan Estimasi Aset di beranda. Kosong berarti belum diisi, bukan nol.",
+      "type": "number"
+    },
     "musim_bertelur_aktif": {
       "default": false,
       "description": "D26 - Sakelar musim bertelur. Jadwal perawatan berfrekuensi 'musiman' (boost kalsium betina, cek kloaka) hanya muncul di layar kiper selama sakelar ini menyala. Sengaja manual, bukan dari kalender: yang menentukan musim adalah tanda di lapangan - betina mulai gelisah, menggali, mencari tempat bertelur - dan yang melihatnya pemilik, bukan aplikasi.",
