@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { skuPakanBaru } from "@/lib/skuBarang";
+import { namaKembar } from "@/lib/namaMirip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +93,45 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
       toast.error("Foto timbangan wajib diunggah");
       return;
     }
+
+    /*
+      Nama pakan yang HAMPIR sama dengan yang sudah ada dihentikan di sini,
+      sebelum satu baris pun ditulis.
+
+      Di bawah, nama yang tidak cocok persis membuat baris FeedStock BARU
+      tanpa bertanya. Satu huruf meleset berarti satu stok tandingan: pada
+      10 Okt 2026 "Reumput" lahir di sebelah "Rumput", menampung 30 kg yang
+      sejak itu tidak pernah diberikan ke kura mana pun.
+
+      Diperiksa di MUKA, bukan di tengah penyimpanan, supaya tidak ada
+      PakanHarian yang tersimpan sementara stoknya gagal. Dan hanya salah
+      ketik yang dihentikan — nama yang memuat nama lain secara utuh
+      ("Melon BS" di samping "Melon") memang barang berbeda dan lolos.
+      Rinciannya di lib/namaMirip.js.
+    */
+    const detailNama = String(form.feed_type_detail || "").trim();
+    if (detailNama) {
+      try {
+        const adaPakan = await base44.entities.FeedStock.list("-created_date", 200);
+        const kunciNama = (t) => String(t || "").trim().toLowerCase().replace(/\s+/g, " ");
+        const sudahPersis = adaPakan.some((f) => kunciNama(f.name) === kunciNama(detailNama));
+        if (!sudahPersis) {
+          const kembar = namaKembar(detailNama, adaPakan);
+          if (kembar) {
+            toast.error(
+              `"${detailNama}" sangat mirip "${kembar}" yang sudah ada. ` +
+              `Tulis persis "${kembar}" bila memang itu, atau nama yang jelas berbeda bila bukan.`,
+            );
+            return;
+          }
+        }
+      } catch {
+        /* Daftar pakan gagal diambil: penyimpanan TIDAK dihentikan. Penjaga
+           ini mencegah baris kembar, dan kehilangan catatan pakan hari itu
+           jauh lebih mahal daripada satu baris kembar yang bisa digabung. */
+      }
+    }
+
     setSaving(true);
     try {
       let photo_url = photoPreview;
