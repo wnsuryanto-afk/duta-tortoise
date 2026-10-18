@@ -189,6 +189,32 @@ export default function PasarSayurTab() {
               pengiriman yang benar-benar terjadi.
             </p>
           </div>
+        ) : sudahKirim.length === 0 ? (
+          /*
+            Semua terdaftar, belum satu pun mengirim — keadaan 18 Okt 2026,
+            sesudah enam lead dijadikan supplier.
+
+            Satu baris per supplier di sini berarti enam kartu yang kalimatnya
+            sama persis: "Belum ada barang masuk yang menunjuk ke sini."
+            Enam baris yang berbunyi sama tidak memuat lebih banyak keterangan
+            daripada satu baris, hanya lebih banyak ruang untuk digulung.
+            Jadi selama belum ada yang mengirim, namanya saja yang disebut,
+            dalam satu kalimat.
+
+            Begitu satu pengiriman tercatat, bentuk per-baris di bawah yang
+            dipakai — karena saat itu tiap baris memang berbeda isinya.
+          */
+          <div className="rounded-xl border border-dashed border-border bg-card/50 p-3">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">{keandalan.length} supplier terdaftar,
+              belum satu pun tercatat mengirim.</span>{" "}
+              {keandalan.map((k) => k.nama).join(", ")}.
+            </p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5">
+              Peringkatnya terisi sendiri begitu barang masuk pertama menunjuk salah satu nama di
+              atas &mdash; pilih supplier-nya di form Barang Masuk.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2">
             {keandalan.map((k) => (

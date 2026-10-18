@@ -670,6 +670,32 @@ export default [
       </div>
     );
   })()],
+  /*
+    Enam supplier terdaftar, nol pengiriman — keadaan nyata 18 Okt 2026,
+    sesudah enam lead dijadikan supplier. Namanya yang sebenarnya dipakai,
+    termasuk "Sayur Surabaya (nama belum disebut)" yang panjang karena
+    postingannya memang tidak menyebut nama penjualnya.
+
+    Daftar nama yang digabung begini adalah satu kalimat panjang tanpa
+    titik potong alami; kalau suatu saat ia diberi truncate atau wadah yang
+    kaku, 280px yang pertama memperlihatkannya.
+  */
+  ["Keandalan — semua terdaftar, belum ada yang kirim", (() => {
+    const nama = ["Max Cliink", "Adinda", "Sayur Surabaya (nama belum disebut)", "Budi Nuryanto", "Bayu Prasetyo", "Riska"];
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-card/50 p-3">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground">{nama.length} supplier terdaftar,
+          belum satu pun tercatat mengirim.</span>{" "}
+          {nama.join(", ")}.
+        </p>
+        <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5">
+          Peringkatnya terisi sendiri begitu barang masuk pertama menunjuk salah satu nama di
+          atas &mdash; pilih supplier-nya di form Barang Masuk.
+        </p>
+      </div>
+    );
+  })()],
   ["NilaiInisiatifSekaligus — antrean nyata", <NilaiInisiatifSekaligus
     settings={{ poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] }}
     logs={[
