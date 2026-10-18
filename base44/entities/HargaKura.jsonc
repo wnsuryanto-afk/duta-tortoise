@@ -1,0 +1,55 @@
+{
+  "name": "HargaKura",
+  "properties": {
+    "asal_genetik": {
+      "description": "cb, wc, ltc, atau kosong bila belum diketahui. Kosong BUKAN sama dengan cb \u2014 ia kelompok tersendiri, supaya kura yang asalnya belum ditentukan tidak diam-diam dihargai sebagai captive bred.",
+      "type": "string"
+    },
+    "catatan": {
+      "description": "Dari mana harganya: penawaran yang dilihat, penjualan nyata, atau perkiraan sendiri.",
+      "type": "string"
+    },
+    "diperbarui": {
+      "description": "Tanggal harga ini terakhir disentuh. Dasar peringatan 'harga ini sudah lebih dari 6 bulan' \u2014 angka lama yang terlihat pasti lebih berbahaya daripada kosong.",
+      "format": "date",
+      "type": "string"
+    },
+    "gender": {
+      "description": "jantan, betina, atau belum_diketahui. Anakan belum berkelamin, jadi ia kelompok tersendiri dan bukan dipaksa ke salah satu.",
+      "type": "string"
+    },
+    "harga_maks": {
+      "description": "Perkiraan harga jual TERTINGGI, rupiah. Harga pasar bukan satu angka; rentang menolak memberi kepastian yang tidak dimiliki siapa pun.",
+      "type": "number"
+    },
+    "harga_min": {
+      "description": "Perkiraan harga jual TERENDAH untuk satu ekor di kelompok ini, rupiah. Kosong berarti kelompok ini belum dinilai \u2014 kuranya dihitung sebagai 'belum ternilai', bukan sebagai nol.",
+      "type": "number"
+    },
+    "kunci": {
+      "description": "Penanda kelompok harga, disusun HANYA oleh kunciHarga() di src/lib/hargaEstimasi.js. Bentuknya: spesies|morph|batas_bawah_pita|kelamin|proven|asal. Contoh: sulcata|normal|50|betina|-|wc. Disimpan apa adanya supaya pencarian harga seekor kura cukup satu kali lihat, dan supaya dua tempat tidak menyusun kunci dengan aturan yang sedikit berbeda \u2014 baris harga yang tidak pernah ketemu kuranya adalah cacat yang tidak menimbulkan error apa pun.",
+      "type": "string"
+    },
+    "morph": {
+      "description": "Morph, disalin dari kunci.",
+      "type": "string"
+    },
+    "pita_min": {
+      "description": "Batas BAWAH pita panjang cangkang dalam cm. Pita di bawah 10 cm lebarnya 1 cm (anakan 6 dan 7 cm berbeda harga); 10 cm ke atas lebarnya 5 cm (indukan 51 dan 53 cm tidak berbeda). Batas atasnya terbuka: pita 50 memuat 50 sampai 54,9 dan tidak memuat 55.",
+      "type": "number"
+    },
+    "proven": {
+      "default": false,
+      "description": "Baris ini untuk kura yang sudah terbukti bertelur/membuahi. Indukan proven berharga berbeda dari seukurannya yang belum proven.",
+      "type": "boolean"
+    },
+    "species": {
+      "description": "Spesies, disalin dari kunci supaya baris ini terbaca tanpa mengurai kunci.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kunci"
+  ],
+  "type": "object"
+}

@@ -162,6 +162,9 @@ export const EXTRA_DESTINATIONS = [
    * didaftarkan, pintunya tinggal dikembalikan ke daftar di atas.
    */
   { path: "/supplier",       section: "supplier",      label: "Pemasok & harga sayur", group: "Stok" },
+  /* Section "finance", bukan "tortoise": harga estimasi menentukan nilai
+     aset dan margin penjualan, dan kiper tidak punya urusan dengannya. */
+  { path: "/harga-kura",     section: "finance",       label: "Harga Estimasi Kura",  group: "Kura" },
   { path: "/passport",           section: "tortoise",  label: "Paspor Kura (cetak)",  group: "Kura" },
   { path: "/incomplete-data",    section: "dashboard", label: "Data Belum Lengkap",   group: "Laporan" },
   { path: "/info",               section: "info",      label: "Info & Pengumuman",    group: "Laporan" },

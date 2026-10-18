@@ -25,6 +25,13 @@ export default function PengaturanHPP() {
 
   const currentFallback = settings[0]?.hpp_fallback_per_ekor ?? 100000;
   const [fallback, setFallback] = useState(null);
+  /* Modal kandang: SATU angka untuk seluruh 20 kandang.
+     Enclosure tidak punya kolom biaya sama sekali, dan pemiliknya memilih
+     satu angka alih-alih 20 isian (18 Okt 2026) — ia memegangnya sebagai
+     satu nilai investasi, bukan per kandang. Dipakai kolom Modal Kerja dan
+     Estimasi Aset di beranda. */
+  const currentKandang = settings[0]?.modal_kandang_total;
+  const [kandang, setKandang] = useState(null);
 
   // Fetch data untuk tabel riwayat biaya per ekor
   const { data: allFinanceTx = [] } = useQuery({
@@ -79,13 +86,25 @@ export default function PengaturanHPP() {
     setSaving(true);
     setSuccess("");
     const val = fallback != null ? fallback : currentFallback;
+    /* Kosong disimpan sebagai null, BUKAN nol: nol berarti kandangnya memang
+       tidak bermodal, kosong berarti belum diisi — dan beranda menampilkan
+       keduanya dengan cara yang berbeda. */
+    const kandangMentah = kandang != null ? kandang : currentKandang;
+    const kandangVal =
+      kandangMentah === "" || kandangMentah === null || kandangMentah === undefined
+        ? null
+        : Number(kandangMentah);
     try {
       if (settings.length > 0) {
-        await base44.entities.CompanySettings.update(settings[0].id, { hpp_fallback_per_ekor: val });
+        await base44.entities.CompanySettings.update(settings[0].id, {
+          hpp_fallback_per_ekor: val,
+          modal_kandang_total: Number.isFinite(kandangVal) ? kandangVal : null,
+        });
       }
       segarkanSetelan(qc);
       setSuccess("Pengaturan disimpan ✓");
       setFallback(null);
+      setKandang(null);
     } catch (_) { setSuccess("Gagal menyimpan"); }
     setSaving(false);
   };
@@ -103,7 +122,7 @@ export default function PengaturanHPP() {
           Setelah ada data pengeluaran, sistem akan menghitung otomatis dari total pengeluaran ÷ jumlah kura aktif.
         </p>
 
-        <div className="flex items-end gap-3">
+        <div className="flex items-end gap-3 flex-wrap">
           <div className="space-y-1.5">
             <Label>Fallback Biaya Per Ekor/Bulan (Rp)</Label>
             <Input
@@ -111,6 +130,17 @@ export default function PengaturanHPP() {
               min={0}
               value={displayFallback}
               onChange={e => setFallback(Number(e.target.value))}
+              className="w-52"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Total Modal Kandang (Rp)</Label>
+            <Input
+              type="number"
+              min={0}
+              placeholder="belum diisi"
+              value={kandang != null ? kandang : (currentKandang ?? "")}
+              onChange={e => setKandang(e.target.value)}
               className="w-52"
             />
           </div>
