@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
+import { bersihkanKura } from "@/lib/bersihkanKura";
 import { useTestMode } from "@/lib/useTestMode";
 import { simpanUkuranSekali } from "@/lib/ukurSekali";
 import { kandangDariNama, kandangBisaDipilih } from "@/lib/kandang";
@@ -352,8 +354,37 @@ export default function TortoiseForm({ open, onClose, editData }) {
     await doSave(true);
   };
 
+  /*
+    Pembungkus yang memastikan tombol Simpan SELALU berhenti berputar.
+
+    `simpanKura` di bawah adalah isi aslinya. Sebelum ini isinya dipanggil
+    langsung, dan `setSaving(false)` adalah baris TERAKHIRNYA — jadi begitu
+    satu saja await di tengah melempar, baris itu tidak pernah tercapai:
+    tombolnya berputar selamanya, tanpa pesan, dan satu-satunya jalan keluar
+    adalah memuat ulang halaman.
+
+    Itu yang dialami pemiliknya 18 Okt 2026 saat memasukkan Sulcata Albino.
+    Penyebab lemparannya sudah diperbaiki (lib/bersihkanKura.js), tetapi
+    sebab yang berikutnya akan ada — dan yang tidak boleh terulang adalah
+    kegagalan yang tidak mengatakan apa-apa.
+  */
   const doSave = async (withWarning = false) => {
     setSaving(true);
+    try {
+      await simpanKura(withWarning);
+    } catch (err) {
+      /* Pesan server dibawa apa adanya: "Error in field proven_year: Input
+         should be a valid number" menyebut kolom yang salah, dan itu jauh
+         lebih berguna daripada "Gagal menyimpan". */
+      const pesan = err?.message || String(err || "");
+      toast.error(pesan ? `Gagal menyimpan: ${pesan}` : "Gagal menyimpan kura.");
+      console.error("Simpan kura gagal:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const simpanKura = async (withWarning = false) => {
     const newWeight = form.weight_grams ? Number(form.weight_grams) : undefined;
     const newLength = form.shell_length_cm ? Number(form.shell_length_cm) : undefined;
     // Auto-create HealthRecord jika sakit baru
@@ -407,12 +438,21 @@ export default function TortoiseForm({ open, onClose, editData }) {
     // baris 79 sebagai "migrasi data lama" yang selamanya kosong. Kura yang
     // fotonya sudah dipilih tetap menampilkan foto pertama apa adanya.
     const utama = thumbnailUrl || photos[0]?.url || "";
-    const data = {
+    /*
+      Dibersihkan lewat satu pustaka, bukan per kolom di sini.
+
+      `weight_grams` dan `shell_length_cm` di atas sudah lama diubah ke angka;
+      `proven_year`, `birth_date` dan `purchase_date` tidak pernah ikut, dan
+      `proven_year: ""` itulah yang membuat setiap penyimpanan kura BARU
+      ditolak server sejak lama — tombolnya berputar selamanya karena
+      penolakannya tidak pernah ditangkap. Rinciannya di lib/bersihkanKura.js.
+    */
+    const data = bersihkanKura({
       ...cleanForm,
       weight_grams: newWeight,
       shell_length_cm: newLength,
       photos: photos.map((f) => ({ ...f, is_primary: !!utama && f.url === utama })),
-    };
+    });
 
     let tortoiseId = editData?.id;
     const oldEnclosure = editData?.enclosure || "";
@@ -498,7 +538,6 @@ export default function TortoiseForm({ open, onClose, editData }) {
     }
 
     queryClient.invalidateQueries({ queryKey: ["tortoises"] });
-    setSaving(false);
     setPendingSubmitData(null);
     onClose();
   };

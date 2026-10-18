@@ -81,6 +81,7 @@ bundel("src/lib/diseaseClusterUtils.js", "kluster.cjs");
 bundel("src/lib/kelompokInisiatif.js", "kelompok.cjs");
 bundel("src/lib/hargaSupplier.js", "harga.cjs");
 bundel("src/lib/pasarSupplier.js", "pasar.cjs");
+bundel("src/lib/bersihkanKura.js", "bersihkura.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -1986,6 +1987,96 @@ for (const [teks, harap] of barangUji) {
 }
 
 /*
+  ── KURA BARU: teks kosong tidak boleh masuk kolom angka ───────────────────
+
+  18 Okt 2026 pemiliknya tidak bisa memasukkan Sulcata Albino yang baru
+  dibeli: tombol Simpan berputar terus, tanpa pesan. Tidak satu pun kura
+  tercatat lewat formulir itu sejak 14 Juli.
+
+  Sebabnya satu baris di keadaan awal formulir — `proven_year: ""` — yang
+  ikut terkirim ke kolom bertipe ANGKA selama kura itu bukan proven breeder.
+  Server menolak seluruh permintaan dengan 422, dan penolakannya tidak
+  pernah ditangkap, jadi `setSaving(false)` tidak pernah tercapai.
+
+  Dibuktikan dengan mengirim muatan formulir apa adanya ke API: dengan
+  `proven_year: ""` ditolak 422, tanpa baris itu tersimpan.
+
+  Yang dijaga di sini: setiap kolom angka dan tanggal di skema Tortoise
+  mengubah teks kosong jadi `null` — `null`, bukan dibuang, supaya
+  MENGOSONGKAN tanggal yang sudah terisi tetap benar-benar mengosongkannya.
+*/
+const BK = await import(`file://${join(dir, "bersihkura.cjs")}`).then((m) => m.default || m);
+
+/* Muatan persis seperti yang dikirim formulir untuk kura baru. */
+const kuraBaru = BK.bersihkanKura({
+  name: "Albino 1", code: "ALB-1", gender: "", morph: "albino",
+  species: "sulcata", source: "beli_lokal",
+  is_proven: false, proven_year: "", birth_date: "", purchase_date: "",
+  status: "aktif", enclosure: "W1", notes: "",
+});
+const bersihUji = [
+  ["proven_year", null],
+  ["birth_date", null],
+  ["purchase_date", null],
+  // Teks kosong bukan nilai enum yang dikenali siapa pun; anakan dari
+  // EggGrid selalu "belum_diketahui", dan kura dari formulir kini sama.
+  ["gender", "belum_diketahui"],
+  // Yang bukan kolom angka/tanggal tidak boleh ikut berubah.
+  ["notes", ""],
+  ["morph", "albino"],
+  ["enclosure", "W1"],
+  ["is_proven", false],
+];
+for (const [kolom, harap] of bersihUji) {
+  if (kuraBaru[kolom] !== harap) {
+    temuan.push(`bersihkan kura: ${kolom} = ${JSON.stringify(kuraBaru[kolom])}, seharusnya ${JSON.stringify(harap)}`);
+  }
+}
+
+/* Angka yang DITULIS tetap jadi angka, bukan teks. */
+const kuraProven = BK.bersihkanKura({ proven_year: "2024", weight_grams: "3500", shell_length_cm: "28,5" });
+if (kuraProven.proven_year !== 2024) temuan.push(`bersihkan kura: proven_year "2024" jadi ${JSON.stringify(kuraProven.proven_year)}, seharusnya angka 2024`);
+if (kuraProven.weight_grams !== 3500) temuan.push(`bersihkan kura: weight_grams "3500" jadi ${JSON.stringify(kuraProven.weight_grams)}, seharusnya angka 3500`);
+/* "28,5" bukan angka yang bisa dibaca Number() — jadi null, BUKAN NaN.
+   NaN ditolak server dengan pesan yang sama membingungkannya. */
+if (kuraProven.shell_length_cm !== null) temuan.push(`bersihkan kura: "28,5" jadi ${String(kuraProven.shell_length_cm)}, seharusnya null (bukan NaN)`);
+
+/* Nol dan tanggal yang sah TIDAK boleh ikut dikosongkan. */
+const kuraNol = BK.bersihkanKura({ weight_grams: 0, purchase_price: "0", birth_date: "2020-01-01" });
+if (kuraNol.weight_grams !== 0) temuan.push(`bersihkan kura: berat 0 jadi ${JSON.stringify(kuraNol.weight_grams)}, seharusnya tetap 0`);
+if (kuraNol.purchase_price !== 0) temuan.push(`bersihkan kura: harga "0" jadi ${JSON.stringify(kuraNol.purchase_price)}, seharusnya angka 0`);
+if (kuraNol.birth_date !== "2020-01-01") temuan.push(`bersihkan kura: tanggal sah ikut dikosongkan`);
+
+/* Kolom yang tidak dikirim TIDAK ditambahkan. */
+const kuraSedikit = BK.bersihkanKura({ name: "X" });
+if ("proven_year" in kuraSedikit || "gender" in kuraSedikit) {
+  temuan.push("bersihkan kura: kolom yang tidak dikirim malah ditambahkan");
+}
+
+/* Spasi saja sama dengan kosong. */
+if (BK.bersihkanKura({ proven_year: "   " }).proven_year !== null) {
+  temuan.push("bersihkan kura: proven_year berisi spasi tidak dijadikan null");
+}
+
+/* Setiap kolom di daftar memang ada di skema Tortoise — salah ketik di
+   daftarnya berarti kolom yang sebenarnya tetap lolos sebagai teks kosong. */
+{
+  const skema = JSON.parse(kupasKomentar(readFileSync(join(AKAR, "base44/entities/Tortoise.jsonc"), "utf8")));
+  for (const k of BK.KOLOM_ANGKA) {
+    if (skema.properties?.[k]?.type !== "number") temuan.push(`bersihkan kura: KOLOM_ANGKA "${k}" bukan number di skema Tortoise`);
+  }
+  for (const k of BK.KOLOM_TANGGAL) {
+    if (skema.properties?.[k]?.format !== "date") temuan.push(`bersihkan kura: KOLOM_TANGGAL "${k}" bukan tanggal di skema Tortoise`);
+  }
+  /* Dan sebaliknya: kolom angka/tanggal BARU di skema harus ikut didaftar,
+     kalau tidak cacat yang sama kembali lewat kolom yang lain. */
+  for (const [k, v] of Object.entries(skema.properties || {})) {
+    if (v?.type === "number" && !BK.KOLOM_ANGKA.includes(k)) temuan.push(`bersihkan kura: kolom angka "${k}" ada di skema tapi tidak didaftar`);
+    if (v?.format === "date" && !BK.KOLOM_TANGGAL.includes(k)) temuan.push(`bersihkan kura: kolom tanggal "${k}" ada di skema tapi tidak didaftar`);
+  }
+}
+
+/*
   ── KEANDALAN SUPPLIER: peringkat dari pengiriman yang BENAR-BENAR tercatat ─
 
   Sampai 18 Okt 2026 tidak ada satu pun barang masuk yang menunjuk balik ke
@@ -2607,6 +2698,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan diuji.`,
 );
 process.exit(0);
