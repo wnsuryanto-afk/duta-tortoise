@@ -43,6 +43,25 @@ export const LABEL_KELAMIN = {
 export const LABEL_ASAL = { cb: "CB", wc: "WC", ltc: "LTC" };
 
 /**
+ * Dari mana kura DIDAPAT — bukan asal-usulnya.
+ *
+ * Dua hal yang mudah tertukar, dan pernah tertukar: `source` menyebut cara
+ * memperolehnya (beli lokal, impor, hasil tetasan sendiri), sementara
+ * `asal_genetik` menyebut CB/WC/LTC. "beli_lokal" tidak mengatakan apa pun
+ * tentang captive bred atau wild caught — itulah sebabnya asal_genetik
+ * ditambahkan sebagai kolom tersendiri pada 18 Okt 2026.
+ *
+ * Peta ini hanya nama baca. Lencana ber-emoji di TortoiseCard dan SilsilahTab
+ * punya isinya sendiri dan tidak dipindahkan ke sini.
+ */
+export const LABEL_SUMBER = {
+  beli_lokal: "Beli lokal",
+  tidak_diketahui: "Sumber tidak dicatat",
+  cb: "CB", wc: "WC", f1: "F1", f2: "F2", ltc: "LTC",
+  hasil_sendiri: "Hasil sendiri", import: "Impor",
+};
+
+/**
  * Nama baca untuk sebuah kode.
  *
  * Kode yang tidak dikenal dikembalikan APA ADANYA, bukan diganti "—" atau

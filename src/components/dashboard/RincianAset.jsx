@@ -185,8 +185,8 @@ export default function RincianAset({ kura = [], harga = [], asetKura, modal }) 
               </p>
             )}
             {diluar > 0 && (
-              <Link to="/incomplete-data" className="text-[11px] text-primary hover:underline mt-1 inline-flex items-center gap-0.5">
-                Lengkapi harga beli <ChevronRight className="w-3 h-3" />
+              <Link to="/isi-harga-beli" className="text-[11px] text-primary hover:underline mt-1 inline-flex items-center gap-0.5">
+                Isi {tanpaModal > 0 ? `${tanpaModal} ` : ""}harga beli sekaligus <ChevronRight className="w-3 h-3" />
               </Link>
             )}
           </>

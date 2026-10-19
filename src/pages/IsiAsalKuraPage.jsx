@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/common/PageHeader";
 import { hanyaDiPeternakan } from "@/lib/populasiKura";
+import { LABEL_SUMBER, judulKura } from "@/lib/labelKura";
 
 /**
  * IsiAsalKuraPage — menentukan CB / WC / LTC untuk kura yang asalnya kosong.
@@ -33,12 +34,6 @@ import { hanyaDiPeternakan } from "@/lib/populasiKura";
  * sekaligus — dan tetap bisa diubah per ekor bila ternyata campur.
  */
 
-const LABEL_SUMBER = {
-  beli_lokal: "Beli lokal",
-  tidak_diketahui: "Sumber tidak dicatat",
-  cb: "CB", wc: "WC", f1: "F1", f2: "F2", ltc: "LTC",
-  hasil_sendiri: "Hasil sendiri", import: "Impor",
-};
 const PILIHAN = [
   { nilai: "cb", label: "CB — captive bred" },
   { nilai: "wc", label: "WC — wild caught" },
@@ -154,7 +149,7 @@ export default function IsiAsalKuraPage() {
             <div key={g.sumber}>
               <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                  {LABEL_SUMBER[g.sumber] || g.sumber} · {g.isi.length} ekor
+                  {judulKura(LABEL_SUMBER, g.sumber)} · {g.isi.length} ekor
                 </p>
                 {/* Satu rombongan biasanya seragam asalnya; satu ketukan
                     menutup belasan ekor, dan tetap bisa diubah per ekor. */}

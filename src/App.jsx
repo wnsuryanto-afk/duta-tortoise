@@ -15,6 +15,7 @@ import SupplierPage from '@/pages/SupplierPage';
 import HargaKuraPage from '@/pages/HargaKuraPage';
 import IsiHargaBarangPage from '@/pages/IsiHargaBarangPage';
 import IsiAsalKuraPage from '@/pages/IsiAsalKuraPage';
+import IsiHargaBeliPage from '@/pages/IsiHargaBeliPage';
 import SalarySlipPage from '@/pages/SalarySlipPage';
 import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
 import DaftarBelanjaPage from '@/pages/DaftarBelanjaPage';
@@ -163,6 +164,7 @@ const AuthenticatedApp = () => {
         <Route path="/harga-kura" element={<HargaKuraPage />} />
         <Route path="/isi-harga-barang" element={<IsiHargaBarangPage />} />
         <Route path="/isi-asal-kura" element={<IsiAsalKuraPage />} />
+        <Route path="/isi-harga-beli" element={<IsiHargaBeliPage />} />
         {/*
           * /pellet-recipe dihapus 17-09-2026, dialihkan seperti /warehouse dan
           * /feed-stock sebelumnya.

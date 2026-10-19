@@ -88,6 +88,7 @@ bundel("src/lib/hargaEstimasi.js", "hargaest.cjs");
 bundel("src/lib/hargaBarang.js", "hargabrg.cjs");
 bundel("src/lib/namaMirip.js", "namamirip.cjs");
 bundel("src/lib/modalKerja.js", "modal.cjs");
+bundel("src/lib/hargaBeliKura.js", "hargabeli.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -2596,6 +2597,203 @@ for (const [nama, kura] of hargaUjiKura.map((x) => [x[0], x[1]])) {
 }
 
 /*
+  ── LAYAR ISIAN MASSAL HARGA BELI ──────────────────────────────────────────
+
+  19 Okt 2026: 44 dari 123 kura yang dibeli belum ada harga belinya, dan
+  satu-satunya tempat mengisinya adalah dialog kura satu per satu. Angka itu
+  juga yang menahan hitungan lain — selisih nilai aset terhadap modal di
+  beranda hanya bisa dihitung dari 91 ekor yang punya kedua angkanya.
+
+  Yang dijaga di sini adalah SATU hal di atas segalanya: daftar "belum ada
+  harga belinya" di layar isian harus sama persis dengan daftar yang ditandai
+  pemeriksa kelengkapan. Dua daftar yang berbeda sedikit menghasilkan keadaan
+  yang paling membingungkan dari semuanya — layar isian berkata selesai
+  sementara Data Belum Lengkap masih menandai, atau sebaliknya — dan tidak
+  ada yang bisa tahu mana yang benar tanpa membuka kodenya.
+*/
+const HBK = await import(`file://${join(dir, "hargabeli.cjs")}`).then((m) => m.default || m);
+
+const hbUji = [
+  // [nama, kura, "sudah ada harganya"?]
+  ["harga tercatat", { purchase_price: 8_000_000 }, true],
+  // Nol SAH: hadiah dan warisan memang bermodal nol.
+  ["hadiah dicatat nol", { purchase_price: 0 }, true],
+  ["belum diisi", { purchase_price: null }, false],
+  ["tidak ada kolomnya", {}, false],
+  ["teks kosong", { purchase_price: "" }, false],
+  // Teks angka dari formulir tetap terbaca; teks bukan angka tidak.
+  ["teks angka dari formulir", { purchase_price: "8000000" }, true],
+  ["teks bukan angka", { purchase_price: "entah" }, false],
+];
+for (const [nama, k, ada] of hbUji) {
+  if (HBK.adaHargaBeli(k) !== ada) {
+    temuan.push(`ada harga beli "${nama}": ${HBK.adaHargaBeli(k)}, seharusnya ${ada}`);
+  }
+}
+
+const HB_KAWANAN = [
+  { id: "1", code: "A40", status: "aktif", source: "beli_lokal", purchase_price: null },
+  { id: "2", code: "A41", status: "aktif", source: "tidak_diketahui", purchase_price: null },
+  { id: "3", code: "B6",  status: "aktif", source: "wc", purchase_price: null },
+  { id: "4", code: "B1",  status: "aktif", source: "wc", purchase_price: 8_000_000 },
+  { id: "5", code: "X1",  status: "aktif", source: "beli_lokal", purchase_price: 0 },      // hadiah: lengkap
+  /* Hasil tetasan sendiri: modalnya biaya induk, tidak ditagih di sini. */
+  { id: "6", code: "BB-2026049", status: "aktif", source: "", purchase_price: null },
+  { id: "7", code: "F99", status: "aktif", source: "hasil_sendiri", purchase_price: null },
+  /* Sudah keluar dari peternakan: bukan urusan layar ini lagi. */
+  { id: "8", code: "B18", status: "terjual", source: "wc", purchase_price: null },
+  { id: "9", code: "B119", status: "mati", source: "wc", purchase_price: null },
+  { id: "10", code: "Z1", status: "aktif", source: "wc", purchase_price: null, is_archived: true },
+];
+const hbKosong = HBK.kuraTanpaHargaBeli(HB_KAWANAN);
+const hbLengkap = HBK.kelengkapanHargaBeli(HB_KAWANAN);
+
+/* Lima ekor dibeli: A40, A41, B6, B1, dan X1. X1 yang bermodal NOL ikut
+   dihitung dibeli — itu justru pokoknya: hadiah tetap seekor kura yang
+   diperoleh, dan nolnya adalah jawaban, bukan kekosongan. Dua di antaranya
+   sudah berharga (B1 delapan juta, X1 nol), jadi 2/5 = 40%. */
+const hbKawananUji = [
+  ["kura dibeli", HBK.kuraDibeli(HB_KAWANAN).length, 5],
+  ["belum ada harganya", hbKosong.length, 3],
+  ["kelengkapan ada", hbLengkap.ada, 2],
+  ["kelengkapan kosong", hbLengkap.kosong, 3],
+  ["kelengkapan dari", hbLengkap.dari, 5],
+  ["persen", hbLengkap.persen, 40],
+];
+for (const [nama, dapat, harap] of hbKawananUji) {
+  if (dapat !== harap) temuan.push(`harga beli massal ${nama}: ${dapat}, seharusnya ${harap}`);
+}
+/* Anakan sendiri tidak boleh ikut ditagih — baik lewat source maupun lewat
+   kode BB-, dua jalur yang dipakai lahirDiFarm. */
+for (const kode of ["BB-2026049", "F99"]) {
+  if (hbKosong.some((k) => k.code === kode)) temuan.push(`harga beli massal: ${kode} (hasil sendiri) ikut ditagih harga beli`);
+}
+/* Yang sudah keluar peternakan juga tidak. */
+for (const kode of ["B18", "B119", "Z1"]) {
+  if (hbKosong.some((k) => k.code === kode)) temuan.push(`harga beli massal: ${kode} sudah keluar peternakan tetapi ikut ditagih`);
+}
+/* Kawanan kosong: 100%, BUKAN 0% — bilah nol pada pekerjaan yang tidak ada
+   akan menagih selamanya tanpa satu baris pun untuk diisi. */
+if (HBK.kelengkapanHargaBeli([]).persen !== 100) {
+  temuan.push(`harga beli massal: kawanan kosong memberi ${HBK.kelengkapanHargaBeli([]).persen}%, seharusnya 100%`);
+}
+
+/* Dikelompokkan per sumber, terbanyak lebih dulu, dan sumber kosong jatuh ke
+   "tidak dicatat" alih-alih membentuk rombongan tanpa nama. */
+const hbGrup = HBK.perSumberHargaBeli([
+  ...HB_KAWANAN,
+  { id: "11", code: "A42", status: "aktif", source: "beli_lokal", purchase_price: null },
+  { id: "12", code: "A43", status: "aktif", source: "", purchase_price: null },
+]);
+if (hbGrup[0]?.sumber !== "beli_lokal" || hbGrup[0]?.isi.length !== 2) {
+  temuan.push(`harga beli massal: rombongan teratas "${hbGrup[0]?.sumber}" ${hbGrup[0]?.isi.length} ekor, seharusnya beli_lokal 2 ekor`);
+}
+if (!hbGrup.some((g) => g.sumber === "tidak_diketahui" && g.isi.some((k) => k.code === "A43"))) {
+  temuan.push("harga beli massal: sumber kosong tidak jatuh ke \"tidak_diketahui\"");
+}
+if (hbGrup.reduce((t, g) => t + g.isi.length, 0) !== 5) {
+  temuan.push(`harga beli massal: ${hbGrup.reduce((t, g) => t + g.isi.length, 0)} ekor terkelompok, seharusnya 5`);
+}
+
+/*
+  Dan inilah penjaga yang sebenarnya penting: daftar layar isian SAMA PERSIS
+  dengan yang ditandai Data Belum Lengkap. Diperiksa ekor demi ekor, bukan
+  dengan membandingkan jumlahnya — dua daftar berukuran sama yang isinya
+  berbeda adalah kegagalan yang paling sulit terlihat.
+*/
+for (const k of HBK.kuraDibeli(HB_KAWANAN)) {
+  const layarMenagih = hbKosong.some((x) => x.id === k.id);
+  const kelengkapanMenandai = cekHarga ? !cekHarga.check(k) : false;
+  if (layarMenagih !== kelengkapanMenandai) {
+    temuan.push(`harga beli massal "${k.code}": layar isian ${layarMenagih ? "menagih" : "tidak menagih"}, Data Belum Lengkap ${kelengkapanMenandai ? "menandai" : "tidak menandai"}`);
+  }
+}
+
+/*
+  ── "HASIL SENDIRI" TIDAK BOLEH DISIMPAN TANPA TANGGAL MENETAS ─────────────
+
+  Pemiliknya (19 Okt 2026) memilih menentukan per ekor: sebagian dari 44 kura
+  itu dibeli, sebagian hasil tetasan sendiri. Jawaban kedua mengubah `source`
+  menjadi hasil_sendiri — dan di situlah jebakannya.
+
+  `bulanDiFarm` memilih tanggal mulainya DARI source yang sama:
+
+      lahirDiFarm(kura) ? kura.birth_date : (kura.purchase_date || kura.created_date)
+
+  Kura yang ditandai hasil sendiri tetapi birth_date-nya kosong mendapat nol
+  bulan di peternakan, dan HPP-nya kehilangan SELURUH biaya pemeliharaan.
+  Angkanya tidak error, tidak kosong, dan tidak ditandai apa pun — ia hanya
+  terlalu kecil, ke arah yang membuat margin penjualan terlihat lebih baik.
+
+  Ketiga belas kura yang sumbernya "tidak diketahui" justru yang birth_date-nya
+  juga kosong, jadi ini bukan kemungkinan teoretis — itu keadaan awal mereka.
+*/
+const hariIniHB = new Date("2026-10-19T00:00:00Z");
+const kuraSendiri = { id: "s", code: "F27", source: "tidak_diketahui", purchase_price: null };
+
+const niatUji = [
+  // [nama, isian, siap?, jenis]
+  ["harga diisi", { jenis: "harga", harga: "8000000" }, true, "harga"],
+  ["harga nol", { jenis: "harga", harga: "0" }, true, "harga"],
+  ["harga kosong", { jenis: "harga", harga: "" }, false, "harga"],
+  ["harga bukan angka", { jenis: "harga", harga: "delapan juta" }, false, "harga"],
+  ["harga minus", { jenis: "harga", harga: "-5000" }, false, "harga"],
+  ["jenis tidak disebut sama dengan harga", { harga: "7000000" }, true, "harga"],
+  // Jawaban kedua: TANPA tanggal tidak siap, apa pun isinya.
+  ["hasil sendiri tanpa tanggal", { jenis: "sendiri", lahir: "" }, false, "sendiri"],
+  ["hasil sendiri tanggal separuh", { jenis: "sendiri", lahir: "2024-05" }, false, "sendiri"],
+  ["hasil sendiri tanggal tak masuk akal", { jenis: "sendiri", lahir: "2024-13-40" }, false, "sendiri"],
+  ["hasil sendiri bertanggal", { jenis: "sendiri", lahir: "2024-05-12" }, true, "sendiri"],
+  // Tanggal di MASA DEPAN: bulanDiFarm negatif, dan HPP ikut bertanda minus.
+  ["hasil sendiri tanggal besok", { jenis: "sendiri", lahir: "2026-10-20" }, false, "sendiri"],
+  ["hasil sendiri hari ini", { jenis: "sendiri", lahir: "2026-10-19" }, true, "sendiri"],
+  // Harga yang sudah diketik TIDAK membuat baris hasil sendiri jadi siap.
+  ["hasil sendiri, harga tersisa dari sebelumnya", { jenis: "sendiri", harga: "8000000", lahir: "" }, false, "sendiri"],
+];
+for (const [nama, isi, siap, jenis] of niatUji) {
+  const n = HBK.muatanIsian(isi, kuraSendiri, hariIniHB);
+  if (n.siap !== siap) temuan.push(`isian harga beli "${nama}": siap=${n.siap}, seharusnya ${siap}`);
+  if (n.jenis !== jenis) temuan.push(`isian harga beli "${nama}": jenis="${n.jenis}", seharusnya "${jenis}"`);
+  if (!n.siap && n.muatan !== null) temuan.push(`isian harga beli "${nama}": belum siap tetapi membawa muatan`);
+  if (!n.siap && !n.sebab) temuan.push(`isian harga beli "${nama}": belum siap tanpa menyebut sebabnya`);
+}
+
+/* Muatannya tepat: harga mengirim purchase_price saja, hasil sendiri mengirim
+   source + birth_date — dan TIDAK mengirim purchase_price nol, yang akan
+   terbaca "gratis" alih-alih "modalnya biaya induk". */
+const mHarga = HBK.muatanIsian({ jenis: "harga", harga: "8000000" }, kuraSendiri, hariIniHB).muatan;
+if (mHarga.purchase_price !== 8_000_000) temuan.push(`isian harga beli: muatan harga ${JSON.stringify(mHarga)}`);
+if ("source" in mHarga || "birth_date" in mHarga) temuan.push("isian harga beli: jawaban harga ikut mengubah source/birth_date");
+
+const mSendiri = HBK.muatanIsian({ jenis: "sendiri", lahir: "2024-05-12" }, kuraSendiri, hariIniHB).muatan;
+if (mSendiri.source !== "hasil_sendiri") temuan.push(`isian harga beli: muatan hasil sendiri source="${mSendiri.source}"`);
+if (mSendiri.birth_date !== "2024-05-12") temuan.push(`isian harga beli: muatan hasil sendiri birth_date="${mSendiri.birth_date}"`);
+if ("purchase_price" in mSendiri) temuan.push("isian harga beli: hasil sendiri ikut menulis purchase_price — nol akan terbaca \"gratis\"");
+
+/* Asal genetik diisi CB hanya bila MASIH KOSONG. Hasil tetasan sendiri memang
+   captive bred, dan aturan yang sama sudah dipakai mengklasifikasi 99 kura —
+   tetapi keputusan yang sudah diambil pemiliknya tidak ditimpa. */
+if (mSendiri.asal_genetik !== "cb") temuan.push("isian harga beli: asal genetik kosong tidak ikut diisi cb");
+const mSudahWC = HBK.muatanIsian({ jenis: "sendiri", lahir: "2024-05-12" },
+  { ...kuraSendiri, asal_genetik: "wc" }, hariIniHB).muatan;
+if ("asal_genetik" in mSudahWC) temuan.push("isian harga beli: asal genetik yang sudah ditentukan ikut ditimpa");
+
+/*
+  Dan penutupnya: baris yang ditandai hasil sendiri HARUS berhenti ditagih
+  oleh pemeriksa kelengkapan sesudah muatannya diterapkan. Diperiksa dengan
+  menerapkan muatannya ke kuranya, bukan dengan percaya pada niatnya —
+  muatan yang benar menurut layar tetapi tidak cukup bagi pemeriksa akan
+  membuat baris itu kembali muncul besok, dan tidak ada yang tahu kenapa.
+*/
+const kuraSesudah = { ...kuraSendiri, ...mSendiri };
+if (cekHarga && !cekHarga.check(kuraSesudah)) {
+  temuan.push("isian harga beli: sesudah ditandai hasil sendiri, Data Belum Lengkap MASIH menagih harga belinya");
+}
+if (HPPK.bulanDiFarm(kuraSesudah, hariIniHB) <= 0) {
+  temuan.push(`isian harga beli: sesudah ditandai hasil sendiri, umur di peternakan ${HPPK.bulanDiFarm(kuraSesudah, hariIniHB)} bulan — HPP kehilangan biaya pemeliharaannya`);
+}
+
+/*
   ── KURA BARU: teks kosong tidak boleh masuk kolom angka ───────────────────
 
   18 Okt 2026 pemiliknya tidak bisa memasukkan Sulcata Albino yang baru
@@ -3307,6 +3505,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
 );
 process.exit(0);
