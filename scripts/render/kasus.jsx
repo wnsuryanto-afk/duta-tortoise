@@ -38,6 +38,7 @@ import VetContactPage from "@/pages/VetContactPage";
 import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import RincianAset from "@/components/dashboard/RincianAset";
+import IsiHargaBeliPage from "@/pages/IsiHargaBeliPage";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
 import { modalKerja } from "@/lib/modalKerja";
 import RiwayatBertelurInduk from "@/components/breeding/RiwayatBertelurInduk";
@@ -791,6 +792,72 @@ export default [
       />
     );
   })()],
+  /*
+    Satu baris layar Isi Harga Beli Kura berikut kepala rombongan dan kotak
+    isian massalnya — bagian yang paling sempit ruangnya, karena kotak angka
+    132px dan keterangan ekornya berbagi satu baris.
+
+    Isinya diambil dari kura yang benar-benar ada: "Red Foot - 02" adalah
+    kode TERPANJANG di kawanan ini (13 huruf, dengan spasi dan tanda hubung
+    yang bisa patah di tempat salah), dan AL02 keterangan terpanjangnya —
+    "76 cm · betina · proven · Aldabra". Rombongan "Sumber tidak dicatat"
+    adalah judul terpanjang dari kesembilan nilai `source`.
+  */
+  ["Isi Harga Beli — baris terpanjang", (() => (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-2 flex-wrap mb-2">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Sumber tidak dicatat &middot; 13 ekor</p>
+        <p className="text-[11px] text-muted-foreground tabular-nums">13 diisi = <b className="text-foreground">Rp 104.000.000</b></p>
+      </div>
+      <div className="rounded-xl border border-dashed border-border bg-muted/30 p-2.5 mb-2 flex items-end gap-2 flex-wrap">
+        <div className="min-w-0 flex-1" style={{ minWidth: "132px" }}>
+          <p className="text-[11px] text-muted-foreground">Satu harga untuk 22 ekor</p>
+          <div className="h-9 mt-0.5 rounded-md border border-border bg-card px-3 flex items-center text-sm text-muted-foreground">8000000</div>
+        </div>
+        <div className="h-9 px-3 rounded-md border border-border flex items-center text-sm flex-shrink-0">Kosongkan</div>
+      </div>
+      {[["Red Foot - 02", "23 cm · betina · Red Foot"], ["AL02", "76 cm · betina · proven · Aldabra"]].map(([kode, rincian]) => (
+        <div key={kode} className="rounded-xl border border-border bg-card p-3 flex items-end justify-between gap-2 flex-wrap">
+          <div className="min-w-0 flex-1" style={{ minWidth: "120px" }}>
+            <p className="text-sm font-medium text-foreground break-words">{kode}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 break-words">{rincian}</p>
+          </div>
+          <div className="flex-shrink-0" style={{ width: "132px" }}>
+            <p className="text-[11px] text-muted-foreground">Harga beli</p>
+            <div className="h-9 mt-0.5 rounded-md border border-border bg-card px-3 flex items-center text-sm text-muted-foreground">75000000</div>
+          </div>
+        </div>
+      ))}
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        Isi <b className="text-foreground">0</b> untuk hadiah, warisan, atau kura yang harga belinya tidak bisa lagi
+        ditelusuri. Nol adalah jawaban yang sah dan menghentikan penandaannya &mdash; dibiarkan kosong tidak.
+      </p>
+      {/* Baris yang sudah dinyatakan hasil tetasan sendiri: kotak tanggal,
+          peringatan belum siap, dan keterangan terpanjang di layar ini —
+          ketiganya berbagi satu baris selebar 132px di HP terlipat. */}
+      <div className="rounded-xl border border-border bg-card p-3">
+        <div className="flex items-end justify-between gap-2 flex-wrap">
+          <div className="min-w-0 flex-1" style={{ minWidth: "120px" }}>
+            <p className="text-sm font-medium text-foreground break-words">8KECIL</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 break-words">15 cm &middot; betina</p>
+          </div>
+          <div className="flex-shrink-0" style={{ width: "132px" }}>
+            <p className="text-[11px] text-muted-foreground">Tanggal menetas</p>
+            <div className="h-9 mt-0.5 rounded-md border border-border bg-card px-3 flex items-center text-sm text-muted-foreground">dd/mm/yyyy</div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-2 flex-wrap mt-2">
+          <span className="text-[11px] text-primary">&larr; Ternyata dibeli, isi harganya</span>
+          <span className="text-[11px] text-amber-700 dark:text-amber-400">tanggal menetas belum diisi</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5">
+          Tanggal menetas dipakai menghitung umur di peternakan, dan HPP kura hasil sendiri dihitung dari
+          situ &mdash; bukan dari tanggal beli. Tanpa tanggalnya, biaya pemeliharaannya hilang dari HPP tanpa
+          tanda apa pun, jadi barisnya belum bisa disimpan. Asal genetiknya ikut diisi CB.
+        </p>
+      </div>
+    </div>
+  ))()],
   ["NilaiInisiatifSekaligus — antrean nyata", <NilaiInisiatifSekaligus
     settings={{ poin_tambahan_maks_harian: 30, poin_tambahan_opsi: [0, 5, 10, 15] }}
     logs={[
@@ -819,6 +886,7 @@ export default [
   ["StockPredictionPage tanpa data", <StockPredictionPage />],
   ["PengaturanPoinPage tanpa data", <PengaturanPoinPage />],
   ["IncompleteDataPage tanpa data", <IncompleteDataPage />],
+  ["IsiHargaBeliPage tanpa data", <IsiHargaBeliPage />],
   ["SystemMaintenancePage tanpa data", <SystemMaintenancePage />],
   ["CatatBiayaPage tanpa data", <CatatBiayaPage />],
   ["TemuanFotoPage tanpa data", <TemuanFotoPage />],
