@@ -38,7 +38,7 @@
  * Jalankan:  node scripts/cek-ronda.mjs
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { kupasKomentar } from "./lib/kupasKomentar.mjs";
@@ -3626,6 +3626,70 @@ if (!/tanggalISOAman\s*\(/.test(financeSrc)) {
   temuan.push("src/pages/FinancePage.jsx  tidak memakai tanggalISOAman() — tanggal dari pembaca invoice masuk tanpa diperiksa");
 }
 
+/*
+  ── CB/WC TIDAK BOLEH DISIMPULKAN DARI CARA MEMBELI ────────────────────────
+
+  Ditemukan 22 Okt 2026 di tab Silsilah. Lencana asal di situ dibaca dari
+  `source` — kolom yang menyebut cara kura DIPEROLEH — dengan dua pemetaan
+  yang keduanya keliru, dan keliru ke arah yang berlawanan:
+
+      beli_lokal  →  "🌍 WC"    22 kura di kawanan ini bersumber beli_lokal.
+                                Membeli di dalam negeri tidak mengatakan apa
+                                pun tentang tangkapan alam.
+      import      →  "📦 CB"    Terbalik: saat asal_genetik ditambahkan
+                                18 Okt, impor justru diklasifikasi WC.
+
+  Silsilah adalah layar tempat orang memutuskan pasangan kawin, dan CB/WC
+  ikut menentukan harga indukan. Sejak 18 Okt jawabannya punya kolomnya
+  sendiri — `asal_genetik` — jadi tidak ada lagi alasan menebaknya.
+
+  Yang dilarang di sini hanya tiga nilai `source` yang BENAR-BENAR tidak
+  membawa keterangan asal-usul. `hasil_sendiri → CBB` dibiarkan: hasil
+  tetasan sendiri memang captive bred menurut definisi.
+*/
+const SUMBER_BISU = ["beli_lokal", "import", "tidak_diketahui"];
+const POLA_KLAIM = /\b(WC|CB|CBB|Wild\s*Caught|Captive\s*Bred)\b/i;
+
+function berkasSumber(dir, keluar = []) {
+  for (const nama of readdirSync(dir)) {
+    const p = join(dir, nama);
+    if (statSync(p).isDirectory()) berkasSumber(p, keluar);
+    else if (/\.(js|jsx)$/.test(nama)) keluar.push(p);
+  }
+  return keluar;
+}
+
+let klaimDiperiksa = 0;
+for (const p of berkasSumber(join(AKAR, "src"))) {
+  const rel = p.slice(AKAR.length + 1);
+  const baris = kupasKomentar(readFileSync(p, "utf8")).split("\n");
+  baris.forEach((b, i) => {
+    for (const sumber of SUMBER_BISU) {
+      /*
+        Yang diperiksa NILAI yang dipetakan, bukan seluruh barisnya.
+
+        Peta sumber sering ditulis satu baris, dan satu di antaranya memuat
+        klaim yang SAH — `hasil_sendiri: "CBB (Captive Bred)"`. Menguji
+        seluruh baris membuat ketiga kunci lain di baris yang sama ikut
+        tertuduh, padahal nilainya sendiri jujur: "Lokal", "Import", "Tidak
+        Diketahui". Penjaga yang menuduh baris yang benar akan dimatikan
+        orang, bukan dipatuhi.
+      */
+      const cocok = b.match(new RegExp(`\\b${sumber}\\s*:\\s*([^,}\\n]*)`));
+      if (!cocok) continue;
+      klaimDiperiksa += 1;
+      if (!POLA_KLAIM.test(cocok[1])) continue;
+      temuan.push(
+        `${rel}:${i + 1} menyimpulkan asal genetik dari \`source: ${sumber}\`.\n` +
+        `      Cara memperoleh kura tidak mengatakan CB atau WC. Sejak 18 Okt 2026\n` +
+        `      jawabannya ada di kolom \`asal_genetik\`; pakai itu, dan katakan\n` +
+        `      "belum ditentukan" bila kosong.\n` +
+        `      ${sumber}: ${cocok[1].trim().slice(0, 80)}`,
+      );
+    }
+  });
+}
+
 if (temuan.length) {
   console.error(`${temuan.length} masalah pada ronda kandang.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
   process.exit(1);
@@ -3633,6 +3697,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
 );
 process.exit(0);

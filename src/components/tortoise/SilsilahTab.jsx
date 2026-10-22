@@ -6,12 +6,38 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Shell, Search, GitBranch, ChevronDown, ChevronRight, Baby, AlertCircle } from "lucide-react";
 
-const SOURCE_LABEL = {
-  hasil_sendiri: { text: "🐣 CBB", title: "Captive Bred & Born", color: "bg-green-100 text-green-800 border-green-300" },
-  import: { text: "📦 CB", title: "Captive Born (Import)", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  beli_lokal: { text: "🌍 WC", title: "Wild Caught / Lokal", color: "bg-amber-100 text-amber-800 border-amber-300" },
-  tidak_diketahui: { text: "❓ Unknown", title: "Tidak Diketahui", color: "bg-muted text-foreground border-border" },
+/*
+  ── Lencana asal: dulu menyimpulkannya dari kolom yang salah ────────────────
+
+  Sampai 22 Okt 2026 lencana di silsilah dibaca dari `source` — kolom yang
+  menyebut cara kura DIPEROLEH, bukan asal-usulnya — dengan dua pemetaan yang
+  keduanya keliru, dan keliru ke arah yang berlawanan:
+
+      beli_lokal  →  "🌍 WC"   Beli lokal tidak mengatakan apa pun tentang
+                               wild caught. 22 kura di kawanan ini bersumber
+                               beli_lokal, dan lencananya menyatakan mereka
+                               tangkapan alam tanpa dasar apa pun.
+
+      import      →  "📦 CB"   Terbalik. Saat `asal_genetik` ditambahkan
+                               18 Okt, impor justru diklasifikasi WC — jadi
+                               kura yang datanya berkata WC tampil "CB" di
+                               layar ini.
+
+  Silsilah adalah layar tempat orang MEMUTUSKAN pasangan kawin, dan CB/WC
+  ikut menentukan harga indukan. Lencana yang mengarang asal-usul di situ
+  lebih buruk daripada tidak ada lencana.
+
+  Sekarang ia membaca `asal_genetik` — kolom yang memang berisi jawaban itu,
+  diisi untuk 99 kura dari sumbernya dan sisanya ditentukan pemiliknya di
+  layar Asal Kura. Yang belum ditentukan DIKATAKAN belum ditentukan, bukan
+  ditebak dari cara membelinya.
+*/
+const ASAL_LABEL = {
+  cb:  { text: "🐣 CB",  title: "Captive Bred — hasil penangkaran", color: "bg-green-100 text-green-800 border-green-300 dark:bg-green-950 dark:text-green-300" },
+  wc:  { text: "🌍 WC",  title: "Wild Caught — tangkapan alam",     color: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300" },
+  ltc: { text: "🏠 LTC", title: "Long Term Captive",                color: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-300" },
 };
+const ASAL_BELUM = { text: "❓ Asal?", title: "Asal genetik belum ditentukan — isi di layar Asal Kura", color: "bg-muted text-muted-foreground border-border" };
 
 // Cari tortoise berdasarkan id ATAU code ATAU name
 function findTortoise(ref, idMap, codeMap) {
@@ -36,8 +62,8 @@ function findParent(ref, idMap, codeMap) {
   return null;
 }
 
-function SourceBadge({ source }) {
-  const s = SOURCE_LABEL[source] || SOURCE_LABEL.tidak_diketahui;
+function AsalBadge({ asal }) {
+  const s = ASAL_LABEL[String(asal || "").trim()] || ASAL_BELUM;
   return (
     <span title={s.title} className={`text-[10px] px-1.5 py-0.5 rounded-md border font-bold ${s.color}`}>{s.text}</span>
   );
@@ -153,7 +179,7 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
               <span className={`text-[10px] px-1.5 py-0 rounded-md ${GENDER_COLOR[tortoise.gender] || GENDER_COLOR.belum_diketahui}`}>
                 {GENDER_LABEL[tortoise.gender] || "?"}
               </span>
-              {!isUnknown && <SourceBadge source={tortoise.source} />}
+              {!isUnknown && <AsalBadge asal={tortoise.asal_genetik} />}
               {!isUnknown && tortoise.morph && tortoise.morph !== "normal" && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{tortoise.morph}</Badge>
               )}
