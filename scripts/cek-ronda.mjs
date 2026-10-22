@@ -89,6 +89,7 @@ bundel("src/lib/hargaBarang.js", "hargabrg.cjs");
 bundel("src/lib/namaMirip.js", "namamirip.cjs");
 bundel("src/lib/modalKerja.js", "modal.cjs");
 bundel("src/lib/hargaBeliKura.js", "hargabeli.cjs");
+bundel("src/lib/barisTelur.js", "baristelur.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -2290,6 +2291,133 @@ if (!HE.hargaBasi("2026-01-01", KINI_HE)) temuan.push("harga basi: harga 290 har
 if (HE.hargaBasi("", KINI_HE)) temuan.push("harga basi: tanggal kosong dianggap basi");
 
 /*
+  ── SATU TELUR DITANDAI, DUA PULUH EMPAT IKUT DIKIRIM ──────────────────────
+
+  Dilaporkan pemiliknya 22 Okt 2026: "Pada saat telur disimpan, kadang-kadang
+  gagal tercatat. Kadang bisa tercatat, tetapi tidak berwarna hitam seperti
+  yang seharusnya."
+
+  EggGrid tidak mengirim "ubah telur #7". Ia mengirim SELURUH array
+  egg_records, disusun dari daftar yang sedang ada di layar. Jadi tiap
+  penandaan satu telur adalah penulisan ulang dua puluh lima baris, dan daftar
+  yang dipakai menyusunnya menentukan nasib dua puluh empat telur yang tidak
+  sedang disentuh.
+
+  Di halaman rinci clutch daftar itu tidak pernah segar — layarnya membaca
+  kunci cache ["breeding-detail", id] sementara EggGrid menyegarkan
+  ["breedings"] (lihat kunciBreeding.js). Akibatnya:
+
+      tandai telur #1 gagal → kirim [#1 gagal, #2 belum, …]   tersimpan
+      tandai telur #2 gagal → kirim [#1 BELUM, #2 gagal, …]   #1 kembali kosong
+
+  Hanya satu telur yang bisa bertahan, yang terakhir ditandai. Tidak ada
+  galat — telur yang sudah ditandai hanya kembali kosong.
+
+  Yang dijaga di sini adalah aturannya sendiri: satu telur berubah, sisanya
+  disalin apa adanya, dan penandaan massal tidak menyentuh telur yang sudah
+  jadi kura.
+*/
+const BT = await import(`file://${join(dir, "baristelur.cjs")}`).then((m) => m.default || m);
+const HARI_BT = "2026-10-22";
+
+/* Clutch yang belum pernah dicek tidak punya egg_records — barisnya dibuat
+   di layar, dan baru benar-benar ada sesudah penyimpanan pertama. */
+const awalKosong = BT.barisTelurAwal({ eggCount: 25, eggRecords: [] });
+const awalAda = BT.barisTelurAwal({ eggCount: 25, eggRecords: [{ egg_number: 1, status: "fertile" }] });
+const awalUji = [
+  ["jumlah baris dari eggCount", awalKosong.length, 25],
+  ["nomor pertama", awalKosong[0].egg_number, 1],
+  ["nomor terakhir", awalKosong[24].egg_number, 25],
+  ["status awal", awalKosong[0].status, "belum_dicek"],
+  /* Yang SUDAH tersimpan dipakai apa adanya — tidak ditimpa daftar kosong,
+     dan tidak ditambal sampai eggCount: menambal akan menciptakan baris baru
+     yang menimpa catatan yang mungkin sengaja dihapus. */
+  ["baris tersimpan dipakai apa adanya", awalAda.length, 1],
+  ["tanpa eggCount", BT.barisTelurAwal({}).length, 0],
+];
+for (const [nama, dapat, harap] of awalUji) {
+  if (dapat !== harap) temuan.push(`baris telur awal ${nama}: ${dapat}, seharusnya ${harap}`);
+}
+
+const DUA5 = BT.barisTelurAwal({ eggCount: 25, eggRecords: [] });
+/* Telur #1 ditandai gagal, lalu #2 — persis urutan yang membuat #1 hilang. */
+const stepA = BT.terapkanStatus(DUA5, { eggNumber: 1, status: "gagal", hariIni: HARI_BT });
+const stepB = BT.terapkanStatus(stepA, { eggNumber: 2, status: "gagal", hariIni: HARI_BT });
+
+const telurUji = [
+  ["#1 sesudah langkah pertama", stepA[0].status, "gagal"],
+  ["#1 MASIH gagal sesudah #2 ditandai", stepB[0].status, "gagal"],
+  ["#2 sesudah langkah kedua", stepB[1].status, "gagal"],
+  ["#3 tidak ikut berubah", stepB[2].status, "belum_dicek"],
+  ["jumlah baris tetap", stepB.length, 25],
+  ["tanggal cek terisi", stepA[0].check_date, HARI_BT],
+  ["tanggal cek telur lain tetap kosong", stepA[1].check_date, null],
+];
+for (const [nama, dapat, harap] of telurUji) {
+  if (dapat !== harap) temuan.push(`terapkan status ${nama}: ${JSON.stringify(dapat)}, seharusnya ${JSON.stringify(harap)}`);
+}
+/* Nomor yang tidak ada tidak boleh menambah baris, dan tidak boleh mengubah
+   satu pun yang ada. */
+const takAda = BT.terapkanStatus(DUA5, { eggNumber: 99, status: "gagal", hariIni: HARI_BT });
+if (takAda.length !== 25 || takAda.some((e) => e.status !== "belum_dicek")) {
+  temuan.push("terapkan status: nomor telur yang tidak ada ikut mengubah daftarnya");
+}
+
+/* hatch_date diisi saat menetas, dan TIDAK dipindahkan saat telur yang sudah
+   menetas ditandai ulang — tanggal menetas bukan tanggal penandaan. */
+const menetas = BT.terapkanStatus(DUA5, { eggNumber: 5, status: "menetas", hariIni: HARI_BT });
+if (menetas[4].hatch_date !== HARI_BT) temuan.push(`terapkan status: menetas tidak mengisi hatch_date (${menetas[4].hatch_date})`);
+const ulang = BT.terapkanStatus(menetas, { eggNumber: 5, status: "menetas", hariIni: "2026-11-30" });
+if (ulang[4].hatch_date !== HARI_BT) temuan.push(`terapkan status: hatch_date dipindahkan jadi ${ulang[4].hatch_date} saat ditandai ulang`);
+/* Status lain tidak mengarang hatch_date. */
+const gagalBT = BT.terapkanStatus(DUA5, { eggNumber: 6, status: "gagal", hariIni: HARI_BT });
+if (gagalBT[5].hatch_date) temuan.push("terapkan status: telur gagal diberi hatch_date");
+/* Catatan yang tidak dikirim tidak menghapus catatan lama. */
+const berCatatan = BT.terapkanStatus(
+  [{ egg_number: 1, status: "fertile", notes: "retak sedikit" }],
+  { eggNumber: 1, status: "gagal", hariIni: HARI_BT },
+);
+if (berCatatan[0].notes !== "retak sedikit") temuan.push(`terapkan status: catatan lama terhapus jadi ${JSON.stringify(berCatatan[0].notes)}`);
+
+/*
+  ── PENANDAAN MASSAL TIDAK MENYENTUH TELUR YANG SUDAH JADI KURA ────────────
+
+  "Semua Infertil" dulu menimpa seluruh baris. Telur yang sudah menetas dan
+  sudah punya bayi terdaftar ikut jadi infertil — sambil tetap membawa
+  tortoise_id-nya, sehingga ada kura hidup yang menurut catatan berasal dari
+  telur yang tidak pernah berkembang. Jalur satu-per-satu sudah meminta
+  konfirmasi untuk perubahan itu sejak awal; jalur massal tidak pernah
+  bertanya.
+*/
+const KAWANAN_BT = [
+  { egg_number: 1, status: "menetas", tortoise_id: "t1", tortoise_code: "BB-2026001" },
+  { egg_number: 2, status: "menetas", tortoise_id: null },   // menetas, belum didaftarkan
+  { egg_number: 3, status: "belum_dicek", tortoise_id: null },
+  { egg_number: 4, status: "fertile", tortoise_id: null },
+];
+const massal = BT.terapkanSemua(KAWANAN_BT, { status: "infertil", hariIni: HARI_BT });
+const massalUji = [
+  ["jumlah dilewati", massal.dilewati, 1],
+  ["telur yang sudah jadi kura tidak berubah", massal.hasil[0].status, "menetas"],
+  ["kode bayinya tetap", massal.hasil[0].tortoise_code, "BB-2026001"],
+  ["menetas tanpa data kura ikut berubah", massal.hasil[1].status, "infertil"],
+  ["belum dicek ikut berubah", massal.hasil[2].status, "infertil"],
+  ["fertile ikut berubah", massal.hasil[3].status, "infertil"],
+  ["jumlah baris tetap", massal.hasil.length, 4],
+];
+for (const [nama, dapat, harap] of massalUji) {
+  if (dapat !== harap) temuan.push(`terapkan semua ${nama}: ${JSON.stringify(dapat)}, seharusnya ${JSON.stringify(harap)}`);
+}
+/* Tanggal cek telur yang dilewati tidak ikut diubah — ia tidak dicek. */
+if (massal.hasil[0].check_date) temuan.push("terapkan semua: telur yang dilewati ikut diberi tanggal cek");
+
+/* Angka ringkas dihitung dari hasil akhir, dengan fungsi yang sama yang
+   dipakai layar — supaya yang tersimpan dan yang tampil tidak bisa berbeda. */
+const HSL = await import(`file://${join(dir, "hasil.cjs")}`).then((m) => m.default || m);
+const ringkasBT = HSL.ringkasDariBarisTelur(stepB);
+if (ringkasBT.failed_count !== 2) temuan.push(`baris telur: 2 telur gagal memberi failed_count ${ringkasBT.failed_count}`);
+
+/*
   ── SUSUNAN NILAI: DI MANA UANGNYA, BUKAN DI MANA EKORNYA ──────────────────
 
   Diminta pemiliknya 18 Okt 2026: "apakah estimasi aset yang ada saat ini
@@ -3505,6 +3633,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
 );
 process.exit(0);

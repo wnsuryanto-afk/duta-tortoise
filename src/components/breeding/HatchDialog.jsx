@@ -16,6 +16,7 @@ import { hatchRateClutch } from "@/lib/hasilInkubasi";
 import { hitungIsiKandang } from "@/lib/kandang";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 import { TANDA_ANAKAN } from "@/lib/anakanKura";
+import { segarkanBreeding } from "@/lib/kunciBreeding";
 
 function generateBreedingCode(maleN, femaleN, date) {
   const m = (maleN || "JT").substring(0, 3).toUpperCase().replace(/\s/g, "");
@@ -315,7 +316,7 @@ export default function HatchDialog({ open, onClose, breeding }) {
     // TIDAK PERLU UPDATE current_eggs lagi - dihitung otomatis dari Breeding
     // Status breeding berubah jadi "menetas" akan otomatis mengurangi telur inkubator
 
-    qc.invalidateQueries({ queryKey: ["breedings"] });
+    segarkanBreeding(qc);
     qc.invalidateQueries({ queryKey: ["tortoises"] });
     qc.invalidateQueries({ queryKey: ["enclosures"] });
     setSaving(false);

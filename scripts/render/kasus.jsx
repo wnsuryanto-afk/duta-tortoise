@@ -53,6 +53,7 @@ import HubPage from "@/pages/HubPage";
 import BreedingDetailPage from "@/pages/BreedingDetailPage";
 import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
 import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
+import EggGrid from "@/components/breeding/EggGrid";
 import { PanelTarget } from "@/components/dashboard/TargetTahunanRingkas";
 import { PanelMenunggu, susunAntrean } from "@/components/dashboard/MenungguPemilik";
 import NilaiInisiatifSekaligus from "@/components/sop/NilaiInisiatifSekaligus";
@@ -877,6 +878,27 @@ export default [
     slip: [{ status: "draft" }, { status: "approved" }, { status: "approved" }],
     checklist: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
   })} />],
+  /*
+    EggGrid dengan clutch yang sebenarnya dikeluhkan 22 Okt 2026: A35 × A47,
+    25 butir, bertelur 6 September, candling-nya lewat H+30.
+
+    Belum pernah diukur sebelumnya. Dua puluh lima tombol telur ditambah
+    bilah ringkasan dan dua tombol massal adalah baris terpanjang yang bisa
+    dibuat layar ini, dan keterangan "sudah jadi kura" yang baru ditambahkan
+    duduk di baris yang sama dengan kedua tombol itu.
+  */
+  ["EggGrid 25 butir — clutch 6 September", <EggGrid breeding={{
+    id: "uji", status: "bertelur", egg_count: 25, egg_laying_date: "2026-09-06",
+    egg_records: Array.from({ length: 25 }, (_, i) => ({
+      egg_number: i + 1,
+      status: i === 0 ? "menetas" : i === 1 ? "gagal" : i < 6 ? "fertile" : i < 9 ? "infertil" : "belum_dicek",
+      check_date: i < 9 ? "2026-10-20" : null,
+      hatch_date: i === 0 ? "2026-10-20" : null,
+      notes: "",
+      tortoise_id: i === 0 ? "t1" : null,
+      tortoise_code: i === 0 ? "BB-2026049" : null,
+    })),
+  }} />],
   ["EggLabelGenerator 12 clutch", <EggLabelGenerator breedings={LABEL12} allActiveBreedings={LABEL12} open onClose={() => {}} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
   ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],
