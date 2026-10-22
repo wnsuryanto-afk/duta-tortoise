@@ -16,6 +16,8 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { hatchRateClutch, ringkasDariBarisTelur } from "@/lib/hasilInkubasi";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 import { TANDA_ANAKAN } from "@/lib/anakanKura";
+import { segarkanBreeding } from "@/lib/kunciBreeding";
+import { barisTelurAwal, terapkanStatus, terapkanSemua, sudahJadiKura } from "@/lib/barisTelur";
 
 const EGG_STATUS = [
   { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-muted",  border: "border-gray-400",  text: "text-foreground" },
@@ -567,13 +569,20 @@ export default function EggGrid({ breeding, onRefresh }) {
   const isReadonly = breeding.status === "selesai";
   const eggCount = breeding.egg_count || 0;
 
-  const records = (() => {
-    const r = breeding.egg_records || [];
-    if (r.length > 0) return r;
-    return Array.from({ length: eggCount }, (_, i) => ({
-      egg_number: i + 1, status: "belum_dicek", check_date: null, hatch_date: null, notes: "", tortoise_id: null, tortoise_code: null,
-    }));
-  })();
+  /*
+    Daftar telur yang sedang dipakai menyusun muatan berikutnya.
+
+    Tiap penyimpanan mengirim SELURUH array, jadi daftar yang dipakai
+    menyusunnya menentukan nasib telur lain yang tidak sedang disentuh. Yang
+    baru saja berhasil disimpan dipakai lebih dulu, sampai kueri mengambil
+    ulang datanya — tanpa itu, dua penandaan beruntun yang lebih cepat
+    daripada satu perjalanan ke server membuat yang kedua mengembalikan yang
+    pertama. Begitu data server datang, ia yang menang lagi.
+  */
+  const dariServer = breeding.egg_records;
+  const [tersimpan, setTersimpan] = useState(null);
+  useEffect(() => { setTersimpan(null); }, [dariServer]);
+  const records = tersimpan || barisTelurAwal({ eggCount, eggRecords: dariServer });
 
   const daysSinceLaying = breeding.egg_laying_date
     ? differenceInDays(new Date(), new Date(breeding.egg_laying_date))
@@ -599,32 +608,44 @@ export default function EggGrid({ breeding, onRefresh }) {
   const registeredBabies = records.filter(e => e.status === "menetas" && e.tortoise_id);
   const allChecked = summary.belum_dicek === 0;
 
+  /*
+    Penyimpanan yang GAGAL harus terlihat.
+
+    Sampai 22 Okt 2026 tidak satu pun penyimpanan di berkas ini punya
+    penangkap galat. Permintaan yang ditolak server membuat `setSaving(false)`
+    tidak pernah tercapai — tombolnya berputar selamanya — dan tidak ada pesan
+    apa pun. Bentuk yang persis sama pernah menahan seluruh pencatatan kura
+    sejak 14 Juli tanpa ada yang tahu sebabnya.
+  */
   const updateEggStatus = async (eggNumber, newStatus, checkDate, notes) => {
     setSaving(true);
     const today = new Date().toISOString().split("T")[0];
-    const updated = records.map(e =>
-      e.egg_number === eggNumber
-        ? { ...e, status: newStatus, check_date: checkDate || today, notes: notes ?? e.notes, hatch_date: newStatus === "menetas" ? (e.hatch_date || today) : e.hatch_date }
-        : e
-    );
+    const updated = terapkanStatus(records, {
+      eggNumber, status: newStatus, checkDate, notes, hariIni: today,
+    });
     // Keempat angka ringkas disegarkan sekaligus. Sebelumnya hanya menetas dan
     // gagal yang ikut diperbarui, jadi fertile_count/infertile_count tertinggal
     // pada nilai lama sampai ada yang menekan "Selesaikan Inkubasi".
     const ringkas = ringkasDariBarisTelur(updated);
-    await base44.entities.Breeding.update(breeding.id, {
-      egg_records: updated,
-      hatched_count: ringkas.hatched_count,
-      failed_count: ringkas.failed_count,
-      fertile_count: ringkas.fertile_count,
-      infertile_count: ringkas.infertile_count,
-    });
-    qc.invalidateQueries({ queryKey: ["breedings"] });
-    setSaving(false);
-    setActiveEgg(null);
-    toast.success(`Telur #${eggNumber} → ${newStatus}`);
-
-    if (newStatus === "menetas") {
-      setPendingHatch({ eggNumber, hatchDate: today });
+    try {
+      await base44.entities.Breeding.update(breeding.id, {
+        egg_records: updated,
+        hatched_count: ringkas.hatched_count,
+        failed_count: ringkas.failed_count,
+        fertile_count: ringkas.fertile_count,
+        infertile_count: ringkas.infertile_count,
+      });
+      /* Dipakai menyusun muatan berikutnya sampai data server datang. */
+      setTersimpan(updated);
+      segarkanBreeding(qc);
+      setActiveEgg(null);
+      toast.success(`Telur #${eggNumber} → ${newStatus}`);
+      if (newStatus === "menetas") setPendingHatch({ eggNumber, hatchDate: today });
+    } catch (e) {
+      segarkanBreeding(qc);
+      toast.error(`Telur #${eggNumber} gagal disimpan: ${e?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -635,8 +656,16 @@ export default function EggGrid({ breeding, onRefresh }) {
         ? { ...e, tortoise_id: tortoiseId, tortoise_code: tortoiseCode }
         : e
     );
-    await base44.entities.Breeding.update(breeding.id, { egg_records: updated });
-    qc.invalidateQueries({ queryKey: ["breedings"] });
+    try {
+      await base44.entities.Breeding.update(breeding.id, { egg_records: updated });
+      setTersimpan(updated);
+    } catch (e) {
+      /* Kuranya SUDAH dibuat — yang gagal hanya menautkannya ke telurnya.
+         Disebutkan apa adanya, karena membuat ulang kuranya akan menghasilkan
+         kura kembar. */
+      toast.error(`Kura ${tortoiseCode} sudah dibuat, tetapi gagal ditautkan ke telur #${pendingHatch.eggNumber}: ${e?.message || "kesalahan tidak diketahui"}`);
+    }
+    segarkanBreeding(qc);
     qc.invalidateQueries({ queryKey: ["tortoises"] });
     setPendingHatch(null);
   };
@@ -659,27 +688,35 @@ export default function EggGrid({ breeding, onRefresh }) {
     // angkanya berselisih, hasilnya bergantung tombol mana yang ditekan.
     const hatchRate = hatchRateClutch(breeding, menetasCount);
 
-    await base44.entities.Breeding.update(breeding.id, {
-      status: "selesai",
-      completed_date: new Date().toISOString().split("T")[0],
-      hatched_count: ringkas.hatched_count,
-      failed_count: ringkas.failed_count,
-      fertile_count: ringkas.fertile_count,
-      infertile_count: ringkas.infertile_count,
-      hatch_rate: hatchRate,
-    });
-    qc.invalidateQueries({ queryKey: ["breedings"] });
-    toast.success("✅ Inkubasi telah diselesaikan!");
+    try {
+      await base44.entities.Breeding.update(breeding.id, {
+        status: "selesai",
+        completed_date: new Date().toISOString().split("T")[0],
+        hatched_count: ringkas.hatched_count,
+        failed_count: ringkas.failed_count,
+        fertile_count: ringkas.fertile_count,
+        infertile_count: ringkas.infertile_count,
+        hatch_rate: hatchRate,
+      });
+      toast.success("✅ Inkubasi telah diselesaikan!");
+    } catch (e) {
+      toast.error(`Gagal menyelesaikan inkubasi: ${e?.message || "kesalahan tidak diketahui"}`);
+    }
+    segarkanBreeding(qc);
     onRefresh?.();
   };
 
   const handleBukaKembali = async () => {
-    await base44.entities.Breeding.update(breeding.id, {
-      status: "bertelur",
-      completed_date: null,
-    });
-    qc.invalidateQueries({ queryKey: ["breedings"] });
-    toast.success("🔓 Inkubasi dibuka kembali — semua telur bisa diedit");
+    try {
+      await base44.entities.Breeding.update(breeding.id, {
+        status: "bertelur",
+        completed_date: null,
+      });
+      toast.success("🔓 Inkubasi dibuka kembali — semua telur bisa diedit");
+    } catch (e) {
+      toast.error(`Gagal membuka kembali inkubasi: ${e?.message || "kesalahan tidak diketahui"}`);
+    }
+    segarkanBreeding(qc);
     onRefresh?.();
   };
 
@@ -690,18 +727,32 @@ export default function EggGrid({ breeding, onRefresh }) {
     }
     setSaving(true);
     const today = new Date().toISOString().split("T")[0];
-    const updated = records.map(e => ({ ...e, status, check_date: today }));
+    /* Telur yang sudah jadi kura terdaftar DILEWATI: menandainya infertil
+       sambil membiarkan tortoise_id-nya menghasilkan kura hidup yang menurut
+       catatan berasal dari telur yang tidak pernah berkembang. */
+    const { hasil: updated, dilewati } = terapkanSemua(records, { status, hariIni: today });
     const ringkas = ringkasDariBarisTelur(updated);
-    await base44.entities.Breeding.update(breeding.id, {
-      egg_records: updated,
-      hatched_count: ringkas.hatched_count,
-      failed_count: ringkas.failed_count,
-      fertile_count: ringkas.fertile_count,
-      infertile_count: ringkas.infertile_count,
-    });
-    qc.invalidateQueries({ queryKey: ["breedings"] });
-    setSaving(false);
-    toast.success(`Semua telur → ${status}`);
+    try {
+      await base44.entities.Breeding.update(breeding.id, {
+        egg_records: updated,
+        hatched_count: ringkas.hatched_count,
+        failed_count: ringkas.failed_count,
+        fertile_count: ringkas.fertile_count,
+        infertile_count: ringkas.infertile_count,
+      });
+      setTersimpan(updated);
+      segarkanBreeding(qc);
+      toast.success(
+        dilewati > 0
+          ? `${updated.length - dilewati} telur → ${status} · ${dilewati} yang sudah jadi kura dilewati`
+          : `Semua telur → ${status}`,
+      );
+    } catch (e) {
+      segarkanBreeding(qc);
+      toast.error(`Gagal menandai semua telur: ${e?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (eggCount === 0) return <p className="text-xs text-muted-foreground">Tidak ada data telur</p>;
@@ -749,6 +800,14 @@ export default function EggGrid({ breeding, onRefresh }) {
           </button>
           {!candlingAllowed && (
             <span className="text-[11px] text-muted-foreground self-center">🔒 Candling H+30 (sisa {30 - daysSinceLaying} hari)</span>
+          )}
+          {/* Disebut SEBELUM tombolnya ditekan, bukan hanya di pesan sesudahnya:
+              yang menekan "Semua Infertil" perlu tahu lebih dulu bahwa telur
+              yang sudah jadi kura tidak ikut. */}
+          {records.some(sudahJadiKura) && (
+            <span className="text-[11px] text-muted-foreground self-center">
+              {records.filter(sudahJadiKura).length} telur sudah jadi kura — tidak ikut ditandai
+            </span>
           )}
         </div>
       )}

@@ -46,6 +46,7 @@ import { calculateIncubatorEggs, getClutchesInIncubator, isIncubatorFull, isIncu
 import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
 import EggGrid from "@/components/breeding/EggGrid";
 import ClutchOffspringSection from "@/components/breeding/ClutchOffspringSection";
+import { segarkanBreeding } from "@/lib/kunciBreeding";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -222,7 +223,7 @@ export default function BreedingAndEggs() {
   const handleDelete = async (breeding) => {
     if (confirm("Hapus data pembiakan ini?")) {
       await base44.entities.Breeding.delete(breeding.id);
-      queryClient.invalidateQueries({ queryKey: ["breedings"] });
+      segarkanBreeding(queryClient);
     }
   };
 

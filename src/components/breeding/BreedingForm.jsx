@@ -18,6 +18,7 @@ import { recoveryDaysAgo } from "@/lib/parentHealthUtils";
 import { selaraskanEggRecords } from "@/lib/hasilInkubasi";
 import { calculateIncubatorEggs as hitungTelurInkubator } from "@/lib/breedingUtils";
 import { daftarTray, uraikanTray, trayTerpakai } from "@/lib/trayTelur";
+import { segarkanBreeding } from "@/lib/kunciBreeding";
 
 export default function BreedingForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -253,7 +254,7 @@ export default function BreedingForm({ open, onClose, editData }) {
       }
     }
 
-    queryClient.invalidateQueries({ queryKey: ["breedings"] });
+    segarkanBreeding(queryClient);
     setSaving(false);
     onClose();
   };

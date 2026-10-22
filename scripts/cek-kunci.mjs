@@ -176,49 +176,85 @@ for (const [kunci, pemakai] of peta) {
  *      KUNCI_SETELAN — kunci baru yang lupa didaftarkan membuat penjaga merah,
  *      bukan membuat satu layar diam-diam tertinggal.
  */
-const BERKAS_KUNCI = "src/lib/kunciSetelan.js";
-const isiKunci = kupasKomentar(readFileSync(join(AKAR, BERKAS_KUNCI), "utf8"));
-const blokDaftar = isiKunci.match(/KUNCI_SETELAN\s*=\s*\[([^\]]*)\]/);
-const terdaftar = new Set(
-  (blokDaftar?.[1] || "").match(/"([^"]+)"/g)?.map((t) => t.slice(1, -1)) || [],
-);
-if (terdaftar.size === 0) {
-  temuan.push(`  KUNCI_SETELAN di ${BERKAS_KUNCI} tidak terbaca — daftar kuncinya hilang atau bentuknya berubah.`);
-}
+/*
+ * Penyakit yang sama menimpa Breeding pada 22 Oktober 2026, jadi
+ * pemeriksaannya dijadikan TABEL — entitas berikutnya satu baris, bukan
+ * satu salinan.
+ *
+ * Clutch dibaca lewat ["breedings"] (6 pembaca) dan ["breeding-detail", id]
+ * (halaman rinci). EggGrid menyegarkan yang pertama saja, jadi di halaman
+ * rinci penandaan telur BERHASIL tetapi layarnya tidak pernah segar — dan
+ * karena tiap penyimpanan menyusun muatannya dari daftar yang ada di layar
+ * lalu mengirim SELURUH array, penandaan telur kedua mengembalikan telur
+ * pertama ke "belum dicek". Dua puluh lima telur yang bertelur 6 September
+ * masih "Belum Cek" semuanya sesudah berkali-kali ditandai.
+ */
+const KELUARGA = [
+  {
+    nama: "CompanySettings",
+    berkas: "src/lib/kunciSetelan.js",
+    daftar: "KUNCI_SETELAN",
+    segarkan: "segarkanSetelan",
+    polaTulis: /CompanySettings\.(update|create)\s*\(/,
+    awalanKunci: "company-settings",
+  },
+  {
+    nama: "Breeding",
+    berkas: "src/lib/kunciBreeding.js",
+    daftar: "KUNCI_BREEDING",
+    segarkan: "segarkanBreeding",
+    polaTulis: /Breeding\.(update|create)\s*\(/,
+    /* Kedua kuncinya tidak berbagi awalan teks, jadi dicocokkan tegas. */
+    kunciMilik: (k) => k === "breedings" || k === "breeding-detail",
+  },
+];
 
-// 1. Penulis tanpa segarkanSetelan, dan invalidasi yang disusun sendiri.
-for (const p of berkasJs(join(AKAR, "src"))) {
-  const rel = relative(AKAR, p);
-  if (rel === BERKAS_KUNCI) continue;
-  const isi = kupasKomentar(readFileSync(p, "utf8"));
-  const menulis = /CompanySettings\.(update|create)\s*\(/.test(isi);
-  if (menulis && !/segarkanSetelan\s*\(/.test(isi)) {
-    temuan.push(
-      `  ${rel} menulis CompanySettings tanpa memanggil segarkanSetelan().\n` +
-      `      Sebagian pembaca akan tetap menampilkan nilai yang lama.`,
-    );
+let jumlahTerdaftar = 0;
+for (const keluarga of KELUARGA) {
+  const isiKunci = kupasKomentar(readFileSync(join(AKAR, keluarga.berkas), "utf8"));
+  const blokDaftar = isiKunci.match(new RegExp(`${keluarga.daftar}\\s*=\\s*\\[([^\\]]*)\\]`));
+  const terdaftar = new Set(
+    (blokDaftar?.[1] || "").match(/"([^"]+)"/g)?.map((t) => t.slice(1, -1)) || [],
+  );
+  if (terdaftar.size === 0) {
+    temuan.push(`  ${keluarga.daftar} di ${keluarga.berkas} tidak terbaca — daftar kuncinya hilang atau bentuknya berubah.`);
+    continue;
   }
-  const sendiri = isi.match(/invalidateQueries\(\s*\{\s*queryKey:\s*\[\s*"company-settings[^"]*"/g);
-  if (sendiri) {
-    temuan.push(
-      `  ${rel} menyusun ${sendiri.length} invalidasi company-settings sendiri.\n` +
-      `      Pakai segarkanSetelan(qc) dari ${BERKAS_KUNCI}; daftar yang disusun\n` +
-      `      sendiri selalu ketinggalan satu kunci.`,
-    );
-  }
-}
+  jumlahTerdaftar += terdaftar.size;
 
-// 2. Kunci yang dipakai tetapi tidak terdaftar.
-if (terdaftar.size > 0) {
-  const belum = [];
+  const milik = keluarga.kunciMilik || ((k) => k.startsWith(keluarga.awalanKunci));
+
+  // 1. Penulis tanpa fungsi penyegarnya, dan invalidasi yang disusun sendiri.
+  for (const p of berkasJs(join(AKAR, "src"))) {
+    const rel = relative(AKAR, p);
+    if (rel === keluarga.berkas) continue;
+    const isi = kupasKomentar(readFileSync(p, "utf8"));
+    if (keluarga.polaTulis.test(isi) && !new RegExp(`${keluarga.segarkan}\\s*\\(`).test(isi)) {
+      temuan.push(
+        `  ${rel} menulis ${keluarga.nama} tanpa memanggil ${keluarga.segarkan}().\n` +
+        `      Sebagian pembaca akan tetap menampilkan nilai yang lama.`,
+      );
+    }
+    const sendiri = (isi.match(/invalidateQueries\(\s*\{\s*queryKey:\s*\[\s*"([^"]+)"/g) || [])
+      .map((t) => t.match(/"([^"]+)"/)[1])
+      .filter(milik);
+    if (sendiri.length > 0) {
+      temuan.push(
+        `  ${rel} menyusun ${sendiri.length} invalidasi ${keluarga.nama} sendiri (${sendiri.join(", ")}).\n` +
+        `      Pakai ${keluarga.segarkan}(qc) dari ${keluarga.berkas}; daftar yang disusun\n` +
+        `      sendiri selalu ketinggalan satu kunci.`,
+      );
+    }
+  }
+
+  // 2. Kunci yang dipakai tetapi tidak terdaftar.
   for (const kunci of peta.keys()) {
-    if (!kunci.startsWith("company-settings")) continue;
-    if (terdaftar.has(kunci)) continue;
-    belum.push(`  ["${kunci}"] dipakai di kode tetapi tidak ada di KUNCI_SETELAN.\n` +
+    if (!milik(kunci) || terdaftar.has(kunci)) continue;
+    temuan.push(`  ["${kunci}"] dipakai di kode tetapi tidak ada di ${keluarga.daftar}.\n` +
       pemakaiRingkas(peta.get(kunci)));
   }
-  temuan.push(...belum);
 }
+const terdaftar = { size: jumlahTerdaftar };
 
 /* ── Bagian 3: gaya v4 yang menyegarkan SELURUH cache ─────────────────────
  *
@@ -269,7 +305,8 @@ if (temuan.length) {
     `    menampilkan nilai yang lama tanpa galat apa pun.\n\n` +
     `Bentuk: satukan lewat satu hook (src/lib/useCompanySettings.js), atau beri\n` +
     `kunci berbeda bila bentuknya memang harus berbeda.\n` +
-    `Penyegaran: pakai segarkanSetelan(qc) dari src/lib/kunciSetelan.js.\n\n` +
+    `Penyegaran: pakai segarkanSetelan(qc) dari src/lib/kunciSetelan.js, dan\n` +
+    `segarkanBreeding(qc) dari src/lib/kunciBreeding.js.\n\n` +
     temuan.join("\n"),
   );
   process.exit(1);
@@ -277,7 +314,7 @@ if (temuan.length) {
 
 console.log(
   `Setiap kunci cache satu bentuk (${peta.size} kunci literal diperiksa), ` +
-  `${terdaftar.size} kunci CompanySettings disegarkan dari satu tempat, ` +
+  `${terdaftar.size} kunci CompanySettings + Breeding disegarkan dari satu tempat, ` +
   `dan tidak ada penyegaran gaya v4 yang membatalkan seluruh cache.`,
 );
 process.exit(0);

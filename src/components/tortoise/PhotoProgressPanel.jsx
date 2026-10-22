@@ -1,5 +1,5 @@
 import InputBerat from "@/components/common/InputBerat";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,46 @@ export default function PhotoProgressPanel({ tortoise, onClose }) {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
 
-  // Use photos array from tortoise entity
-  const photos = Array.isArray(tortoise.photos) ? [...tortoise.photos] : [];
+  /*
+    ── Kenapa daftar foto disimpan juga di sini ────────────────────────────
+
+    Tiap penyimpanan mengirim SELURUH array `photos`, bukan "ubah foto ke-3".
+    Jadi daftar yang dipakai menyusunnya menentukan nasib foto lain yang
+    tidak sedang disentuh — bentuk yang sama persis dengan yang membuat telur
+    yang sudah ditandai kembali kosong pada 22 Okt 2026 (lihat
+    lib/kunciBreeding.js).
+
+    Di sini kunci cache-nya memang benar, jadi daftarnya SELALU menyusul —
+    tetapi menyusulnya perlu satu perjalanan ke server. Dua tindakan yang
+    lebih cepat daripada itu — unggah foto lalu langsung jadikan utama —
+    membuat yang kedua disusun dari daftar sebelum foto barunya ada, dan
+    foto itu hilang lagi tanpa satu pun galat.
+  */
+  const dariServer = tortoise.photos;
+  const [tersimpan, setTersimpan] = useState(null);
+  useEffect(() => { setTersimpan(null); }, [dariServer]);
+  const photos = tersimpan || (Array.isArray(dariServer) ? [...dariServer] : []);
+
+  /*
+    SATU tempat yang menulis `photos`. Sebelumnya ada lima, dan empat di
+    antaranya tidak punya penangkap galat sama sekali: penyimpanan yang
+    ditolak tidak memberi tahu siapa pun, dan pesan "Foto dihapus!" tidak
+    muncul — jadi satu-satunya tanda kegagalan adalah foto yang tetap ada.
+  */
+  const simpanFoto = async (updated, pesanBerhasil) => {
+    try {
+      await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
+      setTersimpan(updated);
+      qc.invalidateQueries({ queryKey: ["tortoises"] });
+      qc.invalidateQueries({ queryKey: ["tortoises-stats"] });
+      toast.success(pesanBerhasil);
+      return true;
+    } catch (err) {
+      qc.invalidateQueries({ queryKey: ["tortoises"] });
+      toast.error(`Gagal menyimpan foto: ${err?.message || "kesalahan tidak diketahui"}`);
+      return false;
+    }
+  };
   const sorted = photos.sort((a, b) => new Date(b.date || b.created_date || 0) - new Date(a.date || a.created_date || 0));
 
   // Photos with weight for growth chart
@@ -46,45 +84,33 @@ export default function PhotoProgressPanel({ tortoise, onClose }) {
         notes: "",
         is_primary: photos.length === 0,
       };
-      const updated = [...photos, newPhoto];
-      await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
-      qc.invalidateQueries({ queryKey: ["tortoises"] });
-      qc.invalidateQueries({ queryKey: ["tortoises-stats"] });
-      setUploading(false);
-      toast.success("Foto berhasil ditambahkan!");
+      await simpanFoto([...photos, newPhoto], "Foto berhasil ditambahkan!");
     } catch (err) {
+      /* Yang gagal di sini pengunggahan berkasnya, bukan penyimpanannya —
+         pesannya menyebut yang mana, supaya yang mencoba lagi tahu apa yang
+         harus diulang. */
+      toast.error(`Gagal mengunggah foto: ${err?.message || "kesalahan tidak diketahui"}`);
+    } finally {
       setUploading(false);
-      toast.error("Gagal upload foto");
     }
   };
 
   const handleUpdateMetadata = async (idx, updates) => {
-    const updated = photos.map((p, i) => i === idx ? { ...p, ...updates } : p);
-    await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
-    qc.invalidateQueries({ queryKey: ["tortoises"] });
-    toast.success("Metadata diperbarui!");
+    await simpanFoto(photos.map((p, i) => i === idx ? { ...p, ...updates } : p), "Metadata diperbarui!");
   };
 
   const handleSetPrimary = async (idx) => {
-    const updated = photos.map((p, i) => ({ ...p, is_primary: i === idx }));
-    await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
-    qc.invalidateQueries({ queryKey: ["tortoises"] });
-    toast.success("Foto utama diperbarui!");
+    await simpanFoto(photos.map((p, i) => ({ ...p, is_primary: i === idx })), "Foto utama diperbarui!");
   };
 
   const handleDelete = async (idx) => {
-    const updated = photos.filter((_, i) => i !== idx);
-    await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
-    qc.invalidateQueries({ queryKey: ["tortoises"] });
-    setSelectedIdx(null);
-    toast.success("Foto dihapus!");
+    /* Pilihan baru dilepas sesudah penyimpanan BERHASIL — kalau gagal,
+       foto yang masih ada tetap terpilih dan bisa dicoba lagi. */
+    if (await simpanFoto(photos.filter((_, i) => i !== idx), "Foto dihapus!")) setSelectedIdx(null);
   };
 
   const handleUpdateFromForm = async (idx, formData) => {
-    const updated = photos.map((p, i) => i === idx ? { ...p, ...formData } : p);
-    await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
-    qc.invalidateQueries({ queryKey: ["tortoises"] });
-    toast.success("Foto diperbarui!");
+    await simpanFoto(photos.map((p, i) => i === idx ? { ...p, ...formData } : p), "Foto diperbarui!");
   };
 
   return (
