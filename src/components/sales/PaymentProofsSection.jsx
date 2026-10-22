@@ -7,6 +7,7 @@ import { Plus, Upload, Loader2, X, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { rupiah } from "@/lib/rupiah";
+import { toast } from "sonner";
 
 
 export default function PaymentProofsSection({ sale, onUpdated }) {
@@ -21,13 +22,30 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
   const remaining = price - totalPaid;
   const pct = price > 0 ? Math.min(100, Math.round((totalPaid / price) * 100)) : 0;
 
+  /*
+    ── Penyimpanan yang gagal tanpa suara, pada catatan UANG ───────────────
+
+    Ketiga tindakan di berkas ini — unggah bukti, tambah pembayaran, hapus
+    pembayaran — dulu tidak punya satu pun penangkap galat. Unggahan yang
+    gagal membiarkan "Mengunggah…" berputar selamanya; penambahan yang
+    ditolak server tidak memberi tahu siapa pun, dan yang mencatatnya
+    menyangka pembayaran sudah masuk.
+
+    Yang tercatat di sini menentukan `payment_status` dan sisa tagihan
+    pembeli. Diam adalah jawaban yang paling mahal di layar ini.
+  */
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const res = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, photo_url: res.file_url }));
-    setUploading(false);
+    try {
+      const res = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, photo_url: res.file_url }));
+    } catch (err) {
+      toast.error(`Gagal mengunggah bukti: ${err?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleAdd = async () => {
@@ -39,17 +57,25 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
     const newRemaining = price - newTotalPaid;
     const newStatus = newTotalPaid >= price ? "lunas" : "dp";
 
-    await base44.entities.Sale.update(sale.id, {
-      payment_proofs: newProofs,
-      total_paid: newTotalPaid,
-      remaining_balance: newRemaining,
-      payment_status: newStatus,
-    });
-
-    setSaving(false);
-    setShowAdd(false);
-    setForm({ amount: "", date: new Date().toISOString().split("T")[0], notes: "", photo_url: "" });
-    onUpdated?.();
+    try {
+      await base44.entities.Sale.update(sale.id, {
+        payment_proofs: newProofs,
+        total_paid: newTotalPaid,
+        remaining_balance: newRemaining,
+        payment_status: newStatus,
+      });
+      /* Formulir hanya dikosongkan kalau penyimpanannya BERHASIL — kalau
+         gagal, angka yang sudah diketik tetap di tempatnya dan bisa dicoba
+         lagi tanpa mengetik ulang. */
+      setShowAdd(false);
+      setForm({ amount: "", date: new Date().toISOString().split("T")[0], notes: "", photo_url: "" });
+      toast.success(`Pembayaran ${rupiah(Number(form.amount))} dicatat`);
+    } catch (e) {
+      toast.error(`Gagal mencatat pembayaran: ${e?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      setSaving(false);
+      onUpdated?.();
+    }
   };
 
   const handleRemove = async (idx) => {
@@ -58,12 +84,17 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
     const newTotalPaid = newProofs.reduce((s, p) => s + (p.amount || 0), 0);
     const newRemaining = price - newTotalPaid;
     const newStatus = newTotalPaid >= price ? "lunas" : newProofs.length > 0 ? "dp" : "belum_bayar";
-    await base44.entities.Sale.update(sale.id, {
-      payment_proofs: newProofs,
-      total_paid: newTotalPaid,
-      remaining_balance: newRemaining,
-      payment_status: newStatus,
-    });
+    try {
+      await base44.entities.Sale.update(sale.id, {
+        payment_proofs: newProofs,
+        total_paid: newTotalPaid,
+        remaining_balance: newRemaining,
+        payment_status: newStatus,
+      });
+      toast.success("Bukti pembayaran dihapus");
+    } catch (e) {
+      toast.error(`Gagal menghapus bukti pembayaran: ${e?.message || "kesalahan tidak diketahui"}`);
+    }
     onUpdated?.();
   };
 

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,6 +168,7 @@ function ProvenBadge({ gender, provenYear }) {
 }
 
 export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSell, healthStatus = "none", latestHealth, parentIndicator, isSick = false }) {
+  const queryClient = useQueryClient();
   const { role } = useCurrentUser();
   const showPrice = canViewPrice(role);
   const [showHistory, setShowHistory] = useState(false);
@@ -449,8 +452,17 @@ export default function TortoiseCard({ tortoise, onEdit, onDelete, onMove, onSel
         tortoiseName={tortoise.name || ""}
         onClose={() => setLightboxIdx(null)}
         onSetPrimary={async (i) => {
+          /* Dulu tidak menyegarkan apa pun DAN tidak menangkap galat: foto
+             utama yang baru dipilih tidak berubah di layar, dan kalau
+             penyimpanannya ditolak tidak ada yang mengatakannya. */
           const updated = photos.map((p, idx) => ({ ...p, is_primary: idx === i }));
-          await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
+          try {
+            await base44.entities.Tortoise.update(tortoise.id, { photos: updated });
+            toast.success("Foto utama diperbarui");
+          } catch (e) {
+            toast.error(`Gagal mengubah foto utama: ${e?.message || "kesalahan tidak diketahui"}`);
+          }
+          queryClient.invalidateQueries({ queryKey: ["tortoises"] });
           setLightboxIdx(null);
         }}
         onShare={(url) => shareWA(url)}
