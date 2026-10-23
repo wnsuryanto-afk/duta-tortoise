@@ -899,6 +899,33 @@ export default [
       tortoise_code: i === 0 ? "BB-2026049" : null,
     })),
   }} />],
+  /*
+    Lencana asal di Silsilah, keempat bentuknya sekaligus, pada baris yang
+    juga memuat kode kura dan ukurannya.
+
+    Yang terpanjang bukan CB/WC melainkan cadangan "cara diperoleh" yang
+    ditambahkan 23 Okt 2026 untuk 36 kura yang asal genetiknya belum
+    ditentukan — "🛒 Sumber tidak dicatat" tiga kali lebih panjang daripada
+    "❓ Asal?" yang digantikannya, dan ia duduk di baris yang sama dengan
+    "Red Foot - 02", kode terpanjang di kawanan ini.
+  */
+  ["Silsilah — lencana asal terpanjang", (() => (
+    <div className="space-y-2">
+      {[
+        ["Red Foot - 02", "23 cm", "🛒 Sumber tidak dicatat"],
+        ["A95", "46 cm", "🛒 Beli lokal"],
+        ["B106", "56 cm", "🌍 WC"],
+        ["BB-2026049", "5,8 cm", "🐣 CB"],
+        ["8KECIL", "15 cm", "❓ Asal?"],
+      ].map(([kode, ukuran, lencana]) => (
+        <div key={kode} className="rounded-xl border border-border bg-card p-3 flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-sm">{kode}</span>
+          <span className="text-[11px] text-muted-foreground">{ukuran}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-md border font-bold bg-muted text-muted-foreground border-border">{lencana}</span>
+        </div>
+      ))}
+    </div>
+  ))()],
   ["EggLabelGenerator 12 clutch", <EggLabelGenerator breedings={LABEL12} allActiveBreedings={LABEL12} open onClose={() => {}} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
   ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Shell, Search, GitBranch, ChevronDown, ChevronRight, Baby, AlertCircle } from "lucide-react";
+import { LABEL_SUMBER } from "@/lib/labelKura";
 
 /*
   ── Lencana asal: dulu menyimpulkannya dari kolom yang salah ────────────────
@@ -37,7 +38,35 @@ const ASAL_LABEL = {
   wc:  { text: "🌍 WC",  title: "Wild Caught — tangkapan alam",     color: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300" },
   ltc: { text: "🏠 LTC", title: "Long Term Captive",                color: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-300" },
 };
-const ASAL_BELUM = { text: "❓ Asal?", title: "Asal genetik belum ditentukan — isi di layar Asal Kura", color: "bg-muted text-muted-foreground border-border" };
+/*
+  Yang belum ditentukan asal genetiknya menyebut CARA DIPEROLEHNYA.
+
+  Diminta pemiliknya 23 Okt 2026, saat 36 dari 135 kura masih bertanda tanya:
+  "kura yang hari ini punya status tanda tanya, asal diganti ke beli lokal".
+
+  Yang ditampilkan bukan jawaban atas pertanyaan CB/WC — pertanyaan itu
+  memang belum terjawab untuk ke-36 ekor ini, dan menjawabnya dengan cara
+  membelinya adalah kekeliruan yang baru saja dibereskan di berkas ini.
+  Yang ditampilkan adalah keterangan yang BENAR-BENAR dimiliki: dari mana
+  kura itu datang. Lencananya berwarna netral, bukan warna CB atau WC, dan
+  keterangannya menyebut dengan tegas bahwa asal genetiknya belum ditentukan.
+
+  "❓ Asal?" hanya tersisa untuk kura yang bahkan sumbernya pun tidak
+  tercatat — keadaan yang sesudah hari ini tidak ada lagi di kawanan ini.
+*/
+const ASAL_BELUM = { text: "❓ Asal?", title: "Asal genetik belum ditentukan, dan sumbernya tidak tercatat", color: "bg-muted text-muted-foreground border-border" };
+
+function lencanaAsal(asal, sumber) {
+  const pasti = ASAL_LABEL[String(asal || "").trim()];
+  if (pasti) return pasti;
+  const namaSumber = LABEL_SUMBER[String(sumber || "").trim()];
+  if (!namaSumber) return ASAL_BELUM;
+  return {
+    text: `🛒 ${namaSumber}`,
+    title: `Asal genetik belum ditentukan — baru diketahui cara memperolehnya: ${namaSumber.toLowerCase()}. Tentukan di layar Asal Kura.`,
+    color: "bg-muted text-muted-foreground border-border",
+  };
+}
 
 // Cari tortoise berdasarkan id ATAU code ATAU name
 function findTortoise(ref, idMap, codeMap) {
@@ -62,8 +91,8 @@ function findParent(ref, idMap, codeMap) {
   return null;
 }
 
-function AsalBadge({ asal }) {
-  const s = ASAL_LABEL[String(asal || "").trim()] || ASAL_BELUM;
+function AsalBadge({ asal, sumber }) {
+  const s = lencanaAsal(asal, sumber);
   return (
     <span title={s.title} className={`text-[10px] px-1.5 py-0.5 rounded-md border font-bold ${s.color}`}>{s.text}</span>
   );
@@ -179,7 +208,7 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
               <span className={`text-[10px] px-1.5 py-0 rounded-md ${GENDER_COLOR[tortoise.gender] || GENDER_COLOR.belum_diketahui}`}>
                 {GENDER_LABEL[tortoise.gender] || "?"}
               </span>
-              {!isUnknown && <AsalBadge asal={tortoise.asal_genetik} />}
+              {!isUnknown && <AsalBadge asal={tortoise.asal_genetik} sumber={tortoise.source} />}
               {!isUnknown && tortoise.morph && tortoise.morph !== "normal" && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{tortoise.morph}</Badge>
               )}
