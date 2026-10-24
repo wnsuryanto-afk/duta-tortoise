@@ -65,6 +65,29 @@ const AKAR = process.cwd();
 const BATAS = 226;
 const BATAS_BERPUTAR = 135;
 
+/*
+  ── Bagian kedua: pekerjaan borongan yang berhenti di baris pertama yang rusak
+
+  24 Okt 2026, tombol "Recalculate Buyer Profile" di Pemeliharaan Sistem:
+
+      Error in field hp_whatsapp: Field required (HTTP 500)
+
+  Dua dari empat belas BuyerProfile tidak punya hp_whatsapp, padahal
+  skemanya mewajibkan. Penolakan satu baris itu melempar keluar dari loop,
+  jadi fungsinya membalas 500 — padahal DUA BELAS profil sudah berhasil
+  diperbarui sebelum baris itu tersentuh. Layarnya cuma merah, dan tidak ada
+  cara tahu bahwa sebagian besar pekerjaannya selesai.
+
+  Itu bukan satu fungsi yang ceroboh. Dari 63 penulisan entity di dalam loop
+  di base44/functions, 52 tidak punya penangkap galat di dalam loopnya: satu
+  baris rusak membatalkan sisa pekerjaan, berapa pun yang sudah selesai, dan
+  yang menjalankannya tidak diberi tahu sampai mana.
+
+  Diukur sesudah recalculateBuyerProfiles dibereskan. Boleh turun, tidak
+  boleh naik.
+*/
+const BATAS_BORONG = 52;
+
 function berkasJs(d, keluar = []) {
   for (const nama of readdirSync(d)) {
     const p = join(d, nama);
@@ -200,14 +223,66 @@ for (const p of berkasJs(join(AKAR, "src"))) {
   }
 }
 
-const naik = diam.length > BATAS || berputar.length > BATAS_BERPUTAR;
+/* ── Penulisan entity di dalam loop, tanpa try DI DALAM loop itu ────────── */
+function rentangBlok(teks, dari) {
+  const b = teks.indexOf("{", dari);
+  if (b < 0) return null;
+  let d = 0;
+  for (let j = b; j < teks.length; j++) {
+    if (teks[j] === "{") d++;
+    else if (teks[j] === "}") { d--; if (d === 0) return [b, j]; }
+  }
+  return null;
+}
+
+const POLA_TULIS_FUNGSI = /await\s+\w+(?:\.\w+)*\.entities\.(\w+)\.(update|create|delete|bulkCreate)\s*\(/g;
+const borong = [];
+let borongTotal = 0;
+const akarFungsi = join(AKAR, "base44/functions");
+for (const nama of readdirSync(akarFungsi)) {
+  const dir = join(akarFungsi, nama);
+  if (!statSync(dir).isDirectory()) continue;
+  for (const f of readdirSync(dir)) {
+    if (!/\.ts$/.test(f)) continue;
+    const asli = readFileSync(join(dir, f), "utf8");
+    const teks = tanpaIsiString(asli);
+    const loops = [];
+    for (const m of teks.matchAll(/\b(for|while)\s*\(/g)) {
+      const r = rentangBlok(teks, m.index);
+      if (r) loops.push(r);
+    }
+    const trys = [];
+    for (const m of teks.matchAll(/\btry\s*\{/g)) {
+      const r = rentangBlok(teks, m.index);
+      if (r) trys.push(r);
+    }
+    POLA_TULIS_FUNGSI.lastIndex = 0;
+    let w;
+    while ((w = POLA_TULIS_FUNGSI.exec(teks)) !== null) {
+      const pos = w.index;
+      const dalamLoop = loops.filter(([a, b]) => pos > a && pos < b);
+      if (!dalamLoop.length) continue;
+      borongTotal++;
+      /* try yang dibuka DI DALAM loop terdalam — try di luar loop tidak
+         menolong, karena ia justru yang menelan sisa pekerjaannya. */
+      const [mulaiLoop] = dalamLoop.sort((x, y) => y[0] - x[0])[0];
+      const terlindung = trys.some(([a, b]) => a > mulaiLoop && pos > a && pos < b);
+      if (!terlindung) {
+        borong.push(`${nama}/${f}:${asli.slice(0, pos).split("\n").length}  ${w[1]}.${w[2]}`);
+      }
+    }
+  }
+}
+
+const naik = diam.length > BATAS || berputar.length > BATAS_BERPUTAR || borong.length > BATAS_BORONG;
 if (naik) {
   const perBerkas = new Map();
   for (const d of diam) perBerkas.set(d.rel, (perBerkas.get(d.rel) || 0) + 1);
   console.error(
     `Penyimpanan yang gagal tanpa suara BERTAMBAH.\n\n` +
     `  gagal tanpa pesan : ${diam.length} (batas ${BATAS})\n` +
-    `  tombol berputar   : ${berputar.length} (batas ${BATAS_BERPUTAR})\n\n` +
+    `  tombol berputar   : ${berputar.length} (batas ${BATAS_BERPUTAR})\n` +
+    `  borongan terhenti : ${borong.length} (batas ${BATAS_BORONG})\n\n` +
     `Permintaan yang ditolak server tanpa penangkap galat tidak memberi tahu\n` +
     `siapa pun: tombolnya berputar, tidak ada pesan, dan yang menekannya\n` +
     `menyangka dirinya salah pencet. Bentuk itu pernah menahan SELURUH\n` +
@@ -225,15 +300,20 @@ if (naik) {
     [...perBerkas].sort((a, b) => b[1] - a[1]).slice(0, 10)
       .map(([f, n]) => `  ${String(n).padStart(3)}  ${f}`).join("\n") + "\n\n" +
     `Tombol yang berputar selamanya bila gagal:\n` +
-    berputar.slice(0, 20).map((b) => `  ${b.rel}:${b.baris}  ${b.ent}.${b.op}`).join("\n") + "\n",
+    berputar.slice(0, 20).map((b) => `  ${b.rel}:${b.baris}  ${b.ent}.${b.op}`).join("\n") + "\n\n" +
+    `Pekerjaan borongan yang berhenti di baris pertama yang rusak\n` +
+    `(penulisan entity di dalam loop, tanpa try DI DALAM loopnya —\n` +
+    ` satu baris ditolak membatalkan sisanya, berapa pun yang sudah selesai):\n` +
+    borong.slice(0, 20).map((b) => `  base44/functions/${b}`).join("\n") + "\n",
   );
   process.exit(1);
 }
 
-const turun = diam.length < BATAS || berputar.length < BATAS_BERPUTAR;
+const turun = diam.length < BATAS || berputar.length < BATAS_BERPUTAR || borong.length < BATAS_BORONG;
 console.log(
   `${total} penulisan entity: ${diam.length} gagal tanpa pesan (batas ${BATAS}), ` +
-  `${berputar.length} tombol berputar selamanya bila gagal (batas ${BATAS_BERPUTAR})` +
+  `${berputar.length} tombol berputar selamanya bila gagal (batas ${BATAS_BERPUTAR}), ` +
+  `${borong.length} dari ${borongTotal} borongan berhenti di baris rusak pertama (batas ${BATAS_BORONG})` +
   (turun ? ` — turunkan batasnya di scripts/cek-diam.mjs.` : `.`),
 );
 process.exit(0);
