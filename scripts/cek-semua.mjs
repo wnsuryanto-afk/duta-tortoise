@@ -146,7 +146,7 @@ process.stdout.write(`\n── eslint ${"─".repeat(40)}\n`);
 // pada file yang tidak sedang dikerjakan. Jadi yang dijaga adalah ARAHNYA:
 // angkanya boleh turun, tidak boleh naik. Turunkan BATAS_PERINGATAN setiap
 // kali ada yang dibersihkan — penjaga ini akan memaksanya.
-const BATAS_PERINGATAN = 100;
+const BATAS_PERINGATAN = 99;
 
 let keluaranEslint = "";
 let eslintMelempar = false;

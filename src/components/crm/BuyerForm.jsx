@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export default function BuyerForm({ data, onSave, onClose }) {
   const [form, setForm] = useState(data || {
@@ -13,6 +14,7 @@ export default function BuyerForm({ data, onSave, onClose }) {
     total_purchases: 0, total_spent: 0,
   });
   const [errors, setErrors] = useState({});
+  const [menyimpan, setMenyimpan] = useState(false);
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: "" })); };
 
   const validate = () => {
@@ -24,12 +26,43 @@ export default function BuyerForm({ data, onSave, onClose }) {
     return Object.keys(e).length === 0;
   };
 
+  /*
+    Nomor HP adalah kunci identitas pembeli di seluruh aplikasi: otomatisasi
+    `onSaleCreated`, perhitungan ulang profil, dan pencarian pembeli di
+    SaleWizard semuanya mencocokkan lewat `hp_whatsapp`. Dua profil dengan
+    nomor sama berarti riwayat belanja satu orang terbelah dua, dan yang
+    dipakai adalah yang kebetulan terambil lebih dulu.
+
+    Empat pembeli sudah terlanjur punya profil kembar (terlihat di data
+    24 Okt 2026) karena jalur penjualan membuat profil tanpa memeriksa
+    lebih dulu. Formulir ini jalur kedua ke lubang yang sama.
+  */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    if (data?.id) await base44.entities.BuyerProfile.update(data.id, form);
-    else await base44.entities.BuyerProfile.create(form);
-    onSave();
+    setMenyimpan(true);
+    try {
+      if (data?.id) {
+        await base44.entities.BuyerProfile.update(data.id, form);
+      } else {
+        const hp = String(form.hp_whatsapp || "").trim();
+        const sudahAda = hp ? await base44.entities.BuyerProfile.filter({ hp_whatsapp: hp }) : [];
+        if (sudahAda?.[0]?.id) {
+          /* Nomor ini sudah punya profil. Yang ada DIPERBARUI, bukan
+             ditimpa profil kedua — dan dikatakan, supaya yang mengisi tahu
+             pembelinya memang sudah terdaftar. */
+          await base44.entities.BuyerProfile.update(sudahAda[0].id, form);
+          toast.success(`${sudahAda[0].name || hp} sudah terdaftar — datanya diperbarui, bukan dibuat ganda.`);
+        } else {
+          await base44.entities.BuyerProfile.create(form);
+        }
+      }
+      onSave();
+    } catch (err) {
+      toast.error(`Gagal menyimpan pembeli: ${err?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      setMenyimpan(false);
+    }
   };
 
   const isValid = form.name?.trim() && form.hp_whatsapp?.trim() && form.platform_asal;
@@ -89,7 +122,7 @@ export default function BuyerForm({ data, onSave, onClose }) {
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-        <Button type="submit" disabled={!isValid}>Simpan</Button>
+        <Button type="submit" disabled={!isValid || menyimpan}>{menyimpan ? "Menyimpan…" : "Simpan"}</Button>
       </div>
     </form>
   );

@@ -3627,6 +3627,49 @@ if (!/tanggalISOAman\s*\(/.test(financeSrc)) {
 }
 
 /*
+  ── PROFIL PEMBELI DICARI DULU, BARU DIBUAT ────────────────────────────────
+
+  Terlihat di data 24 Okt 2026: empat pembeli punya DUA profil, dibuat
+  berselang satu detik. "Bapak Aryo" paling jelas — satu penjualan, dua
+  profil. Begitu juga Rizki Sekop, Ardy bactiar, dan Mr lee new hope.
+
+  Sebabnya dua penulis untuk satu kejadian. `Sale.create` menyalakan
+  otomatisasi `onSaleCreated`, yang juga membuat BuyerProfile bila belum
+  ada. Otomatisasi itu MEMERIKSA lebih dulu — tetapi pemeriksaannya berjalan
+  sebelum SaleWizard membuat profilnya. Keduanya melihat "belum ada",
+  keduanya membuat.
+
+  Nomor HP adalah kunci identitas pembeli di seluruh aplikasi: otomatisasi,
+  perhitungan ulang profil, dan pencarian pembeli di SaleWizard semuanya
+  mencocokkan lewat `hp_whatsapp`. Dua profil bernomor sama berarti riwayat
+  belanja satu orang terbelah dua, dan yang dipakai adalah yang kebetulan
+  terambil lebih dulu.
+
+  Jadi siapa pun yang MEMBUAT BuyerProfile harus mencarinya lebih dulu lewat
+  nomor itu. Pola yang sama sudah diperbaiki untuk FinanceTransaction di
+  SaleWizard beberapa langkah di atasnya, dengan alasan yang sama persis;
+  perbaikannya tidak pernah ikut dibawa ke profil pembeli.
+*/
+let pembuatProfil = 0;
+for (const p of berkasSumber(join(AKAR, "src"))) {
+  const rel = p.slice(AKAR.length + 1);
+  const isi = kupasKomentar(readFileSync(p, "utf8"));
+  if (!/BuyerProfile\.create\s*\(/.test(isi)) continue;
+  pembuatProfil += 1;
+  if (!/BuyerProfile\.filter\s*\(\s*\{\s*hp_whatsapp/.test(isi)) {
+    temuan.push(
+      `${rel} membuat BuyerProfile tanpa mencarinya dulu lewat hp_whatsapp.\n` +
+      `      Otomatisasi onSaleCreated membuat profil untuk penjualan yang sama,\n` +
+      `      dan dua pemeriksaan yang berjalan bersamaan sama-sama melihat\n` +
+      `      "belum ada". Empat pembeli sudah terlanjur punya profil kembar.`,
+    );
+  }
+}
+if (pembuatProfil === 0) {
+  temuan.push("penjaga profil pembeli: tidak ada lagi yang membuat BuyerProfile — penjaganya kehilangan dasarnya, periksa apakah masih relevan.");
+}
+
+/*
   ── CB/WC TIDAK BOLEH DISIMPULKAN DARI CARA MEMBELI ────────────────────────
 
   Ditemukan 22 Okt 2026 di tab Silsilah. Lencana asal di situ dibaca dari
@@ -3697,6 +3740,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
 );
 process.exit(0);

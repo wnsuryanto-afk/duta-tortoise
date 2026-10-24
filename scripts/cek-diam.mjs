@@ -61,8 +61,12 @@ const AKAR = process.cwd();
   yang bentuknya sama dengan cacat telur: array utuh ditulis ulang dari
   daftar di layar, tanpa penangkap galat — bukti pembayaran (yang menentukan
   sisa tagihan pembeli) dan daftar foto kura.
+
+  Turun lagi 226 → 221 pada 24 Okt saat jalur profil pembeli dibereskan:
+  SaleWizard dulu menelan kegagalannya dengan `catch (_) { }`, sehingga
+  profil kembar tumbuh tanpa ada yang tahu.
 */
-const BATAS = 226;
+const BATAS = 221;
 const BATAS_BERPUTAR = 135;
 
 /*
