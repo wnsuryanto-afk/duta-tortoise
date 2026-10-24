@@ -19,6 +19,7 @@ import { biayaBarangKura } from "@/lib/pemakaianBarang";
 import { differenceInMonths } from "date-fns";
 import { angkaRibuan } from "@/lib/rupiah";
 import { LABEL_SPESIES } from "@/lib/labelKura";
+import { toast } from "sonner";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
 
@@ -793,24 +794,57 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
       }
       // D) Update / Create BuyerProfile
       const tortoiseCode = selectedTortoise?.code || "";
+      /*
+        ── Profil pembeli: DICARI DULU, baru dibuat ───────────────────────
+
+        Cacat yang terlihat di data 24 Okt 2026: empat pembeli punya DUA
+        profil, dibuat berselang satu detik. "Bapak Aryo" paling jelas —
+        satu penjualan, dua profil.
+
+        Sebabnya dua penulis untuk satu kejadian. `Sale.create` di atas
+        menyalakan otomatisasi `onSaleCreated`, yang juga membuat
+        BuyerProfile bila belum ada. Otomatisasi itu punya penjaganya
+        sendiri — ia memeriksa `BuyerProfile.filter({ hp_whatsapp })` lebih
+        dulu — tetapi pemeriksaan itu berjalan SEBELUM baris di bawah ini
+        membuat profilnya. Keduanya melihat "belum ada", keduanya membuat.
+
+        Persis pola yang sudah diperbaiki beberapa langkah di atas untuk
+        FinanceTransaction, dengan alasan yang sama persis. Perbaikannya
+        tidak pernah ikut dibawa ke sini.
+
+        Jadi: dicari dulu lewat server (bukan dari daftar `buyers` di cache,
+        yang justru tidak memuat profil yang baru saja dibuat otomatisasi),
+        dan yang ketemu dipakai ulang.
+      */
       try {
-        if (form.buyer_profile_id) {
-          // Existing buyer — increment stats
-          const existingBuyer = buyers.find(b => b.id === form.buyer_profile_id) || {};
-          await base44.entities.BuyerProfile.update(form.buyer_profile_id, {
-            total_purchases: (existingBuyer.total_purchases || 0) + 1,
-            total_spent: (existingBuyer.total_spent || 0) + price,
-            last_purchase_date: form.sale_date,
-            last_purchased_tortoise: tortoiseCode,
-            is_repeat_buyer: (existingBuyer.total_purchases || 0) + 1 > 1,
-            // Update address/city if changed
+        let profilId = form.buyer_profile_id;
+
+        if (!profilId && form.hp_whatsapp) {
+          const sudahAda = await base44.entities.BuyerProfile.filter({ hp_whatsapp: form.hp_whatsapp });
+          profilId = sudahAda?.[0]?.id || "";
+        }
+
+        if (profilId) {
+          /*
+            Angka totalnya TIDAK ditulis di sini.
+
+            `onSaleCreated` menghitung ulang total_purchases dan total_spent
+            dari seluruh Sale pembeli ini — hitungan yang benar berapa pun
+            kali ia dijalankan. Menambahkan "+1" di atasnya dari daftar yang
+            ada di layar membuat satu penjualan terhitung dua kali, dan
+            selisihnya tidak pernah kembali turun sendiri.
+
+            Yang ditulis di sini hanya keterangan yang cuma diketahui
+            formulir ini: alamat, kota, nomor, dan asal platform.
+          */
+          const existingBuyer = buyers.find(b => b.id === profilId) || {};
+          await base44.entities.BuyerProfile.update(profilId, {
             buyer_address: form.buyer_address || existingBuyer.buyer_address || "",
             city: form.buyer_city || existingBuyer.city || "",
             hp_whatsapp: form.hp_whatsapp || existingBuyer.hp_whatsapp || "",
             platform_asal: form.platform || existingBuyer.platform_asal || "Langsung",
           });
         } else {
-          // New buyer — create profile
           const newBuyer = await base44.entities.BuyerProfile.create({
             name: form.buyer_name,
             hp_whatsapp: form.hp_whatsapp,
@@ -824,12 +858,21 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
             last_purchased_tortoise: tortoiseCode,
             is_repeat_buyer: false,
           });
-          // Link sale to new buyer profile
-          await base44.entities.Sale.update(newSale.id, {
-            buyer_profile_id: newBuyer?.id || "",
-          });
+          profilId = newBuyer?.id || "";
         }
-      } catch (_) { /* non-critical */ }
+
+        /* Penjualannya ditautkan ke profil mana pun yang dipakai — termasuk
+           yang dibuat otomatisasi — supaya tautannya tidak tertinggal kosong
+           dan penjualan berikutnya menemukannya. */
+        if (profilId && profilId !== form.buyer_profile_id) {
+          await base44.entities.Sale.update(newSale.id, { buyer_profile_id: profilId });
+        }
+      } catch (e) {
+        /* Penjualannya SUDAH tersimpan — yang gagal hanya profil pembelinya.
+           Disebutkan apa adanya, karena diam di sini dulu membuat profil
+           kembar tumbuh tanpa ada yang tahu. */
+        toast.error(`Penjualan tersimpan, tetapi profil pembeli gagal diperbarui: ${e?.message || "kesalahan tidak diketahui"}`);
+      }
 
       queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
 
