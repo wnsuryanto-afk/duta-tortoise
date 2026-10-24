@@ -5,6 +5,34 @@ import { BATAS_AMBIL } from "../../shared/batas.ts";
 // Hitung ulang total_purchases dan total_spent semua BuyerProfile dari data Sale.
 // Aman dijalankan berkali-kali (idempoten). Bisa untuk satu buyer (buyer_profile_id atau hp)
 // atau semua buyer sekaligus.
+//
+// ── Satu baris rusak tidak boleh membatalkan seluruhnya (24 Okt 2026) ──────
+//
+// Tombol "Recalculate Buyer Profile" di Pemeliharaan Sistem gagal dengan
+//
+//     Error in field hp_whatsapp: Field required (HTTP 500)
+//
+// Dua dari empat belas BuyerProfile tidak punya `hp_whatsapp` — "Ibu Rina"
+// dan "Pak Ahmad", dua baris tertua, dibuat pada detik yang sama, tanpa satu
+// pun Sale yang menyebut mereka. Skema BuyerProfile MEWAJIBKAN hp_whatsapp,
+// jadi menyentuh baris itu membuat server memeriksa ulang seluruh recordnya
+// dan menolaknya.
+//
+// Dua cacat sekaligus, dan yang kedua lebih buruk:
+//
+//   1. Penolakan satu baris melempar keluar dari loop, sehingga fungsi
+//      membalas 500. Dua belas profil SUDAH diperbarui sebelum itu, tetapi
+//      layarnya hanya menampilkan merah — tidak ada cara tahu bahwa
+//      sebagian besar pekerjaannya berhasil.
+//
+//   2. Profil tanpa hp_whatsapp dicocokkan dengan `salesByHp[undefined]`,
+//      yang selalu kosong. Seandainya penyimpanannya lolos, totalnya
+//      di-NOL-kan — menghapus angka yang ada di sana tanpa ada yang
+//      memintanya. Jadi melewatinya bukan sekadar menghindari galat;
+//      itu memang perilaku yang benar.
+//
+// Sekarang tiap profil ditangani sendiri-sendiri, yang dilewati dan yang
+// gagal dihitung terpisah, dan jawabannya menyebut keduanya.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -49,9 +77,20 @@ Deno.serve(async (req) => {
     }
 
     let updatedCount = 0;
+    const dilewati: string[] = [];
+    const gagal: string[] = [];
 
     for (const profile of profiles) {
       const hp = profile.hp_whatsapp;
+
+      // Tanpa nomor HP, profil ini tidak bisa dicocokkan dengan penjualan
+      // mana pun — perhitungannya selalu menghasilkan nol, dan nol itu akan
+      // MENGHAPUS angka yang sudah ada. Dilewati, lalu disebut namanya.
+      if (!hp) {
+        dilewati.push(profile.name || profile.id);
+        continue;
+      }
+
       const buyerSales = salesByHp[hp] || [];
 
       const totalPurchases = buyerSales.length;
@@ -69,22 +108,37 @@ Deno.serve(async (req) => {
       if (totalSpent > 10000000) tier = "vip";
       else if (totalSpent > 2000000) tier = "reguler";
 
-      await db.entities.BuyerProfile.update(profile.id, {
-        total_purchases: totalPurchases,
-        total_spent: totalSpent,
-        first_purchase_date: firstPurchaseDate,
-        last_purchase_date: lastPurchaseDate,
-        last_purchased_tortoise: lastTortoiseCode,
-        is_repeat_buyer: totalPurchases > 1,
-        tier,
-      });
-      updatedCount++;
+      // Ditangkap per profil: satu baris yang ditolak server tidak boleh
+      // membuang sebelas baris yang sudah benar.
+      try {
+        await db.entities.BuyerProfile.update(profile.id, {
+          total_purchases: totalPurchases,
+          total_spent: totalSpent,
+          first_purchase_date: firstPurchaseDate,
+          last_purchase_date: lastPurchaseDate,
+          last_purchased_tortoise: lastTortoiseCode,
+          is_repeat_buyer: totalPurchases > 1,
+          tier,
+        });
+        updatedCount++;
+      } catch (e) {
+        gagal.push(`${profile.name || profile.id}: ${e?.message || 'kesalahan tidak diketahui'}`);
+      }
     }
 
+    const bagian = [`${updatedCount} profil dihitung ulang`];
+    if (dilewati.length) bagian.push(`${dilewati.length} dilewati karena belum ada nomor HP (${dilewati.join(', ')})`);
+    if (gagal.length) bagian.push(`${gagal.length} gagal (${gagal.join('; ')})`);
+
     return Response.json({
-      success: true,
-      message: `Recalculated ${updatedCount} buyer profile(s)`,
+      // Berhasil sebagian tetap berhasil, dan jumlahnya disebut. Membalas
+      // gagal total untuk dua baris yang memang tidak bisa dihitung membuat
+      // dua belas pembaruan yang benar ikut terlihat seperti kegagalan.
+      success: gagal.length === 0,
+      message: bagian.join('. ') + '.',
       updated: updatedCount,
+      skipped: dilewati,
+      failed: gagal,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
