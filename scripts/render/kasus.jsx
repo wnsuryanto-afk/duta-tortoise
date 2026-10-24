@@ -926,6 +926,36 @@ export default [
       ))}
     </div>
   ))()],
+  /*
+    Spanduk nomor kembar di tab Pembeli, dengan nama profil terpanjang yang
+    benar-benar ada sesudah penandaan 24 Okt 2026 —
+    "[KEMBAR — HAPUS SAYA] Mr lee new hope" — tepat di atas kartu ringkasan
+    yang menyempit jadi 150px.
+  */
+  ["PembeliTab — spanduk nomor kembar", (() => (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-3">
+        <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+          <b className="tabular-nums">4 nomor HP</b> dipakai lebih dari satu profil. Riwayat belanja orang yang
+          sama terbelah dua, dan yang terpakai adalah profil yang kebetulan terambil lebih dulu &mdash;
+          gabungkan atau hapus salah satunya.
+        </p>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-3">
+        <p className="text-sm font-semibold break-words">[KEMBAR &mdash; HAPUS SAYA] Mr lee new hope</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 break-words">0821-2035-2060 &middot; 2 pembelian &middot; Rp 1.200.000</p>
+      </div>
+      <div className="grid gap-3" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+        {[["👥", "14", "Total Pembeli"], ["🌱", "4", "Baru (30 Hari)"], ["🔄", "2", "Repeat Buyer"], ["💰", "Rp 52.821.248", "Total Belanja"]].map(([ikon, nilai, label]) => (
+          <div key={label} className="rounded-xl border border-border bg-card p-4 text-center">
+            <div className="text-2xl mb-1">{ikon}</div>
+            <div className="text-sm font-bold break-words">{nilai}</div>
+            <div className="text-xs text-muted-foreground">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ))()],
   ["EggLabelGenerator 12 clutch", <EggLabelGenerator breedings={LABEL12} allActiveBreedings={LABEL12} open onClose={() => {}} />],
   ["PanduanPakanPage tanpa data", <PanduanPakanPage />],
   ["DailyTaskTemplatePage tanpa data", <DailyTaskTemplatePage />],

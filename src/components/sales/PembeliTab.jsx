@@ -15,6 +15,7 @@ import AccessDenied from "@/components/common/AccessDenied";
 import SaleWizard from "@/components/sales/SaleWizard";
 import { rupiah } from "@/lib/rupiah";
 import { kisiWadah } from "@/lib/kisiWadah";
+import { toast } from "sonner";
 
 const formatDate = d => d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-";
 
@@ -33,9 +34,19 @@ export default function PembeliTab() {
 
   const handleSyncBuyer = async (buyer) => {
     setSyncingId(buyer.id);
-    await base44.functions.invoke("recalculateBuyerProfiles", { buyer_profile_id: buyer.id });
-    await queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
-    setSyncingId(null);
+    try {
+      /* Jawabannya memuat berapa yang dihitung ulang dan apa yang dilewati —
+         ditampilkan, bukan dibuang. Tanpa itu tombol ini terlihat sama saja
+         entah profilnya diperbarui atau dilewati karena tidak bernomor. */
+      const hasil = await base44.functions.invoke("recalculateBuyerProfiles", { buyer_profile_id: buyer.id });
+      const pesan = hasil?.data?.message || hasil?.message;
+      toast.success(pesan || `${buyer.name} dihitung ulang`);
+    } catch (e) {
+      toast.error(`Gagal menghitung ulang ${buyer.name}: ${e?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
+      setSyncingId(null);
+    }
   };
 
   const { data: buyersRaw = [], isLoading } = useQuery({
@@ -61,6 +72,44 @@ export default function PembeliTab() {
   }, [allSales]);
 
   const buyers = buyersRaw.filter(b => !b.is_blacklist);
+
+  /*
+    ── Total Belanja dihitung dari PENJUALAN, bukan dari kolom di profil ────
+
+    Dua sebab, dan keduanya terbukti di data 24 Okt 2026:
+
+      · empat pembeli sempat punya DUA profil (otomatisasi dan wizard
+        sama-sama membuatnya), dan kedua profil membawa total yang sama —
+        jadi belanja mereka terhitung dua kali, Rp 3 juta berlebih;
+      · dua baris contoh lama, "Ibu Rina" dan "Pak Ahmad", membawa total
+        Rp 1,8 jt dan Rp 2,5 jt tanpa SATU PUN penjualan yang menyebut
+        mereka — Rp 4,3 juta yang tidak pernah terjadi.
+
+    Totalnya meleset Rp 7,3 juta dari buku penjualan, dan tidak ada tanda
+    apa pun di layar. Dihitung dari `allSales` — yang sudah disaring
+    hanyaLaporan, jadi penjualan yang dibatalkan ikut keluar — angka ini
+    tidak bisa lagi berbeda dari layar Penjualan, berapa pun profil kembar
+    yang ada.
+  */
+  const totalBelanja = useMemo(
+    () => allSales.reduce((s, x) => s + (Number(x.price) || 0), 0),
+    [allSales],
+  );
+
+  /*
+    Nomor HP adalah kunci identitas pembeli di seluruh aplikasi. Dua profil
+    bernomor sama berarti riwayat satu orang terbelah dua — dan sampai hari
+    ini tidak ada satu pun tanda di layar yang mengatakannya.
+  */
+  const nomorKembar = useMemo(() => {
+    const per = new Map();
+    for (const b of buyers) {
+      const hp = String(b.hp_whatsapp || "").replace(/\D/g, "");
+      if (!hp) continue;
+      per.set(hp, (per.get(hp) || 0) + 1);
+    }
+    return [...per.values()].filter((n) => n > 1).length;
+  }, [buyers]);
 
   // Stats
   const repeatBuyers = buyers.filter(b => b.is_repeat_buyer);
@@ -96,13 +145,27 @@ export default function PembeliTab() {
         )}
       </div>
 
+      {/* Dua profil bernomor sama membelah riwayat satu orang jadi dua, dan
+          sampai 24 Okt 2026 tidak ada satu pun tanda di layar ini yang
+          mengatakannya — empat pembeli sudah terlanjur begitu selama
+          berminggu-minggu. */}
+      {nomorKembar > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-3">
+          <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+            <b className="tabular-nums">{nomorKembar} nomor HP</b> dipakai lebih dari satu profil. Riwayat belanja
+            orang yang sama terbelah dua, dan yang terpakai adalah profil yang kebetulan terambil lebih dulu —
+            gabungkan atau hapus salah satunya.
+          </p>
+        </div>
+      )}
+
       {/* Stats mini */}
       <div className="grid gap-3" style={kisiWadah(150)}>
         {[
           { label: "Total Pembeli", value: totalPembeli, icon: "👥" },
           { label: "Baru (30 Hari)", value: new30Days.length, icon: "🌱" },
           { label: "Repeat Buyer", value: repeatBuyers.length, icon: "🔄" },
-          { label: "Total Belanja", value: rupiah(buyers.reduce((s, b) => s + (b.total_spent || 0), 0)), icon: "💰", isString: true },
+          { label: "Total Belanja", value: rupiah(totalBelanja), icon: "💰", isString: true },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-4 text-center">
