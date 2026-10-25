@@ -106,7 +106,11 @@
  *                   Kecil" di gudang. Pelet kura-kura KUNKKA yang dibaca dari
  *                   screenshot pesanan tampil sebagai Gas Elpiji Kecil, dan
  *                   menyimpannya akan menambah 1,2 kg pelet ke tabung gas
- *                   sekaligus menimpa harga belinya — tanpa satu pun error
+ *                   sekaligus menimpa harga belinya — tanpa satu pun error.
+ *                   Dari akar yang sama: kunciBahanSOP menuang kedua daftar ke
+ *                   SATU peta ber-kunci SKU, jadi "Gas Elpiji Kecil" selalu
+ *                   terbaca sebagai 50 kg "Pakan Lainnya" — begitu tabung
+ *                   gasnya habis, tugas SOP-nya tidak dikunci sama sekali
  *   cek-penjaga     penjaga yang mengupas komentar sendiri → satu atribut
  *                   accept="image/*" membuatnya ikut memakan kode sesudahnya,
  *                   dan penjaganya hijau karena tidak pernah melihatnya

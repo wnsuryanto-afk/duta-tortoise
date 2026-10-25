@@ -42,9 +42,31 @@ Deno.serve(async (req) => {
     // jadi bertindak atasnya berarti bertindak atas angka karangan.
     const pakanAktif = (pakan || []).filter((f: any) => f?.is_active !== false);
 
-    const stokBySku = new Map<string, any>();
-    for (const i of gudang || []) if (i.sku) stokBySku.set(String(i.sku), i);
-    for (const f of pakanAktif || []) if (f.sku) stokBySku.set(String(f.sku), f);
+    /*
+     * Dua peta, bukan satu — karena SKU tidak unik lintas entitas.
+     *
+     * Awalan LNN dan SPM dipakai WarehouseItem maupun FeedStock, dengan nomor
+     * yang dihitung dari daftar masing-masing. Hasilnya di data peternakan ini:
+     *
+     *     LNN-0001  "Isolasi Listrik"  (gudang, 1)  |  "Pakan Lainnya" (pakan, 71,97)
+     *     LNN-0002  "Mabock"           (gudang, 1)  |  "Melon"         (pakan, 65)
+     *     LNN-0003  "Gas Elpiji Kecil" (gudang, 1)  |  "Pakan Lainnya" (pakan, 50)
+     *
+     * Versi sebelumnya memakai SATU peta dan menulis pakan TERAKHIR, jadi
+     * pakan menimpa gudang. `required_skus` hanya bisa diisi dari daftar
+     * barang GUDANG (lihat pemilihnya di SOPTaskManager.jsx), jadi LNN-0003 di
+     * situ selalu berarti Gas Elpiji Kecil — tetapi yang dibaca adalah 50 kg
+     * "Pakan Lainnya". Begitu tabung gasnya habis, tugas yang membutuhkannya
+     * TIDAK dikunci, dan alasan terkuncinya pun akan menyebut nama pakan.
+     *
+     * Gudang didahulukan karena di situlah required_skus berasal; pakan tetap
+     * dipakai sebagai cadangan untuk SKU lama yang tidak ada di gudang.
+     */
+    const gudangBySku = new Map<string, any>();
+    for (const i of gudang || []) if (i.sku) gudangBySku.set(String(i.sku), i);
+    const pakanBySku = new Map<string, any>();
+    for (const f of pakanAktif || []) if (f.sku) pakanBySku.set(String(f.sku), f);
+    const cariStok = (sku: string) => gudangBySku.get(sku) || pakanBySku.get(sku) || null;
 
     const terkunci: string[] = [];
     const dilepas: string[] = [];
@@ -96,7 +118,7 @@ Deno.serve(async (req) => {
 
       const habis: string[] = [];
       for (const sku of skus) {
-        const item = stokBySku.get(String(sku));
+        const item = cariStok(String(sku));
         if (!item) {
           habis.push(`SKU ${sku} tidak terdaftar`);
           continue;
