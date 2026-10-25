@@ -53,6 +53,7 @@ import { rupiah } from "@/lib/rupiah";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
 import { modalKerja, totalAset } from "@/lib/modalKerja";
 import RincianAset from "@/components/dashboard/RincianAset";
+import KartuModalAset from "@/components/dashboard/KartuModalAset";
 import { kelengkapanHargaBarang } from "@/lib/hargaBarang";
 import { kalimatKomposisi, ringkasUmur } from "@/lib/anakanKura";
 
@@ -1213,83 +1214,19 @@ export default function OwnerDashboard({ user }) {
         {/*
           ── Modal kerja & estimasi aset ──────────────────────────────
 
-          Diminta pemiliknya 18 Okt 2026. Keduanya berdampingan karena
-          selisihnya yang jadi kabarnya: modal adalah yang sudah keluar,
-          estimasi adalah yang dipegang sekarang.
-
-          Bilah persentase di bawah tiap angka bukan hiasan. Modal hari ini
-          dihitung dari data 67% lengkap dan estimasi dari kawanan yang baru
-          sebagian berharga; tanpa bilah itu, dua angka setengah jadi akan
-          terbaca sebagai neraca yang utuh.
+          Markup-nya pindah ke KartuModalAset 25-10-2026, bukan demi kerapian:
+          selama ia tinggal di sini, satu-satunya cara penjaga lebar
+          menggambarnya adalah lewat kasus "OwnerDashboard tanpa data" — dan
+          tanpa data berarti semua angka rupiahnya Rp 0 dan baris peringatan
+          taksirannya tidak pernah muncul. Justru bentuk yang paling mungkin
+          meluap yang tidak pernah terukur.
         */}
-        <div className="grid gap-3 mb-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-xs font-semibold text-muted-foreground">Modal Kerja</p>
-              <Link to="/finance?tab=pengaturan" className="text-[11px] text-primary hover:underline flex-shrink-0">Atur</Link>
-            </div>
-            <p className="text-xl font-bold text-foreground tabular-nums mt-1 leading-tight">{rupiah(modal.total)}</p>
-            <div className="h-1.5 rounded-full bg-muted mt-2 overflow-hidden">
-              <div className="h-full bg-primary rounded-full" style={{ width: `${modal.persenLengkap}%` }} />
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-              {modal.persenLengkap}% data terisi — kura {rupiah(modal.bagian[0].nilai)}, alat &amp; vitamin {rupiah(modal.bagian[1].nilai)}
-              {modal.kandangBelumDiisi
-                ? <>, <span className="text-amber-700 dark:text-amber-400 font-semibold">kandang belum diisi</span></>
-                : <>, kandang {rupiah(modal.bagian[2].nilai)}</>}
-            </p>
-            {/*
-              Taksiran disebut terpisah dari kelengkapan, bukan dilebur ke
-              dalamnya. Nilainya ikut dihitung — kalau tidak, modal alat
-              kembali terbaca nyaris nol — tetapi orang yang membaca angka ini
-              berhak tahu bagian mana yang belum berdasar nota.
-            */}
-            {modal.barangPerkiraan > 0 && (
-              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
-                {modal.barangPerkiraan} barang harganya masih <strong>taksiran pasaran</strong>, belum dari nota —
-                nilainya ikut dihitung di atas.
-              </p>
-            )}
-            {/* Jalurnya disebut, bukan dibiarkan dicari sendiri: barang tanpa
-                harga adalah sebab terbesar modal alat tampak kecil. */}
-            {hargaBarangLengkap.kosong > 0 ? (
-              <Link to="/isi-harga-barang" className="text-[11px] text-primary hover:underline mt-1 inline-block">
-                {hargaBarangLengkap.kosong} barang berstok belum ada harganya — isi sekaligus
-              </Link>
-            ) : hargaBarangLengkap.perkiraan > 0 ? (
-              /* Tautannya tidak boleh hilang hanya karena kolomnya sudah
-                 terisi: yang terisi taksiran justru yang paling perlu
-                 disentuh lagi, dan tanpa pintu ini "nanti dikoreksi" tidak
-                 punya tempat untuk dikerjakan. */
-              <Link to="/isi-harga-barang" className="text-[11px] text-primary hover:underline mt-1 inline-block">
-                {hargaBarangLengkap.perkiraan} harga masih taksiran — cocokkan dengan nota
-              </Link>
-            ) : null}
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-xs font-semibold text-muted-foreground">Estimasi Total Aset</p>
-              <Link to="/harga-kura" className="text-[11px] text-primary hover:underline flex-shrink-0">Isi harga</Link>
-            </div>
-            {aset.adaRentang ? (
-              <p className="text-xl font-bold text-foreground tabular-nums mt-1 leading-tight">
-                {rupiah(aset.min)}{aset.maks !== aset.min && <span className="text-muted-foreground font-normal"> – </span>}
-                {aset.maks !== aset.min && rupiah(aset.maks)}
-              </p>
-            ) : (
-              <p className="text-base font-semibold text-muted-foreground mt-1 leading-tight">belum bisa dihitung</p>
-            )}
-            <div className="h-1.5 rounded-full bg-muted mt-2 overflow-hidden">
-              <div className="h-full bg-accent rounded-full" style={{ width: `${asetKura.persenTernilai}%` }} />
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-              {asetKura.persenTernilai === 0
-                ? <>Belum ada kelompok kura yang diberi harga. Isi dari baris teratas di layar Harga Estimasi Kura.</>
-                : <>{asetKura.persenTernilai}% kawanan sudah berharga — {asetKura.ekorTernilai} dari {asetKura.totalEkor} ekor{asetKura.ekorBelum > 0 && <>, {asetKura.ekorBelum} ekor belum</>}</>}
-            </p>
-          </div>
-        </div>
+        <KartuModalAset
+          modal={modal}
+          aset={aset}
+          asetKura={asetKura}
+          hargaBarang={hargaBarangLengkap}
+        />
 
         {/* Rinciannya satu kartu di bawah angkanya, bukan di halaman lain:
             rentang Rp 1,27–1,63 miliar tidak bisa ditindaklanjuti sampai

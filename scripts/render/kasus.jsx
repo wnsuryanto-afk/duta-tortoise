@@ -39,6 +39,7 @@ import VetContactPage from "@/pages/VetContactPage";
 import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import RincianAset from "@/components/dashboard/RincianAset";
+import KartuModalAset from "@/components/dashboard/KartuModalAset";
 import IsiHargaBeliPage from "@/pages/IsiHargaBeliPage";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
 import { modalKerja } from "@/lib/modalKerja";
@@ -981,6 +982,54 @@ export default [
   ["LayarTimPage tanpa data", <LayarTimPage />],
   ["PembelianPage tanpa data", <PembelianPage />],
   ["UnifiedStokPage tanpa data", <UnifiedStokPage />],
+  /*
+   * Kartu Modal Kerja & Estimasi Aset dengan ANGKA SUNGGUHAN 25-10-2026.
+   *
+   * Kasus "OwnerDashboard tanpa data" sudah ada, tetapi tanpa data berarti
+   * semua angka rupiahnya Rp 0, rentang asetnya "belum bisa dihitung", dan
+   * baris peringatan taksiran tidak pernah muncul. Jadi justru bentuk yang
+   * paling mungkin meluap yang tidak pernah terukur: "Rp 1.354.818.451",
+   * rentang dua miliar dengan tanda pisah, dan dua baris keterangan panjang
+   * di bawah bilah. Di 280px kartunya hanya selebar ±248px.
+   */
+  ["KartuModalAset angka nyata 25-10-2026", (
+    <KartuModalAset
+      modal={{
+        total: 1354818451,
+        persenLengkap: 76,
+        barangPerkiraan: 53,
+        kandangBelumDiisi: false,
+        bagian: [
+          { kunci: "kura", label: "Kura", nilai: 938100000, ada: 135, dari: 135 },
+          { kunci: "barang", label: "Alat & vitamin", nilai: 16718451, ada: 34, dari: 87 },
+          { kunci: "kandang", label: "Kandang", nilai: 400000000, ada: 1, dari: 1 },
+        ],
+      }}
+      aset={{ min: 1676718451, maks: 2036718451, tetap: 416718451, adaRentang: true }}
+      asetKura={{ persenTernilai: 100, ekorTernilai: 135, totalEkor: 135, ekorBelum: 0 }}
+      hargaBarang={{ berstok: 87, berharga: 87, kosong: 0, perkiraan: 53, terverifikasi: 34, persen: 100, persenTerverifikasi: 39 }}
+    />
+  )],
+  /* Keadaan sebelum 25-10-2026: ada yang belum berharga, kandang belum diisi,
+     dan asetnya belum bisa dihitung sama sekali. Ketiga cabang teks yang lain. */
+  ["KartuModalAset belum lengkap", (
+    <KartuModalAset
+      modal={{
+        total: 947485201,
+        persenLengkap: 67,
+        barangPerkiraan: 0,
+        kandangBelumDiisi: true,
+        bagian: [
+          { kunci: "kura", label: "Kura", nilai: 938100000, ada: 91, dari: 135 },
+          { kunci: "barang", label: "Alat & vitamin", nilai: 9385201, ada: 34, dari: 87 },
+          { kunci: "kandang", label: "Kandang", nilai: 0, ada: 0, dari: 1 },
+        ],
+      }}
+      aset={{ min: 0, maks: 0, tetap: 9385201, adaRentang: false }}
+      asetKura={{ persenTernilai: 0, ekorTernilai: 0, totalEkor: 135, ekorBelum: 135 }}
+      hargaBarang={{ berstok: 87, berharga: 34, kosong: 53, perkiraan: 0, terverifikasi: 34, persen: 39, persenTerverifikasi: 39 }}
+    />
+  )],
   /*
    * Kartu penjualan BESERTA tombol pemiliknya.
    *
