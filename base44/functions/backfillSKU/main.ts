@@ -22,8 +22,25 @@ Deno.serve(async (req) => {
     const feedstocks = await base44.asServiceRole.entities.FeedStock.list("-created_date", 1000);
     const warehouses = await base44.asServiceRole.entities.WarehouseItem.list("-created_date", 1000);
 
-    const feedSkus = feedstocks.map(i => i.sku).filter(Boolean);
-    const whSkus = warehouses.map(i => i.sku).filter(Boolean);
+    /*
+     * SKU baru dibuat dari SATU daftar gabungan, bukan dari daftar entitasnya
+     * sendiri.
+     *
+     * Awalan LNN, SPM, dan PKN dipakai FeedStock maupun WarehouseItem (lihat
+     * PREFIKS_PAKAN dan PREFIKS_GUDANG). Selama nomornya diambil dari daftar
+     * masing-masing, keduanya akan sampai di angka yang sama. Itu sudah terjadi:
+     *
+     *     LNN-0001  FeedStock "Pakan Lainnya"   |  WarehouseItem "Isolasi Listrik"
+     *     LNN-0002  FeedStock "Melon"           |  WarehouseItem "Mabock"
+     *     LNN-0003  FeedStock "Pakan Lainnya"   |  WarehouseItem "Gas Elpiji Kecil"
+     *
+     * SKU kembar membuat pencarian lewat SKU menemukan barang yang salah, dan
+     * itu tidak melempar error apa pun. Daftar gabungan mencegah yang BARU lahir.
+     */
+    const semuaSku = [
+      ...feedstocks.map(i => i.sku).filter(Boolean),
+      ...warehouses.map(i => i.sku).filter(Boolean),
+    ];
 
     let feedCount = 0;
     let whCount = 0;
@@ -31,8 +48,8 @@ Deno.serve(async (req) => {
     // Backfill FeedStock
     for (const item of feedstocks) {
       if (item.sku) continue;
-      const sku = skuPakanBaru(item.category, feedSkus);
-      feedSkus.push(sku);
+      const sku = skuPakanBaru(item.category, semuaSku);
+      semuaSku.push(sku);
       await base44.asServiceRole.entities.FeedStock.update(item.id, { sku });
       feedCount++;
     }
@@ -40,8 +57,8 @@ Deno.serve(async (req) => {
     // Backfill WarehouseItem
     for (const item of warehouses) {
       if (item.sku) continue;
-      const sku = skuGudangBaru(item.category, whSkus);
-      whSkus.push(sku);
+      const sku = skuGudangBaru(item.category, semuaSku);
+      semuaSku.push(sku);
       await base44.asServiceRole.entities.WarehouseItem.update(item.id, { sku });
       whCount++;
     }

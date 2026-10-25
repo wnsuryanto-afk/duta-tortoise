@@ -29,6 +29,23 @@
  *    alasannya; orangnya yang memastikan. Nama marketplace tidak pernah sama
  *    dengan nama gudang — dari 16 baris pesanan nyata, nol yang cocok persis.
  *
+ * 3. GUDANG DAN PAKAN ADALAH DUA TEMPAT, dan SKU-nya bisa kembar. Awalan LNN,
+ *    SPM, dan PKN dipakai WarehouseItem maupun FeedStock, dengan nomor yang
+ *    dibuat dari daftar masing-masing. Hasilnya pada data peternakan ini:
+ *
+ *        LNN-0003  FeedStock      "Pakan Lainnya"      50 kg
+ *        LNN-0003  WarehouseItem  "Gas Elpiji Kecil"   1 botol
+ *
+ *    Versi sebelumnya mencari padanan dengan `warehouse.find(w => w.sku === …)`.
+ *    Jadi ketika AI mencocokkan pelet kura-kura KUNKKA ke "Pakan Lainnya"
+ *    dengan benar, layar ini menampilkan "Gas Elpiji Kecil" — dan menyimpan
+ *    akan menambah 1,2 kg pelet ke tabung gas sekaligus menimpa harga belinya.
+ *
+ *    Sekarang padanan dicari lewat ID barang, yang unik, bukan lewat SKU.
+ *    Baris yang sebenarnya pakan diberi peringatan dan diarahkan ke menu Pakan,
+ *    karena alur "Barang Datang" hanya bisa menerima ke barang gudang —
+ *    kategori WarehouseItem bahkan tidak punya nilai "pakan".
+ *
  * 2. ANGKA DI STRUK itu harga satuan atau subtotal. Marketplace menampilkan
  *    keduanya dengan cara yang sama. Pada pesanan Zoetics: 3 x Rp 2.500 +
  *    5 x Rp 1.500 = Rp 15.000, sementara total pesanan tertulis Rp 13.000.
@@ -45,7 +62,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScanLine, Loader2, CheckCircle2, AlertTriangle, PackagePlus, Truck } from "lucide-react";
+import { ScanLine, Loader2, CheckCircle2, AlertTriangle, PackagePlus, Truck, Wheat } from "lucide-react";
 import { toast } from "sonner";
 import MultiImagePicker from "@/components/ai/MultiImagePicker";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -128,7 +145,8 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
       semuaPesanan.forEach((p, iPesanan) => {
         const tafsir = p.hitung?.tafsiran_terdekat || "satuan";
         (p.barang || []).forEach((b, iBarang) => {
-          const cocok = b.sku_gudang ? warehouse.find((w) => w.sku === b.sku_gudang) : null;
+          // Lewat ID, BUKAN SKU. Alasannya di catatan nomor 3 di kepala berkas.
+          const cocok = b.id_gudang ? warehouse.find((w) => w.id === b.id_gudang) : null;
           rows.push({
             kunci: `${iPesanan}-${iBarang}`,
             iPesanan,
@@ -140,8 +158,12 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
             hargaTertera: b.harga_tertera || 0,
             jikaSatuan: b.jika_satuan,
             jikaSubtotal: b.jika_subtotal,
-            sku: b.sku_gudang || "",
-            namaGudang: b.nama_gudang || "",
+            itemId: cocok?.id || "",
+            sku: cocok?.sku || "",
+            namaGudang: cocok?.name || "",
+            // Penanda dari fungsi pembaca: baris ini mirip stok pakan. Bukan
+            // tujuan — pakan tidak bisa diterima lewat layar ini.
+            pakanMirip: b.pakan_mirip || null,
             keyakinan: b.keyakinan || "tidak_ada",
             alasan: b.alasan || "",
             // Kategori menentukan biaya vs aset saat barangnya datang nanti.
@@ -177,7 +199,11 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
   const perluIsi = (r) => SATUAN_CURAH.has(String(r.satuan || "").toLowerCase()) && (Number(r.isi) || 1) === 1;
 
   const dipilih = baris.filter((r) => r.ikut);
-  const belumDipetakan = dipilih.filter((r) => !r.sku).length;
+  const belumDipetakan = dipilih.filter((r) => !r.itemId).length;
+  // Baris pakan yang belum dipetakan ke barang gudang: kalau dibiarkan, alur
+  // penerimaan akan membuat BARANG GUDANG baru bernama sama dengan baris pakan
+  // yang sudah ada, dan stok pakannya tetap nol selamanya.
+  const barisPakan = dipilih.filter((r) => r.pakanMirip && !r.itemId);
   const totalNilai = dipilih.reduce((s, r) => s + subtotal(r), 0);
 
   // Ongkir dan biaya layanan bukan nilai stok, tapi tetap uang yang keluar.
@@ -241,7 +267,7 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
             kategori: r.kategori || "lainnya",
             label_per_butir: false,
             item_sku: r.sku || "",
-            warehouse_item_id: (r.sku && warehouse.find((w) => w.sku === r.sku)?.id) || "",
+            warehouse_item_id: r.itemId || "",
           })),
           ...testModeTag,
         });
@@ -307,6 +333,20 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                     dibiarkan, barang gudang baru akan dibuatkan saat barangnya datang. Kalau
                     sebenarnya sudah ada, pilih barangnya di kolom kanan supaya stoknya tidak
                     terpecah dua.
+                  </p>
+                </div>
+              )}
+
+              {barisPakan.length > 0 && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <Wheat className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">
+                    <strong>{barisPakan.length} baris sepertinya pakan, bukan barang gudang.</strong>{" "}
+                    Layar ini hanya bisa menerima barang ke <strong>gudang</strong>; stok pakan
+                    ditambah di menu <strong>Pakan</strong>. Kalau baris pakan dibiarkan tersimpan di
+                    sini, saat “Barang Datang” ditekan yang terbentuk adalah barang gudang baru
+                    bernama sama — jadi ada dua catatan untuk satu karung yang sama. Lepas
+                    centangnya dan catat lewat menu Pakan: {barisPakan.map((r) => r.pakanMirip.nama).join(", ")}.
                   </p>
                 </div>
               )}
@@ -378,13 +418,21 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Masuk ke barang gudang</p>
+                        <p className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                          Masuk ke barang gudang mana
+                        </p>
+                        {/*
+                          Nilainya ID barang, bukan SKU. SKU tidak unik lintas
+                          entitas — lihat catatan nomor 3 di kepala berkas.
+                        */}
                         <Select
-                          value={r.sku || "__baru__"}
+                          value={r.itemId || "__baru__"}
                           onValueChange={(v) => {
-                            const w = v === "__baru__" ? null : warehouse.find((x) => x.sku === v);
+                            const w = v === "__baru__" ? null : warehouse.find((x) => x.id === v);
                             ubah(r.kunci, {
-                              sku: v === "__baru__" ? "" : v,
+                              itemId: w?.id || "",
+                              sku: w?.sku || "",
+                              namaGudang: w?.name || "",
                               kategori: KATEGORI.includes(w?.category) ? w.category : r.kategori,
                               satuan: w?.unit || r.satuan,
                             });
@@ -394,15 +442,23 @@ export default function TerimaDariScreenshot({ warehouse = [], onSelesai }) {
                           <SelectContent className="max-h-64">
                             <SelectItem value="__baru__">➕ Buat barang gudang baru</SelectItem>
                             {warehouse
-                              .filter((w) => w.sku && w.is_active !== false)
+                              .filter((w) => w.id && w.is_active !== false)
                               .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
                               .map((w) => (
-                                <SelectItem key={w.id} value={w.sku}>{w.name}</SelectItem>
+                                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                               ))}
                           </SelectContent>
                         </Select>
-                        {r.alasan && r.sku && (
+                        {r.alasan && r.itemId && (
                           <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{r.alasan}</p>
+                        )}
+                        {r.pakanMirip && !r.itemId && (
+                          <p className="text-[10px] text-amber-700 mt-0.5 leading-snug">
+                            Mirip stok pakan <strong>{r.pakanMirip.nama}</strong> ({r.pakanMirip.satuan}).
+                            Pakan dicatat di menu <strong>Pakan</strong>, bukan di gudang — kalau
+                            dibiarkan di sini, yang terbentuk adalah barang gudang baru bernama sama,
+                            dan stok pakannya tidak bertambah.
+                          </p>
                         )}
                       </div>
 

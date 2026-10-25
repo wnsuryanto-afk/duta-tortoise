@@ -109,6 +109,18 @@ export default function PembelianPage() {
     queryKey: ["pembelian-warehouse"],
     queryFn: () => base44.entities.WarehouseItem.list("-name", 300),
   });
+  /*
+   * Dipakai hanya untuk memastikan SKU barang gudang baru tidak bentrok dengan
+   * SKU stok pakan. Awalan LNN, SPM, dan PKN dipakai kedua entitas, dan selama
+   * nomornya diambil dari daftar masing-masing keduanya sampai di angka yang
+   * sama — LNN-0001 sampai LNN-0003 sudah kembar di data peternakan ini. SKU
+   * kembar membuat pencarian lewat SKU menemukan barang yang salah, tanpa
+   * error apa pun.
+   */
+  const { data: pakanSku = [] } = useQuery({
+    queryKey: ["pembelian-pakan-sku"],
+    queryFn: () => base44.entities.FeedStock.list("-name", 300),
+  });
   // Dipakai hanya untuk memastikan kode batch baru tidak bentrok dengan yang
   // sudah tertempel di rak.
   const { data: semuaBatch = [] } = useQuery({
@@ -271,7 +283,10 @@ export default function PembelianPage() {
        * bertumpuk, bukan saling menimpa.
        */
       const stokBerjalan = new Map();
-      const skuTerpakai = warehouse.map((w) => w.sku).filter(Boolean);
+      const skuTerpakai = [
+        ...warehouse.map((w) => w.sku),
+        ...pakanSku.map((f) => f.sku),
+      ].filter(Boolean);
       // Kode batch harus unik lintas SEMUA batch, bukan cuma dalam pesanan ini
       // — kode itu yang dipindai dari label di rak.
       const kodeBatchTerpakai = semuaBatch.map((b) => b.batch_code).filter(Boolean);

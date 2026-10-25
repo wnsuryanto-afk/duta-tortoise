@@ -231,11 +231,30 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
                * Tombol backfill-nya ada dan berfungsi, tapi selama sisi
                * pembuat ini tidak ikut diperbaiki, hal yang sama lahir lagi
                * tiap kali jenis pakan baru dicatat.
+               *
+               * Dan SKU-nya dibuat dari daftar GABUNGAN pakan + gudang.
+               *
+               * Awalan LNN, SPM, dan PKN dipakai FeedStock maupun
+               * WarehouseItem. Selama nomornya diambil dari daftar pakan saja,
+               * baris pakan baru bisa lahir ber-SKU sama dengan barang gudang
+               * yang sudah ada — dan itu sudah terjadi: LNN-0003 menunjuk
+               * "Pakan Lainnya" di pakan dan "Gas Elpiji Kecil" di gudang.
+               * Akibatnya pencarian lewat SKU menemukan barang yang salah,
+               * tanpa error apa pun.
+               *
+               * Daftar gudang diambil di sini, bukan lewat useQuery di atas,
+               * karena hanya dibutuhkan saat jenis pakan BARU dicatat — bukan
+               * pada setiap pembukaan formulir.
                */
+              const semuaGudang = await base44.entities.WarehouseItem.list("-name", 500);
+              const skuTerpakai = [
+                ...allFeed.map((f) => f.sku),
+                ...semuaGudang.map((w) => w.sku),
+              ].filter(Boolean);
               feedItem = await base44.entities.FeedStock.create({
                 name: namaStok,
                 category: mapping.category,
-                sku: skuPakanBaru(mapping.category, allFeed.map((f) => f.sku)),
+                sku: skuPakanBaru(mapping.category, skuTerpakai),
                 unit: form.satuan,
                 current_stock: 0,
                 minimum_stock: 1,
