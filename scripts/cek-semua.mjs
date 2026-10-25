@@ -87,7 +87,13 @@
  *                   lipat saat terlipat), 3 pada 320px, nol dari 360px ke atas.
  *                   673px — layar dalam HP lipat, di antara sm: dan md: —
  *                   menangkap cacat yang tidak terlihat dari lebar mana pun
- *                   yang lain.
+ *                   yang lain. Sejak 25-10-2026 ia juga menangkap LAPISAN
+ *                   MELAYANG YANG MENIMPA TULISAN: tombol pemilik di daftar
+ *                   penjualan dipasang `absolute top-3 right-3`, persis di
+ *                   tempat kartunya menaruh harga, jadi ikon pensil dan tong
+ *                   sampah tergambar di atas "Rp 600.000". Lapisannya
+ *                   `lg:opacity-0`, jadi di layar tempat orang mengerjakannya
+ *                   ia tak pernah terlihat — di ponsel ia muncul di tiap baris
  *   cek-tautan      angka ringkasan yang tidak membawa ke mana pun, dan yang
  *                   membawa ke tempat yang salah tanpa terlihat rusak →
  *                   disurvei 11-10-2026: 24 angka di sembilan berkas tidak

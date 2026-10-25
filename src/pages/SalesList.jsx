@@ -223,10 +223,7 @@ export default function SalesList() {
     return (
       <div className="space-y-3">
         {list.map(s => (
-          <div key={s.id} className="group relative">
-            <SaleCard sale={s} onDetail={null} onPrint={() => setPrintSale(s)} />
-            {/* Admin actions overlay */}
-            <div className="absolute top-3 right-3 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
+          <SaleCard key={s.id} sale={s} onDetail={null} onPrint={() => setPrintSale(s)} aksi={<>
               {isOwner && (
                 <ExcludeToggle
                   record={s}
@@ -254,7 +251,7 @@ export default function SalesList() {
                 </Button>
               )}
               {perms.canEdit && (
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditData(s); setShowEditForm(true); }}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Ubah penjualan" onClick={() => { setEditData(s); setShowEditForm(true); }}>
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
               )}
@@ -265,12 +262,11 @@ export default function SalesList() {
                 </Button>
               )}
               {ownerCanDelete && (
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(s)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Hapus penjualan" onClick={() => handleDelete(s)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               )}
-            </div>
-          </div>
+            </>} />
         ))}
       </div>
     );

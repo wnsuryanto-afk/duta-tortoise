@@ -127,6 +127,101 @@ function luapan(lebarLayar) {
   return keluar;
 }
 
+/**
+ * Elemen melayang yang MENIMPA tulisan.
+ *
+ * ── Kejadian yang melahirkannya ──
+ *
+ * 25-10-2026 pemilik melingkari sisi kanan daftar penjualan: ikon pensil dan
+ * tong sampah tergambar persis di atas angka "Rp 600.000", sehingga harganya
+ * terbaca seperti dicoret. SalesList menempelkan tombol pemiliknya sebagai
+ * lapisan `absolute top-3 right-3` di atas SaleCard, dan di situlah SaleCard
+ * menaruh harganya.
+ *
+ * Yang membuatnya bertahan lama: lapisannya `lg:opacity-0` — di layar lebar
+ * ia tak terlihat sampai kursor lewat. Jadi di layar tempat orang
+ * MENGERJAKANNYA cacat itu tidak pernah muncul, sementara di ponsel dan
+ * tablet ia muncul di setiap baris.
+ *
+ * ── Kenapa saringannya "latar transparan" ──
+ *
+ * Lapisan melayang di aplikasi ini ada dua macam. Yang SAH menutupi foto dan
+ * membawa latarnya sendiri (`bg-black/50` pada tombol hapus foto, backdrop
+ * lightbox); menimpa memang tugasnya. Yang CACAT tidak punya latar sama
+ * sekali, jadi tulisan di bawahnya tembus dan keduanya terbaca sekaligus.
+ * Jadi yang dilaporkan hanya yang latarnya transparan.
+ *
+ * Diukur di 412px saja — lebar ponsel yang betul-betul dipakai, dan lebar
+ * tempat lapisan semacam ini selalu tampil. Memeriksa kelima lebar
+ * melipatgandakan waktu tanpa menambah cacat yang bisa ditemukan.
+ */
+function tindih() {
+  const bingkai = document.getElementById("bingkai");
+  if (!bingkai) return [];
+
+  const tembus = (warna) => {
+    if (!warna || warna === "transparent") return true;
+    const m = warna.match(/rgba?\(([^)]+)\)/);
+    if (!m) return false;
+    const bagian = m[1].split(",").map((x) => parseFloat(x));
+    return bagian.length < 4 ? false : bagian[3] < 0.1;
+  };
+
+  // Hanya elemen daun yang benar-benar memuat tulisan — kalau induknya ikut
+  // dihitung, satu tindihan dilaporkan sekali per tingkat sampai ke akar.
+  const berteks = [];
+  for (const el of bingkai.querySelectorAll("*")) {
+    const teks = (el.textContent || "").trim();
+    if (!teks) continue;
+    if ([...el.children].some((c) => (c.textContent || "").trim())) continue;
+    const g = getComputedStyle(el);
+    if (g.visibility === "hidden" || g.display === "none" || Number(g.opacity) < 0.1) continue;
+    berteks.push({ el, teks, r: el.getBoundingClientRect() });
+  }
+
+  const keluar = [];
+  const lihat = new Set();
+  for (const el of bingkai.querySelectorAll("*")) {
+    const g = getComputedStyle(el);
+    if (g.position !== "absolute" && g.position !== "fixed") continue;
+    if (Number(g.opacity) < 0.1 || g.visibility === "hidden") continue;
+    if (!tembus(g.backgroundColor)) continue;
+    if (el.closest('[role="dialog"]')) continue;
+    /*
+     * Label yang membungkus <input> adalah BIDANG KETUK, dan menutupi apa yang
+     * ada di bawahnya memang tugasnya — contohnya label transparan di atas foto
+     * profil (EditProfilePage) supaya fotonya bisa diketuk untuk diganti.
+     * Huruf awal nama di dalam avatar tetap terbaca; yang menumpang di situ
+     * cuma daerah sentuhnya.
+     */
+    if (el.tagName === "LABEL" && el.querySelector("input")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 1 || r.height <= 1) continue;
+
+    for (const t of berteks) {
+      if (el.contains(t.el) || t.el.contains(el)) continue;
+      const lebar = Math.min(r.right, t.r.right) - Math.max(r.left, t.r.left);
+      const tinggi = Math.min(r.bottom, t.r.bottom) - Math.max(r.top, t.r.top);
+      if (lebar <= 4 || tinggi <= 4) continue;
+
+      const kelas = (el.className?.toString?.() || "").slice(0, 80);
+      const k = kelas + "|" + t.teks;
+      if (lihat.has(k)) continue;
+      lihat.add(k);
+      keluar.push({
+        kelas,
+        tag: el.tagName.toLowerCase(),
+        tertimpa: t.teks.slice(0, 45),
+        luas: `${Math.round(lebar)}×${Math.round(tinggi)}px`,
+      });
+    }
+  }
+  return keluar;
+}
+
+/** Satu lebar saja — lihat alasannya di atas tindih(). */
+const LEBAR_PERIKSA_TINDIH = new Set([412]);
+
 const server = spawn(
   "npx", ["vite", "--config", path.join(SINI, "lebar/vite.config.js")],
   { cwd: AKAR, env: { ...process.env, PORT_UJI: String(PORT) }, stdio: "ignore" },
@@ -178,6 +273,15 @@ for (const w of LEBAR) {
         `      kelas: ${t.kelas}`,
       );
     }
+    if (LEBAR_PERIKSA_TINDIH.has(w)) {
+      for (const t of (await hal.evaluate(tindih)) || []) {
+        galat.push(
+          `layar ${w}px — ${nama[i]}\n` +
+          `      <${t.tag}> melayang menimpa tulisan "${t.tertimpa}" (${t.luas})\n` +
+          `      kelas: ${t.kelas}`,
+        );
+      }
+    }
     if (LEBAR_PERIKSA_TEKS.has(w)) {
       const lihat = new Set();
       for (const t of (await hal.evaluate(ukur, w)) || []) {
@@ -201,20 +305,26 @@ tutup();
 
 if (galat.length) {
   console.error(
-    `\n${galat.length} elemen keluar layar (${LEBAR.join("/")}px):\n\n` +
+    `\n${galat.length} masalah tata letak (${LEBAR.join("/")}px):\n\n` +
     galat.map((g) => "  " + g).join("\n\n") +
     `\n\nSatu elemen yang lebih lebar daripada layarnya membuat SELURUH halaman\n` +
     `bisa digeser ke samping: setiap gulungan ke bawah ikut menyerempet ke\n` +
     `kanan dan judulnya bergeser keluar bingkai.\n\n` +
     `Perbaikinya biasanya flex-wrap pada barisnya, atau min-w-0 pada anggota\n` +
     `flex yang menolak mengecil — bukan titik henti baru, karena yang\n` +
-    `menentukan muat atau tidak adalah lebar WADAH.\n`,
+    `menentukan muat atau tidak adalah lebar WADAH.\n\n` +
+    `Untuk yang MENIMPA TULISAN: lapisan melayang tanpa latar membuat dua\n` +
+    `tulisan terbaca sekaligus di tempat yang sama. Taruh tombolnya di aliran\n` +
+    `kartu (baris tombol yang sudah ada), atau sisakan ruangnya dengan pr-*\n` +
+    `pada isi yang ditimpanya — bukan menyembunyikannya di layar lebar, karena\n` +
+    `di layar lebar itulah orang mengerjakannya dan di ponsel ia tetap muncul.\n`,
   );
   process.exit(1);
 }
 
 console.log(
-  `Tidak ada yang keluar layar dan tidak ada tulisan terpotong: ${totalDiukur} ` +
+  `Tidak ada yang keluar layar, tidak ada tulisan terpotong, dan tidak ada ` +
+  `lapisan melayang yang menimpa tulisan: ${totalDiukur} ` +
   `pengukuran pada layar ${LEBAR.join("/")}px — termasuk 280px (HP lipat saat ` +
   `terlipat, tulisannya ikut diperiksa) dan 673px (saat dibuka, di antara ` +
   `titik henti sm: dan md:).`,
