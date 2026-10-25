@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Plus, Search, MessageCircle, MapPin, Phone, Shell, RefreshCw } from "lucide-react";
+import { Users, Plus, Search, MessageCircle, MapPin, Phone, Shell, RefreshCw, Trash2 } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { canDelete } from "@/lib/permissions";
 import BuyerForm from "@/components/crm/BuyerForm";
 import AccessDenied from "@/components/common/AccessDenied";
 import SaleWizard from "@/components/sales/SaleWizard";
@@ -31,6 +32,41 @@ export default function PembeliTab() {
   const [syncingId, setSyncingId] = useState(null);
   const cmCanAccess = ["owner", "admin", "manajer"].includes(role);
   const canEdit = ["owner", "admin"].includes(role);
+  /* Menghapus memakai aturan yang sama dengan seluruh aplikasi — pemilik
+     saja — bukan daftar peran baru yang ditulis di layar ini. */
+  const bolehHapus = canDelete(role);
+
+  /*
+    ── Kenapa tombol hapus baru ada sekarang ──────────────────────────────
+
+    Dua puluh lima entitas bisa dihapus dari layarnya masing-masing.
+    BuyerProfile satu-satunya yang tidak — tidak ada `BuyerProfile.delete`
+    di mana pun dalam aplikasi ini. Baru ketahuan 25 Okt 2026, saat
+    pemiliknya diminta menghapus empat profil kembar dan tombolnya memang
+    tidak pernah ada.
+
+    Profil yang MASIH punya penjualan tidak boleh hilang begitu saja:
+    `buyer_profile_id` di Sale akan menunjuk baris yang tidak ada lagi, dan
+    riwayat belanja orang itu lenyap dari tab ini tanpa jejak. Jadi
+    jumlahnya disebut lebih dulu, dan konfirmasinya berbeda.
+  */
+  const [hapusBuyer, setHapusBuyer] = useState(null);
+  const [menghapus, setMenghapus] = useState(false);
+
+  const handleDeleteBuyer = async () => {
+    if (!hapusBuyer) return;
+    setMenghapus(true);
+    try {
+      await base44.entities.BuyerProfile.delete(hapusBuyer.id);
+      toast.success(`Profil ${hapusBuyer.name} dihapus`);
+      setHapusBuyer(null);
+    } catch (e) {
+      toast.error(`Gagal menghapus: ${e?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
+      setMenghapus(false);
+    }
+  };
 
   const handleSyncBuyer = async (buyer) => {
     setSyncingId(buyer.id);
@@ -271,6 +307,17 @@ export default function PembeliTab() {
                         ✏️
                       </Button>
                     )}
+                    {bolehHapus && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-8 px-2 text-destructive"
+                        title={`Hapus profil ${b.name}`}
+                        onClick={() => setHapusBuyer(b)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
 
                   {canEdit && (
@@ -288,6 +335,45 @@ export default function PembeliTab() {
           })}
         </div>
       )}
+
+      {/* ── Konfirmasi hapus ── */}
+      <Dialog open={!!hapusBuyer} onOpenChange={() => !menghapus && setHapusBuyer(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="text-base">Hapus profil pembeli?</DialogTitle></DialogHeader>
+          {hapusBuyer && (() => {
+            const jml = (salesByBuyer[hapusBuyer.id] || []).length;
+            return (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-foreground break-words">{hapusBuyer.name}</p>
+                <p className="text-xs text-muted-foreground">{hapusBuyer.hp_whatsapp || "tanpa nomor HP"}</p>
+                {/* Jumlah penjualannya disebut SEBELUM dihapus, bukan sesudah.
+                    Profil tanpa penjualan aman; yang punya penjualan membuat
+                    riwayat orang itu lenyap dari tab ini. */}
+                {jml > 0 ? (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-2.5">
+                    <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                      Profil ini masih dipakai <b className="tabular-nums">{jml} penjualan</b>. Penjualannya tidak
+                      ikut terhapus, tetapi riwayat belanjanya hilang dari tab ini dan tidak bisa dikembalikan.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border bg-muted/40 p-2.5">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Tidak ada penjualan yang menunjuk profil ini — aman dihapus.
+                    </p>
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" disabled={menghapus} onClick={() => setHapusBuyer(null)}>Batal</Button>
+                  <Button variant="destructive" size="sm" disabled={menghapus} onClick={handleDeleteBuyer}>
+                    {menghapus ? "Menghapus…" : "Hapus"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {/* ── Tambah/Edit Buyer ── */}
       <Dialog open={showForm} onOpenChange={() => setShowForm(false)}>
