@@ -1,12 +1,16 @@
 {
   "name": "WarehouseItem",
-  "type": "object",
   "properties": {
-    "name": {
+    "batch_number": {
       "type": "string"
     },
+    "botol_terbuka": {
+      "default": 0,
+      "description": "Berapa botol/vial multi-dosis yang sudah ditusuk dan sedang dipakai. Yang menua pada obat suntik multi-dosis adalah BOTOLNYA, bukan dosisnya: sekali tutup karetnya ditembus jarum, isinya hanya aman beberapa minggu meski dosis tersisa masih banyak. Stok dihitung dalam dosis (mis. Vitamin B Kompleks 505 ampul dari 5 botol 100 ml), jadi tanpa kolom ini aplikasi mengira masih ada 505 dosis padahal yang menentukan adalah berapa botol sudah dibuka dan kapan.",
+      "type": "number"
+    },
     "category": {
-      "type": "string",
+      "default": "lainnya",
       "enum": [
         "obat",
         "vitamin",
@@ -16,10 +20,125 @@
         "peralatan",
         "lainnya"
       ],
-      "default": "lainnya"
+      "type": "string"
+    },
+    "condition": {
+      "default": "baik",
+      "description": "Kondisi fisik barang. Dipakai lencana di Gudang, penanda alat tidak tersedia di SOP Harian, dan sumber \"Barang rusak\" di Harus Dibeli.",
+      "enum": [
+        "baik",
+        "rusak_ringan",
+        "rusak_berat",
+        "hilang"
+      ],
+      "type": "string"
+    },
+    "condition_note": {
+      "description": "Keterangan kerusakan dari pelapor.",
+      "type": "string"
+    },
+    "condition_photo_url": {
+      "description": "Foto bukti kerusakan.",
+      "type": "string"
+    },
+    "condition_reported_at": {
+      "description": "Tanggal laporan kondisi terakhir.",
+      "format": "date",
+      "type": "string"
+    },
+    "condition_reported_by": {
+      "description": "Nama yang melaporkan kondisi terakhir.",
+      "type": "string"
+    },
+    "current_stock": {
+      "default": 0,
+      "type": "number"
+    },
+    "expired_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "harga_perkiraan": {
+      "default": false,
+      "description": "True bila purchase_price adalah TAKSIRAN harga pasaran, bukan angka dari nota/pesanan yang tercatat. Diisi 25-10-2026 untuk 53 barang yang masuk gudang sebagai inventaris awal tanpa pernah melewati alur pembelian: tidak ada nota, pesanan, maupun batch untuk satu pun dari mereka. Tanpa penanda ini, taksiran dan angka terverifikasi terlihat sama persis, dan bilah kelengkapan di beranda akan berbunyi 100% untuk data yang separuhnya tebakan. Alur Barang Datang mengosongkannya kembali begitu harga sungguhan masuk.",
+      "type": "boolean"
+    },
+    "hari_pakai_setelah_dibuka": {
+      "description": "Berapa hari isi botol masih boleh dipakai setelah tutupnya dibuka/ditusuk pertama kali. Hanya diisi untuk botol multi-dosis (mis. vial injeksi 100 dosis). Kosong berarti aturan ini tidak berlaku dan hanya tanggal cetak yang dipakai. ANGKANYA DARI DOKTER HEWAN, bukan dari aplikasi - jangan diisi dengan tebakan.",
+      "type": "number"
+    },
+    "is_mandatory": {
+      "default": false,
+      "description": "Barang wajib tersedia, ada alert jika stok < minimum",
+      "type": "boolean"
+    },
+    "last_edited_at": {
+      "description": "Waktu terakhir edit",
+      "format": "date-time",
+      "type": "string"
+    },
+    "last_edited_by": {
+      "description": "Email user terakhir edit",
+      "type": "string"
+    },
+    "last_restocked_date": {
+      "description": "Tanggal terakhir kali stok diisi/restock",
+      "format": "date",
+      "type": "string"
+    },
+    "location": {
+      "default": "gudang_utama",
+      "enum": [
+        "gudang_utama",
+        "gazebo",
+        "lemari_obat",
+        "kulkas",
+        "rak_vitamin",
+        "gudang_alat"
+      ],
+      "type": "string"
+    },
+    "minimum_stock": {
+      "default": 1,
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    },
+    "needs_replacement": {
+      "default": false,
+      "description": "Perlu diganti \u2014 diisi otomatis saat kondisinya rusak berat atau hilang. Dibaca Harus Dibeli dan Tahap Yang Kurang untuk mengusulkan pembelian.",
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "photo_url": {
+      "description": "Foto barang",
+      "type": "string"
+    },
+    "purchase_price": {
+      "default": 0,
+      "type": "number"
+    },
+    "restock_reminder_days": {
+      "default": 7,
+      "type": "number"
+    },
+    "sku": {
+      "description": "Kode SKU unik, prefix OBT/VIT/ALT/LNN-XXXX",
+      "type": "string"
+    },
+    "supplier": {
+      "type": "string"
+    },
+    "tanggal_botol_dibuka": {
+      "description": "Tanggal botol multi-dosis yang sedang dipakai ditusuk pertama kali. Dasar peringatan 'botol terbuka sudah lewat masa pakai', terpisah dari expired_date yang berlaku untuk botol yang masih tersegel.",
+      "format": "date",
+      "type": "string"
     },
     "unit": {
-      "type": "string",
+      "default": "pcs",
       "enum": [
         "pcs",
         "botol",
@@ -34,126 +153,7 @@
         "box",
         "strip"
       ],
-      "default": "pcs"
-    },
-    "current_stock": {
-      "type": "number",
-      "default": 0
-    },
-    "minimum_stock": {
-      "type": "number",
-      "default": 1
-    },
-    "purchase_price": {
-      "type": "number",
-      "default": 0
-    },
-    "is_mandatory": {
-      "type": "boolean",
-      "default": false,
-      "description": "Barang wajib tersedia, ada alert jika stok < minimum"
-    },
-    "supplier": {
       "type": "string"
-    },
-    "location": {
-      "type": "string",
-      "enum": [
-        "gudang_utama",
-        "gazebo",
-        "lemari_obat",
-        "kulkas",
-        "rak_vitamin",
-        "gudang_alat"
-      ],
-      "default": "gudang_utama"
-    },
-    "botol_terbuka": {
-      "type": "number",
-      "default": 0,
-      "description": "Berapa botol/vial multi-dosis yang sudah ditusuk dan sedang dipakai. Yang menua pada obat suntik multi-dosis adalah BOTOLNYA, bukan dosisnya: sekali tutup karetnya ditembus jarum, isinya hanya aman beberapa minggu meski dosis tersisa masih banyak. Stok dihitung dalam dosis (mis. Vitamin B Kompleks 505 ampul dari 5 botol 100 ml), jadi tanpa kolom ini aplikasi mengira masih ada 505 dosis padahal yang menentukan adalah berapa botol sudah dibuka dan kapan."
-    },
-    "tanggal_botol_dibuka": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal botol multi-dosis yang sedang dipakai ditusuk pertama kali. Dasar peringatan 'botol terbuka sudah lewat masa pakai', terpisah dari expired_date yang berlaku untuk botol yang masih tersegel."
-    },
-    "hari_pakai_setelah_dibuka": {
-      "type": "number",
-      "description": "Berapa hari botol multi-dosis ini masih aman dipakai setelah ditusuk. Kosongkan bila barang ini bukan multi-dosis. Umumnya 28 hari untuk vial injeksi dengan pengawet."
-    },
-    "expired_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "hari_pakai_setelah_dibuka": {
-      "type": "number",
-      "description": "Berapa hari isi botol masih boleh dipakai setelah tutupnya dibuka/ditusuk pertama kali. Hanya diisi untuk botol multi-dosis (mis. vial injeksi 100 dosis). Kosong berarti aturan ini tidak berlaku dan hanya tanggal cetak yang dipakai. ANGKANYA DARI DOKTER HEWAN, bukan dari aplikasi - jangan diisi dengan tebakan."
-    },
-    "batch_number": {
-      "type": "string"
-    },
-    "restock_reminder_days": {
-      "type": "number",
-      "default": 7
-    },
-    "condition": {
-      "type": "string",
-      "enum": [
-        "baik",
-        "rusak_ringan",
-        "rusak_berat",
-        "hilang"
-      ],
-      "default": "baik",
-      "description": "Kondisi fisik barang. Dipakai lencana di Gudang, penanda alat tidak tersedia di SOP Harian, dan sumber \"Barang rusak\" di Harus Dibeli."
-    },
-    "condition_note": {
-      "type": "string",
-      "description": "Keterangan kerusakan dari pelapor."
-    },
-    "condition_photo_url": {
-      "type": "string",
-      "description": "Foto bukti kerusakan."
-    },
-    "condition_reported_by": {
-      "type": "string",
-      "description": "Nama yang melaporkan kondisi terakhir."
-    },
-    "condition_reported_at": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal laporan kondisi terakhir."
-    },
-    "needs_replacement": {
-      "type": "boolean",
-      "default": false,
-      "description": "Perlu diganti \u2014 diisi otomatis saat kondisinya rusak berat atau hilang. Dibaca Harus Dibeli dan Tahap Yang Kurang untuk mengusulkan pembelian."
-    },
-    "notes": {
-      "type": "string"
-    },
-    "photo_url": {
-      "type": "string",
-      "description": "Foto barang"
-    },
-    "sku": {
-      "type": "string",
-      "description": "Kode SKU unik, prefix OBT/VIT/ALT/LNN-XXXX"
-    },
-    "last_edited_by": {
-      "type": "string",
-      "description": "Email user terakhir edit"
-    },
-    "last_edited_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Waktu terakhir edit"
-    },
-    "last_restocked_date": {
-      "type": "string",
-      "format": "date",
-      "description": "Tanggal terakhir kali stok diisi/restock"
     }
   },
   "required": [
@@ -163,5 +163,6 @@
     "minimum_stock",
     "category",
     "purchase_price"
-  ]
+  ],
+  "type": "object"
 }
