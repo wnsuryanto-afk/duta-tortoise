@@ -1,5 +1,6 @@
 import { hanyaDiPeternakan } from "@/lib/populasiKura";
 import { kunciHarga } from "@/lib/hargaEstimasi";
+import { hargaPerkiraan } from "@/lib/hargaBarang";
 
 /**
  * modalKerja.js — berapa yang SUDAH dikeluarkan untuk aset yang dipegang.
@@ -64,12 +65,26 @@ export function modalKerja({ kura = [], warehouse = [], modalKandang = null } = 
     kuraBerharga += 1;
   }
 
+  /*
+   * Nilainya memakai SEMUA harga yang ada, termasuk taksiran — kalau tidak,
+   * modal alat kembali terbaca nyaris nol dan tidak ada gunanya mengisinya.
+   *
+   * Tetapi KELENGKAPANNYA hanya menghitung yang terverifikasi. 25-10-2026,
+   * 53 dari 87 barang berstok diisi harga pasaran atas permintaan pemilik;
+   * tidak satu pun punya nota, pesanan, atau batch. Kalau taksiran ikut
+   * dihitung lengkap, bilah di beranda melompat ke 100% dan berhenti
+   * mengatakan satu-satunya hal yang perlu dikatakannya: bahwa angka ini
+   * belum selesai. Bilah penuh di atas data tebakan lebih buruk daripada
+   * bilah yang jujur setengah.
+   */
   const stok = barangBerstok(warehouse);
-  let nilaiBarang = 0, barangBerharga = 0;
+  let nilaiBarang = 0, barangPasti = 0, barangPerkiraan = 0;
   for (const b of stok) {
     const h = angka(b.purchase_price);
     nilaiBarang += angka(b.current_stock) * h;
-    if (h > 0) barangBerharga += 1;
+    if (h <= 0) continue;
+    if (hargaPerkiraan(b)) barangPerkiraan += 1;
+    else barangPasti += 1;
   }
 
   const adaKandang = modalKandang !== null && modalKandang !== undefined && modalKandang !== "";
@@ -77,7 +92,7 @@ export function modalKerja({ kura = [], warehouse = [], modalKandang = null } = 
 
   const bagian = [
     { kunci: "kura",    label: "Kura",            nilai: nilaiKura,    ada: kuraBerharga,   dari: hidup.length },
-    { kunci: "barang",  label: "Alat & vitamin",  nilai: nilaiBarang,  ada: barangBerharga, dari: stok.length },
+    { kunci: "barang",  label: "Alat & vitamin",  nilai: nilaiBarang,  ada: barangPasti,    dari: stok.length },
     { kunci: "kandang", label: "Kandang",         nilai: nilaiKandang, ada: adaKandang ? 1 : 0, dari: 1 },
   ];
 
@@ -93,6 +108,10 @@ export function modalKerja({ kura = [], warehouse = [], modalKandang = null } = 
     lengkapAda: adaSemua,
     lengkapDari: dariSemua,
     persenLengkap: dariSemua > 0 ? Math.round((adaSemua / dariSemua) * 100) : 0,
+    /* Berapa baris barang yang nilainya ikut dihitung tetapi angkanya taksiran.
+       Layar menyebutkannya, supaya nilai modal yang naik tidak disalahartikan
+       sebagai modal yang baru terdata. */
+    barangPerkiraan,
     kandangBelumDiisi: !adaKandang,
   };
 }

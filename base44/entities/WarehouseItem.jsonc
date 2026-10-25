@@ -44,6 +44,11 @@
       "type": "number",
       "default": 1
     },
+    "harga_perkiraan": {
+      "type": "boolean",
+      "default": false,
+      "description": "True bila purchase_price adalah TAKSIRAN harga pasaran, bukan angka dari nota/pesanan yang tercatat. Diisi 25-10-2026 untuk 53 barang yang masuk gudang sebagai inventaris awal tanpa pernah melewati alur pembelian: tidak ada nota, pesanan, maupun batch untuk satu pun dari mereka. Tanpa penanda ini, taksiran dan angka terverifikasi terlihat sama persis, dan bilah kelengkapan di beranda akan berbunyi 100% untuk data yang separuhnya tebakan. Alur Barang Datang mengosongkannya kembali begitu harga sungguhan masuk."
+    },
     "purchase_price": {
       "type": "number",
       "default": 0
