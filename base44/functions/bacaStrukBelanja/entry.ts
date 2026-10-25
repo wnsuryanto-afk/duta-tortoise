@@ -42,6 +42,35 @@ import { dilacak } from "../../shared/stok.ts";
  * tanpa memilih tafsiran sendiri, karena salah tafsir di sini berarti angka
  * rupiah yang salah masuk ke catatan keuangan.
  *
+ * ── Kenapa stok pakan TIDAK boleh jadi tujuan pencocokan ──
+ *
+ * Versi pertama fungsi ini menyatukan WarehouseItem dan FeedStock menjadi satu
+ * "KATALOG GUDANG" dan memulangkan SKU-nya saja. Dua hal membuat itu salah:
+ *
+ *   1. SKU TIDAK UNIK LINTAS ENTITAS. Awalan LNN, SPM, dan PKN dipakai oleh
+ *      kedua entitas, dan nomornya dibuat dari daftar masing-masing. Pada data
+ *      peternakan ini LNN-0001, LNN-0002, dan LNN-0003 ada di DUA tempat:
+ *
+ *          LNN-0003  FeedStock      "Pakan Lainnya"      50 kg
+ *          LNN-0003  WarehouseItem  "Gas Elpiji Kecil"   1 botol
+ *
+ *      Jadi ketika AI dengan benar mencocokkan pelet kura-kura KUNKKA ke
+ *      "Pakan Lainnya" dan fungsi ini memulangkan "LNN-0003", layar — yang
+ *      hanya punya daftar barang gudang — mencarinya di sana dan menemukan
+ *      Gas Elpiji Kecil. 1,2 kg pelet akan masuk ke tabung gas, dan harga beli
+ *      gas tertimpa harga pelet. Tidak ada error yang muncul.
+ *
+ *   2. ALUR PEMBELIAN TIDAK BISA MENERIMA KE FeedStock. "Barang Datang" di
+ *      PembelianPage hanya menulis ke WarehouseItem, dan kategori WarehouseItem
+ *      bahkan tidak punya nilai "pakan" (lihat entities/WarehouseItem.jsonc).
+ *      Menawarkan baris pakan sebagai tujuan berarti menjanjikan sesuatu yang
+ *      tidak bisa ditepati.
+ *
+ * Karena itu: yang dicocokkan HANYA barang gudang, dan id barangnya ikut
+ * dipulangkan supaya layar tidak perlu mencari lewat SKU yang bisa kembar.
+ * Stok pakan tetap dibaca, tapi hanya untuk MEMPERINGATKAN — "barang ini mirip
+ * stok pakan X, pakan dicatat di menu Pakan" — bukan sebagai tujuan.
+ *
  * Read-only. Tidak menulis apa pun.
  */
 
@@ -77,9 +106,18 @@ const SKEMA = {
                 },
                 sku_gudang: {
                   type: "string",
-                  description: "SKU barang gudang yang cocok. WAJIB null bila tidak yakin — jangan menebak.",
+                  description:
+                    "SKU dari DAFTAR A (barang gudang) yang cocok. WAJIB null bila tidak yakin — jangan menebak. " +
+                    "Jangan pernah mengisi ini dengan SKU dari DAFTAR B.",
                 },
                 nama_gudang: { type: "string", description: "Nama barang gudang yang dicocokkan" },
+                sku_pakan: {
+                  type: "string",
+                  description:
+                    "SKU dari DAFTAR B (stok pakan) bila barang ini sebenarnya pakan/hijauan. " +
+                    "Ini BUKAN tujuan penyimpanan — hanya penanda supaya orangnya diarahkan ke menu Pakan. " +
+                    "Isi null bila bukan pakan.",
+                },
                 keyakinan: { type: "string", enum: ["tinggi", "sedang", "rendah", "tidak_ada"] },
                 alasan: { type: "string", description: "Satu kalimat singkat kenapa dicocokkan begitu" },
               },
@@ -105,25 +143,26 @@ Deno.serve(async (req) => {
 
     const svc = base44.asServiceRole;
 
-    // Katalog gudang dikirim ke AI supaya pencocokan dilakukan olehnya, bukan
-    // ditebak oleh pemanggil. Hanya barang yang dilacak — barang nonaktif tidak
-    // boleh jadi tujuan penambahan stok.
+    // Katalog dikirim ke AI supaya pencocokan dilakukan olehnya, bukan ditebak
+    // oleh pemanggil. Hanya barang yang dilacak — barang nonaktif tidak boleh
+    // jadi tujuan penambahan stok.
+    //
+    // Dua daftar, DIPISAH, dengan alasan di kepala berkas: hanya daftar gudang
+    // yang boleh jadi tujuan; daftar pakan hanya untuk memperingatkan.
     const [gudang, pakan] = await Promise.all([
       svc.entities.WarehouseItem.list("-name", 500),
       svc.entities.FeedStock.list("-name", 200),
     ]);
-    const katalog = [
-      ...(gudang || []).filter(dilacak).map((w: any) => ({
-        sku: w.sku || "", nama: w.name, satuan: w.unit || "", jenis: "gudang",
-      })),
-      ...(pakan || []).filter(dilacak).map((f: any) => ({
-        sku: f.sku || "", nama: f.name, satuan: f.unit || "", jenis: "pakan",
-      })),
-    ].filter((k) => k.sku);
+    const katalog = (gudang || []).filter(dilacak)
+      .map((w: any) => ({ id: w.id, sku: w.sku || "", nama: w.name, satuan: w.unit || "" }))
+      .filter((k: any) => k.sku);
+    const katalogPakan = (pakan || []).filter(dilacak)
+      .map((f: any) => ({ id: f.id, sku: f.sku || "", nama: f.name, satuan: f.unit || "" }))
+      .filter((k: any) => k.sku);
 
-    const daftarKatalog = katalog
-      .map((k) => `${k.sku} | ${k.nama} | satuan: ${k.satuan || "-"}`)
-      .join("\n");
+    const baris = (k: any) => `${k.sku} | ${k.nama} | satuan: ${k.satuan || "-"}`;
+    const daftarKatalog = katalog.map(baris).join("\n");
+    const daftarPakan = katalogPakan.map(baris).join("\n");
 
     const prompt = [
       "Anda membaca screenshot rincian pesanan dari marketplace Indonesia (Shopee, Tokopedia, Lazada) atau nota apotek.",
@@ -141,7 +180,7 @@ Deno.serve(async (req) => {
       "  dari perhitungan yang cocok dengan total pesanan. Bila ragu, isi 'tidak_yakin'.",
       "  JANGAN mengarang angka yang tidak terbaca — isi null.",
       "",
-      "TUGAS 2 — cocokkan tiap barang ke katalog gudang di bawah:",
+      "TUGAS 2 — cocokkan tiap barang ke DAFTAR A (barang gudang) di bawah:",
       "  Cocokkan berdasarkan ZAT atau FUNGSINYA, bukan kemiripan huruf. Contoh yang benar:",
       "    'Saline Wound Irrigation OneMed 100 ml'  →  NaCl 0.9% 100ml   (saline = NaCl 0,9%)",
       "    'WONDER OXYTOCIN 10ML'                   →  Oxytocin 10 IU/ml",
@@ -156,8 +195,19 @@ Deno.serve(async (req) => {
       "  Menebak lebih buruk daripada mengaku tidak tahu: tebakan yang salah membuat stok",
       "  bertambah di barang yang keliru, dan itu baru ketahuan saat barangnya dicari di rak.",
       "",
-      "KATALOG GUDANG (SKU | nama | satuan):",
-      daftarKatalog || "(katalog kosong)",
+      "TUGAS 3 — tandai barang yang sebenarnya PAKAN:",
+      "  DAFTAR B di bawah adalah stok pakan/hijauan. Pakan TIDAK disimpan di gudang dan",
+      "  TIDAK bisa diterima lewat layar pembelian ini. Jadi bila suatu baris struk",
+      "  sebenarnya pakan — pelet reptil, rumput, sayur, buah, hay — isi sku_pakan dengan",
+      "  SKU dari DAFTAR B, dan tetap biarkan sku_gudang null.",
+      "  JANGAN memasukkan SKU DAFTAR B ke sku_gudang. Keduanya memakai awalan yang sama",
+      "  (LNN, SPM, PKN) dan nomor yang sama bisa menunjuk barang yang sama sekali berbeda.",
+      "",
+      "DAFTAR A — BARANG GUDANG, satu-satunya tujuan yang sah (SKU | nama | satuan):",
+      daftarKatalog || "(kosong)",
+      "",
+      "DAFTAR B — STOK PAKAN, hanya untuk penanda, BUKAN tujuan (SKU | nama | satuan):",
+      daftarPakan || "(kosong)",
     ].join("\n");
 
     const hasil = await svc.integrations.Core.InvokeLLM({
@@ -168,6 +218,8 @@ Deno.serve(async (req) => {
 
     const perSku: Record<string, any> = {};
     for (const k of katalog) perSku[k.sku] = k;
+    const pakanPerSku: Record<string, any> = {};
+    for (const k of katalogPakan) pakanPerSku[k.sku] = k;
 
     // Lengkapi tiap baris dengan hitungan angkanya, supaya layar tidak perlu
     // menghitung ulang dan tidak ada dua tempat yang bisa berbeda hasil.
@@ -177,6 +229,13 @@ Deno.serve(async (req) => {
         const harga = Number(b.harga_tertera) || 0;
         const kaliJumlah = jumlah * harga;
         const cocokKatalog = b.sku_gudang ? perSku[b.sku_gudang] || null : null;
+        // Penanda pakan sengaja dicari di DUA tempat: di sku_pakan sebagaimana
+        // diminta, dan di sku_gudang — karena model yang keliru menaruh SKU
+        // pakan di kolom gudang harus tetap ketahuan, bukan lolos sebagai
+        // "tidak ada padanan".
+        const cocokPakan =
+          (b.sku_pakan ? pakanPerSku[b.sku_pakan] || null : null) ||
+          (b.sku_gudang && !cocokKatalog ? pakanPerSku[b.sku_gudang] || null : null);
         return {
           ...b,
           jumlah,
@@ -185,11 +244,18 @@ Deno.serve(async (req) => {
           // memilih, bukan ditebak di sini.
           jika_satuan: { harga_satuan: harga, subtotal: kaliJumlah },
           jika_subtotal: { harga_satuan: jumlah > 0 ? Math.round(harga / jumlah) : 0, subtotal: harga },
-          // sku_gudang hanya dipercaya bila SKU-nya benar-benar ada di katalog.
+          // sku_gudang hanya dipercaya bila SKU-nya benar-benar ada di katalog
+          // GUDANG. id_gudang-lah yang dipakai layar untuk menemukan barangnya;
+          // SKU tidak unik lintas entitas, id unik.
           sku_gudang: cocokKatalog ? b.sku_gudang : null,
+          id_gudang: cocokKatalog ? cocokKatalog.id : null,
           nama_gudang: cocokKatalog ? cocokKatalog.nama : null,
           satuan_gudang: cocokKatalog ? cocokKatalog.satuan : null,
           keyakinan: cocokKatalog ? b.keyakinan || "sedang" : "tidak_ada",
+          // Penanda, bukan tujuan: layar memakai ini untuk mengarahkan orangnya
+          // ke menu Pakan alih-alih membuat barang gudang kembar.
+          pakan_mirip: cocokPakan ? { sku: cocokPakan.sku, nama: cocokPakan.nama, satuan: cocokPakan.satuan } : null,
+          sku_pakan: cocokPakan ? cocokPakan.sku : null,
         };
       });
 
@@ -228,6 +294,7 @@ Deno.serve(async (req) => {
       pesanan,
       jumlah_gambar: fileUrls.length,
       katalog_diperiksa: katalog.length,
+      katalog_pakan_diperiksa: katalogPakan.length,
     });
   } catch (e) {
     return Response.json({ error: (e as Error)?.message || "Gagal membaca struk." }, { status: 500 });
