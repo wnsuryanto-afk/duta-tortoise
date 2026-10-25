@@ -38,6 +38,13 @@
  *    tanpa disadari. Awalan yang sudah terbagi tidak bisa diganti (label QR-nya
  *    sudah tercetak dan tertempel di rak), tapi yang baru masih bisa dicegah.
  *
+ * 4. Tidak ada satu peta ber-kunci SKU yang diisi dari DUA daftar. Yang ditulis
+ *    terakhir menimpa yang pertama, dan tidak ada yang tahu mana yang menang.
+ *    Ditemukan 25-10-2026 di kunciBahanSOP: satu peta diisi gudang lalu pakan,
+ *    jadi "Gas Elpiji Kecil" (stok 1) selalu terbaca sebagai "Pakan Lainnya"
+ *    (50 kg). Begitu tabung gasnya habis, tugas SOP yang membutuhkannya tidak
+ *    dikunci sama sekali.
+ *
  * Jalankan:  node scripts/cek-sku.mjs
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -116,6 +123,39 @@ for (const rel of berkas) {
   });
 }
 
+/* ── 4. Satu peta SKU tidak boleh diisi dari dua daftar ─────────────── */
+
+/*
+ * Dua bentuk pengisian yang dipakai di aplikasi ini: Map.set(String(x.sku), x)
+ * dan objek biasa peta[x.sku] = x. Yang dicari adalah SATU nama peta yang
+ * menerima dari DUA variabel sumber berbeda — itu tandanya dua daftar entitas
+ * dituang ke satu ruang nama kunci.
+ */
+const POLA_SET = /(\w+)\.set\(\s*String\(\s*(\w+)\.sku\s*\)/g;
+const POLA_INDEKS = /(\w+)\s*\[\s*(\w+)\.sku\s*\]\s*=/g;
+
+for (const rel of berkas) {
+  const kode = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+  const sumberPerPeta = new Map();
+  for (const pola of [POLA_SET, POLA_INDEKS]) {
+    pola.lastIndex = 0;
+    for (const m of kode.matchAll(pola)) {
+      if (!sumberPerPeta.has(m[1])) sumberPerPeta.set(m[1], new Set());
+      sumberPerPeta.get(m[1]).add(m[2]);
+    }
+  }
+  for (const [peta, sumber] of sumberPerPeta) {
+    if (sumber.size < 2) continue;
+    temuan.push(
+      `${rel}  peta "${peta}" ber-kunci SKU diisi dari ${sumber.size} daftar berbeda ` +
+      `(${[...sumber].join(", ")}). SKU tidak unik lintas entitas, jadi yang ditulis terakhir ` +
+      `menimpa yang pertama tanpa error — LNN-0003 menunjuk "Pakan Lainnya" di pakan dan ` +
+      `"Gas Elpiji Kecil" di gudang. Pakai satu peta per entitas, dan putuskan urutan ` +
+      `pencariannya secara tertulis.`,
+    );
+  }
+}
+
 /* ── 3. Awalan yang berbagi tidak boleh bertambah ───────────────────── */
 
 /*
@@ -180,6 +220,7 @@ if (temuan.length) {
 }
 console.log(
   `SKU aman: ${situsPembuat} tempat pembuat SKU melihat kedua daftar, tidak ada kolom id ` +
-  `yang diisi lewat SKU, dan awalan yang terbagi tetap ${[...BERBAGI_DIKETAHUI].join(", ")}.`,
+  `yang diisi lewat SKU, tidak ada peta SKU yang diisi dari dua daftar, dan awalan yang ` +
+  `terbagi tetap ${[...BERBAGI_DIKETAHUI].join(", ")}.`,
 );
 process.exit(0);
