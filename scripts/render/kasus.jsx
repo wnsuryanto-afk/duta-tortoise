@@ -25,6 +25,7 @@ import PerpustakaanSOPTab from "@/components/sop/PerpustakaanSOPTab";
 import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
 import LaporanPenjualanTab from "@/components/sales/LaporanPenjualanTab";
 import PembeliTab from "@/components/sales/PembeliTab";
+import SaleCard from "@/components/sales/SaleCard";
 import CatatanUntukSayaTab from "@/components/sop/CatatanUntukSayaTab";
 import BahanTerpakaiEditor from "@/components/sop/BahanTerpakaiEditor";
 import PembaruanTersedia from "@/components/common/PembaruanTersedia";
@@ -980,4 +981,45 @@ export default [
   ["LayarTimPage tanpa data", <LayarTimPage />],
   ["PembelianPage tanpa data", <PembelianPage />],
   ["UnifiedStokPage tanpa data", <UnifiedStokPage />],
+  /*
+   * Kartu penjualan BESERTA tombol pemiliknya.
+   *
+   * Dulu tombol-tombol itu ditempelkan SalesList sebagai lapisan
+   * `absolute top-3 right-3` di atas kartu — persis di tempat kartunya
+   * menaruh harga, jadi ikon pensil dan tong sampah menimpa "Rp 600.000".
+   * Di layar lebar lapisannya disembunyikan sampai kursor lewat; di ponsel
+   * ia selalu tampil. Jadi cacatnya hanya terlihat di perangkat yang justru
+   * tidak dipakai saat mengerjakannya.
+   *
+   * Datanya diambil dari baris nyata 9 Okt 2026, termasuk baris beralamat
+   * panjang — baris itulah satu-satunya yang dulu LOLOS, karena harganya
+   * terdorong turun oleh flex-wrap dan keluar dari jalur lapisan.
+   */
+  ["SaleCard dengan tombol pemilik", (() => {
+    const tombol = (
+      <>
+        <span className="text-[10px] px-2 py-1 rounded-full font-medium border bg-green-50 text-green-700 border-green-300 whitespace-nowrap">📊 Masuk Laporan</span>
+        <button type="button" className="h-7 w-7 inline-flex items-center justify-center rounded-md" title="Bukti Bayar">💳</button>
+        <button type="button" className="h-7 w-7 inline-flex items-center justify-center rounded-md" title="Ubah penjualan">✏️</button>
+        <button type="button" className="h-7 w-7 inline-flex items-center justify-center rounded-md text-amber-600" title="Batalkan Penjualan">↩</button>
+        <button type="button" className="h-7 w-7 inline-flex items-center justify-center rounded-md text-destructive" title="Hapus penjualan">🗑</button>
+      </>
+    );
+    const baris = [
+      { id: "s1", tortoise_name: "BB-2026036", payment_status: "lunas", platform: "Langsung",
+        sale_date: "2026-10-09", buyer_name: "Mr lee new hope", price: 600000, hpp: 81695 },
+      { id: "s2", tortoise_name: "BB-2026030", payment_status: "lunas", platform: "Langsung",
+        sale_date: "2026-10-06", buyer_name: "Rizki Sekop", price: 600000, hpp: 78033,
+        buyer_address: "Cluster Vivere Blok A5 No. 11 Laverde Serpong Tangerang Selatan 15323" },
+      { id: "s3", tortoise_name: "BB-2026045", payment_status: "dp", platform: "Shopee",
+        sale_date: "2026-10-09", buyer_name: "Bapak Aryo", price: 600000, hpp: 82309, total_paid: 200000 },
+    ];
+    return (
+      <div className="space-y-3">
+        {baris.map((b) => (
+          <SaleCard key={b.id} sale={b} onDetail={null} onPrint={() => {}} aksi={tombol} />
+        ))}
+      </div>
+    );
+  })()],
 ];

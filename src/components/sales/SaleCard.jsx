@@ -21,7 +21,26 @@ const platformColors = {
 };
 
 
-export default function SaleCard({ sale, onDetail, onPrint }) {
+/**
+ * `aksi` — tombol milik pemilik/admin (bukti bayar, ubah, batalkan, hapus,
+ * masuk-laporan).
+ *
+ * Dulu tombol-tombol itu ditempelkan pemanggilnya sebagai lapisan
+ * `absolute top-3 right-3` DI ATAS kartu ini. Tepat di situ kartu ini menaruh
+ * harganya, jadi ikon pensil dan tong sampah menimpa angka "Rp 600.000" —
+ * terbaca seperti harga yang dicoret. Di layar lebar lapisannya disembunyikan
+ * sampai kursor lewat, jadi cacatnya tidak pernah terlihat saat dikerjakan;
+ * di bawah lg: lapisannya SELALU tampil, jadi di ponsel dan tablet setiap
+ * baris penjualan menampilkan harga yang tertimpa ikon.
+ *
+ * Satu-satunya baris yang lolos adalah yang nama pembelinya panjang: harganya
+ * terdorong turun oleh flex-wrap, keluar dari jalur lapisan itu. Tata letak
+ * yang benar hanya karena datanya kebetulan panjang.
+ *
+ * Sekarang tombolnya ikut ALIRAN kartu, di baris tombol paling bawah, dan
+ * tidak ada yang bisa ditimpa.
+ */
+export default function SaleCard({ sale, onDetail, onPrint, aksi }) {
   const laba = (sale.price || 0) - (sale.hpp || 0);
   const margin = sale.price > 0 && sale.hpp > 0 ? Math.round((laba / sale.price) * 100) : null;
 
@@ -109,7 +128,7 @@ export default function SaleCard({ sale, onDetail, onPrint }) {
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 flex-wrap items-center">
             {onDetail && (
               <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => onDetail(sale)}>
                 <Eye className="w-3.5 h-3.5" /> Detail
@@ -123,6 +142,11 @@ export default function SaleCard({ sale, onDetail, onPrint }) {
                 <Printer className="w-3.5 h-3.5" /> Cetak
               </Button>
             )}
+            {/*
+              ml-auto mendorongnya ke kanan selama masih muat; begitu tidak,
+              flex-wrap menurunkannya ke baris sendiri — bukan menindih apa pun.
+            */}
+            {aksi && <div className="flex items-center gap-1 flex-wrap ml-auto">{aksi}</div>}
           </div>
         </div>
       </div>
