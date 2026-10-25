@@ -344,6 +344,11 @@ export default function PembelianPage() {
         await base44.entities.WarehouseItem.update(wi.id, {
           current_stock: stokSesudah,
           purchase_price: hargaSatuanFinal,
+          /* Harga dari nota mengalahkan taksiran: begitu barangnya benar-benar
+             datang dengan angka yang dibayar, penanda taksiran dicabut. Kalau
+             tidak, 53 barang yang diisi 25-10-2026 akan terus dilaporkan
+             "masih taksiran" selamanya walau notanya sudah masuk. */
+          harga_perkiraan: false,
           last_restocked_date: today(),
         });
 

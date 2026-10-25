@@ -1238,13 +1238,33 @@ export default function OwnerDashboard({ user }) {
                 ? <>, <span className="text-amber-700 dark:text-amber-400 font-semibold">kandang belum diisi</span></>
                 : <>, kandang {rupiah(modal.bagian[2].nilai)}</>}
             </p>
+            {/*
+              Taksiran disebut terpisah dari kelengkapan, bukan dilebur ke
+              dalamnya. Nilainya ikut dihitung — kalau tidak, modal alat
+              kembali terbaca nyaris nol — tetapi orang yang membaca angka ini
+              berhak tahu bagian mana yang belum berdasar nota.
+            */}
+            {modal.barangPerkiraan > 0 && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+                {modal.barangPerkiraan} barang harganya masih <strong>taksiran pasaran</strong>, belum dari nota —
+                nilainya ikut dihitung di atas.
+              </p>
+            )}
             {/* Jalurnya disebut, bukan dibiarkan dicari sendiri: barang tanpa
                 harga adalah sebab terbesar modal alat tampak kecil. */}
-            {hargaBarangLengkap.kosong > 0 && (
+            {hargaBarangLengkap.kosong > 0 ? (
               <Link to="/isi-harga-barang" className="text-[11px] text-primary hover:underline mt-1 inline-block">
                 {hargaBarangLengkap.kosong} barang berstok belum ada harganya — isi sekaligus
               </Link>
-            )}
+            ) : hargaBarangLengkap.perkiraan > 0 ? (
+              /* Tautannya tidak boleh hilang hanya karena kolomnya sudah
+                 terisi: yang terisi taksiran justru yang paling perlu
+                 disentuh lagi, dan tanpa pintu ini "nanti dikoreksi" tidak
+                 punya tempat untuk dikerjakan. */
+              <Link to="/isi-harga-barang" className="text-[11px] text-primary hover:underline mt-1 inline-block">
+                {hargaBarangLengkap.perkiraan} harga masih taksiran — cocokkan dengan nota
+              </Link>
+            ) : null}
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
