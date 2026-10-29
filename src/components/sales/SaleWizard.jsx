@@ -717,9 +717,32 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     biayaObat: biayaBarangKura(pergerakanStok, selectedTortoise).total,
   });
 
+  /**
+   * ── Kenapa kemajuannya dilacak, bukan sekadar berhasil/gagal ──────────────
+   *
+   * Satu penjualan menulis berurutan ke EMPAT tempat: Sale, status kura,
+   * FinanceTransaction, lalu Sale lagi (laba, margin, tautan transaksi).
+   * Kegagalan di tengah meninggalkan keadaan yang berbeda-beda, dan pesan
+   * "Gagal menyimpan" yang polos sama untuk semuanya — padahal artinya jauh
+   * berbeda:
+   *
+   *   gagal di Sale.create        belum ada apa pun; catat ulang, aman.
+   *   gagal di Tortoise.update    uangnya SUDAH tercatat, kuranya masih
+   *                               aktif: masih menempati kandang, masih
+   *                               diberi makan, masih dihitung sebagai aset.
+   *   gagal sesudahnya            penjualan ada tapi tanpa laba/margin dan
+   *                               tanpa tautan ke catatan keuangan.
+   *
+   * Hanya yang pertama boleh dicatat ulang. Dua yang lain, bila dicatat
+   * ulang, menghasilkan DUA penjualan untuk satu kura — dan pemasukan ganda
+   * di laba rugi. Harga satu kura di sini Rp 600.000 ke atas.
+   */
   const handleSave = async () => {
     setSaving(true);
     setSaveError("");
+    let idPenjualan = null;
+    let kuraDitandai = false;
+    let keuanganTercatat = false;
     try {
       const rincian = rincianHpp();
       const hpp = rincian.total;
@@ -736,6 +759,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         ...testModeTag,
       };
       const newSale = await base44.entities.Sale.create(saleData);
+      idPenjualan = newSale?.id || null;
 
       // A) Update Tortoise status (skip if already terjual — fallback case)
       const prevTortoise = selectedTortoise;
@@ -748,6 +772,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
           ...kosongkanKandang(),
           last_status_change: today,
         });
+        kuraDitandai = true;
         // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.
         try { await recalcEnclosureCounts(); } catch { /* penjualan tetap tersimpan */ }
       }
@@ -767,6 +792,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
         description: `Penjualan ${selectedTortoise?.code || selectedTortoise?.name} ke ${form.buyer_name} — Laba Rp ${angkaRibuan(laba)}`,
         ...(testModeTag || {}),
       });
+      keuanganTercatat = true;
       // Modal: harga beli untuk kura yang dibeli, biaya induk selama pengeraman
       // untuk kura hasil tetasan sendiri. Diambil dari rincian yang sama dengan
       // yang membentuk hpp di atas — kalau dihitung ulang di sini, ketiganya
@@ -898,7 +924,39 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
 
       onClose(true); // true = success, trigger refresh
     } catch (err) {
-      setSaveError("Gagal menyimpan: " + (err?.message || "Terjadi kesalahan"));
+      const pesan = err?.message || "Terjadi kesalahan";
+      /*
+        Pesannya menyebut SAMPAI MANA, dan — kalau sudah ada yang tersimpan —
+        melarang pencatatan ulang secara eksplisit. Formulir ini masih terisi
+        penuh saat galat muncul, jadi "coba lagi" adalah hal paling wajar
+        yang akan dilakukan orang.
+      */
+      if (!idPenjualan) {
+        setSaveError(`Gagal menyimpan: ${pesan}. Belum ada yang tersimpan — aman dicoba lagi.`);
+      } else if (!kuraDitandai) {
+        setSaveError(
+          `PENJUALAN SUDAH TERSIMPAN, tetapi status kuranya belum berubah jadi terjual: ${pesan}. ` +
+          `JANGAN dicatat ulang — tutup layar ini, lalu ubah status kuranya lewat halaman kura.`,
+        );
+      } else if (!keuanganTercatat) {
+        setSaveError(
+          `PENJUALAN SUDAH TERSIMPAN dan kuranya sudah ditandai terjual, tetapi catatan keuangannya belum: ${pesan}. ` +
+          `JANGAN dicatat ulang — periksa Laba Rugi; otomatisasi server biasanya sudah membuatnya.`,
+        );
+      } else {
+        setSaveError(
+          `PENJUALAN SUDAH TERSIMPAN, tetapi laba, margin, dan tautan transaksinya belum terisi: ${pesan}. ` +
+          `JANGAN dicatat ulang — lengkapi lewat Ubah Penjualan di daftar Penjualan.`,
+        );
+      }
+      // Daftar tetap disegarkan: penjualan yang sudah terlanjur tersimpan
+      // harus terlihat, justru supaya tidak dicatat ulang.
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["tortoises"] });
+    } finally {
+      /* Di `finally`: pada jalan sukses, setSaving(false) dulu tidak pernah
+         dijalankan sama sekali — hanya `onClose(true)`. Selama induknya tidak
+         melepas komponen ini, tombolnya tetap berputar. */
       setSaving(false);
     }
   };
