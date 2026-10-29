@@ -155,10 +155,22 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
     if (noNota && !noNotaReason.trim()) { toast.error("Alasan 'tidak ada nota' wajib diisi"); return; }
     if (isOver && !confirmOver) { setConfirmOver(true); return; }
     setSaving(true);
+    /*
+     * Satu pemakaian kas kecil menulis ke DUA buku: PettyCashLedger (kas) dan
+     * FinanceTransaction (laba rugi). Kalau yang kedua gagal setelah yang
+     * pertama berhasil, pesan "Gagal: …" berbohong — ia terbaca sebagai
+     * "tidak ada yang tersimpan", dan yang mencatat akan mengetiknya ulang.
+     * Hasilnya dua baris kas untuk satu nota, dan saldonya salah selamanya.
+     *
+     * Jadi yang dilacak bukan berhasil/gagal, melainkan SAMPAI MANA.
+     */
+    let ledgerTercatat = null;
     try {
       const balanceAfter = Math.round(currentSaldo - amt);
       const byName = user?.full_name || user?.email || "Admin";
-      if (!byName) { toast.error("Data pengguna belum dimuat, coba refresh halaman."); setSaving(false); return; }
+      // setSaving(false) tidak perlu di sini: `finally` di bawah menjalankannya
+      // untuk SETIAP jalan keluar, termasuk return ini. Itulah gunanya.
+      if (!byName) { toast.error("Data pengguna belum dimuat, coba refresh halaman."); return; }
       const ledgerPayload = {
         entry_type: "pemakaian",
         amount: amt,
@@ -176,6 +188,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       if (hargaNum > 0) ledgerPayload.harga_satuan = hargaNum;
 
       const ledger = await base44.entities.PettyCashLedger.create(ledgerPayload);
+      ledgerTercatat = ledger?.id || null;
 
       // Bangun label deskripsi dengan qty × harga jika ada
       const txDesc = qtyNum > 0 && hargaNum > 0
@@ -211,9 +224,19 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
       onSaved();
       onClose();
     } catch (err) {
-      toast.error("Gagal: " + (err?.message || ""));
+      const pesan = err?.message || "kesalahan tidak diketahui";
+      if (ledgerTercatat) {
+        toast.error(
+          `Pemakaian SUDAH tercatat di kas kecil, tetapi belum masuk Laba Rugi: ${pesan}. ` +
+          `JANGAN dicatat ulang — perbaiki lewat Riwayat Kas Kecil.`,
+          { duration: 12000 },
+        );
+      } else {
+        toast.error(`Gagal mencatat: ${pesan}. Belum ada yang tersimpan.`);
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (
