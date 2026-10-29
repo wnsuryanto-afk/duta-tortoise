@@ -61,10 +61,20 @@ export default function FotoPenyakitVerificationPanel({ protocol }) {
         try {
           const cl = await base44.entities.DailyChecklist.get(task.daily_checklist_id);
           if (cl && cl.status === "submitted") {
+            /*
+             * Ini PENULIS PERSETUJUAN KELIMA, dan paling mudah terlewat: poin
+             * cair sebagai AKIBAT memverifikasi foto penyakit, bukan lewat
+             * layar persetujuan. Sampai 29-10-2026 ia tidak mencatat waktu
+             * maupun email penyetujunya sama sekali — jadi poin yang cair
+             * lewat pintu ini tidak muncul di audit mana pun, dan tidak ada
+             * yang bisa menjawab siapa yang mencairkannya.
+             */
             await base44.entities.DailyChecklist.update(cl.id, {
               status: "approved",
               approved_points: cl.total_points_claimed || task.points || 0,
               approved_by: user?.full_name || user?.email,
+              approved_by_email: user?.email || "",
+              approved_at: new Date().toISOString(),
             });
           }
         } catch {

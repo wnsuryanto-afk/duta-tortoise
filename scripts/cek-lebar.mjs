@@ -47,6 +47,7 @@
  */
 import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
+import { cariChromium, pesanChromiumHilang } from "./lib/chromium.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ukur } from "./lebar/ukur.mjs";
@@ -55,8 +56,13 @@ const SINI = path.dirname(fileURLToPath(import.meta.url));
 const AKAR = path.resolve(SINI, "..");
 const PORT = Number(process.env.PORT_UJI || 5199);
 const LEBAR = 360;
-const CHROME = process.env.CHROME_UJI ||
-  "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const CHROME = cariChromium();
+if (!CHROME) {
+  // Berhenti MERAH, bukan hijau: penjaga yang tidak bisa menggambar tidak
+  // boleh melaporkan bahwa tata letaknya aman.
+  console.error(pesanChromiumHilang());
+  process.exit(1);
+}
 
 /*
  * Dua cacat yang diukur di dalam peramban yang sama, karena keduanya hanya

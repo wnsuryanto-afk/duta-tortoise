@@ -25,6 +25,7 @@ import PerpustakaanSOPTab from "@/components/sop/PerpustakaanSOPTab";
 import BiayaOperasionalTab from "@/components/finance/BiayaOperasionalTab";
 import LaporanPenjualanTab from "@/components/sales/LaporanPenjualanTab";
 import PembeliTab from "@/components/sales/PembeliTab";
+import SOPApproval from "@/components/sop/SOPApproval";
 import SaleCard from "@/components/sales/SaleCard";
 import CatatanUntukSayaTab from "@/components/sop/CatatanUntukSayaTab";
 import BahanTerpakaiEditor from "@/components/sop/BahanTerpakaiEditor";
@@ -982,6 +983,7 @@ export default [
   ["LayarTimPage tanpa data", <LayarTimPage />],
   ["PembelianPage tanpa data", <PembelianPage />],
   ["UnifiedStokPage tanpa data", <UnifiedStokPage />],
+  ["SOPApproval tanpa data", <SOPApproval />],
   /*
    * Kartu Modal Kerja & Estimasi Aset dengan ANGKA SUNGGUHAN 25-10-2026.
    *

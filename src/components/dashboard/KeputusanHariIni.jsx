@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { useViewAsGuard } from "@/lib/useViewAsGuard";
 import { canAccess } from "@/lib/permissions";
-import { logActivity } from "@/lib/logActivity";
-import { poinDiklaim } from "@/lib/poinChecklist";
 import { nilaiUrgensiStok, gabungRiwayatPemakaian, AMBANG_GAWAT_HARI } from "@/lib/urgensiStok";
 import { penandaMenunggu, sudahDidaftar, barisDariBarang, idBarangRacikan, diracikSendiri } from "@/lib/daftarBelanja";
 import InfoHint from "@/components/ui/info-hint";
 import { cn } from "@/lib/utils";
 import { hanyaLaporan } from "@/lib/laporan";
+import { useActiveUsers } from "@/hooks/useActiveUsers";
+import { useCompanySettings } from "@/lib/useCompanySettings";
+import { pilahMassal, setujuiMassal, KUNCI_SEGARKAN } from "@/lib/setujuiMassal";
 
 /**
  * KeputusanHariIni — lapis paling atas beranda: hal yang perlu DIPUTUSKAN,
@@ -70,6 +71,9 @@ function KartuKeputusan({ tone = "warn", icon: Icon, judul, rincian, anak, aksi 
 export default function KeputusanHariIni() {
   const qc = useQueryClient();
   const { user, role } = useCurrentUser();
+  // Keduanya dipakai aturan hak menyetujui di lib/persetujuanPoin.
+  const { data: semuaPengguna = [] } = useActiveUsers();
+  const pengaturanPerusahaan = useCompanySettings();
   const { isPreviewMode, previewProps } = useViewAsGuard();
   const [menyetujui, setMenyetujui] = useState(false);
   const [menambah, setMenambah] = useState(false);
@@ -160,42 +164,39 @@ export default function KeputusanHariIni() {
   const setujuiSemua = async () => {
     if (berfoto.length === 0) return;
     setMenyetujui(true);
-    let berhasil = 0;
-    const gagal = [];
-
-    for (const c of berfoto) {
-      const poin = poinDiklaim(c);
-      try {
-        await base44.entities.DailyChecklist.update(c.id, {
-          status: "approved",
-          approved_by: user?.full_name || user?.email,
-          approved_points: poin,
-        });
-        await logActivity({
-          action: "approve",
-          entity_type: "DailyChecklist",
-          entity_id: c.id,
-          entity_name: `${c.employee_name} — ${c.date}`,
-          changes_summary:
-            `Menyetujui checklist ${c.employee_name} (${c.date}): ${poin} poin — ` +
-            `persetujuan massal dari beranda, ${(c.photo_proofs || []).length} foto terlampir`,
-        });
-        berhasil++;
-      } catch (e) {
-        gagal.push(`${c.employee_name}: ${e?.message || "gagal"}`);
-      }
-    }
+    /*
+     * Lewat lib/setujuiMassal, bukan perulangan sendiri.
+     *
+     * Versi sebelumnya di sini sudah benar soal try/catch per baris, tetapi
+     * tidak pernah menulis approved_at maupun approved_by_email, dan tidak
+     * memeriksa hak menyetujui sama sekali — termasuk aturan "tidak boleh
+     * menyetujui checklist milik sendiri", yang justru paling mungkin kena
+     * di beranda: yang membukanya sering ikut mengisi checklist harian.
+     */
+    const { siap, takBerwenang } = pilahMassal({
+      checklists: berfoto,
+      penilai: { ...user, role },
+      settings: pengaturanPerusahaan,
+      peran: (c) => semuaPengguna.find((u) => u.email === c?.employee_email)?.role || "",
+    });
+    const { berhasil, gagal } = await setujuiMassal({
+      daftar: siap,
+      penilai: user,
+      sumber: "Setujui semua di Beranda",
+      namaOrang: (c) => c?.employee_name || c?.employee_email || "—",
+    });
 
     // Sebagian berhasil tetap dilaporkan apa adanya — menyembunyikan kegagalan
     // di sini berarti poin karyawan hilang tanpa ada yang tahu.
     if (berhasil > 0) {
       toast.success(`${berhasil} checklist disetujui`);
-      ["checklists-all", "checklists-pending-count", "owner-pending-approval",
-       "my-checklist-today", "checklist-today", "kf-checklists"]
-        .forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      KUNCI_SEGARKAN.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    }
+    if (takBerwenang.length > 0) {
+      toast.warning(`${takBerwenang.length} dilewati — ${takBerwenang[0].sebab}`);
     }
     if (gagal.length > 0) {
-      toast.error(`${gagal.length} gagal disetujui — ${gagal[0]}`);
+      toast.error(`${gagal.length} gagal disetujui — ${gagal[0].nama}: ${gagal[0].pesan}`);
     }
     setMenyetujui(false);
   };
