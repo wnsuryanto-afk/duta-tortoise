@@ -249,49 +249,86 @@ export default function TreatmentPage() {
       resolvedNames = pool.map(t => t.name);
     }
     const data = { ...form, tortoise_ids: resolvedIds, tortoise_names: resolvedNames };
-    if (editData?.id) {
-      await base44.entities.TreatmentSchedule.update(editData.id, data);
-    } else {
-      await base44.entities.TreatmentSchedule.create(data);
-      const sopFreq = form.frequency === "harian" ? "harian" : form.frequency === "mingguan" ? "mingguan" : "bulanan";
-      const sopData = {
-        title: `[Treatment] ${form.title}`,
-        category: "pemeriksaan", points: 15, frequency: sopFreq, is_active: true,
-      };
-      if (form.frequency === "mingguan" && form.weekly_days?.length > 0) sopData.weekly_days = form.weekly_days;
-      if (form.frequency === "bulanan" && form.monthly_dates?.length > 0) sopData.monthly_dates = form.monthly_dates;
-      if (form.deadline_time) sopData.deadline_time = form.deadline_time;
-      await base44.entities.SOPTask.create(sopData);
+    /*
+     * Jadwal baru menulis DUA kali: jadwalnya sendiri, lalu tugas SOP yang
+     * membuatnya muncul di daftar kerja kiper. Bila yang kedua gagal,
+     * jadwalnya ada tetapi tidak pernah muncul di layar siapa pun — dan
+     * menyimpannya ulang membuat jadwal kembar, bukan memperbaiki yang kurang.
+     */
+    let jadwalTersimpan = false;
+    try {
+      if (editData?.id) {
+        await base44.entities.TreatmentSchedule.update(editData.id, data);
+        jadwalTersimpan = true;
+      } else {
+        await base44.entities.TreatmentSchedule.create(data);
+        jadwalTersimpan = true;
+        const sopFreq = form.frequency === "harian" ? "harian" : form.frequency === "mingguan" ? "mingguan" : "bulanan";
+        const sopData = {
+          title: `[Treatment] ${form.title}`,
+          category: "pemeriksaan", points: 15, frequency: sopFreq, is_active: true,
+        };
+        if (form.frequency === "mingguan" && form.weekly_days?.length > 0) sopData.weekly_days = form.weekly_days;
+        if (form.frequency === "bulanan" && form.monthly_dates?.length > 0) sopData.monthly_dates = form.monthly_dates;
+        if (form.deadline_time) sopData.deadline_time = form.deadline_time;
+        await base44.entities.SOPTask.create(sopData);
+      }
+      qc.invalidateQueries({ queryKey: ["treatment-schedules"] });
+      qc.invalidateQueries({ queryKey: ["sop-tasks"] });
+      toast.success(editData?.id ? "Jadwal diperbarui" : "Jadwal dibuat");
+      setShowForm(false);
+    } catch (err) {
+      const alasan = err?.message || "kesalahan tidak diketahui";
+      qc.invalidateQueries({ queryKey: ["treatment-schedules"] });
+      qc.invalidateQueries({ queryKey: ["sop-tasks"] });
+      if (jadwalTersimpan && !editData?.id) {
+        toast.error(
+          `Jadwal SUDAH tersimpan, tetapi tugas SOP-nya gagal dibuat: ${alasan}. ` +
+          `Jadwalnya tidak akan muncul di daftar kerja kiper. JANGAN disimpan ulang — ` +
+          `itu membuat jadwal kembar; buat tugas SOP-nya lewat Perpustakaan SOP.`,
+          { duration: 14000 },
+        );
+      } else {
+        toast.error(`Gagal menyimpan jadwal: ${alasan}.${jadwalTersimpan ? "" : " Belum ada yang tersimpan."}`);
+      }
+    } finally {
+      setSaving(false);
     }
-    qc.invalidateQueries({ queryKey: ["treatment-schedules"] });
-    qc.invalidateQueries({ queryKey: ["sop-tasks"] });
-    setShowForm(false);
-    setSaving(false);
   };
 
   const handleDelete = async (s) => {
-    if (confirm(`Hapus jadwal "${s.title}"?`)) {
+    if (!confirm(`Hapus jadwal "${s.title}"?`)) return;
+    try {
       await base44.entities.TreatmentSchedule.delete(s.id);
-      qc.invalidateQueries({ queryKey: ["treatment-schedules"] });
+      toast.success(`Jadwal "${s.title}" dihapus`);
+    } catch (err) {
+      toast.error(`Gagal menghapus jadwal: ${err?.message || "kesalahan tidak diketahui"}`);
     }
+    qc.invalidateQueries({ queryKey: ["treatment-schedules"] });
   };
 
   const handleLogDone = async () => {
     if (!logDialog) return;
     setSaving(true);
-    await base44.entities.TreatmentLog.create({
-      schedule_id: logDialog.schedule.id,
-      schedule_title: logDialog.schedule.title,
-      tortoise_id: logDialog.tortoise?.id || "",
-      tortoise_name: logDialog.tortoise?.name || "Semua",
-      done_date: format(new Date(), "yyyy-MM-dd"),
-      done_by: user?.full_name || user?.email || "",
-      notes: logNote,
-    });
-    qc.invalidateQueries({ queryKey: ["treatment-logs"] });
-    setLogDialog(null);
-    setLogNote("");
-    setSaving(false);
+    try {
+      await base44.entities.TreatmentLog.create({
+        schedule_id: logDialog.schedule.id,
+        schedule_title: logDialog.schedule.title,
+        tortoise_id: logDialog.tortoise?.id || "",
+        tortoise_name: logDialog.tortoise?.name || "Semua",
+        done_date: format(new Date(), "yyyy-MM-dd"),
+        done_by: user?.full_name || user?.email || "",
+        notes: logNote,
+      });
+      toast.success("Perawatan dicatat");
+      setLogDialog(null);
+      setLogNote("");
+    } catch (err) {
+      toast.error(`Gagal mencatat perawatan: ${err?.message || "kesalahan tidak diketahui"}. Belum tersimpan.`);
+    } finally {
+      qc.invalidateQueries({ queryKey: ["treatment-logs"] });
+      setSaving(false);
+    }
   };
 
   const toggleTortoise = (t) => {
@@ -333,29 +370,60 @@ export default function TreatmentPage() {
 
   const handleSaveReminder = async () => {
     if (!reminderForm.title || !reminderForm.due_date) return;
-    await base44.entities.HealthReminder.create({
-      ...reminderForm, interval_days: reminderForm.interval_days ? Number(reminderForm.interval_days) : null, is_done: false,
-    });
+    try {
+      await base44.entities.HealthReminder.create({
+        ...reminderForm, interval_days: reminderForm.interval_days ? Number(reminderForm.interval_days) : null, is_done: false,
+      });
+      toast.success("Pengingat dibuat");
+      setShowReminderForm(false);
+      setReminderForm({ title: "", type: "checkup", tortoise_name: "", enclosure: "", due_date: "", interval_days: "", notes: "" });
+    } catch (err) {
+      toast.error(`Gagal membuat pengingat: ${err?.message || "kesalahan tidak diketahui"}. Belum tersimpan.`);
+    }
     qc.invalidateQueries({ queryKey: ["health-reminders-all"] });
     qc.invalidateQueries({ queryKey: ["health-reminders"] });
-    setShowReminderForm(false);
-    setReminderForm({ title: "", type: "checkup", tortoise_name: "", enclosure: "", due_date: "", interval_days: "", notes: "" });
   };
 
+  /*
+   * Pengingat berulang menulis DUA kali: pengingat berikutnya dibuat, lalu
+   * yang sekarang ditandai selesai. Urutannya penting — dan bila yang kedua
+   * gagal, yang berikutnya sudah ada sementara yang sekarang masih terbuka.
+   * Menekan "Selesai" lagi membuat pengingat ketiga. Tiga pengingat untuk
+   * satu pemeriksaan, dan tidak ada error yang muncul.
+   */
   const handleReminderDone = async (reminder) => {
-    if (reminder.interval_days) {
-      const nextDate = new Date(reminder.due_date);
-      nextDate.setDate(nextDate.getDate() + reminder.interval_days);
-      await base44.entities.HealthReminder.create({ ...reminder, id: undefined, due_date: format(nextDate, "yyyy-MM-dd"), is_done: false, done_date: null });
+    let berikutnyaDibuat = false;
+    try {
+      if (reminder.interval_days) {
+        const nextDate = new Date(reminder.due_date);
+        nextDate.setDate(nextDate.getDate() + reminder.interval_days);
+        await base44.entities.HealthReminder.create({ ...reminder, id: undefined, due_date: format(nextDate, "yyyy-MM-dd"), is_done: false, done_date: null });
+        berikutnyaDibuat = true;
+      }
+      await base44.entities.HealthReminder.update(reminder.id, { is_done: true, done_date: today });
+      toast.success(berikutnyaDibuat ? "Selesai — pengingat berikutnya dibuat" : "Pengingat ditandai selesai");
+    } catch (err) {
+      const alasan = err?.message || "kesalahan tidak diketahui";
+      toast.error(
+        berikutnyaDibuat
+          ? `Pengingat berikutnya SUDAH dibuat, tetapi yang ini belum ditandai selesai: ${alasan}. ` +
+            `JANGAN tekan Selesai lagi — itu membuat pengingat ketiga. Tandai selesai lewat daftar pengingat.`
+          : `Gagal menandai selesai: ${alasan}.`,
+        { duration: 12000 },
+      );
     }
-    await base44.entities.HealthReminder.update(reminder.id, { is_done: true, done_date: today });
     qc.invalidateQueries({ queryKey: ["health-reminders-all"] });
     qc.invalidateQueries({ queryKey: ["health-reminders"] });
   };
 
   const handleReminderDelete = async (id) => {
     if (!confirm("Hapus pengingat ini?")) return;
-    await base44.entities.HealthReminder.delete(id);
+    try {
+      await base44.entities.HealthReminder.delete(id);
+      toast.success("Pengingat dihapus");
+    } catch (err) {
+      toast.error(`Gagal menghapus pengingat: ${err?.message || "kesalahan tidak diketahui"}`);
+    }
     qc.invalidateQueries({ queryKey: ["health-reminders-all"] });
     qc.invalidateQueries({ queryKey: ["health-reminders"] });
   };
