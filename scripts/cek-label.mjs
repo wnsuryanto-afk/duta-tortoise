@@ -31,6 +31,7 @@ import { execFileSync } from "child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { cariChromium, pesanChromiumHilang } from "./lib/chromium.mjs";
 import { fileURLToPath } from "url";
 import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 import { dirname, resolve } from "path";
@@ -253,11 +254,11 @@ if (!cocokScale) {
 // Jadi penjaga ini MENGGAMBAR labelnya di Chromium dan mengukur kotak tinta
 // tiap baris terhadap kotak pemotongnya — pada beberapa tumpukan huruf, karena
 // itulah yang berbeda antar perangkat. Mengukur, bukan membaca angka di kode.
-const CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const CHROMIUM = cariChromium();
 console.log("Baris terpotong:");
-if (!existsSync(CHROMIUM)) {
+if (!CHROMIUM) {
   // Penjaga yang diam saat tidak bisa melihat adalah penjaga yang hijau palsu.
-  console.log("  ✗ Chromium tidak ada — pemeriksaan pemotongan TIDAK dijalankan.");
+  console.log(`  ✗ Chromium tidak ada — pemeriksaan pemotongan TIDAK dijalankan. ${pesanChromiumHilang()}`);
   gagal++;
 } else {
   const { chromium } = await import("playwright-core");

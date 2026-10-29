@@ -21,6 +21,8 @@ import { TeamArt } from "@/components/common/Illustration";
 import { saldoTerkini } from "@/lib/kasKecil";
 import { periksaStok } from "@/lib/stokMenipis";
 import PengingatPersetujuan from "@/components/sop/PengingatPersetujuan";
+import { useCompanySettings } from "@/lib/useCompanySettings";
+import { pilahMassal, setujuiMassal, KUNCI_SEGARKAN } from "@/lib/setujuiMassal";
 
 export default function KepalaFeederDashboard({ user }) {
   const qc = useQueryClient();
@@ -30,6 +32,8 @@ export default function KepalaFeederDashboard({ user }) {
   const todayLabel = format(now, "EEEE, d MMMM yyyy", { locale: idLocale });
 
   const { data: allUsers = [] } = useActiveUsers();
+  // Dipakai aturan hak menyetujui: daftar peran penyetuju disimpan di sana.
+  const pengaturanPerusahaan = useCompanySettings();
 
   const { data: attendances = [] } = useQuery({
     queryKey: ["kf-attendance", today],
@@ -177,6 +181,9 @@ export default function KepalaFeederDashboard({ user }) {
       await base44.entities.DailyChecklist.update(id, {
         status: "approved",
         approved_by: user?.full_name || user?.email,
+        // Nama saja tidak bisa dicocokkan ke User tanpa menebak, dan audit
+        // mingguan perlu tahu persetujuan mana yang BUKAN milik pembukanya.
+        approved_by_email: user?.email || "",
         approved_at: new Date().toISOString(),
         approved_points,
       });
@@ -218,18 +225,40 @@ export default function KepalaFeederDashboard({ user }) {
       `Semua tugas disetujui sesuai klaim, tanpa diperiksa satu per satu.`,
     )) return;
     setApproveAllLoading(true);
-    for (const c of pendingChecklists) {
-      await base44.entities.DailyChecklist.update(c.id, {
-        status: "approved",
-        approved_by: user?.full_name || user?.email,
-        approved_at: new Date().toISOString(),
-        approved_points: poinDiklaim(c),
-      });
-    }
+    /*
+     * Lewat lib/setujuiMassal, bukan perulangan sendiri.
+     *
+     * Versi sebelumnya di sini memanggil update() di dalam `for` TANPA
+     * try/catch. Satu kegagalan di tengah melempar keluar, baris
+     * setApproveAllLoading(false) di bawahnya tidak pernah dijalankan, dan
+     * tombolnya berputar selamanya — sementara sebagian checklist sudah
+     * disetujui tanpa ada yang tahu yang mana. Ia juga melewati aturan
+     * "checklist kepala_feeder hanya untuk manajer/owner", padahal yang
+     * menekan tombol ini justru kepala_feeder.
+     */
+    const { takBerwenang, siap } = pilahMassal({
+      checklists: pendingChecklists,
+      /* Peran dibaca dari User, bukan ditebak dari nama layar: owner pun bisa
+         membuka beranda ini lewat "Lihat Sebagai", dan haknya berbeda. */
+      penilai: { ...user, role: allUsers.find((u) => u.email === user?.email)?.role || user?.role },
+      settings: pengaturanPerusahaan,
+      peran: (c) => allUsers.find((u) => u.email === c?.employee_email)?.role || "",
+    });
+    const { berhasil, gagal } = await setujuiMassal({
+      daftar: siap,
+      penilai: user,
+      sumber: "Setujui semua di Beranda Kepala Feeder",
+      namaOrang: (c) => c?.employee_name || c?.employee_email || "—",
+    });
     setApproveAllLoading(false);
-    qc.invalidateQueries({ queryKey: ["kf-checklists"] });
-    qc.invalidateQueries({ queryKey: ["kf-month-checklists"] });
-    toast.success("Semua checklist disetujui!");
+    KUNCI_SEGARKAN.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    if (berhasil > 0) toast.success(`${berhasil} checklist disetujui`);
+    if (takBerwenang.length > 0) {
+      toast.warning(`${takBerwenang.length} dilewati — ${takBerwenang[0].sebab}`);
+    }
+    if (gagal.length > 0) {
+      toast.error(`${gagal.length} gagal — ${gagal.slice(0, 3).map((g) => g.nama).join(", ")}. Buka satu per satu.`);
+    }
   };
 
   // Null guard setelah semua hooks — aman untuk React

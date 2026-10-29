@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   CheckCircle2, XCircle, Star, ChevronDown, ChevronUp,
-  AlertTriangle, UserCheck, Loader2, ListChecks, Sparkles, Clock, Search, RefreshCw
+  AlertTriangle, UserCheck, Loader2, ListChecks, Sparkles, Clock, Search, RefreshCw, CheckCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -26,6 +27,7 @@ import { useCompanySettings } from "@/lib/useCompanySettings";
 import {
   bolehMenyetujui, periksaAlasanPotong, adaPemotongan, labelSebab,
 } from "@/lib/persetujuanPoin";
+import { pilahMassal, setujuiMassal, KUNCI_SEGARKAN } from "@/lib/setujuiMassal";
 
 const statusConfig = {
   submitted: { label: "Menunggu", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -85,6 +87,12 @@ export default function SOPApproval() {
   const [filterNeedsReview, setFilterNeedsReview] = useState(false);
   const [reverifyLoading, setReverifyLoading] = useState({});
   const [bulkReverifyLoading, setBulkReverifyLoading] = useState(false);
+  // Persetujuan massal: dialognya terbuka, apakah yang ditandai ikut, dan
+  // kemajuannya saat berjalan.
+  const [massalBuka, setMassalBuka] = useState(false);
+  const [massalIkutTanda, setMassalIkutTanda] = useState(false);
+  const [massalJalan, setMassalJalan] = useState(false);
+  const [massalKemajuan, setMassalKemajuan] = useState({ sudah: 0, total: 0 });
 
   const taskNeedsReview = (t) => {
     if (t.ai_verified === false) return true;
@@ -450,6 +458,72 @@ export default function SOPApproval() {
       t.photo_url && taskRequiresPhoto(t.task_title) && getAIStatus(t) !== "selesai" && getAIStatus(t) !== "sedang_diproses"
     ).length, 0);
 
+  /**
+   * Alasan sebuah checklist sebaiknya DIBUKA dulu, bukan disapu tombol massal.
+   *
+   * Ketiganya adalah penanda yang sudah ditampilkan di kartunya masing-masing.
+   * Tombol "Setujui semua" yang ikut menyapu baris bertanda membuat penanda
+   * itu tidak ada gunanya: ia memberi peringatan lalu menyediakan tombol yang
+   * mengabaikannya dalam satu ketukan.
+   */
+  const alasanDitandai = (c) => {
+    const tasks = c.completed_tasks || [];
+    const sebab = [];
+    if (checkBeruntun(tasks)) sebab.push("dicentang beruntun");
+    if ((c.total_points_claimed || tasks.reduce((s, t) => s + (t.points || 0), 0)) > 250) {
+      sebab.push("klaim harian tinggi");
+    }
+    const perlu = tasks.filter(taskNeedsReview).length;
+    if (perlu > 0) sebab.push(`${perlu} foto perlu diperiksa`);
+    return sebab.length > 0 ? sebab.join(", ") : null;
+  };
+
+  /*
+   * Pilahannya dihitung dari daftar yang sedang TAMPIL, bukan dari seluruh
+   * antrean. Kalau tidak, tombolnya akan menyetujui baris yang tersaring
+   * keluar dari layar — termasuk yang disembunyikan karena data uji.
+   */
+  const massal = useMemo(
+    () => pilahMassal({
+      checklists,
+      penilai: { ...user, role },
+      settings: pengaturan,
+      tandai: alasanDitandai,
+      peran: empRole,
+    }),
+    [checklists, user, role, pengaturan, users],
+  );
+  const massalTerpilih = massalIkutTanda
+    ? [...massal.siap, ...massal.ditandai.map((x) => x.checklist)]
+    : massal.siap;
+  const massalPoin = massalIkutTanda ? massal.poinSiap + massal.poinDitandai : massal.poinSiap;
+
+  const handleSetujuiMassal = async () => {
+    if (massalTerpilih.length === 0) return;
+    setMassalJalan(true);
+    setMassalKemajuan({ sudah: 0, total: massalTerpilih.length });
+    const { berhasil, gagal } = await setujuiMassal({
+      daftar: massalTerpilih,
+      penilai: user,
+      sumber: "Setujui semua di layar Persetujuan Checklist",
+      namaOrang: empName,
+      onKemajuan: (sudah, total) => setMassalKemajuan({ sudah, total }),
+    });
+    setMassalJalan(false);
+    setMassalBuka(false);
+    setMassalIkutTanda(false);
+    KUNCI_SEGARKAN.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    if (berhasil > 0) toast.success(`${berhasil} checklist disetujui`);
+    // Yang gagal disebut NAMANYA: "3 gagal" tidak memberi tahu siapa yang
+    // belum dibayar, dan itu satu-satunya hal yang perlu ditindaklanjuti.
+    if (gagal.length > 0) {
+      toast.error(
+        `${gagal.length} gagal — ${gagal.slice(0, 3).map((g) => g.nama).join(", ")}` +
+        `${gagal.length > 3 ? ", dan lainnya" : ""}. Buka satu per satu.`,
+      );
+    }
+  };
+
   const maxPoints = Math.max(...employeeStats.map(e => e.points), 0);
   const hasImbalance = employeeStats.length > 1 && maxPoints > 0 &&
     employeeStats.some(e => e.points > 0 && e.points < maxPoints * 0.7);
@@ -508,18 +582,36 @@ export default function SOPApproval() {
             {ujiDisembunyikan} checklist data uji disembunyikan
           </span>
         )}
-        {isOwner && pendingAIPhotos > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReverifyAllPending}
-            disabled={bulkReverifyLoading}
-            className="gap-1.5 ml-auto"
-          >
-            {bulkReverifyLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-            Periksa semua tertunda ({pendingAIPhotos})
-          </Button>
-        )}
+        <div className="flex gap-2 flex-wrap items-center ml-auto">
+          {isOwner && pendingAIPhotos > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReverifyAllPending}
+              disabled={bulkReverifyLoading}
+              className="gap-1.5"
+            >
+              {bulkReverifyLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              Periksa semua tertunda ({pendingAIPhotos})
+            </Button>
+          )}
+          {/*
+            Hanya muncul di saringan "Menunggu". Di saringan lain daftarnya
+            memuat yang sudah disetujui dan ditolak, dan tombol bernama
+            "Setujui semua" di atas daftar seperti itu menjanjikan sesuatu
+            yang tidak dikerjakannya.
+          */}
+          {isOwner && filterStatus === "submitted" && (massal.siap.length + massal.ditandai.length) > 0 && (
+            <Button
+              size="sm"
+              onClick={() => setMassalBuka(true)}
+              className="gap-1.5"
+            >
+              <CheckCheck className="w-3.5 h-3.5" />
+              Setujui semua ({massal.siap.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Ringkasan beban per karyawan */}
@@ -879,6 +971,106 @@ export default function SOPApproval() {
           })}
         </div>
       )}
+
+      {/*
+        ── Konfirmasi "Setujui semua" ─────────────────────────────────
+        Pertanyaannya menyebut JUMLAH POIN, bukan hanya jumlah checklist.
+        Poin menjadi upah lewat approved_points, dan klaim rutin terpangkas
+        saat diperiksa satu per satu — menyetujui 43 baris sekaligus adalah
+        keputusan rupiah, bukan keputusan administrasi.
+      */}
+      <Dialog open={massalBuka} onOpenChange={(v) => { if (!massalJalan) { setMassalBuka(v); if (!v) setMassalIkutTanda(false); } }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <CheckCheck className="w-5 h-5 text-primary" /> Setujui semua tanpa dibuka
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-sm">
+                <strong className="tabular-nums">{massalTerpilih.length} checklist</strong> akan disetujui
+                pada klaim penuhnya: <strong className="tabular-nums">{massalPoin.toLocaleString("id-ID")} poin</strong>.
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                Poin menjadi upah lewat slip gaji. Tidak ada tugas yang dibuka, tidak ada yang dipotong —
+                yang perlu dipotong harus dibuka satu per satu, karena pemotongan menuntut alasan tertulis
+                per orang.
+              </p>
+            </div>
+
+            {massal.ditandai.length > 0 && (
+              <div className="rounded-lg border border-orange-300 bg-orange-50 p-3">
+                <p className="text-xs font-bold text-orange-800 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {massal.ditandai.length} checklist bertanda — tidak ikut disetujui
+                </p>
+                <div className="mt-1.5 space-y-0.5">
+                  {massal.ditandai.slice(0, 6).map(({ checklist: c, alasan }) => (
+                    <p key={c.id} className="text-[11px] text-orange-700">
+                      {empName(c)} {c.date ? `· ${format(new Date(c.date), "d MMM", { locale: id })}` : ""} — {alasan}
+                    </p>
+                  ))}
+                  {massal.ditandai.length > 6 && (
+                    <p className="text-[11px] text-orange-700">dan {massal.ditandai.length - 6} lagi</p>
+                  )}
+                </div>
+                <label className="flex items-start gap-2 mt-2.5 cursor-pointer">
+                  <Checkbox
+                    checked={massalIkutTanda}
+                    onCheckedChange={(v) => setMassalIkutTanda(v === true)}
+                    disabled={massalJalan}
+                    className="mt-0.5"
+                  />
+                  <span className="text-[11px] text-orange-800 leading-snug">
+                    Ikut setujui yang bertanda ({massal.poinDitandai.toLocaleString("id-ID")} poin).
+                    Penandanya memang meminta baris ini dilihat dulu.
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {massal.takBerwenang.length > 0 && (
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {massal.takBerwenang.length} checklist tidak bisa Anda setujui
+                </p>
+                <div className="mt-1 space-y-0.5">
+                  {[...new Set(massal.takBerwenang.map((x) => x.sebab))].map((sebab) => (
+                    <p key={sebab} className="text-[11px] text-muted-foreground">{sebab}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {massalJalan && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1 tabular-nums">
+                  Menyetujui {massalKemajuan.sudah} dari {massalKemajuan.total}…
+                </p>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${massalKemajuan.total > 0 ? (massalKemajuan.sudah / massalKemajuan.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" size="sm" disabled={massalJalan} onClick={() => setMassalBuka(false)}>
+                Batal
+              </Button>
+              <Button size="sm" className="gap-1.5" disabled={massalJalan || massalTerpilih.length === 0} onClick={handleSetujuiMassal}>
+                {massalJalan
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyetujui…</>
+                  : <><CheckCheck className="w-3.5 h-3.5" /> Setujui {massalTerpilih.length}</>}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {photoPreview && (
         <PhotoPreviewModal

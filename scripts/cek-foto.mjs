@@ -21,6 +21,7 @@ import { tmpdir } from "os";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { kupasKomentar } from "./lib/kupasKomentar.mjs";
+import { cariChromium, pesanChromiumHilang } from "./lib/chromium.mjs";
 
 const akar = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let gagal = 0;
@@ -65,10 +66,10 @@ if (!/max-h-full/.test(lightbox)) salah("viewer tidak membatasi tinggi gambar �
 console.log("  PhotoPreviewModal meneruskan ke viewer bersama; viewernya memuat gambar utuh (object-contain + max-h-full).");
 
 // ── 3. Aturannya diuji di DOM sungguhan ───────────────────────────────────
-const CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const CHROMIUM = cariChromium();
 console.log("Aturan boleh-diperbesar:");
-if (!existsSync(CHROMIUM)) {
-  salah("Chromium tidak ada — aturan boleh-diperbesar TIDAK diuji.");
+if (!CHROMIUM) {
+  salah(`Chromium tidak ada — aturan boleh-diperbesar TIDAK diuji. ${pesanChromiumHilang()}`);
 } else {
   const tmp = mkdtempSync(join(tmpdir(), "cek-foto-"));
   const keluar = join(tmp, "aturan.cjs");

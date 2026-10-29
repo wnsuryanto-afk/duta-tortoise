@@ -146,6 +146,9 @@ Deno.serve(async (req) => {
         status: "approved",
         approved_points: poin,
         approved_by: "Otomatis (aturan)",
+        // Kosong yang DINYATAKAN, bukan kolom yang terlupa: tidak ada orang
+        // di balik persetujuan ini, dan audit perlu bisa membedakan keduanya.
+        approved_by_email: "",
         approved_at: new Date().toISOString(),
       });
       disetujui.push(`${cl.employee_name || cl.employee_email} ${cl.date} (${poin} poin)`);

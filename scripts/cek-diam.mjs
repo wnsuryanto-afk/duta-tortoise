@@ -65,8 +65,14 @@ const AKAR = process.cwd();
   Turun lagi 226 → 221 pada 24 Okt saat jalur profil pembeli dibereskan:
   SaleWizard dulu menelan kegagalannya dengan `catch (_) { }`, sehingga
   profil kembar tumbuh tanpa ada yang tahu.
+*
+  Turun lagi 221 → 220 pada 29 Okt: "Setujui semua" di Beranda Kepala Feeder
+  dulu memanggil update() di dalam `for` tanpa try/catch sama sekali. Satu
+  kegagalan di tengah melempar keluar, tombolnya berputar selamanya, dan
+  sebagian checklist sudah disetujui tanpa ada yang tahu yang mana. Sekarang
+  lewat lib/setujuiMassal.
 */
-const BATAS = 221;
+const BATAS = 220;
 const BATAS_BERPUTAR = 135;
 
 /*
