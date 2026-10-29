@@ -65,9 +65,25 @@ export default function PecahBatchDialog({ item, onClose }) {
   const tambah = () => setBaris((p) => [...p, { jumlah: "", tanggal_expired: "", catatan: "" }]);
   const hapus = (i) => setBaris((p) => p.filter((_, j) => j !== i));
 
+  /**
+   * ── Kenapa tiap batch punya penangkap galatnya sendiri ────────────────────
+   *
+   * Memecah stok rak menjadi beberapa batch adalah pekerjaan BORONGAN: satu
+   * tekan membuat tiga, lima, kadang delapan batch. Sebelum 29-10-2026
+   * perulangannya tidak punya penangkap galat di dalamnya, jadi kegagalan di
+   * batch ketiga membatalkan sisanya dan pesannya cuma "Gagal membuat batch".
+   *
+   * Dua batch pertama SUDAH ada di database. Yang membacanya akan menekan
+   * tombolnya lagi — dan dua batch pertama itu terbentuk untuk kedua kalinya,
+   * dengan kode berbeda, untuk barang fisik yang sama. Sejak itu sisa batch
+   * tidak pernah lagi cocok dengan stok gudang, dan tidak ada error di mana
+   * pun yang menunjuk sebabnya.
+   */
   const simpan = async () => {
     if (!bisaSimpan) return;
     setMenyimpan(true);
+    const gagal = [];
+    let dibuat = 0;
     try {
       const terpakai = (batchAda || []).map((b) => b.batch_code).filter(Boolean);
       const hariIni = format(new Date(), "yyyy-MM-dd");
@@ -77,27 +93,34 @@ export default function PecahBatchDialog({ item, onClose }) {
       for (const b of isi) {
         const kode = kodeBatch(item.sku || item.id, stempel, terpakai);
         terpakai.push(kode);
-        await base44.entities.BatchBarang.create({
-          batch_code: kode,
-          item_id: item.id,
-          item_sku: item.sku || "",
-          nama_barang: item.name,
-          jumlah_awal: Number(b.jumlah),
-          jumlah_sisa: Number(b.jumlah),
-          satuan: item.unit || "pcs",
-          harga_satuan: Number(item.purchase_price) || 0,
-          // Tanggal terima tidak diketahui untuk stok lama, jadi diisi hari
-          // pendataannya dan disebut apa adanya di catatan — menebak tanggal
-          // terima akan merusak urutan pengambilan FEFO tanpa ada yang tahu.
-          tanggal_terima: hariIni,
-          tanggal_expired: b.tanggal_expired,
-          catatan:
-            "Dipecah dari stok yang sudah ada di rak (tanpa riwayat pembelian). " +
-            "Tanggal terima adalah tanggal pendataan, bukan tanggal barang datang." +
-            (b.catatan ? ` ${b.catatan}` : ""),
-          label_dicetak: false,
-          ...testModeTag,
-        });
+        try {
+          await base44.entities.BatchBarang.create({
+            batch_code: kode,
+            item_id: item.id,
+            item_sku: item.sku || "",
+            nama_barang: item.name,
+            jumlah_awal: Number(b.jumlah),
+            jumlah_sisa: Number(b.jumlah),
+            satuan: item.unit || "pcs",
+            harga_satuan: Number(item.purchase_price) || 0,
+            // Tanggal terima tidak diketahui untuk stok lama, jadi diisi hari
+            // pendataannya dan disebut apa adanya di catatan — menebak tanggal
+            // terima akan merusak urutan pengambilan FEFO tanpa ada yang tahu.
+            tanggal_terima: hariIni,
+            tanggal_expired: b.tanggal_expired,
+            catatan:
+              "Dipecah dari stok yang sudah ada di rak (tanpa riwayat pembelian). " +
+              "Tanggal terima adalah tanggal pendataan, bukan tanggal barang datang." +
+              (b.catatan ? ` ${b.catatan}` : ""),
+            label_dicetak: false,
+            ...testModeTag,
+          });
+          dibuat++;
+        } catch (e) {
+          /* Satu batch yang ditolak tidak membatalkan sisanya: yang lain tetap
+             dibuat, dan yang gagal disebut jumlahnya beserta sebabnya. */
+          gagal.push(`${b.jumlah} ${item.unit || "pcs"}: ${e?.message || "gagal"}`);
+        }
       }
 
       /*
@@ -115,12 +138,31 @@ export default function PecahBatchDialog({ item, onClose }) {
 
       qc.invalidateQueries({ queryKey: ["batch-barang"] });
       qc.invalidateQueries({ queryKey: ["warehouse-items"] });
-      toast.success(`${isi.length} batch dibuat untuk ${item.name}`);
-      onClose();
+      if (gagal.length === 0) {
+        toast.success(`${dibuat} batch dibuat untuk ${item.name}`);
+        onClose();
+      } else {
+        /* Layarnya TIDAK ditutup bila ada yang gagal: menutupnya membuat orang
+           menekan tombolnya lagi dari awal, dan yang sudah jadi terbentuk dua
+           kali. */
+        toast.error(
+          `${dibuat} batch dibuat, ${gagal.length} gagal — ${gagal[0]}. ` +
+          `Yang sudah jadi JANGAN dibuat ulang; hapus barisnya dari daftar ini dulu.`,
+          { duration: 12000 },
+        );
+      }
     } catch (e) {
-      toast.error("Gagal membuat batch: " + (e?.message || ""));
+      qc.invalidateQueries({ queryKey: ["batch-barang"] });
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      toast.error(
+        dibuat > 0
+          ? `${dibuat} batch sudah dibuat, lalu gagal: ${e?.message || "kesalahan tidak diketahui"}. Jangan diulang dari awal.`
+          : `Gagal membuat batch: ${e?.message || "kesalahan tidak diketahui"}. Belum ada yang dibuat.`,
+        { duration: 10000 },
+      );
+    } finally {
+      setMenyimpan(false);
     }
-    setMenyimpan(false);
   };
 
   return (

@@ -2,7 +2,7 @@
 // PelletRecipePage; halaman itu sudah dihapus 17-09-2026 karena salinannya
 // mengurangi stok tanpa StockMovement dan tanpa menurunkan sisa batch.
 // Ini re-render konten resep & produksi langsung di dalam tab
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useTestMode } from "@/lib/useTestMode";
@@ -124,13 +124,37 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
   const hpp = hppHasil(biaya, qty, satuanHasil);
   const hasilDalamSatuan = jumlahHasil(qty, satuanHasil);
 
+  /* Kode batch racikan terakhir, supaya pesan galat bisa menyebutnya — ia
+     dibuat di dalam try, jadi tidak terjangkau dari catch tanpa ini. */
+  const batchNoTerakhir = useRef("");
+
+  /**
+   * ── Kenapa kemajuannya dilacak di sini, dari semua tempat ─────────────────
+   *
+   * Memproduksi racikan adalah pemakaian stok TERBESAR di peternakan ini, dan
+   * urutannya tidak bisa dibatalkan: bahan-bahannya dikurangi satu per satu,
+   * baru hasilnya dimasukkan. Bila gagal di tengah, bahannya sudah habis
+   * sementara hasilnya tidak pernah ada.
+   *
+   * Pesan "Gagal memproduksi" yang polos terbaca sebagai "tidak jadi" — dan
+   * yang membacanya akan menekan Produksi lagi. Bahan yang sama dikurangi
+   * untuk kedua kalinya, dari stok yang sudah berkurang. Pada resep tujuh
+   * bahan, satu kali ulang berarti empat belas pengurangan untuk satu adonan.
+   *
+   * Jadi yang dilaporkan: berapa bahan yang SUDAH terpakai, dan apakah
+   * hasilnya sudah masuk.
+   */
   const handleProduce = async () => {
     if (stockIssues.length > 0 || !qty) return;
     setProducing(true);
     setGagal("");
+    const bahanTerpakai = [];
+    let produksiTercatat = false;
+    let hasilMasuk = false;
     try {
       const today = new Date().toISOString().split("T")[0];
       const batchNo = `BATCH-RACIK-${Date.now().toString(36).toUpperCase()}`;
+      batchNoTerakhir.current = batchNo;
 
       // ── Bahan keluar ──
       // Dikurangi memakai jumlah yang SUDAH dikonversi ke satuan barangnya,
@@ -170,6 +194,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           notes: `Bahan racikan ${recipe.name} — batch ${batchNo}.`,
           ...testModeTag,
         });
+        bahanTerpakai.push(r.item.name);
       }
 
       const kedaluwarsa = new Date();
@@ -181,6 +206,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
         produced_quantity_kg: Number(qty), produced_by: userName,
         batch_number: batchNo, expiry_date: tglExp,
       });
+      produksiTercatat = true;
 
       // ── Hasil masuk ──
       // Ke barang tujuan yang SUDAH ada (Duta Repro → VIT-REP00), bukan barang
@@ -226,6 +252,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           price_per_unit: hpp,
         });
       }
+      hasilMasuk = true;
 
       await base44.entities.StockMovement.create({
         item_id: hasil.id,
@@ -249,9 +276,29 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
       onSaved();
       onClose();
     } catch (e) {
-      setGagal(e?.message || "Gagal memproduksi.");
+      const alasan = e?.message || "kesalahan tidak diketahui";
+      const sudah = bahanTerpakai.length;
+      if (sudah === 0) {
+        setGagal(`Gagal memproduksi: ${alasan}. Belum ada bahan yang terpakai — aman dicoba lagi.`);
+      } else if (!hasilMasuk) {
+        setGagal(
+          `JANGAN diulang. ${sudah} dari ${rincian.filter((r) => r.item && r.butuh > 0).length} bahan ` +
+          `SUDAH dikurangi dari stok (${bahanTerpakai.join(", ")}), tetapi hasilnya belum masuk: ${alasan}. ` +
+          `Menekan Produksi lagi akan mengurangi bahan yang sama untuk kedua kalinya. ` +
+          (produksiTercatat
+            ? `Catatan produksinya sendiri sudah terbentuk, jadi yang kurang hanya stok hasilnya. `
+            : `Catatan produksinya belum terbentuk. `) +
+          `Kembalikan stoknya lewat Pergerakan Stok, atau lanjutkan memasukkan hasilnya secara manual.`,
+        );
+      } else {
+        setGagal(
+          `Bahan sudah terpakai dan hasilnya SUDAH masuk stok, tetapi langkah terakhirnya gagal: ${alasan}. ` +
+          `JANGAN diulang — periksa catatan pergerakan stok untuk batch ${batchNoTerakhir.current || "racikan ini"}.`,
+        );
+      }
+    } finally {
+      setProducing(false);
     }
-    setProducing(false);
   };
 
   return (

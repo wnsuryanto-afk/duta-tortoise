@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useTestMode } from "@/lib/useTestMode";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,62 +71,99 @@ export default function FormPergerakanStok({ feedstocks, warehouseItems, onClose
     setForm(p => ({ ...p, item_id: id, item_type: it?.type || "feedstock", unit_price: it?.price || "" }));
   };
 
+  /**
+   * ── Kenapa dibungkus, dan kenapa kegagalannya dirinci ─────────────────────
+   *
+   * Sebelum 29-10-2026 fungsi ini tidak punya penangkap galat sama sekali dan
+   * tidak memberi kabar apa pun — tidak saat berhasil, tidak saat gagal. Satu
+   * penolakan server berarti tombol yang berputar selamanya di atas formulir
+   * yang masih terisi.
+   *
+   * Dan ia menulis DUA kali berurutan: catatan pergerakan, lalu angka stok
+   * yang sebenarnya. Bila yang kedua gagal, catatannya mengatakan stok sudah
+   * bergerak sementara angkanya belum — dan mengulanginya menggerakkan stok
+   * dua kali untuk satu kejadian.
+   */
   const handleSave = async (e) => {
     e.preventDefault();
     if (!form.item_id || !form.quantity) return;
     setSaving(true);
+    let catatanDibuat = false;
     const pemasok = suppliers.find((x) => x.id === form.supplier_id) || null;
     const total = Number(form.quantity) * Number(form.unit_price || 0);
     const needsApproval = form.type === "keluar" && total >= threshold;
     const status = needsApproval ? "menunggu_approval" : "selesai";
 
-    await base44.entities.StockMovement.create({
-      item_id: form.item_id,
-      item_name: selectedItem?.name || "",
-      item_type: form.item_type,
-      type: form.type,
-      quantity: Number(form.quantity),
-      unit: selectedItem?.unit || "",
-      unit_price: Number(form.unit_price || 0),
-      total_value: total,
-      date: form.date,
-      by_email: user?.email || "",
-      by_name: user?.full_name || user?.email || "",
-      notes: form.notes,
-      status,
-      /*
-        Hanya untuk barang MASUK, dan hanya bila supplier terdaftar dipilih.
-        Barang keluar tidak punya supplier, dan sumber yang memang bukan
-        supplier terdaftar (beli pasar, kebun sendiri) dibiarkan kosong
-        alih-alih diisi tebakan.
-      */
-      ...(form.type === "masuk" && pemasok
-        ? { supplier_id: pemasok.id, supplier: pemasok.name || "" }
-        : {}),
-      ...testModeTag,
-    });
+    try {
+      await base44.entities.StockMovement.create({
+        item_id: form.item_id,
+        item_name: selectedItem?.name || "",
+        item_type: form.item_type,
+        type: form.type,
+        quantity: Number(form.quantity),
+        unit: selectedItem?.unit || "",
+        unit_price: Number(form.unit_price || 0),
+        total_value: total,
+        date: form.date,
+        by_email: user?.email || "",
+        by_name: user?.full_name || user?.email || "",
+        notes: form.notes,
+        status,
+        /*
+          Hanya untuk barang MASUK, dan hanya bila supplier terdaftar dipilih.
+          Barang keluar tidak punya supplier, dan sumber yang memang bukan
+          supplier terdaftar (beli pasar, kebun sendiri) dibiarkan kosong
+          alih-alih diisi tebakan.
+        */
+        ...(form.type === "masuk" && pemasok
+          ? { supplier_id: pemasok.id, supplier: pemasok.name || "" }
+          : {}),
+        ...testModeTag,
+      });
+      catatanDibuat = true;
 
-    // Update actual stock if selesai
-    if (status === "selesai") {
-      const src = allOptions.find(o => o.id === form.item_id);
-      if (src) {
-        const entity = form.item_type === "feedstock" ? base44.entities.FeedStock : base44.entities.WarehouseItem;
-        const allList = form.item_type === "feedstock" ? feedstocks : warehouseItems;
-        const current = allList.find(i => i.id === form.item_id);
-        if (current) {
-          const newStock = form.type === "masuk"
-            ? current.current_stock + Number(form.quantity)
-            : Math.max(0, current.current_stock - Number(form.quantity));
-          await entity.update(form.item_id, { current_stock: newStock });
+      // Update actual stock if selesai
+      if (status === "selesai") {
+        const src = allOptions.find(o => o.id === form.item_id);
+        if (src) {
+          const entity = form.item_type === "feedstock" ? base44.entities.FeedStock : base44.entities.WarehouseItem;
+          const allList = form.item_type === "feedstock" ? feedstocks : warehouseItems;
+          const current = allList.find(i => i.id === form.item_id);
+          if (current) {
+            const newStock = form.type === "masuk"
+              ? current.current_stock + Number(form.quantity)
+              : Math.max(0, current.current_stock - Number(form.quantity));
+            await entity.update(form.item_id, { current_stock: newStock });
+          }
         }
       }
-    }
 
-    qc.invalidateQueries({ queryKey: ["stock-movements"] });
-    qc.invalidateQueries({ queryKey: ["feedstocks"] });
-    qc.invalidateQueries({ queryKey: ["warehouse-items"] });
-    setSaving(false);
-    onClose();
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+      qc.invalidateQueries({ queryKey: ["feedstocks"] });
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      toast.success(
+        status === "menunggu_approval"
+          ? "Pergerakan dicatat — menunggu persetujuan, stok belum berubah."
+          : `Stok ${form.type === "masuk" ? "masuk" : "keluar"} tercatat.`,
+      );
+      onClose();
+    } catch (err) {
+      const alasan = err?.message || "kesalahan tidak diketahui";
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+      qc.invalidateQueries({ queryKey: ["feedstocks"] });
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      if (catatanDibuat) {
+        toast.error(
+          `Pergerakan SUDAH tercatat, tetapi angka stoknya belum berubah: ${alasan}. ` +
+          `JANGAN diulang — sesuaikan stoknya langsung, atau batalkan pergerakannya.`,
+          { duration: 12000 },
+        );
+      } else {
+        toast.error(`Gagal menyimpan: ${alasan}. Belum ada yang tercatat.`);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

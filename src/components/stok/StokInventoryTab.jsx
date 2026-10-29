@@ -576,48 +576,78 @@ function AdjustDialog({ item, onClose }) {
     enabled: item?._src !== "feed",
   });
 
+  /**
+   * Penyesuaian stok cepat.
+   *
+   * Sebelum 29-10-2026 fungsi ini tidak punya penangkap galat, jadi satu
+   * penolakan server membuat tombolnya berputar selamanya tanpa pesan. Dan ia
+   * menulis dua hal: ANGKA STOK dulu, lalu catatan pergerakannya. Kalau yang
+   * kedua gagal, stoknya sudah berubah sementara tidak ada satu pun catatan
+   * yang menjelaskan kenapa — dan laporan pemakaian tidak akan pernah
+   * menyebutkannya. Mengulanginya menggeser stok untuk kedua kalinya.
+   */
   const handleSave = async () => {
     const delta = Number(amount);
     if (!delta || delta <= 0) return;
     setSaving(true);
-    const newStock = mode === "tambah" ? item.current_stock + delta : Math.max(0, item.current_stock - delta);
-    if (item._src === "feed") await base44.entities.FeedStock.update(item.id, { current_stock: newStock });
-    else await base44.entities.WarehouseItem.update(item.id, { current_stock: newStock });
+    let stokBerubah = false;
+    try {
+      const newStock = mode === "tambah" ? item.current_stock + delta : Math.max(0, item.current_stock - delta);
+      if (item._src === "feed") await base44.entities.FeedStock.update(item.id, { current_stock: newStock });
+      else await base44.entities.WarehouseItem.update(item.id, { current_stock: newStock });
+      stokBerubah = true;
 
-    /*
-     * Sisa batch ikut turun saat stok dikurangi dari sini.
-     *
-     * Tombol ini memotong stok gudang langsung. Tanpa baris di bawah, total
-     * gudang dan jumlah sisa seluruh batch berpisah diam-diam — lalu layar
-     * kedaluwarsa dan urutan FEFO menunjuk botol yang sebenarnya sudah habis.
-     * Penambahan tidak menyentuh batch: barang masuk tanpa tanggal bukan
-     * batch, dan menebak batch mana yang bertambah lebih buruk daripada
-     * tidak mencatatnya (pakai "Pecah jadi batch" untuk itu).
-     */
-    if (item._src !== "feed" && mode === "kurangi") {
-      const { kurang } = await potongBatchGudang(base44, batchAktif, item.id, delta);
-      if (kurang > 0) {
-        toast.warning(
-          `Stok dikurangi, tapi batch tercatat kurang ${kurang} ${item.unit || ""}. ` +
-          "Sisa batch di aplikasi lebih sedikit daripada yang benar-benar diambil.",
-        );
+      /*
+       * Sisa batch ikut turun saat stok dikurangi dari sini.
+       *
+       * Tombol ini memotong stok gudang langsung. Tanpa baris di bawah, total
+       * gudang dan jumlah sisa seluruh batch berpisah diam-diam — lalu layar
+       * kedaluwarsa dan urutan FEFO menunjuk botol yang sebenarnya sudah habis.
+       * Penambahan tidak menyentuh batch: barang masuk tanpa tanggal bukan
+       * batch, dan menebak batch mana yang bertambah lebih buruk daripada
+       * tidak mencatatnya (pakai "Pecah jadi batch" untuk itu).
+       */
+      if (item._src !== "feed" && mode === "kurangi") {
+        const { kurang } = await potongBatchGudang(base44, batchAktif, item.id, delta);
+        if (kurang > 0) {
+          toast.warning(
+            `Stok dikurangi, tapi batch tercatat kurang ${kurang} ${item.unit || ""}. ` +
+            "Sisa batch di aplikasi lebih sedikit daripada yang benar-benar diambil.",
+          );
+        }
+        qc.invalidateQueries({ queryKey: ["batch-barang"] });
       }
-      qc.invalidateQueries({ queryKey: ["batch-barang"] });
+      await base44.entities.StockMovement.create({
+        item_id: item.id, item_name: item.name,
+        item_type: item._src === "feed" ? "feedstock" : "warehouse",
+        type: mode === "tambah" ? "masuk" : "keluar",
+        quantity: delta, unit: item.unit,
+        date: format(new Date(), "yyyy-MM-dd"),
+        by_email: user?.email || "", by_name: user?.full_name || user?.email || "", status: "selesai",
+        ...testModeTag,
+      });
+      qc.invalidateQueries({ queryKey: ["feedstocks"] });
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+      toast.success(`Stok ${item.name} ${mode === "tambah" ? "ditambah" : "dikurangi"} ${delta} ${item.unit || ""}`);
+      onClose();
+    } catch (e) {
+      const alasan = e?.message || "kesalahan tidak diketahui";
+      qc.invalidateQueries({ queryKey: ["feedstocks"] });
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+      if (stokBerubah) {
+        toast.error(
+          `Stok SUDAH berubah, tetapi catatan pergerakannya gagal dibuat: ${alasan}. ` +
+          `JANGAN diulang — stoknya akan bergeser dua kali. Catat pergerakannya lewat Pergerakan Stok.`,
+          { duration: 12000 },
+        );
+      } else {
+        toast.error(`Gagal menyesuaikan stok: ${alasan}. Belum ada yang berubah.`);
+      }
+    } finally {
+      setSaving(false);
     }
-    await base44.entities.StockMovement.create({
-      item_id: item.id, item_name: item.name,
-      item_type: item._src === "feed" ? "feedstock" : "warehouse",
-      type: mode === "tambah" ? "masuk" : "keluar",
-      quantity: delta, unit: item.unit,
-      date: format(new Date(), "yyyy-MM-dd"),
-      by_email: user?.email || "", by_name: user?.full_name || user?.email || "", status: "selesai",
-      ...testModeTag,
-    });
-    qc.invalidateQueries({ queryKey: ["feedstocks"] });
-    qc.invalidateQueries({ queryKey: ["warehouse-items"] });
-    qc.invalidateQueries({ queryKey: ["stock-movements"] });
-    setSaving(false);
-    onClose();
   };
 
   return (

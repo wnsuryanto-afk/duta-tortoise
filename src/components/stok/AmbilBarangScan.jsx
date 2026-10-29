@@ -118,9 +118,32 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
   const siapMenyimpan =
     item && jumlahAngka > 0 && !stokKurang && (!butuhKura || !!kodeKura) && !menyimpan;
 
+  /**
+   * ── Tiga tulisan untuk satu pengambilan, dan ketiganya bisa gagal sendiri ──
+   *
+   * Mengambil barang dari rak menulis berurutan ke TIGA tempat:
+   *
+   *   1. StockMovement  catatan "barang keluar", beserta stock_after-nya.
+   *   2. WarehouseItem  stok gudang dikurangi.
+   *   3. BatchBarang    sisa batch yang dipindai ikut dikurangi.
+   *
+   * Pesan "Gagal menyimpan" yang polos sama untuk ketiganya, padahal:
+   *
+   *   gagal di (1)  belum ada apa pun; pindai ulang, aman.
+   *   gagal di (2)  catatan mengatakan stok tinggal sekian, tetapi angka di
+   *                 gudang belum turun. Mengulanginya menurunkan stok DUA
+   *                 kali untuk satu barang yang diambil sekali.
+   *   gagal di (3)  stok gudang sudah turun, sisa batch belum. Dua angka
+   *                 untuk satu rak, dan keduanya masuk akal — persis cacat
+   *                 yang dijaga cek-batch.
+   *
+   * Jadi yang dilaporkan bukan berhasil/gagal, melainkan sampai mana.
+   */
   const simpan = async () => {
     if (!siapMenyimpan) return;
     setMenyimpan(true);
+    let catatanDibuat = false;
+    let stokTurun = false;
     try {
       // by_email diisi dari sesi yang sedang login, BUKAN dari kolom isian.
       // Inti permintaannya adalah tahu siapa yang mengambil; kolom yang bisa
@@ -153,10 +176,12 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
           (batch ? `Dari batch ${batch.batch_code}.` : ""),
         ...testModeTag,
       });
+      catatanDibuat = true;
 
       await base44.entities.WarehouseItem.update(item.id, {
         current_stock: stokSekarang - jumlahAngka,
       });
+      stokTurun = true;
 
       if (batch) {
         await base44.entities.BatchBarang.update(batch.id, {
@@ -175,9 +200,27 @@ export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
       setOpen(false);
       onSelesai?.();
     } catch (e) {
-      setPesan("Gagal menyimpan: " + (e?.message || ""));
+      const alasan = e?.message || "kesalahan tidak diketahui";
+      // Daftar tetap disegarkan: yang sudah terlanjur berubah harus terlihat.
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+      qc.invalidateQueries({ queryKey: ["batch-barang"] });
+      if (!catatanDibuat) {
+        setPesan(`Gagal menyimpan: ${alasan}. Belum ada yang tercatat — aman dipindai ulang.`);
+      } else if (!stokTurun) {
+        setPesan(
+          `Pengambilan SUDAH tercatat, tetapi stok gudang belum turun: ${alasan}. ` +
+          `JANGAN diulang — kurangi stoknya lewat Stok & Gudang, atau batalkan pergerakannya.`,
+        );
+      } else {
+        setPesan(
+          `Pengambilan tercatat dan stok gudang sudah turun, tetapi sisa batch ${batch?.batch_code || ""} belum: ${alasan}. ` +
+          `JANGAN diulang — sesuaikan sisa batch lewat Stok & Gudang.`,
+        );
+      }
+    } finally {
+      setMenyimpan(false);
     }
-    setMenyimpan(false);
   };
 
   return (
