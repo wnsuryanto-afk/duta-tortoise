@@ -11,6 +11,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
+import { toast } from "sonner";
 import { ongkirUntukHpp } from "@/lib/hppKura";
 
 export default function SaleForm({ open, onClose, editData }) {
@@ -57,10 +58,33 @@ export default function SaleForm({ open, onClose, editData }) {
   const totalHpp = (Number(form.hpp) || 0) + ongkirHpp;
   const profit = (Number(form.price) || 0) - totalHpp;
 
+  /**
+   * Menyimpan penjualan.
+   *
+   * ── Kenapa seluruhnya dibungkus, dan kenapa kegagalannya dirinci ──────────
+   *
+   * Sebelum 29-10-2026 fungsi ini TIDAK punya penangkap galat sama sekali, dan
+   * tidak memanggil toast sekali pun — tidak saat berhasil, tidak saat gagal.
+   * Akibatnya satu penolakan server berarti: janji yang gagal tanpa pemilik,
+   * `setSaving(false)` tidak pernah tercapai, `onClose()` tidak pernah
+   * dipanggil, dan tombolnya berputar selamanya di atas formulir yang masih
+   * terisi penuh. Yang menekannya tidak diberi tahu apa pun.
+   *
+   * Dan penjualan baru menulis ke DUA tempat berurutan: Sale, lalu status
+   * kura. Bila yang kedua gagal setelah yang pertama berhasil, uangnya sudah
+   * tercatat sementara kuranya masih berstatus aktif — masih menempati
+   * kandang, masih ikut dihitung sebagai aset, masih diberi makan. Pesan
+   * "Gagal menyimpan" yang polos terbaca sebagai "tidak ada yang tersimpan",
+   * dan penjualan akan dicatat ulang: dua penjualan untuk satu kura.
+   *
+   * Jadi yang dilacak bukan berhasil/gagal, melainkan SAMPAI MANA.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     setSaving(true);
+    let penjualanTersimpan = false;
+    let kuraDitandai = false;
     const data = {
       ...form,
       price: form.price ? Number(form.price) : 0,
@@ -82,46 +106,67 @@ export default function SaleForm({ open, onClose, editData }) {
         ? Math.round((((Number(form.price) || 0) - totalHpp) / Number(form.price)) * 100)
         : 0,
     };
-    if (editData?.id) {
-      await base44.entities.Sale.update(editData.id, data);
-      // FIX: Auto-sync hp_whatsapp ke BuyerProfile (newest number wins)
-      if (form.hp_whatsapp && editData.buyer_profile_id) {
-        try {
-          const buyer = await base44.entities.BuyerProfile.get(editData.buyer_profile_id);
-          if (buyer && (!buyer.hp_whatsapp || buyer.hp_whatsapp !== form.hp_whatsapp)) {
-            await base44.entities.BuyerProfile.update(editData.buyer_profile_id, {
-              hp_whatsapp: form.hp_whatsapp,
-            });
-            queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
-          }
-        } catch (_) { /* non-critical */ }
+    try {
+      if (editData?.id) {
+        await base44.entities.Sale.update(editData.id, data);
+        penjualanTersimpan = true;
+        // FIX: Auto-sync hp_whatsapp ke BuyerProfile (newest number wins)
+        if (form.hp_whatsapp && editData.buyer_profile_id) {
+          try {
+            const buyer = await base44.entities.BuyerProfile.get(editData.buyer_profile_id);
+            if (buyer && (!buyer.hp_whatsapp || buyer.hp_whatsapp !== form.hp_whatsapp)) {
+              await base44.entities.BuyerProfile.update(editData.buyer_profile_id, {
+                hp_whatsapp: form.hp_whatsapp,
+              });
+              queryClient.invalidateQueries({ queryKey: ["buyer-profiles"] });
+            }
+          } catch (_) { /* non-critical */ }
+        }
+      } else {
+        await base44.entities.Sale.create({ ...data, ...testModeTag });
+        penjualanTersimpan = true;
+        // Update tortoise status to terjual and remove from enclosure
+        if (data.tortoise_id) {
+          // Status asal disimpan dan tanggal perubahannya dicatat, sama seperti
+          // yang dilakukan SaleWizard. Tanpa keduanya, pembatalan penjualan tidak
+          // punya rujukan untuk mengembalikan kura ke statusnya semula.
+          const kuraTerjual = tortoises.find(t => t.id === data.tortoise_id);
+          await base44.entities.Tortoise.update(data.tortoise_id, {
+            status: "terjual",
+            is_currently_sick: false,
+            previous_status: kuraTerjual?.status && kuraTerjual.status !== "terjual"
+              ? kuraTerjual.status
+              : kuraTerjual?.previous_status,
+            last_status_change: new Date().toISOString().split("T")[0],
+            ...kosongkanKandang(),
+          });
+          kuraDitandai = true;
+          // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.
+          try { await recalcEnclosureCounts(); } catch { /* penjualan tetap tersimpan */ }
+          queryClient.invalidateQueries({ queryKey: ["tortoises"] });
+          queryClient.invalidateQueries({ queryKey: ["enclosures"] });
+        }
       }
-    } else {
-      await base44.entities.Sale.create({ ...data, ...testModeTag });
-      // Update tortoise status to terjual and remove from enclosure
-      if (data.tortoise_id) {
-        // Status asal disimpan dan tanggal perubahannya dicatat, sama seperti
-        // yang dilakukan SaleWizard. Tanpa keduanya, pembatalan penjualan tidak
-        // punya rujukan untuk mengembalikan kura ke statusnya semula.
-        const kuraTerjual = tortoises.find(t => t.id === data.tortoise_id);
-        await base44.entities.Tortoise.update(data.tortoise_id, {
-          status: "terjual",
-          is_currently_sick: false,
-          previous_status: kuraTerjual?.status && kuraTerjual.status !== "terjual"
-            ? kuraTerjual.status
-            : kuraTerjual?.previous_status,
-          last_status_change: new Date().toISOString().split("T")[0],
-          ...kosongkanKandang(),
-        });
-        // Kandang lama kehilangan satu penghuni — hitung ulang agar tidak melar.
-        try { await recalcEnclosureCounts(); } catch { /* penjualan tetap tersimpan */ }
-        queryClient.invalidateQueries({ queryKey: ["tortoises"] });
-        queryClient.invalidateQueries({ queryKey: ["enclosures"] });
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      toast.success(editData?.id ? "Penjualan diperbarui" : "Penjualan dicatat");
+      onClose();
+    } catch (err) {
+      const pesan = err?.message || "kesalahan tidak diketahui";
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      if (penjualanTersimpan && data.tortoise_id && !kuraDitandai && !editData?.id) {
+        toast.error(
+          `Penjualan SUDAH tersimpan, tetapi status kuranya belum berubah jadi terjual: ${pesan}. ` +
+          `JANGAN dicatat ulang — ubah statusnya lewat halaman kura.`,
+          { duration: 12000 },
+        );
+      } else if (penjualanTersimpan) {
+        toast.error(`Penjualan SUDAH tersimpan, tetapi ada langkah lanjutan yang gagal: ${pesan}. Jangan dicatat ulang.`, { duration: 10000 });
+      } else {
+        toast.error(`Gagal menyimpan: ${pesan}. Belum ada yang tersimpan.`);
       }
+    } finally {
+      setSaving(false);
     }
-    queryClient.invalidateQueries({ queryKey: ["sales"] });
-    setSaving(false);
-    onClose();
   };
 
   return (

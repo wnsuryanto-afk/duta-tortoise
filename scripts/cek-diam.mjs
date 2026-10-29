@@ -72,7 +72,13 @@ const AKAR = process.cwd();
   sebagian checklist sudah disetujui tanpa ada yang tahu yang mana. Sekarang
   lewat lib/setujuiMassal.
 */
-const BATAS = 220;
+/*
+  Turun 220 → 216 pada 29 Okt: SaleForm.handleSubmit tidak punya penangkap
+  galat SAMA SEKALI dan tidak memanggil toast sekali pun — tidak saat berhasil,
+  tidak saat gagal. Satu penolakan server berarti janji yang gagal tanpa
+  pemilik, formulir yang tetap terisi, dan tombol yang berputar selamanya.
+*/
+const BATAS = 216;
 /*
   Turun 135 → 125 pada 29 Okt: seluruh kelompok KAS KECIL dibereskan sekaligus
   — pemakaian, top-up, permintaan top-up, rekonsiliasi, pencairan, dan
@@ -81,8 +87,12 @@ const BATAS = 220;
   PemakaianForm sudah membuktikan bahayanya: ia punya satu `return` lebih awal
   yang harus mengulang setSaving(false) sendiri, dan `return` berikutnya yang
   lupa melakukannya akan membuat tombolnya berputar selamanya.
+
+  Turun lagi 125 → 114 pada hari yang sama: kelompok PENJUALAN. SaleForm tanpa
+  penangkap galat sama sekali, dan SaleWizard yang mematikan penandanya hanya
+  di `catch` — pada jalan sukses tombolnya tidak pernah dimatikan sama sekali.
 */
-const BATAS_BERPUTAR = 125;
+const BATAS_BERPUTAR = 114;
 
 /*
   ── Bagian kedua: pekerjaan borongan yang berhenti di baris pertama yang rusak
