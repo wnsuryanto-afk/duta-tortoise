@@ -78,7 +78,7 @@ const AKAR = process.cwd();
   tidak saat gagal. Satu penolakan server berarti janji yang gagal tanpa
   pemilik, formulir yang tetap terisi, dan tombol yang berputar selamanya.
 */
-const BATAS = 216;
+const BATAS = 212;
 /*
   Turun 135 → 125 pada 29 Okt: seluruh kelompok KAS KECIL dibereskan sekaligus
   — pemakaian, top-up, permintaan top-up, rekonsiliasi, pencairan, dan
@@ -91,8 +91,13 @@ const BATAS = 216;
   Turun lagi 125 → 114 pada hari yang sama: kelompok PENJUALAN. SaleForm tanpa
   penangkap galat sama sekali, dan SaleWizard yang mematikan penandanya hanya
   di `catch` — pada jalan sukses tombolnya tidak pernah dimatikan sama sekali.
+
+  Dan 114 → 105: kelompok STOK & GUDANG. FormPergerakanStok dan penyesuaian
+  stok cepat di StokInventoryTab sama-sama tanpa penangkap galat; AmbilBarangScan
+  menulis tiga kali berurutan (catatan, stok gudang, sisa batch) dan hanya
+  mengabarkan "Gagal menyimpan" untuk ketiganya.
 */
-const BATAS_BERPUTAR = 114;
+const BATAS_BERPUTAR = 105;
 
 /*
   ── Bagian kedua: pekerjaan borongan yang berhenti di baris pertama yang rusak
