@@ -26,8 +26,12 @@ export default function RejectTopUpDialog({ request, onClose, onSaved }) {
       onClose();
     } catch (err) {
       toast.error("Gagal: " + (err?.data?.error || err?.message || ""));
+    } finally {
+      /* Di `finally`, bukan sesudah catch: satu `return` lebih awal yang
+         ditambahkan nanti akan melewatinya, dan tombolnya berputar selamanya
+         tanpa pesan apa pun. */
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (

@@ -58,8 +58,9 @@ export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }
       onClose();
     } catch (err) {
       toast.error("Gagal: " + (err?.message || ""));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (

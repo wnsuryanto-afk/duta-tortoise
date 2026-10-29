@@ -33,8 +33,9 @@ export default function TopUpRequestForm({ user, onClose, onSaved }) {
       onClose();
     } catch (err) {
       toast.error("Gagal: " + (err?.message || ""));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (

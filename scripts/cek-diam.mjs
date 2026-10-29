@@ -73,7 +73,16 @@ const AKAR = process.cwd();
   lewat lib/setujuiMassal.
 */
 const BATAS = 220;
-const BATAS_BERPUTAR = 135;
+/*
+  Turun 135 → 125 pada 29 Okt: seluruh kelompok KAS KECIL dibereskan sekaligus
+  — pemakaian, top-up, permintaan top-up, rekonsiliasi, pencairan, dan
+  penyuntingan entri. Sepuluh tombol yang memegang uang tunai, semuanya
+  memakai `setSaving(false)` SESUDAH catch alih-alih di dalam `finally`.
+  PemakaianForm sudah membuktikan bahayanya: ia punya satu `return` lebih awal
+  yang harus mengulang setSaving(false) sendiri, dan `return` berikutnya yang
+  lupa melakukannya akan membuat tombolnya berputar selamanya.
+*/
+const BATAS_BERPUTAR = 125;
 
 /*
   ── Bagian kedua: pekerjaan borongan yang berhenti di baris pertama yang rusak

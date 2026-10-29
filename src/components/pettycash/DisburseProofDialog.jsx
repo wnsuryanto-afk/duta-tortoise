@@ -59,8 +59,9 @@ export default function DisburseProofDialog({ request, mode = "disburse", user, 
       onClose();
     } catch (err) {
       toast.error("Gagal: " + (err?.message || ""));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleAddProof = async () => {
@@ -78,8 +79,9 @@ export default function DisburseProofDialog({ request, mode = "disburse", user, 
       onClose();
     } catch (err) {
       toast.error("Gagal: " + (err?.message || ""));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (

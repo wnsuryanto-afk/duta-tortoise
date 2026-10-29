@@ -61,6 +61,9 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
       if (noNota && !noNotaReason.trim()) { toast.error("Alasan 'tidak ada nota' wajib diisi"); return; }
     }
     setSaving(true);
+    // Sampai mana perubahannya tiba — bukan sekadar berhasil/gagal.
+    let kasBerubah = false;
+    let labaRugiBerubah = false;
     try {
       const before = { ...entry };
       const updateData = {
@@ -77,6 +80,7 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
       if (hargaNum > 0) updateData.harga_satuan = hargaNum;
 
       await base44.entities.PettyCashLedger.update(entry.id, updateData);
+      kasBerubah = true;
 
       // Update linked FinanceTransaction
       if (entry.finance_tx_id) {
@@ -90,6 +94,7 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
           edited_by: user?.full_name || user?.email || "",
           edited_at: new Date().toISOString(),
         });
+        labaRugiBerubah = true;
       }
 
       // Recalculate all balance_after (cascade)
@@ -108,9 +113,28 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
       onSaved();
       onClose();
     } catch (err) {
-      toast.error("Gagal: " + (err?.message || ""));
+      const pesan = err?.message || "kesalahan tidak diketahui";
+      /*
+       * Dua buku, dan yang kedua bisa gagal setelah yang pertama berubah.
+       * "Gagal: …" terbaca sebagai "tidak ada yang berubah" — padahal nominal
+       * di kas kecil sudah menjadi angka baru sementara laba rugi masih
+       * memakai yang lama. Dua buku yang menyebut angka berbeda untuk satu
+       * nota adalah selisih yang baru ketahuan saat tutup buku.
+       */
+      if (kasBerubah && entry.finance_tx_id && !labaRugiBerubah) {
+        toast.error(
+          `Nominal di kas kecil SUDAH berubah, tetapi catatan Laba Rugi-nya belum: ${pesan}. ` +
+          `Kedua angka sekarang berbeda — ulangi penyuntingan ini sampai berhasil.`,
+          { duration: 12000 },
+        );
+      } else if (kasBerubah) {
+        toast.error(`Entri berubah, tetapi saldo belum dihitung ulang: ${pesan}. Buka lagi Riwayat Kas Kecil.`);
+      } else {
+        toast.error(`Gagal menyimpan: ${pesan}. Belum ada yang berubah.`);
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (

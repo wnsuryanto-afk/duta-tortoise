@@ -41,8 +41,9 @@ export default function RekonsiliasiForm({ currentSaldo, user, role, onClose, on
       onClose();
     } catch (err) {
       toast.error("Gagal: " + (err?.message || ""));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (
