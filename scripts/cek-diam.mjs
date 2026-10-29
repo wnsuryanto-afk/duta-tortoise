@@ -78,7 +78,7 @@ const AKAR = process.cwd();
   tidak saat gagal. Satu penolakan server berarti janji yang gagal tanpa
   pemilik, formulir yang tetap terisi, dan tombol yang berputar selamanya.
 */
-const BATAS = 212;
+const BATAS = 196;
 /*
   Turun 135 → 125 pada 29 Okt: seluruh kelompok KAS KECIL dibereskan sekaligus
   — pemakaian, top-up, permintaan top-up, rekonsiliasi, pencairan, dan
@@ -96,8 +96,14 @@ const BATAS = 212;
   stok cepat di StokInventoryTab sama-sama tanpa penangkap galat; AmbilBarangScan
   menulis tiga kali berurutan (catatan, stok gudang, sisa batch) dan hanya
   mengabarkan "Gagal menyimpan" untuk ketiganya.
+
+  Lalu 105 → 94 dan 212 → 196: kelompok KESEHATAN. HealthForm tanpa penangkap
+  galat di jalur utamanya, dan enam penangan di TreatmentPage tanpa satu pun —
+  termasuk "Selesai" pada pengingat berulang, yang membuat pengingat berikutnya
+  lalu menandai yang sekarang: gagal di langkah kedua berarti dua pengingat
+  terbuka untuk satu pemeriksaan, dan menekan Selesai lagi membuat yang ketiga.
 */
-const BATAS_BERPUTAR = 105;
+const BATAS_BERPUTAR = 94;
 
 /*
   ── Bagian kedua: pekerjaan borongan yang berhenti di baris pertama yang rusak

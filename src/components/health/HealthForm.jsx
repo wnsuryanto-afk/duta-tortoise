@@ -124,186 +124,233 @@ export default function HealthForm({ open, onClose, editData }) {
     });
   };
 
+  /**
+   * ── Kenapa seluruhnya dibungkus, dan kenapa kegagalannya dirinci ──────────
+   *
+   * Sebelum 29-10-2026 fungsi ini tidak punya penangkap galat di jalur
+   * utamanya. Satu penolakan server berarti tombolnya berputar selamanya di
+   * atas formulir yang masih terisi, tanpa satu pun pesan.
+   *
+   * Yang paling mahal bukan itu, melainkan urutannya. Catatan kesehatan
+   * disimpan dulu, stok obat dipotong, lalu — hanya untuk obat yang dibeli
+   * dadakan — sebuah FinanceTransaction dibuat dan id-nya ditulis balik ke
+   * catatan kesehatannya. Bila langkah terakhir itu gagal, `finance_tx_id`
+   * tidak pernah tersimpan. Menyimpan ulang formulir yang sama akan membuat
+   * FinanceTransaction KEDUA untuk obat yang sama, karena tidak ada id lama
+   * yang bisa diperbarui. Pengeluaran yang sama masuk laba rugi dua kali.
+   *
+   * Pemotongan stoknya sendiri aman diulang — `terapkanPemakaianObat` bekerja
+   * atas SELISIH itemsLama vs itemsBaru, jadi menyimpan ulang catatan yang
+   * sama menghasilkan selisih nol. Yang tidak aman diulang hanya sisi uangnya.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (hasOverStock) return;
     setSaving(true);
-    // Bersihkan _available_stock sebelum simpan
-    const cleanItems = (form.treatment_items || []).map(({ _available_stock, ...it }) => it);
-    const data = {
-      ...form,
-      treatment_items: cleanItems,
-      biaya_obat: Number(form.biaya_obat) || 0,
-      biaya_obat_manual: editBiayaManual,
-      last_edited_by: (await base44.auth.me().catch(() => null))?.email || "sistem",
-    };
-    let savedRecord;
-    if (editData?.id) {
-      savedRecord = await base44.entities.HealthRecord.update(editData.id, data);
-    } else {
-      savedRecord = await base44.entities.HealthRecord.create({ ...data, ...testModeTag });
-    }
-
-    // ── Obat yang diberikan mengurangi stok gudang ──
-    //
-    // Sebelum ini tidak ada satu pun jalur di aplikasi yang mengurangi stok
-    // karena pengobatan, jadi angka stok obat hanya pernah naik. Itu yang
-    // membuat gudang terbaca 505 ampul Vitamin B dan 22 ampul Oxytocin.
-    //
-    // Dihitung sebagai SELISIH terhadap catatan lama, supaya menyimpan ulang
-    // catatan yang sudah ada tidak memotong stok untuk kedua kalinya.
-    if (cleanItems.length > 0 || (editData?.treatment_items || []).length > 0) {
-      const { gagal, kurangBatch = [] } = await terapkanPemakaianObat({
-        record: { ...data, id: savedRecord?.id || editData?.id },
-        itemsLama: editData?.treatment_items || [],
-        itemsBaru: cleanItems,
-        user: await base44.auth.me().catch(() => null),
-        tandaUji: testModeTag,
-        batchAktif,
-      });
-      // Stok yang meleset diam-diam adalah persis cacat yang sedang diperbaiki
-      // di sini, jadi kegagalannya disebutkan.
-      if (gagal.length > 0) {
-        toast.error(`Stok ${gagal.length} obat gagal disesuaikan — ${gagal[0]}`);
+    let catatanTersimpan = false;
+    let uangTercatat = false;
+    try {
+      // Bersihkan _available_stock sebelum simpan
+      const cleanItems = (form.treatment_items || []).map(({ _available_stock, ...it }) => it);
+      const data = {
+        ...form,
+        treatment_items: cleanItems,
+        biaya_obat: Number(form.biaya_obat) || 0,
+        biaya_obat_manual: editBiayaManual,
+        last_edited_by: (await base44.auth.me().catch(() => null))?.email || "sistem",
+      };
+      let savedRecord;
+      if (editData?.id) {
+        savedRecord = await base44.entities.HealthRecord.update(editData.id, data);
+      } else {
+        savedRecord = await base44.entities.HealthRecord.create({ ...data, ...testModeTag });
       }
-      // Barangnya nyata-nyata sudah dipakai, jadi catatan kesehatannya tetap
-      // disimpan — yang kurang adalah batch yang tercatat, bukan barangnya.
-      for (const b of kurangBatch) {
-        toast.warning(
-          `${b.nama}: ${b.kurang} ${b.satuan} tidak tertutup batch mana pun. ` +
-          "Stok gudang sudah dikurangi, tapi ada barang terpakai yang tidak punya catatan batch."
+      catatanTersimpan = true;
+
+      // ── Obat yang diberikan mengurangi stok gudang ──
+      //
+      // Sebelum ini tidak ada satu pun jalur di aplikasi yang mengurangi stok
+      // karena pengobatan, jadi angka stok obat hanya pernah naik. Itu yang
+      // membuat gudang terbaca 505 ampul Vitamin B dan 22 ampul Oxytocin.
+      //
+      // Dihitung sebagai SELISIH terhadap catatan lama, supaya menyimpan ulang
+      // catatan yang sudah ada tidak memotong stok untuk kedua kalinya.
+      if (cleanItems.length > 0 || (editData?.treatment_items || []).length > 0) {
+        const { gagal, kurangBatch = [] } = await terapkanPemakaianObat({
+          record: { ...data, id: savedRecord?.id || editData?.id },
+          itemsLama: editData?.treatment_items || [],
+          itemsBaru: cleanItems,
+          user: await base44.auth.me().catch(() => null),
+          tandaUji: testModeTag,
+          batchAktif,
+        });
+        // Stok yang meleset diam-diam adalah persis cacat yang sedang diperbaiki
+        // di sini, jadi kegagalannya disebutkan.
+        if (gagal.length > 0) {
+          toast.error(`Stok ${gagal.length} obat gagal disesuaikan — ${gagal[0]}`);
+        }
+        // Barangnya nyata-nyata sudah dipakai, jadi catatan kesehatannya tetap
+        // disimpan — yang kurang adalah batch yang tercatat, bukan barangnya.
+        for (const b of kurangBatch) {
+          toast.warning(
+            `${b.nama}: ${b.kurang} ${b.satuan} tidak tertutup batch mana pun. ` +
+            "Stok gudang sudah dikurangi, tapi ada barang terpakai yang tidak punya catatan batch."
+          );
+        }
+      }
+      // ── Sambungkan catatan kesehatan ke status kura ──
+      // Sebelumnya HealthRecord dibuat tanpa pernah menandai kuranya, sehingga
+      // penghitung "Sakit" di Daftar Kura selalu 0 meski ada catatan sakit aktif.
+      if (data.tortoise_id) {
+        try {
+          // Status sebelum sakit dibaca dari kuranya sendiri; menebak "aktif"
+          // membuat kura baby kehilangan klasifikasinya setelah sembuh.
+          const kura = tortoises.find((t) => t.id === data.tortoise_id);
+          if (data.type === "sakit") {
+            await base44.entities.Tortoise.update(data.tortoise_id, perubahanSakit(kura, data.date));
+          } else if (data.type === "sembuh") {
+            await base44.entities.Tortoise.update(data.tortoise_id, perubahanSembuh(kura, data.date));
+          }
+        } catch {
+          // Gagal memperbarui status tidak boleh membatalkan catatan yang sudah tersimpan.
+        }
+      }
+
+      // ── Obat yang dipakai keluar dari gudang ──
+      //
+      // Sampai 31-08-2026 bagian ini TIDAK ADA. Formulir ini sudah lama punya
+      // pemilih obat lengkap dengan pemeriksa stok, tapi menyimpannya tidak
+      // pernah memotong stok apa pun dan tidak pernah menulis pergerakan barang.
+      // Obat dipakai, stok gudang tidak bergerak, dan kura yang diobati tidak
+      /*
+       * Blok pemotongan stok KEDUA dihapus di sini pada 30-09-2026.
+       *
+       * Sampai hari ini berkas ini memotong stok DUA KALI untuk satu catatan
+       * pengobatan baru:
+       *
+       *   · `terapkanPemakaianObat()` di atas — menghitung SELISIH terhadap
+       *     catatan lama, lalu mengurangi current_stock dan menulis
+       *     StockMovement;
+       *   · lalu sebuah gelung tersendiri yang mengurangi current_stock lagi
+       *     dan menulis StockMovement kedua untuk barang yang sama.
+       *
+       * Penjaganya tidak menahan apa pun: syaratnya `!editData?.stok_dipotong`,
+       * dan pada catatan BARU `editData` memang undefined — jadi selalu benar.
+       * Gelung itu peninggalan 31-08-2026; penggantinya ditambahkan belakangan
+       * dan yang lama lupa dibuang.
+       *
+       * Dua hal lagi yang ikut salah tempat, dan itulah yang membuat cacat ini
+       * tidak terlihat sebagai satu cacat:
+       *
+       *   · penanda `stok_dipotong` ditulis di DALAM cabang
+       *     `if (menjadiPengeluaran(data))`. Obat yang diambil dari gudang
+       *     bukan pengeluaran baru, jadi penandanya tidak pernah tersimpan —
+       *     dan menyimpan ulang catatan yang sama memotong stok sekali lagi;
+       *   · ketiga invalidateQueries stok juga di dalam cabang yang sama, jadi
+       *     layar gudang tidak menyegar untuk obat dari stok sendiri.
+       *
+       * Sekarang satu penulis mengerjakan ketiganya — current_stock,
+       * StockMovement, dan sisa batch — di lib/pemakaianObat.js, dan ia
+       * idempoten karena bekerja atas selisih, bukan atas penanda.
+       *
+       * Diperiksa di basis data 30-09-2026: ke-18 HealthRecord punya
+       * `treatment_items` kosong dan tidak ada satu pun StockMovement
+       * berkeperluan "pengobatan_kura". Pemilih obatnya belum pernah dipakai,
+       * jadi pemotongan ganda ini belum pernah benar-benar terjadi.
+       */
+
+      // Catatan keuangan HANYA untuk obat yang dibeli dadakan di luar stok.
+      //
+      // Obat yang diambil dari gudang sudah dibiayakan saat DIBELI — dua puluh
+      // pembelian yang ada semuanya sudah masuk laba rugi begitu barangnya
+      // diterima. Mencatatnya lagi di sini menghitung rupiah yang sama dua kali.
+      // Biayanya tetap tersimpan pada catatan kesehatan sebagai atribusi ke kura
+      // yang bersangkutan, hanya tidak menjadi pengeluaran baru.
+      if (menjadiPengeluaran(data)) {
+        const diagDesc = (data.diagnoses || []).slice(0, 2).join(", ");
+        const txDesc = `Obat: ${data.tortoise_name}${diagDesc ? " - " + diagDesc : ""}`;
+        const existingTxId = editData?.finance_tx_id;
+        if (existingTxId) {
+          await base44.entities.FinanceTransaction.update(existingTxId, {
+            amount: data.biaya_obat,
+            date: data.date,
+            description: txDesc,
+          });
+        } else {
+          const tx = await base44.entities.FinanceTransaction.create({
+            type: "pengeluaran",
+            category: "obat_perawatan",
+            amount: data.biaya_obat,
+            date: data.date,
+            description: txDesc,
+            reference_id: savedRecord?.id || editData?.id || "",
+            ...testModeTag,
+          });
+          if (tx?.id && savedRecord?.id) {
+            await base44.entities.HealthRecord.update(savedRecord.id, { finance_tx_id: tx.id });
+          }
+        }
+        uangTercatat = true;
+      }
+
+      /*
+       * Penyegaran cache stok dikeluarkan dari cabang `menjadiPengeluaran`.
+       *
+       * Ketiganya dulu di dalam cabang itu, jadi obat yang diambil dari gudang
+       * — yang justru BUKAN pengeluaran baru — memotong stok tanpa pernah
+       * menyegarkan layar gudang, daftar pergerakan, maupun batch. Angkanya
+       * sudah berubah di basis data; yang di layar belum.
+       *
+       * Penanda `stok_dipotong` ikut dibuang bersama gelung lama di atas:
+       * `terapkanPemakaianObat` bekerja atas SELISIH itemsLama vs itemsBaru,
+       * jadi menyimpan ulang catatan yang sama menghasilkan selisih nol dan
+       * tidak memotong apa pun. Itu jaminan yang berasal dari cara kerjanya,
+       * bukan dari sebuah penanda yang bisa gagal tersimpan.
+       */
+      if (cleanItems.length > 0 || (editData?.treatment_items || []).length > 0) {
+        queryClient.invalidateQueries({ queryKey: ["warehouse-items"] });
+        queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
+        queryClient.invalidateQueries({ queryKey: ["batch-barang"] });
+      }
+
+      // FinanceTransaction untuk biaya_obat SENGAJA TIDAK dibuat lagi di sini.
+      //
+      // Uang untuk obat sudah keluar saat obatnya DIBELI — penerimaan barang
+      // mencatatnya sebagai pengeluaran. Mencatatnya sekali lagi saat obatnya
+      // dipakai membuat rupiah yang sama muncul dua kali di laba rugi, dan
+      // membesar tiap kali seekor kura diobati.
+      //
+      // Peran biaya_obat di sini adalah PEMBEBANAN ke seekor kura, bukan
+      // pengeluaran baru: angkanya menempel ke harga pokok kura lewat catatan
+      // pergerakan barang di atas.
+      queryClient.invalidateQueries({ queryKey: ["health"] });
+      queryClient.invalidateQueries({ queryKey: ["health-records"] });
+      queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
+      toast.success(editData?.id ? "Catatan kesehatan diperbarui" : "Catatan kesehatan tersimpan");
+      onClose();
+    } catch (err) {
+      const alasan = err?.message || "kesalahan tidak diketahui";
+      ["health", "health-records", "health-records-all", "warehouse-items", "stock-movements", "batch-barang"]
+        .forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+      if (!catatanTersimpan) {
+        toast.error(`Gagal menyimpan: ${alasan}. Belum ada yang tersimpan.`);
+      } else if (!uangTercatat && menjadiPengeluaran(form)) {
+        toast.error(
+          `Catatan kesehatan SUDAH tersimpan dan stok obatnya sudah disesuaikan, tetapi biayanya belum masuk Laba Rugi: ${alasan}. ` +
+          `JANGAN disimpan ulang — itu akan membuat pengeluaran KEDUA untuk obat yang sama. ` +
+          `Catat biayanya lewat Keuangan, atau buka lagi catatan ini lalu simpan dari sana.`,
+          { duration: 14000 },
+        );
+      } else {
+        toast.error(
+          `Catatan kesehatan SUDAH tersimpan, tetapi ada langkah lanjutan yang gagal: ${alasan}. ` +
+          `Periksa dulu sebelum menyimpan ulang.`,
+          { duration: 10000 },
         );
       }
+    } finally {
+      setSaving(false);
     }
-    // ── Sambungkan catatan kesehatan ke status kura ──
-    // Sebelumnya HealthRecord dibuat tanpa pernah menandai kuranya, sehingga
-    // penghitung "Sakit" di Daftar Kura selalu 0 meski ada catatan sakit aktif.
-    if (data.tortoise_id) {
-      try {
-        // Status sebelum sakit dibaca dari kuranya sendiri; menebak "aktif"
-        // membuat kura baby kehilangan klasifikasinya setelah sembuh.
-        const kura = tortoises.find((t) => t.id === data.tortoise_id);
-        if (data.type === "sakit") {
-          await base44.entities.Tortoise.update(data.tortoise_id, perubahanSakit(kura, data.date));
-        } else if (data.type === "sembuh") {
-          await base44.entities.Tortoise.update(data.tortoise_id, perubahanSembuh(kura, data.date));
-        }
-      } catch {
-        // Gagal memperbarui status tidak boleh membatalkan catatan yang sudah tersimpan.
-      }
-    }
-
-    // ── Obat yang dipakai keluar dari gudang ──
-    //
-    // Sampai 31-08-2026 bagian ini TIDAK ADA. Formulir ini sudah lama punya
-    // pemilih obat lengkap dengan pemeriksa stok, tapi menyimpannya tidak
-    // pernah memotong stok apa pun dan tidak pernah menulis pergerakan barang.
-    // Obat dipakai, stok gudang tidak bergerak, dan kura yang diobati tidak
-    /*
-     * Blok pemotongan stok KEDUA dihapus di sini pada 30-09-2026.
-     *
-     * Sampai hari ini berkas ini memotong stok DUA KALI untuk satu catatan
-     * pengobatan baru:
-     *
-     *   · `terapkanPemakaianObat()` di atas — menghitung SELISIH terhadap
-     *     catatan lama, lalu mengurangi current_stock dan menulis
-     *     StockMovement;
-     *   · lalu sebuah gelung tersendiri yang mengurangi current_stock lagi
-     *     dan menulis StockMovement kedua untuk barang yang sama.
-     *
-     * Penjaganya tidak menahan apa pun: syaratnya `!editData?.stok_dipotong`,
-     * dan pada catatan BARU `editData` memang undefined — jadi selalu benar.
-     * Gelung itu peninggalan 31-08-2026; penggantinya ditambahkan belakangan
-     * dan yang lama lupa dibuang.
-     *
-     * Dua hal lagi yang ikut salah tempat, dan itulah yang membuat cacat ini
-     * tidak terlihat sebagai satu cacat:
-     *
-     *   · penanda `stok_dipotong` ditulis di DALAM cabang
-     *     `if (menjadiPengeluaran(data))`. Obat yang diambil dari gudang
-     *     bukan pengeluaran baru, jadi penandanya tidak pernah tersimpan —
-     *     dan menyimpan ulang catatan yang sama memotong stok sekali lagi;
-     *   · ketiga invalidateQueries stok juga di dalam cabang yang sama, jadi
-     *     layar gudang tidak menyegar untuk obat dari stok sendiri.
-     *
-     * Sekarang satu penulis mengerjakan ketiganya — current_stock,
-     * StockMovement, dan sisa batch — di lib/pemakaianObat.js, dan ia
-     * idempoten karena bekerja atas selisih, bukan atas penanda.
-     *
-     * Diperiksa di basis data 30-09-2026: ke-18 HealthRecord punya
-     * `treatment_items` kosong dan tidak ada satu pun StockMovement
-     * berkeperluan "pengobatan_kura". Pemilih obatnya belum pernah dipakai,
-     * jadi pemotongan ganda ini belum pernah benar-benar terjadi.
-     */
-
-    // Catatan keuangan HANYA untuk obat yang dibeli dadakan di luar stok.
-    //
-    // Obat yang diambil dari gudang sudah dibiayakan saat DIBELI — dua puluh
-    // pembelian yang ada semuanya sudah masuk laba rugi begitu barangnya
-    // diterima. Mencatatnya lagi di sini menghitung rupiah yang sama dua kali.
-    // Biayanya tetap tersimpan pada catatan kesehatan sebagai atribusi ke kura
-    // yang bersangkutan, hanya tidak menjadi pengeluaran baru.
-    if (menjadiPengeluaran(data)) {
-      const diagDesc = (data.diagnoses || []).slice(0, 2).join(", ");
-      const txDesc = `Obat: ${data.tortoise_name}${diagDesc ? " - " + diagDesc : ""}`;
-      const existingTxId = editData?.finance_tx_id;
-      if (existingTxId) {
-        await base44.entities.FinanceTransaction.update(existingTxId, {
-          amount: data.biaya_obat,
-          date: data.date,
-          description: txDesc,
-        });
-      } else {
-        const tx = await base44.entities.FinanceTransaction.create({
-          type: "pengeluaran",
-          category: "obat_perawatan",
-          amount: data.biaya_obat,
-          date: data.date,
-          description: txDesc,
-          reference_id: savedRecord?.id || editData?.id || "",
-          ...testModeTag,
-        });
-        if (tx?.id && savedRecord?.id) {
-          await base44.entities.HealthRecord.update(savedRecord.id, { finance_tx_id: tx.id });
-        }
-      }
-    }
-
-    /*
-     * Penyegaran cache stok dikeluarkan dari cabang `menjadiPengeluaran`.
-     *
-     * Ketiganya dulu di dalam cabang itu, jadi obat yang diambil dari gudang
-     * — yang justru BUKAN pengeluaran baru — memotong stok tanpa pernah
-     * menyegarkan layar gudang, daftar pergerakan, maupun batch. Angkanya
-     * sudah berubah di basis data; yang di layar belum.
-     *
-     * Penanda `stok_dipotong` ikut dibuang bersama gelung lama di atas:
-     * `terapkanPemakaianObat` bekerja atas SELISIH itemsLama vs itemsBaru,
-     * jadi menyimpan ulang catatan yang sama menghasilkan selisih nol dan
-     * tidak memotong apa pun. Itu jaminan yang berasal dari cara kerjanya,
-     * bukan dari sebuah penanda yang bisa gagal tersimpan.
-     */
-    if (cleanItems.length > 0 || (editData?.treatment_items || []).length > 0) {
-      queryClient.invalidateQueries({ queryKey: ["warehouse-items"] });
-      queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
-      queryClient.invalidateQueries({ queryKey: ["batch-barang"] });
-    }
-
-    // FinanceTransaction untuk biaya_obat SENGAJA TIDAK dibuat lagi di sini.
-    //
-    // Uang untuk obat sudah keluar saat obatnya DIBELI — penerimaan barang
-    // mencatatnya sebagai pengeluaran. Mencatatnya sekali lagi saat obatnya
-    // dipakai membuat rupiah yang sama muncul dua kali di laba rugi, dan
-    // membesar tiap kali seekor kura diobati.
-    //
-    // Peran biaya_obat di sini adalah PEMBEBANAN ke seekor kura, bukan
-    // pengeluaran baru: angkanya menempel ke harga pokok kura lewat catatan
-    // pergerakan barang di atas.
-    queryClient.invalidateQueries({ queryKey: ["health"] });
-    queryClient.invalidateQueries({ queryKey: ["health-records"] });
-    queryClient.invalidateQueries({ queryKey: ["health-records-all"] });
-    setSaving(false);
-    onClose();
   };
 
   const typeLabels = {
