@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,8 +23,24 @@ import { potongBatchGudang } from "@/lib/pemakaianBarang";
 import { periksaResep, bolehDiracik } from "@/lib/resepRacikan";
 import {
   rincianBahan, masalahBahan, bahanTanpaHarga, totalBiaya,
-  hppHasil, jumlahHasil, cariBarangHasil,
+  hppHasil, jumlahHasil, cariBarangHasil, batasDariStok, dampakKekurangan,
 } from "@/lib/produksiRacikan";
+
+/**
+ * Kandungan IU per gram dari nama bahannya, bila tertulis di situ.
+ *
+ * Resep ini sengaja menulis kadar di dalam nama — "Vitamin D3 100.000 IU/g" —
+ * karena pelajaran termahal dari resep awal adalah bahwa "Vitamin D 250 g"
+ * tanpa kadar bisa berarti aman atau meracuni. Kalau kadarnya tertulis, layar
+ * bisa menyebut dosisnya dalam IU, satu-satunya satuan yang bisa dibandingkan
+ * dengan rentang rujukan.
+ */
+function iuPerGram(nama) {
+  const m = /([\d][\d.,]*)\s*IU\s*\/\s*g/i.exec(String(nama || ""));
+  if (!m) return 0;
+  const n = Number(m[1].replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
 
 function RecipeForm({ recipe, feedItems, warehouseItems, onClose, onSaved }) {
   const allItems = [
@@ -113,16 +130,40 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
   const [qty, setQty] = useState(recipe?.yield_kg || "");
   const [producing, setProducing] = useState(false);
   const [gagal, setGagal] = useState("");
+  // Izin meracik walau bahannya kurang — sengaja mati setiap kali jumlahnya
+  // diubah, supaya tidak terbawa dari hitungan sebelumnya.
+  const [izinKurang, setIzinKurang] = useState(false);
+  const [bukaRincian, setBukaRincian] = useState(false);
 
   const semuaBarang = [...feedItems, ...warehouseItems];
   const rincian = rincianBahan(recipe, qty, semuaBarang);
   const stockIssues = masalahBahan(rincian);
+  const dosisResep = Number(recipe?.dosis_gram) || 0;
+  const maksDariStok = batasDariStok(rincian, Number(qty) || 0);
+  const dampak = dampakKekurangan(rincian, recipe, Number(qty) || 0, dosisResep);
+  const kurangBahan = stockIssues.length > 0;
+  const bisaDiracik = !!qty && (!kurangBahan || (izinKurang && dampak.beratAktualKg > 0));
+  /*
+   * Yang BENAR-BENAR dipakai meracik. Saat bahannya kurang dan pemilik memilih
+   * jalan terus, tiap bahan diambil sebanyak yang ada — bukan sebanyak yang
+   * diminta resep. Satu daftar ini dipakai untuk memotong stok, menghitung
+   * biaya, DAN menentukan berat hasilnya, supaya ketiganya tidak bisa berbeda.
+   */
+  const rincianPakai = (kurangBahan && izinKurang)
+    ? rincian.map((r) => {
+        const ada = r.item ? Number(r.item.current_stock) || 0 : 0;
+        const butuh = Math.min(r.butuh, ada);
+        return { ...r, butuh, biaya: Math.round(butuh * r.hargaSatuan), cukup: true };
+      })
+    : rincian;
   const tanpaHarga = bahanTanpaHarga(rincian);
-  const biaya = totalBiaya(rincian);
+  const biaya = totalBiaya(rincianPakai);
   const tujuan = cariBarangHasil(recipe, warehouseItems, feedItems);
   const satuanHasil = tujuan.item?.unit || "kg";
-  const hpp = hppHasil(biaya, qty, satuanHasil);
-  const hasilDalamSatuan = jumlahHasil(qty, satuanHasil);
+  // Berat hasil = jumlah bahan yang sungguh masuk, bukan angka yang diketik.
+  const hasilKg = (kurangBahan && izinKurang) ? dampak.beratAktualKg : (Number(qty) || 0);
+  const hpp = hppHasil(biaya, hasilKg, satuanHasil);
+  const hasilDalamSatuan = jumlahHasil(hasilKg, satuanHasil);
 
   /* Kode batch racikan terakhir, supaya pesan galat bisa menyebutnya — ia
      dibuat di dalam try, jadi tidak terjangkau dari catch tanpa ini. */
@@ -145,7 +186,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
    * hasilnya sudah masuk.
    */
   const handleProduce = async () => {
-    if (stockIssues.length > 0 || !qty) return;
+    if (!bisaDiracik) return;
     setProducing(true);
     setGagal("");
     const bahanTerpakai = [];
@@ -155,13 +196,26 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
       const today = new Date().toISOString().split("T")[0];
       const batchNo = `BATCH-RACIK-${Date.now().toString(36).toUpperCase()}`;
       batchNoTerakhir.current = batchNo;
+      /*
+       * Satu kalimat yang menempel di catatan produksi, label batch, DAN
+       * catatan pergerakan stok. Batch yang takarannya tidak sesuai resep
+       * harus bisa dikenali dari mana pun orang membukanya — kalau hanya
+       * tercatat di satu tempat, yang membuka tempat lain tidak akan tahu.
+       */
+      const catatanKurang = (kurangBahan && izinKurang)
+        ? ` ⚠ BATCH TIDAK UTUH: ${dampak.kurang.map((k) => k.nama.split(" — ")[0]).join(", ")} kurang, ` +
+          `adonan jadi ${dampak.beratAktualKg.toFixed(2)} kg dari ${Number(qty)} kg yang diminta` +
+          (dampak.adaYangNaik
+            ? `. DOSIS NAIK: ${dampak.dosis.filter((d) => d.kaliLipat > 1.05).map((d) => `${d.nama.split(" — ")[0]} ×${d.kaliLipat.toFixed(2)}`).join(", ")}.`
+            : ". Dosis bahan yang kurang menjadi lebih rendah dari resep.")
+        : "";
 
       // ── Bahan keluar ──
       // Dikurangi memakai jumlah yang SUDAH dikonversi ke satuan barangnya,
       // dan tiap pemakaian menulis jejaknya sendiri. Tanpa jejak ini,
       // pemakaian terbesar di peternakan ini tidak terlihat oleh perkiraan
       // sisa hari maupun laporan mana pun.
-      for (const r of rincian) {
+      for (const r of rincianPakai) {
         if (!r.item || r.butuh <= 0) continue;
         const sisa = Math.max(0, (Number(r.item.current_stock) || 0) - r.butuh);
         const diPakan = feedItems.some((f) => f.id === r.item.id);
@@ -191,7 +245,8 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           status: "selesai",
           by_email: userEmail || "",
           by_name: userName || userEmail || "",
-          notes: `Bahan racikan ${recipe.name} — batch ${batchNo}.`,
+          notes: `Bahan racikan ${recipe.name} — batch ${batchNo}.` +
+            (kurangBahan && izinKurang ? " Batch TIDAK UTUH — bahan diambil seadanya." : ""),
           ...testModeTag,
         });
         bahanTerpakai.push(r.item.name);
@@ -203,8 +258,9 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
 
       await base44.entities.PelletProduction.create({
         recipe_id: recipe.id, recipe_name: recipe.name, production_date: today,
-        produced_quantity_kg: Number(qty), produced_by: userName,
+        produced_quantity_kg: hasilKg, produced_by: userName,
         batch_number: batchNo, expiry_date: tglExp,
+        notes: catatanKurang ? catatanKurang.trim() : undefined,
       });
       produksiTercatat = true;
 
@@ -234,7 +290,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
           batch_code: batchNo,
           item_id: hasil.id,
           item_sku: hasil.sku || "",
-          nama_barang: `${recipe.name} — racikan ${today}`,
+          nama_barang: `${recipe.name} — racikan ${today}${(kurangBahan && izinKurang) ? " (TIDAK UTUH)" : ""}`,
           jumlah_awal: hasilDalamSatuan,
           jumlah_sisa: hasilDalamSatuan,
           satuan: satuanHasil,
@@ -269,7 +325,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
         status: "selesai",
         by_email: userEmail || "",
         by_name: userName || userEmail || "",
-        notes: `Hasil racikan ${recipe.name} — batch ${batchNo}. Biaya bahan ${Math.round(biaya).toLocaleString("id-ID")} rupiah.`,
+        notes: `Hasil racikan ${recipe.name} — batch ${batchNo}. Biaya bahan ${Math.round(biaya).toLocaleString("id-ID")} rupiah.${catatanKurang}`,
         ...testModeTag,
       });
 
@@ -308,25 +364,75 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
         <p className="text-xs text-muted-foreground">Resep dasar: {recipe?.yield_kg} kg · {(recipe?.ingredients || []).length} bahan</p>
       </div>
       <div>
-        <Label className="text-xs">Jumlah yang diproduksi (kg) *</Label>
-        <Input type="number" value={qty} onChange={e => setQty(e.target.value)} className="mt-1" />
-      </div>
-      {qty && (
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground">
-            Kebutuhan bahan <span className="font-normal">— dalam satuan gudangnya, bukan satuan resep</span>
+        <Label className="text-xs">Mau meracik berapa kilogram?</Label>
+        <Input type="number" value={qty} onChange={e => { setQty(e.target.value); setIzinKurang(false); }} className="mt-1" />
+        <div className="flex gap-1.5 mt-1.5 flex-wrap">
+          {recipe?.yield_kg > 0 && (
+            <button type="button" onClick={() => { setQty(recipe.yield_kg); setIzinKurang(false); }}
+              className="text-[11px] px-2 py-1 rounded-full border border-border hover:bg-muted">
+              1 batch resep · {recipe.yield_kg} kg
+            </button>
+          )}
+          {recipe?.yield_kg > 0 && (
+            <button type="button" onClick={() => { setQty(Math.round((recipe.yield_kg / 2) * 100) / 100); setIzinKurang(false); }}
+              className="text-[11px] px-2 py-1 rounded-full border border-border hover:bg-muted">
+              setengah
+            </button>
+          )}
+          {maksDariStok > 0 && kurangBahan && (
+            <button type="button" onClick={() => { setQty(Math.floor(maksDariStok * 100) / 100); setIzinKurang(false); }}
+              className="text-[11px] px-2 py-1 rounded-full border border-primary text-primary hover:bg-primary/10 font-medium">
+              sebanyak stok cukup · {(Math.floor(maksDariStok * 100) / 100).toLocaleString("id-ID")} kg
+            </button>
+          )}
+        </div>
+        {dosisResep > 0 && Number(qty) > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            {Math.floor((Number(qty) * 1000) / dosisResep).toLocaleString("id-ID")} dosis @ {dosisResep} g
           </p>
-          {rincian.map((r, i) => (
-            <div key={i} className={`flex items-center justify-between gap-2 text-xs p-2 rounded-lg ${r.cukup ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-              <span className="min-w-0 flex-1">{r.ing.item_name}</span>
-              <span className="font-medium whitespace-nowrap">
-                {r.butuh >= 100 ? Math.round(r.butuh).toLocaleString("id-ID") : r.butuh.toFixed(2)} {r.satuan}
-                {r.adaHarga && <span className="opacity-70"> · Rp {r.biaya.toLocaleString("id-ID")}</span>}
-                {" "}
-                {r.cukup ? <CheckCircle2 className="w-3 h-3 inline" /> : <AlertTriangle className="w-3 h-3 inline" />}
-              </span>
+        )}
+      </div>
+
+      {qty && (
+        <div className="space-y-2">
+          {/*
+            Dulu di sini ada satu baris berwarna hijau atau merah untuk SETIAP
+            bahan. Pada resep dua belas bahan itu dua belas kotak berwarna yang
+            harus dibaca satu per satu hanya untuk menjawab satu pertanyaan:
+            cukup atau tidak. Sekarang jawabannya satu baris, dan rinciannya
+            dibuka hanya kalau memang perlu dilihat.
+          */}
+          <button
+            type="button"
+            onClick={() => setBukaRincian((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 text-xs px-2.5 py-2 rounded-lg border border-border hover:bg-muted/50"
+          >
+            <span className="font-medium">
+              {rincian.length} bahan ·{" "}
+              {kurangBahan
+                ? <span className="text-amber-700">{dampak.kurang.length} kurang</span>
+                : <span className="text-muted-foreground">semua cukup</span>}
+            </span>
+            <span className="text-muted-foreground">{bukaRincian ? "tutup" : "lihat rincian"}</span>
+          </button>
+
+          {bukaRincian && (
+            <div className="space-y-1 pl-1">
+              {rincian.map((r, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-0.5">
+                  <span className="min-w-0 flex-1 truncate text-muted-foreground">{r.ing.item_name}</span>
+                  <span className="whitespace-nowrap tabular-nums">
+                    {r.butuh >= 100 ? Math.round(r.butuh).toLocaleString("id-ID") : r.butuh.toFixed(2)} {r.satuan}
+                    {!r.cukup && (
+                      <span className="text-amber-700 font-medium">
+                        {" "}· ada {r.item ? (Number(r.item.current_stock) || 0).toLocaleString("id-ID") : 0}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
 
           <div className="rounded-lg border border-border p-2.5 space-y-1 text-xs">
             <div className="flex justify-between">
@@ -376,14 +482,21 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
         diberi", bukan berapa gram.
       */}
       {(() => {
-        const cek = periksaResep(recipe, 15);
-        if (!cek || !cek.bahan.some((b) => b.mikro)) return null;
+        /*
+          Rentang timbangnya dihitung dari dosis RESEP INI, bukan ditulis mati.
+          Sebelum 03-11-2026 di sini tertulis "harus 13-17 g" dengan dosis
+          patokan 15 g — padahal Duta Repro v7 memakai 10 g. Angka yang salah
+          pada kotak yang justru ada untuk menangkap angka yang salah.
+        */
+        const cek = periksaResep(recipe, dosisResep || 15);
+        if (!cek || !cek.bahan.some((b) => b.mikro) || !dosisResep) return null;
+        const bawah = Math.round(dosisResep * 0.9 * 10) / 10;
+        const atas = Math.round(dosisResep * 1.1 * 10) / 10;
         return (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-800">
-            <strong>Kalibrasi sendok takar setelah batch ini jadi.</strong> Isi sendok peres, timbang:
-            harus 13–17 g. Di luar itu, ganti sendoknya atau tandai garis batas baru — kepadatan
-            campuran berubah bila kehalusan tepung hijauannya berganti. Sendok yang meleset 2 g pada
-            93 betina berarti selisih 186 g sehari.
+            <strong>Kalibrasi sendok setelah batch ini jadi.</strong> Isi sendok peres, timbang:
+            harus {bawah.toLocaleString("id-ID")}–{atas.toLocaleString("id-ID")} g. Di luar itu,
+            ganti sendoknya atau tandai garis batas baru.
           </div>
         );
       })()}
@@ -391,16 +504,107 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
       {gagal && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs text-red-700">{gagal}</div>
       )}
-      {stockIssues.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-          <p className="text-xs font-semibold text-red-700">⚠️ Stok tidak mencukupi:</p>
-          {stockIssues.map((msg, i) => <p key={i} className="text-xs text-red-600 mt-1">• {msg}</p>)}
+      {/*
+        ── Bahan kurang: dua jalan, yang aman ditawarkan lebih dulu ──────────
+
+        Diminta pemiliknya 3 November 2026 supaya peracikan tidak perlu
+        menunggu kiriman. Tetapi "campur apa adanya" tidak sama amannya untuk
+        semua bahan, dan arah bahayanya berlawanan dengan dugaan: yang kurang
+        bahan PEMBAWA justru MENAIKKAN dosis vitamin, karena adonannya jadi
+        lebih sedikit sementara vitaminnya utuh.
+
+        Karena itu jalan pertama yang ditawarkan adalah MENGECILKAN batch
+        sampai semua bahan cukup — takarannya tetap persis resep, tidak ada
+        yang perlu diperingatkan. Jalan kedua ada, tapi harus dicentang
+        sendiri dan menyebutkan akibatnya dalam angka.
+      */}
+      {kurangBahan && Number(qty) > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 space-y-2.5">
+          <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Stok tidak cukup untuk {Number(qty).toLocaleString("id-ID")} kg
+          </p>
+          <div className="space-y-0.5">
+            {dampak.kurang.map((k, i) => (
+              <p key={i} className="text-[11px] text-amber-800">
+                {k.nama.split(" — ")[0]}: butuh {k.butuh >= 100 ? Math.round(k.butuh).toLocaleString("id-ID") : k.butuh.toFixed(2)} {k.satuan},
+                ada {k.ada >= 100 ? Math.round(k.ada).toLocaleString("id-ID") : k.ada.toFixed(2)}
+              </p>
+            ))}
+          </div>
+
+          {maksDariStok > 0 && (
+            <button
+              type="button"
+              onClick={() => { setQty(Math.floor(maksDariStok * 100) / 100); setIzinKurang(false); }}
+              className="w-full text-left rounded-lg border border-primary bg-background p-2.5 hover:bg-primary/5"
+            >
+              <span className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Turunkan ke {(Math.floor(maksDariStok * 100) / 100).toLocaleString("id-ID")} kg
+              </span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5 leading-snug">
+                Takarannya tetap persis resep, jadi dosis per ekor tidak berubah sama sekali.
+                {dosisResep > 0 && ` Cukup untuk ${Math.floor((maksDariStok * 1000) / dosisResep).toLocaleString("id-ID")} dosis.`}
+              </span>
+            </button>
+          )}
+
+          <label className="flex items-start gap-2 cursor-pointer pt-0.5">
+            <Checkbox checked={izinKurang} onCheckedChange={(v) => setIzinKurang(v === true)} className="mt-0.5" />
+            <span className="text-[11px] text-amber-900 leading-snug">
+              <strong>Atau campur apa adanya</strong> — adonan jadi {dampak.beratAktualKg.toFixed(2)} kg,
+              dan takarannya TIDAK lagi sama dengan resep.
+            </span>
+          </label>
+
+          {izinKurang && (
+            <div className={`rounded-lg border p-2.5 ${dampak.adaYangNaik ? "border-red-300 bg-red-50" : "border-border bg-background"}`}>
+              <p className={`text-[11px] font-bold ${dampak.adaYangNaik ? "text-red-700" : "text-muted-foreground"}`}>
+                {dampak.adaYangNaik
+                  ? "Dosis per ekor NAIK untuk bahan di bawah ini:"
+                  : "Dosis per ekor turun — arah yang aman, tapi vitaminnya berkurang:"}
+              </p>
+              <div className="mt-1 space-y-0.5">
+                {dampak.dosis
+                  .filter((d) => d.kaliLipat > 1.05 || d.kaliLipat < 0.95)
+                  .map((d, i) => {
+                    const iu = iuPerGram(d.nama);
+                    const naik = d.kaliLipat > 1.05;
+                    return (
+                      <p key={i} className={`text-[11px] ${naik ? "text-red-700" : "text-muted-foreground"}`}>
+                        {d.nama.split(" — ")[0]}:{" "}
+                        {iu > 0
+                          ? `${Math.round(d.perDosisResep * iu).toLocaleString("id-ID")} IU → ${Math.round(d.perDosisAktual * iu).toLocaleString("id-ID")} IU`
+                          : `${(d.perDosisResep * 1000).toFixed(d.perDosisResep < 0.01 ? 2 : 0)} mg → ${(d.perDosisAktual * 1000).toFixed(d.perDosisAktual < 0.01 ? 2 : 0)} mg`}
+                        {" "}<strong>×{d.kaliLipat.toFixed(2)}</strong>
+                      </p>
+                    );
+                  })}
+              </div>
+              {dampak.adaYangNaik && (
+                <p className="text-[11px] text-red-700 mt-1.5 leading-snug">
+                  Adonannya lebih sedikit sementara vitaminnya utuh, jadi tiap sendok membawa lebih
+                  banyak. Kelebihan vitamin D3 menyebabkan pengapuran organ dalam yang permanen —
+                  turunkan ukuran batch, atau kurangi takaran sendoknya sesuai angka di atas.
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+                Batch ini akan ditandai <strong>TIDAK UTUH</strong> di label, catatan produksi, dan
+                catatan pergerakan stok.
+              </p>
+            </div>
+          )}
         </div>
       )}
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
-        <Button className="flex-1" onClick={handleProduce} disabled={producing || !qty || stockIssues.length > 0}>
-          {producing ? "Memproduksi..." : "Konfirmasi Produksi"}
+        <Button className="flex-1" onClick={handleProduce} disabled={producing || !bisaDiracik}>
+          {producing
+            ? "Memproduksi..."
+            : kurangBahan && izinKurang
+              ? `Racik ${dampak.beratAktualKg.toFixed(2)} kg (tidak utuh)`
+              : "Konfirmasi Produksi"}
         </Button>
       </div>
     </div>
