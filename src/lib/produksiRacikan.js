@@ -138,3 +138,102 @@ function bulat(n) {
   const x = Number(n) || 0;
   return x >= 100 ? Math.round(x).toLocaleString("id-ID") : x.toFixed(2).replace(/\.00$/, "");
 }
+
+/**
+ * ── Meracik saat bahannya tidak cukup ───────────────────────────────────────
+ *
+ * Diminta pemiliknya 3 November 2026: "kalau ada bahan yang kurang, kita tetap
+ * bisa mencampurnya tanpa harus menunggu barang datang."
+ *
+ * Itu masuk akal — menunggu kiriman berarti betina tidak dapat kalsium hari
+ * ini. Tetapi "campur saja apa adanya" TIDAK sama amannya untuk semua bahan,
+ * dan arah bahayanya berlawanan dengan dugaan:
+ *
+ *   Kekurangan bahan MIKRO (vitamin D3, vitamin E) menurunkan dosisnya.
+ *   Kurang vitamin itu lambat, terlihat, dan bisa dikejar batch berikutnya.
+ *
+ *   Kekurangan bahan PEMBAWA (tepung hijauan, kalsium karbonat) justru
+ *   MENAIKKAN dosis bahan mikro. Adonan jadi lebih sedikit sementara vitamin
+ *   D3-nya utuh, jadi tiap sendok membawa D3 lebih banyak. Kekurangan separuh
+ *   tepung hijauan membuat dosis D3 per ekor naik hampir dua kali lipat — dan
+ *   D3 berlebih menyebabkan pengapuran organ dalam yang permanen.
+ *
+ * Jadi yang dihitung di sini bukan "cukup atau tidak", melainkan BERAPA KALI
+ * LIPAT dosis tiap bahan berubah bila batch diracik apa adanya. Layar memakai
+ * angka itu untuk menawarkan jalan yang aman lebih dulu: menurunkan ukuran
+ * batch sampai semua bahan cukup, sehingga takarannya tetap persis resep.
+ */
+
+/** Berapa kg paling banyak yang bisa diracik dengan stok sekarang. */
+export function batasDariStok(rincian = [], jumlahKg = 0) {
+  const diminta = Number(jumlahKg) || 0;
+  if (diminta <= 0 || rincian.length === 0) return 0;
+  let rasioTerkecil = 1;
+  for (const r of rincian) {
+    if (!r.item) return 0;                       // barangnya tidak ada sama sekali
+    if (r.butuh <= 0) continue;
+    const ada = Number(r.item.current_stock) || 0;
+    rasioTerkecil = Math.min(rasioTerkecil, ada / r.butuh);
+  }
+  return Math.max(0, diminta * rasioTerkecil);
+}
+
+/**
+ * Apa yang terjadi pada tiap dosis bila batch diracik dengan stok seadanya.
+ *
+ * @returns {{
+ *   beratAktualKg, persenTerisi, kurang: Array, dosis: Array, adaYangNaik: boolean
+ * }}
+ */
+export function dampakKekurangan(rincian = [], resep = null, jumlahKg = 0, dosisGram = 0) {
+  const diminta = Number(jumlahKg) || 0;
+  const dosis = Number(dosisGram) || 0;
+  const hasilResepKg = Number(resep?.yield_kg) || 0;
+
+  let beratAktualKg = 0;
+  const dipakai = rincian.map((r) => {
+    const ada = r.item ? Number(r.item.current_stock) || 0 : 0;
+    const pakai = Math.min(r.butuh, ada);
+    const faktor = faktorSatuan(r.satuan) || 1;
+    const kg = pakai / faktor;
+    beratAktualKg += kg;
+    return { r, pakai, kg, ada };
+  });
+
+  const kurang = dipakai
+    .filter((d) => d.pakai < d.r.butuh - 1e-9)
+    .map((d) => ({
+      nama: d.r.ing.item_name,
+      butuh: d.r.butuh,
+      ada: d.ada,
+      satuan: d.r.satuan,
+      persenTerpenuhi: d.r.butuh > 0 ? (d.pakai / d.r.butuh) * 100 : 100,
+    }));
+
+  /*
+   * Dosis sesungguhnya = bagian bahan ini dalam adonan YANG JADI, dikali
+   * takaran per ekor. Dibandingkan dengan bagiannya di resep, bukan dengan
+   * gram yang hilang — gram yang hilang tidak memberi tahu apa pun tentang
+   * apa yang masuk ke seekor kura.
+   */
+  const dosisBahan = dipakai.map((d) => {
+    const bagianResep = hasilResepKg > 0 ? (Number(d.r.ing.quantity_kg) || 0) / hasilResepKg : 0;
+    const bagianAktual = beratAktualKg > 0 ? d.kg / beratAktualKg : 0;
+    return {
+      nama: d.r.ing.item_name,
+      perDosisResep: bagianResep * dosis,
+      perDosisAktual: bagianAktual * dosis,
+      kaliLipat: bagianResep > 0 ? bagianAktual / bagianResep : 1,
+      mikro: bagianResep > 0 && bagianResep * 100 < 0.1,
+    };
+  });
+
+  return {
+    beratAktualKg,
+    persenTerisi: diminta > 0 ? (beratAktualKg / diminta) * 100 : 0,
+    kurang,
+    dosis: dosisBahan,
+    // Naik di atas 5% dianggap berarti; di bawah itu pembulatan timbangan.
+    adaYangNaik: dosisBahan.some((d) => d.kaliLipat > 1.05),
+  };
+}
