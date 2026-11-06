@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { STATUS_REQUEST } from "@/lib/kasKecil";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -75,7 +76,10 @@ export default function LabaRugiEnhanced({ period }) {
   // lagi menghitung uang yang sama dua kali — sekali saat keluar dari rekening,
   // sekali saat dibelanjakan. Angkanya tetap ditampilkan sebagai keterangan
   // karena berguna, tetapi tidak lagi masuk hitungan biaya.
-  const monthPC = pettyCash.filter(p => p.disbursement_date?.startsWith(selectedPeriod) && p.status === "disbursed");
+  // "disbursed" diambil dari enum skema; yang tersimpan "dicairkan". Jadi
+  // baris keterangan di bawah tidak pernah muncul sekali pun. Lihat
+  // STATUS_REQUEST di src/lib/kasKecil.js.
+  const monthPC = pettyCash.filter(p => p.disbursement_date?.startsWith(selectedPeriod) && p.status === STATUS_REQUEST.DICAIRKAN);
   const totalPC = monthPC.reduce((s, p) => s + (p.amount_requested || 0), 0);
 
   // Gaji sudah termasuk di totalPengeluaranFinance (lihat di atas), jadi tidak

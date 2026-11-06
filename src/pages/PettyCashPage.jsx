@@ -24,7 +24,9 @@ import LedgerHistory from "@/components/pettycash/LedgerHistory";
 import TopUpRequestForm from "@/components/pettycash/TopUpRequestForm";
 import TopUpRequestList from "@/components/pettycash/TopUpRequestList";
 import DisburseProofDialog from "@/components/pettycash/DisburseProofDialog";
-import { saldoTerkini } from "@/lib/kasKecil";
+import PanelBelumMasuk from "@/components/pettycash/PanelBelumMasuk";
+import { saldoTerkini, pencairanBelumMasuk, totalBelumMasuk, STATUS_REQUEST } from "@/lib/kasKecil";
+import { pastikanMasukBukuKas } from "@/lib/cairkanKasKecil";
 import PageHeader from "@/components/common/PageHeader";
 import { WalletArt } from "@/components/common/Illustration";
 import { rupiah } from "@/lib/rupiah";
@@ -32,10 +34,10 @@ import { rupiah } from "@/lib/rupiah";
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
 const STATUS_CONFIG = {
-  diajukan:  { label: "Diajukan",  color: "bg-amber-100 text-amber-700" },
-  disetujui: { label: "Disetujui", color: "bg-blue-100 text-blue-700" },
-  dicairkan: { label: "Dicairkan", color: "bg-green-100 text-green-700" },
-  ditolak:   { label: "Ditolak",   color: "bg-red-100 text-red-700" },
+  [STATUS_REQUEST.DIAJUKAN]:  { label: "Diajukan",  color: "bg-amber-100 text-amber-700" },
+  [STATUS_REQUEST.DISETUJUI]: { label: "Disetujui", color: "bg-blue-100 text-blue-700" },
+  [STATUS_REQUEST.DICAIRKAN]: { label: "Dicairkan", color: "bg-green-100 text-green-700" },
+  [STATUS_REQUEST.DITOLAK]:   { label: "Ditolak",   color: "bg-red-100 text-red-700" },
 };
 
 
@@ -149,15 +151,51 @@ export default function PettyCashPage() {
   const [disburseTarget, setDisburseTarget] = useState(null);
   const [addProofTarget, setAddProofTarget] = useState(null);
   const [proofPreview, setProofPreview] = useState(null);
+  const [memasukkan, setMemasukkan] = useState(null);
 
   const currentSaldo = useMemo(() => saldoTerkini(ledger), [ledger]);
   const isNeg = currentSaldo <= 0;
+
+  /*
+   * Pencairan yang uangnya tidak ada di buku kas.
+   *
+   * Sampai 6 Nov 2026 tidak ada tempat mana pun di aplikasi yang bisa
+   * menunjukkan ini: menekan "Cairkan" hanya mengubah status request, jadi
+   * Rp 200.000 yang cair 29 Okt tidak pernah sampai ke saldo, dan satu-satunya
+   * kabar yang muncul justru notifikasi "Dana Sudah Dicairkan" ke pemohon.
+   * Saldo berjalan sampai Rp −55.500 tanpa satu pun peringatan.
+   *
+   * Sekarang pencairannya ditulis ke buku kas saat tombolnya ditekan
+   * (cairkanKasKecil.js). Panel ini tetap ada sebagai jaring: pencairan lama,
+   * dan tulisan yang putus di tengah, tetap harus kelihatan.
+   */
+  const belumMasuk = useMemo(() => pencairanBelumMasuk(requests, ledger), [requests, ledger]);
+  const rpBelumMasuk = useMemo(() => totalBelumMasuk(requests, ledger), [requests, ledger]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["petty-cash-ledger"] });
     qc.invalidateQueries({ queryKey: ["petty-cash-requests"] });
     qc.invalidateQueries({ queryKey: ["petty-cash-topup-requests"] });
     qc.invalidateQueries({ queryKey: ["finance-transactions"] });
+  };
+
+  const handleMasukkanBukuKas = async (req) => {
+    setMemasukkan(req.id);
+    try {
+      const { dibuat } = await pastikanMasukBukuKas({
+        request: req,
+        user: { ...user, role },
+        tanggal: req.disbursement_date || req.request_date,
+      });
+      toast.success(dibuat
+        ? `${rupiah(req.amount_requested)} masuk saldo kas kecil`
+        : "Pencairan ini sudah ada di buku kas — tidak ditambah dua kali");
+      invalidate();
+    } catch (err) {
+      toast.error("Gagal memasukkan ke buku kas: " + (err?.message || ""));
+    } finally {
+      setMemasukkan(null);
+    }
   };
 
   // Disburse: buka dialog upload bukti transfer (owner wajib ditawarkan, boleh lewati untuk tunai)
@@ -249,6 +287,18 @@ export default function PettyCashPage() {
         icon={Wallet}
         art={<WalletArt size="md" />}
       />
+
+      {/* Panel pencairan yang belum masuk buku kas — markup-nya di
+          PanelBelumMasuk supaya bisa diukur penjaga lebar dengan baris nyata. */}
+      {isOwnerAdminManajer && (
+        <PanelBelumMasuk
+          belumMasuk={belumMasuk}
+          total={rpBelumMasuk}
+          bolehPerbaiki={canApproveRequest}
+          sedang={memasukkan}
+          onMasukkan={handleMasukkanBukuKas}
+        />
+      )}
 
       {/* ── SALDO PANEL ── */}
       {isOwnerAdminManajer && (

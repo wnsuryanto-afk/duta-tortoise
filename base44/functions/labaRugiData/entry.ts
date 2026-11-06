@@ -55,7 +55,8 @@ Deno.serve(async (req) => {
 
     // 3. PettyCash bulan ini
     const allPettyCash = await db.entities.PettyCashRequest.filter({}, '-disbursement_date', 500);
-    const monthPetty = allPettyCash.filter(p => p.disbursement_date?.startsWith(period) && p.status === 'disbursed');
+    // 'dicairkan', bukan 'disbursed' — lihat STATUS_REQUEST di src/lib/kasKecil.js.
+    const monthPetty = allPettyCash.filter(p => p.disbursement_date?.startsWith(period) && p.status === 'dicairkan');
     const totalKasKecil = monthPetty.reduce((s, p) => s + (p.amount_requested || 0), 0);
     const pettyByCat = {};
     monthPetty.forEach(p => {

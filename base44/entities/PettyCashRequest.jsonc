@@ -47,15 +47,23 @@
       "type": "string",
       "format": "date"
     },
+    // Nilai berbahasa Indonesia, sesuai yang BENAR-BENAR ditulis aplikasi dan
+    // tersimpan di basis data. Enum ini sebelumnya berbahasa Inggris
+    // (pending/approved/rejected/disbursed) sementara setiap penulis status
+    // menulis bahasa Indonesia. Base44 tidak menolak nilai di luar enum, jadi
+    // perbedaannya tidak pernah menimbulkan error — tetapi dua pembaca yang
+    // menulis `status === "disbursed"` dengan membaca skema ini (LabaRugiEnhanced
+    // dan useCostPerTortoise) tidak pernah cocok sekali pun. Satu-satunya daftar
+    // yang berlaku ada di STATUS_REQUEST pada src/lib/kasKecil.js.
     "status": {
       "type": "string",
       "enum": [
-        "pending",
-        "approved",
-        "rejected",
-        "disbursed"
+        "diajukan",
+        "disetujui",
+        "dicairkan",
+        "ditolak"
       ],
-      "default": "pending"
+      "default": "diajukan"
     },
     "approved_by": {
       "type": "string"
