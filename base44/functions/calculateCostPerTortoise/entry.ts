@@ -25,7 +25,10 @@ Deno.serve(async (req) => {
     // sudah ada di totalFinance. Menjumlahkan slip lagi di sini membuat setiap
     // gaji terhitung dua kali dan biaya per ekor ikut menggelembung.
     const totalSalary = financeTx.filter(t => t.type === 'pengeluaran' && (t.date||'').startsWith(month) && ['gaji','gaji_karyawan'].includes(t.category) && masukLaporan(t)).reduce((s,t)=>s+(t.amount||0),0);
-    const totalPettyCash = pettyCash.filter(p => p.status==='disbursed' && (p.disbursement_date||'').startsWith(month) && masukLaporan(p)).reduce((s,t)=>s+(t.amount_requested||0),0);
+    // 'dicairkan', bukan 'disbursed'. Enum skema PettyCashRequest dulu
+    // berbahasa Inggris sementara aplikasinya menulis bahasa Indonesia, jadi
+    // penyaringan ini tidak pernah cocok sekali pun dan totalPettyCash selalu 0.
+    const totalPettyCash = pettyCash.filter(p => p.status==='dicairkan' && (p.disbursement_date||'').startsWith(month) && masukLaporan(p)).reduce((s,t)=>s+(t.amount_requested||0),0);
 
     // Pencairan kas kecil TIDAK ditambahkan ke biaya. Mencairkan kas kecil adalah
     // memindahkan uang ke kotak kas, bukan mengeluarkannya; biayanya baru muncul
