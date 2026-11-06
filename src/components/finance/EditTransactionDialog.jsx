@@ -91,37 +91,65 @@ export default function EditTransactionDialog({ tx, user, canDelete, onClose, on
     };
     if (form.qty) payload.qty = Number(form.qty);
     if (form.harga_satuan) payload.harga_satuan = Number(form.harga_satuan);
-    await base44.entities.FinanceTransaction.update(tx.id, payload);
-    await logActivity({
-      action: "update",
-      entity_type: "FinanceTransaction",
-      entity_id: tx.id,
-      entity_name: tx.description || tx.category,
-      before: tx,
-      after: { ...tx, ...payload },
-    });
-    qc.invalidateQueries({ queryKey: ["finance-transactions"] });
-    toast.success("Transaksi diperbarui");
-    onSaved?.();
-    onClose();
-    setSaving(false);
+    /*
+      Dulu tanpa penangkap galat dan tanpa finally: satu penolakan server
+      membuat tombolnya berputar selamanya tanpa satu pun pesan, pada dialog
+      yang MENGUBAH ANGKA UANG.
+
+      logActivity dipisah ke try sendiri. Dulu kegagalannya menghentikan
+      seluruh sisanya — nilainya SUDAH tersimpan, tetapi layarnya tidak
+      disegarkan, tidak ada toast, dan dialognya tetap terbuka. Yang
+      menekannya akan menyimpan ulang angka yang sudah benar. Jejak yang
+      hilang tidak boleh membatalkan perubahan yang sah.
+    */
+    try {
+      await base44.entities.FinanceTransaction.update(tx.id, payload);
+      try {
+        await logActivity({
+          action: "update",
+          entity_type: "FinanceTransaction",
+          entity_id: tx.id,
+          entity_name: tx.description || tx.category,
+          before: tx,
+          after: { ...tx, ...payload },
+        });
+      } catch { /* jejaknya saja yang hilang */ }
+      qc.invalidateQueries({ queryKey: ["finance-transactions"] });
+      toast.success("Transaksi diperbarui");
+      onSaved?.();
+      onClose();
+    } catch (err) {
+      toast.error("Gagal memperbarui transaksi: " + (err?.message || "kesalahan tidak diketahui"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    await base44.entities.FinanceTransaction.delete(tx.id);
-    await logActivity({
-      action: "delete",
-      entity_type: "FinanceTransaction",
-      entity_id: tx.id,
-      entity_name: tx.description || tx.category,
-      changes_summary: `Menghapus transaksi "${tx.description || tx.category}" sebesar Rp ${(tx.amount || 0).toLocaleString("id-ID")}`,
-    });
-    qc.invalidateQueries({ queryKey: ["finance-transactions"] });
-    toast.success("Transaksi dihapus");
-    onSaved?.();
-    onClose();
-    setDeleting(false);
+    /* Menghapus catatan uang. Kegagalan di sini dulu tidak berbunyi sama
+       sekali: tombolnya berputar, barisnya masih ada, dan yang menekannya
+       menyangka hapusnya berhasil karena tidak ada yang mengatakan sebaliknya. */
+    try {
+      await base44.entities.FinanceTransaction.delete(tx.id);
+      try {
+        await logActivity({
+          action: "delete",
+          entity_type: "FinanceTransaction",
+          entity_id: tx.id,
+          entity_name: tx.description || tx.category,
+          changes_summary: `Menghapus transaksi "${tx.description || tx.category}" sebesar Rp ${(tx.amount || 0).toLocaleString("id-ID")}`,
+        });
+      } catch { /* jejaknya saja yang hilang */ }
+      qc.invalidateQueries({ queryKey: ["finance-transactions"] });
+      toast.success("Transaksi dihapus");
+      onSaved?.();
+      onClose();
+    } catch (err) {
+      toast.error("Gagal menghapus transaksi: " + (err?.message || "kesalahan tidak diketahui"));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // ── Linked Warning Dialog ──────────────────────────────────────────────────
