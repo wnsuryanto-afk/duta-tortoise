@@ -2,6 +2,7 @@ import { hanyaLaporan } from "@/lib/laporan";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,21 +151,35 @@ export default function BiayaOperasionalTab() {
     e.preventDefault();
     if (!form.category || !form.amount || !form.date) return;
     setSaving(true);
-    await base44.entities.FinanceTransaction.create({
-      type: "pengeluaran",
-      category: form.category,
-      sub_category: form.sub_category,
-      amount: Number(form.amount),
-      date: form.date,
-      description: form.description || `${CATEGORIES[form.category]?.label} — ${form.sub_category || ""}`,
-      created_by_name: user?.full_name || user?.email,
-      ...testModeTag,
-    });
-    qc.invalidateQueries({ queryKey: ["finance-transactions-ops"] });
-    qc.invalidateQueries({ queryKey: ["finance-transactions"] });
-    setSaving(false);
-    setShowForm(false);
-    setForm(EMPTY_FORM);
+    /*
+      Dulu tanpa penangkap galat dan tanpa toast sama sekali — tidak saat
+      berhasil, tidak saat gagal. Satu penolakan server berarti tombolnya
+      berputar selamanya (setSaving(false) ada SESUDAH await, jadi tidak
+      pernah dijalankan), formulirnya tetap terbuka dan terisi, dan yang
+      menekannya tidak diberi tahu apa pun. Ini mencatat biaya operasional —
+      angka yang masuk laba rugi.
+    */
+    try {
+      await base44.entities.FinanceTransaction.create({
+        type: "pengeluaran",
+        category: form.category,
+        sub_category: form.sub_category,
+        amount: Number(form.amount),
+        date: form.date,
+        description: form.description || `${CATEGORIES[form.category]?.label} — ${form.sub_category || ""}`,
+        created_by_name: user?.full_name || user?.email,
+        ...testModeTag,
+      });
+      qc.invalidateQueries({ queryKey: ["finance-transactions-ops"] });
+      qc.invalidateQueries({ queryKey: ["finance-transactions"] });
+      toast.success("Biaya operasional dicatat");
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      toast.error("Gagal menyimpan biaya: " + (err?.message || "kesalahan tidak diketahui"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const detailTx = activeCard
