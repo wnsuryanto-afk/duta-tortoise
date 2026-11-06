@@ -41,6 +41,7 @@ import UserManagement from "@/pages/UserManagement";
 import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import RincianAset from "@/components/dashboard/RincianAset";
 import KartuModalAset from "@/components/dashboard/KartuModalAset";
+import PanelBelumMasuk from "@/components/pettycash/PanelBelumMasuk";
 import IsiHargaBeliPage from "@/pages/IsiHargaBeliPage";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
 import { modalKerja } from "@/lib/modalKerja";
@@ -994,6 +995,57 @@ export default [
    * rentang dua miliar dengan tanda pisah, dan dua baris keterangan panjang
    * di bawah bilah. Di 280px kartunya hanya selebar ±248px.
    */
+  /*
+   * Panel pencairan yang belum masuk buku kas, dengan baris NYATA.
+   *
+   * Barisnya datang dari PettyCashRequest 29 Okt 2026 yang memicu seluruh
+   * perbaikan ini: Rp 200.000, dicairkan dengan bukti transfer, tidak pernah
+   * sampai ke saldo. Di 280px satu baris harus memuat nominal, tanggal, nama
+   * pemohon, cara pencairan, DAN tombol "Masukkan ke buku kas" — tombol
+   * terpanjang di halaman ini. flex-wrap menurunkannya ke baris sendiri saat
+   * tidak muat; yang diukur di sini adalah apakah penurunan itu benar terjadi
+   * sebelum ada yang meluap.
+   */
+  ["PanelBelumMasuk satu baris nyata 29-10-2026", (
+    <PanelBelumMasuk
+      belumMasuk={[
+        { id: "6ae30655ea69ff917e64f62d", amount_requested: 200000, disbursement_date: "2026-10-29",
+          requester_name: "duta tortoise", disbursement_method: "transfer" },
+      ]}
+      total={200000}
+      bolehPerbaiki
+      onMasukkan={() => {}}
+    />
+  )],
+  /* Tiga baris, nominal tujuh angka, dan nama pemohon sepanjang nama asli
+     yang terpanjang di daftar User. Juga kasus tanpa hak perbaikan (manajer
+     yang tidak boleh menyetujui): tombolnya hilang, teksnya harus tetap rapi. */
+  ["PanelBelumMasuk tiga baris nama panjang", (
+    <PanelBelumMasuk
+      belumMasuk={[
+        { id: "a", amount_requested: 1200000, disbursement_date: "2026-07-25",
+          requester_name: "Muhammad Iwan Suryanto Probolinggo", disbursement_method: "transfer" },
+        { id: "b", amount_requested: 200000, disbursement_date: "2026-09-24",
+          requester_name: "duta tortoise", disbursement_method: "tunai" },
+        { id: "c", amount_requested: 200000, request_date: "2026-10-29",
+          requester_name: "duta tortoise", disbursement_method: "transfer" },
+      ]}
+      total={1600000}
+      bolehPerbaiki
+      sedang="b"
+      onMasukkan={() => {}}
+    />
+  )],
+  ["PanelBelumMasuk tanpa hak perbaikan", (
+    <PanelBelumMasuk
+      belumMasuk={[
+        { id: "a", amount_requested: 1200000, disbursement_date: "2026-07-25",
+          requester_name: "Muhammad Iwan Suryanto Probolinggo", disbursement_method: "transfer" },
+      ]}
+      total={1200000}
+      bolehPerbaiki={false}
+    />
+  )],
   ["KartuModalAset angka nyata 25-10-2026", (
     <KartuModalAset
       modal={{
