@@ -78,7 +78,29 @@ const AKAR = process.cwd();
   tidak saat gagal. Satu penolakan server berarti janji yang gagal tanpa
   pemilik, formulir yang tetap terisi, dan tombol yang berputar selamanya.
 */
-const BATAS = 196;
+/*
+  Turun 196 → 194 dan 94 → 92 pada 6 Nov, saat kas kecil dibereskan. Dua
+  tempat di modul KEUANGAN yang memegang angka laba rugi:
+
+  BiayaOperasionalTab.handleSubmit tidak punya penangkap galat sama sekali
+  dan tidak memanggil toast sekali pun — tidak saat berhasil, tidak saat
+  gagal. setSaving(false) ada SESUDAH await, jadi satu penolakan server
+  membuat tombolnya berputar selamanya pada formulir yang tetap terisi.
+
+  EditTransactionDialog mengUBAH dan mengHAPUS catatan uang, keduanya tanpa
+  try/catch dan tanpa finally. Dan logActivity-nya dipanggil di jalur utama:
+  kegagalan mencatat jejak menghentikan sisanya, jadi angkanya SUDAH berubah
+  sementara layarnya tidak disegarkan dan tidak ada toast — yang menekannya
+  akan menyimpan ulang angka yang sudah benar.
+
+  Satu penulisan BERTAMBAH pada hari yang sama: pastikanMasukBukuKas di
+  lib/cairkanKasKecil.js. Itu pustaka, bukan penangan tombol — kedua
+  pemanggilnya (DisburseProofDialog dan PettyCashPage) menangkap dan
+  mengabarkan dengan kata-katanya sendiri, dan menaruh toast di pustakanya
+  akan membuat satu kegagalan dilaporkan dua kali. Jadi penulisan itu
+  dibayar dengan membereskan dua yang lain, bukan dengan menaikkan batas.
+*/
+const BATAS = 194;
 /*
   Turun 135 → 125 pada 29 Okt: seluruh kelompok KAS KECIL dibereskan sekaligus
   — pemakaian, top-up, permintaan top-up, rekonsiliasi, pencairan, dan
@@ -103,7 +125,7 @@ const BATAS = 196;
   lalu menandai yang sekarang: gagal di langkah kedua berarti dua pengingat
   terbuka untuk satu pemeriksaan, dan menekan Selesai lagi membuat yang ketiga.
 */
-const BATAS_BERPUTAR = 94;
+const BATAS_BERPUTAR = 92;
 
 /*
   ── Bagian kedua: pekerjaan borongan yang berhenti di baris pertama yang rusak
