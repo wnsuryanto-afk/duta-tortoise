@@ -50,12 +50,12 @@
     "status": {
       "type": "string",
       "enum": [
-        "pending",
-        "approved",
-        "rejected",
-        "disbursed"
+        "diajukan",
+        "disetujui",
+        "dicairkan",
+        "ditolak"
       ],
-      "default": "pending"
+      "default": "diajukan"
     },
     "approved_by": {
       "type": "string"
