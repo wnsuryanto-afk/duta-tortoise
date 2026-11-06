@@ -5,6 +5,7 @@ import { Loader2, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
 import { rupiah } from "@/lib/rupiah";
+import { pastikanMasukBukuKas } from "@/lib/cairkanKasKecil";
 
 
 /**
@@ -39,13 +40,35 @@ export default function DisburseProofDialog({ request, mode = "disburse", user, 
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  /*
+   * Dua tulisan, dan buku kas DULU.
+   *
+   * Sebelum ini hanya status request yang ditulis, jadi uang yang benar-benar
+   * keluar dari rekening tidak pernah sampai ke saldo kas kecil (29 Okt 2026,
+   * Rp 200.000). Lihat cairkanKasKecil.js untuk sebabnya dan kenapa
+   * urutannya begini.
+   *
+   * Kalau tulisan kedua gagal, yang dilaporkan adalah keadaan yang SEBENARNYA
+   * tersimpan — bukan "Gagal" polos yang membuat orang menekan tombolnya lagi
+   * tanpa tahu apa yang sudah tertulis. Menekan lagi aman: pastikanMasukBukuKas
+   * tidak membuat baris kedua.
+   */
   const handleDisburse = async (method) => {
     setSaving(true);
+    const tanggal = new Date().toISOString().split("T")[0];
+    let masukBukuKas = false;
     try {
+      await pastikanMasukBukuKas({
+        request: { ...request, disbursement_proof_url: (method === "transfer" && proofUrl) || request.disbursement_proof_url },
+        user,
+        tanggal,
+      });
+      masukBukuKas = true;
+
       const now = new Date().toISOString();
       const payload = {
         status: "dicairkan",
-        disbursement_date: new Date().toISOString().split("T")[0],
+        disbursement_date: tanggal,
         disbursement_method: method,
         disbursement_proof_uploaded_at: now,
         disbursement_proof_uploaded_by: user?.full_name || user?.email,
@@ -54,11 +77,23 @@ export default function DisburseProofDialog({ request, mode = "disburse", user, 
         payload.disbursement_proof_url = proofUrl;
       }
       await base44.entities.PettyCashRequest.update(request.id, payload);
-      toast.success(method === "transfer" ? "Dana dicairkan dengan bukti transfer" : "Dana dicairkan (tunai)");
+      toast.success(
+        (method === "transfer" ? "Dana dicairkan dengan bukti transfer" : "Dana dicairkan (tunai)") +
+        ` — ${rupiah(request.amount_requested)} masuk saldo kas kecil`
+      );
       onSaved();
       onClose();
     } catch (err) {
-      toast.error("Gagal: " + (err?.message || ""));
+      if (masukBukuKas) {
+        toast.error(
+          `${rupiah(request.amount_requested)} SUDAH masuk saldo kas kecil, tetapi status request belum berubah ` +
+          `(${err?.message || "gagal"}). Tekan Cairkan lagi — saldonya tidak akan dihitung dua kali.`,
+          { duration: 12000 }
+        );
+        onSaved();
+      } else {
+        toast.error("Gagal, belum ada yang tersimpan: " + (err?.message || ""));
+      }
     } finally {
       setSaving(false);
     }
