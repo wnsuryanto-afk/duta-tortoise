@@ -24,7 +24,7 @@
  * Yang ditemukan pemiliknya sendiri, sepekan kemudian, dengan bertanya
  * "kok tidak terjumlahkan".
  *
- * ── Tiga hal yang dijaga ─────────────────────────────────────────────
+ * ── Empat hal yang dijaga ────────────────────────────────────────────
  *
  * 1. Setiap tempat yang menulis status "dicairkan" harus juga lewat
  *    pastikanMasukBukuKas. Satu jalur baru yang lupa — layar lain, fungsi
@@ -127,9 +127,8 @@ if (situsPenulis === 0) {
  *
  * Perbandingan ke nilai di luar daftar yang sah tidak akan pernah melempar.
  * Hanya penjaga yang bisa menemukannya.
- */
-/*
- * Dua pemeriksaan yang SEMPIT, bukan satu yang luas.
+ *
+ * Tetapi pemeriksaannya harus SEMPIT, bukan luas.
  *
  * Percobaan pertama penjaga ini menolak setiap perbandingan status ke nilai
  * Inggris di berkas mana pun yang menyebut kas kecil. Ia menemukan dua bug
@@ -186,7 +185,7 @@ for (const rel of berkas) {
   }
 }
 
-/* ── 2 & 3. Pencocokan pencairan ↔ buku kas ─────────────────────────── */
+/* ── 2 & 4. Pencocokan pencairan ↔ buku kas ─────────────────────────── */
 
 const uji = [];
 const cek = (nama, dapat, harus) => {
