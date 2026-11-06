@@ -93,7 +93,10 @@ export default function KepalaFeederDashboard({ user }) {
 
   const { data: pettyCashRequests = [] } = useQuery({
     queryKey: ["kf-petty-cash-requests"],
-    queryFn: () => base44.entities.PettyCashRequest.filter({ status: "pending" }),
+    // "diajukan", bukan "pending". Status PettyCashRequest berbahasa Indonesia;
+    // "pending" hanya ada di enum skema yang tidak pernah dipakai menulis. Jadi
+    // hitungan request dana yang menunggu di beranda kepala feeder selalu 0.
+    queryFn: () => base44.entities.PettyCashRequest.filter({ status: "diajukan" }),
     staleTime: 3 * 60 * 1000,
   });
 
