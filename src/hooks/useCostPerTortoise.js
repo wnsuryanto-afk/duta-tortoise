@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { STATUS_REQUEST } from "@/lib/kasKecil";
 import { differenceInMonths } from "date-fns";
 import { masukLaporan } from "@/lib/laporan";
 import { diPeternakan } from "@/lib/populasiKura";
@@ -65,7 +66,7 @@ export function useCostPerTortoise(period) {
 
     // PettyCash disbursed bulan ini
     const totalPC = pettyCash
-      .filter(p => p.disbursement_date?.startsWith(monthKey) && p.status === "disbursed")
+      .filter(p => p.disbursement_date?.startsWith(monthKey) && p.status === STATUS_REQUEST.DICAIRKAN)
       .reduce((s, p) => s + (p.amount_requested || 0), 0);
 
     // Pencairan kas kecil sengaja TIDAK ditambahkan: itu perpindahan uang ke
