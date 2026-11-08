@@ -12,12 +12,18 @@ module.exports = {
         dengan 639px. cek-lipat mengukur 280px justru karena di situ dua
         kolom tidak lagi muat: "Menunggu Follow-up" terpotong 75px.
 
+        400px, bukan 360px. Percobaan pertama saya memakai 360px dan masih
+        meninggalkan dua label terpotong PERSIS di 360px — lebar yang diukur
+        cek-lebar: dua kolom di situ hanya ±158px, sementara "Menunggu
+        Follow-up" butuh ±193px. Angkanya sekarang lebar terkecil yang
+        benar-benar memuat dua kartu.
+
         Dinamai, bukan min-[360px]: repo ini belum memakai varian sembarang
         satu kali pun, dan nama yang sama di 12 tempat lebih mudah dicari
         daripada angka yang ditulis ulang.
       */
       screens: {
-        xs: "360px",
+        xs: "400px",
       },
       fontFamily: {
         heading: ['var(--font-heading)'],

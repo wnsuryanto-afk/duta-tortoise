@@ -126,38 +126,3 @@ export function ringkasRetak(records = []) {
   };
 }
 
-/**
- * Telur retak yang masih perlu diperhatikan, dari seluruh clutch.
- *
- * "Masih perlu" berarti belum ada hasilnya: belum menetas, belum dinyatakan
- * gagal atau infertil. Telur retak yang sudah menetas tidak butuh perhatian
- * lagi — ia sudah jadi kura.
- *
- * Clutch yang sudah ditutup dilewati: telurnya tidak lagi dierami siapa pun,
- * dan menaruhnya di daftar kerja hanya membuat daftar itu diabaikan.
- */
-const CLUTCH_BERJALAN = ["bertelur", "inkubasi"];
-
-export function telurRetakPerluPerhatian(breedings = []) {
-  const keluar = [];
-  for (const b of breedings || []) {
-    if (!b || !CLUTCH_BERJALAN.includes(b.status)) continue;
-    for (const e of b.egg_records || []) {
-      if (!retak(e)) continue;
-      if (e.status === "menetas" || e.status === "gagal" || e.status === "infertil") continue;
-      keluar.push({
-        breeding_id: b.id,
-        pasangan: `${b.male_name || "?"} × ${b.female_name || "?"}`,
-        egg_number: e.egg_number,
-        status: e.status || "belum_dicek",
-        retak_date: e.retak_date || null,
-        retak_catatan: e.retak_catatan || "",
-        egg_laying_date: b.egg_laying_date || null,
-        incubator_name: b.incubator_name || "",
-      });
-    }
-  }
-  return keluar.sort((a, b) =>
-    String(a.egg_laying_date || "").localeCompare(String(b.egg_laying_date || "")) ||
-    (a.egg_number || 0) - (b.egg_number || 0));
-}

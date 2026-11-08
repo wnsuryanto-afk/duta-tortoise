@@ -328,8 +328,16 @@ export default function SalesList() {
         "Laba Bulan Ini" 50px. Yang terbaca jadi "Menunggu Fol…".
       */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+        {/*
+          "Follow-up", bukan "Menunggu Follow-up".
+
+          Label panjang itu terpotong di setiap lebar ponsel yang memuat dua
+          kartu: 158px tersedia di 360px, 9px masih kurang di 412px. Yang
+          terbaca orang adalah "Menunggu Fol…", dan keterangan di bawahnya
+          ("DP / belum bayar") sudah mengatakan menunggu apa.
+        */}
         {salesAktif.length > 0 && (
-          <StatCard label="Menunggu Follow-up" value={salesAktif.length}
+          <StatCard label="Follow-up" value={salesAktif.length}
             icon={Clock} color="bg-amber-100 text-amber-700"
             href="/sales?tab=aktif"
             sub="DP / belum bayar" />
@@ -349,7 +357,7 @@ export default function SalesList() {
           href="/sales?tab=semua"
           sub={`Rp ${angkaRibuan(totalRevenue)}`} />
         {salesAktif.length === 0 && (
-          <StatCard label="Menunggu Follow-up" value={0}
+          <StatCard label="Follow-up" value={0}
             icon={Clock} color="bg-muted text-muted-foreground"
             href="/sales?tab=aktif"
             sub="✓ semua lunas" />

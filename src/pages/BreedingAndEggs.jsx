@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { telurRetakPerluPerhatian } from "@/lib/telurRetak";
-import PanelTelurRetak from "@/components/breeding/PanelTelurRetak";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -371,7 +369,6 @@ export default function BreedingAndEggs() {
     render yang memuat dan yang tidak. Hitungannya ringan (21 clutch), dan
     aturan hook tidak boleh ditekuk demi menghemat satu perulangan.
   */
-  const telurRetakPerhatian = telurRetakPerluPerhatian(breedings);
 
   return (
     <div className="space-y-6">
@@ -438,7 +435,6 @@ export default function BreedingAndEggs() {
         terlihat bersamaan — padahal yang tersebar itulah yang paling mudah
         terlewat. Lihat lib/telurRetak.js.
       */}
-      <PanelTelurRetak telur={telurRetakPerhatian} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Dua baris di ponsel, satu baris di layar lebar. Enam tab dalam satu
