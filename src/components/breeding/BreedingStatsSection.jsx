@@ -11,7 +11,6 @@ import {
 import { TrendingUp, Egg, Download, BarChart2 } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import html2canvas from "html2canvas";
 import { ringkasTelurDicek } from "@/lib/hasilInkubasi";
 
 const MORPH_COLORS = [
@@ -103,7 +102,21 @@ export default function BreedingStatsSection({ breedings = [] }) {
 
   const handleExport = async () => {
     if (!chartRef.current) return;
-    const canvas = await html2canvas(chartRef.current, { backgroundColor: "#ffffff" });
+    /*
+      html2canvas dimuat SAAT DITEKAN, bukan saat halaman dibuka.
+
+      Impor statisnya menarik ±200 KB ke dalam bundel utama hanya supaya
+      tombol "Unduh PNG" ini siap — dan karena halaman Breeding & Telur
+      mengimpor komponen ini, setiap orang yang membuka /breeding membayar
+      ongkosnya, termasuk yang tidak pernah menekan tombolnya.
+
+      Dua pemanggil lain di repo ini (lib/labelUtils.js dan
+      EggLabelGenerator.jsx) sudah memuatnya seperti ini; yang satu ini
+      tertinggal, dan karena impor statis menang atas impor dinamis, satu
+      berkas ini membatalkan pemisahan di kedua berkas itu juga.
+    */
+    const h2c = (await import("html2canvas")).default;
+    const canvas = await h2c(chartRef.current, { backgroundColor: "#ffffff" });
     const link = document.createElement("a");
     link.download = `breeding-stats-${format(new Date(), "yyyy-MM")}.png`;
     link.href = canvas.toDataURL();

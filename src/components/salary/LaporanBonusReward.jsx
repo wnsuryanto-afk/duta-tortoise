@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { FileDown, Star, Trophy, Gift, CheckCircle2, Clock } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
-import jsPDF from "jspdf";
 import { kisiWadah } from "@/lib/kisiWadah";
 
 // Generate last 12 months options
@@ -115,7 +114,16 @@ export default function LaporanBonusReward() {
   const totalPoints = employees.reduce((s, e) => s + e.approvedPoints, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === selectedPeriod)?.label || selectedPeriod;
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    /*
+      jsPDF dimuat SAAT DITEKAN, bukan saat halaman dibuka.
+
+      Impor statisnya ikut masuk bundel utama — dan karena aplikasi ini satu
+      berkas JavaScript tanpa pemisahan rute, SETIAP halaman membayarnya,
+      termasuk layar kiper yang tidak punya tombol ekspor sama sekali.
+      Pustaka cetak hanya diperlukan sesudah tombolnya ditekan.
+    */
+    const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();

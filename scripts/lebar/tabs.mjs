@@ -1,5 +1,6 @@
 import { chromium } from "playwright-core";
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+import { cariChromium } from "../lib/chromium.mjs";
+const b = await chromium.launch({ executablePath: cariChromium() });
 const p = await b.newPage({ viewport: { width: 390, height: 900 } });
 const galat = [];
 p.on("pageerror", (e) => galat.push(String(e).split("\n")[0].slice(0, 110)));

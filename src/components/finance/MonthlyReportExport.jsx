@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Download, Loader2, FileText } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import jsPDF from "jspdf";
 import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { fertilClutch } from "@/lib/hasilInkubasi";
@@ -219,6 +218,15 @@ export default function MonthlyReportExport({ role }) {
       const hatchedThisMonth = breedings.filter(b => (b.hatch_date || "").startsWith(period)).reduce((s, b) => s + (b.hatched_count || 0), 0);
 
       const TOTAL_PAGES = 6;
+      /*
+        jsPDF dimuat SAAT DITEKAN, bukan saat halaman dibuka.
+
+        Impor statisnya ikut masuk bundel utama — dan karena aplikasi ini satu
+        berkas JavaScript tanpa pemisahan rute, SETIAP halaman membayarnya,
+        termasuk layar kiper yang tidak punya tombol ekspor sama sekali.
+        Pustaka cetak hanya diperlukan sesudah tombolnya ditekan.
+      */
+      const jsPDF = (await import("jspdf")).default;
       const doc = new jsPDF({ unit: "mm", format: "a4" });
 
       // ───────────────────────────────────────────

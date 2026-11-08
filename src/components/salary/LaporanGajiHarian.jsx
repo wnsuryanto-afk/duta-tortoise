@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { FileDown, ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval, parseISO, isWithinInterval } from "date-fns";
 import { id } from "date-fns/locale";
-import jsPDF from "jspdf";
 
 // Tarif cadangan, dipakai HANYA bila SalaryConfig belum diisi. Sebelum ini
 // kedua angka ini ditulis mati di berkas ini, jadi laporan ini tetap memakai
@@ -135,7 +134,16 @@ export default function LaporanGajiHarian() {
     return { totalDays, totalHours: Math.round(totalHours), totalOvertime: otHours, upahHarian, upahLembur, total };
   }
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    /*
+      jsPDF dimuat SAAT DITEKAN, bukan saat halaman dibuka.
+
+      Impor statisnya ikut masuk bundel utama — dan karena aplikasi ini satu
+      berkas JavaScript tanpa pemisahan rute, SETIAP halaman membayarnya,
+      termasuk layar kiper yang tidak punya tombol ekspor sama sekali.
+      Pustaka cetak hanya diperlukan sesudah tombolnya ditekan.
+    */
+    const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF({ orientation: "landscape" });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 12;

@@ -59,6 +59,30 @@ import TermConditionSOPPage from "@/pages/TermConditionSOPPage";
 import RiwayatKlusterPage from "@/pages/RiwayatKlusterPage";
 import HubPage from "@/pages/HubPage";
 import BreedingDetailPage from "@/pages/BreedingDetailPage";
+import AlatKerjaPage from "@/pages/AlatKerjaPage";
+import ApprovalPoinPage from "@/pages/ApprovalPoinPage";
+import BreedingAndEggs from "@/pages/BreedingAndEggs";
+import BreedingPlannerPage from "@/pages/BreedingPlannerPage";
+import DaftarBelanjaPage from "@/pages/DaftarBelanjaPage";
+import Dashboard from "@/pages/Dashboard";
+import DashboardStokPage from "@/pages/DashboardStokPage";
+import FinancePage from "@/pages/FinancePage";
+import HargaKuraPage from "@/pages/HargaKuraPage";
+import HealthList from "@/pages/HealthList";
+import IsiAsalKuraPage from "@/pages/IsiAsalKuraPage";
+import IsiHargaBarangPage from "@/pages/IsiHargaBarangPage";
+import KritikSaranPage from "@/pages/KritikSaranPage";
+import MaintenanceSchedulePage from "@/pages/MaintenanceSchedulePage";
+import NotificationsPage from "@/pages/NotificationsPage";
+import PakanHarianPage from "@/pages/PakanHarianPage";
+import PettyCashPage from "@/pages/PettyCashPage";
+import ProfileSetupPage from "@/pages/ProfileSetupPage";
+import RempesanPage from "@/pages/RempesanPage";
+import SOPPage from "@/pages/SOPPage";
+import SalesList from "@/pages/SalesList";
+import TortoisePassport from "@/pages/TortoisePassport";
+import TreatmentPage from "@/pages/TreatmentPage";
+import UserDetailPage from "@/pages/UserDetailPage";
 import NaikkanProduksi from "@/components/breeding/NaikkanProduksi";
 import EggLabelGenerator from "@/components/breeding/EggLabelGenerator";
 import EggGrid from "@/components/breeding/EggGrid";
@@ -551,6 +575,45 @@ export default [
   ["RiwayatKlusterPage tanpa data", <RiwayatKlusterPage />],
   ["HubPage tanpa data", <HubPage />],
   ["BreedingDetailPage tanpa data", <BreedingDetailPage />],
+
+  /*
+   * 24 halaman yang TIDAK PERNAH DIUKUR sampai 8 Nov 2026.
+   *
+   * Penjaga lebar melaporkan "157 kasus, tidak ada tulisan terpotong" — dan
+   * angka itu benar. Yang tidak disebutnya: 25 dari 58 halaman di src/pages
+   * tidak ada di daftar ini sama sekali, jadi tidak satu pun pernah digambar
+   * apalagi diukur. Di antaranya Dashboard, Keuangan, Kas Kecil, Kesehatan,
+   * Penjualan, Perawatan — dan Breeding & Telur, yang baris tabnya memang
+   * meluap di layar pemiliknya (foto 8 Nov 2026: "Pembiakan" menempel ke
+   * "Telur & Inkubasi" tanpa jarak).
+   *
+   * Satu-satunya hal yang membuat penjaga ini bernilai adalah bahwa daftar
+   * kasusnya lengkap. cek-cakupan.mjs sekarang menjaga itu.
+   */
+  ["AlatKerjaPage tanpa data", <AlatKerjaPage />],
+  ["ApprovalPoinPage tanpa data", <ApprovalPoinPage />],
+  ["BreedingAndEggs tanpa data", <BreedingAndEggs />],
+  ["BreedingPlannerPage tanpa data", <BreedingPlannerPage />],
+  ["DaftarBelanjaPage tanpa data", <DaftarBelanjaPage />],
+  ["Dashboard tanpa data", <Dashboard />],
+  ["DashboardStokPage tanpa data", <DashboardStokPage />],
+  ["FinancePage tanpa data", <FinancePage />],
+  ["HargaKuraPage tanpa data", <HargaKuraPage />],
+  ["HealthList tanpa data", <HealthList />],
+  ["IsiAsalKuraPage tanpa data", <IsiAsalKuraPage />],
+  ["IsiHargaBarangPage tanpa data", <IsiHargaBarangPage />],
+  ["KritikSaranPage tanpa data", <KritikSaranPage />],
+  ["MaintenanceSchedulePage tanpa data", <MaintenanceSchedulePage />],
+  ["NotificationsPage tanpa data", <NotificationsPage />],
+  ["PakanHarianPage tanpa data", <PakanHarianPage />],
+  ["PettyCashPage tanpa data", <PettyCashPage />],
+  ["ProfileSetupPage tanpa data", <ProfileSetupPage />],
+  ["RempesanPage tanpa data", <RempesanPage />],
+  ["SOPPage tanpa data", <SOPPage />],
+  ["SalesList tanpa data", <SalesList />],
+  ["TortoisePassport tanpa data", <TortoisePassport />],
+  ["TreatmentPage tanpa data", <TreatmentPage />],
+  ["UserDetailPage tanpa data", <UserDetailPage />],
 
   /*
     Tab "Naikkan produksi" DENGAN data, bukan hanya kosong.
