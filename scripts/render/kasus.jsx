@@ -44,6 +44,7 @@ import KartuModalAset from "@/components/dashboard/KartuModalAset";
 import PanelBelumMasuk from "@/components/pettycash/PanelBelumMasuk";
 import PanelKelaminDini from "@/components/tortoise/PanelKelaminDini";
 import PanelTelurRetak from "@/components/breeding/PanelTelurRetak";
+import PanelPakanTerpecah from "@/components/stok/PanelPakanTerpecah";
 import KendaliRetak from "@/components/breeding/KendaliRetak";
 import IsiHargaBeliPage from "@/pages/IsiHargaBeliPage";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
@@ -989,34 +990,35 @@ export default [
   ["UnifiedStokPage tanpa data", <UnifiedStokPage />],
   ["SOPApproval tanpa data", <SOPApproval />],
   /*
-   * Kartu Modal Kerja & Estimasi Aset dengan ANGKA SUNGGUHAN 25-10-2026.
+   * Pakan yang sama tersimpan di dua satuan — DATA NYATA per 8 Nov 2026.
    *
-   * Kasus "OwnerDashboard tanpa data" sudah ada, tetapi tanpa data berarti
-   * semua angka rupiahnya Rp 0, rentang asetnya "belum bisa dihitung", dan
-   * baris peringatan taksiran tidak pernah muncul. Jadi justru bentuk yang
-   * paling mungkin meluap yang tidak pernah terukur: "Rp 1.354.818.451",
-   * rentang dua miliar dengan tanda pisah, dan dua baris keterangan panjang
-   * di bawah bilah. Di 280px kartunya hanya selebar ±248px.
+   * "Pakan Lainnya" benar-benar ada dua kali di kebun ini: 410 kg dan 71,97
+   * keranjang. Di 280px satu baris harus memuat nama pakan, dua angka stok
+   * bersatuannya, dua SKU, dan penanda nonaktif.
    */
-  /*
-   * Panel pencairan yang belum masuk buku kas, dengan baris NYATA.
-   *
-   * Barisnya datang dari PettyCashRequest 29 Okt 2026 yang memicu seluruh
-   * perbaikan ini: Rp 200.000, dicairkan dengan bukti transfer, tidak pernah
-   * sampai ke saldo. Di 280px satu baris harus memuat nominal, tanggal, nama
-   * pemohon, cara pencairan, DAN tombol "Masukkan ke buku kas" — tombol
-   * terpanjang di halaman ini. flex-wrap menurunkannya ke baris sendiri saat
-   * tidak muat; yang diukur di sini adalah apakah penurunan itu benar terjadi
-   * sebelum ada yang meluap.
-   */
-  /*
-   * Kura yang dikelamini sebelum ukurannya memungkinkan — DATA NYATA.
-   *
-   * Ketujuhnya benar-benar ada di peternakan per 8 Nov 2026, dan dua di
-   * antaranya (20,5 dan 20,7 cm) berdiri persis di atas ambang lama 20 cm
-   * yang menagihnya. Di 280px satu baris harus memuat nama, lencana kelamin,
-   * ukuran cangkang, nama spesies non-sulcata, DAN tautan "Buka".
-   */
+  ["PanelPakanTerpecah data nyata 08-11-2026", (
+    <PanelPakanTerpecah
+      kelompok={[[
+        { id: "1", name: "Pakan Lainnya", unit: "kg", current_stock: 410, sku: "LNN-0003" },
+        { id: "2", name: "Pakan Lainnya", unit: "keranjang", current_stock: 71.97, sku: "LNN-0001" },
+      ]]}
+    />
+  )],
+  /* Dua kelompok, nama panjang, satu baris nonaktif dan satu tanpa SKU. */
+  ["PanelPakanTerpecah dua kelompok", (
+    <PanelPakanTerpecah
+      kelompok={[
+        [
+          { id: "1", name: "Rumput Gajah / Sudan Sorghum", unit: "kg", current_stock: 1348.97, sku: "RPT-0004" },
+          { id: "2", name: "Rumput Gajah / Sudan Sorghum", unit: "keranjang", current_stock: 12, sku: null },
+        ],
+        [
+          { id: "3", name: "Melon BS", unit: "kg", current_stock: 400, sku: "BUH-0001" },
+          { id: "4", name: "Melon BS", unit: "keranjang", current_stock: 0, sku: "BUH-0002", is_active: false },
+        ],
+      ]}
+    />
+  )],
   /*
    * Telur retak yang masih dierami.
    *
@@ -1058,6 +1060,14 @@ export default [
     <KendaliRetak egg={{ egg_number: 4, status: "menetas", retak: true, retak_date: "2026-11-08" }}
       readonly onSimpan={() => {}} />
   )],
+  /*
+   * Kura yang dikelamini sebelum ukurannya memungkinkan — DATA NYATA.
+   *
+   * Ketujuhnya benar-benar ada di peternakan per 8 Nov 2026, dan dua di
+   * antaranya (20,5 dan 20,7 cm) berdiri persis di atas ambang lama 20 cm
+   * yang menagihnya. Di 280px satu baris harus memuat nama, lencana kelamin,
+   * ukuran cangkang, nama spesies non-sulcata, DAN tautan "Buka".
+   */
   ["PanelKelaminDini tujuh baris nyata 08-11-2026", (
     <PanelKelaminDini
       kura={[
@@ -1076,6 +1086,17 @@ export default [
       kura={[{ id: "1", name: "8 KECIL", code: "8KECIL", gender: "betina", shell_length_cm: 15, species: "sulcata" }]}
     />
   )],
+  /*
+   * Panel pencairan yang belum masuk buku kas, dengan baris NYATA.
+   *
+   * Barisnya datang dari PettyCashRequest 29 Okt 2026 yang memicu seluruh
+   * perbaikan ini: Rp 200.000, dicairkan dengan bukti transfer, tidak pernah
+   * sampai ke saldo. Di 280px satu baris harus memuat nominal, tanggal, nama
+   * pemohon, cara pencairan, DAN tombol "Masukkan ke buku kas" — tombol
+   * terpanjang di halaman ini. flex-wrap menurunkannya ke baris sendiri saat
+   * tidak muat; yang diukur di sini adalah apakah penurunan itu benar terjadi
+   * sebelum ada yang meluap.
+   */
   ["PanelBelumMasuk satu baris nyata 29-10-2026", (
     <PanelBelumMasuk
       belumMasuk={[
@@ -1116,6 +1137,16 @@ export default [
       bolehPerbaiki={false}
     />
   )],
+  /*
+   * Kartu Modal Kerja & Estimasi Aset dengan ANGKA SUNGGUHAN 25-10-2026.
+   *
+   * Kasus "OwnerDashboard tanpa data" sudah ada, tetapi tanpa data berarti
+   * semua angka rupiahnya Rp 0, rentang asetnya "belum bisa dihitung", dan
+   * baris peringatan taksiran tidak pernah muncul. Jadi justru bentuk yang
+   * paling mungkin meluap yang tidak pernah terukur: "Rp 1.354.818.451",
+   * rentang dua miliar dengan tanda pisah, dan dua baris keterangan panjang
+   * di bawah bilah. Di 280px kartunya hanya selebar ±248px.
+   */
   ["KartuModalAset angka nyata 25-10-2026", (
     <KartuModalAset
       modal={{

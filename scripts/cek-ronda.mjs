@@ -2080,6 +2080,76 @@ if (!NM.perincianDari("Melon", "Melon BS")) temuan.push("nama mirip: 'Melon BS' 
 if (NM.perincianDari("Rum", "Rumput")) temuan.push("nama mirip: potongan kata 'Rum' dianggap perincian 'Rumput'");
 
 /*
+  ── Baris pakan: penjaga dan pencarinya harus SATU ──────────────────────
+
+  PakanHarianForm dulu menanyakan dua hal dengan kunci yang berbeda:
+  penjaganya melihat NAMA saja, pencarinya NAMA DAN SATUAN. Nama yang sudah
+  ada dengan satuan baru lolos penjaga, lalu gagal ditemukan pencarinya, lalu
+  melahirkan baris kedua tanpa sepatah pun peringatan. Hanya ada dua satuan
+  di formulir itu, jadi celahnya berjarak dua klik — dan per 8 Nov 2026 daftar
+  pakan memang sudah memuat dua baris "Pakan Lainnya" (410 kg + 71,97
+  keranjang).
+
+  Sekarang satu panggilan memutuskan keduanya: yang mengizinkan juga yang
+  memulangkan barisnya. Yang diuji di sini adalah bahwa keduanya tetap satu.
+*/
+let barisPakanUji = 0;
+{
+  const PAKAN_BARIS = [
+    { name: "Pakan Campur",  unit: "kg", current_stock: 30 },
+    { name: "Pakan Lainnya", unit: "kg", current_stock: 410 },
+    { name: "Melon",         unit: "kg", current_stock: 65 },
+    { name: "Melon BS",      unit: "kg", current_stock: 400 },
+    { name: "Rumput",        unit: "kg", current_stock: 1348.97 },
+    { name: "Pakan Lainnya", unit: "keranjang", current_stock: 71.97 },
+    { name: "Mentimun",      unit: "kg", current_stock: 0 },
+  ];
+  const pilih = (nama, satuan) => NM.pilihBarisPakan({ nama, satuan, daftar: PAKAN_BARIS });
+
+  const uji = [
+    // [nama, satuan, boleh, stok baris yang dipakai (null = baris baru), keterangan]
+    ["Rumput", "kg", true, 1348.97, "nama+satuan cocok → pakai baris itu"],
+    ["Rumput", "keranjang", false, null, "CELAHNYA: nama ada, satuan belum punya baris"],
+    ["Melon BS", "keranjang", false, null, "hanya ada dalam kg"],
+    ["Pakan Lainnya", "keranjang", true, 71.97, "satuan ini SUDAH punya baris → dipakai kembali"],
+    ["Pakan Lainnya", "kg", true, 410, "baris kg-nya yang dipakai, bukan yang keranjang"],
+    ["Reumput", "kg", false, null, "salah ketik tetap tertangkap"],
+    ["Melon BS", "kg", true, 400, "perincian yang sah, bukan typo"],
+    ["Kangkung", "kg", true, null, "pakan baru yang sah → baris baru"],
+  ];
+  for (const [nama, satuan, boleh, stok, ket] of uji) {
+    const d = pilih(nama, satuan);
+    const stokDapat = d.cocok ? (Number(d.cocok.current_stock) || 0) : null;
+    if (d.boleh !== boleh || stokDapat !== stok) {
+      temuan.push(
+        `baris pakan ${JSON.stringify(nama)}/${satuan} (${ket}): ` +
+        `boleh=${d.boleh} stok=${JSON.stringify(stokDapat)}, ` +
+        `seharusnya boleh=${boleh} stok=${JSON.stringify(stok)}`,
+      );
+    }
+  }
+
+  /* Penolakan harus MENYEBUT isi yang sudah ada — "sudah ada" saja tidak
+     cukup untuk memutuskan ganti satuan atau ganti nama. */
+  const tolak = pilih("Rumput", "keranjang");
+  if (!tolak.sebab.includes("1348.97")) {
+    temuan.push(`baris pakan: penolakan satuan tidak menyebut isi yang sudah ada — "${tolak.sebab}"`);
+  }
+  if (tolak.bentrok?.unit !== "kg") {
+    temuan.push("baris pakan: baris yang bentrok tidak dipulangkan");
+  }
+
+  /* Yang sudah terpecah harus bisa didaftar, supaya bisa digabung orangnya. */
+  const pecah = NM.pakanTerpecahSatuan(PAKAN_BARIS);
+  if (pecah.length !== 1 || pecah[0][0].name !== "Pakan Lainnya") {
+    temuan.push(`baris pakan terpecah: dapat ${JSON.stringify(pecah.map((g) => g[0]?.name))}, seharusnya ["Pakan Lainnya"]`);
+  }
+  if (NM.pakanTerpecahSatuan().length !== 0) temuan.push("baris pakan terpecah: daftar kosong tidak menghasilkan 0");
+  if (NM.pilihBarisPakan({}).boleh !== true) temuan.push("baris pakan: panggilan tanpa argumen tidak boleh menolak");
+  barisPakanUji = uji.length;
+}
+
+/*
   ── HARGA BARANG GUDANG: 53 barang berstok tanpa harga beli ────────────────
 
   18 Okt 2026: 53 dari 87 barang bergudang punya stok tetapi harga belinya
@@ -3740,6 +3810,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
 );
 process.exit(0);

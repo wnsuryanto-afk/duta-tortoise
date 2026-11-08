@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef } from "react";
+import { pakanTerpecahSatuan } from "@/lib/namaMirip";
+import PanelPakanTerpecah from "@/components/stok/PanelPakanTerpecah";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useTestMode } from "@/lib/useTestMode";
@@ -800,8 +802,19 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
   // Show "Item Wajib Habis" alert banner
   const showMandatoryAlert = mandatoryEmpty > 0;
 
+  /*
+    Pakan yang sama tersimpan di dua satuan. Sengaja BUKAN useMemo: baris ini
+    berada sesudah early-return, jadi hook di sini akan dipanggil bersyarat.
+    Daftarnya 15 baris — hitungannya tidak terasa.
+  */
+  const pakanTerpecah = pakanTerpecahSatuan(feedstocks || []);
+
   return (
     <div className="space-y-4">
+      {/* Pakan yang sama di dua satuan — markup-nya di PanelPakanTerpecah
+          supaya penjaga lebar bisa mengukurnya dengan baris nyata. */}
+      <PanelPakanTerpecah kelompok={pakanTerpecah} />
+
       {/* Alert: item wajib habis */}
       {showMandatoryAlert && (
         <button
