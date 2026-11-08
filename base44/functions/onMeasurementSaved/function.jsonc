@@ -1,6 +1,6 @@
 {
   "name": "onMeasurementSaved",
-  "entry": "main.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Auto-update Tortoise setelah Timbang",

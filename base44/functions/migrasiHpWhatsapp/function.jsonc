@@ -1,4 +1,4 @@
 {
   "name": "migrasiHpWhatsapp",
-  "entry": "main.ts"
+  "entry": "entry.ts"
 }

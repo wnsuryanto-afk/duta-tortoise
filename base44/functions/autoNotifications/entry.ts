@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { clutchAktif } from "../../shared/kura.ts";
 import { perluDiperhatikan, dilacak } from "../../shared/stok.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { tanggalMaju, tanggalMundur, wibTanggal } from "../../shared/otomatis.ts";
 
 // Batas pengambilan ditulis tegas. Pemberitahuan otomatis yang membaca daftar
 // tanpa batas mengandalkan bawaan SDK: begitu datanya lewat batas itu,
@@ -11,7 +12,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const today = wibTanggal();
     const todayStart = today + "T00:00:00.000Z";
     const results = [];
 
@@ -45,8 +46,8 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     // 2D. OBAT KADALUARSA
     // ══════════════════════════════════════════════════
-    const in30days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const in7days  = new Date(now.getTime() + 7  * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const in30days = tanggalMaju(30);
+    const in7days  = tanggalMaju(7);
     const warehouseItems = await base44.asServiceRole.entities.WarehouseItem.list('-name', 2000);
     const expiringItems = warehouseItems.filter(i =>
       i.expired_date && i.expired_date <= in30days
@@ -81,7 +82,7 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     // 2E. FOLLOW-UP TREATMENT JATUH TEMPO
     // ══════════════════════════════════════════════════
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const yesterday = tanggalMundur(1);
     const healthRecords = await base44.asServiceRole.entities.HealthRecord.list("-date", 500);
     const followUpDue = healthRecords.filter(r =>
       r.follow_up_date && (r.follow_up_date === today || r.follow_up_date === yesterday)
@@ -110,7 +111,7 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     // 2F. KURA BELUM DITIMBANG > 30 HARI
     // ══════════════════════════════════════════════════
-    const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const last30 = tanggalMundur(30);
     const tortoises = await base44.asServiceRole.entities.Tortoise.list('-created_date', 2000);
     const notWeighed = tortoises.filter(t =>
       ["aktif", "breeding"].includes(t.status) &&
@@ -184,7 +185,7 @@ Deno.serve(async (req) => {
     // 12. TELUR MAU MENETAS (3 hari ke depan)
     // Gunakan expected_hatch_start / estimated_hatch_date
     // ══════════════════════════════════════════════════
-    const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const in3days = tanggalMaju(3);
     const breedingRecords = await base44.asServiceRole.entities.Breeding.list('-created_date', 2000);
     const nearHatch = breedingRecords.filter(b => {
       // Clutch aktif = "bertelur" ATAU "inkubasi" (../../shared/kura.ts).

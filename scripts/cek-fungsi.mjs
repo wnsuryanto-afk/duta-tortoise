@@ -15,6 +15,13 @@
  * paling sunyi yang bisa dimiliki sebuah repo: perbaikan yang terlihat
  * selesai tapi tidak pernah dipasang.
  *
+ * 8 Nov 2026 kembarannya DICABUT, bukan cuma dijaga: keempat belas
+ * function.jsonc itu sekarang menunjuk entry.ts — berkas yang isinya sudah
+ * identik — dan main.ts-nya dihapus. Kedelapan puluh fungsi kini memakai
+ * satu nama yang sama. Penjaga ini tetap ada karena yang membuat cacat itu
+ * sunyi bukan jumlah salinannya, melainkan tidak adanya tanda apa pun saat
+ * salinan baru muncul lagi.
+ *
  * ── YANG DIPERIKSA ─────────────────────────────────────────────────
  *
  *   1. Berkas yang ditunjuk `entry` di function.jsonc memang ada.

@@ -3,6 +3,7 @@ import { diPeternakan } from "../../shared/kura.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { perluDitimbang } from "../../shared/timbang.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 /**
  * getRotasiUkur — kura mana yang perlu ditimbang hari ini, dan KENAPA.
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const targetDate = body.date || new Date().toISOString().split("T")[0];
+    const targetDate = body.date || wibTanggal();
 
     const svc = base44.asServiceRole;
 

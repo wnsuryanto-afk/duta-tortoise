@@ -10,6 +10,7 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
               borrower_name: u.borrower_name || u.by_name || "",
               borrow_date: u.borrow_date
                 ? u.borrow_date.substring(0, 10)
-                : (u.date || new Date().toISOString().substring(0, 10)),
+                : (u.date || wibTanggal()),
               return_date: u.return_date ? u.return_date.substring(0, 10) : undefined,
               purpose: u.purpose || u.notes || "",
               return_condition: u.return_condition || undefined,
@@ -143,7 +144,7 @@ Deno.serve(async (req) => {
               by_email: u.by_email || "",
               by_name: u.by_name || "",
               notes: u.notes || "",
-              date: u.date || new Date().toISOString().substring(0, 10),
+              date: u.date || wibTanggal(),
               status: u.status || "selesai",
               approved_by: u.approved_by || "",
               approved_at: u.approved_at || undefined,

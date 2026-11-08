@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 /**
  * generateDailyCareTasks — cron harian untuk membuat tugas "Perawatan [kode] — [penyakit]"
@@ -10,8 +11,7 @@ import { BATAS_AMBIL } from "../../shared/batas.ts";
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const today = wibTanggal();
     const CARE_POINTS = 15;
 
     // 1. Ambil semua kura yang masih sakit (tidak archived)

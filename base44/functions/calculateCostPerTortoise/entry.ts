@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { masukLaporan } from "../../shared/laporan.ts";
 import { diPeternakan } from "../../shared/kura.ts";
+import { wibBulan } from "../../shared/otomatis.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -9,7 +10,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const url = new URL(req.url);
-    const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
+    const month = url.searchParams.get('month') || wibBulan();
 
     const [financeTx, salarySlips, pettyCash, tortoises, settings] = await Promise.all([
       base44.asServiceRole.entities.FinanceTransaction.list('-date', 5000),

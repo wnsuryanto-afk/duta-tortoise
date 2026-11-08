@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 // Dipanggil oleh keeper/kepala_feeder saat menekan "Lapor Rusak" pada item gudang.
 // 1. Update WarehouseItem: condition, condition_note, condition_photo_url, pelapor, tanggal, needs_replacement
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
     const item = await base44.asServiceRole.entities.WarehouseItem.get(warehouse_item_id);
     if (!item) return Response.json({ error: 'Item tidak ditemukan' }, { status: 404 });
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = wibTanggal();
     const now = new Date().toISOString();
 
     // 1. Update condition pada WarehouseItem

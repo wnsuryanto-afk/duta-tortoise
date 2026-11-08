@@ -1,5 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { getOtomatis } from "../../shared/otomatis.ts";
+import { getOtomatis, wibTanggal } from "../../shared/otomatis.ts";
 import { clutchAktif } from "../../shared/kura.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
           is_active: aktif,
           description:
             String(t.description || "").split("\n\n[Otomatis]")[0] +
-            `\n\n[Otomatis] ${aktif ? "Dinyalakan" : "Dimatikan"} ${new Date().toISOString().slice(0, 10)} — ${alasan}.`,
+            `\n\n[Otomatis] ${aktif ? "Dinyalakan" : "Dimatikan"} ${wibTanggal()} — ${alasan}.`,
         });
         hasil.push(`${aktif ? "NYALA" : "MATI"}: ${t.title} — ${alasan}`);
       }
