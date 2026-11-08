@@ -18,6 +18,7 @@ import { recoveryDaysAgo } from "@/lib/parentHealthUtils";
 import { selaraskanEggRecords } from "@/lib/hasilInkubasi";
 import { tandaiRetakMassal } from "@/lib/telurRetak";
 import { calculateIncubatorEggs as hitungTelurInkubator } from "@/lib/breedingUtils";
+import { clutchKembar } from "@/lib/clutchKembar";
 import { daftarTray, uraikanTray, trayTerpakai } from "@/lib/trayTelur";
 import { segarkanBreeding } from "@/lib/kunciBreeding";
 
@@ -76,6 +77,18 @@ export default function BreedingForm({ open, onClose, editData }) {
     queryKey: ["tortoises"],
     queryFn: () => base44.entities.Tortoise.list("-created_date", 200),
   });
+
+  /*
+    Catatan clutch yang sudah ada — untuk memeriksa kembaran sebelum menyimpan.
+
+    Kunci cache yang sama dengan halaman Breeding, jadi tidak menambah satu
+    pun permintaan: daftarnya sudah ada di tangan saat formulir ini dibuka.
+  */
+  const { data: clutchAda = [] } = useQuery({
+    queryKey: ["breedings"],
+    queryFn: () => base44.entities.Breeding.list("-created_date", 200),
+  });
+  const [kembar, setKembar] = useState(null);
 
   const { data: incubators = [] } = useQuery({
     queryKey: ["incubators"],
@@ -195,6 +208,31 @@ export default function BreedingForm({ open, onClose, editData }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+
+    /*
+      Pasangan + tanggal bertelur yang sama = hampir pasti clutch yang sama.
+
+      8 Nov 2026 dua clutch tercatat dua kali: penjaga mencatat pagi, pemilik
+      mencatat lagi beberapa jam kemudian, dan tidak ada satu pun layar yang
+      memberi tahu catatannya sudah ada. 35 telur terhitung dua kali, dan
+      Ranking Indukan memakai angka itu.
+
+      DITUNJUKKAN, bukan ditolak: seekor betina bisa saja — walau jarang —
+      punya alasan yang tidak diketahui program ini. Jadi catatan yang sudah
+      ada dipampangkan dulu; kalau orangnya menekan simpan sekali lagi, itu
+      keputusannya dan tetap dijalankan.
+    */
+    if (!editData?.id && !kembar) {
+      const sudahAda = clutchKembar(
+        { ...form, egg_laying_date: form.egg_laying_date },
+        clutchAda,
+      );
+      if (sudahAda) {
+        setKembar(sudahAda);
+        return;
+      }
+    }
+
     setSaving(true);
     const eggCount = form.egg_count ? Number(form.egg_count) : 0;
     // Baris telur diselaraskan dengan jumlah telur, bukan hanya dibuat saat
@@ -633,11 +671,48 @@ export default function BreedingForm({ open, onClose, editData }) {
             );
           })()}
 
+          {/*
+            Catatan yang sudah ada dipampangkan, bukan sekadar "sudah ada".
+
+            Yang menentukan ini clutch yang sama atau bukan adalah orang yang
+            mengangkat telurnya — dan untuk memutuskan ia perlu melihat
+            catatan yang mana: siapa yang mencatat, jam berapa, berapa telur.
+            "Data sudah ada" tanpa itu hanya memindahkan tebakan.
+          */}
+          {kembar && (
+            <div className="rounded-xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+              <p className="flex items-start gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>Clutch ini sepertinya sudah dicatat</span>
+              </p>
+              <div className="rounded-lg bg-background/70 border border-amber-300 px-3 py-2 text-xs space-y-0.5">
+                <div className="font-semibold">{kembar.male_name} × {kembar.female_name}</div>
+                <div className="text-muted-foreground">
+                  bertelur {kembar.egg_laying_date
+                    ? format(new Date(kembar.egg_laying_date), "d MMM yyyy", { locale: idLocale })
+                    : "—"} · {kembar.egg_count || 0} butir
+                  {kembar.incubator_name ? ` · ${kembar.incubator_name}` : ""}
+                </div>
+                <div className="text-muted-foreground">
+                  dicatat {kembar.created_by || "entah siapa"}
+                  {kembar.created_date
+                    ? ` · ${format(new Date(kembar.created_date), "d MMM yyyy HH:mm", { locale: idLocale })}`
+                    : ""}
+                </div>
+              </div>
+              <p className="text-[11px] leading-snug text-amber-900/90 dark:text-amber-200/90">
+                Kalau ini clutch yang sama, tekan <strong>Batal</strong> dan buka catatan
+                yang sudah ada. Kalau induknya memang bertelur dua kali di hari yang sama,
+                tekan <strong>Tetap tambah</strong>.
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={saving || !form.male_name?.trim() || !form.female_name?.trim() || !form.egg_laying_date || !form.egg_count || !form.status || !form.incubator_name}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {editData?.id ? "Simpan" : "Tambah"}
+              {editData?.id ? "Simpan" : kembar ? "Tetap tambah" : "Tambah"}
             </Button>
           </div>
         </form>

@@ -87,6 +87,7 @@ bundel("src/lib/pitaUkuran.js", "pita.cjs");
 bundel("src/lib/hargaEstimasi.js", "hargaest.cjs");
 bundel("src/lib/hargaBarang.js", "hargabrg.cjs");
 bundel("src/lib/namaMirip.js", "namamirip.cjs");
+bundel("src/lib/clutchKembar.js", "clutchkembar.cjs");
 bundel("src/lib/modalKerja.js", "modal.cjs");
 bundel("src/lib/hargaBeliKura.js", "hargabeli.cjs");
 bundel("src/lib/barisTelur.js", "baristelur.cjs");
@@ -2014,6 +2015,7 @@ for (const [teks, harap] of barangUji) {
   memanggil kemiripan() dan memblokir pencatatan pakan harian yang benar.
 */
 const NM = await import(`file://${join(dir, "namamirip.cjs")}`).then((m) => m.default || m);
+const CK = await import(`file://${join(dir, "clutchkembar.cjs")}`).then((m) => m.default || m);
 
 /* Keempat belas nama pakan yang BENAR-BENAR ada, 18 Okt 2026. */
 const PAKAN_NYATA = [
@@ -2078,6 +2080,73 @@ if (NM.jarakHuruf("abc", "abc") !== 0) temuan.push("nama mirip: jarak nama ident
 /* Perincian dikenali dari batas KATA, bukan potongan huruf. */
 if (!NM.perincianDari("Melon", "Melon BS")) temuan.push("nama mirip: 'Melon BS' tidak dikenali sebagai perincian 'Melon'");
 if (NM.perincianDari("Rum", "Rumput")) temuan.push("nama mirip: potongan kata 'Rum' dianggap perincian 'Rumput'");
+
+/*
+  ── Clutch kembar: satu pasangan, satu tanggal, satu catatan ───────────
+
+  8 Nov 2026 pemiliknya melihat clutch yang sama tercatat dua kali di
+  Rencana Kawin. Benar: penjaga mencatat pagi, pemiliknya mencatat clutch
+  yang sama beberapa jam kemudian, dan tidak ada satu pun layar yang
+  memberi tahu catatannya sudah ada. 35 telur terhitung dua kali.
+
+  Data di bawah ini SUNGGUHAN — keempat baris pertamanya apa adanya dari
+  kebun ini, termasuk jam dan siapa yang mencatat.
+*/
+let clutchKembarUji = 0;
+{
+  const NYATA_KEMBAR = [
+    { id: "a1", male_id: "A27i", female_id: "C9i", male_name: "A27", female_name: "C9",
+      egg_count: 14, egg_laying_date: "2026-11-08", created_date: "2026-11-08T12:55:16", created_by: "wnsuryanto@gmail.com" },
+    { id: "a2", male_id: "A27i", female_id: "C9i", male_name: "A27", female_name: "C9",
+      egg_count: 14, egg_laying_date: "2026-11-08", created_date: "2026-11-08T08:43:09", created_by: "hanifakbar1110@gmail.com" },
+    { id: "b1", male_id: "A40i", female_id: "C23i", male_name: "A40", female_name: "C23",
+      egg_count: 21, egg_laying_date: "2026-11-01", created_date: "2026-11-01T09:37:43", created_by: "wnsuryanto@gmail.com" },
+    { id: "b2", male_id: "A40i", female_id: "C23i", male_name: "A40", female_name: "C23",
+      egg_count: 21, egg_laying_date: "2026-11-01", created_date: "2026-11-01T08:53:42", created_by: "hanifakbar1110@gmail.com" },
+    { id: "c1", male_id: "A43i", female_id: "B108i", male_name: "A43", female_name: "B108",
+      egg_count: 15, egg_laying_date: "2026-10-23", created_date: "2026-10-23T09:33:40" },
+    { id: "c2", male_id: "A43i", female_id: "B108i", male_name: "A43", female_name: "B108",
+      egg_count: 13, egg_laying_date: "2026-09-30", created_date: "2026-09-30T07:47:40" },
+  ];
+
+  const uji = [
+    ["pasangan + tanggal sama -> ketemu yang sudah ada",
+     { male_id: "A27i", female_id: "C9i", egg_laying_date: "2026-11-08" }, "", "a1"],
+    ["pasangan sama, tanggal beda -> bukan kembaran",
+     { male_id: "A43i", female_id: "B108i", egg_laying_date: "2026-10-23" }, "c1", null],
+    ["induk yang sama bertelur di bulan lain -> bukan kembaran",
+     { male_id: "A43i", female_id: "B108i", egg_laying_date: "2026-11-20" }, "", null],
+    ["betina beda, tanggal sama -> bukan kembaran",
+     { male_id: "A27i", female_id: "B108i", egg_laying_date: "2026-11-08" }, "", null],
+    ["yang sedang disunting bukan kembarannya sendiri",
+     { male_id: "A40i", female_id: "C23i", egg_laying_date: "2026-11-01" }, "b1", "b2"],
+    ["tanpa tanggal bertelur -> tidak menuduh apa pun",
+     { male_id: "A27i", female_id: "C9i", egg_laying_date: "" }, "", null],
+    ["induk belum terdaftar, dicocokkan dengan namanya",
+     { male_name: "A27", female_name: "C9", egg_laying_date: "2026-11-08" }, "", null],
+    ["tanggal bertanda waktu tetap dibaca harinya",
+     { male_id: "A27i", female_id: "C9i", egg_laying_date: "2026-11-08T05:00:00Z" }, "", "a1"],
+  ];
+  for (const [ket, calon, abaikan, harap] of uji) {
+    const dapat = CK.clutchKembar(calon, NYATA_KEMBAR, abaikan);
+    const dapatId = dapat ? dapat.id : null;
+    if (dapatId !== harap) {
+      temuan.push(`clutch kembar (${ket}): dapat ${JSON.stringify(dapatId)}, seharusnya ${JSON.stringify(harap)}`);
+    }
+  }
+
+  /* Yang sudah terlanjur kembar harus bisa didaftar, supaya bisa dibereskan. */
+  const kelompok = CK.kelompokClutchKembar(NYATA_KEMBAR);
+  if (kelompok.length !== 2) {
+    temuan.push(`kelompok clutch kembar: dapat ${kelompok.length}, seharusnya 2`);
+  }
+  if (kelompok[0]?.[0]?.id !== "a1" || kelompok[1]?.[0]?.id !== "b1") {
+    temuan.push(`kelompok clutch kembar: urutannya bukan terbaru dulu (${kelompok.map((g) => g[0]?.id).join(", ")})`);
+  }
+  if (CK.kelompokClutchKembar().length !== 0) temuan.push("kelompok clutch kembar: daftar kosong tidak menghasilkan 0");
+  if (CK.clutchKembar() !== null) temuan.push("clutch kembar: tanpa argumen tidak menghasilkan null");
+  clutchKembarUji = uji.length;
+}
 
 /*
   ── Baris pakan: penjaga dan pencarinya harus SATU ──────────────────────
@@ -3810,6 +3879,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
 );
 process.exit(0);
