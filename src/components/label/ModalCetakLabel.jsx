@@ -141,7 +141,7 @@ export default function ModalCetakLabel({ open, items = [], onClose, judul = "Ce
                       Di layar ponsel tingginya diturunkan: pratinjau setinggi
                       72px menyisakan 90px untuk namanya, dan nama barang di sini
                       rata-rata jauh lebih panjang. */}
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={dataUrl}
                     alt={item.name}
                     className="border rounded bg-white flex-shrink-0 h-14 sm:h-[72px]"

@@ -1688,7 +1688,7 @@ export default function GuidedHariIni({ user }) {
         {/* Selfie preview */}
         {attendance?.selfie_checkin_url && (
           <div className="flex items-center gap-2 px-1">
-            <img src={attendance.selfie_checkin_url} alt="Selfie masuk" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
+            <img loading="lazy" decoding="async" src={attendance.selfie_checkin_url} alt="Selfie masuk" className="w-10 h-10 rounded-full object-cover border-2 border-green-300" />
             <div className="min-w-0">
               <span className="text-xs text-muted-foreground">Selfie masuk {attendance.check_in}</span>
               <KeteranganMasuk att={attendance} />

@@ -67,7 +67,7 @@ export default function PaymentProofDialog({ slip, mode, onClose, onSuccess }) {
         {/* Preview / Upload area */}
         {preview ? (
           <div className="relative">
-            <img
+            <img loading="lazy" decoding="async"
               src={preview}
               alt="Preview bukti"
               className="w-full rounded-lg border border-border max-h-72 object-contain bg-muted/30"

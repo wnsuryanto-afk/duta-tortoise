@@ -64,7 +64,7 @@ export default function TortoiseTerjualTab({ tortoises, isOwner }) {
                 {/* Photo */}
                 <div className="flex-shrink-0">
                   {t._photo ? (
-                    <img src={t._photo} alt={t.name} className="w-16 h-16 rounded-lg object-cover" />
+                    <img loading="lazy" decoding="async" src={t._photo} alt={t.name} className="w-16 h-16 rounded-lg object-cover" />
                   ) : (
                     <div className="w-16 h-16 rounded-lg bg-green-50 flex items-center justify-center">
                       <Shell className="w-7 h-7 text-green-400" />

@@ -217,7 +217,7 @@ export default function TortoisePhotoLightbox({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <img
+        <img loading="lazy" decoding="async"
           src={photo.url}
           alt={`Foto ${index + 1}`}
           draggable={false}

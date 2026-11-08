@@ -110,7 +110,7 @@ export default function KatalogPenyakit() {
                   {(() => {
                     const coverUrl = (p.images?.length > 0 && p.images[0]?.url) || p.image_url;
                     return coverUrl ? (
-                      <img src={coverUrl} alt={p.diagnosis_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <img loading="lazy" decoding="async" src={coverUrl} alt={p.diagnosis_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     ) : (
                       <BookOpen className="w-10 h-10 text-muted-foreground/30" />
                     );

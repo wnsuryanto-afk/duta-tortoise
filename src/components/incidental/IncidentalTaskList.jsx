@@ -106,7 +106,7 @@ export default function IncidentalTaskList({ user }) {
             </div>
             {task.done_notes && <p className="text-xs text-muted-foreground mt-0.5">{task.done_notes}</p>}
             {task.done_photo_url && (
-              <img
+              <img loading="lazy" decoding="async"
                 src={task.done_photo_url}
                 alt="Bukti"
                 className="w-16 h-12 rounded-lg object-cover border border-green-200 mt-1.5"
@@ -180,7 +180,7 @@ export default function IncidentalTaskList({ user }) {
                 </p>
               )}
               {task.photo_url && (
-                <img
+                <img loading="lazy" decoding="async"
                   src={task.photo_url}
                   alt="Acuan"
                   className="w-16 h-12 rounded-lg object-cover border border-border mt-1.5"

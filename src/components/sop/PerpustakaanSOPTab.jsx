@@ -173,7 +173,7 @@ export default function PerpustakaanSOPTab() {
           )}
           {selectedDoc?.photo_urls?.length > 0 && (
             <div className="mt-4 grid grid-cols-2 gap-2">
-              {selectedDoc.photo_urls.map((url, i) => <img key={i} src={url} alt={`foto-${i}`} className="rounded-lg w-full object-cover h-40" />)}
+              {selectedDoc.photo_urls.map((url, i) => <img loading="lazy" decoding="async" key={i} src={url} alt={`foto-${i}`} className="rounded-lg w-full object-cover h-40" />)}
             </div>
           )}
         </DialogContent>

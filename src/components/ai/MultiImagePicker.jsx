@@ -60,7 +60,7 @@ export default function MultiImagePicker({ images = [], onChange, max = 5, hint 
         <div className="flex flex-wrap gap-2">
           {images.map((img, i) => (
             <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border">
-              <img src={img.dataUrl} alt={`foto-${i + 1}`} className="w-full h-full object-cover" />
+              <img loading="lazy" decoding="async" src={img.dataUrl} alt={`foto-${i + 1}`} className="w-full h-full object-cover" />
               <button type="button" onClick={() => removeAt(i)} className="absolute top-0 right-0 bg-black/60 text-white rounded-bl-md p-0.5 hover:bg-black/80" aria-label="Hapus foto">
                 <X className="w-3 h-3" />
               </button>

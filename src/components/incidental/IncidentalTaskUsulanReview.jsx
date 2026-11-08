@@ -160,7 +160,7 @@ export default function IncidentalTaskUsulanReview({ task, open, onClose, onReso
           {task.photo_url && (
             <div className="space-y-1.5">
               <Label>Foto Kondisi</Label>
-              <img src={task.photo_url} alt="Kondisi" className="w-full max-h-48 object-cover rounded-lg border" />
+              <img loading="lazy" decoding="async" src={task.photo_url} alt="Kondisi" className="w-full max-h-48 object-cover rounded-lg border" />
             </div>
           )}
 

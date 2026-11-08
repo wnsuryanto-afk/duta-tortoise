@@ -139,7 +139,7 @@ export default function DisburseProofDialog({ request, mode = "disburse", user, 
 
       {proofUrl ? (
         <div className="relative inline-block w-full">
-          <img src={proofUrl} alt="bukti transfer" className="w-full max-h-48 object-contain rounded-lg border" />
+          <img loading="lazy" decoding="async" src={proofUrl} alt="bukti transfer" className="w-full max-h-48 object-contain rounded-lg border" />
           <button
             type="button"
             onClick={() => setProofUrl("")}

@@ -313,7 +313,7 @@ export default function IncidentalTaskForm({ open, onClose, user }) {
             <Label>Foto Acuan (opsional)</Label>
             {photoUrl ? (
               <div className="relative w-fit">
-                <img src={photoUrl} alt="Acuan" className="w-24 h-20 rounded-lg object-cover border" />
+                <img loading="lazy" decoding="async" src={photoUrl} alt="Acuan" className="w-24 h-20 rounded-lg object-cover border" />
                 <button
                   onClick={() => setPhotoUrl("")}
                   className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center"

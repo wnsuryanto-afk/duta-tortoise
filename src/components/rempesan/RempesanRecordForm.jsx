@@ -139,7 +139,7 @@ export default function RempesanRecordForm({
             <Label>Foto Hasil Timbangan *</Label>
             {photoUrl ? (
               <div className="space-y-1.5">
-                <img src={photoUrl} alt="Rempesan" className="w-full h-32 object-cover rounded-lg border" />
+                <img loading="lazy" decoding="async" src={photoUrl} alt="Rempesan" className="w-full h-32 object-cover rounded-lg border" />
                 {/* Sebelumnya foto yang sudah terunggah tidak bisa diganti sama
                     sekali. Itu jadi masalah nyata begitu formulir ini bisa
                     dibuka dari absensi: yang terbawa adalah foto RUMPUTNYA,

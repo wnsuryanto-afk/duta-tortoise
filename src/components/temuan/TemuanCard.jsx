@@ -18,7 +18,7 @@ export default function TemuanCard({ finding, isRecurring, onPhotoClick, onSakit
         {/* Thumbnail */}
         {finding.photo_url ? (
           <button onClick={() => onPhotoClick(finding.photo_url)} className="flex-shrink-0">
-            <img
+            <img loading="lazy" decoding="async"
               src={finding.photo_url}
               alt="Bukti foto"
               className="h-16 w-20 object-cover rounded border hover:opacity-80 transition-opacity"

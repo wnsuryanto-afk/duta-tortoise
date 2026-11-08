@@ -165,7 +165,7 @@ export default function PhotoProgressPanel({ tortoise, onClose }) {
                   className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border bg-muted"
                   onClick={() => setSelectedIdx(selectedIdx === originalIdx ? null : originalIdx)}
                 >
-                  <img src={photo.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={photo.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
                 </button>
 
                 {/* Info */}
@@ -200,7 +200,7 @@ export default function PhotoProgressPanel({ tortoise, onClose }) {
                   {selectedIdx === originalIdx && (
                     <div className="mt-3 space-y-3 border-t pt-3">
                       {/* Large preview */}
-                      <img src={photo.url} alt={`Foto ${idx + 1}`} className="w-full rounded-lg max-h-60 object-contain bg-muted" />
+                      <img loading="lazy" decoding="async" src={photo.url} alt={`Foto ${idx + 1}`} className="w-full rounded-lg max-h-60 object-contain bg-muted" />
 
                       {/* Edit metadata form */}
                       <PhotoEditForm

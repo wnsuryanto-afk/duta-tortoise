@@ -53,7 +53,7 @@ export default function ClutchOffspringSection({ breeding }) {
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border bg-amber-50 hover:bg-amber-100 transition-colors border-amber-200"
           >
             {t.photo_url ? (
-              <img src={t.photo_url} alt={t.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+              <img loading="lazy" decoding="async" src={t.photo_url} alt={t.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <Shell className="w-3.5 h-3.5 text-primary" />

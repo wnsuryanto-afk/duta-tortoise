@@ -98,7 +98,7 @@ function PhotoCell({ item, onPreview, onUpload, canEdit }) {
   if (item.photo_url) {
     return (
       <button onClick={() => onPreview(item.photo_url)} className="group relative w-11 h-11 rounded-lg overflow-hidden border border-border flex-shrink-0 hover:opacity-90 transition-opacity">
-        <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover" />
+        <img loading="lazy" decoding="async" src={item.photo_url} alt={item.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
           <Eye className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
@@ -159,7 +159,7 @@ function PhotoUploadDialog({ item, onClose }) {
         onClick={() => fileRef.current?.click()}
         className="w-full cursor-pointer border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center h-40 gap-2 hover:bg-muted/40 transition-colors relative overflow-hidden"
       >
-        {preview ? <img src={preview} alt="" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : (
+        {preview ? <img loading="lazy" decoding="async" src={preview} alt="" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : (
           <><Camera className="w-8 h-8 text-muted-foreground" /><p className="text-sm text-muted-foreground">Klik untuk pilih foto</p><p className="text-xs text-muted-foreground">JPG/PNG/WebP maks. 2MB</p></>
         )}
       </button>
@@ -215,7 +215,7 @@ function ItemDetailDialog({ item, onClose, onEdit, onUploadPhoto, canEdit }) {
       <div className="flex gap-4 items-start">
         <div className="relative">
           {item.photo_url
-            ? <img src={item.photo_url} alt={item.name} className="w-24 h-24 rounded-xl object-cover border border-border" />
+            ? <img loading="lazy" decoding="async" src={item.photo_url} alt={item.name} className="w-24 h-24 rounded-xl object-cover border border-border" />
             : <div className="w-24 h-24 rounded-xl border-2 border-dashed border-border bg-muted/50 flex items-center justify-center text-4xl">{catIcon(item)}</div>
           }
           {canEdit && (
@@ -424,7 +424,7 @@ function ItemForm({ item, onClose }) {
             aria-label={photoPreview ? "Ganti foto item" : "Pilih foto item"}
             className="cursor-pointer w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted/50 flex items-center justify-center overflow-hidden hover:bg-muted/80 transition-colors flex-shrink-0"
           >
-            {photoPreview ? <img src={photoPreview} alt="" className="w-full h-full object-cover" /> : <Camera className="w-6 h-6 text-muted-foreground" />}
+            {photoPreview ? <img loading="lazy" decoding="async" src={photoPreview} alt="" className="w-full h-full object-cover" /> : <Camera className="w-6 h-6 text-muted-foreground" />}
           </button>
           <div>
             <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} className="gap-1.5 text-xs">
@@ -1025,7 +1025,7 @@ export default function StokInventoryTab({ feedstocks, warehouseItems, role }) {
       {/* Photo Preview Modal */}
       <Dialog open={!!photoPreview} onOpenChange={o => { if (!o) setPhotoPreview(null); }}>
         <DialogContent className="max-w-lg p-2">
-          {photoPreview && <img src={photoPreview} alt="Preview" className="w-full rounded-xl object-contain max-h-[80vh]" />}
+          {photoPreview && <img loading="lazy" decoding="async" src={photoPreview} alt="Preview" className="w-full rounded-xl object-contain max-h-[80vh]" />}
         </DialogContent>
       </Dialog>
 

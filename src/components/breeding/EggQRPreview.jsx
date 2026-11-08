@@ -21,5 +21,5 @@ export default function EggQRPreview({ id, size = 56 }) {
   if (!url) {
     return <div style={{ width: size, height: size }} className="bg-muted/40 rounded animate-pulse flex-shrink-0" />;
   }
-  return <img src={url} width={size} height={size} alt="QR telur" className="rounded border border-green-200 flex-shrink-0" />;
+  return <img loading="lazy" decoding="async" src={url} width={size} height={size} alt="QR telur" className="rounded border border-green-200 flex-shrink-0" />;
 }

@@ -902,7 +902,7 @@ export default function TortoiseList() {
               const Icon = typeIcon[enc.type] || Home;
               return (
                 <Card key={enc.id} className={`cursor-pointer hover:shadow-md transition-shadow border-2 ${statusStyle[status]}`} onClick={() => setSelectedEnclosureDetail(enc)}>
-                  {enc.photo_url && <div className="h-32 overflow-hidden rounded-t-xl"><img src={enc.photo_url} alt={enc.name} className="w-full h-full object-cover" /></div>}
+                  {enc.photo_url && <div className="h-32 overflow-hidden rounded-t-xl"><img loading="lazy" decoding="async" src={enc.photo_url} alt={enc.name} className="w-full h-full object-cover" /></div>}
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2"><Icon className="w-5 h-5 text-green-700" /><CardTitle className="text-base">{enc.name}</CardTitle></div>
@@ -1044,7 +1044,7 @@ export default function TortoiseList() {
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {encTortoises.map(t => (
                     <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                      {t.photo_url ? <img src={t.photo_url} alt={t.name} className="w-10 h-10 rounded-full object-cover" /> : <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Shell className="w-5 h-5 text-green-700" /></div>}
+                      {t.photo_url ? <img loading="lazy" decoding="async" src={t.photo_url} alt={t.name} className="w-10 h-10 rounded-full object-cover" /> : <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Shell className="w-5 h-5 text-green-700" /></div>}
                       <div className="flex-1 min-w-0"><p className="font-medium text-sm truncate">{t.name}</p><p className="text-xs text-muted-foreground">{t.morph} · {t.gender}</p></div>
                       <Badge variant="outline" className="text-xs">{t.status}</Badge>
                     </div>

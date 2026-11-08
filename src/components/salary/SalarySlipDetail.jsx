@@ -198,7 +198,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
           {/* KOP */}
           <div className="header text-center border-b-2 border-border pb-3 mb-4">
             {settings.company_logo_url && (
-              <img src={settings.company_logo_url} alt="Logo" className="h-12 mx-auto mb-1" />
+              <img loading="lazy" decoding="async" src={settings.company_logo_url} alt="Logo" className="h-12 mx-auto mb-1" />
             )}
             <h1 className="text-base font-bold">{settings.company_name || "Duta Tortoise Farm"}</h1>
             {settings.company_address && <p className="text-xs text-muted-foreground">{settings.company_address}{settings.company_city ? `, ${settings.company_city}` : ""}</p>}
@@ -358,7 +358,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
               {/* Bukti transfer thumbnail / actions */}
               {slip.payment_proof_url ? (
                 <div className="flex items-center gap-3">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={slip.payment_proof_url}
                     alt="Bukti transfer"
                     className="w-20 h-20 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
@@ -452,7 +452,7 @@ export default function SalarySlipDetail({ slip, onClose, companySettings }) {
       {showProofLightbox && slip.payment_proof_url && (
         <Dialog open onOpenChange={() => setShowProofLightbox(false)}>
           <DialogContent className="max-w-2xl p-2">
-            <img src={slip.payment_proof_url} alt="Bukti transfer" className="w-full rounded-lg" />
+            <img loading="lazy" decoding="async" src={slip.payment_proof_url} alt="Bukti transfer" className="w-full rounded-lg" />
           </DialogContent>
         </Dialog>
       )}

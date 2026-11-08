@@ -53,7 +53,7 @@ export default function TortoiseQRCode({ tortoise }) {
         .sub { font-size: 6pt; color: #444; margin: 1mm 0 0; line-height: 1.2; }
       </style></head><body>
       <div class="label">
-        <img class="qr" src="${qrDataUrl}" />
+        <img loading="lazy" decoding="async" class="qr" src="${qrDataUrl}" />
         <div class="info">
           <p class="nm">${tortoise.name || ""}</p>
           ${tortoise.enclosure ? `<p class="sub">Kandang: ${tortoise.enclosure}</p>` : ""}
@@ -77,7 +77,7 @@ export default function TortoiseQRCode({ tortoise }) {
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="border-2 border-border rounded-xl p-3 bg-card">
-        <img src={qrDataUrl} alt={`QR ${tortoise.name}`} className="w-48 h-48 object-contain" />
+        <img loading="lazy" decoding="async" src={qrDataUrl} alt={`QR ${tortoise.name}`} className="w-48 h-48 object-contain" />
       </div>
 
       <div className="text-center">

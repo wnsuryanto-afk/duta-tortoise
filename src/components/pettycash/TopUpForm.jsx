@@ -95,7 +95,7 @@ export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
         {proofUrl ? (
           <div className="relative mt-1 inline-block w-full">
-            <img src={proofUrl} alt="bukti transfer" className="w-full max-h-40 object-contain rounded-lg border" />
+            <img loading="lazy" decoding="async" src={proofUrl} alt="bukti transfer" className="w-full max-h-40 object-contain rounded-lg border" />
             <button type="button" onClick={() => setProofUrl("")} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80">
               <X className="w-3 h-3" />
             </button>

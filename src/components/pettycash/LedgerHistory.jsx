@@ -222,7 +222,7 @@ export default function LedgerHistory({ ledger, role }) {
                     <span className="text-sm font-medium truncate">{l.description || "—"}</span>
                     {l.proof_photo ? (
                       <button type="button" onClick={() => setPhotoPreview(l.proof_photo)} className="flex-shrink-0">
-                        <img src={l.proof_photo} alt="nota" className="w-8 h-8 rounded object-cover border hover:opacity-80 transition-opacity" />
+                        <img loading="lazy" decoding="async" src={l.proof_photo} alt="nota" className="w-8 h-8 rounded object-cover border hover:opacity-80 transition-opacity" />
                       </button>
                     ) : (l.entry_type === "pemakaian" && l.notes) ? (
                       <Badge variant="outline" className="text-[10px] py-0 bg-muted text-muted-foreground border-border" title={l.notes}>Tanpa nota</Badge>
@@ -305,7 +305,7 @@ export default function LedgerHistory({ ledger, role }) {
       {/* Photo Preview */}
       <Dialog open={!!photoPreview} onOpenChange={(v) => !v && setPhotoPreview(null)}>
         <DialogContent className="max-w-md p-2">
-          {photoPreview && <img src={photoPreview} alt="nota" className="w-full rounded-lg" />}
+          {photoPreview && <img loading="lazy" decoding="async" src={photoPreview} alt="nota" className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
     </div>

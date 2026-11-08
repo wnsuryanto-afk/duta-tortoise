@@ -341,7 +341,7 @@ export default function TemuanFotoPage() {
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
           onClick={() => setPhotoPreview(null)}
         >
-          <img src={photoPreview} alt="Foto besar" className="max-w-full max-h-full rounded-lg" />
+          <img loading="lazy" decoding="async" src={photoPreview} alt="Foto besar" className="max-w-full max-h-full rounded-lg" />
         </div>
       )}
 

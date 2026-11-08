@@ -58,7 +58,7 @@ export default function SaleCard({ sale, onDetail, onPrint, aksi }) {
         {/* Photo */}
         <div className="flex-shrink-0">
           {photoUrl ? (
-            <img src={photoUrl} alt={sale.tortoise_name} className="w-14 h-14 rounded-lg object-cover" />
+            <img loading="lazy" decoding="async" src={photoUrl} alt={sale.tortoise_name} className="w-14 h-14 rounded-lg object-cover" />
           ) : (
             <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
               <Shell className="w-6 h-6 text-muted-foreground" />

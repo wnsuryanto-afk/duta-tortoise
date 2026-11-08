@@ -513,7 +513,7 @@ export default function BreedingForm({ open, onClose, editData }) {
             <div className="flex flex-wrap gap-2 mt-1">
               {(form.photos || []).map((p, i) => (
                 <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
-                  <img src={p.url} alt="" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={p.url} alt="" className="w-full h-full object-cover" />
                   <button type="button" onClick={() => removePhoto(i)}
                     className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
                     <X className="w-3 h-3" />
@@ -601,7 +601,7 @@ export default function BreedingForm({ open, onClose, editData }) {
                   {/* QR Code */}
                   <div className="flex flex-col items-center justify-center gap-1 flex-shrink-0">
                     {previewQR
-                      ? <img src={previewQR} width={72} height={72} className="rounded-lg border-2 border-green-600" alt="QR" />
+                      ? <img loading="lazy" decoding="async" src={previewQR} width={72} height={72} className="rounded-lg border-2 border-green-600" alt="QR" />
                       : <div className="w-[72px] h-[72px] rounded-lg border-2 border-green-200 bg-green-50 flex items-center justify-center text-[9px] text-muted-foreground">QR...</div>
                     }
                     <div className="text-[7px] bg-green-800 text-white rounded-full px-2 py-0.5 font-bold">F2 · CB</div>

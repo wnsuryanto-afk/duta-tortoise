@@ -374,7 +374,7 @@ export default function UserDetailPage({ userId, onBack }) {
             {/* Avatar */}
             <div className="flex items-end gap-4">
               {profile?.photo_url ? (
-                <img src={profile.photo_url} alt={targetUser.full_name} className="w-[90px] h-[90px] rounded-2xl border-4 border-background object-cover shadow-md" />
+                <img loading="lazy" decoding="async" src={profile.photo_url} alt={targetUser.full_name} className="w-[90px] h-[90px] rounded-2xl border-4 border-background object-cover shadow-md" />
               ) : (
                 <div className={`w-[90px] h-[90px] rounded-2xl border-4 border-background shadow-md flex items-center justify-center text-3xl font-bold
                   ${isKicked ? "bg-red-100 text-red-600" : targetUser.role === "owner" ? "bg-purple-100 text-purple-700" : "bg-primary/10 text-primary"}`}>

@@ -264,7 +264,7 @@ function LoanCard({ loan, showBorrower, isReturned }) {
           )}
         </div>
         {isReturned && loan.return_photo_url && (
-          <img src={loan.return_photo_url} alt="foto" className="w-10 h-10 rounded-lg object-cover border" />
+          <img loading="lazy" decoding="async" src={loan.return_photo_url} alt="foto" className="w-10 h-10 rounded-lg object-cover border" />
         )}
       </div>
     </Card>

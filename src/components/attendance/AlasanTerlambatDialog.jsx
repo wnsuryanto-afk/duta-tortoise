@@ -151,7 +151,7 @@ export default function AlasanTerlambatDialog({
           <div className="rounded-xl border border-border p-3">
             {fotoUrl ? (
               <div className="flex items-start gap-3">
-                <img
+                <img loading="lazy" decoding="async"
                   src={fotoUrl}
                   alt="Bukti pengambilan pakan"
                   className="w-20 h-20 rounded-lg object-cover flex-shrink-0"

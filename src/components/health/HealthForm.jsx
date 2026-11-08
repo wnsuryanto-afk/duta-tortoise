@@ -567,7 +567,7 @@ export default function HealthForm({ open, onClose, editData }) {
               <div className="flex gap-2 flex-wrap">
                 {form.photo_urls.map((url, i) => (
                   <div key={i} className="relative">
-                    <img src={url} alt="" className="w-16 h-16 rounded-lg object-cover border" />
+                    <img loading="lazy" decoding="async" src={url} alt="" className="w-16 h-16 rounded-lg object-cover border" />
                     <button
                       type="button"
                       onClick={() => setForm(prev => ({ ...prev, photo_urls: prev.photo_urls.filter((_, j) => j !== i) }))}

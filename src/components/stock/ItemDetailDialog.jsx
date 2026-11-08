@@ -27,7 +27,7 @@ export default function ItemDetailDialog({ item, itemType, role, open, onClose, 
         <div className="space-y-4">
           {/* Photo */}
           {item.photo_url && (
-            <img src={item.photo_url} alt={item.name}
+            <img loading="lazy" decoding="async" src={item.photo_url} alt={item.name}
               className="w-full h-40 object-cover rounded-lg border" />
           )}
 

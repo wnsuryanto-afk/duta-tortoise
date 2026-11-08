@@ -107,7 +107,7 @@ export default function TortoiseLabelPage() {
         ${labels
           .map(
             (l) => `<div class="label">
-              <img class="qr" src="${l.qr}" />
+              <img loading="lazy" decoding="async" class="qr" src="${l.qr}" />
               <div class="info">
                 <p class="nm">${l.name}</p>
                 ${l.enclosure ? `<p class="sub">Kandang: ${l.enclosure}</p>` : ""}

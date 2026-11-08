@@ -255,7 +255,7 @@ export default function PettyCashPage() {
             {req.disbursement_proof_url ? (
               <>
                 <button type="button" onClick={() => setProofPreview({ url: req.disbursement_proof_url, uploaded_at: req.disbursement_proof_uploaded_at, by: req.disbursement_proof_uploaded_by })}>
-                  <img src={req.disbursement_proof_url} alt="bukti transfer" className="w-12 h-12 rounded-lg object-cover border hover:opacity-80 transition-opacity" />
+                  <img loading="lazy" decoding="async" src={req.disbursement_proof_url} alt="bukti transfer" className="w-12 h-12 rounded-lg object-cover border hover:opacity-80 transition-opacity" />
                 </button>
                 <div className="text-xs text-muted-foreground">
                   <p className="font-medium text-foreground">Bukti transfer</p>
@@ -485,7 +485,7 @@ export default function PettyCashPage() {
         <DialogContent className="max-w-md p-2">
           {proofPreview && (
             <div className="space-y-2">
-              <img src={proofPreview.url} alt="bukti transfer" className="w-full rounded-lg" />
+              <img loading="lazy" decoding="async" src={proofPreview.url} alt="bukti transfer" className="w-full rounded-lg" />
               <p className="text-xs text-muted-foreground text-center">
                 Diunggah: {proofPreview.uploaded_at
                   ? format(new Date(proofPreview.uploaded_at), "d MMM yyyy, HH:mm", { locale: id })

@@ -603,7 +603,7 @@ export default function BreedingAndEggs() {
                     {/* Baris 1: Foto | Nama pasangan | Badge status | ⋮ */}
                     <div className="flex items-start gap-3">
                       {b.photos?.length > 0 && (
-                        <img src={b.photos[0].url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border" />
+                        <img loading="lazy" decoding="async" src={b.photos[0].url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border" />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">

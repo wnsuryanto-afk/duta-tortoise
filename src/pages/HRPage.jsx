@@ -361,7 +361,7 @@ function CompanySettingsTab() {
           <Label>URL Logo (opsional)</Label>
           <Input value={currentForm.company_logo_url} onChange={e => set("company_logo_url", e.target.value)} placeholder="https://..." />
           {currentForm.company_logo_url && (
-            <img src={currentForm.company_logo_url} alt="Logo" className="h-12 mt-1 rounded object-contain border p-1" />
+            <img loading="lazy" decoding="async" src={currentForm.company_logo_url} alt="Logo" className="h-12 mt-1 rounded object-contain border p-1" />
           )}
         </div>
         <div className="space-y-1.5">

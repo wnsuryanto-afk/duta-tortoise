@@ -117,7 +117,7 @@ function BabyForm({ baby, onChange, index, total }) {
         <Label className="text-xs">Foto Baby (opsional)</Label>
         <div className="mt-0.5 flex items-center gap-2">
           {baby.photo_url ? (
-            <img src={baby.photo_url} alt="baby" className="w-12 h-12 rounded-lg object-cover border" />
+            <img loading="lazy" decoding="async" src={baby.photo_url} alt="baby" className="w-12 h-12 rounded-lg object-cover border" />
           ) : null}
           <label className="cursor-pointer">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted transition-colors">

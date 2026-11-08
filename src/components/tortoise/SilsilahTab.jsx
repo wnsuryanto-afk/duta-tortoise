@@ -196,7 +196,7 @@ function TortoiseNode({ tortoise, tortoiseMap, codeMap, depth = 0, maxDepth = 3,
           onClick={() => !isUnknown && onSelect && onSelect(tortoise.id)}
         >
           {!isUnknown && (tortoise.photos?.[0]?.url || tortoise.photo_url) ? (
-            <img src={tortoise.photos?.[0]?.url || tortoise.photo_url} alt={tortoise.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 border" />
+            <img loading="lazy" decoding="async" src={tortoise.photos?.[0]?.url || tortoise.photo_url} alt={tortoise.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 border" />
           ) : (
             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isUnknown ? "bg-muted" : "bg-primary/10"}`}>
               <Shell className={`w-5 h-5 ${isUnknown ? "text-muted-foreground" : "text-primary"}`} />
@@ -335,7 +335,7 @@ export default function SilsilahTab() {
                   className={`w-full text-left p-2.5 rounded-lg border transition-all flex items-center gap-2.5 ${selected === t.id ? "bg-primary/10 border-primary/30" : "hover:bg-muted/50"}`}
                 >
                   {(t.photos?.[0]?.url || t.photo_url) ? (
-                    <img src={t.photos?.[0]?.url || t.photo_url} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-primary/20" />
+                    <img loading="lazy" decoding="async" src={t.photos?.[0]?.url || t.photo_url} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-primary/20" />
                   ) : (
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       t.morph && morphColors[t.morph] ? morphColors[t.morph] : "bg-muted"
@@ -412,7 +412,7 @@ export default function SilsilahTab() {
                           className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30 hover:bg-primary/10 hover:border-primary/30 transition-all"
                         >
                           {(child.photos?.[0]?.url || child.photo_url) ? (
-                            <img src={child.photos?.[0]?.url || child.photo_url} className="w-8 h-8 rounded-full object-cover" alt={child.name} />
+                            <img loading="lazy" decoding="async" src={child.photos?.[0]?.url || child.photo_url} className="w-8 h-8 rounded-full object-cover" alt={child.name} />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                               <Shell className="w-4 h-4 text-primary" />
