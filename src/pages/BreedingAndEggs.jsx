@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { telurRetakPerluPerhatian } from "@/lib/telurRetak";
+import PanelTelurRetak from "@/components/breeding/PanelTelurRetak";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -363,6 +365,14 @@ export default function BreedingAndEggs() {
 
 
 
+  /*
+    Sengaja BUKAN useMemo: baris ini berada sesudah early-return pemuatan,
+    jadi hook di sini akan dipanggil bersyarat — urutan hook berubah antara
+    render yang memuat dan yang tidak. Hitungannya ringan (21 clutch), dan
+    aturan hook tidak boleh ditekuk demi menghemat satu perulangan.
+  */
+  const telurRetakPerhatian = telurRetakPerluPerhatian(breedings);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -420,6 +430,15 @@ export default function BreedingAndEggs() {
           karena ia berlaku untuk seluruh halaman — bukan untuk satu tab.
           Lihat lib/pantauInkubator.js untuk angka yang melatarinya. */}
       <InkubatorBelumDipantau breedings={breedings} />
+
+      {/*
+        Telur retak yang masih dierami, dari SELURUH clutch sekaligus.
+        Tandanya hidup di dalam satu clutch dan clutch dibuka satu per satu,
+        jadi tanpa panel ini telur retak di tiga batch berbeda tidak pernah
+        terlihat bersamaan — padahal yang tersebar itulah yang paling mudah
+        terlewat. Lihat lib/telurRetak.js.
+      */}
+      <PanelTelurRetak telur={telurRetakPerhatian} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Dua baris di ponsel, satu baris di layar lebar. Enam tab dalam satu

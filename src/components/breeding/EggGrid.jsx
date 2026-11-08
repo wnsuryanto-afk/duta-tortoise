@@ -19,6 +19,8 @@ import { TANDA_ANAKAN } from "@/lib/anakanKura";
 import { BATAS_KELAMIN_CM } from "@/lib/kelaminKura";
 import { segarkanBreeding } from "@/lib/kunciBreeding";
 import { barisTelurAwal, terapkanStatus, terapkanSemua, sudahJadiKura } from "@/lib/barisTelur";
+import { tandaiRetak, retak as telurRetak, ringkasRetak } from "@/lib/telurRetak";
+import KendaliRetak from "@/components/breeding/KendaliRetak";
 
 const EGG_STATUS = [
   { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-muted",  border: "border-gray-400",  text: "text-foreground" },
@@ -37,7 +39,7 @@ const STATUS_CELL = {
 };
 
 // ── Egg Detail Popup (Desktop) ─────────────────────────────────────────────────
-function EggDetailPopup({ egg, breeding, breedingStatus, candlingAllowed, onClose, onUpdateStatus, onOpenHatchCreate }) {
+function EggDetailPopup({ egg, breeding, breedingStatus, candlingAllowed, onClose, onUpdateStatus, onUpdateRetak, onOpenHatchCreate }) {
   const [confirmChange, setConfirmChange] = useState(null); // status to change to
   const [saving, setSaving] = useState(false);
 
@@ -155,6 +157,15 @@ function EggDetailPopup({ egg, breeding, breedingStatus, candlingAllowed, onClos
             </div>
           </div>
         )}
+        {/* Di BAWAH daftar status, bentuknya berbeda — bukan status keenam. */}
+        <div className="px-3 pb-3">
+          <KendaliRetak
+            egg={egg}
+            readonly={isReadonly}
+            saving={saving}
+            onSimpan={(nilai, catatan) => onUpdateRetak(egg.egg_number, nilai, catatan)}
+          />
+        </div>
       </div>
 
       {/* Confirm dialog for changing from menetas */}
@@ -180,7 +191,7 @@ function EggDetailPopup({ egg, breeding, breedingStatus, candlingAllowed, onClos
 }
 
 // ── Egg Bottom Sheet (Mobile) ──────────────────────────────────────────────────
-function EggBottomSheet({ egg, breeding, breedingStatus, candlingAllowed, onClose, onUpdateStatus, onOpenHatchCreate }) {
+function EggBottomSheet({ egg, breeding, breedingStatus, candlingAllowed, onClose, onUpdateStatus, onUpdateRetak, onOpenHatchCreate }) {
   const [status, setStatus] = useState(egg.status || "belum_dicek");
   const [notes, setNotes] = useState(egg.notes || "");
   const [saving, setSaving] = useState(false);
@@ -300,6 +311,14 @@ function EggBottomSheet({ egg, breeding, breedingStatus, candlingAllowed, onClos
                 </div>
               </>
             )}
+            {/* Di BAWAH daftar status, dengan bentuk berbeda — supaya tidak
+                terbaca sebagai status keenam. Lihat KendaliRetak.jsx. */}
+            <KendaliRetak
+              egg={egg}
+              readonly={isReadonly}
+              saving={saving}
+              onSimpan={(nilai, catatan) => onUpdateRetak(egg.egg_number, nilai, catatan)}
+            />
           </div>
           {!isReadonly && (
             <div className="flex gap-3 px-5 py-4 border-t bg-background">
@@ -612,6 +631,7 @@ export default function EggGrid({ breeding, onRefresh }) {
 
   const registeredBabies = records.filter(e => e.status === "menetas" && e.tortoise_id);
   const allChecked = summary.belum_dicek === 0;
+  const retakRingkas = ringkasRetak(records);
 
   /*
     Penyimpanan yang GAGAL harus terlihat.
@@ -649,6 +669,28 @@ export default function EggGrid({ breeding, onRefresh }) {
     } catch (e) {
       segarkanBreeding(qc);
       toast.error(`Telur #${eggNumber} gagal disimpan: ${e?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /*
+    Menandai retak TIDAK menyentuh status, dan karena itu tidak menyentuh
+    angka ringkas clutch sama sekali. Retak adalah keadaan cangkang; status
+    adalah perjalanan hidup telur. Lihat lib/telurRetak.js.
+  */
+  const updateEggRetak = async (eggNumber, nilai, catatan) => {
+    setSaving(true);
+    const today = new Date().toISOString().split("T")[0];
+    const updated = tandaiRetak(records, { eggNumber, nilai, tanggal: today, catatan });
+    try {
+      await base44.entities.Breeding.update(breeding.id, { egg_records: updated });
+      setTersimpan(updated);
+      segarkanBreeding(qc);
+      toast.success(nilai ? `Telur #${eggNumber} ditandai retak` : `Tanda retak telur #${eggNumber} dilepas`);
+    } catch (e) {
+      segarkanBreeding(qc);
+      toast.error(`Tanda retak telur #${eggNumber} gagal disimpan: ${e?.message || "kesalahan tidak diketahui"}`);
     } finally {
       setSaving(false);
     }
@@ -785,6 +827,34 @@ export default function EggGrid({ breeding, onRefresh }) {
         )}
       </div>
 
+      {/*
+        Retak berdiri di BARIS SENDIRI, bukan di antara chip status.
+
+        Chip di atas berjumlah total: fertil + infertil + belum dicek = seluruh
+        telur. Menyisipkan "retak" di sana membuat jumlahnya seolah lebih dari
+        100% dan menerbitkan pertanyaan yang salah ("kenapa totalnya tidak
+        cocok?"). Retak memotong SEMUA kelompok itu — telur retak juga seorang
+        fertil, atau seorang belum-dicek. Lihat lib/telurRetak.js.
+      */}
+      {retakRingkas.total > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-800 border border-orange-300 font-semibold">
+            🧩 Retak: {retakRingkas.total} butir
+          </span>
+          {retakRingkas.berjalan > 0 && (
+            <span className="px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+              {retakRingkas.berjalan} masih perlu perhatian
+            </span>
+          )}
+          {retakRingkas.persenSelamat !== null && (
+            <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground">
+              {retakRingkas.selamat} selamat · {retakRingkas.gagal} tidak
+              <span className="opacity-70"> ({retakRingkas.persenSelamat}%)</span>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Progress bar — sections sum to 100% without overlap */}
       <div className="h-2 rounded-full bg-muted overflow-hidden flex">
         <div className="bg-green-400 transition-all" style={{ width: `${(fertileTotal / eggCount) * 100}%` }} />
@@ -827,10 +897,27 @@ export default function EggGrid({ breeding, onRefresh }) {
                 ${STATUS_CELL[egg.status] || STATUS_CELL.belum_dicek}
                 ${isReadonly ? "opacity-80 cursor-pointer" : ""}
               `}
-              title={`Telur #${egg.egg_number} — ${egg.status}${isReadonly ? " (Terkunci)" : ""}`}
+              title={`Telur #${egg.egg_number} — ${egg.status}${telurRetak(egg) ? " · RETAK" : ""}${isReadonly ? " (Terkunci)" : ""}`}
             >
               {egg.egg_number}
             </button>
+            {/*
+              Cincin oranye, bukan warna sel yang diganti. Warna sel SUDAH
+              dipakai status, dan menimpanya akan menukar satu keterangan
+              dengan keterangan lain — padahal justru keduanya yang perlu
+              terbaca sekaligus: "retak, dan sudah fertil".
+            */}
+            {telurRetak(egg) && (
+              <span
+                className="pointer-events-none absolute -inset-0.5 top-0 h-11 w-11 rounded-xl ring-2 ring-orange-500 ring-offset-1 ring-offset-background"
+                aria-hidden="true"
+              />
+            )}
+            {telurRetak(egg) && (
+              <span className="text-[9px] leading-none text-orange-700 dark:text-orange-400 font-bold" title="Cangkang retak">
+                🧩 retak
+              </span>
+            )}
             {/* Badge baby */}
             {egg.status === "menetas" && egg.tortoise_code && (
               <a
@@ -862,6 +949,7 @@ export default function EggGrid({ breeding, onRefresh }) {
                 candlingAllowed={candlingAllowed}
                 onClose={() => setActiveEgg(null)}
                 onUpdateStatus={updateEggStatus}
+                onUpdateRetak={updateEggRetak}
                 onOpenHatchCreate={handleOpenHatchCreate}
               />
             )}
@@ -947,6 +1035,7 @@ export default function EggGrid({ breeding, onRefresh }) {
           candlingAllowed={candlingAllowed}
           onClose={() => setActiveEgg(null)}
           onUpdateStatus={updateEggStatus}
+          onUpdateRetak={updateEggRetak}
           onOpenHatchCreate={handleOpenHatchCreate}
         />
       )}

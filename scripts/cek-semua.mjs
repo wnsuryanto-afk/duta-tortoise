@@ -137,6 +137,13 @@
  *                   memilih penerima "Boost Kalsium Betina" dan "DUTA FEMALE
  *                   PLUS" langsung darinya, sementara age_filter yang
  *                   seharusnya menahan — tersimpan, tampil, tidak pernah dibaca
+ *   cek-retak       telur retak dijadikan status → "retak" sebagai nilai
+ *                   keenam di enum status akan MENGHAPUS status fertilitas
+ *                   telurnya dan membuatnya menguap dari fertile_count,
+ *                   infertile_count, dan hatched_count sekaligus. Fertilitas
+ *                   mengukur pejantan, daya tetas mengukur inkubator —
+ *                   telur yang menguap menekan keduanya tanpa alasan, dan
+ *                   Ranking Indukan memakai angka itu
  *   cek-penjaga     penjaga yang mengupas komentar sendiri → satu atribut
  *                   accept="image/*" membuatnya ikut memakan kode sesudahnya,
  *                   dan penjaganya hijau karena tidak pernah melihatnya
@@ -154,7 +161,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

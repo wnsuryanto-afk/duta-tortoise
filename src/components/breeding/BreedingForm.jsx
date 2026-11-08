@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
 import { recoveryDaysAgo } from "@/lib/parentHealthUtils";
 import { selaraskanEggRecords } from "@/lib/hasilInkubasi";
+import { tandaiRetakMassal } from "@/lib/telurRetak";
 import { calculateIncubatorEggs as hitungTelurInkubator } from "@/lib/breedingUtils";
 import { daftarTray, uraikanTray, trayTerpakai } from "@/lib/trayTelur";
 import { segarkanBreeding } from "@/lib/kunciBreeding";
@@ -37,9 +38,13 @@ export default function BreedingForm({ open, onClose, editData }) {
     clutch lama lalu menyimpannya akan menghapus traynya tanpa suara.
   */
   const [form, setForm] = useState(
-    editData ? { ...editData, tray_teks: daftarTray(editData).join(", ") } : {
+    editData ? { ...editData, tray_teks: daftarTray(editData).join(", "), retak_teks: String((editData.egg_records || []).filter((e) => e?.retak).length || "") } : {
     male_name: "", female_name: "", male_id: "", female_id: "",
     egg_laying_date: "", egg_count: "",
+    // Kotak ketik, BUKAN kolom Breeding — sama seperti tray_teks. Jumlahnya
+    // langsung jadi penanda `retak` pada baris telur, supaya tidak ada angka
+    // kedua yang bisa berselisih dengan barisnya (lihat jumlahTelurClutch).
+    retak_teks: "",
     // SATU nama, sama dengan skema. Formulir ini dulu menyimpan dua pasang
     // nama untuk satu nilai — `estimated_hatch_start/_end` untuk
     // tampilan, `estimated_hatch_start/_end` untuk penyimpanan. Yang tersimpan
@@ -122,6 +127,15 @@ export default function BreedingForm({ open, onClose, editData }) {
     if (!form.female_name?.trim()) e.female_name = "Tortoise betina wajib dipilih";
     if (!form.egg_laying_date) e.egg_laying_date = "Tanggal bertelur wajib diisi";
     if (!form.egg_count) e.egg_count = "Jumlah telur wajib diisi";
+    /*
+      Yang retak tidak boleh lebih banyak dari telurnya. Tanpa penjagaan ini
+      angkanya diterima diam-diam lalu dipotong oleh tandaiRetakMassal, dan
+      yang mengetik 30 dari 22 tidak pernah tahu angkanya tidak tersimpan.
+    */
+    const retakDiisi = Number(form.retak_teks) || 0;
+    if (retakDiisi > (Number(form.egg_count) || 0)) {
+      e.retak_teks = `Hanya ada ${Number(form.egg_count) || 0} telur`;
+    }
     if (!form.status) e.status = "Status wajib dipilih";
     if (!form.incubator_name) e.incubator_name = "Lokasi inkubator wajib dipilih";
     setErrors(e);
@@ -192,7 +206,20 @@ export default function BreedingForm({ open, onClose, editData }) {
     //
     // Pengurangan hanya membuang baris yang belum dicek — baris yang sudah
     // punya hasil adalah catatan telur yang benar-benar ada.
-    const egg_records = selaraskanEggRecords(form.egg_records, eggCount);
+    const barisSelaras = selaraskanEggRecords(form.egg_records, eggCount);
+    /*
+      Jumlah retak jadi PENANDA pada baris, bukan angka tersendiri.
+
+      Menyimpannya sebagai kolom `retak_count` akan mengulang persis cacat
+      egg_count vs egg_records yang sudah dijelaskan di jumlahTelurClutch:
+      dua tempat menjawab satu pertanyaan, lalu berselisih diam-diam. Nomor
+      telur mana yang retak bisa dibetulkan belakangan di layar telur —
+      yang diketahui saat telurnya baru diangkat dari lubang hanya angkanya.
+    */
+    const { hasil: egg_records } = tandaiRetakMassal(barisSelaras, {
+      jumlah: Number(form.retak_teks) || 0,
+      tanggal: form.egg_laying_date || undefined,
+    });
     const trayDiisi = uraikanTray(form.tray_teks);
     /*
       `tray_teks` DIBUANG sebelum disebar, bukan ditimpa undefined.
@@ -201,7 +228,7 @@ export default function BreedingForm({ open, onClose, editData }) {
       undefined — tetap terhitung mengirim kolom yang tidak ada di skema, dan
       penjaga cek-kolom-hantu menangkapnya: "datanya dibuang diam-diam".
     */
-    const { tray_teks: _buang, ...formTersimpan } = form;
+    const { tray_teks: _buang, retak_teks: _buangRetak, ...formTersimpan } = form;
 
     const data = {
       ...formTersimpan,
@@ -333,6 +360,47 @@ export default function BreedingForm({ open, onClose, editData }) {
               <Input type="number" value={form.egg_count} onChange={(e) => handleChange("egg_count", e.target.value)} className={errors.egg_count ? "border-red-500" : ""} />
               {errors.egg_count && <p className="text-xs text-red-500">{errors.egg_count}</p>}
             </div>
+          </div>
+
+          {/*
+            Jumlah telur RETAK, diisi saat telurnya baru diangkat dari lubang.
+
+            Angkanya langsung jadi penanda `retak` pada baris telur — bukan
+            kolom tersendiri. Retak adalah keadaan cangkang, BUKAN status:
+            telur retak tetap punya status fertilitasnya sendiri dan tetap
+            bisa menetas. Lihat lib/telurRetak.js untuk kenapa membuatnya
+            status akan merusak hitungan fertilitas dan daya tetas.
+          */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Berapa yang Retak?</Label>
+              <Input
+                type="number"
+                min="0"
+                max={form.egg_count || undefined}
+                value={form.retak_teks}
+                onChange={(e) => handleChange("retak_teks", e.target.value)}
+                placeholder="0"
+                className={errors.retak_teks ? "border-red-500" : ""}
+              />
+              {errors.retak_teks ? (
+                <p className="text-xs text-red-500">{errors.retak_teks}</p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Ditandai untuk perlakuan khusus. Nomor telurnya bisa dibetulkan
+                  nanti di layar telur.
+                </p>
+              )}
+            </div>
+            {Number(form.retak_teks) > 0 && (
+              <div className="self-end pb-1">
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 leading-relaxed">
+                  {Number(form.retak_teks)} telur akan ditandai <strong>retak</strong> dan
+                  muncul di daftar perhatian khusus. Statusnya tetap berjalan
+                  seperti telur lain — yang retak masih bisa menetas.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Perkiraan menetas range 80-105 hari - AUTO READ ONLY */}
