@@ -357,6 +357,33 @@
 }
 
 @layer utilities {
+  /*
+    Kartu angka: jumlah kolom mengikuti lebar WADAH, bukan lebar LAYAR.
+
+    `grid-cols-2 lg:grid-cols-4` membaca lebar layar. Halaman yang hidup di
+    kolom sempit — panel pratinjau, layar terbagi, iPad — tetap memakai empat
+    kolom meski ruang yang benar-benar ada selebar ponsel. Diukur 8 Nov 2026
+    pada wadah 420px di layar 1280px: "Total Pengeluaran" terpotong 76px,
+    "Total Pemasukan" 70px, dan di SalesList enam label sekaligus.
+
+    minmax(180px, 1fr): 180px adalah lebar terkecil yang masih memuat label
+    terpanjang beserta ikonnya (diukur, bukan ditebak — yang terpotong tadi
+    96px dan kurang 76px). auto-fit melipat kolom kosongnya, jadi empat kartu
+    di layar lebar tetap empat kolom.
+
+    Ini juga menggantikan titik henti `xs` yang sempat saya tambahkan: titik
+    henti apa pun membaca layar, dan justru itu cacatnya.
+  */
+  .kolom-kartu {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  /* Isian formulir berdampingan — sama alasannya, hanya lebih sempit. */
+  .kolom-isian {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
   /* Anak-anak muncul berurutan — membuat halaman terasa mengalir */
   .stagger > * {
     animation: fadeInUp .45s cubic-bezier(.16,1,.3,1) both;

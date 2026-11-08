@@ -327,7 +327,7 @@ export default function SalesList() {
         kartu, dan labelnya terpotong: "Menunggu Follow-up" kehilangan 75px,
         "Laba Bulan Ini" 50px. Yang terbaca jadi "Menunggu Fol…".
       */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+      <div className="kolom-kartu gap-3 stagger">
         {/*
           "Follow-up", bukan "Menunggu Follow-up".
 
@@ -346,11 +346,18 @@ export default function SalesList() {
           icon={ShoppingBag} color="bg-primary/15 text-primary"
           href="/sales?tab=riwayat"
           sub={`Rp ${angkaRibuan(revenueThisMonth)}`} />
-        <StatCard label="Laba Bulan Ini" value={`Rp ${angkaRibuan(labaThisMonth)}`}
+        {/*
+          "Laba", dan "bulan ini" pindah ke keterangan di bawahnya.
+
+          Empat kartu berdampingan di layar 768px menyisakan 183px per kolom,
+          dan label itu butuh ±203px — terpotong 20px, terbaca "Laba Bulan…".
+          Cakupannya tidak hilang, hanya pindah ke baris yang memang muat.
+        */}
+        <StatCard label="Laba" value={`Rp ${angkaRibuan(labaThisMonth)}`}
           icon={TrendingUp}
           color={labaThisMonth >= 0 ? "bg-accent/15 text-accent" : "bg-red-100 text-red-600"}
           href="/sales?tab=laporan"
-          sub={`Margin rata-rata ${avgMargin}%`}
+          sub={`bulan ini · margin rata-rata ${avgMargin}%`}
           hint="Hanya penjualan yang HPP-nya sudah diisi yang ikut dihitung. Penjualan tanpa HPP tidak bisa dihitung labanya." />
         <StatCard label="Total Terjual" value={enrichedSales.length}
           icon={DollarSign} color="bg-primary/15 text-primary"

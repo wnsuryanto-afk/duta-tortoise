@@ -247,7 +247,7 @@ export default function BreedingPlannerPage() {
         </TabsContent>
 
         <TabsContent value="produksi" className="mt-0 space-y-0">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+      <div className="kolom-kartu gap-3 mb-5">
         {/* Keempat kartu ini menyaring daftar betina tepat di bawahnya.
             Dua di antaranya sudah bisa; dua lagi dulu hanya angka — padahal
             pertanyaan yang muncul setelah membaca "Bertelur tahun ini 9"

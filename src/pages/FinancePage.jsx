@@ -464,11 +464,19 @@ export default function FinancePage() {
 
       {/* Ringkasan periode — tiga angka yang saling terkait, jadi ditaruh
           berdampingan dengan bilah perbandingan di bawahnya. */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger">
-        <StatCard label="Total Pemasukan" value={totalPemasukan} icon={TrendingUp}
+      {/*
+        "Pemasukan", bukan "Total Pemasukan".
+
+        Kata "Total" tidak menambah apa pun — angkanya memang total, dan
+        keterangan di bawahnya sudah menyebut cakupannya ("uang masuk pada
+        periode ini"). Yang ditambahkannya cuma ±40px, dan itu persis yang
+        membuat labelnya terpotong 4px pada wadah 420px.
+      */}
+      <div className="kolom-kartu gap-3 stagger">
+        <StatCard label="Pemasukan" value={totalPemasukan} icon={TrendingUp}
           format={(n) => `Rp ${n.toLocaleString("id-ID")}`}
           color="bg-accent/15 text-accent" sub="uang masuk pada periode ini" />
-        <StatCard label="Total Pengeluaran" value={totalPengeluaran} icon={TrendingDown}
+        <StatCard label="Pengeluaran" value={totalPengeluaran} icon={TrendingDown}
           format={(n) => `Rp ${n.toLocaleString("id-ID")}`}
           color="bg-red-100 text-red-600" sub="uang keluar pada periode ini" />
         <StatCard label={labaRugi >= 0 ? "Laba" : "Rugi"} value={Math.abs(labaRugi)} icon={DollarSign}

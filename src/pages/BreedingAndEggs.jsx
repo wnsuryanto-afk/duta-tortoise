@@ -442,7 +442,22 @@ export default function BreedingAndEggs() {
             terbaca — "Pasangan" dan "Pembiakan" tercetak di atas satu sama
             lain. `h-auto` diperlukan karena tinggi bawaan TabsList dipatok
             untuk satu baris. */}
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 h-auto gap-1">
+        {/*
+          Tanpa grid tujuh kolom.
+
+          `grid-cols-3 sm:grid-cols-7` membaca lebar LAYAR lalu memaksa tujuh
+          sel sama lebar ke dalam ruang yang ada. Di wadah sempit pada layar
+          lebar — panel pratinjau, layar terbagi — selnya tinggal ±60px dan
+          labelnya terpotong di dalam tombolnya sendiri: diukur 8 Nov 2026,
+          "Telur & Inkubasi" kehilangan 24px pada wadah 420px, 14px pada
+          560px, dan masih 2px pada 720px. Itu yang terlihat di foto pemiliknya
+          sebagai tab yang berdempetan.
+
+          TabsList sendiri sudah dirancang untuk ini: `overflow-x-auto` dengan
+          batang gulir disembunyikan. Melepas gridnya mengembalikan tombol ke
+          lebar isinya, dan yang tidak muat digeser — bukan dipotong.
+        */}
+        <TabsList className="w-full">
           <TabsTrigger value="pasangan">Pasangan</TabsTrigger>
           <TabsTrigger value="pembiakan">Pembiakan</TabsTrigger>
           <TabsTrigger value="telur">Telur & Inkubasi</TabsTrigger>
