@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { saringTarget } from "@/lib/sasaranPerawatan";
 import { kandangDariKura } from "@/lib/kandang";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -217,7 +218,7 @@ export default function TreatmentPage() {
 
   const EMPTY_FORM = {
     title: "", frequency: "mingguan", mod_type: "lainnya", apply_to_all: true,
-    gender_filter: "semua", tortoise_ids: [], tortoise_names: [],
+    gender_filter: "semua", age_filter: "semua", tortoise_ids: [], tortoise_names: [],
     weekly_days: [], monthly_dates: [], deadline_time: "", notes: "",
   };
   const [form, setForm] = useState(EMPTY_FORM);
@@ -228,6 +229,14 @@ export default function TreatmentPage() {
       title: s.title, frequency: s.frequency, mod_type: s.mod_type || "lainnya",
       apply_to_all: s.apply_to_all ?? true,
       gender_filter: s.gender_filter || "semua",
+      /*
+        age_filter DULU tidak ikut dibawa formulir ini sama sekali. Selama ia
+        juga tidak pernah dipakai memilih kura, itu tidak terasa. Begitu
+        saringannya benar-benar bekerja, kelalaian yang sama berubah jadi
+        pelebaran diam-diam: membuka lalu menyimpan ulang jadwal "dewasa"
+        akan menyusun ulang daftarnya seolah tidak pernah ada batas umur.
+      */
+      age_filter: s.age_filter || "semua",
       tortoise_ids: s.tortoise_ids || [],
       tortoise_names: s.tortoise_names || [],
       weekly_days: s.weekly_days || [],
@@ -244,7 +253,7 @@ export default function TreatmentPage() {
     let resolvedIds = form.tortoise_ids;
     let resolvedNames = form.tortoise_names;
     if (form.apply_to_all) {
-      let pool = form.gender_filter !== "semua" ? tortoises.filter(t => t.gender === form.gender_filter) : tortoises;
+      const pool = saringTarget(tortoises, form);
       resolvedIds = pool.map(t => t.id);
       resolvedNames = pool.map(t => t.name);
     }
@@ -347,9 +356,7 @@ export default function TreatmentPage() {
 
   const getTargetTortoises = (schedule) => {
     if (schedule.apply_to_all) {
-      let pool = tortoises;
-      if (schedule.gender_filter && schedule.gender_filter !== "semua") pool = tortoises.filter(t => t.gender === schedule.gender_filter);
-      return pool;
+      return saringTarget(tortoises, schedule);
     }
     return tortoises.filter(t => (schedule.tortoise_ids || []).includes(t.id));
   };
@@ -449,7 +456,7 @@ export default function TreatmentPage() {
     if (dateTo && d > dateTo) return false;
     return true;
   });
-  const formTortoises = form.gender_filter !== "semua" ? tortoises.filter(t => t.gender === form.gender_filter) : tortoises;
+  const formTortoises = saringTarget(tortoises, form);
   const pendingRemindersCount = reminders.filter(r => !r.is_done).length;
 
   return (
@@ -878,7 +885,7 @@ export default function TreatmentPage() {
                 </label>
                 <div>
                   <Label className="text-xs mb-1 block text-muted-foreground">Filter Jenis Kelamin</Label>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
                     {[{value:"semua",label:"Semua"},{value:"jantan",label:"♂ Jantan"},{value:"betina",label:"♀ Betina"}].map(opt => (
                       <button key={opt.value} type="button"
                         onClick={() => setForm(p=>({...p,gender_filter:opt.value,tortoise_ids:[],tortoise_names:[]}))}
@@ -887,6 +894,32 @@ export default function TreatmentPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+                {/*
+                  Saringan umur bisa diatur di sini sejak 8 Nov 2026. Sebelumnya
+                  kolomnya hanya bisa disentuh dari tabel syarat-ketentuan, dan
+                  tidak pernah dipakai memilih kura sama sekali — jadi jadwal
+                  vitamin reproduksi yang ditandai "dewasa" tetap menyasar setiap
+                  betina, berapa pun umurnya. Lihat lib/sasaranPerawatan.js.
+                */}
+                <div>
+                  <Label className="text-xs mb-1 block text-muted-foreground">Filter Umur</Label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[{value:"semua",label:"Semua"},{value:"baby",label:"Bayi"},{value:"dewasa",label:"Dewasa"}].map(opt => (
+                      <button key={opt.value} type="button"
+                        onClick={() => setForm(p=>({...p,age_filter:opt.value,tortoise_ids:[],tortoise_names:[]}))}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${(form.age_filter||"semua")===opt.value?"bg-primary text-primary-foreground border-primary":"bg-background border-border hover:bg-muted"}`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  {form.mod_type === "vitamin" && form.gender_filter === "betina" && (form.age_filter || "semua") === "semua" && (
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1.5 leading-relaxed">
+                      Vitamin khusus betina tanpa batas umur ikut menyasar bayi dan
+                      juvenile yang tercatat betina. Pilih <strong>Dewasa</strong> kalau
+                      memang hanya untuk indukan.
+                    </p>
+                  )}
                 </div>
                 {!form.apply_to_all && (
                   <div>
