@@ -27,6 +27,7 @@ import { getBestProfile } from "@/lib/getBestProfile";
 import { upsertUserProfile } from "@/lib/userProfileUpsert";
 import UserAvatar from "@/components/common/UserAvatar";
 import { toast } from "sonner";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 // ── Fullscreen profile setup — ditampilkan saat profil belum lengkap (non-owner) ──
 function ProfileSetupScreen({ user, onComplete }) {
@@ -81,7 +82,7 @@ function ProfileSetupScreen({ user, onComplete }) {
       const data = {
         full_name: form.full_name || user?.full_name || "Pengguna",
         hp_whatsapp: form.hp_whatsapp || "",
-        join_date: form.join_date || new Date().toISOString().split("T")[0],
+        join_date: form.join_date || tanggalHariIni(),
         bank_name: form.bank_name || "",
         bank_account_number: form.bank_account_number || "",
         bank_account_name: form.bank_account_name || "",

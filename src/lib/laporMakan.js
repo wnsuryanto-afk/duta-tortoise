@@ -14,12 +14,20 @@ import { base44 } from "@/api/base44Client";
 import { BATAS_AMBIL } from "@/api/base44Client";
 import { masukLaporan } from "@/lib/laporan";
 import { laporanTerbukaPerKura } from "@/lib/jadwalTimbang";
+import { tanggalHariIni } from "@/lib/safeDate";
 
-/** Tanggal WIB hari ini, "YYYY-MM-DD". */
-export function hariIniWIB() {
-  const w = new Date(Date.now() + 7 * 60 * 60 * 1000);
-  return w.toISOString().slice(0, 10);
-}
+/*
+  Dulu di sini ada `hariIniWIB()`: waktu sekarang digeser tujuh jam lalu
+  diambil tanggal UTC-nya, yaitu tanggal WIB. Hitungannya benar — tetapi ia
+  jawaban KEDUA atas satu pertanyaan. Seluruh sisa aplikasi, termasuk setiap
+  `<input type="date">` tempat orang memilih tanggal, memakai tanggal menurut
+  jam perangkatnya sendiri. Pada perangkat yang zona waktunya tidak WIB, satu
+  laporan bisa ditulis bertanggal hari ini sementara layar yang membacanya
+  menyebut hari lain — dan yang ditimbang adalah kura yang salah.
+
+  Sekarang keduanya memakai tanggalHariIni(). Di perangkat yang memang WIB
+  hasilnya persis sama dengan sebelumnya.
+*/
 
 /** Semua laporan yang masih dihitung (bukan data uji, bukan dikecualikan). */
 export async function ambilLaporanMakan() {
@@ -53,7 +61,7 @@ export async function catatTidakMakan(kura, { sumber = "lainnya", catatan = "", 
     tortoise_id: kura.id,
     tortoise_code: kura.code || kura.name || "",
     enclosure_name: kura.enclosure || "",
-    date: hariIniWIB(),
+    date: tanggalHariIni(),
     status: "tidak_makan",
     sumber,
     catatan,
@@ -78,7 +86,7 @@ export async function catatMakanLagi(kura, { catatan = "", user, tandaUji } = {}
     tortoise_id: kura.id,
     tortoise_code: kura.code || kura.name || "",
     enclosure_name: kura.enclosure || "",
-    date: hariIniWIB(),
+    date: tanggalHariIni(),
     status: "makan_lagi",
     sumber: "halaman_kura",
     catatan,

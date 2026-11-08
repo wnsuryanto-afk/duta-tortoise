@@ -11,6 +11,7 @@ import { Plus, Camera, TrendingUp, Ruler, Star, StarOff, Trash2 } from "lucide-r
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function PhotoProgressPanel({ tortoise, onClose }) {
   const qc = useQueryClient();
@@ -78,7 +79,7 @@ export default function PhotoProgressPanel({ tortoise, onClose }) {
       const res = await base44.integrations.Core.UploadFile({ file });
       const newPhoto = {
         url: res.file_url,
-        date: new Date().toISOString().split("T")[0],
+        date: tanggalHariIni(),
         weight_grams: tortoise.weight_grams || undefined,
         shell_length_cm: tortoise.shell_length_cm || undefined,
         notes: "",

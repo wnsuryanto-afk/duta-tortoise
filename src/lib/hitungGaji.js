@@ -34,6 +34,7 @@ import { nilaiPerPoin } from "@/lib/nilaiPoin";
 import { masukLaporan } from "@/lib/laporan";
 import { ringkasPoin } from "@/lib/poinChecklist";
 import { tripPerPeriode, tarifTrip } from "@/lib/rempesan";
+import { tanggalHariIni } from "@/lib/safeDate";
 /*
   ATURAN GAJI YANG BERLAKU (keputusan Iwan, 01-09-2026):
 
@@ -440,13 +441,26 @@ export function hitungGajiKaryawan(karyawan, sumber) {
   const tanggalTercatat = new Set(absensi.map((a) => a.date));
   const hariTanpaCatatan = [];
   {
-    const d = new Date(awal);
-    const batas = new Date(akhir);
-    const hariIni = new Date();
-    while (d < batas && d <= hariIni) {
-      const teks = d.toISOString().split("T")[0];
+    /*
+      Seluruh langkahnya di UTC, seperti pekanPenuhHadir di atas: `new Date(awal)`
+      pada "YYYY-MM-DD" adalah tengah malam UTC, jadi memajukannya dengan
+      setDate/getDate yang LOKAL berarti mencampur dua penanggalan dalam satu
+      lingkaran. Di Jakarta keduanya kebetulan sejalan; di zona waktu barat
+      daftarnya bergeser sehari.
+
+      Hari ini sendiri TIDAK dihitung sebagai lubang data: absensi hari ini
+      memang belum tentu sudah diisi, dan peringatan yang muncul setiap pagi
+      lalu hilang sendiri adalah peringatan yang berhenti dibaca. Periode yang
+      sudah berakhir tidak terpengaruh — `akhir` memang eksklusif.
+    */
+    const d = new Date(`${String(awal).slice(0, 10)}T00:00:00Z`);
+    const batas = new Date(`${String(akhir).slice(0, 10)}T00:00:00Z`);
+    const hariIni = tanggalHariIni();
+    while (d < batas) {
+      const teks = d.toISOString().slice(0, 10);
+      if (teks >= hariIni) break;
       if (!tanggalTercatat.has(teks)) hariTanpaCatatan.push(teks);
-      d.setDate(d.getDate() + 1);
+      d.setUTCDate(d.getUTCDate() + 1);
     }
   }
 

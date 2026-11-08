@@ -15,6 +15,7 @@ import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import { normalizePhone } from "@/lib/normalizePhone";
 import { TEMPLATE_PESAN, pesanDari } from "@/lib/templatePesanSupplier";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 /**
  * LeadsSupplierTab — calon pemasok yang dikumpulkan dari tangkapan layar
@@ -197,7 +198,7 @@ export default function LeadsSupplierTab({ onJadiSupplier }) {
   const ubahStatus = async (lead, status) => {
     const patch = { status };
     if (status === "dihubungi" && !lead.tanggal_dihubungi) {
-      patch.tanggal_dihubungi = new Date().toISOString().split("T")[0];
+      patch.tanggal_dihubungi = tanggalHariIni();
     }
     await base44.entities.SupplierLead.update(lead.id, patch);
     qc.invalidateQueries({ queryKey: ["supplier-leads"] });

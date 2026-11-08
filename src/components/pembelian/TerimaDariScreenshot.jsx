@@ -70,8 +70,9 @@ import { KATEGORI_PEMBELIAN } from "@/lib/kategoriBarang";
 import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
 import { rupiah } from "@/lib/rupiah";
 import { TOMBOL_PANJANG } from "@/lib/tombolPanjang";
+import { tanggalHariIni } from "@/lib/safeDate";
 
-const hariIni = () => new Date().toISOString().split("T")[0];
+const hariIni = () => tanggalHariIni();
 
 // Daftar kategori dan aturan aset/biaya ada di src/lib/kategoriBarang.js.
 const KATEGORI = KATEGORI_PEMBELIAN;

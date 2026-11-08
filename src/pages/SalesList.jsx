@@ -31,6 +31,7 @@ import { WalletArt } from "@/components/common/Illustration";
 import { masukLaporan } from "@/lib/laporan";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 import { angkaRibuan } from "@/lib/rupiah";
+import { bulanHariIni, tanggalHariIni } from "@/lib/safeDate";
 
 
 export default function SalesList() {
@@ -119,7 +120,7 @@ export default function SalesList() {
 
   const totalRevenue = enrichedSales.filter(masukLaporan).reduce((sum, s) => sum + (s.price || 0), 0);
   const totalLaba = enrichedSales.filter(s => masukLaporan(s) && s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = bulanHariIni();
   const salesThisMonth = enrichedSales.filter(s => s.sale_date?.startsWith(currentMonth) && masukLaporan(s));
   const revenueThisMonth = salesThisMonth.reduce((sum, s) => sum + (s.price || 0), 0);
   const labaThisMonth = salesThisMonth.filter(s => s.hpp > 0).reduce((sum, s) => sum + (s.price - s.hpp), 0);
@@ -153,7 +154,7 @@ export default function SalesList() {
         status: cancelSale._prev_status || "aktif",
         enclosure: cancelEnclosure || "",
         enclosure_id: kandangKembali?.id || "",
-        last_status_change: new Date().toISOString().split("T")[0],
+        last_status_change: tanggalHariIni(),
       });
       // Hapus SEMUA catatan keuangan penjualan ini, dicari lewat reference_id.
       //
@@ -293,7 +294,7 @@ export default function SalesList() {
             <PageTooltip page="sales" />
             <ExportButton
               data={sales}
-              filename={`penjualan-${new Date().toISOString().split("T")[0]}`}
+              filename={`penjualan-${tanggalHariIni()}`}
               title="Data Penjualan"
               columns={[
                 {key:"sale_date",label:"Tgl"},{key:"tortoise_name",label:"Kura-kura"},

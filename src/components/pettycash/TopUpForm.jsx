@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const QUICK_AMOUNTS = [500000, 1000000, 2000000];
 
 export default function TopUpForm({ currentSaldo, user, role, onClose, onSaved }) {
   const [amount, setAmount] = useState("");
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split("T")[0]);
+  const [entryDate, setEntryDate] = useState(tanggalHariIni());
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [proofUrl, setProofUrl] = useState("");

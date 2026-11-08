@@ -7,10 +7,11 @@ import { useNavigate } from "react-router-dom";
 import { jadwalBerlaku } from "@/lib/jadwalPerawatan";
 import { useKeadaanJadwal } from "@/lib/useKeadaanJadwal";
 import { kisiWadah } from "@/lib/kisiWadah";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function OperationalToday() {
   const navigate = useNavigate();
-  const today = new Date().toISOString().split('T')[0];
+  const today = tanggalHariIni();
 
   // Tugas hari ini
   const { data: todayChecklists = [] } = useQuery({

@@ -34,6 +34,7 @@ import { diPeternakan } from "@/lib/populasiKura";
 import { getMissingFields } from "@/lib/incompleteChecks";
 import { recalcEnclosureCountsAman, recalcEnclosureCounts } from "@/lib/enclosureCount";
 import { anakan, hanyaAnakan } from "@/lib/anakanKura";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 /**
  * Status kepenuhan kandang, dihitung dari ISI NYATA.
@@ -449,7 +450,7 @@ export default function TortoiseList() {
             <div className="flex gap-2 flex-wrap">
               <ExportButton
                 data={filtered}
-                filename={`tortoise-${new Date().toISOString().split("T")[0]}`}
+                filename={`tortoise-${tanggalHariIni()}`}
                 title="Data Kura-kura"
                 columns={[
                   {key:"name",label:"Nama"},{key:"code",label:"Kode"},{key:"gender",label:"Gender"},

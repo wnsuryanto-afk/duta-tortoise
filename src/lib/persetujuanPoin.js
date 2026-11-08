@@ -1,3 +1,5 @@
+import { tanggalLokal } from "@/lib/safeDate";
+
 /**
  * persetujuanPoin.js — SATU aturan "siapa boleh menyetujui, dan kapan alasannya wajib".
  *
@@ -165,7 +167,7 @@ export function periksaAlasanPotong({ checklist, akanDisetujui, kode, teks }) {
 export function checklistTertunda(checklists = [], hariIni, { lebihDari = 1 } = {}) {
   const batas = new Date(`${hariIni}T00:00:00`);
   batas.setDate(batas.getDate() - lebihDari);
-  const batasStr = batas.toISOString().slice(0, 10);
+  const batasStr = tanggalLokal(batas);
 
   return (checklists || [])
     .filter((c) => c?.status === "submitted")

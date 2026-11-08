@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { sedangSakit } from "@/lib/populasiKura";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 
 export default function KeeperAttentionWidget() {
@@ -12,7 +13,7 @@ export default function KeeperAttentionWidget() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = tanggalHariIni();
   const { data: rotasi = [] } = useQuery({
     queryKey: ["rotasi-ukur", today],
     queryFn: async () => {

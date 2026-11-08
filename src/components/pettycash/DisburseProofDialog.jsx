@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { compressImage } from "@/lib/useImageCompression";
 import { rupiah } from "@/lib/rupiah";
 import { pastikanMasukBukuKas } from "@/lib/cairkanKasKecil";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 
 /**
@@ -55,7 +56,7 @@ export default function DisburseProofDialog({ request, mode = "disburse", user, 
    */
   const handleDisburse = async (method) => {
     setSaving(true);
-    const tanggal = new Date().toISOString().split("T")[0];
+    const tanggal = tanggalHariIni();
     let masukBukuKas = false;
     try {
       await pastikanMasukBukuKas({

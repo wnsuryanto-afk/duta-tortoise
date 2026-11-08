@@ -20,6 +20,7 @@ import { differenceInMonths } from "date-fns";
 import { angkaRibuan } from "@/lib/rupiah";
 import { LABEL_SPESIES } from "@/lib/labelKura";
 import { toast } from "sonner";
+import { bulanHariIni, tanggalHariIni } from "@/lib/safeDate";
 
 const STEPS = ["Pilih Kura", "Data Pembeli", "Detail Penjualan", "Review & Simpan"];
 
@@ -602,7 +603,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
     tortoise_id: "", tortoise_name: "",
     buyer_name: "", hp_whatsapp: "", buyer_address: "", buyer_city: "", buyer_profile_id: "",
     price: "", shipping_cost: 0, ongkir_ditanggung: "penjual", payment_status: "lunas", shipping_method: "ambil_sendiri",
-    platform: "", sale_date: new Date().toISOString().split("T")[0], notes: "", dp_amount: "",
+    platform: "", sale_date: tanggalHariIni(), notes: "", dp_amount: "",
     purchase_price_input: "",
   });
   const [errors, setErrors] = useState({});
@@ -674,7 +675,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
   const selectedTortoise = tortoises.find(t => t.id === form.tortoise_id);
 
   // Fetch actual cost data
-  const currentPeriod = new Date().toISOString().slice(0, 7);
+  const currentPeriod = bulanHariIni();
   const costData = useCostPerTortoise(currentPeriod);
 
   const onChange = (field, value) => {
@@ -747,7 +748,7 @@ export default function SaleWizard({ open, onClose, preSelectedTortoiseId, prese
       const rincian = rincianHpp();
       const hpp = rincian.total;
       const price = Number(form.price);
-      const today = new Date().toISOString().split("T")[0];
+      const today = tanggalHariIni();
 
       // B) Create Sale record
       const saleData = {

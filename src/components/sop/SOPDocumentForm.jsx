@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const CATEGORIES = [
   { value: "perawatan_harian", label: "Perawatan Harian" },
@@ -18,7 +19,7 @@ const CATEGORIES = [
 ];
 
 export default function SOPDocumentForm({ data, onSave, onClose, user }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = tanggalHariIni();
   const [form, setForm] = useState(data || {
     title: "", category: "lainnya", content: "", video_url: "",
     version: "v1.0", is_active: true,

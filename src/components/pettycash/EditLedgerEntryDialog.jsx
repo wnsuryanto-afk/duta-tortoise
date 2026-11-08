@@ -12,6 +12,7 @@ import { PETTYCASH_CATS } from "@/lib/financeCategories";
 import { logActivity } from "@/lib/logActivity";
 import { compressImage } from "@/lib/useImageCompression";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
   const { user } = useCurrentUser();
@@ -20,7 +21,7 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
   const [amountManual, setAmountManual] = useState(String(entry.amount || ""));
   const [category, setCategory] = useState(entry.category || "lainnya");
   const [description, setDescription] = useState(entry.description || "");
-  const [entryDate, setEntryDate] = useState(entry.entry_date || new Date().toISOString().split("T")[0]);
+  const [entryDate, setEntryDate] = useState(entry.entry_date || tanggalHariIni());
   const [proofPhoto, setProofPhoto] = useState(entry.proof_photo || "");
   const [noNota, setNoNota] = useState(!entry.proof_photo && !!entry.notes);
   const [noNotaReason, setNoNotaReason] = useState((!entry.proof_photo && entry.notes) ? entry.notes : "");

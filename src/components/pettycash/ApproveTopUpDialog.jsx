@@ -7,10 +7,11 @@ import { Loader2, ImagePlus, X, CheckCircle2 } from "lucide-react";
 import { compressImage } from "@/lib/useImageCompression";
 import { toast } from "sonner";
 import { rupiah } from "@/lib/rupiah";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 
 export default function ApproveTopUpDialog({ request, onClose, onSaved }) {
-  const [transferDate, setTransferDate] = useState(new Date().toISOString().split("T")[0]);
+  const [transferDate, setTransferDate] = useState(tanggalHariIni());
   const [proofUrl, setProofUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);

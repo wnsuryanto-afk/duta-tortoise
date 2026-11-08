@@ -17,6 +17,7 @@ import { formatDateIndonesian, formatCurrency } from "@/lib/formatIndonesian";
 import EmptyState from "@/components/common/EmptyState";
 import { toast } from "sonner";
 import PageHeader from "@/components/common/PageHeader";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const WA_TEMPLATE = (name) =>
   `Halo dr. ${name}, saya dari peternakan Duta Tortoise. Ingin konsultasi tentang kura-kura sulcata kami...`;
@@ -214,7 +215,7 @@ export default function VetContactPage() {
 
   const recordConsultation = useMutation({
     mutationFn: ({ id, total }) => base44.entities.VetContact.update(id, {
-      last_consulted: new Date().toISOString().split("T")[0],
+      last_consulted: tanggalHariIni(),
       total_consultations: (total || 0) + 1,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["vets"] }); toast.success("Konsultasi dicatat"); },

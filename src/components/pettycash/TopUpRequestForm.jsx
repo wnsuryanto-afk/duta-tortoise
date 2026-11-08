@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const QUICK_AMOUNTS = [500000, 1000000, 2000000];
 
@@ -25,7 +26,7 @@ export default function TopUpRequestForm({ user, onClose, onSaved }) {
         requester_name: user?.full_name || user?.email,
         amount_requested: amt,
         reason: reason.trim(),
-        request_date: new Date().toISOString().split("T")[0],
+        request_date: tanggalHariIni(),
         status: "pending",
       });
       toast.success("Request top-up terkirim ke owner");

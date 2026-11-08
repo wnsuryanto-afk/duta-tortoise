@@ -91,6 +91,7 @@ bundel("src/lib/clutchKembar.js", "clutchkembar.cjs");
 bundel("src/lib/modalKerja.js", "modal.cjs");
 bundel("src/lib/hargaBeliKura.js", "hargabeli.cjs");
 bundel("src/lib/barisTelur.js", "baristelur.cjs");
+bundel("src/lib/safeDate.js", "safedate.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -3401,6 +3402,57 @@ if (TGT.hariSetahun(2024) !== 366 || TGT.hariSetahun(2026) !== 365 || TGT.hariSe
   temuan.push("hariSetahun: kabisat salah");
 }
 
+/*
+  ── Tanggal setempat, bukan tanggal UTC ────────────────────────────────────
+
+  `new Date().toISOString().slice(0, 10)` memberi tanggal UTC. Di Jakarta,
+  setiap hari sebelum pukul tujuh pagi, cara itu masih menyebut tanggal
+  KEMARIN — dan pekerjaan di peternakan ini dimulai pukul tujuh.
+
+  Diuji di DUA zona waktu, karena satu zona tidak membuktikan apa-apa: di
+  Jakarta yang salah adalah dini hari, di zona barat yang salah adalah
+  malam. Dijalankan di proses terpisah supaya TZ-nya tidak bocor ke uji lain
+  di berkas ini.
+*/
+let zonaUji = 0;
+{
+  const KASUS = [
+    // zona,             saat (ISO berzona),          tanggal,      bulan,     jam setempat
+    ["Asia/Jakarta",     "2026-11-08T06:30:00+07:00", "2026-11-08", "2026-11", "2026-11-08T06:30"],
+    ["Asia/Jakarta",     "2026-11-08T23:45:00+07:00", "2026-11-08", "2026-11", "2026-11-08T23:45"],
+    ["Asia/Jakarta",     "2026-12-01T05:00:00+07:00", "2026-12-01", "2026-12", "2026-12-01T05:00"],
+    ["America/New_York", "2026-11-08T20:15:00-05:00", "2026-11-08", "2026-11", "2026-11-08T20:15"],
+  ];
+  const naskah = `
+    const SD = require(${JSON.stringify(join(dir, "safedate.cjs"))});
+    const saat = new Date(process.argv[1]);
+    process.stdout.write(JSON.stringify([
+      SD.tanggalHariIni(saat),
+      SD.bulanHariIni(saat),
+      SD.waktuLokalSekarang(saat),
+      SD.tanggalLokal(saat),
+      SD.tanggalLokal("2026-11-08"),
+      SD.tanggalLokal("bukan tanggal"),
+    ]));
+  `;
+  for (const [zona, saat, tanggal, bulan, jam] of KASUS) {
+    const keluar = execFileSync(process.execPath, ["-e", naskah, saat], {
+      env: { ...process.env, TZ: zona },
+      encoding: "utf8",
+    });
+    const [hariIni, bulanIni, waktu, dariDate, dariTeks, takTerbaca] = JSON.parse(keluar);
+    zonaUji++;
+    if (hariIni !== tanggal) temuan.push(`tanggalHariIni di ${zona} pada ${saat}: ${hariIni}, seharusnya ${tanggal}`);
+    if (bulanIni !== bulan) temuan.push(`bulanHariIni di ${zona} pada ${saat}: ${bulanIni}, seharusnya ${bulan}`);
+    if (waktu !== jam) temuan.push(`waktuLokalSekarang di ${zona} pada ${saat}: ${waktu}, seharusnya ${jam}`);
+    if (dariDate !== tanggal) temuan.push(`tanggalLokal(Date) di ${zona} pada ${saat}: ${dariDate}, seharusnya ${tanggal}`);
+    // Teks yang sudah berbentuk tanggal tidak boleh bergeser di zona mana pun.
+    if (dariTeks !== "2026-11-08") temuan.push(`tanggalLokal("2026-11-08") di ${zona}: ${dariTeks}`);
+    // Yang tidak terbaca mengembalikan kosong, bukan tanggal hari ini.
+    if (takTerbaca !== "") temuan.push(`tanggalLokal("bukan tanggal") di ${zona}: ${JSON.stringify(takTerbaca)}`);
+  }
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 /* ── Clutch yang perlu dipantau di beranda ─────────────────────────── */
@@ -3879,6 +3931,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona diuji.`,
 );
 process.exit(0);

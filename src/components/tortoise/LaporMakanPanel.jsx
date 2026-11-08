@@ -10,7 +10,7 @@ import {
   ambilLaporanMakan, catatTidakMakan, catatMakanLagi,
 } from "@/lib/laporMakan";
 import { laporanTerbukaPerKura, selisihHari } from "@/lib/jadwalTimbang";
-import { hariIniWIB } from "@/lib/laporMakan";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 /**
  * LaporMakanPanel — tombol "tidak makan" / "sudah makan lagi" di halaman kura.
@@ -38,7 +38,7 @@ export default function LaporMakanPanel({ tortoise }) {
     queryFn: ambilLaporanMakan,
   });
   const terbuka = laporanTerbukaPerKura(laporan).get(tortoise?.id) || null;
-  const lama = terbuka ? selisihHari(terbuka.date, hariIniWIB()) : null;
+  const lama = terbuka ? selisihHari(terbuka.date, tanggalHariIni()) : null;
 
   const segarkan = () => {
     qc.invalidateQueries({ queryKey: ["laporan-makan"] });

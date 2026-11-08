@@ -25,6 +25,7 @@ import {
   rincianBahan, masalahBahan, bahanTanpaHarga, totalBiaya,
   hppHasil, jumlahHasil, cariBarangHasil, batasDariStok, dampakKekurangan,
 } from "@/lib/produksiRacikan";
+import { tanggalHariIni, tanggalLokal } from "@/lib/safeDate";
 
 /**
  * Kandungan IU per gram dari nama bahannya, bila tertulis di situ.
@@ -193,7 +194,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
     let produksiTercatat = false;
     let hasilMasuk = false;
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = tanggalHariIni();
       const batchNo = `BATCH-RACIK-${Date.now().toString(36).toUpperCase()}`;
       batchNoTerakhir.current = batchNo;
       /*
@@ -254,7 +255,7 @@ function ProductionDialog({ recipe, feedItems, warehouseItems, onClose, onSaved,
 
       const kedaluwarsa = new Date();
       kedaluwarsa.setDate(kedaluwarsa.getDate() + (Number(recipe?.shelf_life_days) || 30));
-      const tglExp = kedaluwarsa.toISOString().split("T")[0];
+      const tglExp = tanggalLokal(kedaluwarsa);
 
       await base44.entities.PelletProduction.create({
         recipe_id: recipe.id, recipe_name: recipe.name, production_date: today,

@@ -27,6 +27,7 @@ import RecoveryModal from "./RecoveryModal";
 import PilihInduk from "./PilihInduk";
 import { logActivity } from "@/lib/logActivity";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const SPECIES_LIST = [
   { value: "sulcata",     label: "Sulcata (African Spurred)" },
@@ -268,7 +269,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
    */
   const handleStatusChange = (newStatus) => {
     if (!newStatus || newStatus === form.status) return;
-    const hariIni = new Date().toISOString().split("T")[0];
+    const hariIni = tanggalHariIni();
 
     if (newStatus === "mati" && !editData?.death_date) {
       // Jika belum pernah mati, tampilkan modal kematian
@@ -309,7 +310,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
   };
 
   const handleDeathSaved = (deathData) => {
-    setForm(p => ({ ...p, status: "mati", is_currently_sick: false, previous_status: p.status, last_status_change: new Date().toISOString().split("T")[0], ...deathData }));
+    setForm(p => ({ ...p, status: "mati", is_currently_sick: false, previous_status: p.status, last_status_change: tanggalHariIni(), ...deathData }));
     setShowDeathModal(false);
     setPendingStatus(null);
   };
@@ -423,7 +424,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
     const newWeight = form.weight_grams ? Number(form.weight_grams) : undefined;
     const newLength = form.shell_length_cm ? Number(form.shell_length_cm) : undefined;
     // Auto-create HealthRecord jika sakit baru
-    const today = new Date().toISOString().split("T")[0];
+    const today = tanggalHariIni();
     if (form._pendingHealthData && editData?.id) {
       try {
         const existing = await base44.entities.HealthRecord.filter({ tortoise_id: editData.id, date: today, type: "sakit", source: "auto_sick" });
@@ -563,7 +564,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
       await simpanUkuranSekali({
         tortoise_id: tortoiseId,
         tortoise_name: form.name,
-        date: new Date().toISOString().split("T")[0],
+        date: tanggalHariIni(),
         weight_grams: newWeight,
         shell_length_cm: newLength,
         notes: "Otomatis dari update data tortoise",

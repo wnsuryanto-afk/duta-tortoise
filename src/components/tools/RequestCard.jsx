@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CheckCircle2, XCircle, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { safeFormatDate } from "@/lib/safeDate";
+import { safeFormatDate, tanggalHariIni } from "@/lib/safeDate";
 
 const statusConfig = {
   menunggu: { label: "Menunggu", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -29,7 +29,7 @@ export default function RequestCard({ req, canApprove, approverName, onSaved }) 
       await base44.entities.ToolRequest.update(req.id, {
         status: "disetujui",
         approved_by: approverName,
-        approved_date: new Date().toISOString().split("T")[0],
+        approved_date: tanggalHariIni(),
       });
       toast.success("Pengajuan disetujui");
       onSaved?.();
@@ -46,7 +46,7 @@ export default function RequestCard({ req, canApprove, approverName, onSaved }) 
       await base44.entities.ToolRequest.update(req.id, {
         status: "ditolak",
         approved_by: approverName,
-        approved_date: new Date().toISOString().split("T")[0],
+        approved_date: tanggalHariIni(),
         rejection_reason: rejectReason.trim(),
       });
       toast.success("Pengajuan ditolak");

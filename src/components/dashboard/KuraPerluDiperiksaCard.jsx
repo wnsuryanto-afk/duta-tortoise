@@ -29,7 +29,8 @@ import { Stethoscope, Camera, Scale } from "lucide-react";
 import { Link } from "react-router-dom";
 import { diPeternakan } from "@/lib/populasiKura";
 import { perluDitimbang } from "@/lib/jadwalTimbang";
-import { ambilLaporanMakan, hariIniWIB } from "@/lib/laporMakan";
+import { ambilLaporanMakan } from "@/lib/laporMakan";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function KuraPerluDiperiksaCard() {
   const { data: temuan = [] } = useQuery({
@@ -51,7 +52,7 @@ export default function KuraPerluDiperiksaCard() {
   });
 
   const perluTimbang = useMemo(
-    () => perluDitimbang((tortoises || []).filter(diPeternakan), laporanMakan, hariIniWIB()),
+    () => perluDitimbang((tortoises || []).filter(diPeternakan), laporanMakan, tanggalHariIni()),
     [tortoises, laporanMakan],
   );
 

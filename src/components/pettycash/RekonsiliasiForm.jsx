@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function RekonsiliasiForm({ currentSaldo, user, role, onClose, onSaved }) {
   const [physicalCash, setPhysicalCash] = useState("");
@@ -21,7 +22,7 @@ export default function RekonsiliasiForm({ currentSaldo, user, role, onClose, on
     if (!reason.trim()) { toast.error("Alasan selisih wajib diisi"); return; }
     setSaving(true);
     try {
-      const entryDate = new Date().toISOString().split("T")[0];
+      const entryDate = tanggalHariIni();
       await base44.entities.PettyCashLedger.create({
         entry_type: "penyesuaian",
         amount: Math.abs(selisih),

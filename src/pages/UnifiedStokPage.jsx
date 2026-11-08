@@ -1,5 +1,6 @@
 import { dilacak, perluDiperhatikan, stokHabis } from "@/lib/stokMenipis";
 import { rupiah } from "@/lib/rupiah";
+import { tanggalHariIni } from "@/lib/safeDate";
 // Halaman /dashboard-stok digabungkan ke sini sebagai tab. Isinya ringkasan
 // atas persediaan yang sama yang didaftar tab Inventaris — nilai stok, yang
 // akan kadaluarsa, pemakaian pakan, dan pengeluaran bulan ini. Berdiri
@@ -77,7 +78,7 @@ export default function UnifiedStokPage() {
   const criticalCount = allItems.filter(perluDiperhatikan).length;
   const mandatoryEmptyCount = allItems.filter(stokHabis).length;
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = tanggalHariIni();
   const todayMovements = movements.filter(m => m.date === todayStr);
   const todayMasuk = todayMovements.filter(m => m.type === "masuk").reduce((s, m) => s + (m.quantity || 0), 0);
   const todayKeluar = todayMovements.filter(m => m.type === "keluar").reduce((s, m) => s + (m.quantity || 0), 0);

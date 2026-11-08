@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Send, Users } from "lucide-react";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function SendNotifDialog({ open, onClose }) {
   const queryClient = useQueryClient();
@@ -24,7 +25,7 @@ export default function SendNotifDialog({ open, onClose }) {
 
   const handleSend = async () => {
     setSaving(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = tanggalHariIni();
     const base = {
       title: form.title,
       message: form.message,

@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PageHeader from "@/components/common/PageHeader";
 import { segarkanSetelan } from "@/lib/kunciSetelan";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const fmt = (d) => d ? format(new Date(d), "d MMM yyyy", { locale: id }) : "-";
 
@@ -83,7 +84,7 @@ function WarningLetterTab() {
 
 function WarnLetterForm({ data, onClose, onSaved }) {
   const isEdit = !!data;
-  const [form, setForm] = useState(data ? { ...data, reason: data.reason || data.reasons?.[0] || "" } : { employee_name: "", employee_email: "", date: new Date().toISOString().split("T")[0], level: "SP1", reason: "", description: "", issued_by: "", acknowledged: false, notes: "" });
+  const [form, setForm] = useState(data ? { ...data, reason: data.reason || data.reasons?.[0] || "" } : { employee_name: "", employee_email: "", date: tanggalHariIni(), level: "SP1", reason: "", description: "", issued_by: "", acknowledged: false, notes: "" });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
   // Kolom "Alasan" disimpan ke `reasons` (array) — nama yang ADA di skema dan
   // yang dibaca Dasbor Pemilik serta Detail Karyawan. Sebelumnya disimpan
@@ -191,7 +192,7 @@ function TrainingTab() {
 
 function TrainingForm({ data, onClose, onSaved }) {
   const isEdit = !!data;
-  const [form, setForm] = useState(data || { employee_name: "", employee_email: "", training_title: "", training_date: new Date().toISOString().split("T")[0], duration_hours: "", trainer: "", category: "lainnya", result: "dalam_proses", certificate_url: "", notes: "" });
+  const [form, setForm] = useState(data || { employee_name: "", employee_email: "", training_title: "", training_date: tanggalHariIni(), duration_hours: "", trainer: "", category: "lainnya", result: "dalam_proses", certificate_url: "", notes: "" });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const mutation = useMutation({ mutationFn: () => isEdit ? base44.entities.TrainingLog.update(data.id, form) : base44.entities.TrainingLog.create(form), onSuccess: onSaved });
   return (
@@ -231,7 +232,7 @@ function TrainingForm({ data, onClose, onSaved }) {
 
 // ─── Attendance Quick Tab ─────────────────────────────────────────────────────
 function AttendanceSummaryTab() {
-  const today = new Date().toISOString().split("T")[0];
+  const today = tanggalHariIni();
   const [date, setDate] = useState(today);
   const { data: records = [] } = useQuery({ queryKey: ["attendance", date], queryFn: () => base44.entities.Attendance.filter({ date }) });
   return (

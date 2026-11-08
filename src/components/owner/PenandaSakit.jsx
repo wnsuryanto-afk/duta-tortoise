@@ -9,6 +9,7 @@ import { periksaTandaSakit, perubahanSakit } from "@/lib/statusKura";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
 import { cn } from "@/lib/utils";
 import KartuPemeliharaan from "@/components/owner/KartuPemeliharaan";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 /**
  * PenandaSakit — menyelaraskan dua penanda sakit pada data kura.
@@ -105,7 +106,7 @@ export default function PenandaSakit() {
         kura.id,
         masihSakit
           ? perubahanSakit(kura)
-          : { is_currently_sick: false, last_status_change: new Date().toISOString().split("T")[0] }
+          : { is_currently_sick: false, last_status_change: tanggalHariIni() }
       );
       segarkan();
       toast.success(
