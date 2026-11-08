@@ -234,6 +234,7 @@ export default function KritikSaranPage() {
             <CardTitle className="text-base">Kirim Masukan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* Kolom mengikuti lebar wadah: di 280px "💡 Saran" terpotong 6px. */}
             <div className="kolom-isian gap-3">
               <div>
                 <Label className="text-xs mb-1 block">Tipe *</Label>
