@@ -789,7 +789,7 @@ export default function SOPApproval() {
                                 {t.photo_url ? (
                                   <div className="mt-1.5 space-y-1">
                                     <button onClick={() => setPhotoPreview({ url: t.photo_url, takenAt: t.photo_taken_at, title: t.task_title })} className="block">
-                                      <img src={t.photo_url} alt="Bukti" className="h-16 w-24 object-cover rounded border hover:opacity-80 transition-opacity" />
+                                      <img loading="lazy" decoding="async" src={t.photo_url} alt="Bukti" className="h-16 w-24 object-cover rounded border hover:opacity-80 transition-opacity" />
                                       {t.photo_taken_at && <span className="text-[10px] text-muted-foreground block mt-0.5">🕐 {t.photo_taken_at}</span>}
                                     </button>
                                     <div className="flex flex-wrap gap-1">

@@ -322,11 +322,6 @@ export default function SalesList() {
         sementara tiga lainnya adalah keadaan. Saat nol, ia kembali ke
         tempat semula dan warnanya ikut tenang — nol bukan tagihan.
       */}
-      {/*
-        Satu kolom di bawah 360px. Di 280px dua kolom menyisakan ±130px per
-        kartu, dan labelnya terpotong: "Menunggu Follow-up" kehilangan 75px,
-        "Laba Bulan Ini" 50px. Yang terbaca jadi "Menunggu Fol…".
-      */}
       <div className="kolom-kartu gap-3 stagger">
         {/*
           "Follow-up", bukan "Menunggu Follow-up".

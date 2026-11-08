@@ -117,7 +117,7 @@ export default function RequestForm({ user, onClose, onSaved }) {
         />
         {photoUrl ? (
           <div className="relative mt-1">
-            <img src={photoUrl} alt="foto alat" className="w-full max-h-40 object-contain rounded-lg border" />
+            <img loading="lazy" decoding="async" src={photoUrl} alt="foto alat" className="w-full max-h-40 object-contain rounded-lg border" />
             <button type="button" onClick={() => setPhotoUrl("")} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1">
               <X className="w-3 h-3" />
             </button>

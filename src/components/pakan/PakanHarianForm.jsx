@@ -394,7 +394,7 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
             </Label>
             {photoPreview ? (
               <div className="relative mt-1">
-                <img src={photoPreview} alt="Bukti" className="w-full h-40 object-cover rounded-lg border" />
+                <img loading="lazy" decoding="async" src={photoPreview} alt="Bukti" className="w-full h-40 object-cover rounded-lg border" />
                 <button type="button" onClick={clearPhoto} className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
                   <X className="w-3.5 h-3.5" />
                 </button>

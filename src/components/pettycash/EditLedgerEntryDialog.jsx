@@ -211,7 +211,7 @@ export default function EditLedgerEntryDialog({ entry, onClose, onSaved }) {
               </label>
               {proofPhoto && (
                 <div className="relative">
-                  <img src={proofPhoto} alt="nota" className="w-14 h-14 rounded-lg object-cover border" />
+                  <img loading="lazy" decoding="async" src={proofPhoto} alt="nota" className="w-14 h-14 rounded-lg object-cover border" />
                   <button type="button" onClick={() => setProofPhoto("")} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center">
                     <X className="w-2.5 h-2.5" />
                   </button>

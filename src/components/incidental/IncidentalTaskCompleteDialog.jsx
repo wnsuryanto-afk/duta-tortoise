@@ -102,7 +102,7 @@ export default function IncidentalTaskCompleteDialog({ task, open, onClose, onCo
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Foto hasil <span className="text-red-500">*</span></p>
               {preview ? (
                 <div className="relative inline-block">
-                  <img src={preview} alt="Bukti" className="h-32 w-44 object-cover rounded-lg border" />
+                  <img loading="lazy" decoding="async" src={preview} alt="Bukti" className="h-32 w-44 object-cover rounded-lg border" />
                   <button
                     onClick={() => { setPhotoUrl(null); setPreview(null); }}
                     className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-white rounded-full flex items-center justify-center"

@@ -127,7 +127,7 @@ export default function FotoPenyakitVerificationPanel({ protocol }) {
           return (
             <div key={task.id} className="bg-white/70 dark:bg-card/70 rounded-lg p-3 border border-border">
               <div className="flex gap-3">
-                <img
+                <img loading="lazy" decoding="async"
                   src={task.done_photo_url}
                   alt="Foto penyakit"
                   className="w-24 h-24 rounded-lg object-cover border flex-shrink-0"

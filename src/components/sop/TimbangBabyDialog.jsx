@@ -192,7 +192,7 @@ export default function TimbangBabyDialog({ open, onClose, onDone, user, today, 
               <Label className="text-xs">Foto</Label>
               <label className="mt-1 flex items-center justify-center h-20 rounded-lg border-2 border-dashed border-pink-300 cursor-pointer hover:bg-pink-50 overflow-hidden">
                 {preview ? (
-                  <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={preview} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Camera className="w-4 h-4" /> Ambil / pilih foto</span>
                 )}

@@ -177,7 +177,7 @@ function ContentModal({ item, onClose }) {
                 allowFullScreen title={item.title} />
             </div>
           ) : imgUrl ? (
-            <img src={imgUrl} alt={item.title} className="w-full h-48 object-cover rounded-xl" />
+            <img loading="lazy" decoding="async" src={imgUrl} alt={item.title} className="w-full h-48 object-cover rounded-xl" />
           ) : null}
           <div className="flex gap-2">
             <Badge className={item.type === "video" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}>
@@ -378,7 +378,7 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
               <Card key={item.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group" onClick={() => setSelected(item)}>
                 <div className="relative overflow-hidden">
                   {(item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]) ? (
-                    <img src={item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]} alt={item.title} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img loading="lazy" decoding="async" src={item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]} alt={item.title} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-40 bg-muted/50 flex items-center justify-center">
                       {item.type === "video" ? <PlayCircle className="w-12 h-12 text-muted-foreground/40" /> : <BookOpen className="w-12 h-12 text-muted-foreground/40" />}
@@ -434,7 +434,7 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
                 <Card key={item.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group" onClick={() => setSelected(item)}>
                   <div className="relative">
                     {(item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]) ? (
-                      <img src={item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]} alt={item.title} className="w-full h-40 object-cover" />
+                      <img loading="lazy" decoding="async" src={item.image_url || item.image || CATEGORY_THUMBNAILS[item.category]} alt={item.title} className="w-full h-40 object-cover" />
                     ) : (
                       <div className="w-full h-40 bg-slate-800 flex items-center justify-center">
                         <PlayCircle className="w-16 h-16 text-white/40" />
@@ -516,7 +516,7 @@ Kembalikan JSON dengan field: title (string), youtube_url (URL YouTube lengkap v
               <label className="text-xs font-medium mb-1 block">Gambar Thumbnail</label>
               {form.image_url && (
                 <div className="relative mb-2 w-full h-32 rounded-lg overflow-hidden border">
-                  <img src={form.image_url} alt="" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={form.image_url} alt="" className="w-full h-full object-cover" />
                   <button type="button" onClick={() => setForm(p=>({...p,image_url:""}))}
                     className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80">✕</button>
                 </div>

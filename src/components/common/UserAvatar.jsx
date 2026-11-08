@@ -12,7 +12,7 @@ export default function UserAvatar({ name, photoUrl, size = "sm", className = ""
 
   if (photoUrl) {
     return (
-      <img
+      <img loading="lazy" decoding="async"
         src={photoUrl}
         alt={name || "User"}
         className={`${sz} rounded-full object-cover border border-primary/25 ${className}`}

@@ -25,7 +25,7 @@ export default function TopUpRequestCard({ req, isOwner, onApprove, onReject }) 
           <p className="text-sm text-muted-foreground mt-1">{req.reason}</p>
           {req.status === "approved" && req.transfer_proof_url && (
             <div className="mt-2">
-              <img src={req.transfer_proof_url} alt="bukti transfer" className="w-16 h-16 rounded-lg object-cover border" />
+              <img loading="lazy" decoding="async" src={req.transfer_proof_url} alt="bukti transfer" className="w-16 h-16 rounded-lg object-cover border" />
             </div>
           )}
           {req.status === "approved" && req.approved_by && (

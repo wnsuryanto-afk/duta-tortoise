@@ -71,7 +71,7 @@ function ProtocolCard({ protocol }) {
       {/* ── FOTO PENYAKIT BESAR ── */}
       <div className="w-full" style={{ height: "160px" }}>
         {imgUrl ? (
-          <img
+          <img loading="lazy" decoding="async"
             src={imgUrl}
             alt={protocol.diagnosis_name}
             className="w-full h-full object-cover"

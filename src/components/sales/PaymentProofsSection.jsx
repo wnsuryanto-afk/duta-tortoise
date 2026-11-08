@@ -129,7 +129,7 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
           {proofs.map((p, i) => (
             <div key={i} className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
               {p.photo_url && (
-                <img src={p.photo_url} alt="bukti" className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border" />
+                <img loading="lazy" decoding="async" src={p.photo_url} alt="bukti" className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-green-700">{rupiah(p.amount)}</p>
@@ -171,7 +171,7 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
                 {form.photo_url ? "Ganti Foto" : "Upload Foto"}
                 <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
               </label>
-              {form.photo_url && <img src={form.photo_url} alt="preview" className="w-10 h-10 rounded-lg object-cover border" />}
+              {form.photo_url && <img loading="lazy" decoding="async" src={form.photo_url} alt="preview" className="w-10 h-10 rounded-lg object-cover border" />}
             </div>
           </div>
           <div className="flex gap-2">

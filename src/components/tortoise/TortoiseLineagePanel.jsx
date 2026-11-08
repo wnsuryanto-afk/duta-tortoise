@@ -32,7 +32,7 @@ function TortoiseBox({ t, isMain = false }) {
   const inner = (
     <div className={`flex flex-col items-center gap-1 w-28 ${isMain ? "" : "cursor-pointer hover:opacity-80 transition-opacity"}`}>
       {photo ? (
-        <img src={photo} alt={t.name} className={`rounded-full object-cover border-2 ${color} ${isMain ? "w-16 h-16" : "w-12 h-12"}`} />
+        <img loading="lazy" decoding="async" src={photo} alt={t.name} className={`rounded-full object-cover border-2 ${color} ${isMain ? "w-16 h-16" : "w-12 h-12"}`} />
       ) : (
         <div className={`flex items-center justify-center rounded-full border-2 ${color} ${isMain ? "w-16 h-16" : "w-12 h-12"}`}>
           <span className="text-lg font-bold">{label}</span>
@@ -194,7 +194,7 @@ export default function TortoiseLineagePanel({ tortoise, allTortoises }) {
                 className="flex items-center gap-2 px-3 py-2 rounded-xl border bg-muted/30 hover:bg-primary/10 hover:border-primary/30 transition-all"
               >
                 {child.photo_url ? (
-                  <img src={child.photo_url} className="w-8 h-8 rounded-full object-cover" alt={child.name} />
+                  <img loading="lazy" decoding="async" src={child.photo_url} className="w-8 h-8 rounded-full object-cover" alt={child.name} />
                 ) : (
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${GENDER_BG[child.gender] || GENDER_BG.belum_diketahui}`}>
                     <span className="text-xs font-bold">{GENDER_LABEL[child.gender] || "?"}</span>

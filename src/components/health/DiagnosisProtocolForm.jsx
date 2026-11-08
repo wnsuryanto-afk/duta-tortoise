@@ -237,7 +237,7 @@ export default function DiagnosisProtocolForm({ open, onClose, editData, onSaved
                   <div key={idx} className="flex items-center gap-2">
                     <div className="w-10 h-10 flex-shrink-0 rounded-md overflow-hidden bg-muted border">
                       {img.url ? (
-                        <img src={img.url} alt="" className="w-full h-full object-cover" />
+                        <img loading="lazy" decoding="async" src={img.url} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <ImageIcon className="w-full h-full p-2 text-muted-foreground/40" />
                       )}

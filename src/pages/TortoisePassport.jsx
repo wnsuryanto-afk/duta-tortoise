@@ -51,12 +51,12 @@ function WatermarkedPhoto({ src, alt, className }) {
   }, [src]);
 
   if (!src) return null;
-  return <img src={dataUrl || src} alt={alt} className={className} />;
+  return <img loading="lazy" decoding="async" src={dataUrl || src} alt={alt} className={className} />;
 }
 
 function QRDisplay({ url }) {
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&format=png&margin=6&color=1a3a0a`;
-  return <img src={qrSrc} alt="QR Code Passport" className="w-36 h-36 rounded-xl border-4 border-white shadow-lg bg-card" />;
+  return <img loading="lazy" decoding="async" src={qrSrc} alt="QR Code Passport" className="w-36 h-36 rounded-xl border-4 border-white shadow-lg bg-card" />;
 }
 
 function PhotoCarousel({ photos }) {

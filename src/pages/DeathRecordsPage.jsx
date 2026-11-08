@@ -39,7 +39,7 @@ function DeathCard({ tortoise, onClick }) {
       <CardContent className="p-4">
         <div className="flex gap-3">
           {primaryPhoto ? (
-            <img src={primaryPhoto} alt={tortoise.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border grayscale" />
+            <img loading="lazy" decoding="async" src={primaryPhoto} alt={tortoise.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border grayscale" />
           ) : (
             <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
               <Skull className="w-7 h-7 text-muted-foreground" />
@@ -95,7 +95,7 @@ function DeathDetail({ tortoise, onBack, onEdit }) {
 
       {/* Foto utama */}
       {(deathPhotos[0] || regularPhotos.find(p => p.is_primary)?.url) && (
-        <img
+        <img loading="lazy" decoding="async"
           src={deathPhotos[0] || regularPhotos.find(p => p.is_primary)?.url}
           alt={tortoise.name}
           className="w-full max-h-64 object-cover rounded-2xl border grayscale"
@@ -140,7 +140,7 @@ function DeathDetail({ tortoise, onBack, onEdit }) {
             <h3 className="font-bold text-sm mb-3">Foto Bukti Kematian ({deathPhotos.length})</h3>
             <div className="flex gap-2 flex-wrap">
               {deathPhotos.map((url, i) => (
-                <img key={i} src={url} alt={`bukti-${i+1}`} className="w-20 h-20 rounded-xl object-cover border grayscale" />
+                <img loading="lazy" decoding="async" key={i} src={url} alt={`bukti-${i+1}`} className="w-20 h-20 rounded-xl object-cover border grayscale" />
               ))}
             </div>
           </CardContent>
@@ -233,7 +233,7 @@ function SelectTortoiseModal({ tortoises, onSelect, onClose }) {
                 onClick={() => onSelect(t)}
               >
                 {photo ? (
-                  <img src={photo} alt={t.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border" />
+                  <img loading="lazy" decoding="async" src={photo} alt={t.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border" />
                 ) : (
                   <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                     <Skull className="w-5 h-5 text-muted-foreground" />

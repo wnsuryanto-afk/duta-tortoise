@@ -82,7 +82,7 @@ function CertificatePrint({ sale, tortoise }) {
           </div>
 
           {tortoise?.photos?.[0]?.url && (
-            <img src={tortoise.photos[0].url} alt="tortoise" className="tortoise-img" />
+            <img loading="lazy" decoding="async" src={tortoise.photos[0].url} alt="tortoise" className="tortoise-img" />
           )}
 
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "#6B9B37", letterSpacing: 1, marginBottom: 6 }}>Data Kura-Kura</div>

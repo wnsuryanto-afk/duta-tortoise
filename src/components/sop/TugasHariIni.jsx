@@ -1671,7 +1671,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
           {photoUrl && (
             <div className="mt-1.5 flex items-start gap-2" onClick={e => e.stopPropagation()}>
               <button onClick={() => setShowPhoto(true)} className="block flex-shrink-0">
-                <img src={photoUrl} alt="Dokumentasi" className="w-16 h-12 rounded-lg object-cover border border-green-200 hover:opacity-80 transition-opacity" />
+                <img loading="lazy" decoding="async" src={photoUrl} alt="Dokumentasi" className="w-16 h-12 rounded-lg object-cover border border-green-200 hover:opacity-80 transition-opacity" />
               </button>
               <input
                 type="text"
@@ -1827,7 +1827,7 @@ function ExtraTaskRow({ log, showTeamView, user, onApprove, opsi = [0, 5, 10, 15
             <p className="text-xs text-muted-foreground mt-0.5">
               oleh {log.done_by} · {tampilkanTanggal ? `${log.period_key} ` : ""}{log.done_at}
             </p>
-            {log.photo_url && <img src={log.photo_url} alt="Foto" className="w-16 h-12 rounded-lg object-cover border mt-1.5" />}
+            {log.photo_url && <img loading="lazy" decoding="async" src={log.photo_url} alt="Foto" className="w-16 h-12 rounded-lg object-cover border mt-1.5" />}
           </div>
 
           {isApproved && (

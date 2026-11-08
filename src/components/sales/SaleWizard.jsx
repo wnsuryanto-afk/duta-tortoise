@@ -78,7 +78,7 @@ function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
         <div className="p-4 bg-green-50 border-2 border-green-400 rounded-xl">
           <div className="flex gap-4 items-start">
             {primaryPhoto(selected) ? (
-              <img src={primaryPhoto(selected)} alt={selected.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+              <img loading="lazy" decoding="async" src={primaryPhoto(selected)} alt={selected.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
             ) : (
               <div className="w-16 h-16 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
                 <Shell className="w-7 h-7 text-green-600" />
@@ -126,7 +126,7 @@ function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors mb-1.5 ${isSelected ? "border-green-500 bg-green-50" : "border-border hover:bg-muted"}`}
                 >
                   {primaryPhoto(t) ? (
-                    <img src={primaryPhoto(t)} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    <img loading="lazy" decoding="async" src={primaryPhoto(t)} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                       <Shell className="w-5 h-5 text-muted-foreground" />
@@ -165,7 +165,7 @@ function StepPilihKura({ tortoises, allSales, selectedId, onSelect }) {
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors mb-1.5 ${isSelected ? "border-amber-500 bg-amber-50" : "border-amber-200 bg-amber-50/50 hover:bg-amber-100"}`}
                   >
                     {primaryPhoto(t) ? (
-                      <img src={primaryPhoto(t)} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                      <img loading="lazy" decoding="async" src={primaryPhoto(t)} alt={t.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
                         <Shell className="w-5 h-5 text-amber-600" />

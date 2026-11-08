@@ -128,7 +128,7 @@ export default function SakitFromTemuanDialog({ finding, user, onClose, onResolv
 
         <div className="space-y-3">
           {finding.photo_url && (
-            <img src={finding.photo_url} alt="Bukti" className="h-24 w-full object-cover rounded-lg border" />
+            <img loading="lazy" decoding="async" src={finding.photo_url} alt="Bukti" className="h-24 w-full object-cover rounded-lg border" />
           )}
 
           <div>

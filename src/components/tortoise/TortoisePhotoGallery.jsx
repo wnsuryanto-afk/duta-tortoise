@@ -83,7 +83,7 @@ export default function TortoisePhotoGallery({ photos: rawPhotos = [], thumbnail
           <div key={idx} className="relative group">
             <button type="button" onClick={() => setLightbox(idx)}
               className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all hover:opacity-80 ${p.is_primary ? "border-yellow-400 ring-2 ring-yellow-300" : "border-border"}`}>
-              <img src={p.url} alt={`foto-${idx}`} className="w-full h-full object-cover" />
+              <img loading="lazy" decoding="async" src={p.url} alt={`foto-${idx}`} className="w-full h-full object-cover" />
             </button>
             {/* Primary badge */}
             {p.is_primary && (

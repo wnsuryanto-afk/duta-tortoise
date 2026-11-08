@@ -79,7 +79,7 @@ export default function IncidentalTaskUsulanSection({ usulanTasks, rejectedUsula
                       </div>
                       {t.notes && <p className="text-xs text-muted-foreground mt-1">{t.notes}</p>}
                       {t.photo_url && (
-                        <img src={t.photo_url} alt="Kondisi" className="mt-1.5 h-16 w-24 object-cover rounded border" />
+                        <img loading="lazy" decoding="async" src={t.photo_url} alt="Kondisi" className="mt-1.5 h-16 w-24 object-cover rounded border" />
                       )}
                     </div>
                     <Button size="sm" onClick={() => setReviewTask(t)} className="flex-shrink-0 gap-1.5">

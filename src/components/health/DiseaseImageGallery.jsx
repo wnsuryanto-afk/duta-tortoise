@@ -108,7 +108,7 @@ export default function DiseaseImageGallery({ protocol, onHapusFoto }) {
           className="block w-full bg-[#f5f5f5] rounded-xl overflow-hidden group cursor-zoom-in"
           aria-label="Buka gambar fullscreen"
         >
-          <img
+          <img loading="lazy" decoding="async"
             src={activeImage.url}
             alt={activeImage.caption || protocol.diagnosis_name || "Gambar penyakit"}
             className="w-full max-h-80 object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.02]"
@@ -157,7 +157,7 @@ export default function DiseaseImageGallery({ protocol, onHapusFoto }) {
                 }}
                 aria-label={`Lihat gambar ${i + 1}`}
               >
-                <img
+                <img loading="lazy" decoding="async"
                   src={img.url}
                   alt={img.caption || `Foto ${i + 1}`}
                   className="w-full h-full object-cover"
@@ -223,7 +223,7 @@ export default function DiseaseImageGallery({ protocol, onHapusFoto }) {
             className="flex flex-col items-center max-w-[90vw] max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <img loading="lazy" decoding="async"
               src={activeImage.url}
               alt={activeImage.caption || protocol.diagnosis_name || "Gambar penyakit"}
               className="max-w-[90vw] max-h-[85vh] object-contain"

@@ -279,7 +279,7 @@ export default function BatchLabelModal({ open, batches = [], onClose }) {
             <div className="space-y-3">
               {previews.map(({ batch, dataUrl }) => (
                 <div key={batch.id} className="border rounded-lg p-3 flex items-center gap-3">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={dataUrl}
                     alt={batch.batch_code}
                     className="border rounded bg-white flex-shrink-0 h-14 sm:h-[72px]"

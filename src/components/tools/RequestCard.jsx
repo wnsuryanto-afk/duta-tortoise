@@ -74,7 +74,7 @@ export default function RequestCard({ req, canApprove, approverName, onSaved }) 
     <Card className="p-3">
       <div className="flex items-start gap-3">
         {req.photo_url && (
-          <img src={req.photo_url} alt="foto" className="w-14 h-14 rounded-lg object-cover border flex-shrink-0" />
+          <img loading="lazy" decoding="async" src={req.photo_url} alt="foto" className="w-14 h-14 rounded-lg object-cover border flex-shrink-0" />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">

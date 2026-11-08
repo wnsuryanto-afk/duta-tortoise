@@ -179,7 +179,7 @@ export default function RempesanPage() {
             visible.map((log) => (
               <div key={log.id} className="p-4 flex gap-3">
                 {log.photo_url ? (
-                  <img src={log.photo_url} alt="Rempesan" className="w-16 h-16 object-cover rounded-lg border flex-shrink-0" />
+                  <img loading="lazy" decoding="async" src={log.photo_url} alt="Rempesan" className="w-16 h-16 object-cover rounded-lg border flex-shrink-0" />
                 ) : (
                   <div className="w-16 h-16 rounded-lg border flex items-center justify-center flex-shrink-0 bg-muted/40">
                     <ImageOff className="w-5 h-5 text-muted-foreground" />

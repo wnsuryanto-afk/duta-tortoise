@@ -149,7 +149,7 @@ export default function SelfieCaptureDialog({ open, onClose, onCapture, title = 
           ) : (
             <>
               <div className="rounded-xl overflow-hidden bg-black aspect-[4/3]">
-                <img src={captured} alt="Selfie" className="w-full h-full object-cover" />
+                <img loading="lazy" decoding="async" src={captured} alt="Selfie" className="w-full h-full object-cover" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={handleRetake} disabled={uploading} className="gap-2">

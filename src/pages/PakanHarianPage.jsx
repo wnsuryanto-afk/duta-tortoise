@@ -119,7 +119,7 @@ export default function PakanHarianPage() {
               const srcLabel = SOURCES.find(s => s.value === l.feed_source)?.label || l.feed_source;
               return (
                 <div key={l.id} className="flex items-center gap-3 p-3">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={l.photo_url}
                     alt="Bukti"
                     className="w-14 h-14 rounded-lg object-cover border cursor-pointer flex-shrink-0 bg-muted"
@@ -158,7 +158,7 @@ export default function PakanHarianPage() {
 
       <Dialog open={!!preview} onOpenChange={o => !o && setPreview(null)}>
         <DialogContent className="max-w-2xl">
-          {preview && <img src={preview} alt="Foto besar" className="w-full rounded-lg" />}
+          {preview && <img loading="lazy" decoding="async" src={preview} alt="Foto besar" className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
     </div>

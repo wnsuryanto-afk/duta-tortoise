@@ -140,7 +140,7 @@ export default function ExtraTaskForm({ open, onClose, user, today, onSaved, tug
             <div className="mt-1">
               {photo ? (
                 <div className="relative">
-                  <img src={photo} alt="Foto" className="w-full h-32 object-cover rounded-xl border" />
+                  <img loading="lazy" decoding="async" src={photo} alt="Foto" className="w-full h-32 object-cover rounded-xl border" />
                   <button
                     onClick={() => setPhoto(null)}
                     className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
