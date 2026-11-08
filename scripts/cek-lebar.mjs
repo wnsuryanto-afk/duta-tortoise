@@ -51,6 +51,7 @@ import { cariChromium, pesanChromiumHilang } from "./lib/chromium.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ukur } from "./lebar/ukur.mjs";
+import { pindahKe, pesanTakBisaPindah } from "./lebar/harness.mjs";
 
 const SINI = path.dirname(fileURLToPath(import.meta.url));
 const AKAR = path.resolve(SINI, "..");
@@ -228,7 +229,21 @@ const temuanTeks = [];
 
 const takTerukur = [];
 for (let i = 0; i < nama.length; i++) {
-  await halaman.evaluate((n) => window.__pindah(n), i);
+  /*
+    Harness bisa lenyap di tengah jalan, dan itu BUKAN selalu kesalahan orang.
+
+    8 Nov 2026, segera setelah 24 halaman masuk daftar kasus, penjaga ini mati
+    dengan `TypeError: window.__pindah is not a function` tanpa ada yang
+    menyunting apa pun: dependensi halaman-halaman baru itu membuat Vite
+    mengoptimalkan ulang dan MEMUAT ULANG halamannya sendiri, tepat setelah
+    `window.__kasus` terbaca. Stack trace Node tidak mengatakan apa pun soal
+    tata letak; yang benar adalah menunggunya kembali, lalu berhenti dengan
+    kalimat yang menyebut sebabnya.
+  */
+  if (!(await pindahKe(halaman, i))) {
+    console.error(pesanTakBisaPindah(nama[i], i, `di layar ${LEBAR}px`));
+    await peramban.close(); tutup(); process.exit(1);
+  }
   await halaman.waitForTimeout(400);
   const salah = await pastikanTergambar(halaman, nama[i]);
   if (salah) { takTerukur.push(`${nama[i]}  ${salah}`); continue; }
@@ -350,7 +365,11 @@ await halaman2.waitForTimeout(1500);
 
 const temuan2 = [];
 for (let i = 0; i < nama.length; i++) {
-  await halaman2.evaluate((n) => window.__pindah(n), i);
+  /* Lihat alasannya di Bagian 1. */
+  if (!(await pindahKe(halaman2, i))) {
+    console.error(pesanTakBisaPindah(nama[i], i, "pada pengukuran wadah sempit"));
+    await peramban.close(); tutup(); process.exit(1);
+  }
   await halaman2.waitForTimeout(300);
   const salah2 = await pastikanTergambar(halaman2, nama[i]);
   if (salah2) { takTerukur.push(`${nama[i]}  (wadah sempit)  ${salah2}`); continue; }
