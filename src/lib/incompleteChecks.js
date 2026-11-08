@@ -1,3 +1,4 @@
+import { bisaDikelamini } from "@/lib/kelaminKura";
 // Utility: cek kelengkapan data per entity
 
 import { lahirDiFarm } from "@/lib/hppKura";
@@ -11,9 +12,16 @@ export const INCOMPLETE_CHECKS = {
       { key: "weight_grams",   label: "Berat",          check: (d) => !!d.weight_grams && d.weight_grams > 0 },
       { key: "shell_length_cm",label: "Panjang cangkang",check: (d) => !!d.shell_length_cm && d.shell_length_cm > 0 },
       { key: "birth_date",     label: "Tgl lahir",      check: (d) => !!d.birth_date },
+      /*
+        Gender hanya dihitung "belum lengkap" bila ukurannya sudah
+        memungkinkan. Batasnya dulu 20 cm, dan itu bukan hanya terlalu dini —
+        saringan ini MENAGIH. Setiap kura di atas 20 cm yang kelaminnya
+        "belum_diketahui" muncul di daftar Data Belum Lengkap, jadi yang
+        mengisinya mengisi karena ditagih, bukan karena memeriksanya. Lihat
+        lib/kelaminKura.js.
+      */
       { key: "gender", label: "Gender", check: (d) => {
-          const isSmall = (d.shell_length_cm && d.shell_length_cm < 20) || d.age_category === "baby";
-          if (isSmall) return true; // Gender opsional untuk kura kecil
+          if (!bisaDikelamini(d).bisa) return true;
           return !!d.gender && d.gender !== "belum_diketahui";
         }},
       { key: "enclosure",      label: "Kandang",        check: (d) => !!d.enclosure },
