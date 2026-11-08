@@ -1,4 +1,5 @@
 import InputBerat from "@/components/common/InputBerat";
+import { bisaDikelamini, kelaminTerlaluDini, BATAS_KELAMIN_CM } from "@/lib/kelaminKura";
 import { STATUS_KELUAR } from "@/lib/populasiKura";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -189,10 +190,22 @@ export default function TortoiseForm({ open, onClose, editData }) {
     const e = {};
     if (!form.name?.trim()) e.name = "Nama tortoise wajib diisi";
     if (!form.code?.trim()) e.code = "Kode identifikasi wajib diisi";
-    // Gender: hanya wajib jika cangkang >= 20 cm
-    const shellLen = form.shell_length_cm ? Number(form.shell_length_cm) : 0;
-    const isSmall = shellLen < 20 || form.age_category === "baby";
-    if (!isSmall && (!form.gender || form.gender === "belum_diketahui")) e.gender = "Jenis kelamin wajib dipilih";
+    /*
+      Jenis kelamin hanya DIMINTA bila ukurannya sudah memungkinkan.
+
+      Batasnya dulu 20 cm — terlalu dini. Pustaka menyebut pengelaminan
+      sulcata di bawah ±30 cm "sulit", dan yakin baru di sekitar 38 cm. Pada
+      20 cm yang diisi orang adalah tebakan, dan karena formulir ini
+      MEWAJIBKANNYA, tebakan itu wajib. Dua kura ber-kelamin di bawah 30 cm
+      berukuran 20,5 dan 20,7 cm — persis di atas garis lama itu.
+
+      Satu aturan untuk seluruh aplikasi ada di lib/kelaminKura.js.
+    */
+    const bolehKelamin = bisaDikelamini({
+      shell_length_cm: form.shell_length_cm,
+      age_category: form.age_category,
+    });
+    if (bolehKelamin.bisa && (!form.gender || form.gender === "belum_diketahui")) e.gender = "Jenis kelamin wajib dipilih";
     if (!form.morph) e.morph = "Morph wajib dipilih";
     if (!form.source || form.source === "tidak_diketahui") e.source = "Asal kura-kura wajib dipilih";
     if (!form.status) e.status = "Status wajib dipilih";
@@ -341,10 +354,10 @@ export default function TortoiseForm({ open, onClose, editData }) {
     if (isOldData) {
       const basicErrors = {};
       if (!form.name?.trim()) basicErrors.name = "Nama wajib diisi";
-      // Gender: hanya wajib jika cangkang >= 20 cm
-      const shellLen = form.shell_length_cm ? Number(form.shell_length_cm) : 0;
-      const isSmall = shellLen < 20 || form.age_category === "baby";
-      if (!isSmall && !form.gender) basicErrors.gender = "Jenis kelamin wajib dipilih";
+      // Jenis kelamin: hanya wajib bila ukurannya memungkinkan — lihat
+      // lib/kelaminKura.js. Dulu 20 cm, terlalu dini.
+      if (bisaDikelamini({ shell_length_cm: form.shell_length_cm, age_category: form.age_category }).bisa
+          && !form.gender) basicErrors.gender = "Jenis kelamin wajib dipilih";
       if (!form.status) basicErrors.status = "Status wajib dipilih";
       if (Object.keys(basicErrors).length > 0) {
         setErrors(basicErrors);
@@ -625,7 +638,7 @@ export default function TortoiseForm({ open, onClose, editData }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Jenis Kelamin {(form.shell_length_cm && Number(form.shell_length_cm) >= 20 && form.age_category !== "baby") ? <span className="text-red-500">*</span> : null}</Label>
+              <Label>Jenis Kelamin {bisaDikelamini({ shell_length_cm: form.shell_length_cm, age_category: form.age_category }).bisa && form.shell_length_cm ? <span className="text-red-500">*</span> : null}</Label>
               <Select value={form.gender} onValueChange={(v) => set("gender", v)}>
                 <SelectTrigger className={errors.gender ? "border-red-500 ring-1 ring-red-400" : ""}>
                   <SelectValue placeholder="Pilih..." />
@@ -636,10 +649,16 @@ export default function TortoiseForm({ open, onClose, editData }) {
                   <SelectItem value="belum_diketahui">? Belum Diketahui</SelectItem>
                 </SelectContent>
               </Select>
-              {(form.shell_length_cm && Number(form.shell_length_cm) < 20) || form.age_category === "baby" ? (
-                <p className="text-xs text-muted-foreground italic">ℹ️ Opsional — gender ditentukan saat cangkang &gt; 20 cm</p>
+              {!bisaDikelamini({ shell_length_cm: form.shell_length_cm, age_category: form.age_category }).bisa ? (
+                <p className="text-xs text-muted-foreground italic">
+                  ℹ️ Biarkan &quot;Belum Diketahui&quot; — sulcata baru bisa dikelamini mulai ±{BATAS_KELAMIN_CM} cm
+                </p>
               ) : errors.gender ? (
                 <p className="text-xs text-red-600">{errors.gender}</p>
+              ) : kelaminTerlaluDini({ ...form, shell_length_cm: form.shell_length_cm }) ? (
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Tercatat sebelum ±{BATAS_KELAMIN_CM} cm — pastikan ulang kalau belum pernah diperiksa
+                </p>
               ) : (
                 <p className="text-xs text-muted-foreground">Disarankan diisi untuk kura dewasa</p>
               )}
