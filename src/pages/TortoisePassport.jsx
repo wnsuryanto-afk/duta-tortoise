@@ -1,4 +1,5 @@
 import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
+import { kelaminTerlaluDini, BATAS_KELAMIN_CM } from "@/lib/kelaminKura";
 import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -300,6 +301,22 @@ export default function TortoisePassport() {
                 </div>
               ))}
             </div>
+            {/*
+              Jenis kelamin yang tercatat SEBELUM ukurannya memungkinkan.
+
+              Tidak dihapus — sebagian mungkin memang sudah diperiksa dokter,
+              dan menghapus kelamin yang benar memutus catatan perkawinan dan
+              silsilah. Yang perlu diketahui pembacanya hanyalah bahwa angka
+              ini belum tentu hasil pemeriksaan. Lihat lib/kelaminKura.js.
+            */}
+            {kelaminTerlaluDini(tortoise) && (
+              <p className="text-[11px] text-amber-300 bg-amber-900/30 border border-amber-700/40 rounded-xl px-3 py-2 mt-2 leading-relaxed">
+                Jenis kelamin tercatat saat cangkang masih
+                {tortoise.shell_length_cm ? ` ${tortoise.shell_length_cm} cm` : " di bawah ukuran"} —
+                sulcata baru bisa dikelamini mulai ±{BATAS_KELAMIN_CM} cm. Pastikan ulang
+                kalau belum pernah diperiksa langsung.
+              </p>
+            )}
           </div>
         </div>
 

@@ -42,6 +42,7 @@ import TortoiseMorphSummary from "@/components/dashboard/TortoiseMorphSummary";
 import RincianAset from "@/components/dashboard/RincianAset";
 import KartuModalAset from "@/components/dashboard/KartuModalAset";
 import PanelBelumMasuk from "@/components/pettycash/PanelBelumMasuk";
+import PanelKelaminDini from "@/components/tortoise/PanelKelaminDini";
 import IsiHargaBeliPage from "@/pages/IsiHargaBeliPage";
 import { nilaiAsetKura } from "@/lib/hargaEstimasi";
 import { modalKerja } from "@/lib/modalKerja";
@@ -1006,6 +1007,32 @@ export default [
    * tidak muat; yang diukur di sini adalah apakah penurunan itu benar terjadi
    * sebelum ada yang meluap.
    */
+  /*
+   * Kura yang dikelamini sebelum ukurannya memungkinkan — DATA NYATA.
+   *
+   * Ketujuhnya benar-benar ada di peternakan per 8 Nov 2026, dan dua di
+   * antaranya (20,5 dan 20,7 cm) berdiri persis di atas ambang lama 20 cm
+   * yang menagihnya. Di 280px satu baris harus memuat nama, lencana kelamin,
+   * ukuran cangkang, nama spesies non-sulcata, DAN tautan "Buka".
+   */
+  ["PanelKelaminDini tujuh baris nyata 08-11-2026", (
+    <PanelKelaminDini
+      kura={[
+        { id: "1", name: "8 KECIL", code: "8KECIL", gender: "betina", shell_length_cm: 15, species: "sulcata" },
+        { id: "2", name: "AMBON", code: "AMBON", gender: "betina", shell_length_cm: 20.5, species: "sulcata" },
+        { id: "3", name: "H3", code: "H3", gender: "betina", shell_length_cm: 20.7, species: "sulcata" },
+        { id: "4", name: "Red Foot - 02", code: "Red Foot - 02", gender: "betina", shell_length_cm: 23.3, species: "red_foot" },
+        { id: "5", name: "RD besar ", code: "RD", gender: "betina", shell_length_cm: 26.5, species: "sulcata" },
+        { id: "6", name: "F23", code: "F23", gender: "betina", shell_length_cm: 27.7, species: "sulcata" },
+        { id: "7", name: "Kura Tanpa Ukuran Bernama Panjang Sekali", code: "X", gender: "jantan", species: "sulcata" },
+      ]}
+    />
+  )],
+  ["PanelKelaminDini satu baris", (
+    <PanelKelaminDini
+      kura={[{ id: "1", name: "8 KECIL", code: "8KECIL", gender: "betina", shell_length_cm: 15, species: "sulcata" }]}
+    />
+  )],
   ["PanelBelumMasuk satu baris nyata 29-10-2026", (
     <PanelBelumMasuk
       belumMasuk={[

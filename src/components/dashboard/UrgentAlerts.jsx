@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { bisaDikelamini } from "@/lib/kelaminKura";
 import { hitungIsiKandang } from "@/lib/kandang";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -113,8 +114,22 @@ export default function UrgentAlerts() {
     .filter((e) => e?.is_active !== false && Number(e?.max_capacity) > 0)
     .map((e) => ({ ...e, isi: hitungIsiKandang(e, tortoises, enclosures) }))
     .filter((e) => e.isi > e.max_capacity);
+  /*
+    `!t.gender` tidak pernah benar: kolom itu berisi "belum_diketahui" secara
+    bawaan, dan string itu truthy. Jadi sejak dibuat, bagian gender dari
+    pemeriksaan ini tidak pernah sekali pun menyala — sementara halaman Data
+    Belum Lengkap menghitungnya dengan aturan yang sama sekali lain. Dua
+    definisi "belum lengkap" untuk satu kura.
+
+    Sekarang keduanya memakai aturan yang sama: kelamin baru dianggap kurang
+    bila ukurannya SUDAH memungkinkan dibaca (lib/kelaminKura.js). Bayi dan
+    kura di bawah ±30 cm tidak ikut dihitung — menagih jawaban yang belum
+    mungkin ada persis itulah yang membuat tujuh kura terlanjur dikelamini.
+  */
   const incomplete = tortoises.filter(t => {
-    return !t.birth_date || !t.weight_grams || !t.shell_length_cm || !t.gender;
+    const kelaminKurang = bisaDikelamini(t).bisa
+      && (!t.gender || t.gender === "belum_diketahui");
+    return !t.birth_date || !t.weight_grams || !t.shell_length_cm || kelaminKurang;
   });
 
   /*

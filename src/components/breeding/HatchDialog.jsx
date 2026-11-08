@@ -41,12 +41,6 @@ const SHELL_TYPES = [
   { value: "irregular", label: "Irregular" },
 ];
 
-const GENDER_OPTIONS = [
-  { value: "belum_diketahui", label: "Belum Diketahui" },
-  { value: "jantan", label: "Jantan ♂" },
-  { value: "betina", label: "Betina ♀" },
-];
-
 function BabyForm({ baby, onChange, index, total }) {
   const [uploading, setUploading] = useState(false);
 
@@ -74,6 +68,14 @@ function BabyForm({ baby, onChange, index, total }) {
         </div>
       </div>
 
+      {/*
+        Jenis kelamin TIDAK ditanyakan di sini — sama seperti layar penetasan
+        per-telur di EggGrid. Bayi sulcata menetas pada ±4,5 cm dan cirinya
+        baru terbaca mulai ±30 cm, jadi apa pun yang diisi di sini adalah
+        tebakan. Dan kolom itu bukan keterangan: TreatmentPage memilih
+        penerima vitamin reproduksi betina langsung darinya.
+        Lihat lib/kelaminKura.js.
+      */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs">Shell Type</Label>
@@ -81,15 +83,6 @@ function BabyForm({ baby, onChange, index, total }) {
             <SelectTrigger className="mt-0.5 h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               {SHELL_TYPES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs">Gender</Label>
-          <Select value={baby.gender} onValueChange={v => onChange({ ...baby, gender: v })}>
-            <SelectTrigger className="mt-0.5 h-8 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GENDER_OPTIONS.map(g => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -246,7 +239,8 @@ export default function HatchDialog({ open, onClose, breeding }) {
           `age_category`.
         */
         ...TANDA_ANAKAN,
-        gender: b.gender || "belum_diketahui",
+        // Layar ini tidak menanyakannya; selalu "belum_diketahui".
+        gender: "belum_diketahui",
         birth_date: hatchDate,
         // `breeding.male_id || null` menghapus tautannya sama sekali bila
         // induknya belum terdaftar sebagai kura. Namanya dipakai sebagai jalan
@@ -511,7 +505,7 @@ export default function HatchDialog({ open, onClose, breeding }) {
               <p className="text-xs font-medium text-green-800 mb-2">Baby yang akan dibuat ({hatchedCount} ekor):</p>
               <div className="space-y-1 max-h-32 overflow-y-auto">
                 {babies.map((b, i) => (
-                  <p key={i} className="text-xs font-mono text-green-700">• {b.name} — {b.shell_type}, {b.gender}{b.weight_grams ? `, ${b.weight_grams}g` : ""}</p>
+                  <p key={i} className="text-xs font-mono text-green-700">• {b.name} — {b.shell_type}{b.weight_grams ? `, ${b.weight_grams}g` : ""}</p>
                 ))}
               </div>
             </div>
