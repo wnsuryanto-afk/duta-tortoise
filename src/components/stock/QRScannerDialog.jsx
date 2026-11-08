@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +43,18 @@ export default function QRScannerDialog({ open, onClose, onResult }) {
     let scanner;
     const timeout = setTimeout(async () => {
       try {
+        /*
+          Pustaka pemindai dimuat saat dialognya DIBUKA dengan kamera, bukan
+          saat halaman dibuka.
+
+          Impor statisnya ikut ke bundel utama, dan tiga layar mengimpor
+          dialog ini — termasuk Breeding & Telur. Orang yang cuma membuka
+          daftar clutch ikut mengunduh seluruh pustaka kamera.
+
+          Kegagalan memuatnya sudah tertangani: try/catch di bawah ini jatuh
+          ke input manual, jalur yang sama dengan kamera yang ditolak.
+        */
+        const { Html5Qrcode } = await import("html5-qrcode");
         scanner = new Html5Qrcode(scannerDivId);
         scannerRef.current = scanner;
         await scanner.start(

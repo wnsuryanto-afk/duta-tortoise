@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import PageErrorBoundary from "@/components/common/PageErrorBoundary";
 import Sidebar from "./Sidebar";
@@ -427,7 +427,22 @@ export default function AppLayout() {
         <div className="p-4 lg:p-8 max-w-7xl mx-auto">
           {isOwner && <IncompleteProfileBanner user={user} profile={profile} />}
           <PageErrorBoundary>
-            <Outlet />
+            {/*
+              Batas <Suspense> untuk halaman yang dimuat per rute (lihat App.jsx).
+
+              Letaknya DI SINI, bukan di sekeliling <Routes>: menu samping,
+              kepala halaman, dan lonceng notifikasi tetap tergambar selagi
+              berkas halamannya diunduh. Yang berganti hanya isi kolomnya.
+            */}
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-20" role="status" aria-label="Memuat halaman">
+                  <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </PageErrorBoundary>
         </div>
       </main>
