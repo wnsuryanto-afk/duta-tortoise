@@ -1,4 +1,6 @@
 import { profilAktif } from "@/lib/profilUser";
+import { kelaminPerluDipastikan } from "@/lib/kelaminKura";
+import PanelKelaminDini from "@/components/tortoise/PanelKelaminDini";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -121,6 +123,8 @@ export default function IncompleteDataPage() {
 
   const totalIncomplete = Object.values(summary).reduce((s, v) => s + v, 0);
 
+  const kelaminDini = useMemo(() => kelaminPerluDipastikan(tortoises), [tortoises]);
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -137,6 +141,15 @@ export default function IncompleteDataPage() {
         </button>
         }
       />
+
+      {/*
+        Kelamin yang tercatat terlalu dini. Berdiri DI ATAS ringkasan, bukan di
+        dalam tab kura, karena ini kebalikan dari isi halaman ini: bukan data
+        yang kurang, melainkan jawaban yang tersimpan sebelum pertanyaannya
+        bisa dijawab. Markup-nya di PanelKelaminDini supaya penjaga lebar bisa
+        mengukurnya dengan baris nyata.
+      */}
+      <PanelKelaminDini kura={kelaminDini} />
 
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
