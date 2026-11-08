@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -9,64 +10,83 @@ import { ViewAsProvider } from '@/lib/ViewAsContext';
 import { TourProvider } from '@/lib/tourContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import PembesarFoto from '@/components/common/PembesarFoto';
-import StockPredictionPage from '@/pages/StockPredictionPage';
-import PettyCashPage from '@/pages/PettyCashPage';
-import SupplierPage from '@/pages/SupplierPage';
-import HargaKuraPage from '@/pages/HargaKuraPage';
-import IsiHargaBarangPage from '@/pages/IsiHargaBarangPage';
-import IsiAsalKuraPage from '@/pages/IsiAsalKuraPage';
-import IsiHargaBeliPage from '@/pages/IsiHargaBeliPage';
-import SalarySlipPage from '@/pages/SalarySlipPage';
-import ApprovalPoinPage from '@/pages/ApprovalPoinPage';
-import DaftarBelanjaPage from '@/pages/DaftarBelanjaPage';
-import AlatKerjaPage from '@/pages/AlatKerjaPage';
-import PengaturanWhatsAppPage from '@/pages/PengaturanWhatsAppPage';
-import WhatsAppLogPage from '@/pages/WhatsAppLogPage';
-import LayarTimPage from '@/pages/LayarTimPage';
-import HubPage from '@/pages/HubPage';
-import PembelianPage from '@/pages/PembelianPage';
-import TortoiseLabelPage from '@/pages/TortoiseLabelPage';
-import OtomatisasiPage from '@/pages/OtomatisasiPage';
-import CatatBiayaPage from '@/pages/CatatBiayaPage';
+const StockPredictionPage = lazy(() => import('@/pages/StockPredictionPage'));
+const PettyCashPage = lazy(() => import('@/pages/PettyCashPage'));
+const SupplierPage = lazy(() => import('@/pages/SupplierPage'));
+const HargaKuraPage = lazy(() => import('@/pages/HargaKuraPage'));
+const IsiHargaBarangPage = lazy(() => import('@/pages/IsiHargaBarangPage'));
+const IsiAsalKuraPage = lazy(() => import('@/pages/IsiAsalKuraPage'));
+const IsiHargaBeliPage = lazy(() => import('@/pages/IsiHargaBeliPage'));
+const SalarySlipPage = lazy(() => import('@/pages/SalarySlipPage'));
+const ApprovalPoinPage = lazy(() => import('@/pages/ApprovalPoinPage'));
+const DaftarBelanjaPage = lazy(() => import('@/pages/DaftarBelanjaPage'));
+const AlatKerjaPage = lazy(() => import('@/pages/AlatKerjaPage'));
+const PengaturanWhatsAppPage = lazy(() => import('@/pages/PengaturanWhatsAppPage'));
+const WhatsAppLogPage = lazy(() => import('@/pages/WhatsAppLogPage'));
+const LayarTimPage = lazy(() => import('@/pages/LayarTimPage'));
+const HubPage = lazy(() => import('@/pages/HubPage'));
+const PembelianPage = lazy(() => import('@/pages/PembelianPage'));
+const TortoiseLabelPage = lazy(() => import('@/pages/TortoiseLabelPage'));
+const OtomatisasiPage = lazy(() => import('@/pages/OtomatisasiPage'));
+const CatatBiayaPage = lazy(() => import('@/pages/CatatBiayaPage'));
 
 import AppLayout from '@/components/layout/AppLayout';
-import Dashboard from '@/pages/Dashboard';
-import TortoiseList from '@/pages/TortoiseList.jsx';
-import BreedingAndEggs from '@/pages/BreedingAndEggs.jsx';
-import BreedingDetailPage from '@/pages/BreedingDetailPage';
-import HealthList from '@/pages/HealthList.jsx';
-import SalesList from '@/pages/SalesList';
-import UserManagement from '@/pages/UserManagement';
-import SOPPage from '@/pages/SOPPage';
-import FinancePage from '@/pages/FinancePage';
-import InfoPage from '@/pages/InfoPage';
-import TreatmentPage from '@/pages/TreatmentPage';
-import HRPage from '@/pages/HRPage';
-import NotificationsPage from '@/pages/NotificationsPage';
-import BreedingPlannerPage from '@/pages/BreedingPlannerPage';
-import DailyTaskTemplatePage from '@/pages/DailyTaskTemplatePage';
-import TermConditionSOPPage from '@/pages/TermConditionSOPPage';
-import ProfileSetupPage from '@/pages/ProfileSetupPage.jsx';
-import EditProfilePage from '@/pages/EditProfilePage.jsx';
-import IncompleteDataPage from '@/pages/IncompleteDataPage';
-import DeathRecordsPage from '@/pages/DeathRecordsPage';
-import ActivityLogPage from '@/pages/ActivityLogPage';
-import SystemMaintenancePage from '@/pages/SystemMaintenancePage';
-import VetContactPage from '@/pages/VetContactPage.jsx';
-import MaintenanceSchedulePage from '@/pages/MaintenanceSchedulePage.jsx';
-import PrinterConfigPage from '@/pages/PrinterConfigPage';
-import KritikSaranPage from '@/pages/KritikSaranPage';
-import TemuanFotoPage from '@/pages/TemuanFotoPage';
-import RekapPoinGajiPage from '@/pages/RekapPoinGajiPage';
-import DashboardStokPage from '@/pages/DashboardStokPage';
-import UnifiedStokPage from '@/pages/UnifiedStokPage';
-import PanduanPakanPage from '@/pages/PanduanPakanPage';
-import PanduanPenyakitDetailPage from '@/pages/PanduanPenyakitDetailPage';
-import PakanHarianPage from '@/pages/PakanHarianPage';
-import TortoisePassport from '@/pages/TortoisePassport';
-import RiwayatKlusterPage from '@/pages/RiwayatKlusterPage';
-import PengaturanPoinPage from '@/pages/PengaturanPoinPage';
-import RempesanPage from '@/pages/RempesanPage';
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const TortoiseList = lazy(() => import('@/pages/TortoiseList.jsx'));
+const BreedingAndEggs = lazy(() => import('@/pages/BreedingAndEggs.jsx'));
+const BreedingDetailPage = lazy(() => import('@/pages/BreedingDetailPage'));
+const HealthList = lazy(() => import('@/pages/HealthList.jsx'));
+const SalesList = lazy(() => import('@/pages/SalesList'));
+const UserManagement = lazy(() => import('@/pages/UserManagement'));
+const SOPPage = lazy(() => import('@/pages/SOPPage'));
+const FinancePage = lazy(() => import('@/pages/FinancePage'));
+const InfoPage = lazy(() => import('@/pages/InfoPage'));
+const TreatmentPage = lazy(() => import('@/pages/TreatmentPage'));
+const HRPage = lazy(() => import('@/pages/HRPage'));
+const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
+const BreedingPlannerPage = lazy(() => import('@/pages/BreedingPlannerPage'));
+const DailyTaskTemplatePage = lazy(() => import('@/pages/DailyTaskTemplatePage'));
+const TermConditionSOPPage = lazy(() => import('@/pages/TermConditionSOPPage'));
+const ProfileSetupPage = lazy(() => import('@/pages/ProfileSetupPage.jsx'));
+const EditProfilePage = lazy(() => import('@/pages/EditProfilePage.jsx'));
+const IncompleteDataPage = lazy(() => import('@/pages/IncompleteDataPage'));
+const DeathRecordsPage = lazy(() => import('@/pages/DeathRecordsPage'));
+const ActivityLogPage = lazy(() => import('@/pages/ActivityLogPage'));
+const SystemMaintenancePage = lazy(() => import('@/pages/SystemMaintenancePage'));
+const VetContactPage = lazy(() => import('@/pages/VetContactPage.jsx'));
+const MaintenanceSchedulePage = lazy(() => import('@/pages/MaintenanceSchedulePage.jsx'));
+const PrinterConfigPage = lazy(() => import('@/pages/PrinterConfigPage'));
+const KritikSaranPage = lazy(() => import('@/pages/KritikSaranPage'));
+const TemuanFotoPage = lazy(() => import('@/pages/TemuanFotoPage'));
+const RekapPoinGajiPage = lazy(() => import('@/pages/RekapPoinGajiPage'));
+const DashboardStokPage = lazy(() => import('@/pages/DashboardStokPage'));
+const UnifiedStokPage = lazy(() => import('@/pages/UnifiedStokPage'));
+const PanduanPakanPage = lazy(() => import('@/pages/PanduanPakanPage'));
+const PanduanPenyakitDetailPage = lazy(() => import('@/pages/PanduanPenyakitDetailPage'));
+const PakanHarianPage = lazy(() => import('@/pages/PakanHarianPage'));
+const TortoisePassport = lazy(() => import('@/pages/TortoisePassport'));
+const RiwayatKlusterPage = lazy(() => import('@/pages/RiwayatKlusterPage'));
+const PengaturanPoinPage = lazy(() => import('@/pages/PengaturanPoinPage'));
+const RempesanPage = lazy(() => import('@/pages/RempesanPage'));
+
+
+/*
+ * Halaman dimuat SAAT RUTENYA DIBUKA, bukan sekaligus di awal.
+ *
+ * Sampai 8 Nov 2026 ke-58 halaman diimpor statis di berkas ini, jadi Vite
+ * menyatukan seluruh aplikasi menjadi SATU berkas JavaScript. Diukur hari
+ * itu: 4.605 KB. Siapa pun yang membuka /breeding ikut mengunduh layar
+ * Keuangan, Gaji, Penjualan, Kesehatan, dan setiap pustaka yang dipakainya —
+ * sebelum satu pun kandang tergambar. Di tablet dengan data seluler, itulah
+ * yang terasa sebagai "loading terus".
+ *
+ * `lazy()` memecahnya per rute. Batas <Suspense>-nya ada DI DALAM AppLayout,
+ * membungkus <Outlet /> — bukan di sekeliling <Routes> — supaya menu dan
+ * kepala halaman tetap tergambar selagi isi halamannya dimuat. Membungkus
+ * <Routes> akan mengosongkan seluruh layar tiap kali pindah halaman.
+ *
+ * AppLayout sendiri TIDAK ikut dipecah: ia rangka yang harus ada lebih dulu.
+ */
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
