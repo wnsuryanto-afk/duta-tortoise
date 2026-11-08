@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import InputBerat from "@/components/common/InputBerat";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
@@ -87,14 +88,30 @@ function BabyForm({ baby, onChange, index, total }) {
           </Select>
         </div>
         <div>
-          <Label className="text-xs">Berat (gram)</Label>
-          <Input type="number" min={0} value={baby.weight_grams || ""} onChange={e => onChange({ ...baby, weight_grams: e.target.value })} placeholder="0" className="mt-0.5 h-8 text-sm" />
-        </div>
-        <div>
           <Label className="text-xs">Panjang Tempurung (cm)</Label>
           <Input type="number" min={0} step="0.1" value={baby.shell_length_cm || ""} onChange={e => onChange({ ...baby, shell_length_cm: e.target.value })} placeholder="0.0" className="mt-0.5 h-8 text-sm" />
         </div>
       </div>
+
+      {/*
+        Berat lewat InputBerat, bukan kotak angka sendiri.
+
+        Kotak lama di sini berlabel "Berat (gram)" — bentuk yang persis
+        dikeluhkan lib/satuanBerat.js: timbangan gantung menunjukkan kilogram,
+        yang mengetik adalah orang yang berdiri di kandang, dan perkaliannya
+        diserahkan ke kepalanya. 48 catatan antara Juli dan September 2026
+        kehilangan tiga angka nol karena itu.
+
+        Panjang tempurung diisi DI ATAS kotak ini supaya jaring kewajaran
+        beratMencurigakan() sudah terpasang saat beratnya diketik; tanpa
+        panjangnya, jaring itu diam.
+      */}
+      <InputBerat
+        gram={baby.weight_grams}
+        onChange={g => onChange({ ...baby, weight_grams: g })}
+        panjangCm={baby.shell_length_cm}
+        label="Berat"
+      />
 
       <div>
         <Label className="text-xs">Foto Baby (opsional)</Label>

@@ -228,6 +228,37 @@ function tindih() {
 /** Satu lebar saja — lihat alasannya di atas tindih(). */
 const LEBAR_PERIKSA_TINDIH = new Set([412]);
 
+/*
+ * Memindah kasus TANPA mati dengan stack trace Node.
+ *
+ * `window.__pindah` dipasang saat App harness digambar. Bila halamannya dimuat
+ * ulang di tengah pengukuran — Vite HMR melakukannya begitu ada berkas sumber
+ * disimpan — ada jendela beberapa ratus milidetik ketika JS-nya belum jalan
+ * dan `window.__pindah` belum ada. Memanggilnya di jendela itu dulu melempar
+ * `TypeError: window.__pindah is not a function` keluar dari seluruh penjaga,
+ * dan yang terbaca orang adalah stack trace Node, bukan sebab yang bisa
+ * ditindaklanjuti.
+ *
+ * Jadi ditunggu dulu (±4 detik, sama seperti pastikanTergambar di cek-lebar).
+ * Kalau sesudah itu masih tidak ada, barulah menyerah — dengan satu kalimat
+ * yang menyebut sebabnya.
+ *
+ * @returns true bila berhasil pindah.
+ */
+async function tungguSiap(hal, nama) {
+  for (let percobaan = 0; percobaan < 40; percobaan++) {
+    if (await hal.evaluate((n) => typeof window[n] === "function", nama)) return true;
+    await hal.waitForTimeout(100);
+  }
+  return false;
+}
+
+async function pindahKe(hal, i) {
+  if (!(await tungguSiap(hal, "__pindah"))) return false;
+  await hal.evaluate((n) => window.__pindah(n), i);
+  return true;
+}
+
 const server = spawn(
   "npx", ["vite", "--config", path.join(SINI, "lebar/vite.config.js")],
   { cwd: AKAR, env: { ...process.env, PORT_UJI: String(PORT) }, stdio: "ignore" },
@@ -256,6 +287,15 @@ for (const w of LEBAR) {
   await hal.waitForTimeout(1200);
   // Bingkai mengikuti layar; tanpa ini ia tetap dipatok 360px dan lebar
   // layar yang diuji tidak pernah menyentuh tata letaknya.
+  // Ditunggu dulu seperti pindahKe(): pada halaman yang lambat termuat,
+  // memanggilnya terlalu dini melempar TypeError keluar dari penjaga.
+  if (!(await tungguSiap(hal, "__lebarBingkai"))) {
+    console.error(
+      `Harness tidak termuat di layar ${w}px — window.__lebarBingkai tidak ada.\n` +
+      `Hasil hijau di sini tidak berarti apa-apa.`,
+    );
+    await peramban.close(); tutup(); process.exit(1);
+  }
   await hal.evaluate(() => window.__lebarBingkai(null));
   await hal.waitForTimeout(200);
 
@@ -269,7 +309,16 @@ for (const w of LEBAR) {
   }
 
   for (let i = 0; i < nama.length; i++) {
-    await hal.evaluate((n) => window.__pindah(n), i);
+    if (!(await pindahKe(hal, i))) {
+      console.error(
+        `Harness tidak bisa diperintah pindah ke kasus ${i + 1} (${nama[i]}) di layar ${w}px.\n` +
+        `window.__pindah tidak ada — halamannya dimuat ulang di tengah pengukuran\n` +
+        `(biasanya karena berkas sumber disimpan saat penjaga ini berjalan) dan\n` +
+        `tidak kembali. Jangan sunting berkas sumber selagi penjaga lebar jalan,\n` +
+        `lalu ulangi.`,
+      );
+      await peramban.close(); tutup(); process.exit(1);
+    }
     await hal.waitForTimeout(170);
     totalDiukur++;
     for (const t of (await hal.evaluate(luapan, w)) || []) {
