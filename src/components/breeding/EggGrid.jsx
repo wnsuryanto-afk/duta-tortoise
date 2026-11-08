@@ -8,6 +8,7 @@ import { X, Baby, ExternalLink, Lock, LockOpen, CheckCircle2 } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import InputBerat from "@/components/common/InputBerat";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -361,6 +362,7 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
     enclosure: "",
     birth_date: hatchDate,
     weight_grams: "",
+    shell_length_cm: "",
   });
   const [saving, setSaving] = useState(false);
   const [loadingCode, setLoadingCode] = useState(true);
@@ -420,6 +422,19 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
       parent_female: tulisInduk(breeding.female_id, breeding.female_name),
       last_breeding_id: breeding.id,
       weight_grams: form.weight_grams ? Number(form.weight_grams) : undefined,
+      /*
+        Panjang tempurung ikut DITULIS dari pintu ini.
+
+        Sampai 8 Nov 2026 layar ini tidak menanyakannya sama sekali, jadi
+        setiap bayi yang lahir lewat pintu per-telur masuk dengan
+        shell_length_cm kosong — sementara pintu massal (HatchDialog)
+        menanyakannya. Dua pintu, dua bentuk data, lagi. Akibatnya terbaca di
+        data: BB-2026050 sampai BB-2026063, keempat belas bayi yang menetas
+        8 Nov 2026, tidak punya panjang MAUPUN berat; incompleteChecks
+        mewajibkan keduanya, jadi keempat belasnya langsung berdiri di daftar
+        "data belum lengkap" sejak detik pertama.
+      */
+      shell_length_cm: form.shell_length_cm ? Number(form.shell_length_cm) : undefined,
       weighing_interval_days: 14,
       is_archived: false,
       morph: "normal",
@@ -475,9 +490,31 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
             <Input type="date" value={form.birth_date} onChange={e => set("birth_date", e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Berat Awal (gram) — opsional</Label>
-            <Input type="number" min="0" value={form.weight_grams} onChange={e => set("weight_grams", e.target.value)} placeholder="0" />
+            <Label>Panjang Tempurung (cm) — opsional</Label>
+            <Input type="number" min="0" step="0.1" value={form.shell_length_cm}
+              onChange={e => set("shell_length_cm", e.target.value)} placeholder="0.0" />
           </div>
+          {/*
+            Berat lewat InputBerat, dan panjangnya diisi DI ATASNYA.
+
+            Kotak lama di sini berlabel "Berat Awal (gram)" — kotak angka
+            mentah tanpa pilihan satuan, tanpa bacaan balik, dan tanpa jaring
+            kewajaran. InputBerat sendiri menyebut dirinya "satu-satunya kotak
+            isian berat di aplikasi ini"; sampai hari ini kalimat itu tidak
+            benar, dan dua pintu penetasan inilah pengecualiannya.
+
+            Keduanya tetap opsional: memaksa angka pada bayi yang baru menetas
+            tengah malam hanya melahirkan angka karangan, dan angka karangan
+            lebih buruk daripada kolom kosong yang ditagih. Yang menagihnya
+            sudah ada — daftar "data belum lengkap" mewajibkan berat dan
+            panjang.
+          */}
+          <InputBerat
+            gram={form.weight_grams}
+            onChange={g => set("weight_grams", g)}
+            panjangCm={form.shell_length_cm}
+            label="Berat Awal — opsional"
+          />
           <div className="grid grid-cols-2 gap-2 pt-1">
             <Button variant="outline" onClick={onSkip} disabled={saving}>Lewati</Button>
             <Button onClick={handleCreate} disabled={saving || loadingCode || !form.enclosure}>
