@@ -265,8 +265,23 @@ for (let i = 0; i < nama.length; i++) {
     }
   }
   const hasil = await ukurMantap(halaman, LEBAR);
+  /*
+    "bingkai hilang" bukan tulisan yang terpotong.
+
+    ukur() memakai satu nilai kembali untuk dua kabar yang sangat berbeda:
+    daftar tulisan yang terpotong, dan satu penanda bahwa bingkainya sudah
+    tidak ada lagi di DOM. Dulu keduanya masuk saluran yang sama, jadi
+    bingkai yang lenyap dilaporkan sebagai "tulisan terpotong +0px" dengan
+    teks kosong, di bawah penjelasan tentang titik henti Tailwind yang tidak
+    ada hubungannya — tiga baris yang tidak mungkin ditindaklanjuti siapa pun.
+    Yang benar: kasus itu TIDAK TERUKUR, dan itu saluran laporannya sendiri.
+  */
   const lihat = new Set();
   for (const t of hasil) {
+    if (t.jenis === "bingkai hilang") {
+      takTerukur.push(`${nama[i]}  bingkai lenyap saat diukur (layar ${LEBAR}px)`);
+      break;
+    }
     const kunci = t.jenis + "|" + t.teks;
     if (lihat.has(kunci)) continue;
     lihat.add(kunci);
@@ -320,6 +335,15 @@ if (temuan.length) {
  * Jadi di sini layarnya dibiarkan lebar, dan WADAHNYA yang disempitkan.
  */
 const LEBAR_WADAH = [320, 420, 560, 720];
+
+/** Menyempitkan bingkai harness ke `w` px, lalu menunggu tata letaknya tenang. */
+async function sempitkan(hal, w) {
+  await hal.evaluate((w) => {
+    const b = document.getElementById("bingkai");
+    if (b) { b.style.width = w + "px"; b.style.maxWidth = w + "px"; }
+  }, w);
+  await hal.waitForTimeout(250);
+}
 const halaman2 = await peramban.newPage({ viewport: { width: 1280, height: 1000 } });
 await halaman2.goto(alamat, { waitUntil: "networkidle" });
 await halaman2.waitForTimeout(1500);
@@ -331,14 +355,31 @@ for (let i = 0; i < nama.length; i++) {
   const salah2 = await pastikanTergambar(halaman2, nama[i]);
   if (salah2) { takTerukur.push(`${nama[i]}  (wadah sempit)  ${salah2}`); continue; }
   for (const w of LEBAR_WADAH) {
-    await halaman2.evaluate((w) => {
-      const b = document.getElementById("bingkai");
-      if (b) { b.style.width = w + "px"; b.style.maxWidth = w + "px"; }
-    }, w);
-    await halaman2.waitForTimeout(250);
-    const hasil = await ukurMantap(halaman2, 1280);
+    await sempitkan(halaman2, w);
+    let hasil = await ukurMantap(halaman2, 1280);
+    /*
+      Bingkai yang lenyap bisa berarti dua hal yang berbeda, dan keduanya
+      tidak boleh dicampur: akar React yang benar-benar dilepas (cacat), atau
+      bingkai yang kebetulan sedang dipasang ulang saat diukur (bukan cacat).
+      Dibedakan dengan menunggu bingkainya kembali — dan lebarnya DIPASANG
+      ULANG sebelum diukur lagi, sebab bingkai yang baru lahir kembali ke
+      360px bawaannya; mengukurnya tanpa itu berarti melaporkan angka 360px
+      sebagai angka ${w}px.
+    */
+    if (hasil.some((t) => t.jenis === "bingkai hilang")) {
+      const belumKembali = await pastikanTergambar(halaman2, nama[i]);
+      if (!belumKembali) {
+        await sempitkan(halaman2, w);
+        hasil = await ukurMantap(halaman2, 1280);
+      }
+    }
     const lihat = new Set();
     for (const t of hasil) {
+      /* Lihat alasannya di Bagian 1: bingkai yang lenyap = tidak terukur. */
+      if (t.jenis === "bingkai hilang") {
+        takTerukur.push(`${nama[i]}  (wadah ${w}px)  bingkai lenyap saat diukur`);
+        break;
+      }
       const kunci = t.jenis + "|" + t.teks;
       if (lihat.has(kunci)) continue;
       lihat.add(kunci);
