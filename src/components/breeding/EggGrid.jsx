@@ -16,6 +16,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { hatchRateClutch, ringkasDariBarisTelur } from "@/lib/hasilInkubasi";
 import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 import { TANDA_ANAKAN } from "@/lib/anakanKura";
+import { BATAS_KELAMIN_CM } from "@/lib/kelaminKura";
 import { segarkanBreeding } from "@/lib/kunciBreeding";
 import { barisTelurAwal, terapkanStatus, terapkanSemua, sudahJadiKura } from "@/lib/barisTelur";
 
@@ -384,7 +385,8 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
       code: form.code,
       name: form.code,
       birth_date: form.birth_date,
-      gender: form.gender,
+      // Selalu "belum_diketahui" — layar ini tidak menanyakannya.
+      gender: "belum_diketahui",
       species: femaleTortoise?.species || "sulcata",
       source: "hasil_sendiri",
       // Tetapan yang sama dengan HatchDialog — dua pintu penetasan, satu
@@ -424,17 +426,20 @@ function HatchCreateDialog({ eggNumber, breeding, hatchDate, onClose, onCreated,
             <Input value={loadingCode ? "Membuat kode..." : form.code} onChange={e => set("code", e.target.value)} disabled={loadingCode} />
             <p className="text-xs text-muted-foreground">Auto-generate, bisa diedit</p>
           </div>
-          <div className="space-y-1.5">
-            <Label>Jenis Kelamin</Label>
-            <Select value={form.gender} onValueChange={v => set("gender", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="belum_diketahui">Belum Diketahui</SelectItem>
-                <SelectItem value="jantan">Jantan</SelectItem>
-                <SelectItem value="betina">Betina</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/*
+            Jenis kelamin TIDAK ditanyakan di sini.
+
+            Bayi sulcata menetas pada ±4,5 cm; cirinya baru terbaca mulai
+            ±30 cm. Apa pun yang diisi di layar ini adalah tebakan, dan
+            tebakan itu bukan sekadar keterangan — TreatmentPage memilih
+            penerima "Boost Kalsium Betina" dan "DUTA FEMALE PLUS" langsung
+            dari kolom ini. Lihat lib/kelaminKura.js.
+          */}
+          <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 leading-relaxed">
+            Jenis kelamin dicatat <strong>Belum Diketahui</strong> — sulcata baru
+            bisa dikelamini mulai ±{BATAS_KELAMIN_CM} cm. Isi nanti dari halaman
+            kura setelah ukurannya cukup.
+          </p>
           <div className="space-y-1.5">
             <Label>Kandang Tujuan *</Label>
             <Select value={form.enclosure} onValueChange={v => set("enclosure", v)}>
