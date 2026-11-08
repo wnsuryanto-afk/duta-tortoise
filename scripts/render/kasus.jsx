@@ -1029,19 +1029,19 @@ export default [
   ["PanelTelurRetak tiga baris", (
     <PanelTelurRetak
       telur={[
-        { breeding_id: "a", egg_number: 3, pasangan: "A40 × C23", status: "fertile",
+        { breeding_id: "a", egg_number: 3, pasangan: "A40 \u00d7 C23", status: "fertile",
           incubator_name: "Inkubator Besar 1", egg_laying_date: "2026-08-12",
           retak_catatan: "ditutup lilin lebah, dipisah ke tray 7" },
-        { breeding_id: "a", egg_number: 11, pasangan: "A40 × C23", status: "belum_dicek",
+        { breeding_id: "a", egg_number: 11, pasangan: "A40 \u00d7 C23", status: "belum_dicek",
           incubator_name: "Inkubator Besar 1", egg_laying_date: "2026-08-12", retak_catatan: "" },
-        { breeding_id: "b", egg_number: 2, pasangan: "A29 × B108", status: "fertile",
+        { breeding_id: "b", egg_number: 2, pasangan: "A29 \u00d7 B108", status: "fertile",
           incubator_name: "Inkubator Kecil", egg_laying_date: "2026-10-23", retak_catatan: "retak rambut di kutub" },
       ]}
     />
   )],
   ["PanelTelurRetak satu baris tanpa catatan", (
     <PanelTelurRetak
-      telur={[{ breeding_id: "a", egg_number: 1, pasangan: "A40 × C23", status: "belum_dicek",
+      telur={[{ breeding_id: "a", egg_number: 1, pasangan: "A40 \u00d7 C23", status: "belum_dicek",
                 incubator_name: "", egg_laying_date: null, retak_catatan: "" }]}
     />
   )],
