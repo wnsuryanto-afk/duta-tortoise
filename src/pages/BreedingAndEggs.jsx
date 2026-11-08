@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { telurRetakPerluPerhatian } from "@/lib/telurRetak";
+import PanelTelurRetak from "@/components/breeding/PanelTelurRetak";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
