@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { telurRetakPerluPerhatian } from "@/lib/telurRetak";
-import PanelTelurRetak from "@/components/breeding/PanelTelurRetak";
+import { ringkasRetak } from "@/lib/telurRetak";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -371,7 +370,6 @@ export default function BreedingAndEggs() {
     render yang memuat dan yang tidak. Hitungannya ringan (21 clutch), dan
     aturan hook tidak boleh ditekuk demi menghemat satu perulangan.
   */
-  const telurRetakPerhatian = telurRetakPerluPerhatian(breedings);
 
   return (
     <div className="space-y-6">
@@ -438,7 +436,6 @@ export default function BreedingAndEggs() {
         terlihat bersamaan — padahal yang tersebar itulah yang paling mudah
         terlewat. Lihat lib/telurRetak.js.
       */}
-      <PanelTelurRetak telur={telurRetakPerhatian} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Dua baris di ponsel, satu baris di layar lebar. Enam tab dalam satu
@@ -446,7 +443,22 @@ export default function BreedingAndEggs() {
             terbaca — "Pasangan" dan "Pembiakan" tercetak di atas satu sama
             lain. `h-auto` diperlukan karena tinggi bawaan TabsList dipatok
             untuk satu baris. */}
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 h-auto gap-1">
+        {/*
+          Tanpa grid tujuh kolom.
+
+          `grid-cols-3 sm:grid-cols-7` membaca lebar LAYAR lalu memaksa tujuh
+          sel sama lebar ke dalam ruang yang ada. Di wadah sempit pada layar
+          lebar — panel pratinjau, layar terbagi — selnya tinggal ±60px dan
+          labelnya terpotong di dalam tombolnya sendiri: diukur 8 Nov 2026,
+          "Telur & Inkubasi" kehilangan 24px pada wadah 420px, 14px pada
+          560px, dan masih 2px pada 720px. Itu yang terlihat di foto pemiliknya
+          sebagai tab yang berdempetan.
+
+          TabsList sendiri sudah dirancang untuk ini: `overflow-x-auto` dengan
+          batang gulir disembunyikan. Melepas gridnya mengembalikan tombol ke
+          lebar isinya, dan yang tidak muat digeser — bukan dipotong.
+        */}
+        <TabsList className="w-full">
           <TabsTrigger value="pasangan">Pasangan</TabsTrigger>
           <TabsTrigger value="pembiakan">Pembiakan</TabsTrigger>
           <TabsTrigger value="telur">Telur & Inkubasi</TabsTrigger>
@@ -658,8 +670,19 @@ export default function BreedingAndEggs() {
                       {phase?.hatchStart && phase?.hatchEnd && (
                         <p className="text-muted-foreground">Estimasi menetas: {format(phase.hatchStart, "d MMM", { locale: id })} s/d {format(phase.hatchEnd, "d MMM yyyy", { locale: id })}</p>
                       )}
+                      {/*
+                        Telur retak dicatat DI SINI, di baris yang sama dengan
+                        jumlah telurnya — bukan sebagai kartu tersendiri di
+                        kepala halaman. Pemiliknya: "cukup note saja di tempat
+                        yang saya centang", dan yang dicentangnya baris ini.
+                      */}
                       <div className="flex flex-wrap gap-3">
                         {b.egg_count > 0 && <span>{b.egg_count} butir telur</span>}
+                        {ringkasRetak(b.egg_records).total > 0 && (
+                          <span className="text-orange-700 dark:text-orange-400 font-medium">
+                            🧩 {ringkasRetak(b.egg_records).total} retak
+                          </span>
+                        )}
                         {b.incubator_name && <span>📦 {b.incubator_name}</span>}
                         {b.incubation_temp > 0 && <span>🌡 {b.incubation_temp}°C</span>}
                         {b.status === "menetas" && b.hatched_count > 0 && <span className="text-primary font-medium">{b.hatched_count} ekor 🐢</span>}

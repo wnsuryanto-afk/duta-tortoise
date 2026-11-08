@@ -50,7 +50,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { kupasKomentar } from "./lib/kupasKomentar.mjs";
-import { tandaiRetak, tandaiRetakMassal, ringkasRetak, telurRetakPerluPerhatian, retak } from "../src/lib/telurRetak.js";
+import { tandaiRetak, tandaiRetakMassal, ringkasRetak, retak } from "../src/lib/telurRetak.js";
 import { ringkasDariBarisTelur } from "../src/lib/hasilInkubasi.js";
 
 const AKAR = process.cwd();
@@ -193,19 +193,8 @@ cek("ringkasRetak memisah selamat / gagal / masih berjalan",
 cek("belum ada hasil → persen null, bukan 0",
   ringkasRetak([T(1, "belum_dicek", true)]).persenSelamat, null);
 
-{
-  const clutches = [
-    { id: "a", status: "inkubasi", male_name: "A40", female_name: "C23", egg_laying_date: "2026-10-01",
-      egg_records: [T(1, "fertile", true), T(2, "menetas", true), T(3, "belum_dicek", true), T(4, "fertile")] },
-    { id: "b", status: "selesai", male_name: "A29", female_name: "C14", egg_laying_date: "2026-05-01",
-      egg_records: [T(1, "fertile", true)] },
-  ];
-  cek("daftar perhatian: hanya clutch berjalan, hanya yang belum ada hasilnya",
-    telurRetakPerluPerhatian(clutches).map((x) => `${x.pasangan}#${x.egg_number}`),
-    ["A40 × C23#1", "A40 × C23#3"]);
-}
 cek("tanpa argumen tidak melempar",
-  [telurRetakPerluPerhatian().length, ringkasRetak().total, tandaiRetakMassal().tertandai, tandaiRetak().length], [0, 0, 0, 0]);
+  [ringkasRetak().total, tandaiRetakMassal().tertandai, tandaiRetak().length], [0, 0, 0]);
 
 if (temuan.length) {
   console.error(`${temuan.length} masalah telur retak.\n\n` + temuan.map((t) => "  " + t).join("\n") + "\n");
