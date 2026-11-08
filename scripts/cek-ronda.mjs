@@ -2082,7 +2082,7 @@ if (!NM.perincianDari("Melon", "Melon BS")) temuan.push("nama mirip: 'Melon BS' 
 if (NM.perincianDari("Rum", "Rumput")) temuan.push("nama mirip: potongan kata 'Rum' dianggap perincian 'Rumput'");
 
 /*
-  ── Clutch kembar: satu pasangan, satu tanggal, satu catatan ───────
+  ── Clutch kembar: satu pasangan, satu tanggal, satu catatan ───────────
 
   8 Nov 2026 pemiliknya melihat clutch yang sama tercatat dua kali di
   Rencana Kawin. Benar: penjaga mencatat pagi, pemiliknya mencatat clutch
