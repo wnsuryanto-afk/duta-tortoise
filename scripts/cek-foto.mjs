@@ -125,15 +125,63 @@ if (!CHROMIUM) {
 // tanpa alasan, hasilnya kelihatan.
 const berkas = execFileSync("grep", ["-rl", "<img", "src/", "--include=*.jsx"], { cwd: akar, encoding: "utf8" })
   .trim().split("\n").filter(Boolean);
-let total = 0, dimatikan = 0;
+/*
+ * ── Gambar tidak boleh menyandera "halaman selesai dimuat" ────────────
+ *
+ * Peramban menganggap halaman selesai dimuat hanya setelah SEMUA gambarnya
+ * selesai. Satu foto yang menggantung membuat isyarat itu tidak pernah
+ * terjadi — diuji 8 Nov 2026 di peramban, dengan satu alamat gambar sengaja
+ * dimacetkan:
+ *
+ *     <img> biasa             readyState "interactive", load TIDAK PERNAH
+ *     <img loading="lazy">    readyState "complete", load 29 ms
+ *
+ * Isi halamannya tetap tergambar — jadi dari layar tidak ada yang kelihatan
+ * salah, sementara apa pun yang menunggu isyarat itu (bilah pratinjau,
+ * pengukur kecepatan, window.onload) menunggu selamanya. Di peternakan ini
+ * fotonya banyak dan sinyalnya buruk; 8 Nov 2026 dari 107 gambar hanya SATU
+ * yang dimuat malas, termasuk foto profil yang muncul di setiap halaman.
+ *
+ * Pengecualian ditulis di sini beserta alasannya: isi yang DIPOTRET
+ * html2canvas harus sudah termuat saat dipotret.
+ */
+const BOLEH_MEMBLOKIR = {
+  "src/components/breeding/EggLabelGenerator.jsx":
+    "pratinjau label yang ikut dipotret html2canvas sebelum dicetak.",
+};
+
+let total = 0, dimatikan = 0, malas = 0;
+const memblokir = [];
 for (const f of berkas) {
   const isi = kupasKomentar(readFileSync(join(akar, f), "utf8"));
   for (const tag of isi.match(/<img[\s\S]{0,400}?\/?>/g) || []) {
     total++;
     if (/data-zoom="off"/.test(tag)) dimatikan++;
+    if (/loading=\s*["']lazy["']/.test(tag)) malas++;
+    else if (!(f in BOLEH_MEMBLOKIR)) {
+      const cuplik = tag.replace(/\s+/g, " ").slice(0, 72);
+      memblokir.push(`${f}\n      ${cuplik}`);
+    }
   }
 }
-console.log(`Jangkauan:\n  ${total} gambar di ${berkas.length} berkas; ${dimatikan} ditandai tidak bisa diperbesar.`);
+for (const [f, alasan] of Object.entries(BOLEH_MEMBLOKIR)) {
+  if (!berkas.includes(f)) {
+    gagal++;
+    console.log(`Pengecualian "${f}" menunjuk berkas yang tidak punya <img> lagi.\n  Alasannya tercatat: ${alasan}\n  Hapus dari BOLEH_MEMBLOKIR.\n`);
+  }
+}
+if (memblokir.length) {
+  gagal++;
+  console.log(
+    `${memblokir.length} gambar tanpa loading="lazy" — masing-masing bisa membuat\n` +
+    `halaman tidak pernah dianggap selesai dimuat bila alamatnya menggantung:\n\n  ` +
+    memblokir.join("\n  ") +
+    `\n\n  Tambahkan loading="lazy" decoding="async". Bila gambarnya memang harus\n` +
+    `  sudah termuat (dipotret html2canvas), tuliskan alasannya di\n` +
+    `  BOLEH_MEMBLOKIR pada scripts/cek-foto.mjs.\n`,
+  );
+}
+console.log(`Jangkauan:\n  ${total} gambar di ${berkas.length} berkas; ${dimatikan} ditandai tidak bisa diperbesar;\n  ${malas} dimuat malas, ${total - malas} sengaja memblokir pemuatan halaman.`);
 
 if (gagal) { console.log(`\n${gagal} masalah pada pembesar foto.`); process.exit(1); }
 console.log("\nPembesar foto aman.");

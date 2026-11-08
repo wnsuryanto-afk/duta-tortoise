@@ -250,6 +250,7 @@ if (!hidup) {
 const peramban = await chromium.launch({ executablePath: CHROME });
 const galat = [];
 let totalDiukur = 0;
+const takTerukur = [];
 
 for (const w of LEBAR) {
   const hal = await peramban.newPage({ viewport: { width: w, height: 900 } });
@@ -285,7 +286,32 @@ for (const w of LEBAR) {
     }
     await hal.waitForTimeout(170);
     totalDiukur++;
-    for (const t of (await hal.evaluate(luapan, w)) || []) {
+    let luber = (await hal.evaluate(luapan, w)) || [];
+    /*
+      "BINGKAI HILANG" bukan masalah tata letak.
+
+      luapan() memakai satu nilai kembali untuk dua kabar: daftar elemen yang
+      keluar layar, dan penanda bahwa bingkai harness sudah tidak ada. Dulu
+      keduanya masuk saluran yang sama, jadi bingkai yang lenyap terbaca
+      sebagai "<—> lebar 0px, keluar layar +0px" — satu baris yang tidak
+      mungkin ditindaklanjuti siapa pun, persis cacat yang sudah dibereskan
+      di cek-lebar.
+
+      Dicoba sekali lagi lebih dulu: halaman bisa sedang dimuat ulang Vite,
+      dan itu bukan cacat. Perintah pindahnya diulang, sebab pemuatan ulang
+      mengembalikan harness ke kasus pertama.
+    */
+    if (luber.some((t) => t.teks === "BINGKAI HILANG")) {
+      if (await pindahKe(hal, i)) {
+        await hal.waitForTimeout(400);
+        luber = (await hal.evaluate(luapan, w)) || [];
+      }
+    }
+    if (luber.some((t) => t.teks === "BINGKAI HILANG")) {
+      takTerukur.push(`layar ${w}px — ${nama[i]}: bingkai lenyap saat diukur, dan tidak kembali setelah dicoba ulang`);
+      continue;
+    }
+    for (const t of luber) {
       galat.push(
         `layar ${w}px — ${nama[i]}\n` +
         `      <${t.tag}> lebar ${t.lebar}px, keluar layar +${t.lebih}px  "${t.teks}"\n` +
@@ -321,6 +347,16 @@ for (const w of LEBAR) {
 
 await peramban.close();
 tutup();
+
+if (takTerukur.length) {
+  console.error(
+    `${takTerukur.length} kasus tidak pernah terukur:\n\n` +
+    `Penjaga yang melaporkan "bersih" untuk kasus yang tidak pernah digambar\n` +
+    `lebih buruk daripada tidak ada penjaga.\n\n` +
+    takTerukur.map((t) => "  " + t).join("\n") + "\n",
+  );
+  process.exit(1);
+}
 
 if (galat.length) {
   console.error(
