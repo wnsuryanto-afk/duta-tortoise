@@ -13,7 +13,6 @@ import { hitungGajiKaryawan, PERAN_BERGAJI } from "@/lib/hitungGaji";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { format, subMonths } from "date-fns";
 import { id } from "date-fns/locale";
-import jsPDF from "jspdf";
 import { rupiah } from "@/lib/rupiah";
 import { kisiWadah } from "@/lib/kisiWadah";
 
@@ -192,7 +191,16 @@ export default function LaporanGajiBulanan() {
   const totalNet = salaryData.reduce((s, e) => s + e.netSalary, 0);
   const selectedLabel = MONTH_OPTIONS.find((m) => m.value === period)?.label || period;
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    /*
+      jsPDF dimuat SAAT DITEKAN, bukan saat halaman dibuka.
+
+      Impor statisnya ikut masuk bundel utama — dan karena aplikasi ini satu
+      berkas JavaScript tanpa pemisahan rute, SETIAP halaman membayarnya,
+      termasuk layar kiper yang tidak punya tombol ekspor sama sekali.
+      Pustaka cetak hanya diperlukan sesudah tombolnya ditekan.
+    */
+    const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF({ orientation: "landscape" });
     const margin = 14;
     let y = 20;
