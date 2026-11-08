@@ -1,6 +1,6 @@
 {
   "name": "onToolRequestUpdate",
-  "entry": "main.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Notif Pengajuan Alat",

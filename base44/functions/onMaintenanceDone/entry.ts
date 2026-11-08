@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { kunciTugas as dedupKey } from "../../shared/kunciTugas.ts";
 import { masukLaporan, tandaLaporan } from "../../shared/laporan.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
     if (log.freq === "harian" && log.period_key && log.period_key.match(/^\d{4}-\d{2}-\d{2}$/)) {
       taskDate = log.period_key;
     } else {
-      taskDate = new Date().toISOString().split("T")[0];
+      taskDate = wibTanggal();
     }
 
     // Cari DailyChecklist yang sudah ada untuk karyawan + tanggal ini

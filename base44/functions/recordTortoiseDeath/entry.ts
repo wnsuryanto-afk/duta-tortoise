@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { segarkanIsiKandang } from "../../shared/isiKandang.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -28,7 +29,7 @@ Deno.serve(async (req) => {
       status: 'mati',
       is_currently_sick: false,
       previous_status: tortoiseBefore?.status || 'aktif',
-      last_status_change: death_data.death_date || new Date().toISOString().split("T")[0],
+      last_status_change: death_data.death_date || wibTanggal(),
     });
 
     // 4. Log activity

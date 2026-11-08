@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { masukLaporan } from "../../shared/laporan.ts";
 import { diPeternakan } from "../../shared/kura.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibBulan } from "../../shared/otomatis.ts";
 
 /**
  * labaRugiData — ringkasan laba-rugi satu periode.
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const db = base44.asServiceRole;
     const url = new URL(req.url);
-    const period = url.searchParams.get('period') || new Date().toISOString().slice(0, 7);
+    const period = url.searchParams.get('period') || wibBulan();
 
     // 1. FinanceTransaction bulan ini
     const allTx = await db.entities.FinanceTransaction.list('-date', 2000);

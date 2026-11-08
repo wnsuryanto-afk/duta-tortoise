@@ -4,7 +4,7 @@ import {
   sendWhatsAppNotification,
   getEmployeePhone,
 } from "../../shared/whatsapp.ts";
-import { notifSekali, emailPerRole } from "../../shared/otomatis.ts";
+import { emailPerRole, notifSekali, wibTanggal } from "../../shared/otomatis.ts";
 import { masukLaporan } from "../../shared/laporan.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { POTONGAN_KASBON_BAWAAN } from "../../shared/gaji.ts";
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
               const newStatus = newPaid >= (kasbon.amount || 0) ? "lunas" : kasbon.status;
               const newLog = [...(kasbon.deduction_log || []), {
                 amount: ded,
-                date: new Date().toISOString().split('T')[0],
+                date: wibTanggal(),
                 method: "salary_slip",
                 salary_period: periodKey,
                 salary_slip_id: slip.id,
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
               const newStatus = newPaid >= (kasbon.amount || 0) ? "lunas" : kasbon.status;
               const newLog = [...(kasbon.deduction_log || []), {
                 amount: ded,
-                date: new Date().toISOString().split('T')[0],
+                date: wibTanggal(),
                 method: "salary_slip",
                 salary_period: periodKey,
                 salary_slip_id: slip.id,
@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
               const tanggal =
                 slip.paid_date ||
                 slip.payment_date ||
-                new Date().toISOString().slice(0, 10);
+                wibTanggal();
               await base44.asServiceRole.entities.FinanceTransaction.create({
                 type: "pengeluaran",
                 category: "gaji_karyawan",

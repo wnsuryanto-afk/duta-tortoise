@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { segarkanIsiKandang } from "../../shared/isiKandang.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -19,7 +20,7 @@ Deno.serve(async (req) => {
         type: "pemasukan",
         category: "penjualan_tortoise",
         amount: sale.price || 0,
-        date: sale.sale_date || new Date().toISOString().split("T")[0],
+        date: sale.sale_date || wibTanggal(),
         description: `Penjualan ${sale.tortoise_name || "tortoise"} kepada ${sale.buyer_name || "-"}`,
         reference_id: sale.id,
         created_by_name: sale.created_by || "",
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
         await db.entities.Tortoise.update(sale.tortoise_id, {
           status: "terjual",
           previous_status: tortoise.status || "aktif",
-          last_status_change: sale.sale_date || new Date().toISOString().split("T")[0],
+          last_status_change: sale.sale_date || wibTanggal(),
         });
         // `filter({ id: tortoise.enclosure })` mencari kandang berdasarkan ID
         // tetapi menyodorkan NAMA kandang, jadi hasilnya selalu kosong dan
@@ -52,7 +53,7 @@ Deno.serve(async (req) => {
     // berapapun kali trigger dijalankan, hasilnya selalu angka yang benar.
     const hp = sale.hp_whatsapp || sale.buyer_phone;
     if (hp) {
-      const saleDate = sale.sale_date || new Date().toISOString().split("T")[0];
+      const saleDate = sale.sale_date || wibTanggal();
 
       // Ambil semua sale milik pembeli ini (by hp_whatsapp)
       const allBuyerSales = await db.entities.Sale.filter({ hp_whatsapp: hp }, null, BATAS_AMBIL);

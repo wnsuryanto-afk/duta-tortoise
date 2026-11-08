@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 // Dipanggil via entity automation saat ToolLoan diupdate.
 // Saat alat dikembalikan dengan kondisi rusak/hilang → buat ShoppingList otomatis.
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: 'already_has_shopping_list' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = wibTanggal();
     const conditionLabel = loan.return_condition === 'hilang' ? 'HILANG' : 'RUSAK';
 
     const sl = await base44.asServiceRole.entities.ShoppingList.create({

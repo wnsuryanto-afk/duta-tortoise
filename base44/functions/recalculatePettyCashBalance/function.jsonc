@@ -1,4 +1,4 @@
 {
   "name": "recalculatePettyCashBalance",
-  "entry": "main.ts"
+  "entry": "entry.ts"
 }

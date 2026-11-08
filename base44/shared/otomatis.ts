@@ -43,6 +43,23 @@ export function tanggalMundur(hari: number, d: Date = wibNow()): string {
   return wibTanggal(new Date(d.getTime() - hari * 24 * 60 * 60 * 1000));
 }
 
+/** Tanggal WIB N hari ke depan, "YYYY-MM-DD". */
+export function tanggalMaju(hari: number, d: Date = wibNow()): string {
+  return wibTanggal(new Date(d.getTime() + hari * 24 * 60 * 60 * 1000));
+}
+
+/**
+ * Bulan WIB "YYYY-MM".
+ *
+ * Dipakai sebagai kunci periode laporan. `new Date().toISOString().slice(0, 7)`
+ * benar 30 hari dari 31 lalu salah pada yang satu itu: sepanjang tujuh jam
+ * pertama tanggal 1 WIB, server masih menyebut bulan LALU — dan laba rugi
+ * maupun biaya per kura memakai angka itu sebagai periode bawaannya.
+ */
+export function wibBulan(d: Date = wibNow()): string {
+  return wibTanggal(d).slice(0, 7);
+}
+
 /**
  * SATU aturan lembur, kembaran dari `jamLembur` di src/lib/weeklySalaryUtils.js.
  *

@@ -1,6 +1,6 @@
 {
   "name": "onToolLoanReturned",
-  "entry": "main.ts",
+  "entry": "entry.ts",
   "automations": [
     {
       "name": "Auto ShoppingList Alat Rusak",

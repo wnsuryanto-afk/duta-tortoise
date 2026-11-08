@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 function getSortDate(entry) {
   const ed = entry.entry_date;
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Request sudah diproses', status: request.status }, { status: 400 });
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = wibTanggal();
       const tDate = transfer_date || today;
       const amount = Math.round(request.amount_requested || 0);
 
@@ -122,7 +123,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Request sudah diproses', status: request.status }, { status: 400 });
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = wibTanggal();
       await base44.asServiceRole.entities.PettyCashTopUpRequest.update(request_id, {
         status: 'rejected',
         rejection_reason: rejection_reason || '',

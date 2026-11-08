@@ -92,6 +92,7 @@ bundel("src/lib/modalKerja.js", "modal.cjs");
 bundel("src/lib/hargaBeliKura.js", "hargabeli.cjs");
 bundel("src/lib/barisTelur.js", "baristelur.cjs");
 bundel("src/lib/safeDate.js", "safedate.cjs");
+bundel("base44/shared/otomatis.ts", "otomatis.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -3453,6 +3454,49 @@ let zonaUji = 0;
   }
 }
 
+/*
+  ── Sisi server: WIB dihitung sendiri ──────────────────────────────────────
+
+  Di peramban "hari ini" berarti jam perangkatnya. Di server tidak ada
+  perangkat: penjadwal Base44 berjalan di UTC, jadi tanggal WIB harus
+  dihitung sendiri — `wibTanggal()` di shared/otomatis.ts.
+
+  Yang diuji adalah tujuh jam yang membedakannya. Diperiksa dengan TZ proses
+  dipaksa UTC, karena begitulah server benar-benar berjalan: fungsi ini
+  tidak boleh bergantung pada zona waktu mesinnya sama sekali.
+*/
+let wibUji = 0;
+{
+  const naskah = `
+    const O = require(${JSON.stringify(join(dir, "otomatis.cjs"))});
+    const saat = new Date(process.argv[1]).getTime() + O.WIB_OFFSET_MS;
+    const d = new Date(saat);
+    process.stdout.write(JSON.stringify([
+      O.wibTanggal(d), O.wibBulan(d), O.wibJam(d),
+      O.tanggalMaju(7, d), O.tanggalMundur(1, d),
+    ]));
+  `;
+  const KASUS = [
+    // saat UTC,               tanggal WIB,  bulan WIB, jam WIB, +7 hari,      -1 hari
+    ["2026-11-07T23:45:00Z", "2026-11-08", "2026-11", "06:45", "2026-11-15", "2026-11-07"],
+    ["2026-11-08T07:00:00Z", "2026-11-08", "2026-11", "14:00", "2026-11-15", "2026-11-07"],
+    ["2026-11-30T22:00:00Z", "2026-12-01", "2026-12", "05:00", "2026-12-08", "2026-11-30"],
+  ];
+  for (const [saat, tanggal, bulan, jam, maju, mundur] of KASUS) {
+    const keluar = execFileSync(process.execPath, ["-e", naskah, saat], {
+      env: { ...process.env, TZ: "UTC" },
+      encoding: "utf8",
+    });
+    const [t, b, j, m, u] = JSON.parse(keluar);
+    wibUji++;
+    if (t !== tanggal) temuan.push(`wibTanggal pada ${saat}: ${t}, seharusnya ${tanggal}`);
+    if (b !== bulan) temuan.push(`wibBulan pada ${saat}: ${b}, seharusnya ${bulan}`);
+    if (j !== jam) temuan.push(`wibJam pada ${saat}: ${j}, seharusnya ${jam}`);
+    if (m !== maju) temuan.push(`tanggalMaju(7) pada ${saat}: ${m}, seharusnya ${maju}`);
+    if (u !== mundur) temuan.push(`tanggalMundur(1) pada ${saat}: ${u}, seharusnya ${mundur}`);
+  }
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 /* ── Clutch yang perlu dipantau di beranda ─────────────────────────── */
@@ -3931,6 +3975,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona + ${wibUji} tanggal WIB sisi server diuji.`,
 );
 process.exit(0);

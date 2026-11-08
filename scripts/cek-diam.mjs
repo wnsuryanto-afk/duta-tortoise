@@ -147,8 +147,12 @@ const BATAS_BERPUTAR = 92;
 
   Diukur sesudah recalculateBuyerProfiles dibereskan. Boleh turun, tidak
   boleh naik.
+
+  8 Nov 2026 turun dari 52 ke 47 tanpa satu pun loop diperbaiki: 14 fungsi
+  menyimpan kodenya dua kali (entry.ts dan main.ts), jadi lima loop yang
+  sama terhitung dua kali. Salinan matinya dicabut — lihat scripts/cek-fungsi.mjs.
 */
-const BATAS_BORONG = 52;
+const BATAS_BORONG = 47;
 
 function berkasJs(d, keluar = []) {
   for (const nama of readdirSync(d)) {

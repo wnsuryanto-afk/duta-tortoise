@@ -4,6 +4,7 @@
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibTanggal } from "../../shared/otomatis.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, skipped: "no breeding data" });
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = wibTanggal();
     const year = breeding.season_year || new Date().getFullYear();
 
     async function updateProven(tortoiseId, tortoiseName) {

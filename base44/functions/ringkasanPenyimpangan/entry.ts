@@ -1,15 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import {
-  getOtomatis,
-  setOtomatis,
-  wibTanggal,
-  wibJam,
-  sudahWaktunya,
-  userPerRole,
-  sopIdDariTaskId,
-  itemIdDariTaskId,
-  petaFotoHarian,
-} from "../../shared/otomatis.ts";
+import { getOtomatis, itemIdDariTaskId, petaFotoHarian, setOtomatis, sopIdDariTaskId, sudahWaktunya, tanggalMaju, userPerRole, wibJam, wibTanggal } from "../../shared/otomatis.ts";
 import { sendWhatsAppNotification, getPhoneNumbersForRoles } from "../../shared/whatsapp.ts";
 import { dilacak } from "../../shared/stok.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
@@ -173,7 +163,7 @@ Deno.serve(async (req) => {
     }
 
     // 7. Obat kadaluarsa dalam 7 hari.
-    const dalam7 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const dalam7 = tanggalMaju(7);
     const kadaluarsa = (gudang || []).filter(
       (i: any) => i.expired_date && String(i.expired_date) <= dalam7,
     );

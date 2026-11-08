@@ -1,4 +1,4 @@
 {
   "name": "processTopUpRequest",
-  "entry": "main.ts"
+  "entry": "entry.ts"
 }

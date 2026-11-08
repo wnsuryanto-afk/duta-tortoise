@@ -1,4 +1,4 @@
 {
   "name": "getCostPerTortoise",
-  "entry": "main.ts"
+  "entry": "entry.ts"
 }
