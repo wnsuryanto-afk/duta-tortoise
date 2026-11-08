@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { skuPakanBaru } from "@/lib/skuBarang";
-import { namaKembar } from "@/lib/namaMirip";
+import { pilihBarisPakan } from "@/lib/namaMirip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,17 +113,20 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
     if (detailNama) {
       try {
         const adaPakan = await base44.entities.FeedStock.list("-created_date", 200);
-        const kunciNama = (t) => String(t || "").trim().toLowerCase().replace(/\s+/g, " ");
-        const sudahPersis = adaPakan.some((f) => kunciNama(f.name) === kunciNama(detailNama));
-        if (!sudahPersis) {
-          const kembar = namaKembar(detailNama, adaPakan);
-          if (kembar) {
-            toast.error(
-              `"${detailNama}" sangat mirip "${kembar}" yang sudah ada. ` +
-              `Tulis persis "${kembar}" bila memang itu, atau nama yang jelas berbeda bila bukan.`,
-            );
-            return;
-          }
+        /*
+          SATU panggilan memutuskan boleh-tidaknya DAN baris mana yang dipakai.
+
+          Dua pemeriksaan terpisah di sini dulu memakai kunci yang berbeda:
+          penjaganya melihat nama saja, pencarinya di bawah melihat nama DAN
+          satuan. Celahnya persis di antara keduanya — nama yang sudah ada
+          dengan satuan baru lolos penjaga, lalu gagal ditemukan pencarinya,
+          lalu melahirkan baris kedua tanpa sepatah pun peringatan. Rinciannya
+          di lib/namaMirip.js.
+        */
+        const putusan = pilihBarisPakan({ nama: detailNama, satuan: form.satuan, daftar: adaPakan });
+        if (!putusan.boleh) {
+          toast.error(putusan.sebab, { duration: 10000 });
+          return;
         }
       } catch {
         /* Daftar pakan gagal diambil: penyimpanan TIDAK dihentikan. Penjaga
@@ -205,7 +208,6 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
             const detail = String(form.feed_type_detail || "").trim();
             const namaStok = detail || mapping.name;
 
-            const kunci = (t) => String(t || "").trim().toLowerCase().replace(/\s+/g, " ");
             const allFeed = await base44.entities.FeedStock.list("-created_date", 200);
             // Satuannya HARUS ikut dicocokkan. Ada "Mentimun" dalam kg di daftar
             // pakan; menambahkan keranjang ke sana akan mencampur dua satuan
@@ -213,9 +215,12 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
             // Satuannya ikut satuan yang dicatat, bukan selalu "keranjang".
             // Dengan begitu "Mentimun" dalam kg yang sudah ada di daftar pakan
             // benar-benar ketemu, dan tidak lahir "Mentimun" kedua.
-            let feedItem = allFeed.find(s =>
-              kunci(s.name) === kunci(namaStok) && s.unit === form.satuan
-            );
+            // Pencari yang SAMA dengan penjaganya di atas — lihat
+            // pilihBarisPakan di lib/namaMirip.js. Keduanya tidak bisa lagi
+            // berselisih, karena keduanya tidak lagi dua.
+            let feedItem = pilihBarisPakan({
+              nama: namaStok, satuan: form.satuan, daftar: allFeed,
+            }).cocok;
             if (!feedItem) {
               /*
                * SKU diberikan SEKARANG, bukan nanti lewat "Generate SKU
