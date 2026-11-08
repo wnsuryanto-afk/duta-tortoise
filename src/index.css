@@ -1,4 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+/*
+  Huruf Plus Jakarta Sans TIDAK diambil dari sini lagi.
+
+  `@import` di baris pertama sebuah stylesheet MEMBLOKIR gambar halaman:
+  peramban menunggu berkas dari fonts.googleapis.com sebelum menggambar apa
+  pun. Diuji 8 Nov 2026 pada hasil build, dengan alamat itu sengaja
+  dimacetkan:
+
+      readyState berhenti di "interactive", event load TIDAK PERNAH terjadi,
+      dan layarnya KOSONG SAMA SEKALI — bukan sekadar hurufnya berganti.
+
+  Untuk peternakan yang catatan di repo ini sendiri menyebut "sinyal buruk di
+  kandang adalah keadaan biasa", itu jarak antara aplikasi yang bisa dipakai
+  dan aplikasi yang mati total.
+
+  Sekarang hurufnya dipasang dari index.html SESUDAH halaman selesai dimuat.
+  Yang tergambar lebih dulu memakai huruf sistem di bawah ini — dan kalau
+  Google Fonts tidak pernah menjawab, halamannya tetap bisa dipakai.
+*/
 
 @tailwind base;
 @tailwind components;

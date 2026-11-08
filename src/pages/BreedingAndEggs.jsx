@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ringkasRetak } from "@/lib/telurRetak";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -669,8 +670,19 @@ export default function BreedingAndEggs() {
                       {phase?.hatchStart && phase?.hatchEnd && (
                         <p className="text-muted-foreground">Estimasi menetas: {format(phase.hatchStart, "d MMM", { locale: id })} s/d {format(phase.hatchEnd, "d MMM yyyy", { locale: id })}</p>
                       )}
+                      {/*
+                        Telur retak dicatat DI SINI, di baris yang sama dengan
+                        jumlah telurnya — bukan sebagai kartu tersendiri di
+                        kepala halaman. Pemiliknya: "cukup note saja di tempat
+                        yang saya centang", dan yang dicentangnya baris ini.
+                      */}
                       <div className="flex flex-wrap gap-3">
                         {b.egg_count > 0 && <span>{b.egg_count} butir telur</span>}
+                        {ringkasRetak(b.egg_records).total > 0 && (
+                          <span className="text-orange-700 dark:text-orange-400 font-medium">
+                            🧩 {ringkasRetak(b.egg_records).total} retak
+                          </span>
+                        )}
                         {b.incubator_name && <span>📦 {b.incubator_name}</span>}
                         {b.incubation_temp > 0 && <span>🌡 {b.incubation_temp}°C</span>}
                         {b.status === "menetas" && b.hatched_count > 0 && <span className="text-primary font-medium">{b.hatched_count} ekor 🐢</span>}
