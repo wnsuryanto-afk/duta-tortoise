@@ -827,6 +827,34 @@ export default function EggGrid({ breeding, onRefresh }) {
         )}
       </div>
 
+      {/*
+        Retak berdiri di BARIS SENDIRI, bukan di antara chip status.
+
+        Chip di atas berjumlah total: fertil + infertil + belum dicek = seluruh
+        telur. Menyisipkan "retak" di sana membuat jumlahnya seolah lebih dari
+        100% dan menerbitkan pertanyaan yang salah ("kenapa totalnya tidak
+        cocok?"). Retak memotong SEMUA kelompok itu — telur retak juga seorang
+        fertil, atau seorang belum-dicek. Lihat lib/telurRetak.js.
+      */}
+      {retakRingkas.total > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-800 border border-orange-300 font-semibold">
+            🧩 Retak: {retakRingkas.total} butir
+          </span>
+          {retakRingkas.berjalan > 0 && (
+            <span className="px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+              {retakRingkas.berjalan} masih perlu perhatian
+            </span>
+          )}
+          {retakRingkas.persenSelamat !== null && (
+            <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground">
+              {retakRingkas.selamat} selamat · {retakRingkas.gagal} tidak
+              <span className="opacity-70"> ({retakRingkas.persenSelamat}%)</span>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Progress bar — sections sum to 100% without overlap */}
       <div className="h-2 rounded-full bg-muted overflow-hidden flex">
         <div className="bg-green-400 transition-all" style={{ width: `${(fertileTotal / eggCount) * 100}%` }} />
@@ -869,10 +897,27 @@ export default function EggGrid({ breeding, onRefresh }) {
                 ${STATUS_CELL[egg.status] || STATUS_CELL.belum_dicek}
                 ${isReadonly ? "opacity-80 cursor-pointer" : ""}
               `}
-              title={`Telur #${egg.egg_number} — ${egg.status}${isReadonly ? " (Terkunci)" : ""}`}
+              title={`Telur #${egg.egg_number} — ${egg.status}${telurRetak(egg) ? " · RETAK" : ""}${isReadonly ? " (Terkunci)" : ""}`}
             >
               {egg.egg_number}
             </button>
+            {/*
+              Cincin oranye, bukan warna sel yang diganti. Warna sel SUDAH
+              dipakai status, dan menimpanya akan menukar satu keterangan
+              dengan keterangan lain — padahal justru keduanya yang perlu
+              terbaca sekaligus: "retak, dan sudah fertil".
+            */}
+            {telurRetak(egg) && (
+              <span
+                className="pointer-events-none absolute -inset-0.5 top-0 h-11 w-11 rounded-xl ring-2 ring-orange-500 ring-offset-1 ring-offset-background"
+                aria-hidden="true"
+              />
+            )}
+            {telurRetak(egg) && (
+              <span className="text-[9px] leading-none text-orange-700 dark:text-orange-400 font-bold" title="Cangkang retak">
+                🧩 retak
+              </span>
+            )}
             {/* Badge baby */}
             {egg.status === "menetas" && egg.tortoise_code && (
               <a
@@ -904,6 +949,7 @@ export default function EggGrid({ breeding, onRefresh }) {
                 candlingAllowed={candlingAllowed}
                 onClose={() => setActiveEgg(null)}
                 onUpdateStatus={updateEggStatus}
+                onUpdateRetak={updateEggRetak}
                 onOpenHatchCreate={handleOpenHatchCreate}
               />
             )}
@@ -989,6 +1035,7 @@ export default function EggGrid({ breeding, onRefresh }) {
           candlingAllowed={candlingAllowed}
           onClose={() => setActiveEgg(null)}
           onUpdateStatus={updateEggStatus}
+          onUpdateRetak={updateEggRetak}
           onOpenHatchCreate={handleOpenHatchCreate}
         />
       )}
