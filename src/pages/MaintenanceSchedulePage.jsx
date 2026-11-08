@@ -310,7 +310,8 @@ export default function MaintenanceSchedulePage() {
 
       {/* Freq Tabs + Enc Filter */}
       <div className="flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex gap-1.5">
+        {/* flex-wrap: di 280px "Bulanan" keluar layar 12px. */}
+        <div className="flex flex-wrap gap-1.5">
           {[["harian","Harian"],["mingguan","Mingguan"],["bulanan","Bulanan"]].map(([v, l]) => (
             <button key={v} onClick={() => setFreq(v)}
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${freq === v ? "bg-primary text-primary-foreground" : "bg-background border-border hover:bg-muted"}`}>

@@ -322,9 +322,17 @@ export default function SalesList() {
         sementara tiga lainnya adalah keadaan. Saat nol, ia kembali ke
         tempat semula dan warnanya ikut tenang — nol bukan tagihan.
       */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+      <div className="kolom-kartu gap-3 stagger">
+        {/*
+          "Follow-up", bukan "Menunggu Follow-up".
+
+          Label panjang itu terpotong di setiap lebar ponsel yang memuat dua
+          kartu: 158px tersedia di 360px, 9px masih kurang di 412px. Yang
+          terbaca orang adalah "Menunggu Fol…", dan keterangan di bawahnya
+          ("DP / belum bayar") sudah mengatakan menunggu apa.
+        */}
         {salesAktif.length > 0 && (
-          <StatCard label="Menunggu Follow-up" value={salesAktif.length}
+          <StatCard label="Follow-up" value={salesAktif.length}
             icon={Clock} color="bg-amber-100 text-amber-700"
             href="/sales?tab=aktif"
             sub="DP / belum bayar" />
@@ -333,18 +341,25 @@ export default function SalesList() {
           icon={ShoppingBag} color="bg-primary/15 text-primary"
           href="/sales?tab=riwayat"
           sub={`Rp ${angkaRibuan(revenueThisMonth)}`} />
-        <StatCard label="Laba Bulan Ini" value={`Rp ${angkaRibuan(labaThisMonth)}`}
+        {/*
+          "Laba", dan "bulan ini" pindah ke keterangan di bawahnya.
+
+          Empat kartu berdampingan di layar 768px menyisakan 183px per kolom,
+          dan label itu butuh ±203px — terpotong 20px, terbaca "Laba Bulan…".
+          Cakupannya tidak hilang, hanya pindah ke baris yang memang muat.
+        */}
+        <StatCard label="Laba" value={`Rp ${angkaRibuan(labaThisMonth)}`}
           icon={TrendingUp}
           color={labaThisMonth >= 0 ? "bg-accent/15 text-accent" : "bg-red-100 text-red-600"}
           href="/sales?tab=laporan"
-          sub={`Margin rata-rata ${avgMargin}%`}
+          sub={`bulan ini · margin rata-rata ${avgMargin}%`}
           hint="Hanya penjualan yang HPP-nya sudah diisi yang ikut dihitung. Penjualan tanpa HPP tidak bisa dihitung labanya." />
         <StatCard label="Total Terjual" value={enrichedSales.length}
           icon={DollarSign} color="bg-primary/15 text-primary"
           href="/sales?tab=semua"
           sub={`Rp ${angkaRibuan(totalRevenue)}`} />
         {salesAktif.length === 0 && (
-          <StatCard label="Menunggu Follow-up" value={0}
+          <StatCard label="Follow-up" value={0}
             icon={Clock} color="bg-muted text-muted-foreground"
             href="/sales?tab=aktif"
             sub="✓ semua lunas" />

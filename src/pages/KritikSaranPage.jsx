@@ -234,7 +234,7 @@ export default function KritikSaranPage() {
             <CardTitle className="text-base">Kirim Masukan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="kolom-isian gap-3">
               <div>
                 <Label className="text-xs mb-1 block">Tipe *</Label>
                 <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
