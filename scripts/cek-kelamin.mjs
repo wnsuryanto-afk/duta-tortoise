@@ -44,6 +44,10 @@
  *    saringTarget, supaya age_filter ikut terpakai. Penyaringan tangan
  *    adalah persis bentuk yang membuat age_filter diam selama ini.
  *
+ * 3b. Jadwal "berlaku untuk semua" tidak membekukan daftar kura. Daftar
+ *    beku itu tidak pernah dibaca — sampai seseorang mematikan "berlaku
+ *    untuk semua", dan ia seketika jadi daftar yang berlaku.
+ *
  * 4. Aturan saringTarget sendiri benar — terutama bahwa juvenile dan umur
  *    yang tidak diketahui TIDAK ikut "dewasa".
  *
@@ -225,6 +229,36 @@ for (const rel of berkas) {
       `ikut terlewat — persis sebabnya jadwal "DUTA FEMALE PLUS" yang ` +
       `ditandai "dewasa" menyasar setiap betina berapa pun umurnya. Pakai ` +
       `saringTarget dari ${SUMBER_SARING}.`,
+    );
+  }
+}
+
+/* ── 3b. Jadwal "berlaku untuk semua" tidak membekukan daftar kura ──── */
+
+/*
+ * Daftar yang tidak pernah dibaca tidak boleh disimpan.
+ *
+ * TreatmentPage dulu menyusun tortoise_ids + tortoise_names setiap kali
+ * jadwal "berlaku untuk semua" disimpan. Tidak ada yang membacanya:
+ * getTargetTortoises menyusun ulang daftarnya setiap kali, dan tabel
+ * syarat-ketentuan hanya menampilkan jumlahnya ketika apply_to_all MATI.
+ *
+ * Yang tersimpan karena itu data mati — sampai seseorang mematikan "berlaku
+ * untuk semua", dan data mati itu seketika jadi daftar yang berlaku. Di
+ * Folavit (Asam Folat) Harian (Betina) tertinggal 102 nama yang dibekukan
+ * sebelum gender_filter ada: 7 JANTAN, 2 kura mati, 5 yang sudah terjual,
+ * 4 non-sulcata, dan satu nama yang tidak ada di daftar kura mana pun.
+ */
+const PENYIMPAN_JADWAL = "src/pages/TreatmentPage.jsx";
+{
+  const kode = kupasKomentar(readFileSync(join(AKAR, PENYIMPAN_JADWAL), "utf8"));
+  if (!/apply_to_all\s*\?\s*\[\]/.test(kode)) {
+    temuan.push(
+      `${PENYIMPAN_JADWAL}  menyimpan daftar kura untuk jadwal "berlaku untuk ` +
+      `semua". Daftar itu tidak pernah dibaca selama apply_to_all menyala, ` +
+      `tetapi langsung berlaku begitu dimatikan — lengkap dengan kura yang ` +
+      `sudah mati, terjual, dan berjenis kelamin yang salah. Tulis [] saat ` +
+      `apply_to_all menyala.`,
     );
   }
 }

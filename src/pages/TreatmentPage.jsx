@@ -250,13 +250,28 @@ export default function TreatmentPage() {
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-    let resolvedIds = form.tortoise_ids;
-    let resolvedNames = form.tortoise_names;
-    if (form.apply_to_all) {
-      const pool = saringTarget(tortoises, form);
-      resolvedIds = pool.map(t => t.id);
-      resolvedNames = pool.map(t => t.name);
-    }
+    /*
+      Saat "berlaku untuk semua", daftar kuranya TIDAK dibekukan.
+
+      Dulu baris ini menyusun daftar nama+id lalu menyimpannya. Daftar itu
+      tidak pernah dibaca lagi: getTargetTortoises menyusunnya ulang setiap
+      kali, dan tabel syarat-ketentuan hanya menampilkan jumlahnya ketika
+      apply_to_all MATI. Jadi yang tersimpan adalah data mati — sampai
+      seseorang mematikan "berlaku untuk semua", dan data mati itu seketika
+      jadi daftar yang berlaku.
+
+      Yang tertinggal di Folavit (Asam Folat) Harian (Betina) per 8 Nov 2026:
+      102 nama, dibekukan entah kapan sebelum gender_filter ada. Isinya 7
+      JANTAN (A23, A29, A40, A43, B11, B45, C3), 2 kura mati, 5 yang sudah
+      terjual, 4 non-sulcata, dan satu nama yang tidak ada di daftar kura mana
+      pun. Satu kali orang mematikan "berlaku untuk semua" pada jadwal yang
+      judulnya sendiri berbunyi "(Betina)", dan tujuh jantan mulai menerima
+      asam folat harian.
+
+      Daftar yang tidak pernah dibaca tidak boleh disimpan.
+    */
+    const resolvedIds = form.apply_to_all ? [] : form.tortoise_ids;
+    const resolvedNames = form.apply_to_all ? [] : form.tortoise_names;
     const data = { ...form, tortoise_ids: resolvedIds, tortoise_names: resolvedNames };
     /*
      * Jadwal baru menulis DUA kali: jadwalnya sendiri, lalu tugas SOP yang
