@@ -261,7 +261,8 @@ export default function DailyChecklistTab() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
-        <div className="flex gap-1">
+        {/* flex-wrap: di 280px "⚕️ Quarterly" keluar layar 29px. */}
+        <div className="flex flex-wrap gap-1">
           {[["harian","☀️ Harian"],["mingguan","📅 Mingguan"],["bulanan","🗓️ Bulanan"],["quarterly","⚕️ Quarterly"]].map(([v, l]) => (
             <button key={v} onClick={() => setFreqTab(v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${freqTab === v ? "bg-primary text-primary-foreground" : "bg-background border-border hover:bg-muted"}`}>

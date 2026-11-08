@@ -322,7 +322,12 @@ export default function SalesList() {
         sementara tiga lainnya adalah keadaan. Saat nol, ia kembali ke
         tempat semula dan warnanya ikut tenang — nol bukan tagihan.
       */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
+      {/*
+        Satu kolom di bawah 360px. Di 280px dua kolom menyisakan ±130px per
+        kartu, dan labelnya terpotong: "Menunggu Follow-up" kehilangan 75px,
+        "Laba Bulan Ini" 50px. Yang terbaca jadi "Menunggu Fol…".
+      */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 stagger">
         {salesAktif.length > 0 && (
           <StatCard label="Menunggu Follow-up" value={salesAktif.length}
             icon={Clock} color="bg-amber-100 text-amber-700"

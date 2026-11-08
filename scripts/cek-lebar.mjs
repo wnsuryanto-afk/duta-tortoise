@@ -209,6 +209,25 @@ async function pastikanTergambar(hal, harap) {
   return `yang tergambar "${k.nama}", bukan kasus yang diminta`;
 }
 
+/*
+ * Sekali percobaan memulihkan harness yang berkedip, lalu menyerah.
+ *
+ * "bingkai hilang" bisa berarti akar React benar-benar dilepas (cacat) atau
+ * halamannya sedang dimuat ulang (bukan cacat — Vite melakukannya sendiri
+ * begitu ada dependensi baru). Dibedakan dengan mencoba sekali lagi.
+ *
+ * `pindahKe` diulang LEBIH DULU, bukan hanya menunggu bingkainya: pemuatan
+ * ulang mengembalikan harness ke kasus pertama, jadi menunggu saja akan
+ * mengukur kasus yang salah — dan pastikanTergambar akan menolaknya dengan
+ * "yang tergambar X, bukan kasus yang diminta".
+ *
+ * @returns "" bila pulih, atau kalimat sebab bila tidak.
+ */
+async function pulihkan(hal, i, harap) {
+  if (!(await pindahKe(hal, i))) return "harness tidak bisa diperintah pindah lagi";
+  return await pastikanTergambar(hal, harap);
+}
+
 async function ukurMantap(hal, lebar) {
   await tenang(hal);
   const satu = await hal.evaluate(ukur, lebar);
@@ -279,7 +298,7 @@ for (let i = 0; i < nama.length; i++) {
       temuanTeks.push(`${nama[i]}  kalimat dipecah flex jadi ${c.n} kolom: "${c.teks}"`);
     }
   }
-  const hasil = await ukurMantap(halaman, LEBAR);
+  let hasil = await ukurMantap(halaman, LEBAR);
   /*
     "bingkai hilang" bukan tulisan yang terpotong.
 
@@ -291,10 +310,14 @@ for (let i = 0; i < nama.length; i++) {
     ada hubungannya — tiga baris yang tidak mungkin ditindaklanjuti siapa pun.
     Yang benar: kasus itu TIDAK TERUKUR, dan itu saluran laporannya sendiri.
   */
+  if (hasil.some((t) => t.jenis === "bingkai hilang")) {
+    const sebab = await pulihkan(halaman, i, nama[i]);
+    if (!sebab) hasil = await ukurMantap(halaman, LEBAR);
+  }
   const lihat = new Set();
   for (const t of hasil) {
     if (t.jenis === "bingkai hilang") {
-      takTerukur.push(`${nama[i]}  bingkai lenyap saat diukur (layar ${LEBAR}px)`);
+      takTerukur.push(`${nama[i]}  bingkai lenyap saat diukur (layar ${LEBAR}px), dan tidak kembali setelah dicoba ulang`);
       break;
     }
     const kunci = t.jenis + "|" + t.teks;
@@ -386,8 +409,8 @@ for (let i = 0; i < nama.length; i++) {
       sebagai angka ${w}px.
     */
     if (hasil.some((t) => t.jenis === "bingkai hilang")) {
-      const belumKembali = await pastikanTergambar(halaman2, nama[i]);
-      if (!belumKembali) {
+      const sebab = await pulihkan(halaman2, i, nama[i]);
+      if (!sebab) {
         await sempitkan(halaman2, w);
         hasil = await ukurMantap(halaman2, 1280);
       }

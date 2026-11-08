@@ -145,7 +145,8 @@ export default function RempesanPage() {
         milikSendiri={!isManager}
       />
 
-      <div className="flex gap-2">
+      {/* flex-wrap: di 280px "Ditolak" keluar layar 37px. */}
+      <div className="flex flex-wrap gap-2">
         {[
           ["all", "Semua"],
           ["pending", "Menunggu"],

@@ -4,6 +4,21 @@ module.exports = {
   content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
     extend: {
+      /*
+        Titik henti untuk layar luar HP lipat saat TERLIPAT.
+
+        Tailwind mulai dari sm: 640px, jadi di bawah itu tidak ada apa pun —
+        dan 280px (Galaxy Z Flip tertutup) jatuh ke tata letak yang sama
+        dengan 639px. cek-lipat mengukur 280px justru karena di situ dua
+        kolom tidak lagi muat: "Menunggu Follow-up" terpotong 75px.
+
+        Dinamai, bukan min-[360px]: repo ini belum memakai varian sembarang
+        satu kali pun, dan nama yang sama di 12 tempat lebih mudah dicari
+        daripada angka yang ditulis ulang.
+      */
+      screens: {
+        xs: "360px",
+      },
       fontFamily: {
         heading: ['var(--font-heading)'],
         body:    ['var(--font-body)'],

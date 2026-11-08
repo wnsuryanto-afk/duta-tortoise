@@ -234,7 +234,8 @@ export default function KritikSaranPage() {
             <CardTitle className="text-base">Kirim Masukan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            {/* Satu kolom di bawah 360px: di 280px "💡 Saran" terpotong 6px. */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs mb-1 block">Tipe *</Label>
                 <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>

@@ -478,11 +478,16 @@ export default function BreedingPlannerPage() {
 
       {/* ── Kalender: bagian lama yang dipertahankan ────────────────────── */}
       <Card className="p-4">
-        <div className="flex items-center justify-between mb-3">
+        {/*
+          flex-wrap di kedua baris: lebarnya dipatok (w-32 + w-24 + dua tombol
+          ikon) dan berjumlah ±328px, jadi di layar 280px seluruh halaman bisa
+          digeser ke samping.
+        */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <Button variant="ghost" size="icon" onClick={() => {
             if (bulan === 0) { setBulan(11); setTahun((y) => y - 1); } else setBulan((m) => m - 1);
           }}><ChevronLeft className="w-4 h-4" /></Button>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <Select value={String(bulan)} onValueChange={(v) => setBulan(Number(v))}>
               <SelectTrigger className="w-32 h-8 text-sm"><SelectValue /></SelectTrigger>

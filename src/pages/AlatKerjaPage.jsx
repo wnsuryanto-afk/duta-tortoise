@@ -132,7 +132,8 @@ export default function AlatKerjaPage() {
       {isMgr && (
         <div className="space-y-3">
           {/* Tabs */}
-          <div className="flex gap-2">
+          {/* flex-wrap: di 280px "Pengajuan (0)" keluar layar 70px. */}
+          <div className="flex flex-wrap gap-2">
             {[
               ["active", `Sedang Dipinjam (${activeLoans.length})`],
               ["returned", `Riwayat (${returnedLoans.length})`],
