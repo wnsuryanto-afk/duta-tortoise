@@ -117,7 +117,7 @@ export function namaKembar(nama, daftar = []) {
 /**
  * SATU keputusan: baris stok pakan mana yang menampung catatan ini?
  *
- * ── Cacat yang ditutupnya ───────────────────────────────────────────
+ * ── Cacat yang ditutupnya ───────────────────────────────────────────────────
  *
  * PakanHarianForm dulu menanyakan dua hal, di dua tempat, dengan kunci yang
  * BERBEDA:
@@ -142,7 +142,7 @@ export function namaKembar(nama, daftar = []) {
  * 8 Sep 2026 dari cacat lain yang sudah diperbaiki — tetapi barisnya tetap
  * tinggal, masih aktif, masih terbaca sebagai stok.
  *
- * ── Kenapa satu fungsi, bukan satu pemeriksaan tambahan ───────────────────
+ * ── Kenapa satu fungsi, bukan satu pemeriksaan tambahan ─────────────────────
  *
  * Menambahkan pemeriksaan kedua di formulir akan meninggalkan dua aturan yang
  * masih bisa bergeser sendiri-sendiri — yaitu bentuk yang melahirkan cacat
