@@ -65,6 +65,20 @@
           "notes": {
             "type": "string"
           },
+          "retak": {
+            "default": false,
+            "description": "Cangkangnya retak. BUKAN status \u2014 telur retak tetap punya status fertilitasnya sendiri dan masih bisa menetas. Dijadikan status akan mengeluarkannya dari hitungan fertil/infertil/menetas dan membuat pertanyaan terpenting \u2014 apakah yang retak itu selamat \u2014 tidak bisa dijawab.",
+            "type": "boolean"
+          },
+          "retak_catatan": {
+            "description": "Perlakuan yang diberikan pada telur retak (mis. ditutup lilin/lem, dipisah tray).",
+            "type": "string"
+          },
+          "retak_date": {
+            "description": "Tanggal retaknya diketahui. Kosong untuk yang dicatat sejak hari bertelur.",
+            "format": "date",
+            "type": "string"
+          },
           "status": {
             "enum": [
               "belum_dicek",
