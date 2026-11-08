@@ -1,4 +1,5 @@
 import { idKuraDenganKasusTerbuka, sedangSakitLengkap } from "@/lib/kesehatanKura";
+import { kelaminTerlaluDini, BATAS_KELAMIN_CM } from "@/lib/kelaminKura";
 import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
