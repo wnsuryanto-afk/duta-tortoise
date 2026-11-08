@@ -1,4 +1,5 @@
 import { bacaBarang, bacaHarga } from "@/lib/hargaSupplier";
+import { tanggalLokal } from "@/lib/safeDate";
 
 /**
  * pasarSupplier.js — sayur apa yang ada, dari siapa, dan berapa per kilogram.
@@ -296,7 +297,7 @@ export function keandalanSupplier({ movements = [], suppliers = [], hariIni = ne
     e.nilai += Number(m.total_value || m.total_purchase_price || 0);
   }
 
-  const hariIniStr = hariIni.toISOString().slice(0, 10);
+  const hariIniStr = tanggalLokal(hariIni);
 
   return [...per.values()]
     .map(({ supplier: s, tanggal, nilai }) => {

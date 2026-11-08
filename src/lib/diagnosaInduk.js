@@ -45,6 +45,7 @@
  * ketahuan bertelur" adalah kalimat yang sama.
  */
 import { umurTahun } from "@/lib/produksiBetina";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 /** Betina sebanyak ini di satu kandang sudah cukup untuk menilai kandangnya. */
 export const MIN_BETINA_NILAI_KANDANG = 3;
@@ -132,7 +133,7 @@ export function diagnosaBetina(r, { kandang, bulanAdaptasi = BULAN_ADAPTASI_BAWA
   const sebab = [];
   const usulan = [];
   const k = kandang || {};
-  const hari = String(hariIni || new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const hari = String(hariIni || tanggalHariIni()).slice(0, 10);
   const lamaBulan = bulanAntara(r?.purchaseDate, hari);
   const ayah = r?.ayah || {};
 

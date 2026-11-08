@@ -4,6 +4,7 @@ import { hanyaLaporan } from "@/lib/laporan";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, TrendingUp, Clock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function HRMetrics() {
   const { role } = useCurrentUser();
@@ -12,7 +13,7 @@ export default function HRMetrics() {
   const { data: attendances = [] } = useQuery({
     queryKey: ["attendances-hr"],
     queryFn: async () => hanyaLaporan(await base44.entities.Attendance.filter({
-      date: new Date().toISOString().split('T')[0]
+      date: tanggalHariIni()
     })),
     enabled: isAdmin,
   });
@@ -23,7 +24,7 @@ export default function HRMetrics() {
     enabled: isAdmin,
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = tanggalHariIni();
   const currentMonth = today.substring(0, 7);
 
   const { data: overtimeLogs = [] } = useQuery({

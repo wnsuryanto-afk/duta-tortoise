@@ -18,6 +18,7 @@ import PasarSayurTab from "@/components/supplier/PasarSayurTab";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
 import PageHeader from "@/components/common/PageHeader";
 import { keandalanSupplier } from "@/lib/pasarSupplier";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 function StarRating({ rating }) {
   return (
@@ -137,7 +138,7 @@ function SupplierItemForm({ supplierId, supplierName, item, onClose, onSaved }) 
   const handleSave = async () => {
     if (!form.item_name || !form.price) return;
     setSaving(true);
-    const data = { ...form, supplier_id: supplierId, supplier_name: supplierName, price: Number(form.price), last_updated: new Date().toISOString().split("T")[0] };
+    const data = { ...form, supplier_id: supplierId, supplier_name: supplierName, price: Number(form.price), last_updated: tanggalHariIni() };
     if (item?.id) {
       await base44.entities.SupplierItem.update(item.id, data);
     } else {

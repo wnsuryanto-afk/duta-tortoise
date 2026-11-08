@@ -6,13 +6,14 @@ import { differenceInMonths } from "date-fns";
 import { masukLaporan } from "@/lib/laporan";
 import { diPeternakan } from "@/lib/populasiKura";
 import { biayaTerbebanKura } from "@/lib/pemakaianBarang";
+import { bulanHariIni } from "@/lib/safeDate";
 
 /**
  * Hook: hitung biaya per ekor per bulan dari data aktual
  * @param {string} period - YYYY-MM (default: bulan ini)
  */
 export function useCostPerTortoise(period) {
-  const monthKey = period || new Date().toISOString().slice(0, 7);
+  const monthKey = period || bulanHariIni();
 
   const { data: finances = [] } = useQuery({
     queryKey: ["hpp-finances", monthKey],

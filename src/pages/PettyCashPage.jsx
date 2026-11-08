@@ -30,6 +30,7 @@ import { pastikanMasukBukuKas } from "@/lib/cairkanKasKecil";
 import PageHeader from "@/components/common/PageHeader";
 import { WalletArt } from "@/components/common/Illustration";
 import { rupiah } from "@/lib/rupiah";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const REQUEST_CATEGORIES = ["Obat", "Vitamin", "Pakan", "Peralatan Kandang", "Transportasi", "Lainnya"];
 
@@ -61,7 +62,7 @@ function RequestForm({ user, role, users, onClose, onSaved }) {
       requester_name: form.feeder_name || user?.full_name || user?.email,
       reason: form.keperluan, amount_requested: Number(form.amount),
       category: form.category, need_date: form.need_date, notes: form.notes,
-      status: "diajukan", request_date: new Date().toISOString().split("T")[0],
+      status: "diajukan", request_date: tanggalHariIni(),
     });
     setSaving(false); onSaved(); onClose();
     toast.success("Request kas kecil berhasil diajukan");
@@ -210,7 +211,7 @@ export default function PettyCashPage() {
     await base44.entities.PettyCashRequest.update(req.id, {
       status: approved ? "disetujui" : "ditolak",
       approved_by: user?.full_name || user?.email,
-      approved_date: new Date().toISOString().split("T")[0],
+      approved_date: tanggalHariIni(),
     });
     invalidate();
     toast.success(approved ? "Request disetujui" : "Request ditolak");

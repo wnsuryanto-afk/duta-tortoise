@@ -45,8 +45,9 @@ import {
 } from "@/lib/pemakaianBarang";
 import { statusKedaluwarsaBatch, alasanKedaluwarsaBatch } from "@/lib/kedaluwarsaBatch";
 import { rupiah } from "@/lib/rupiah";
+import { tanggalHariIni } from "@/lib/safeDate";
 
-const hariIni = () => new Date().toISOString().split("T")[0];
+const hariIni = () => tanggalHariIni();
 
 export default function AmbilBarangScan({ trigger = "button", onSelesai }) {
   const { testModeTag } = useTestMode();

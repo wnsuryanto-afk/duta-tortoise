@@ -10,6 +10,7 @@ import { rupiah } from "@/lib/rupiah";
 import { nilaiAsetKura, hargaBasi, HARI_HARGA_BASI, barisKembarAsal } from "@/lib/hargaEstimasi";
 import { Link } from "react-router-dom";
 import { LABEL_SPESIES, LABEL_MORPH, LABEL_KELAMIN, LABEL_ASAL, judulKura } from "@/lib/labelKura";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 /**
  * HargaKuraPage — perkiraan harga jual per kelompok, untuk nilai aset.
@@ -87,7 +88,7 @@ export default function HargaKuraPage() {
   const simpan = async () => {
     if (berubah.length === 0) return;
     setMenyimpan(true);
-    const hariIniISO = new Date().toISOString().slice(0, 10);
+    const hariIniISO = tanggalHariIni();
     try {
       for (const b of berubah) {
         const d = draf[b.kunci] || {};

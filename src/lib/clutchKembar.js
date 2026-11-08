@@ -1,3 +1,5 @@
+import { tanggalLokal } from "@/lib/safeDate";
+
 /**
  * clutchKembar.js — satu pasangan, satu tanggal bertelur, satu catatan.
  *
@@ -43,8 +45,10 @@ function hari(nilai) {
   if (!nilai) return "";
   const t = String(nilai).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
-  const d = new Date(t);
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  // tanggalLokal, bukan toISOString: `new Date("8 Nov 2026")` adalah tengah
+  // malam SETEMPAT, dan toISOString pada tengah malam di Jakarta jatuh pada
+  // tanggal sebelumnya — dua clutch kembar jadi tidak lagi berpasangan.
+  return tanggalLokal(t);
 }
 
 const bersih = (s) => String(s ?? "").trim().toLowerCase();

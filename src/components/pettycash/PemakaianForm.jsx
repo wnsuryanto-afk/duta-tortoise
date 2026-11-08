@@ -12,6 +12,7 @@ import { PETTYCASH_CATS as PEMAKAIAN_CATS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
 import { logActivity } from "@/lib/logActivity";
 import { useTestMode } from "@/lib/useTestMode";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function PemakaianForm({ currentSaldo, user, role, onClose, onSaved }) {
   const { testModeTag } = useTestMode();
@@ -20,7 +21,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
   const [amountManual, setAmountManual] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split("T")[0]);
+  const [entryDate, setEntryDate] = useState(tanggalHariIni());
   const [proofPhoto, setProofPhoto] = useState("");
   const [noNota, setNoNota] = useState(false);
   const [noNotaReason, setNoNotaReason] = useState("");
@@ -109,7 +110,7 @@ export default function PemakaianForm({ currentSaldo, user, role, onClose, onSav
         }
         if (result.keterangan) setDescription(result.keterangan);
         // Validate scanned date: null/invalid → today; suspicious year → today + warning
-        const todayStr = new Date().toISOString().split("T")[0];
+        const todayStr = tanggalHariIni();
         const currentYear = new Date().getFullYear();
         const rawDate = result.tanggal;
         let parsedDate = null;

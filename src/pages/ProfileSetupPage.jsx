@@ -9,6 +9,7 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { upsertUserProfile } from "@/lib/userProfileUpsert";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const REQUIRED_FIELDS = ["full_name"];
 
@@ -127,7 +128,7 @@ export default function ProfileSetupPage() {
     const skipData = {
       full_name: form.full_name || user?.full_name || "Pengguna",
       hp_whatsapp: form.hp_whatsapp || "",
-      join_date: form.join_date || new Date().toISOString().split("T")[0],
+      join_date: form.join_date || tanggalHariIni(),
       is_complete: true,
       tour_completed: true,
     };

@@ -144,3 +144,61 @@ export function tanggalHariIni(sekarang = new Date()) {
   const p = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+/**
+ * Tanggal sebuah Date dalam "YYYY-MM-DD", menurut jam SETEMPAT.
+ *
+ * Dipakai untuk tanggal TURUNAN — hasil hitungan, bukan "hari ini":
+ * tujuh hari terakhir di grafik beranda, daftar tanggal di laporan gaji,
+ * tanggal kedaluwarsa pelet, batas waktu penilaian. Semuanya dirakit dengan
+ * `new Date(tahun, bulan, hari)`, yang berarti tengah malam SETEMPAT — dan
+ * `toISOString()` pada tengah malam setempat di Jakarta jatuh pada pukul
+ * 17:00 hari SEBELUMNYA. Jadi tiap tanggal turunan bergeser satu hari,
+ * selalu, bukan cuma sebelum pukul tujuh pagi.
+ *
+ * Mengembalikan "" bila nilainya tidak terbaca sebagai tanggal — bukan
+ * tanggal hari ini, karena pemanggil yang menyangka punya tanggal padahal
+ * tidak sebaiknya melihat kekosongan itu, bukan angka yang menenangkan.
+ */
+export function tanggalLokal(nilai) {
+  // Teks yang SUDAH berbentuk tanggal dikembalikan apa adanya: melewatkannya
+  // lewat `new Date(teks)` berarti tengah malam UTC, dan di zona waktu barat
+  // itu jatuh pada tanggal sebelumnya — tanggal yang tertulis berubah hanya
+  // karena dibaca ulang.
+  if (typeof nilai === "string") {
+    const cocok = /^\d{4}-\d{2}-\d{2}/.exec(nilai.trim());
+    if (cocok) return cocok[0];
+  }
+  const d = nilai instanceof Date ? nilai : safeParseDate(nilai);
+  if (!isValidDate(d)) return "";
+  return tanggalHariIni(d);
+}
+
+/**
+ * Bulan ini dalam "YYYY-MM", menurut jam SETEMPAT.
+ *
+ * `new Date().toISOString().slice(0, 7)` benar selama 30 hari dari 31, lalu
+ * salah pada yang satu itu: setiap tanggal 1 sebelum pukul tujuh pagi ia
+ * masih menyebut bulan LALU. Yang membacanya adalah rekap bulanan kas kecil,
+ * target penjualan, dan biaya per kura — tiga layar yang justru dibuka pagi
+ * hari di awal bulan, saat orang ingin tahu bulan baru dimulai dari mana.
+ */
+export function bulanHariIni(sekarang = new Date()) {
+  return tanggalHariIni(sekarang).slice(0, 7);
+}
+
+/**
+ * Saat ini dalam "YYYY-MM-DDTHH:mm", menurut jam SETEMPAT.
+ *
+ * Bentuk yang diminta `<input type="datetime-local">`. Isian itu TIDAK
+ * mengenal zona waktu: apa pun yang ditulis di situ dibaca sebagai jam
+ * setempat. Jadi mengisinya dengan `new Date().toISOString().slice(0, 16)`
+ * memberi jam UTC yang lalu dibaca sebagai jam setempat — di Jakarta
+ * pembacaan inkubator pukul 14:00 muncul sebagai 07:00, tujuh jam yang
+ * hilang tanpa ada yang salah ketik.
+ */
+export function waktuLokalSekarang(sekarang = new Date()) {
+  const d = isValidDate(sekarang) ? sekarang : new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${tanggalHariIni(d)}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}

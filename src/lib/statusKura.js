@@ -1,4 +1,5 @@
 import { STATUS_KELUAR } from "@/lib/populasiKura";
+import { tanggalHariIni } from "@/lib/safeDate";
 /**
  * statusKura.js — aturan perpindahan status kura.
  *
@@ -47,7 +48,7 @@ export function perubahanSembuh(kura, tanggal) {
   return {
     is_currently_sick: false,
     status: statusSetelahSembuh(kura),
-    last_status_change: tanggal || new Date().toISOString().split("T")[0],
+    last_status_change: tanggal || tanggalHariIni(),
   };
 }
 
@@ -64,7 +65,7 @@ export function perubahanSakit(kura, tanggal) {
     is_currently_sick: true,
     status: "sakit",
     previous_status: sekarang && sekarang !== "sakit" ? sekarang : kura?.previous_status,
-    last_status_change: tanggal || new Date().toISOString().split("T")[0],
+    last_status_change: tanggal || tanggalHariIni(),
   };
 }
 

@@ -49,6 +49,7 @@ import {
   usulanJantan,
 } from "@/lib/diagnosaInduk";
 import { jarakKebun, kalimatSumber, siklusBetina, urutkanSiklus } from "@/lib/siklusBertelur";
+import { tanggalLokal } from "@/lib/safeDate";
 
 /** Tag pendek sumber jarak. Kalimat lengkapnya pindah ke tooltip. */
 const TAG_SUMBER = {
@@ -104,7 +105,7 @@ function AngkaMundur({ s }) {
 export default function NaikkanProduksi({ baris = [], breedings = [], tortoises = [], umurMinimal = null, hariIni }) {
   const [semua, setSemua] = useState(false);
   const hari = useMemo(
-    () => (hariIni instanceof Date ? hariIni : new Date(hariIni || Date.now())).toISOString().slice(0, 10),
+    () => tanggalLokal(hariIni || new Date()),
     [hariIni],
   );
 

@@ -22,6 +22,7 @@ import { segarkanBreeding } from "@/lib/kunciBreeding";
 import { barisTelurAwal, terapkanStatus, terapkanSemua, sudahJadiKura } from "@/lib/barisTelur";
 import { tandaiRetak, retak as telurRetak, ringkasRetak } from "@/lib/telurRetak";
 import KendaliRetak from "@/components/breeding/KendaliRetak";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const EGG_STATUS = [
   { value: "belum_dicek", label: "⬜ Belum Dicek",  bg: "bg-muted",  border: "border-gray-400",  text: "text-foreground" },
@@ -213,14 +214,14 @@ function EggBottomSheet({ egg, breeding, breedingStatus, candlingAllowed, onClos
       return;
     }
     setSaving(true);
-    await onUpdateStatus(egg.egg_number, newStatus, new Date().toISOString().split("T")[0], notes);
+    await onUpdateStatus(egg.egg_number, newStatus, tanggalHariIni(), notes);
     setSaving(false);
     onClose();
   };
 
   const handleConfirmChange = async () => {
     setSaving(true);
-    await onUpdateStatus(egg.egg_number, confirmChange, new Date().toISOString().split("T")[0], notes);
+    await onUpdateStatus(egg.egg_number, confirmChange, tanggalHariIni(), notes);
     setSaving(false);
     setConfirmChange(null);
     onClose();
@@ -681,7 +682,7 @@ export default function EggGrid({ breeding, onRefresh }) {
   */
   const updateEggStatus = async (eggNumber, newStatus, checkDate, notes) => {
     setSaving(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = tanggalHariIni();
     const updated = terapkanStatus(records, {
       eggNumber, status: newStatus, checkDate, notes, hariIni: today,
     });
@@ -718,7 +719,7 @@ export default function EggGrid({ breeding, onRefresh }) {
   */
   const updateEggRetak = async (eggNumber, nilai, catatan) => {
     setSaving(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = tanggalHariIni();
     const updated = tandaiRetak(records, { eggNumber, nilai, tanggal: today, catatan });
     try {
       await base44.entities.Breeding.update(breeding.id, { egg_records: updated });
@@ -757,7 +758,7 @@ export default function EggGrid({ breeding, onRefresh }) {
   const handleHatchSkip = () => { setPendingHatch(null); };
 
   const handleOpenHatchCreate = (eggNumber) => {
-    setPendingHatch({ eggNumber, hatchDate: new Date().toISOString().split("T")[0] });
+    setPendingHatch({ eggNumber, hatchDate: tanggalHariIni() });
   };
 
   const handleSelesaikanInkubasi = async () => {
@@ -775,7 +776,7 @@ export default function EggGrid({ breeding, onRefresh }) {
     try {
       await base44.entities.Breeding.update(breeding.id, {
         status: "selesai",
-        completed_date: new Date().toISOString().split("T")[0],
+        completed_date: tanggalHariIni(),
         hatched_count: ringkas.hatched_count,
         failed_count: ringkas.failed_count,
         fertile_count: ringkas.fertile_count,
@@ -810,7 +811,7 @@ export default function EggGrid({ breeding, onRefresh }) {
       return;
     }
     setSaving(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = tanggalHariIni();
     /* Telur yang sudah jadi kura terdaftar DILEWATI: menandainya infertil
        sambil membiarkan tortoise_id-nya menghasilkan kura hidup yang menurut
        catatan berasal dari telur yang tidak pernah berkembang. */

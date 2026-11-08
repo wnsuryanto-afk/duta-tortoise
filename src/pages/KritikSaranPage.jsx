@@ -16,6 +16,7 @@ import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import PageHeader from "@/components/common/PageHeader";
 import { TeamArt } from "@/components/common/Illustration";
+import { bulanHariIni, tanggalHariIni } from "@/lib/safeDate";
 
 const STATUS_CONFIG = {
   baru:             { label: "Baru",            color: "bg-yellow-100 text-yellow-700" },
@@ -139,7 +140,7 @@ export default function KritikSaranPage() {
       await base44.entities.FeedbackSuggestion.update(selected.id, {
         response: responseText,
         responded_by: user.full_name,
-        responded_date: new Date().toISOString().split("T")[0],
+        responded_date: tanggalHariIni(),
         status: "ditindaklanjuti",
       });
       // Poin bonus untuk masukan yang ditindaklanjuti.
@@ -147,7 +148,7 @@ export default function KritikSaranPage() {
       let poinDiberi = 0;
       if (selected.submitted_by_email && selected.submitted_by_email !== user?.email) {
         try {
-          const period = new Date().toISOString().slice(0, 7); // yyyy-MM
+          const period = bulanHariIni(); // yyyy-MM
           const existing = await base44.entities.BonusReward.filter({
             employee_email: selected.submitted_by_email,
             period,

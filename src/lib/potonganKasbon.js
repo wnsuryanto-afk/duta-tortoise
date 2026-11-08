@@ -1,3 +1,4 @@
+import { tanggalHariIni } from "@/lib/safeDate";
 /**
  * potonganKasbon.js — satu pintu untuk mencatat cicilan kasbon.
  *
@@ -87,7 +88,7 @@ export function patchPotongan(kasbon, { jumlah, metode = "manual", salarySlipId 
     ...(kasbon.deduction_log || []),
     {
       amount: dipotong,
-      date: tanggal || new Date().toISOString().split("T")[0],
+      date: tanggal || tanggalHariIni(),
       method: metode,
       salary_period: periode,
       salary_slip_id: salarySlipId,

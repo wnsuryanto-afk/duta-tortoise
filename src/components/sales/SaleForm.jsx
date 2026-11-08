@@ -13,6 +13,7 @@ import { Loader2, TrendingUp } from "lucide-react";
 import { useTestMode } from "@/lib/useTestMode";
 import { toast } from "sonner";
 import { ongkirUntukHpp } from "@/lib/hppKura";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function SaleForm({ open, onClose, editData }) {
   const queryClient = useQueryClient();
@@ -29,7 +30,7 @@ export default function SaleForm({ open, onClose, editData }) {
 
   const [form, setForm] = useState(editData || {
     tortoise_name: "", tortoise_id: "", buyer_name: "", hp_whatsapp: "",
-    buyer_address: "", sale_date: new Date().toISOString().split("T")[0],
+    buyer_address: "", sale_date: tanggalHariIni(),
     price: "", hpp: "", shipping_cost: 0, ongkir_ditanggung: "penjual", payment_status: "lunas", shipping_method: "ambil_sendiri", notes: "",
   });
 
@@ -137,7 +138,7 @@ export default function SaleForm({ open, onClose, editData }) {
             previous_status: kuraTerjual?.status && kuraTerjual.status !== "terjual"
               ? kuraTerjual.status
               : kuraTerjual?.previous_status,
-            last_status_change: new Date().toISOString().split("T")[0],
+            last_status_change: tanggalHariIni(),
             ...kosongkanKandang(),
           });
           kuraDitandai = true;

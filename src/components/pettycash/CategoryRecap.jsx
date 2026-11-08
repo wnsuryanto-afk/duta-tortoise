@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
 import { rupiah } from "@/lib/rupiah";
+import { bulanHariIni } from "@/lib/safeDate";
 
 
 export default function CategoryRecap({ ledger }) {
@@ -14,7 +15,7 @@ export default function CategoryRecap({ ledger }) {
   const catLabels = pettyCats.length
     ? Object.fromEntries(pettyCats.map(c => [c.value, c.label]))
     : PETTYCASH_CAT_LABELS;
-  const currentMonth = new Date().toISOString().substring(0, 7);
+  const currentMonth = bulanHariIni();
   const [recapMonth, setRecapMonth] = useState(currentMonth);
 
   const pemakaians = useMemo(() => {

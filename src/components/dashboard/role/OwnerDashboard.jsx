@@ -56,6 +56,7 @@ import RincianAset from "@/components/dashboard/RincianAset";
 import KartuModalAset from "@/components/dashboard/KartuModalAset";
 import { kelengkapanHargaBarang } from "@/lib/hargaBarang";
 import { kalimatKomposisi, ringkasUmur } from "@/lib/anakanKura";
+import { tanggalLokal } from "@/lib/safeDate";
 
 // ─── Helpers ───────────────────────────────────────
 const pct = (a, b) => (b ? ((a / b) * 100).toFixed(1) : "0.0");
@@ -384,7 +385,7 @@ export default function OwnerDashboard({ user }) {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      hari.push(d.toISOString().slice(0, 10));
+      hari.push(tanggalLokal(d));
     }
     const masuk = [], keluar = [], laba = [];
     hari.forEach((tgl) => {

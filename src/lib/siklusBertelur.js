@@ -1,3 +1,4 @@
+import { tanggalHariIni } from "@/lib/safeDate";
 /**
  * siklusBertelur.js — "bulan depan dia bertelur lagi, atau tidak?"
  *
@@ -139,7 +140,7 @@ export function jarakKebun(breedings = []) {
  * }}
  */
 export function siklusBetina(tanggal = [], { hariIni, jarakKebun: jarakKbn = null } = {}) {
-  const hari = String(hariIni || new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const hari = String(hariIni || tanggalHariIni()).slice(0, 10);
   const urut = [...new Set((tanggal || []).filter(Boolean).map((t) => String(t).slice(0, 10)))].sort();
   const jarakSendiri = jarakClutch(urut);
   const kosong = {

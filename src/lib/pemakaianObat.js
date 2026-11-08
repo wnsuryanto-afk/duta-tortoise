@@ -46,6 +46,7 @@
 
 import { base44 } from "@/api/base44Client";
 import { potongBatchGudang } from "@/lib/pemakaianBarang";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 export const KEPERLUAN = "pengobatan_kura";
 
@@ -126,7 +127,7 @@ export async function terapkanPemakaianObat({ record, itemsLama, itemsBaru, user
   let diterapkan = 0;
   const gagal = [];
   const kurangBatch = [];
-  const tanggal = record?.date || new Date().toISOString().slice(0, 10);
+  const tanggal = record?.date || tanggalHariIni();
 
   for (const s of selisih) {
     try {

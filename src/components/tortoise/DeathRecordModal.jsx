@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { Camera, Loader2, X, AlertTriangle } from "lucide-react";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const DEATH_CAUSES = [
   { value: "sakit",           label: "💊 Sakit / Penyakit" },
@@ -24,7 +25,7 @@ const DEATH_CAUSES = [
 ];
 
 export default function DeathRecordModal({ tortoise, open, onClose, onSaved }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = tanggalHariIni();
   const [deathDate, setDeathDate]         = useState(today);
   const [cause, setCause]                 = useState("");
   const [notes, setNotes]                 = useState("");

@@ -20,7 +20,7 @@
 
 // Umur piutang tidak pernah negatif: tagihan bertanggal besok belum berumur,
 // bukan berumur minus. Hitungannya sendiri di lib/safeDate.js.
-import { selisihHari as hariAntara } from "@/lib/safeDate";
+import { selisihHari as hariAntara, tanggalHariIni } from "@/lib/safeDate";
 
 const selisihHari = (dari, sampai) => Math.max(0, hariAntara(dari, sampai) ?? 0);
 
@@ -50,7 +50,7 @@ export function sisaTagihan(sale) {
  *   Tiap baris: { kunci, nama, sisa, jumlahNota, terlamaHari, terakhirTanggal }
  */
 export function piutangPerPembeli(sales = [], hariIni) {
-  const hari = hariIni || new Date().toISOString().split("T")[0];
+  const hari = hariIni || tanggalHariIni();
   const perPembeli = new Map();
 
   sales.forEach((s) => {

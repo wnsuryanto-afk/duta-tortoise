@@ -20,6 +20,7 @@ import TreatmentItemsPicker from "./TreatmentItemsPicker";
 import TortoiseSearchSelect from "./TortoiseSearchSelect";
 import { useTestMode } from "@/lib/useTestMode";
 import { terapkanPemakaianObat, menjadiPengeluaran } from "@/lib/pemakaianObat";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 const SEVERITY_OPTIONS = [
   { value: "ringan",  label: "🟢 Ringan" },
@@ -67,7 +68,7 @@ export default function HealthForm({ open, onClose, editData }) {
 
   const [form, setForm] = useState(editData || {
     tortoise_name: "", tortoise_id: "",
-    date: new Date().toISOString().split("T")[0],
+    date: tanggalHariIni(),
     type: "checkup",
     diagnoses: [],
     severity: "",

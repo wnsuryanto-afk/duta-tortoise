@@ -1,3 +1,5 @@
+import { tanggalHariIni } from "@/lib/safeDate";
+
 /**
  * Menilai apakah sebuah tanggal pesanan masuk akal.
  *
@@ -23,8 +25,7 @@
  */
 export const BATAS_MUNDUR_HARI = 120;
 
-const iso = (d) => d.toISOString().split("T")[0];
-export const hariIniISO = () => iso(new Date());
+export const hariIniISO = () => tanggalHariIni();
 
 /**
  * @param {string} tanggal  "YYYY-MM-DD"

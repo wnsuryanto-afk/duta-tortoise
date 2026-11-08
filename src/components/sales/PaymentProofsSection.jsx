@@ -8,13 +8,14 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { rupiah } from "@/lib/rupiah";
 import { toast } from "sonner";
+import { tanggalHariIni } from "@/lib/safeDate";
 
 
 export default function PaymentProofsSection({ sale, onUpdated }) {
   const [showAdd, setShowAdd] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ amount: "", date: new Date().toISOString().split("T")[0], notes: "", photo_url: "" });
+  const [form, setForm] = useState({ amount: "", date: tanggalHariIni(), notes: "", photo_url: "" });
 
   const proofs = sale?.payment_proofs || [];
   const totalPaid = proofs.reduce((s, p) => s + (p.amount || 0), 0);
@@ -68,7 +69,7 @@ export default function PaymentProofsSection({ sale, onUpdated }) {
          gagal, angka yang sudah diketik tetap di tempatnya dan bisa dicoba
          lagi tanpa mengetik ulang. */
       setShowAdd(false);
-      setForm({ amount: "", date: new Date().toISOString().split("T")[0], notes: "", photo_url: "" });
+      setForm({ amount: "", date: tanggalHariIni(), notes: "", photo_url: "" });
       toast.success(`Pembayaran ${rupiah(Number(form.amount))} dicatat`);
     } catch (e) {
       toast.error(`Gagal mencatat pembayaran: ${e?.message || "kesalahan tidak diketahui"}`);

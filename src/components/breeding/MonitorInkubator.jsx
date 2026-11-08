@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { toast } from "sonner";
+import { waktuLokalSekarang } from "@/lib/safeDate";
 
 const alarmLabels = {
   normal:          { label: "Normal",         color: "bg-green-100 text-green-700" },
@@ -29,7 +30,7 @@ function ReadingForm({ incubators, user, onClose }) {
   const [form, setForm] = useState({
     incubator_id: "",
     incubator_name: "",
-    date_time: new Date().toISOString().slice(0, 16),
+    date_time: waktuLokalSekarang(),
     temperature_actual: "",
     humidity_actual: "",
     recorded_by: user?.full_name || user?.email || "",
