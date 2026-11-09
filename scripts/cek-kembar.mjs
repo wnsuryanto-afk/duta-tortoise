@@ -18,6 +18,17 @@ import fs from "fs";
 import { kupasKomentar } from "./lib/kupasKomentar.mjs";
 
 const PASANGAN = [
+  // `akanKadaluarsa` dan `sudahKadaluarsa` ADA di kedua berkas ini, dan
+  // sengaja TIDAK didaftarkan di sini. Bukan kelalaian — badannya memang
+  // harus berbeda, dengan alasan yang sama seperti `selisihHari` di bawah:
+  // sisi backend berjalan di UTC dan menggeser +7 jam sendiri, sisi frontend
+  // memakai tengah malam setempat lewat lib/safeDate.js.
+  //
+  // Yang dijaga JANJINYA, bukan bentuknya, dan dijaga di scripts/cek-ronda.mjs:
+  // kedua sisi menjawab sama untuk tiap tanggal, dan tidak satu pun barang
+  // boleh "sudah lewat" sekaligus "akan kedaluwarsa". 9 Nov 2026 keduanya
+  // pernah benar bersamaan dan satu obat muncul di dua daftar yang saling
+  // meniadakan di dalam satu pesan notifikasi.
   ["src/lib/stokMenipis.js",   "base44/shared/stok.ts",          ["stokHabis", "stokMenipis", "perluDiperhatikan", "dilacak", "golonganStok", "idBarangRacikan", "diracikSendiri"]],
   ["src/lib/laporan.js",       "base44/shared/laporan.ts",       ["masukLaporan", "tandaLaporan"]],
   ["src/lib/populasiKura.js",  "base44/shared/kura.ts",          ["diPeternakan"]],

@@ -160,28 +160,86 @@ export function golonganStok(daftar: any[] = [], idRacikan: Set<string> | null =
 /** Berapa hari sebelum kedaluwarsa sebuah barang mulai diperingatkan. */
 export const HARI_PERINGATAN_KADALUARSA = 30;
 
+/*
+  ── Kedaluwarsa itu pernyataan tentang HARI, bukan tentang detik ──────────
+
+  9 Nov 2026 satu pesan notifikasi memuat barang yang sama di DUA daftar yang
+  saling meniadakan:
+
+      SUDAH LEWAT TANGGAL — jangan dipakai (3):
+        Stone Breaker (Pelarut Batu): 2026-11-09
+      KEDALUWARSA ≤ 30 HARI (2):
+        Stone Breaker (Pelarut Batu): 2026-11-09
+
+  Obat yang sama sekaligus "jangan dipakai" dan "masih ada sisa waktu".
+
+  Dua sebab, keduanya dari membandingkan DETIK alih-alih HARI:
+
+    1. `new Date("2026-11-09")` adalah tengah malam UTC, yaitu pukul 07:00
+       WIB. Cron-nya jalan 00:46 UTC = 07:46 WIB, jadi barang yang baru
+       kedaluwarsa HARI INI sudah dinyatakan lewat — padahal tanggal
+       kedaluwarsa adalah hari TERAKHIR barang itu masih boleh dipakai.
+       Kebalikannya juga: antara tengah malam dan pukul tujuh pagi WIB,
+       barang yang kedaluwarsa KEMARIN masih dinyatakan aman.
+
+    2. `Math.ceil` dari selisih negatif yang kecil memberi `-0`, dan di
+       JavaScript `-0 >= 0` bernilai BENAR. Jadi barang yang sudah lewat ikut
+       lolos saringan "akan kedaluwarsa".
+
+  Sekarang keduanya dihitung dari selisih HARI KALENDER WIB, dan keduanya
+  berbagi satu sumber (`sisaHariKedaluwarsa`) sehingga `sisa < 0` dan
+  `sisa >= 0` tidak mungkin benar bersamaan. Kembarannya di frontend
+  src/lib/kedaluwarsa.js sudah memakai hari kalender sejak awal — itu yang
+  diikuti di sini, bukan sebaliknya.
+*/
+
+const HARI_MS = 86400000;
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/** "YYYY-MM-DD" → tengah malam UTC hari itu; NaN bila tidak terbaca. */
+function hariDariTeks(nilai: any): number {
+  const cocok = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(nilai ?? "").trim());
+  if (cocok) return Date.UTC(Number(cocok[1]), Number(cocok[2]) - 1, Number(cocok[3]));
+  const d = new Date(String(nilai ?? ""));
+  if (Number.isNaN(d.getTime())) return NaN;
+  const w = new Date(d.getTime() + WIB_OFFSET_MS);
+  return Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate());
+}
+
+/** Tengah malam WIB hari ini, sebagai tengah malam UTC hari yang sama. */
+function hariIni(sekarang: Date): number {
+  const w = new Date(sekarang.getTime() + WIB_OFFSET_MS);
+  return Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate());
+}
+
 /**
- * Akan kedaluwarsa dalam `hari` ke depan. Yang sudah lewat tidak dihitung di
- * sini — itu keadaan lain dan ditangani sudahKadaluarsa().
+ * Sisa HARI sampai tanggal kedaluwarsa; null bila tanggalnya kosong/tak terbaca.
+ * 0 berarti kedaluwarsa hari ini — hari terakhir barang itu masih boleh dipakai.
+ */
+export function sisaHariKedaluwarsa(item: any, sekarang = new Date()): number | null {
+  if (!item?.expired_date) return null;
+  const tanggal = hariDariTeks(item.expired_date);
+  if (Number.isNaN(tanggal)) return null;
+  return Math.round((tanggal - hariIni(sekarang)) / HARI_MS);
+}
+
+/**
+ * Akan kedaluwarsa dalam `hari` ke depan. Yang sudah lewat TIDAK ikut —
+ * itu keadaan lain dan ditangani sudahKadaluarsa().
  *
  * Ditambahkan ke sisi backend 15-09-2026. Sebelumnya aturan ini hanya ada di
  * frontend, dan tidak satu pun otomatisasi memeriksanya — jadi kedaluwarsa
  * hanya terlihat oleh orang yang kebetulan membuka halaman stok.
  */
 export function akanKadaluarsa(item: any, hari = HARI_PERINGATAN_KADALUARSA, sekarang = new Date()): boolean {
-  if (!item?.expired_date) return false;
-  const tanggal = new Date(item.expired_date);
-  if (Number.isNaN(tanggal.getTime())) return false;
-  const selisih = Math.ceil((tanggal.getTime() - sekarang.getTime()) / 86400000);
-  return selisih >= 0 && selisih <= hari;
+  const sisa = sisaHariKedaluwarsa(item, sekarang);
+  return sisa !== null && sisa >= 0 && sisa <= hari;
 }
 
-/** Sudah lewat tanggal kedaluwarsanya. */
+/** Sudah lewat tanggal kedaluwarsanya — yaitu kemarin atau sebelumnya. */
 export function sudahKadaluarsa(item: any, sekarang = new Date()): boolean {
-  if (!item?.expired_date) return false;
-  const tanggal = new Date(item.expired_date);
-  if (Number.isNaN(tanggal.getTime())) return false;
-  return tanggal.getTime() < sekarang.getTime();
+  const sisa = sisaHariKedaluwarsa(item, sekarang);
+  return sisa !== null && sisa < 0;
 }
 
 /**
