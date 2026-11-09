@@ -16,6 +16,7 @@ import { masukLaporan } from "@/lib/laporan";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { diPeternakan, sedangSakit } from "@/lib/populasiKura";
 import { rupiah } from "@/lib/rupiah";
+import { hitungMundur } from "@/lib/hitungMundur";
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
@@ -83,9 +84,28 @@ export default function InvestorDashboard({ user }) {
   // Breeding calcs
   const activeBreedings = breedings.filter(clutchAktif);
   const now2 = new Date();
+  /*
+    Hitung mundurnya dari hitungMundur(), bukan dihitung di sini.
+
+    Versi lama menghitung mundur ke `estimated_hatch_end`, yaitu hari
+    TERAKHIR jendela menetas. Jendelanya selebar 25 hari (bertelur + 80
+    sampai bertelur + 105), jadi "sisa 7 hari" baru muncul 18 hari sesudah
+    telurnya benar-benar bisa menetas — dan angkanya berubah sendiri
+    melewati pukul tujuh malam karena `new Date("2026-12-18")` adalah tengah
+    malam UTC, bukan tengah malam di sini.
+
+    `daysLeft` sekarang berarti: positif = sekian hari lagi jendelanya
+    dibuka, 0 = sedang di dalam jendela, negatif = sudah lewat perkiraan.
+    Urutan menaik karena itu menaruh yang terlambat paling atas.
+  */
   const breedingWithCountdown = activeBreedings.map(b => {
-    const hatchEnd = b.estimated_hatch_end ? new Date(b.estimated_hatch_end) : null;
-    const daysLeft = hatchEnd ? Math.ceil((hatchEnd - now2) / 86400000) : null;
+    const m = hitungMundur(b, now2);
+    const daysLeft =
+      !m ? null
+      : m.jenis === "menuju" ? m.hari
+      : m.jenis === "masa" ? 0
+      : m.jenis === "lewat" ? -(m.hari ?? 0)
+      : null;
     return { ...b, daysLeft };
   }).sort((a, b) => (a.daysLeft ?? 999) - (b.daysLeft ?? 999));
 

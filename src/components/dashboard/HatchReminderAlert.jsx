@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Egg } from "lucide-react";
-import { differenceInDays, parseISO, format } from "date-fns";
+import { parseISO, format } from "date-fns";
+import { clutchMendesak } from "@/lib/hitungMundur";
 import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
 
@@ -14,12 +15,22 @@ export default function HatchReminderAlert() {
 
   const today = new Date();
 
-  // Cari yang punya estimated_hatch_date, belum menetas, dan <= 10 hari lagi
-  const upcoming = breedings.filter(b => {
-    if (!b.estimated_hatch_date || b.status === "menetas" || b.status === "gagal" || b.status === "selesai") return false;
-    const days = differenceInDays(parseISO(b.estimated_hatch_date), today);
-    return days >= 0 && days <= 10;
-  }).sort((a, b) => (a.estimated_hatch_date || "").localeCompare(b.estimated_hatch_date || ""));
+  /*
+    Dari clutchMendesak(), bukan disaring di sini.
+
+    Versi lama menghitung mundur ke `estimated_hatch_date`, dan
+    hitungMundur.js sudah mencatat bahwa kolom itu berisi tanggal TUTUP
+    jendela menetas, bukan tanggal buka. Formulir mengisi jendelanya selebar
+    25 hari (bertelur + 80 sampai bertelur + 105), jadi "≤ 10 hari lagi"
+    diukur dari ujung yang salah: kartu ini baru menyala sekitar 15 hari
+    SESUDAH telurnya benar-benar bisa menetas, dan padam lagi begitu
+    perkiraannya terlampaui — justru saat perlu diperiksa.
+
+    Sekarang isinya sama dengan ubin "Clutch perlu dipantau" di beranda
+    Owner dan kotak di halaman Breeding: satu angka untuk satu pertanyaan.
+  */
+  const perlu = clutchMendesak(breedings, today);
+  const upcoming = [...perlu.lewat, ...perlu.masa, ...perlu.segera];
 
   if (upcoming.length === 0) return null;
 
@@ -31,17 +42,24 @@ export default function HatchReminderAlert() {
         </div>
         <div className="flex-1">
           <p className="font-semibold text-amber-800 text-sm">
-            🥚 {upcoming.length} Telur Akan Segera Menetas!
+            🥚 {upcoming.length} Clutch Perlu Dipantau
           </p>
           <div className="mt-2 space-y-1">
-            {upcoming.map(b => {
-              const days = differenceInDays(parseISO(b.estimated_hatch_date), today);
+            {upcoming.map(({ breeding: b, mundur }) => {
+              const teks =
+                mundur.jenis === "lewat" ? `lewat ${mundur.hari} hari`
+                : mundur.jenis === "masa" ? "sedang menetas"
+                : mundur.hari === 0 ? "Hari ini!"
+                : `${mundur.hari} hari lagi`;
+              const merah = mundur.jenis === "lewat" || mundur.jenis === "masa" || (mundur.hari ?? 99) <= 3;
               return (
                 <div key={b.id} className="flex items-center justify-between text-xs text-amber-700">
                   <span className="font-medium">{b.male_name} × {b.female_name}</span>
-                  <span className={`font-semibold ${days <= 3 ? "text-red-600" : "text-amber-600"}`}>
-                    {days === 0 ? "Hari ini!" : `${days} hari lagi`}
-                    {" "}({format(parseISO(b.estimated_hatch_date), "d MMM", { locale: id })})
+                  <span className={`font-semibold ${merah ? "text-red-600" : "text-amber-600"}`}>
+                    {teks}
+                    {b.estimated_hatch_start
+                      ? ` (${format(parseISO(b.estimated_hatch_start), "d MMM", { locale: id })})`
+                      : ""}
                   </span>
                 </div>
               );
