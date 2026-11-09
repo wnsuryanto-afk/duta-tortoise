@@ -262,7 +262,21 @@ export function dilacak(item) {
 /**
  * Ringkasan satu langkah untuk widget peringatan.
  *
- * @returns {{habis: Array, menipis: Array, kadaluarsa: Array}}
+ * `sudahLewat` dan `kadaluarsa` adalah DUA golongan, bukan satu.
+ *
+ * Sampai 9 Nov 2026 hanya `kadaluarsa` (akan lewat ≤ 30 hari) yang
+ * dikembalikan, dan beranda Owner — satu-satunya layar yang benar-benar
+ * dibuka pemiliknya — memakai itu saja. Akibatnya yang PALING mendesak
+ * justru yang tidak pernah disebut: Kalpanax kedaluwarsa 1 Juni 2024 dan
+ * Salep 88 pada 16 Maret 2025, keduanya masih ada di gudang, keduanya
+ * disebut notifikasi harian sebagai "SUDAH LEWAT TANGGAL — jangan dipakai",
+ * dan tidak satu pun muncul di beranda. Yang muncul justru Enrofloxacin
+ * yang masih 22 hari lagi.
+ *
+ * Keduanya datang dari satu sumber (`sisaHariKedaluwarsa`), jadi sebuah
+ * barang tidak mungkin masuk dua-duanya.
+ *
+ * @returns {{habis: Array, menipis: Array, kadaluarsa: Array, sudahLewat: Array}}
  */
 export function periksaStok(barangGudang = [], pakan = [], sekarang = new Date()) {
   const semua = semuaStok(barangGudang, pakan);
@@ -270,5 +284,6 @@ export function periksaStok(barangGudang = [], pakan = [], sekarang = new Date()
     habis: semua.filter(stokHabis),
     menipis: semua.filter(stokMenipis),
     kadaluarsa: semua.filter((i) => akanKadaluarsa(i, HARI_PERINGATAN_KADALUARSA, sekarang)),
+    sudahLewat: semua.filter((i) => sudahKadaluarsa(i, sekarang)),
   };
 }

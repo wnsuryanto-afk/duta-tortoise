@@ -3699,6 +3699,54 @@ let kedaluwarsaUji = 0;
   }
 
   /*
+    periksaStok memisahkan DUA golongan, bukan satu.
+
+    Sampai 9 Nov 2026 ia hanya mengembalikan "akan kedaluwarsa ≤ 30 hari",
+    dan beranda Owner — satu-satunya layar yang benar-benar dibuka
+    pemiliknya — memakai itu saja. Jadi golongan yang paling mendesak tidak
+    punya baris sama sekali: Kalpanax (1 Juni 2024) dan Salep 88 (16 Maret
+    2025) masih di gudang dan tidak pernah disebut, sementara Enrofloxacin
+    yang masih 22 hari lagi disebut.
+
+    Barang di bawah ini apa adanya dari gudang kebun ini.
+  */
+  {
+    const GUDANG = [
+      { name: "Kalpanax", expired_date: "2024-06-01", current_stock: 1, unit: "pcs" },
+      { name: "Salep 88", expired_date: "2025-03-16", current_stock: 1, unit: "pcs" },
+      { name: "Stone Breaker (Pelarut Batu)", expired_date: "2026-11-09", current_stock: 15, unit: "botol" },
+      { name: "Enrofloxacin 5%", expired_date: "2026-12-01", current_stock: 3, unit: "botol" },
+      { name: "Vaseline", expired_date: "", current_stock: 2, unit: "botol" },
+    ];
+    const p = S.periksaStok(GUDANG, [], SAAT) || {};
+    // Bukan `d.map(...)` telanjang: golongan yang HILANG adalah justru cacat
+    // yang dicari di sini, dan penjaga yang mati dengan stack trace tidak
+    // memberi tahu apa pun tentang golongan mana yang hilang.
+    const nama = (d) => (Array.isArray(d) ? d : []).map((i) => i.name).sort();
+    kedaluwarsaUji += 4;
+
+    for (const golongan of ["habis", "menipis", "kadaluarsa", "sudahLewat"]) {
+      if (!Array.isArray(p[golongan])) {
+        temuan.push(`periksaStok tidak mengembalikan golongan "${golongan}" — layar yang memakainya diam tanpa error`);
+      }
+    }
+
+    const lewatHarus = ["Kalpanax", "Salep 88"];
+    const akanHarus = ["Enrofloxacin 5%", "Stone Breaker (Pelarut Batu)"];
+    if (String(nama(p.sudahLewat)) !== String(lewatHarus)) {
+      temuan.push(`periksaStok.sudahLewat = [${nama(p.sudahLewat)}], seharusnya [${lewatHarus}]`);
+    }
+    if (String(nama(p.kadaluarsa)) !== String(akanHarus)) {
+      temuan.push(`periksaStok.kadaluarsa = [${nama(p.kadaluarsa)}], seharusnya [${akanHarus}]`);
+    }
+    const lewatArr = Array.isArray(p.sudahLewat) ? p.sudahLewat : [];
+    const akanArr = Array.isArray(p.kadaluarsa) ? p.kadaluarsa : [];
+    if (lewatArr.some((i) => akanArr.includes(i))) {
+      temuan.push("periksaStok: sudahLewat dan kadaluarsa beririsan — satu barang masuk dua golongan");
+    }
+  }
+
+  /*
     Sehari penuh di WIB, jam demi jam. Inilah yang dulu bergeser: antara
     tengah malam dan pukul tujuh pagi jawabannya berbeda dari jawaban siang
     hari, untuk tanggal yang sama.
