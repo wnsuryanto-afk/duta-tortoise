@@ -45,7 +45,7 @@ import { hitungOmzet, rentangTahun } from "@/lib/omzet";
 import { kueriUang } from "@/lib/kueriUang";
 import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
-import { periksaStok, sisaHariKedaluwarsa } from "@/lib/stokMenipis";
+import { periksaStok, sisaHariKedaluwarsa, idBarangRacikan } from "@/lib/stokMenipis";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { clutchMendesak, HARI_SEGERA } from "@/lib/hitungMundur";
 import RingkasanAngka from "@/components/common/RingkasanAngka";
@@ -228,6 +228,19 @@ export default function OwnerDashboard({ user }) {
     queryFn: () => base44.entities.FeedStock.list("-name", 300),
     enabled: phase2Ready,
     staleTime: 10 * 60 * 1000,
+    refetchInterval: false,
+  });
+
+  /*
+    Resep ditarik hanya untuk tahu barang mana yang DIRACIK, bukan dibeli.
+    Kunci cache-nya sama dengan kartu peringatan lain supaya ini tidak
+    menambah satu pun permintaan ke server.
+  */
+  const { data: resepRacikan = [] } = useQuery({
+    queryKey: ["resep-alerts"],
+    queryFn: () => base44.entities.PelletRecipe.list("name", 100),
+    enabled: phase2Ready,
+    staleTime: 5 * 60 * 1000,
     refetchInterval: false,
   });
 
@@ -668,7 +681,7 @@ export default function OwnerDashboard({ user }) {
   // DISETEL pemilik, bukan tebakan dari riwayat pergerakan: gudang direstok
   // dengan menyunting angkanya langsung tanpa membuat catatan pergerakan, jadi
   // menebak dari riwayat akan membungkam peringatan obat yang benar-benar habis.
-  const stokPerlu = periksaStok(warehouseItems, feedStocks, now);
+  const stokPerlu = periksaStok(warehouseItems, feedStocks, now, idBarangRacikan(resepRacikan));
   stokPerlu.habis.forEach(i =>
     criticalAlerts.push({ type: "red", msg: `Stok habis: ${i.name}${i._sumber === "pakan" ? " (pakan)" : ""}` })
   );
@@ -694,6 +707,22 @@ export default function OwnerDashboard({ user }) {
     `new Date("2026-11-09")` adalah tengah malam UTC, bukan tengah malam di
     sini.
   */
+  /*
+    Diracik, bukan dibeli.
+
+    "RACIKAN Duta Repro v7" wajib-ada, minimum 6.500 g, stok 0 — sampai
+    9 Nov 2026 ia muncul di daftar "Stok habis" sebagai pembelian yang tidak
+    mungkin dilakukan siapa pun, karena barang itu memang tidak dijual di
+    mana pun. Yang perlu dikerjakan adalah meracik satu batch dari
+    bahan-bahannya, dan bahan yang kurang sudah muncul sendiri di daftar
+    belanja lewat jalur biasa.
+  */
+  stokPerlu.perluDiracik.slice(0, 3).forEach(i =>
+    criticalAlerts.push({
+      type: "yellow",
+      msg: `Perlu diracik (bukan dibeli): ${i.name} — sisa ${i.current_stock || 0} ${i.unit || ""}`.trim(),
+    })
+  );
   stokPerlu.sudahLewat.slice(0, 3).forEach(i => {
     const lewat = Math.abs(sisaHariKedaluwarsa(i, now) ?? 0);
     criticalAlerts.push({

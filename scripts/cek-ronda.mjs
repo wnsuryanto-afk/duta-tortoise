@@ -3747,6 +3747,56 @@ let kedaluwarsaUji = 0;
   }
 
   /*
+    Barang hasil resep tidak boleh muncul sebagai barang yang perlu DIBELI.
+
+    golonganStok() sudah memisahkannya sejak 2 Okt 2026, dan komentarnya
+    mencatat bahwa aturan itu baru dipakai di SATU dari empat tempat.
+    periksaStok — tetangganya di berkas yang sama — salah satu dari tiga yang
+    terlewat, dan justru ia yang dibaca beranda Owner. Pada data 9 Nov 2026
+    "RACIKAN Duta Repro v7" (wajib-ada, minimum 6.500 g, stok 0) duduk di
+    daftar "Stok habis" sebagai pembelian yang mustahil.
+
+    Barang di bawah ini apa adanya dari gudang kebun ini.
+  */
+  {
+    const RACIKAN_ID = "6a50c9c9d70aed0d5b585621";
+    const GUDANG = [
+      { id: RACIKAN_ID, name: "RACIKAN Duta Repro v7 (batch jadi)", current_stock: 0, minimum_stock: 6500, is_mandatory: true, unit: "gram" },
+      { id: "6abe8fd1d8bd28d81cb070da", name: "Tepung hijauan kering giling", current_stock: 0, minimum_stock: 18400, is_mandatory: true, unit: "gram" },
+      { id: "6a255a097b706279fb348600", name: "Hay / Rumput Kering", current_stock: 0, minimum_stock: 3, is_mandatory: false, unit: "kg" },
+    ];
+    const RESEP = [{ name: "Duta Repro", output_item_id: RACIKAN_ID, is_active: true }];
+    const idRacikan = S.idBarangRacikan(RESEP);
+    const p = S.periksaStok(GUDANG, [], SAAT, idRacikan);
+    const nama = (d) => (Array.isArray(d) ? d : []).map((i) => i.name);
+    kedaluwarsaUji += 3;
+
+    if (!Array.isArray(p.perluDiracik)) {
+      temuan.push('periksaStok tidak mengembalikan golongan "perluDiracik"');
+    }
+    if (nama(p.habis).includes("RACIKAN Duta Repro v7 (batch jadi)")) {
+      temuan.push("periksaStok: barang racikan masuk daftar BELI — barang itu tidak dijual di mana pun");
+    }
+    if (!nama(p.perluDiracik).includes("RACIKAN Duta Repro v7 (batch jadi)")) {
+      temuan.push("periksaStok: barang racikan yang habis tidak muncul di perluDiracik — tindakan meracik tidak pernah disebut");
+    }
+    // Bahan-bahannya TETAP perlu dibeli; memisahkan racikan tidak boleh ikut
+    // menelan bahannya.
+    for (const harus of ["Tepung hijauan kering giling", "Hay / Rumput Kering"]) {
+      kedaluwarsaUji++;
+      if (!nama(p.habis).includes(harus)) {
+        temuan.push(`periksaStok: "${harus}" hilang dari daftar beli — bahan racikan tetap harus dibeli`);
+      }
+    }
+    // Tanpa daftar resep, perilakunya harus persis seperti sebelumnya.
+    kedaluwarsaUji++;
+    const lama = S.periksaStok(GUDANG, [], SAAT);
+    if (!nama(lama.habis).includes("RACIKAN Duta Repro v7 (batch jadi)")) {
+      temuan.push("periksaStok tanpa idRacikan berubah perilaku — pemanggil lama tidak boleh ikut berubah diam-diam");
+    }
+  }
+
+  /*
     Sehari penuh di WIB, jam demi jam. Inilah yang dulu bergeser: antara
     tengah malam dan pukul tujuh pagi jawabannya berbeda dari jawaban siang
     hari, untuk tanggal yang sama.

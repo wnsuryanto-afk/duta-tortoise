@@ -276,13 +276,35 @@ export function dilacak(item) {
  * Keduanya datang dari satu sumber (`sisaHariKedaluwarsa`), jadi sebuah
  * barang tidak mungkin masuk dua-duanya.
  *
- * @returns {{habis: Array, menipis: Array, kadaluarsa: Array, sudahLewat: Array}}
+ * @returns {{habis: Array, menipis: Array, perluDiracik: Array, kadaluarsa: Array, sudahLewat: Array}}
  */
-export function periksaStok(barangGudang = [], pakan = [], sekarang = new Date()) {
+export function periksaStok(barangGudang = [], pakan = [], sekarang = new Date(), idRacikan = null) {
   const semua = semuaStok(barangGudang, pakan);
+  /*
+    Barang hasil resep TIDAK ikut "habis"/"menipis": ia tidak dijual di mana
+    pun, hanya bisa diracik sendiri.
+
+    Aturan itu sudah ada di golonganStok() sejak 2 Okt 2026, lengkap dengan
+    catatan bahwa ia baru dipakai di SATU dari empat tempat yang membaca "di
+    bawah minimum". periksaStok — tetangganya di berkas yang sama — salah
+    satu dari tiga yang terlewat, dan justru ia yang dibaca beranda Owner dan
+    beranda Kepala Feeder.
+
+    Akibatnya pada data 9 Nov 2026: "RACIKAN Duta Repro v7 (batch jadi)"
+    (wajib-ada, minimum 6.500 g, stok 0) duduk di urutan atas daftar "Stok
+    habis" sebagai pembelian yang tidak mungkin dilakukan siapa pun —
+    sementara tindakan yang sebenarnya, yaitu meracik satu batch dari
+    bahan-bahannya, tidak pernah disebut.
+
+    `idRacikan` boleh null: pemanggil yang belum menarik resep mendapat
+    perilaku lama persis, tanpa kejutan.
+  */
+  const diracik = (i) => diracikSendiri(i, idRacikan);
+  const dibeli = semua.filter((i) => !diracik(i));
   return {
-    habis: semua.filter(stokHabis),
-    menipis: semua.filter(stokMenipis),
+    habis: dibeli.filter(stokHabis),
+    menipis: dibeli.filter(stokMenipis),
+    perluDiracik: semua.filter((i) => diracik(i) && (stokHabis(i) || stokMenipis(i))),
     kadaluarsa: semua.filter((i) => akanKadaluarsa(i, HARI_PERINGATAN_KADALUARSA, sekarang)),
     sudahLewat: semua.filter((i) => sudahKadaluarsa(i, sekarang)),
   };
