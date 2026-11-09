@@ -45,7 +45,7 @@ import { hitungOmzet, rentangTahun } from "@/lib/omzet";
 import { kueriUang } from "@/lib/kueriUang";
 import { piutangPerPembeli } from "@/lib/piutang";
 import { suratAktif } from "@/lib/suratPeringatan";
-import { periksaStok } from "@/lib/stokMenipis";
+import { periksaStok, sisaHariKedaluwarsa } from "@/lib/stokMenipis";
 import { clutchAktif } from "@/lib/breedingUtils";
 import { clutchMendesak, HARI_SEGERA } from "@/lib/hitungMundur";
 import RingkasanAngka from "@/components/common/RingkasanAngka";
@@ -676,9 +676,39 @@ export default function OwnerDashboard({ user }) {
     .slice(0, 3).forEach(i =>
       criticalAlerts.push({ type: "yellow", msg: `Stok menipis: ${i.name} — sisa ${i.current_stock} ${i.unit}` })
     );
+  /*
+    Yang SUDAH lewat lebih dulu, dan merah — bukan kuning.
+
+    Sampai 9 Nov 2026 beranda ini hanya menyebut golongan "akan kedaluwarsa
+    ≤ 30 hari". Golongan yang paling mendesak tidak punya baris sama sekali:
+    Kalpanax (1 Juni 2024) dan Salep 88 (16 Maret 2025) masih ada di gudang,
+    disebut notifikasi harian sebagai "jangan dipakai", dan tidak pernah
+    muncul di layar yang pemiliknya benar-benar buka. Satu-satunya layar yang
+    menyebutnya — UrgentAlerts — hanya digambar oleh FallbackDashboard, yaitu
+    untuk peran yang tidak dikenali; tidak satu pun akun aktif melewatinya.
+
+    Sisa harinya datang dari sisaHariKedaluwarsa(), bukan dihitung ulang di
+    sini. Hitungan lama `Math.ceil((new Date(expired_date) - now)/86400000)`
+    adalah salinan KEEMPAT aturan yang sama, dan ia menjawab satu hari lebih
+    banyak antara tengah malam dan pukul tujuh pagi WIB — karena
+    `new Date("2026-11-09")` adalah tengah malam UTC, bukan tengah malam di
+    sini.
+  */
+  stokPerlu.sudahLewat.slice(0, 3).forEach(i => {
+    const lewat = Math.abs(sisaHariKedaluwarsa(i, now) ?? 0);
+    criticalAlerts.push({
+      type: "red",
+      msg: `JANGAN DIPAKAI — ${i.name} kedaluwarsa ${lewat} hari lalu (${i.expired_date})`,
+    });
+  });
   stokPerlu.kadaluarsa.slice(0, 3).forEach(i => {
-    const diff = Math.ceil((new Date(i.expired_date) - now) / 86400000);
-    criticalAlerts.push({ type: "yellow", msg: `Obat kadaluarsa ${diff} hari: ${i.name}` });
+    const sisa = sisaHariKedaluwarsa(i, now) ?? 0;
+    criticalAlerts.push({
+      type: "yellow",
+      msg: sisa === 0
+        ? `Obat kadaluarsa HARI INI: ${i.name}`
+        : `Obat kadaluarsa ${sisa} hari lagi: ${i.name}`,
+    });
   });
   // `payment_due_date` tidak ada di entitas mana pun di seluruh aplikasi, jadi
   // "jatuh tempo" tidak pernah bisa dihitung. Umur piutang bisa — dan itu yang
