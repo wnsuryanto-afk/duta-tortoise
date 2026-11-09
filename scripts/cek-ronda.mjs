@@ -93,6 +93,7 @@ bundel("src/lib/hargaBeliKura.js", "hargabeli.cjs");
 bundel("src/lib/barisTelur.js", "baristelur.cjs");
 bundel("src/lib/safeDate.js", "safedate.cjs");
 bundel("base44/shared/otomatis.ts", "otomatis.cjs");
+bundel("src/lib/muatHalaman.js", "muathalaman.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -3497,6 +3498,142 @@ let wibUji = 0;
   }
 }
 
+/*
+  ── Satu unduhan meleset tidak boleh mengunci halamannya ───────────────────
+
+  Diukur di peramban sungguhan 9 Nov 2026: sesudah sebuah URL modul gagal,
+  impor berikutnya ke URL yang SAMA ditolak dari ingatan peramban tanpa
+  mengirim satu permintaan pun. Jadi pemulihannya harus memakai URL yang
+  dibedakan, atau memuat ulang halaman.
+
+  muatModul sengaja murni: penunda, sessionStorage, pemuat-ulang dan
+  pengimpor semuanya disuntikkan, jadi ketiga lapisnya bisa diuji di sini
+  tanpa peramban.
+*/
+let muatUji = 0;
+{
+  const MH = await import("file://" + join(dir, "muathalaman.cjs")).then((m) => m.default || m);
+
+  const galatUnduh = (url) =>
+    new Error(`Failed to fetch dynamically imported module: ${url}`);
+
+  const alat = (opsi = {}) => {
+    const catatan = { url: [], muatUlang: 0, nilai: opsi.penanda ?? null };
+    return {
+      catatan,
+      alat: {
+        jeda: 0,
+        tunggu: async () => {},
+        imporUrl: async (u) => {
+          catatan.url.push(u);
+          if (opsi.urlGagal) throw galatUnduh(u);
+          return { default: () => null };
+        },
+        simpanan: {
+          getItem: () => catatan.nilai,
+          setItem: (_k, v) => { catatan.nilai = v; },
+          removeItem: () => { catatan.nilai = null; },
+        },
+        muatUlang: () => { catatan.muatUlang++; },
+      },
+    };
+  };
+
+  const lekas = (janji) =>
+    Promise.race([janji.then((v) => ["selesai", v]).catch((e) => ["dilempar", e]),
+                  new Promise((r) => setTimeout(() => r(["menggantung"]), 150))]);
+
+  // 1. Berhasil sekali jalan: tidak ada percobaan kedua, penanda dibersihkan.
+  {
+    const { catatan, alat: a } = alat({ penanda: "1" });
+    const [hasil] = await lekas(MH.muatModul(async () => ({ default: () => null }), a));
+    muatUji++;
+    if (hasil !== "selesai") temuan.push(`muatModul: impor yang berhasil malah ${hasil}`);
+    if (catatan.url.length) temuan.push("muatModul: impor berhasil tetapi tetap mencoba URL kedua");
+    if (catatan.nilai !== null) temuan.push("muatModul: penanda muat ulang tidak dilupakan setelah berhasil");
+  }
+
+  // 2. Gagal sekali → diulang dengan URL yang DIBEDAKAN, tanpa muat ulang.
+  {
+    const { catatan, alat: a } = alat();
+    let pertama = true;
+    const [hasil] = await lekas(MH.muatModul(async () => {
+      if (pertama) { pertama = false; throw galatUnduh("https://a.test/assets/Hub-1.js"); }
+      return { default: () => null };
+    }, a));
+    muatUji++;
+    if (hasil !== "selesai") temuan.push(`muatModul: sendatan sesaat tidak pulih (${hasil})`);
+    if (catatan.url.length !== 1 || !catatan.url[0].includes("muat=1")) {
+      temuan.push(`muatModul: percobaan kedua tidak memakai URL yang dibedakan (${catatan.url.join(",")})`);
+    }
+    if (catatan.muatUlang !== 0) temuan.push("muatModul: memuat ulang padahal percobaan kedua berhasil");
+  }
+
+  // 2b. URL yang sudah punya tanda tanya memakai & bukan ? lagi.
+  {
+    const { catatan, alat: a } = alat();
+    await lekas(MH.muatModul(async () => { throw galatUnduh("https://a.test/Hub.js?v=9"); }, a));
+    muatUji++;
+    if (!catatan.url[0]?.includes("?v=9&muat=1")) {
+      temuan.push(`muatModul: pemisah query salah (${catatan.url[0]})`);
+    }
+  }
+
+  // 3. Gagal terus, BELUM pernah muat ulang → muat ulang sekali, janji menggantung.
+  {
+    const { catatan, alat: a } = alat({ urlGagal: true });
+    const [hasil] = await lekas(MH.muatModul(async () => { throw galatUnduh("https://a.test/Hub.js"); }, a));
+    muatUji++;
+    if (catatan.muatUlang !== 1) temuan.push(`muatModul: muat ulang dipanggil ${catatan.muatUlang}x, seharusnya 1`);
+    if (catatan.nilai !== "1") temuan.push("muatModul: muat ulang tidak ditandai, bisa berputar");
+    if (hasil !== "menggantung") temuan.push(`muatModul: seharusnya menggantung sampai halaman berganti, bukan ${hasil}`);
+  }
+
+  // 4. Gagal terus dan SUDAH pernah muat ulang → dilempar ke layar error.
+  {
+    const { catatan, alat: a } = alat({ urlGagal: true, penanda: "1" });
+    const [hasil, nilai] = await lekas(MH.muatModul(async () => { throw galatUnduh("https://a.test/Hub.js"); }, a));
+    muatUji++;
+    if (hasil !== "dilempar") temuan.push(`muatModul: sesudah muat ulang seharusnya dilempar, bukan ${hasil}`);
+    if (catatan.muatUlang !== 0) temuan.push("muatModul: memuat ulang dua kali — itu putaran tanpa akhir");
+    if (hasil === "dilempar" && !MH.gagalUnduhModul(nilai)) {
+      temuan.push("muatModul: galat yang dilempar bukan galat unduh aslinya");
+    }
+  }
+
+  // 5. Galat DI DALAM halaman tidak disamarkan sebagai masalah unduhan.
+  {
+    const { catatan, alat: a } = alat();
+    const [hasil] = await lekas(MH.muatModul(async () => { throw new TypeError("x is not a function"); }, a));
+    muatUji++;
+    if (hasil !== "dilempar") temuan.push(`muatModul: galat di dalam halaman seharusnya langsung dilempar, bukan ${hasil}`);
+    if (catatan.muatUlang !== 0 || catatan.url.length) {
+      temuan.push("muatModul: galat di dalam halaman ikut dicoba ulang — memuat ulang tidak akan memperbaikinya");
+    }
+  }
+
+  // 6. Pengenalan galat dan pembacaan URL-nya.
+  for (const [pesan, harus] of [
+    ["Failed to fetch dynamically imported module: https://a.test/x.js", true],
+    ["error loading dynamically imported module: https://a.test/x.js", true],
+    ["Loading chunk 42 failed", true],
+    ["Importing a module script failed", true],
+    ["Cannot read properties of undefined", false],
+  ]) {
+    muatUji++;
+    if (MH.gagalUnduhModul(new Error(pesan)) !== harus) {
+      temuan.push(`gagalUnduhModul salah menilai: ${pesan}`);
+    }
+  }
+  if (MH.urlModulGagal(new Error("Failed to fetch dynamically imported module: https://a.test/x.js")) !== "https://a.test/x.js") {
+    temuan.push("urlModulGagal tidak membaca URL dari pesan galat");
+  }
+  if (MH.urlModulGagal(new Error("Loading chunk 42 failed")) !== "") {
+    temuan.push("urlModulGagal mengarang URL dari pesan yang tidak memuatnya");
+  }
+  muatUji += 2;
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 /* ── Clutch yang perlu dipantau di beranda ─────────────────────────── */
@@ -3975,6 +4112,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona + ${wibUji} tanggal WIB sisi server diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona + ${wibUji} tanggal WIB sisi server + ${muatUji} pemulihan unduhan halaman diuji.`,
 );
 process.exit(0);
