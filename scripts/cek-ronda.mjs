@@ -94,6 +94,7 @@ bundel("src/lib/barisTelur.js", "baristelur.cjs");
 bundel("src/lib/safeDate.js", "safedate.cjs");
 bundel("base44/shared/otomatis.ts", "otomatis.cjs");
 bundel("src/lib/muatHalaman.js", "muathalaman.cjs");
+bundel("base44/shared/stok.ts", "stokserver.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -3634,6 +3635,89 @@ let muatUji = 0;
   muatUji += 2;
 }
 
+/*
+  ── "Sudah lewat" dan "akan kedaluwarsa" tidak boleh benar bersamaan ───────
+
+  9 Nov 2026 satu pesan notifikasi memuat obat yang sama di DUA daftar yang
+  saling meniadakan:
+
+      SUDAH LEWAT TANGGAL — jangan dipakai (3):
+        Stone Breaker (Pelarut Batu): 2026-11-09
+      KEDALUWARSA ≤ 30 HARI (2):
+        Stone Breaker (Pelarut Batu): 2026-11-09
+
+  Sebabnya membandingkan DETIK, bukan HARI: `new Date("2026-11-09")` adalah
+  tengah malam UTC alias 07:00 WIB, dan `Math.ceil` dari selisih negatif yang
+  kecil memberi `-0` — yang di JavaScript lolos saringan `>= 0`.
+
+  Badan kedua fungsinya memang berbeda di frontend dan backend (yang satu
+  tengah malam setempat, yang satu menggeser +7 jam sendiri), jadi
+  cek-kembar.mjs sengaja tidak menyamakan bentuknya. Yang dijaga di sini
+  JANJINYA: jawaban kedua sisi sama, dan kedua daftarnya tidak pernah
+  beririsan.
+*/
+let kedaluwarsaUji = 0;
+{
+  const SS = await import("file://" + join(dir, "stokserver.cjs")).then((m) => m.default || m);
+
+  // Jam cron yang sebenarnya pada hari kejadian: 00:46 UTC = 07:46 WIB.
+  const SAAT = new Date("2026-11-09T00:46:54Z");
+  const TANGGAL = [
+    ["2024-06-01", "lewat"], ["2025-03-16", "lewat"], ["2026-11-07", "lewat"],
+    ["2026-11-08", "lewat"],
+    ["2026-11-09", "akan"],   // hari ini — hari TERAKHIR masih boleh dipakai
+    ["2026-11-10", "akan"], ["2026-12-01", "akan"], ["2026-12-09", "akan"],
+    ["2026-12-10", "aman"],  ["2027-05-01", "aman"],
+    ["", "tak diketahui"], [null, "tak diketahui"], ["bukan tanggal", "tak diketahui"],
+  ];
+
+  for (const [tgl, harus] of TANGGAL) {
+    const item = { expired_date: tgl };
+    for (const [sisi, M] of [["frontend", S], ["backend", SS]]) {
+      const lewat = M.sudahKadaluarsa(item, SAAT);
+      const akan = M.akanKadaluarsa(item, 30, SAAT);
+      kedaluwarsaUji++;
+
+      if (lewat && akan) {
+        temuan.push(
+          `kedaluwarsa ${sisi}: ${tgl} masuk DUA daftar sekaligus — ` +
+          `"sudah lewat" dan "akan kedaluwarsa" tidak boleh benar bersamaan`,
+        );
+      }
+      const dapat = lewat ? "lewat" : akan ? "akan" : (tgl ? "aman" : "tak diketahui");
+      const diharap = harus === "tak diketahui" ? "aman" : harus;
+      const dapatRapi = harus === "tak diketahui" && dapat === "aman" ? "tak diketahui" : dapat;
+      if (dapatRapi !== harus && dapat !== diharap) {
+        temuan.push(`kedaluwarsa ${sisi}: ${JSON.stringify(tgl)} dinilai "${dapat}", seharusnya "${harus}"`);
+      }
+    }
+    // Kedua sisi harus menjawab sama persis.
+    if (S.sudahKadaluarsa(item, SAAT) !== SS.sudahKadaluarsa(item, SAAT) ||
+        S.akanKadaluarsa(item, 30, SAAT) !== SS.akanKadaluarsa(item, 30, SAAT)) {
+      temuan.push(`kedaluwarsa: frontend dan backend berbeda untuk ${JSON.stringify(tgl)}`);
+    }
+  }
+
+  /*
+    Sehari penuh di WIB, jam demi jam. Inilah yang dulu bergeser: antara
+    tengah malam dan pukul tujuh pagi jawabannya berbeda dari jawaban siang
+    hari, untuk tanggal yang sama.
+  */
+  for (let jam = 0; jam < 24; jam++) {
+    const saat = new Date(Date.UTC(2026, 10, 9, (jam + 17) % 24, 30));
+    if (jam < 7) saat.setUTCDate(saat.getUTCDate() - 1);
+    const hariIni = { expired_date: "2026-11-09" };
+    const kemarin = { expired_date: "2026-11-08" };
+    kedaluwarsaUji += 2;
+    if (SS.sudahKadaluarsa(hariIni, saat)) {
+      temuan.push(`kedaluwarsa backend: barang yang kedaluwarsa HARI INI dinyatakan lewat pada ${jam}:30 WIB`);
+    }
+    if (!SS.sudahKadaluarsa(kemarin, saat)) {
+      temuan.push(`kedaluwarsa backend: barang yang kedaluwarsa KEMARIN belum dinyatakan lewat pada ${jam}:30 WIB`);
+    }
+  }
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 /* ── Clutch yang perlu dipantau di beranda ─────────────────────────── */
@@ -4112,6 +4196,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona + ${wibUji} tanggal WIB sisi server + ${muatUji} pemulihan unduhan halaman diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona + ${wibUji} tanggal WIB sisi server + ${muatUji} pemulihan unduhan halaman + ${kedaluwarsaUji} penilaian kedaluwarsa diuji.`,
 );
 process.exit(0);

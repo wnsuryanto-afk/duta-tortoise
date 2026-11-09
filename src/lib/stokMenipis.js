@@ -1,3 +1,5 @@
+import { selisihHari } from "@/lib/safeDate";
+
 /**
  * stokMenipis.js — SATU definisi "stok ini perlu diperhatikan".
  *
@@ -53,24 +55,63 @@ export function stokMenipis(item) {
   return sekarang > 0 && minimum > 0 && sekarang < minimum;
 }
 
+/*
+  ── Kedaluwarsa itu pernyataan tentang HARI, bukan tentang detik ──────────
+
+  9 Nov 2026 satu pesan notifikasi memuat obat yang sama di DUA daftar yang
+  saling meniadakan:
+
+      SUDAH LEWAT TANGGAL — jangan dipakai (3):
+        Stone Breaker (Pelarut Batu): 2026-11-09
+      KEDALUWARSA ≤ 30 HARI (2):
+        Stone Breaker (Pelarut Batu): 2026-11-09
+
+  Dua sebab, keduanya dari membandingkan DETIK alih-alih HARI:
+
+    1. `new Date("2026-11-09")` adalah tengah malam UTC, yaitu pukul 07:00
+       WIB. Dibandingkan dengan `new Date()` berarti jawabannya berubah di
+       tengah hari: barang yang kedaluwarsa HARI INI dinyatakan lewat mulai
+       pukul tujuh pagi — padahal tanggal kedaluwarsa adalah hari TERAKHIR
+       barang itu masih boleh dipakai. Kebalikannya juga: sebelum pukul
+       tujuh pagi, barang yang kedaluwarsa KEMARIN masih dinyatakan aman.
+
+    2. `Math.ceil` dari selisih negatif yang kecil memberi `-0`, dan di
+       JavaScript `-0 >= 0` bernilai BENAR. Jadi barang yang sudah lewat ikut
+       lolos saringan "akan kedaluwarsa".
+
+  lib/kedaluwarsa.js di aplikasi ini sudah memakai hari kalender sejak awal
+  (differenceInCalendarDays). Yang di sini mengikutinya, bukan sebaliknya —
+  dan keduanya kini berbagi satu sumber `sisaHariKedaluwarsa`, sehingga
+  `sisa < 0` dan `sisa >= 0` tidak mungkin benar bersamaan.
+
+  Kembarannya di backend base44/shared/stok.ts. Badannya memang berbeda —
+  Deno berjalan di UTC dan menggeser +7 jam sendiri, sementara di sini
+  dipakai tengah malam SETEMPAT lewat lib/safeDate.js — jadi cek-kembar.mjs
+  sengaja tidak menyamakan bentuknya. Yang dijaga janjinya, di cek-ronda.mjs.
+*/
+
 /**
- * Akan kedaluwarsa dalam `hari` ke depan. Yang sudah lewat tidak dihitung di
- * sini — itu keadaan lain, dan ditangani daftarnya sendiri.
+ * Sisa HARI sampai tanggal kedaluwarsa; null bila tanggalnya kosong/tak terbaca.
+ * 0 berarti kedaluwarsa hari ini — hari terakhir barang itu masih boleh dipakai.
  */
-export function akanKadaluarsa(item, hari = HARI_PERINGATAN_KADALUARSA, sekarang = new Date()) {
-  if (!item?.expired_date) return false;
-  const tanggal = new Date(item.expired_date);
-  if (Number.isNaN(tanggal.getTime())) return false;
-  const selisih = Math.ceil((tanggal - sekarang) / 86400000);
-  return selisih >= 0 && selisih <= hari;
+export function sisaHariKedaluwarsa(item, sekarang = new Date()) {
+  if (!item?.expired_date) return null;
+  return selisihHari(sekarang, item.expired_date);
 }
 
-/** Sudah lewat tanggal kedaluwarsanya. */
+/**
+ * Akan kedaluwarsa dalam `hari` ke depan. Yang sudah lewat TIDAK ikut —
+ * itu keadaan lain, dan ditangani daftarnya sendiri.
+ */
+export function akanKadaluarsa(item, hari = HARI_PERINGATAN_KADALUARSA, sekarang = new Date()) {
+  const sisa = sisaHariKedaluwarsa(item, sekarang);
+  return sisa !== null && sisa >= 0 && sisa <= hari;
+}
+
+/** Sudah lewat tanggal kedaluwarsanya — yaitu kemarin atau sebelumnya. */
 export function sudahKadaluarsa(item, sekarang = new Date()) {
-  if (!item?.expired_date) return false;
-  const tanggal = new Date(item.expired_date);
-  if (Number.isNaN(tanggal.getTime())) return false;
-  return tanggal < sekarang;
+  const sisa = sisaHariKedaluwarsa(item, sekarang);
+  return sisa !== null && sisa < 0;
 }
 
 /**
