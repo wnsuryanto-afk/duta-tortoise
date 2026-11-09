@@ -48,6 +48,7 @@ import BreedingStatsSection from "@/components/breeding/BreedingStatsSection";
 import EggGrid from "@/components/breeding/EggGrid";
 import ClutchOffspringSection from "@/components/breeding/ClutchOffspringSection";
 import { segarkanBreeding } from "@/lib/kunciBreeding";
+import { clutchMendesak } from "@/lib/hitungMundur";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -329,12 +330,33 @@ export default function BreedingAndEggs() {
   // hasil, jadi memasukkannya akan menekan angkanya secara keliru.
   const ringkasanBreeding = (() => {
     const aktif = breedings.filter(clutchAktif);
-    const sekarang = new Date();
-    const segera = aktif.filter(b => {
-      if (!b.estimated_hatch_end) return false;
-      const sisa = Math.ceil((new Date(b.estimated_hatch_end) - sekarang) / 86400000);
-      return sisa >= 0 && sisa <= 7;
-    }).length;
+    /*
+      Clutch yang perlu dipantau datang dari clutchMendesak(), bukan dihitung
+      di sini — dan dari daftar `breedings` yang SAMA dengan beranda Owner,
+      supaya kedua layar tidak mungkin menyebut angka berbeda.
+
+      Hitungan lama di tempat ini menghitung mundur ke `estimated_hatch_end`,
+      yaitu hari TERAKHIR jendela menetas. Formulir mengisi jendelanya
+      selebar 25 hari: `estimated_hatch_start` = bertelur + 80 hari,
+      `estimated_hatch_end` = bertelur + 105. Jadi kotak berlabel
+      "Menetas ≤7 hari" diam sepanjang 18 hari PERTAMA telur itu benar-benar
+      bisa menetas, lalu menyala di ujung jendela, lalu diam LAGI begitu
+      perkiraannya terlampaui — tepat saat seseorang paling perlu memeriksa.
+
+      Ditelusuri pada clutch sungguhan A35 × A46, bertelur 4 Sep 2026,
+      jendela 23 Nov – 18 Des:
+
+        23 Nov  beranda "sedang menetas"      kotak ini: kosong
+        30 Nov  beranda "sedang menetas"      kotak ini: kosong
+        11 Des  beranda "sedang menetas"      kotak ini: 1
+        19 Des  beranda "lewat perkiraan"     kotak ini: kosong
+
+      hitungMundur.js sudah mencatat jebakan yang sama persis: halaman lama
+      memakai `estimated_hatch_date` sebagai tanggal BUKA jendela, padahal ia
+      tanggal tutupnya. Ini salinan ketiga aturan itu, dan berkas aturannya
+      memang dibuat supaya salinannya berhenti bertambah.
+    */
+    const mendesak = clutchMendesak(breedings);
     /*
       Tingkat menetas dibaca dari ringkasProduksi(), bukan dihitung di sini.
 
@@ -355,7 +377,7 @@ export default function BreedingAndEggs() {
     return {
       batchAktif: aktif.length,
       telurAktif: aktif.reduce((t, b) => t + (b.egg_count || 0), 0),
-      segeraMenetas: segera,
+      perluDipantau: mendesak,
       hatchRate: produksi.telurAdaHasil > 0 ? Math.round(produksi.hatchRate) : null,
     };
   })();
@@ -381,9 +403,20 @@ export default function BreedingAndEggs() {
         chips={[
           { key: "batch", icon: Egg, label: "Batch aktif", value: ringkasanBreeding.batchAktif, ke: "/breeding?tab=pembiakan" },
           { key: "telur", icon: Thermometer, label: "Telur diinkubasi", value: ringkasanBreeding.telurAktif, ke: "/breeding?tab=telur" },
-          { key: "segera", icon: Calendar, label: "Menetas ≤7 hari", value: ringkasanBreeding.segeraMenetas,
+          /*
+            Labelnya "Perlu dipantau", bukan lagi "Menetas ≤7 hari".
+            Yang dihitung memang tiga keadaan sekaligus — sudah lewat
+            perkiraan, sedang di dalam jendela menetas, dan akan masuk
+            jendela dalam 7 hari — persis seperti ubin "Clutch perlu
+            dipantau" di beranda Owner. Label lamanya menjanjikan satu
+            keadaan dan menghitung keadaan lain.
+          */
+          { key: "segera", icon: Calendar, label: "Clutch perlu dipantau",
+            value: ringkasanBreeding.perluDipantau.total,
             ke: "/breeding?tab=telur",
-            tone: ringkasanBreeding.segeraMenetas > 0 ? "warn" : "default" },
+            tone: ringkasanBreeding.perluDipantau.lewat.length || ringkasanBreeding.perluDipantau.masa.length
+              ? "bad"
+              : ringkasanBreeding.perluDipantau.total > 0 ? "warn" : "default" },
           { key: "rate", icon: AlertTriangle, label: "Tingkat menetas",
             ke: "/breeding?tab=statistik",
             value: ringkasanBreeding.hatchRate === null ? "—" : `${ringkasanBreeding.hatchRate}%`,

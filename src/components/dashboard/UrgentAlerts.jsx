@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, AlertCircle, Egg, Package, Home, FileWarning, FlaskConical } from "lucide-react";
 import { formatDateIndonesian } from "@/lib/formatIndonesian";
 import { golonganStok, akanKadaluarsa, sudahKadaluarsa, dilacak, idBarangRacikan } from "@/lib/stokMenipis";
+import { clutchMendesak } from "@/lib/hitungMundur";
 
 export default function UrgentAlerts() {
   // Telur dalam masa penetasan
@@ -13,13 +14,18 @@ export default function UrgentAlerts() {
     queryKey: ["breedings-alerts"],
     queryFn: () => base44.entities.Breeding.filter({ status: 'inkubasi' }),
   });
-  const hatchingSoon = breedings.filter(b => {
-    if (!b.estimated_hatch_date) return false;
-    const hatchDate = new Date(b.estimated_hatch_date);
-    const today = new Date();
-    const diffDays = Math.ceil((hatchDate - today) / (1000 * 60 * 60 * 24));
-    return diffDays >= 0 && diffDays <= 7;
-  });
+  /*
+    Dari clutchMendesak(), bukan dihitung di sini.
+
+    Versi lama menghitung mundur ke `estimated_hatch_date` — dan
+    hitungMundur.js sudah mencatat bahwa kolom itu berisi tanggal TUTUP
+    jendela, bukan tanggal buka. Jadi "dalam 7 hari" diukur dari ujung yang
+    salah: pada jendela selebar 25 hari, ia diam sepanjang 18 hari pertama
+    telurnya bisa menetas, lalu diam lagi begitu perkiraannya terlampaui.
+  */
+  const perluDipantau = clutchMendesak(breedings);
+  const hatchingSoon = [...perluDipantau.lewat, ...perluDipantau.masa, ...perluDipantau.segera]
+    .map((x) => x.breeding);
 
   // Obat kadaluarsa
   const { data: warehouseItems = [] } = useQuery({
