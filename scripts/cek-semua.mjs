@@ -159,6 +159,14 @@
  *                   termasuk — yang baris tabnya memang meluap di layar
  *                   pemiliknya. "157 kasus" bukan cakupan, itu panjang
  *                   daftar yang ditulis tangan
+ *   cek-muat        halaman per rute dimuat dengan lazy() telanjang →
+ *                   peta modul peramban menyimpan KEGAGALAN sebuah URL
+ *                   selama halamannya hidup, jadi impor ulang ke URL yang
+ *                   sama ditolak dari ingatan tanpa mengirim permintaan
+ *                   apa pun. Tombol "Coba Lagi" di layar error, yang hanya
+ *                   menggambar ulang, karena itu TIDAK MUNGKIN menolong —
+ *                   9 Nov 2026 pemiliknya terkunci di /area/kura begitu
+ *                   satu unduhan HubPage.jsx meleset
  *   cek-zona        tanggal UTC dipakai sebagai tanggal setempat →
  *                   `new Date().toISOString().slice(0,10)` menyebut tanggal
  *                   KEMARIN setiap hari sebelum pukul tujuh pagi di Jakarta,
@@ -185,7 +193,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs", "cek-muat.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

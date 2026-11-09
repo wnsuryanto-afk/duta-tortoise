@@ -1,6 +1,7 @@
 import React from "react";
 import { RefreshCw, AlertTriangle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { gagalUnduhModul } from "@/lib/muatHalaman";
 
 class PageErrorBoundary extends React.Component {
   constructor(props) {
@@ -22,7 +23,25 @@ class PageErrorBoundary extends React.Component {
     window.location.reload();
   };
 
+  /*
+    "Coba Lagi" hanya mengosongkan batas error lalu menggambar ulang. Untuk
+    galat DI DALAM halaman itu masuk akal — percobaan kedua bisa berhasil.
+
+    Untuk halaman yang GAGAL DIUNDUH, tidak. Diukur di peramban sungguhan
+    9 Nov 2026: setelah sebuah URL modul gagal, impor berikutnya ke URL yang
+    sama ditolak dari ingatan peramban tanpa mengirim satu permintaan pun.
+    React.lazy menyimpan penolakan itu lagi di sisinya. Jadi menggambar ulang
+    memanggil import yang sama dan layar merahnya kembali seketika — tombol
+    yang terlihat seperti harapan padahal tidak bisa menolong.
+
+    Untuk galat itu satu-satunya yang mengosongkan peta modul adalah memuat
+    ulang halaman, jadi itu yang dilakukan tombolnya.
+  */
   handleRetryReset = () => {
+    if (gagalUnduhModul(this.state.error)) {
+      window.location.reload();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   };
 
@@ -36,7 +55,9 @@ class PageErrorBoundary extends React.Component {
           <div>
             <h2 className="text-lg font-semibold text-foreground">Terjadi Kesalahan</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Halaman ini mengalami error. Silakan coba refresh atau hubungi admin.
+              {gagalUnduhModul(this.state.error)
+                ? "Sebagian halaman ini gagal diunduh — biasanya karena jaringan tersendat. Muat ulang halamannya."
+                : "Halaman ini mengalami error. Silakan coba refresh atau hubungi admin."}
             </p>
             {this.state.error && (
               <div className="mt-2 max-w-lg mx-auto text-left">
