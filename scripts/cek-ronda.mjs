@@ -95,6 +95,9 @@ bundel("src/lib/safeDate.js", "safedate.cjs");
 bundel("base44/shared/otomatis.ts", "otomatis.cjs");
 bundel("src/lib/muatHalaman.js", "muathalaman.cjs");
 bundel("base44/shared/stok.ts", "stokserver.cjs");
+bundel("src/lib/peringkatIndukan.js", "peringkatinduk.cjs");
+bundel("src/lib/produksiBetina.js", "produksibetina.cjs");
+bundel("src/lib/hasilInkubasi.js", "hasilink.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -3816,6 +3819,76 @@ let kedaluwarsaUji = 0;
   }
 }
 
+/*
+  ── Telur yang ditemukan, bukan disaksikan ─────────────────────────────────
+
+  11 Nov 2026 pemiliknya menggali tanah dan menemukan telur: sebagian pecah,
+  sebagian bisa diselamatkan, dan tidak ada yang melihat betina mana yang
+  bertelur. Formulir MEWAJIBKAN nama betina, jadi satu nama tebakan langsung
+  menjadi kredit produksi betina itu — di angka yang dipakai memutuskan
+  indukan mana yang produktif.
+
+  Yang diuji di sini adalah pembagiannya: telurnya IKUT hitungan kebun,
+  induknya TIDAK dinilai.
+*/
+let indukUji = 0;
+{
+  const PI = await import("file://" + join(dir, "peringkatinduk.cjs")).then((m) => m.default || m);
+  const PB = await import("file://" + join(dir, "produksibetina.cjs")).then((m) => m.default || m);
+
+  const betina = { id: "c23", name: "C23", gender: "betina", status: "aktif" };
+  const pasti = {
+    id: "k1", male_id: "a40", female_id: "c23", male_name: "A40", female_name: "C23",
+    egg_count: 21, hatched_count: 14, egg_laying_date: "2026-08-12", season_year: 2026,
+  };
+  const ditemukan = {
+    id: "k2", male_id: "a40", female_id: "c23", male_name: "A40", female_name: "C23",
+    egg_count: 9, hatched_count: 5, egg_laying_date: "2026-11-01", season_year: 2026,
+    induk_perkiraan: true, tanggal_perkiraan: true,
+  };
+
+  // 1. Ranking Indukan melewatinya sama sekali.
+  const hasil = PI.peringkat([pasti, ditemukan], (c) => c.female_name, (c) => ({ maleName: c.male_name, femaleName: c.female_name }));
+  indukUji++;
+  const telurDinilai = hasil.reduce((t, g) => t + (g.totalEggs || 0), 0);
+  if (telurDinilai !== 21) {
+    temuan.push(`peringkat(): C23 dinilai dari ${telurDinilai} telur, seharusnya 21 — 9 telur temuan tidak boleh ikut menilai indukan`);
+  }
+  indukUji++;
+  const totalClutchDinilai = hasil.reduce((t, g) => t + (g.totalClutch || 0), 0);
+  if (totalClutchDinilai !== 1) {
+    temuan.push(`peringkat(): ${totalClutchDinilai} clutch dinilai, seharusnya 1`);
+  }
+
+  // 2. Clutch yang induknya SELURUHNYA perkiraan tidak memunculkan kelompok apa pun.
+  indukUji++;
+  if (PI.peringkat([ditemukan], (c) => c.female_name, (c) => ({ maleName: c.male_name, femaleName: c.female_name })).length !== 0) {
+    temuan.push("peringkat(): clutch berinduk perkiraan tetap memunculkan baris peringkat");
+  }
+
+  // 3. cocokkanBetina tidak memetakannya ke kura mana pun.
+  indukUji++;
+  if (PB.cocokkanBetina(pasti, [betina])?.id !== "c23") {
+    temuan.push("cocokkanBetina: clutch yang induknya pasti malah tidak cocok — penyaringnya kebablasan");
+  }
+  indukUji++;
+  if (PB.cocokkanBetina(ditemukan, [betina]) !== null) {
+    temuan.push("cocokkanBetina: clutch berinduk perkiraan tetap dipetakan ke seekor betina");
+  }
+
+  // 4. Hitungan KEBUN tetap memasukkannya — telurnya nyata.
+  indukUji++;
+  const HI = await import("file://" + join(dir, "hasilink.cjs")).then((m) => m.default || m);
+  const kebun = HI.ringkasProduksi([pasti, ditemukan]);
+  if (kebun.totalTelur !== 30) {
+    temuan.push(`ringkasProduksi(): total telur kebun ${kebun.totalTelur}, seharusnya 30 — telur temuan TETAP produksi kebun`);
+  }
+  indukUji++;
+  if (kebun.totalClutch !== 2) {
+    temuan.push(`ringkasProduksi(): ${kebun.totalClutch} clutch kebun, seharusnya 2`);
+  }
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 /* ── Clutch yang perlu dipantau di beranda ─────────────────────────── */
@@ -4294,6 +4367,6 @@ if (temuan.length) {
 console.log(
   `Ronda lengkap (${ronda.length} kandang dari ${NYATA.length} tercatat, keempat Bonsai ikut), ` +
   `${syarat.length} syarat muat ulang + ${jadwalUji.length} irama jadwal + ${belanjaUji.length} barang belanja + ` +
-  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona + ${wibUji} tanggal WIB sisi server + ${muatUji} pemulihan unduhan halaman + ${kedaluwarsaUji} penilaian kedaluwarsa diuji.`,
+  `resep v7 (${RESMI.length} bahan) + ${stokUji.length} golongan stok + ${cariUji.length} pencarian induk + ${bulanUji.length} saringan bulan + ${mundurUji.length} hitung mundur + ${mendesakUji.length} clutch mendesak + ${betinaUji.length} peringkat betina + ${tahunanUji.length} rekap tahunan + ${fertilUji.length} hitungan fertil + ${tanggalUji.length} tanggal tak terpercaya + ${racikUji.length} izin meracik + ${usulUji.length} usul poin AI + ${setelanUji.length} kunci setelan + ${miripUji.length + miripBaruUji.length} judul mirip tugas + ${anakanUji.length} bentuk anakan + ${barisUji.length} kunci baris checklist + ${hariUji.length} bentuk hari pembayaran surut + ${jendelaUji.length} jendela bayar surut + ${tandaUjiKasus.length + checklistBaruKasus.length} penanda data uji + ${siklusUji.length} siklus bertelur + ${cekKandang.length} rekam kandang + ${jumlahUji.length} jumlah poin sejudul + ${ongkirUji.length} penanggung ongkir + ${trayUji.length} tray telur + ${ambangUji.length} ambang + ${alarmUji.length} alarm inkubator + ${targetUji.length} kemajuan target + ${klusterUji.length} umur kluster penyakit + 10 kelompok inisiatif + ${hargaUji.length + barangUji.length} harga supplier + ${andalUji.length} keandalan supplier + ${bersihUji.length} kolom kura dibersihkan + ${hargaUjiKura.length} harga beli kura + ${awalUji.length + telurUji.length + massalUji.length} baris telur + ${hbUji.length + hbKawananUji.length} isian massal harga beli + ${niatUji.length} jawaban baris isian + ${pitaUji.length} pita ukuran + ${asetUji.length} nilai aset + ${brgUji.length} harga barang gudang + ${asalUji.length} baris kembar asal + ${susunUji.length} susunan nilai + ${teratasUji.length} kelompok teratas + ${klaimDiperiksa} pemetaan sumber kura + ${pembuatProfil} pembuat profil pembeli + ${namaMiripUji.length} nama mirip + ${barisPakanUji} baris pakan satu pintu + ${clutchKembarUji} clutch kembar + ${modalUji.length} modal kerja + ${sebandingUji.length} selisih sebanding + ${zonaUji} tanggal setempat lintas zona + ${wibUji} tanggal WIB sisi server + ${muatUji} pemulihan unduhan halaman + ${kedaluwarsaUji} penilaian kedaluwarsa + ${indukUji} telur berinduk perkiraan diuji.`,
 );
 process.exit(0);

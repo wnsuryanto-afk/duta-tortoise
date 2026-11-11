@@ -42,6 +42,9 @@ export default function BreedingForm({ open, onClose, editData }) {
     editData ? { ...editData, tray_teks: daftarTray(editData).join(", "), retak_teks: String((editData.egg_records || []).filter((e) => e?.retak).length || "") } : {
     male_name: "", female_name: "", male_id: "", female_id: "",
     egg_laying_date: "", egg_count: "",
+    // Telur yang DITEMUKAN, bukan disaksikan. Lihat lib/indukPerkiraan.js.
+    induk_perkiraan: false,
+    tanggal_perkiraan: false,
     // Kotak ketik, BUKAN kolom Breeding — sama seperti tray_teks. Jumlahnya
     // langsung jadi penanda `retak` pada baris telur, supaya tidak ada angka
     // kedua yang bisa berselisih dengan barisnya (lihat jumlahTelurClutch).
@@ -287,6 +290,8 @@ export default function BreedingForm({ open, onClose, editData }) {
       season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
       estimated_hatch_start: form.estimated_hatch_start || undefined,
       estimated_hatch_end: form.estimated_hatch_end || undefined,
+      induk_perkiraan: !!form.induk_perkiraan,
+      tanggal_perkiraan: !!form.tanggal_perkiraan,
     };
     if (editData?.id) {
       await base44.entities.Breeding.update(editData.id, data);
@@ -366,6 +371,48 @@ export default function BreedingForm({ open, onClose, editData }) {
               )}
               {errors.female_name && <p className="text-xs text-red-500">{errors.female_name}</p>}
             </div>
+          </div>
+
+          {/*
+            Telur yang DITEMUKAN saat menggali, bukan disaksikan saat bertelur.
+
+            Nama induknya tetap wajib diisi — tebakan terbaik tetap keterangan
+            yang berguna ("kemungkinan C23, ditemukan di kandangnya"). Yang
+            ditandai di sini adalah bahwa ia TEBAKAN, supaya Ranking Indukan
+            dan produksi betina melewatinya. Telurnya sendiri tetap dihitung
+            sebagai produksi kebun. Lihat lib/indukPerkiraan.js.
+          */}
+          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+            <p className="text-xs font-semibold text-amber-900 dark:text-amber-300">
+              Telur ditemukan, bukan disaksikan?
+            </p>
+            <label className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={!!form.induk_perkiraan}
+                onChange={(e) => handleChange("induk_perkiraan", e.target.checked)}
+              />
+              <span>
+                <span className="font-medium">Induk hanya perkiraan.</span>{" "}
+                Nama di atas tetap disimpan sebagai catatan, tetapi clutch ini
+                tidak akan dipakai menilai indukan mana pun — telurnya tetap
+                dihitung sebagai produksi kebun.
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={!!form.tanggal_perkiraan}
+                onChange={(e) => handleChange("tanggal_perkiraan", e.target.checked)}
+              />
+              <span>
+                <span className="font-medium">Tanggal bertelur hanya perkiraan.</span>{" "}
+                Jendela menetas yang dihitung darinya ikut perkiraan, dan akan
+                ditandai begitu di layar.
+              </span>
+            </label>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

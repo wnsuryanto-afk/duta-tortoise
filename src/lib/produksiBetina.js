@@ -1,5 +1,6 @@
 import { namaKandang } from "@/lib/kandang";
 import { golonganUmur } from "@/lib/umurKura";
+import { indukDinilai } from "@/lib/indukPerkiraan";
 
 /**
  * produksiBetina.js — pertanyaan yang sebenarnya perlu dijawab kebun ini.
@@ -100,6 +101,15 @@ export function umurTermudaBertelur(tortoises = [], breedings = []) {
  */
 export function cocokkanBetina(breeding, tortoises = []) {
   if (!breeding) return null;
+  /*
+    Induk yang hanya perkiraan tidak dicocokkan ke kura mana pun.
+
+    Nama tebakannya tetap tersimpan di catatan, tetapi mengembalikan baris
+    kura di sini berarti telur itu masuk ke produksi seekor betina yang
+    belum tentu bertelur — dan produksi betina itulah yang dipakai
+    memutuskan indukan mana yang produktif. Lihat lib/indukPerkiraan.js.
+  */
+  if (!indukDinilai(breeding)) return null;
   if (breeding.female_id) {
     const lewatId = (tortoises || []).find((t) => t.id === breeding.female_id);
     if (lewatId) return lewatId;

@@ -27,6 +27,7 @@
  */
 import { ringkasProduksi } from "@/lib/hasilInkubasi";
 import { parentHasSickHistory } from "@/lib/parentHealthUtils";
+import { indukDinilai } from "@/lib/indukPerkiraan";
 
 /**
  * Bobot skor. Ditulis sekali di sini dan ditampilkan apa adanya di layar,
@@ -118,6 +119,19 @@ export function statistikKelompok(clutches = [], opsi = {}) {
 export function peringkat(clutches = [], kunci, label, opsi = {}) {
   const peta = new Map();
   for (const c of clutches || []) {
+    /*
+      Clutch yang induknya hanya perkiraan TIDAK ikut menilai indukan.
+
+      Disaring di sini, bukan di pemanggilnya: ketiga ranking di layar
+      Peringkat Indukan (pasangan, jantan, betina) lewat fungsi yang sama,
+      jadi satu baris ini menjaga ketiganya. Menyaringnya di tiap pemanggil
+      berarti tiga salinan aturan yang sama — bentuk yang sudah berkali-kali
+      berselisih diam-diam di aplikasi ini.
+
+      Telurnya tetap dihitung sebagai produksi KEBUN lewat ringkasProduksi;
+      yang dilewati hanya penilaian atas SEEKOR kura. Lihat lib/indukPerkiraan.js.
+    */
+    if (!indukDinilai(c)) continue;
     const k = kunci(c);
     if (k === null || k === undefined) continue;
     if (!peta.has(k)) peta.set(k, { ...label(c), clutches: [] });

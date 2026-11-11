@@ -49,6 +49,7 @@ import EggGrid from "@/components/breeding/EggGrid";
 import ClutchOffspringSection from "@/components/breeding/ClutchOffspringSection";
 import { segarkanBreeding } from "@/lib/kunciBreeding";
 import { clutchMendesak } from "@/lib/hitungMundur";
+import { labelPerkiraan } from "@/lib/indukPerkiraan";
 
 const statusColors = {
   kawin: "bg-accent/10 text-accent border-accent/20",
@@ -714,6 +715,18 @@ export default function BreedingAndEggs() {
                         {ringkasRetak(b.egg_records).total > 0 && (
                           <span className="text-orange-700 dark:text-orange-400 font-medium">
                             🧩 {ringkasRetak(b.egg_records).total} retak
+                          </span>
+                        )}
+                        {/*
+                          Clutch yang induk atau tanggalnya hanya perkiraan
+                          harus terbaca begitu di daftar. Tanpa penanda, ia
+                          tampak persis seperti clutch yang disaksikan — dan
+                          orang berikutnya akan memakai nama induknya sebagai
+                          fakta.
+                        */}
+                        {labelPerkiraan(b) && (
+                          <span className="text-amber-700 dark:text-amber-400 font-medium">
+                            ≈ {labelPerkiraan(b)}
                           </span>
                         )}
                         {b.incubator_name && <span>📦 {b.incubator_name}</span>}
