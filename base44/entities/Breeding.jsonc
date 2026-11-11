@@ -157,6 +157,16 @@
       "description": "Nama inkubator (diambil dari entity Incubator)",
       "type": "string"
     },
+    "induk_perkiraan": {
+      "default": false,
+      "description": "Induknya hanya PERKIRAAN, bukan diketahui pasti. Dipakai untuk telur yang ditemukan saat menggali tanah: telurnya nyata, tapi tidak ada yang melihat betina mana yang bertelur. Clutch bertanda ini TETAP dihitung sebagai produksi kebun (jumlah telur, isi inkubator, daya tetas kebun) tetapi TIDAK PERNAH dipakai menilai seekor indukan — Ranking Indukan dan produksiBetina melewatinya. Mengkreditkan telur kepada betina yang belum tentu bertelur akan membuat keputusan 'indukan mana yang produktif' diambil dari angka karangan. Aturannya di src/lib/indukPerkiraan.js, dijaga scripts/cek-induk.mjs.",
+      "type": "boolean"
+    },
+    "tanggal_perkiraan": {
+      "default": false,
+      "description": "egg_laying_date hanya PERKIRAAN. Untuk telur yang ditemukan terkubur, tanggal bertelurnya ditaksir — misalnya dari kapan terakhir area itu digali atau dari tingkat perkembangan embrio saat disenter. Jendela menetas (+80/+105 hari) yang dihitung darinya ikut perkiraan, jadi layar harus menyebutnya perkiraan dan bukan tanggal pasti.",
+      "type": "boolean"
+    },
     "infertile_count": {
       "description": "Jumlah telur infertil",
       "type": "number"
