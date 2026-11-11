@@ -157,6 +157,11 @@
       "description": "Nama inkubator (diambil dari entity Incubator)",
       "type": "string"
     },
+    "induk_perkiraan": {
+      "default": false,
+      "description": "Induknya hanya PERKIRAAN, bukan diketahui pasti. Dipakai untuk telur yang ditemukan saat menggali tanah: telurnya nyata, tapi tidak ada yang melihat betina mana yang bertelur. Clutch bertanda ini TETAP dihitung sebagai produksi kebun (jumlah telur, isi inkubator, daya tetas kebun) tetapi TIDAK PERNAH dipakai menilai seekor indukan \u2014 Ranking Indukan dan produksiBetina melewatinya. Mengkreditkan telur kepada betina yang belum tentu bertelur akan membuat keputusan 'indukan mana yang produktif' diambil dari angka karangan.",
+      "type": "boolean"
+    },
     "infertile_count": {
       "description": "Jumlah telur infertil",
       "type": "number"
@@ -203,6 +208,11 @@
         "selesai"
       ],
       "type": "string"
+    },
+    "tanggal_perkiraan": {
+      "default": false,
+      "description": "egg_laying_date hanya PERKIRAAN. Untuk telur yang ditemukan terkubur, tanggal bertelurnya ditaksir \u2014 misalnya dari kapan terakhir area itu digali atau dari tingkat perkembangan embrio saat disenter. Jendela menetas (+80/+105 hari) yang dihitung darinya ikut perkiraan, jadi layar harus menyebutnya perkiraan dan bukan tanggal pasti.",
+      "type": "boolean"
     },
     "tray_number": {
       "description": "LAMA \u2014 satu nomor tray saja. Dipertahankan supaya catatan sebelum 02-10-2026 tidak kehilangan traynya. Pengisian baru memakai tray_numbers; pembacaan memakai tray_numbers lebih dulu lalu jatuh ke kolom ini.",
