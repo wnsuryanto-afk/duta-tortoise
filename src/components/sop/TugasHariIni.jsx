@@ -47,6 +47,7 @@ import InfoHint from "@/components/ui/info-hint";
 import { propsTekan } from "@/lib/a11y";
 import { barisAbsensiSah } from "@/lib/absensi";
 import { msServer } from "@/lib/safeDate";
+import { JEDA_TUGAS_DETIK, sisaJedaDetik } from "@/lib/jedaTugas";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
@@ -192,14 +193,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
   // 250 tunggakan sekaligus berarti 250 pemanggilan dalam satu tarikan.
   const [jumlahTertunggak, setJumlahTertunggak] = useState(5);
 
-  // ── Jeda minimum 60 detik antar pencentangan tugas SOP (anti centang beruntun) ──
+  // ── Jeda minimum antar pencentangan tugas SOP — lib/jedaTugas.js ──
   // Pengecualian: absensi, baris istirahat, dan tugas tambahan keeper (tidak konsumsi jeda).
   const lastCheckAtRef = useRef(0);
-  const getCooldownRemaining = () => {
-    if (!lastCheckAtRef.current) return 0;
-    const elapsedMs = Date.now() - lastCheckAtRef.current;
-    return elapsedMs >= 60000 ? 0 : Math.ceil((60000 - elapsedMs) / 1000);
-  };
+  const getCooldownRemaining = () =>
+    sisaJedaDetik(lastCheckAtRef.current, Date.now(), JEDA_TUGAS_DETIK);
   const registerCheckTime = () => { lastCheckAtRef.current = Date.now(); };
 
   const canCatatPakan = ["keeper", "kepala_feeder", "owner", "admin", "manajer"].includes(user?.role);

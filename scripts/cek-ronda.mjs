@@ -98,6 +98,7 @@ bundel("base44/shared/stok.ts", "stokserver.cjs");
 bundel("src/lib/peringkatIndukan.js", "peringkatinduk.cjs");
 bundel("src/lib/produksiBetina.js", "produksibetina.cjs");
 bundel("src/lib/hasilInkubasi.js", "hasilink.cjs");
+bundel("src/lib/jedaTugas.js", "jeda.cjs");
 const K = await import("file://" + join(dir, "kandang.cjs")).then((m) => m.default || m);
 const HPP = await import("file://" + join(dir, "hpp.cjs")).then((m) => m.default || m);
 const UP = await import("file://" + join(dir, "usulpoin.cjs")).then((m) => m.default || m);
@@ -3839,6 +3840,62 @@ let kedaluwarsaUji = 0;
     const tigaPuluhDetikKemudian = Date.parse("2026-11-13T06:34:30.000Z");
     if (tigaPuluhDetikKemudian - SD2.msServer(capServer) >= 60000) {
       temuan.push("jeda 60 dtk: 30 detik sesudah kandang sebelumnya malah dianggap sudah lewat");
+    }
+  }
+
+  /*
+    Jeda antar pencentangan: satu angka, dipakai logika DAN lencananya.
+
+    Angkanya dulu ditulis dua kali untuk satu aturan — `elapsedMs < 60000`
+    di logika dan "Jeda 60 dtk" di lencana, ratusan baris terpisah di berkas
+    yang sama. Bentuk itu tidak gagal dengan error; ia gagal dengan lencana
+    yang menjanjikan satu angka sementara aplikasinya menahan angka lain,
+    dan yang membacanya kiper yang sedang berdiri di depan kandang.
+
+    13 Nov 2026 jeda kandang diturunkan 60 → 30 detik atas keputusan
+    pemiliknya. Jeda tugas SOP SENGAJA tetap 60.
+  */
+  {
+    const J = await import("file://" + join(dir, "jeda.cjs")).then((m) => m.default || m);
+    const SEKARANG = Date.parse("2026-11-13T06:40:00.000Z");
+    const detik = (n) => SEKARANG - n * 1000;
+
+    kedaluwarsaUji++;
+    if (J.JEDA_KANDANG_DETIK !== 30) {
+      temuan.push(`JEDA_KANDANG_DETIK = ${J.JEDA_KANDANG_DETIK}, seharusnya 30`);
+    }
+    kedaluwarsaUji++;
+    if (J.JEDA_TUGAS_DETIK !== 60) {
+      temuan.push(`JEDA_TUGAS_DETIK = ${J.JEDA_TUGAS_DETIK}, seharusnya 60 — tidak ikut diturunkan`);
+    }
+
+    const KASUS = [
+      [0, 30, 0, "belum pernah mencentang → tidak ditahan"],
+      [detik(0), 30, 30, "baru saja → tahan penuh"],
+      [detik(10), 30, 20, "10 detik lalu → sisa 20"],
+      [detik(29), 30, 1, "29 detik lalu → sisa 1"],
+      [detik(30), 30, 0, "tepat 30 detik → boleh"],
+      [detik(31), 30, 0, "31 detik → boleh"],
+      [detik(45), 60, 15, "jeda tugas SOP masih 60"],
+      [SEKARANG + 5000, 30, 0, "cap waktu dari masa depan tidak boleh mengunci kiper"],
+    ];
+    for (const [terakhir, jeda, harus, ket] of KASUS) {
+      kedaluwarsaUji++;
+      const dapat = J.sisaJedaDetik(terakhir, SEKARANG, jeda);
+      if (dapat !== harus) temuan.push(`sisaJedaDetik: ${ket} → ${dapat}, seharusnya ${harus}`);
+    }
+
+    /*
+      Lencana dan teks di layar harus TURUN dari angka itu, bukan ditulis
+      ulang. Satu angka yang diketik dua kali adalah dua angka.
+    */
+    for (const rel of ["src/components/guided/GuidedHariIni.jsx", "src/components/sop/TugasHariIni.jsx"]) {
+      kedaluwarsaUji++;
+      const kode = kupasKomentar(readFileSync(join(AKAR, rel), "utf8"));
+      const hardcoded = /Jeda\s+\d+\s*dtk|\b60000\s*\)?\s*\?|elapsedMs\s*[<>]=?\s*\d{4,}/.exec(kode);
+      if (hardcoded) {
+        temuan.push(`${rel} menulis angka jeda sendiri ("${hardcoded[0].trim()}") — pakai lib/jedaTugas.js`);
+      }
     }
   }
 

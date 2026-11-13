@@ -39,6 +39,7 @@ import { masukLaporan, tandaChecklistBaru } from "@/lib/laporan";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { SARINGAN_ANAKAN, hanyaAnakan } from "@/lib/anakanKura";
 import { msServer } from "@/lib/safeDate";
+import { JEDA_KANDANG_DETIK, sisaJedaDetik } from "@/lib/jedaTugas";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -629,7 +630,7 @@ export default function GuidedHariIni({ user }) {
   const requirePhotoKebersihan = tugasUbin.some(t => t.require_photo === true);
   const kandangCameraRef = useRef(null);
   const [pendingKandang, setPendingKandang] = useState(null);
-  // ── Jeda minimum 60 detik antar kandang (anti centang beruntun) ──
+  // ── Jeda minimum antar kandang (anti centang beruntun) — lib/jedaTugas.js ──
 
   // Poin hari ini (dideklarasikan setelah poinKebersihan)
   // settled = dikerjakan sendiri ATAU dikerjakan rekan (tidak menggandakan poin, tapi menghitung sebagai selesai)
@@ -658,12 +659,13 @@ export default function GuidedHariIni({ user }) {
       setKandangDone(p => { const n = new Set(p); n.delete(k); return n; });
       return;
     }
-    // JEDA MINIMUM 60 DETIK antar kandang — tolak dengan hitungan mundur yang jelas & ramah
-    if (lastCheckAtMs > 0) {
-      const elapsedMs = Date.now() - lastCheckAtMs;
-      if (elapsedMs < 60000) {
-        const remaining = Math.ceil((60000 - elapsedMs) / 1000);
-        setCooldownSec(remaining);
+    // JEDA MINIMUM antar kandang — tolak dengan hitungan mundur yang jelas & ramah.
+    // Panjangnya SATU angka di lib/jedaTugas.js, dipakai logika dan lencananya
+    // sekaligus; dulu keduanya ditulis terpisah dan bisa berselisih diam-diam.
+    {
+      const sisa = sisaJedaDetik(lastCheckAtMs, Date.now(), JEDA_KANDANG_DETIK);
+      if (sisa > 0) {
+        setCooldownSec(sisa);
         return;
       }
     }
@@ -740,7 +742,7 @@ export default function GuidedHariIni({ user }) {
       if (photoUrl) logData.photo_url = photoUrl;
       await catatLogSekali(logData);
       setKandangSaved(p => { const n = new Set(p); n.add(k); return n; });
-      setLastCheckAtMs(Date.now()); // mulai jeda 60 dtk untuk kandang berikutnya
+      setLastCheckAtMs(Date.now()); // mulai jeda untuk kandang berikutnya
       refetchML();
       flashPoin(k, poinUbin(k));
       if (photoUrl) {
@@ -1258,7 +1260,7 @@ export default function GuidedHariIni({ user }) {
                 {requirePhotoKebersihan && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600"><Camera className="w-3 h-3" /> Wajib Foto</span>
                 )}
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda 60 dtk</span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600"><Clock className="w-3 h-3" /> Jeda {JEDA_KANDANG_DETIK} dtk</span>
               </div>
               <span className="text-xs text-muted-foreground">{settledKandangCount}/{daftarKandang.length} selesai</span>
             </div>
