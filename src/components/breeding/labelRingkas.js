@@ -133,9 +133,23 @@ export const PALET_TERMAL = {
  * tata letak yang hanya benar kalau satu properti CSS dihormati bukan tata
  * letak yang benar. Keduanya dipasang.
  */
+/*
+ * 13 Nov 2026: jalur candling diturunkan dari 0,21 ke 0,17.
+ *
+ * Pemiliknya melaporkan: "Karena di labelling tulisannya candling, saya tidak
+ * tahu pasti kapan perkiraan menetas." Kedua keterangan memang ada di label
+ * ini — perkiraan menetas di badan, candling di jalur bawah — tetapi yang
+ * bawah adalah pita berwarna selebar label dengan kotak centang sendiri,
+ * sementara perkiraan menetas hanya tulisan di atas latar putih. Mata jatuh
+ * ke pitanya.
+ *
+ * Yang dikembalikan ke badan adalah 4% tinggi label. Candling tetap ada dan
+ * tetap berpita — ia tugas yang harus ditandai, dan tanggalnya tetap terbaca
+ * — hanya tidak lagi memakai seperlima label untuk itu.
+ */
 export function tinggiJalur(hPx) {
   const kepala = Math.round(hPx * 0.22);
-  const candling = Math.round(hPx * 0.21);
+  const candling = Math.round(hPx * 0.17);
   return { kepala, candling, badan: hPx - kepala - candling };
 }
 
@@ -221,6 +235,18 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
   const trayFg = adaTray ? K.trayAdaFg : K.trayKosongFg;
 
   const bertelur = tgl(breeding.egg_laying_date) || "—";
+
+  /*
+    Kotak telur retak, ditempel di baris keterangan yang sudah ada — bukan
+    baris baru.
+
+    Label ini 50 × 30 mm. Satu baris tambahan berarti satu jalur lagi yang
+    harus muat, dan jalur yang tidak muat memotong tulisannya sendiri
+    (lihat tinggiJalur di atas, yang lahir dari persis kejadian itu).
+    Keterangannya pendek — "retak di R1" — jadi ia menumpang di baris butir
+    dan tanggal bertelur, yang memang sudah ada.
+  */
+  const retakDi = String(breeding.tray_retak || "").trim();
   const mulai = tgl(breeding.estimated_hatch_start) || "—";
   const sampai = tgl(breeding.estimated_hatch_end);
 
@@ -256,7 +282,7 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
       <div style="font-weight:800;letter-spacing:1.2px;color:${K.kapsi};${gayaBaris(fKapsi)}">PERKIRAAN MENETAS</div>
       <div style="font-weight:900;color:${K.besar};${gayaBaris(fBesar)}">${mulai}</div>
       ${sampai ? `<div style="font-weight:700;color:${K.sampai};${gayaBaris(fSampai)}">s/d ${sampai}</div>` : ""}
-      <div style="color:${K.meta};${gayaBaris(fMeta)}"><b>${breeding.egg_count || 0} butir</b> &middot; bertelur ${bertelur}</div>
+      <div style="color:${K.meta};${gayaBaris(fMeta)}"><b>${breeding.egg_count || 0} butir</b> &middot; bertelur ${bertelur}${retakDi ? ` &middot; retak di ${retakDi}` : ""}</div>
     </div>
     <div style="width:${qrKolom}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-left:1px solid ${K.qrGaris};background:${K.qrLatar}">
       <img src="${qrDataUrl}" width="${qrSisi}" height="${qrSisi}" style="display:block"/>

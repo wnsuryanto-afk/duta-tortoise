@@ -5,11 +5,18 @@
  */
 import { addDays, differenceInDays, parseISO } from "date-fns";
 import { STATUS_ADA_HASIL } from "@/lib/hasilInkubasi";
+import { HARI_MENETAS_MIN, HARI_MENETAS_MAX } from "@/lib/jendelaMenetas";
 
 const EGG_LAY_MIN_DAYS = 30;
 const EGG_LAY_MAX_DAYS = 45;
-const HATCH_MIN_DAYS = 80;
-const HATCH_MAX_DAYS = 105;
+
+/*
+ * Jendela menetas TIDAK ditulis ulang di sini. Sampai 13 Nov 2026 angka 80
+ * dan 105 hidup di tiga tempat dan angka 90 di tempat keempat — lihat
+ * lib/jendelaMenetas.js, yang sekarang memegangnya sendirian.
+ */
+const HATCH_MIN_DAYS = HARI_MENETAS_MIN;
+const HATCH_MAX_DAYS = HARI_MENETAS_MAX;
 
 const parse = (d) => {
   if (!d) return null;

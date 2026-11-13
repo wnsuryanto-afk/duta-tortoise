@@ -113,6 +113,7 @@ import LayarTimPage from "@/pages/LayarTimPage";
 import PembelianPage from "@/pages/PembelianPage";
 import UnifiedStokPage from "@/pages/UnifiedStokPage";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
+import UrutanMenetas from "@/components/breeding/UrutanMenetas";
 import FormPergerakanStok from "@/components/stok/FormPergerakanStok";
 import TombolWhatsApp from "@/components/common/TombolWhatsApp";
 import LeadsSupplierTab from "@/components/supplier/LeadsSupplierTab";
@@ -543,6 +544,47 @@ export default [
     breeding={{ status: "selesai", estimated_hatch_start: "2026-06-27", estimated_hatch_end: "2026-07-22" }} />],
   // Tanpa satu pun tanggal perkiraan -> harus DIAM, bukan "NaN hari lagi".
   ["HitungMundur tanpa tanggal", <HitungMundurMenetas breeding={{ status: "bertelur" }} />],
+
+  /*
+    Urutan menetas — layar yang menjawab "yang mana berikutnya" saat orang
+    berdiri di depan inkubator. Datanya SALINAN keadaan 13 Nov 2026: sembilan
+    clutch yang menetas paling dulu semuanya di satu inkubator dan tidak satu
+    pun punya tray. Dua kasus supaya kedua jalannya terukur: yang ada
+    peringatan tray kosong, dan yang semuanya sudah terisi.
+  */
+  ["UrutanMenetas dengan tray kosong", <UrutanMenetas
+    incubators={[{ id: "i1", name: "Inkubator kecil" }, { id: "i2", name: "Showcase 2pintu" }]}
+    breedings={[
+      { id: "a", status: "bertelur", male_name: "A36", female_name: "A31", egg_count: 23,
+        egg_laying_date: "2026-09-04", estimated_hatch_start: "2026-11-23", estimated_hatch_end: "2026-12-18",
+        incubator_id: "i1", incubator_name: "Inkubator 1" },
+      { id: "b", status: "bertelur", male_name: "A35", female_name: "A46", egg_count: 22,
+        egg_laying_date: "2026-09-04", estimated_hatch_start: "2026-11-23", estimated_hatch_end: "2026-12-18",
+        incubator_id: "i1", incubator_name: "Inkubator 1" },
+      { id: "c", status: "bertelur", male_name: "A40", female_name: "C23", egg_count: 28,
+        egg_laying_date: "2026-10-02", estimated_hatch_start: "2026-12-21", estimated_hatch_end: "2027-01-15",
+        incubator_id: "i1", incubator_name: "Inkubator 1", tray_retak: "R1" },
+      { id: "d", status: "bertelur", male_name: "A35", female_name: "A46", egg_count: 24,
+        egg_laying_date: "2026-10-04", estimated_hatch_start: "2026-12-23", estimated_hatch_end: "2027-01-17",
+        incubator_id: "i2", incubator_name: "Showcase 2pintu", tray_numbers: [5] },
+      { id: "e", status: "bertelur", male_name: "A36", female_name: "C6", egg_count: 14,
+        egg_laying_date: "2026-10-09", estimated_hatch_start: "2026-12-28", estimated_hatch_end: "2027-01-22",
+        incubator_id: "i2", incubator_name: "Showcase 2pintu", tray_numbers: [6] },
+    ]} />],
+
+  ["UrutanMenetas semua tray terisi", <UrutanMenetas
+    incubators={[{ id: "i2", name: "Showcase 2pintu" }]}
+    breedings={[
+      { id: "d", status: "bertelur", male_name: "A35", female_name: "A46", egg_count: 24,
+        egg_laying_date: "2026-10-04", estimated_hatch_start: "2026-12-23", estimated_hatch_end: "2027-01-17",
+        incubator_id: "i2", incubator_name: "Showcase 2pintu", tray_numbers: [5] },
+      { id: "e", status: "bertelur", male_name: "A36", female_name: "C6", egg_count: 14,
+        egg_laying_date: "2026-10-09", estimated_hatch_start: "2026-12-28", estimated_hatch_end: "2027-01-22",
+        incubator_id: "i2", incubator_name: "Showcase 2pintu", tray_numbers: [6, 7] },
+    ]} />],
+
+  // Tidak ada clutch aktif -> komponennya harus DIAM, bukan kepala kosong.
+  ["UrutanMenetas tanpa clutch aktif", <UrutanMenetas breedings={[]} incubators={[]} />],
   // Formulir pergerakan stok, dipakai beranda DAN tab Pergerakan. Diuji dua
   // arah karena tombol yang menyala saat dibuka berbeda.
   ["FormPergerakanStok masuk", <FormPergerakanStok tipeAwal="masuk" threshold={500000}
