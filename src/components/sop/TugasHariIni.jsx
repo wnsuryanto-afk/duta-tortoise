@@ -18,7 +18,7 @@ import { format, subDays } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   CheckCircle2, Clock, Users, ChevronDown, ChevronUp,
-  Camera, Plus, Loader2, Check, X, Star, Salad, RefreshCw,
+  Camera, Plus, Loader2, Check, X, Star, Salad, RefreshCw, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import ExtraTaskForm from "./ExtraTaskForm";
