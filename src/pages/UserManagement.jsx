@@ -13,8 +13,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { ROLE_LABELS, ROLE_COLORS, canManageUsers, canInviteUser, canEditUsers } from "@/lib/permissions";
 import AccessDenied from "@/components/common/AccessDenied";
 import UserDetailPage from "@/pages/UserDetailPage";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import PageHeader from "@/components/common/PageHeader";
 
 const ROLE_DESCRIPTIONS = {
@@ -245,7 +244,7 @@ export default function UserManagement() {
             {filtered.map((u) => {
               const isMe = u.id === currentUser?.id;
               const isKicked = u.role === "kicked";
-              const joinDate = u.created_date ? format(new Date(u.created_date), "d MMM yyyy", { locale: id }) : "—";
+              const joinDate = safeFormatDate(waktuServer(u.created_date));
 
               return (
                 <button

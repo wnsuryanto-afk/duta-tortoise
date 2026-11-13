@@ -11,6 +11,7 @@ import { Search, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { PETTYCASH_CAT_LABELS } from "@/lib/financeCategories";
+import { waktuServer } from "@/lib/safeDate";
 import { usePettyCashCategories } from "@/hooks/useEntityCategories";
 import { logActivity } from "@/lib/logActivity";
 import EditLedgerEntryDialog from "./EditLedgerEntryDialog";
@@ -28,6 +29,21 @@ const TYPE_CONFIG = {
 const CAT_LABELS = PETTYCASH_CAT_LABELS;
 
 
+/**
+ * Tanggal baris buku kas, dengan cadangan ke kapan barisnya dibuat.
+ *
+ * `createdDate` adalah `created_date` dari server, yang datang tanpa penanda
+ * zona — dibaca mentah ia tujuh jam lebih awal, dan tanggalnya ikut mundur
+ * sehari untuk baris yang dibuat sebelum pukul tujuh pagi. waktuServer()
+ * membacanya sebagai UTC, seperti yang dimaksud server.
+ *
+ * `entry_date` TIDAK lewat waktuServer(): itu tanggal yang diketik orang,
+ * bukan cap waktu server, dan sudah berupa tanggal setempat.
+ *
+ * Penjaga scripts/cek-stempel.mjs tidak bisa menangkap tempat ini: nilainya
+ * sudah berpindah ke parameter, jadi namanya tidak lagi menyebut
+ * created_date. Diperbaiki dengan tangan.
+ */
 function safeFormatDate(dateStr, createdDate) {
   const opts = { locale: id };
   if (dateStr && dateStr !== "null" && dateStr !== "undefined") {
@@ -36,10 +52,10 @@ function safeFormatDate(dateStr, createdDate) {
       if (!isNaN(d.getTime())) return format(d, "d MMM yyyy", opts);
     } catch {}
   }
-  if (createdDate) {
+  const dibuat = waktuServer(createdDate);
+  if (dibuat) {
     try {
-      const d = new Date(createdDate);
-      if (!isNaN(d.getTime())) return format(d, "d MMM yyyy", opts);
+      return format(dibuat, "d MMM yyyy", opts);
     } catch {}
   }
   return "—";

@@ -11,7 +11,7 @@ import { Plus, Camera, TrendingUp, Ruler, Star, StarOff, Trash2 } from "lucide-r
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { tanggalHariIni } from "@/lib/safeDate";
+import { msServer, tanggalHariIni } from "@/lib/safeDate";
 
 export default function PhotoProgressPanel({ tortoise, onClose }) {
   const qc = useQueryClient();
@@ -60,7 +60,10 @@ export default function PhotoProgressPanel({ tortoise, onClose }) {
       return false;
     }
   };
-  const sorted = photos.sort((a, b) => new Date(b.date || b.created_date || 0) - new Date(a.date || a.created_date || 0));
+  // msServer untuk keduanya: `date` adalah tanggal polos yang diisi orang,
+  // `created_date` cap waktu server tanpa penanda zona. Dibaca mentah,
+  // keduanya memakai penanggalan yang berbeda dalam satu perbandingan.
+  const sorted = photos.sort((a, b) => msServer(b.date || b.created_date) - msServer(a.date || a.created_date));
 
   // Photos with weight for growth chart
   const weightData = photos

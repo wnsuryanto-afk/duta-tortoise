@@ -1,4 +1,4 @@
-import { selisihHari, tanggalHariIni } from "@/lib/safeDate";
+import { selisihHari, tanggalHariIni, tanggalLokal, waktuServer } from "@/lib/safeDate";
 
 /**
  * bonusTertunda.js — bonus yang sudah dijanjikan tetapi belum dibayar.
@@ -55,7 +55,10 @@ export function bonusTertunda(rewards = [], hariIni = tanggalHariIni()) {
       // Umur dihitung dari kapan barisnya DIBUAT, bukan dari periodenya.
       // Bonus untuk periode Agustus yang baru dibuat kemarin belum terlambat;
       // yang dibuat awal September dan masih menggantung, sudah.
-      const dibuat = String(r.created_date || "").slice(0, 10);
+      // tanggalLokal(waktuServer(...)): created_date datang tanpa penanda
+      // zona, jadi memotongnya memberi tanggal UTC — bonus yang dibuat
+      // sebelum pukul tujuh pagi terhitung sehari lebih tua dari sebenarnya.
+      const dibuat = tanggalLokal(waktuServer(r.created_date));
       const umur = selisihHari(dibuat, hariIni);
       return {
         id: r.id,

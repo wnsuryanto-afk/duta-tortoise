@@ -12,6 +12,7 @@ import SendNotifDialog from "@/components/notifications/SendNotifDialog";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
+import { msServer, waktuServer } from "@/lib/safeDate";
 import PageHeader from "@/components/common/PageHeader";
 import { propsTekan } from "@/lib/a11y";
 
@@ -59,9 +60,12 @@ export default function NotificationsPage() {
 
     const batas = new Date();
     batas.setDate(batas.getDate() - 30);
+    // msServer, bukan new Date(): baris ini MENGHAPUS notifikasi. created_date
+    // dibaca mentah terbaca tujuh jam lebih awal, jadi yang berumur tepat 30
+    // hari kurang sedikit sudah dianggap kedaluwarsa dan ikut terhapus.
     const kedaluwarsa = notifs.filter((n) => {
-      const ts = n.created_at || n.created_date;
-      return ts && new Date(ts) < batas;
+      const ms = msServer(n.created_at || n.created_date);
+      return ms > 0 && ms < batas.getTime();
     });
     if (kedaluwarsa.length === 0) return;
 
@@ -80,7 +84,8 @@ export default function NotificationsPage() {
         const pa = a.priority === "tinggi" ? 0 : a.priority === "sedang" ? 1 : 2;
         const pb = b.priority === "tinggi" ? 0 : b.priority === "sedang" ? 1 : 2;
         if (pa !== pb) return pa - pb;
-        return new Date(b.created_at || b.created_date || 0) - new Date(a.created_at || a.created_date || 0);
+        // msServer untuk keduanya — created_at membawa "Z", created_date tidak.
+        return msServer(b.created_at || b.created_date) - msServer(a.created_at || a.created_date);
       });
   }, [notifs, filterRead, filterCategory]);
 
@@ -322,8 +327,8 @@ export default function NotificationsPage() {
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground/60 ml-auto">
-                      {(notif.created_at || notif.created_date)
-                        ? formatDistanceToNow(new Date(notif.created_at || notif.created_date), { addSuffix: true, locale: id })
+                      {waktuServer(notif.created_at || notif.created_date)
+                        ? formatDistanceToNow(waktuServer(notif.created_at || notif.created_date), { addSuffix: true, locale: id })
                         : ""}
                     </span>
                   </div>

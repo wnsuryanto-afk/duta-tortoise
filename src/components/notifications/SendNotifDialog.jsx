@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Send, Users } from "lucide-react";
 import { useActiveUsers } from "@/hooks/useActiveUsers";
-import { tanggalHariIni } from "@/lib/safeDate";
 
 export default function SendNotifDialog({ open, onClose }) {
   const queryClient = useQueryClient();
@@ -25,14 +24,18 @@ export default function SendNotifDialog({ open, onClose }) {
 
   const handleSend = async () => {
     setSaving(true);
-    const today = tanggalHariIni();
+    // Cap waktu UTUH, bukan tanggalHariIni(): created_at dibaca sebagai titik
+    // waktu ("5 menit lalu"). Tanggal polos "2026-11-13" dibaca sebagai tengah
+    // malam UTC, yaitu pukul 07:00 WIB — notifikasi yang dikirim sebelum jam
+    // tujuh pagi tampil sebagai "dalam 4 jam", datang dari masa depan.
+    const dikirimPada = new Date().toISOString();
     const base = {
       title: form.title,
       message: form.message,
       type: form.type,
       category: form.category,
       is_read: false,
-      created_at: today,
+      created_at: dikirimPada,
     };
 
     if (form.recipient_type === "semua_role") {

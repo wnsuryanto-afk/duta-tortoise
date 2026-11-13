@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { jenisAlarm, angkaPembacaan } from "@/lib/inkubator";
 import { base44 } from "@/api/base44Client";
 import { Thermometer } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 
 export default function KeeperIncubatorWidget() {
   const { data: incubators = [] } = useQuery({
@@ -73,7 +73,7 @@ export default function KeeperIncubatorWidget() {
                   <p className="text-sm font-semibold">{inc.name}</p>
                   {last?.created_date && (
                     <p className="text-[10px] text-muted-foreground">
-                      Update: {format(new Date(last.created_date), "d MMM HH:mm")}
+                      Update: {safeFormatDate(waktuServer(last.created_date), "d MMM HH:mm")}
                     </p>
                   )}
                 </div>

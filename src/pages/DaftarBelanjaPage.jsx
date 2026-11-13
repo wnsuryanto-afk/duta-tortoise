@@ -16,8 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ShoppingCart, Check, Package, ArrowRight, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import PageHeader from "@/components/common/PageHeader";
 import { WarehouseArt } from "@/components/common/Illustration";
 
@@ -138,9 +137,7 @@ export default function DaftarBelanjaPage() {
                     )}
                     <span>
                       · Sejak:{" "}
-                      {item.task.created_date
-                        ? format(new Date(item.task.created_date), "d MMM yyyy", { locale: id })
-                        : "-"}
+                      {safeFormatDate(waktuServer(item.task.created_date), "d MMM yyyy", "-")}
                     </span>
                   </div>
                   {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}

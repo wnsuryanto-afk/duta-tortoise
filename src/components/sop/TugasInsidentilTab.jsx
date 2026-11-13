@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Plus, Loader2, Ban } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import { toast } from "sonner";
 import IncidentalTaskForm from "@/components/incidental/IncidentalTaskForm";
 import IncidentalTaskUsulanForm from "@/components/incidental/IncidentalTaskUsulanForm";
@@ -224,7 +225,7 @@ export default function TugasInsidentilTab() {
                         Ditugaskan: <strong className="text-foreground">{t.assigned_to_name || "Siapa saja"}</strong>
                       </span>
                       {t.created_date && (
-                        <span>· Sejak: {format(new Date(t.created_date), "d MMM yyyy", { locale: id })}</span>
+                        <span>· Sejak: {safeFormatDate(waktuServer(t.created_date))}</span>
                       )}
                       <span className={isOverdue ? "text-red-600 font-medium" : ""}>
                         · Tenggat: {tanggalTampil(t.due_date, (d) => format(d, "d MMM yyyy", { locale: id }), "-")}

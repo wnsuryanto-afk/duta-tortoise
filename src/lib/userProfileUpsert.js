@@ -3,6 +3,7 @@
  * Gunakan ini di semua tempat yang menyentuh UserProfile.
  */
 import { base44 } from "@/api/base44Client";
+import { msServer } from "@/lib/safeDate";
 
 /**
  * Simpan profil user dengan pola upsert:
@@ -31,7 +32,7 @@ export async function upsertUserProfile(user, data) {
   if (valid.length > 0) {
     // UPDATE record terbaik (is_complete=true dulu, lalu terbaru)
     const best = valid.find(p => p.is_complete === true)
-      || valid.sort((a, b) => new Date(b.updated_date || 0) - new Date(a.updated_date || 0))[0];
+      || valid.sort((a, b) => msServer(b.updated_date) - msServer(a.updated_date))[0];
     return await base44.entities.UserProfile.update(best.id, dataToSave);
   } else {
     // CREATE baru hanya jika belum ada sama sekali
