@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date().toISOString();
-    const today = now.split("T")[0];
 
     const isDuplicate = async (email) => {
       const existing = await base44.asServiceRole.entities.Notification.filter({

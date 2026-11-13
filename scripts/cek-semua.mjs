@@ -169,6 +169,14 @@
  *                   terpecahkan di lingkup, dan nama di dalam tag JSX tidak
  *                   pernah jadi acuan semacam itu — dibuktikan dengan
  *                   berkas percobaan. Build pun tetap hijau
+ *   cek-hariwib     jendela "sekali sehari" di sisi server diukur dari hari
+ *                   UTC → satu hari UTC berjalan dari pukul 07:00 WIB sampai
+ *                   07:00 WIB berikutnya, tepat memotong awal jam kerja,
+ *                   jadi janji "satu notifikasi per hari" pecah justru pada
+ *                   jam orang mulai bekerja. Bentuk benarnya sudah ada di
+ *                   notifSekali() dan dipakai 12 fungsi; meski begitu tiga
+ *                   dari lima penyaring menulis versinya sendiri tanpa
+ *                   konversi WIB
  *   cek-stempel     stempel waktu server dibaca dengan penanggalan peramban
  *                   → Base44 mengirim created_date/updated_date tanpa
  *                   penanda zona, jadi JavaScript membacanya sebagai waktu
@@ -229,7 +237,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs", "cek-muat.mjs", "cek-menetas.mjs", "cek-induk.mjs", "cek-jsx.mjs", "cek-stempel.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs", "cek-muat.mjs", "cek-menetas.mjs", "cek-induk.mjs", "cek-jsx.mjs", "cek-stempel.mjs", "cek-hariwib.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

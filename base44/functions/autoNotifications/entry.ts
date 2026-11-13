@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { clutchAktif } from "../../shared/kura.ts";
 import { perluDiperhatikan, dilacak } from "../../shared/stok.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
-import { tanggalMaju, tanggalMundur, wibTanggal } from "../../shared/otomatis.ts";
+import { tanggalMaju, tanggalMundur, wibTanggal, WIB_OFFSET_MS } from "../../shared/otomatis.ts";
 
 // Batas pengambilan ditulis tegas. Pemberitahuan otomatis yang membaca daftar
 // tanpa batas mengandalkan bawaan SDK: begitu datanya lewat batas itu,
@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const now = new Date();
     const today = wibTanggal();
-    const todayStart = today + "T00:00:00.000Z";
     const results = [];
 
     // ── Helper: cek duplikat notif hari ini ──
@@ -24,8 +23,18 @@ Deno.serve(async (req) => {
         category,
       }, null, BATAS_AMBIL);
       return existing.some(n => {
-        const createdAt = n.created_at || n.created_date || "";
-        return createdAt.startsWith(today) && !n.is_dismissed;
+        const ca = n.created_at || n.created_date || "";
+        // created_at disimpan dalam UTC; `today` adalah tanggal WIB. Memotong
+        // prefiks UTC lalu membandingkannya dengan tanggal WIB berarti dua
+        // penanggalan dalam satu kesamaan: notifikasi yang dibuat antara
+        // tengah malam dan pukul tujuh pagi WIB membawa tanggal UTC HARI
+        // SEBELUMNYA, tidak pernah cocok, dan kiriman keduanya lolos.
+        //
+        // Bentuk yang benar sudah ada di notifSekali() pada shared/otomatis.ts
+        // dan dipakai 12 fungsi lain. Fungsi ini menulis penyaringnya sendiri
+        // dan kehilangan konversinya.
+        const caWib = ca ? wibTanggal(new Date(new Date(ca).getTime() + WIB_OFFSET_MS)) : "";
+        return caWib === today && !n.is_dismissed;
       });
     };
 
