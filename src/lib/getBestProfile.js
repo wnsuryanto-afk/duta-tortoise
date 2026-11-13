@@ -5,6 +5,8 @@
  * 2. Yang paling baru (updated_date)
  * 3. Abaikan yang full_name = "[DUPLIKAT-HAPUS]"
  */
+import { msServer } from "@/lib/safeDate";
+
 export function getBestProfile(profiles) {
   if (!profiles || profiles.length === 0) return null;
 
@@ -22,13 +24,13 @@ export function getBestProfile(profiles) {
   if (complete.length > 0) {
     // Ambil yang paling baru di-update
     return complete.sort((a, b) =>
-      new Date(b.updated_date || 0) - new Date(a.updated_date || 0)
+      msServer(b.updated_date) - msServer(a.updated_date)
     )[0];
   }
 
   // Tidak ada yang complete — ambil yang paling baru di-update
   return validProfiles.sort((a, b) =>
-    new Date(b.updated_date || 0) - new Date(a.updated_date || 0)
+    msServer(b.updated_date) - msServer(a.updated_date)
   )[0];
 }
 

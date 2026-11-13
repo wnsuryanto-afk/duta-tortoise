@@ -14,8 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ClipboardCheck, Clock, CheckCircle2, XCircle } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import IncidentalTaskUsulanReview from "./IncidentalTaskUsulanReview";
 import { isManagerLevel } from "@/lib/permissions";
 
@@ -74,7 +73,7 @@ export default function IncidentalTaskUsulanSection({ usulanTasks, rejectedUsula
                           Diusulkan: <strong className="text-foreground">{t.created_by_name || t.created_by_email}</strong>
                         </span>
                         {t.created_date && (
-                          <span>· {format(new Date(t.created_date), "d MMM yyyy", { locale: id })}</span>
+                          <span>· {safeFormatDate(waktuServer(t.created_date))}</span>
                         )}
                       </div>
                       {t.notes && <p className="text-xs text-muted-foreground mt-1">{t.notes}</p>}

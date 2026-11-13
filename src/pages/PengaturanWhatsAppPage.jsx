@@ -4,7 +4,7 @@ import { useActiveUsers } from "@/hooks/useActiveUsers";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { normalizePhoneInput } from "@/lib/normalizePhone";
-import { safeFormatDate } from "@/lib/safeDate";
+import { msServer, safeFormatDate } from "@/lib/safeDate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -293,7 +293,7 @@ export default function PengaturanWhatsAppPage() {
         // Dedup: if multiple records exist, keep the newest and delete the rest
         if (existing.length > 1) {
           const sorted = [...existing].sort(
-            (a, b) => new Date(b.updated_date || b.created_date) - new Date(a.updated_date || a.created_date)
+            (a, b) => msServer(b.updated_date || b.created_date) - msServer(a.updated_date || a.created_date)
           );
           const newest = sorted[0];
           payload.fonnte_token = payload.fonnte_token || newest.fonnte_token || "";

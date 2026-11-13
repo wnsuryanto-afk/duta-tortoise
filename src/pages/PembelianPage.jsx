@@ -33,6 +33,18 @@ import TahapYangKurang from "@/components/pembelian/TahapYangKurang";
 import InvoiceVisionUpload from "@/components/ai/InvoiceVisionUpload";
 import { pasangkanItem } from "@/lib/cocokNamaBarang";
 import { tanggalMencurigakan } from "@/lib/tanggalMasukAkal";
+import { tanggalLokal, waktuServer } from "@/lib/safeDate";
+
+/**
+ * Tanggal sebuah baris DICATAT, menurut jam setempat.
+ *
+ * Bukan `(p.created_date || "").slice(0, 10)`: created_date datang dari
+ * server tanpa penanda zona, jadi memotongnya memberi tanggal UTC. Ia lalu
+ * dibandingkan dengan tanggal_pesan yang diketik orang di Jakarta —
+ * dua penanggalan dalam satu pengurangan, dan hitungan "N hari lebih awal"
+ * yang ditampilkan ikut meleset sehari.
+ */
+const tanggalDicatat = (p) => tanggalLokal(waktuServer(p?.created_date)) || undefined;
 import TerimaDariScreenshot from "@/components/pembelian/TerimaDariScreenshot";
 // Halaman /stock-prediction digabungkan ke sini sebagai satu tahap. Isinya
 // menjawab pertanyaan yang sama dengan tahap "Yang Kurang" — kapan sebuah
@@ -632,7 +644,7 @@ export default function PembelianPage() {
   };
 
   /** Peringatan tanggal, dibandingkan dengan saat pesanan itu dicatat. */
-  const peringatanTanggal = (p) => tanggalMencurigakan(p.tanggal_pesan, (p.created_date || "").slice(0, 10));
+  const peringatanTanggal = (p) => tanggalMencurigakan(p.tanggal_pesan, tanggalDicatat(p));
 
   const lunasi = async (p) => {
     await base44.entities.PembelianBarang.update(p.id, {
@@ -905,10 +917,10 @@ export default function PembelianPage() {
                     onChange={(e) => setPerbaikiForm((f) => ({ ...f, platform: e.target.value }))} />
                 </div>
               </div>
-              {tanggalMencurigakan(perbaikiForm.tanggal_pesan, (perbaikiTarget?.created_date || "").slice(0, 10)) && (
+              {tanggalMencurigakan(perbaikiForm.tanggal_pesan, tanggalDicatat(perbaikiTarget)) && (
                 <p className="text-[11px] text-red-700 flex items-start gap-1">
                   <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                  <span>{tanggalMencurigakan(perbaikiForm.tanggal_pesan, (perbaikiTarget?.created_date || "").slice(0, 10))}</span>
+                  <span>{tanggalMencurigakan(perbaikiForm.tanggal_pesan, tanggalDicatat(perbaikiTarget))}</span>
                 </p>
               )}
 

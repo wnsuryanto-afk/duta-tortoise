@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import { jalankanMassal, ringkasHasil } from "@/lib/tugasMassal";
+import { msServer, waktuServer } from "@/lib/safeDate";
 import { cn } from "@/lib/utils";
 import { propsTekan } from "@/lib/a11y";
 
@@ -50,10 +51,18 @@ const LABEL_KATEGORI = {
 
 const BATAS_TAMPIL = 30;
 
+/**
+ * "5 menit lalu" dari cap waktu notifikasi.
+ *
+ * waktuServer, bukan new Date(): `created_date` datang dari server Base44
+ * tanpa penanda zona, dan dibaca mentah ia tujuh jam lebih awal — notifikasi
+ * yang baru saja tiba akan tertulis "7 jam lalu".
+ */
 function timeAgo(dateStr) {
-  if (!dateStr) return "";
+  const d = waktuServer(dateStr);
+  if (!d) return "";
   try {
-    return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: id });
+    return formatDistanceToNow(d, { addSuffix: true, locale: id });
   } catch {
     return "";
   }
@@ -108,7 +117,11 @@ export default function NotificationBell() {
       const pa = a.priority === "tinggi" ? 0 : a.priority === "sedang" ? 1 : 2;
       const pb = b.priority === "tinggi" ? 0 : b.priority === "sedang" ? 1 : 2;
       if (pa !== pb) return pa - pb;
-      return new Date(b.created_at || b.created_date || 0) - new Date(a.created_at || a.created_date || 0);
+      // msServer untuk KEDUANYA: created_at ditulis aplikasi dengan "Z" dan
+      // created_date ditulis server tanpa, jadi membandingkannya mentah
+      // berarti dua penanggalan dalam satu pengurangan — yang lebih baru
+      // bisa jatuh di bawah.
+      return msServer(b.created_at || b.created_date) - msServer(a.created_at || a.created_date);
     });
   }, [aktif, filter, kategori]);
 

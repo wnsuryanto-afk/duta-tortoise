@@ -11,6 +11,7 @@ import { logActivity } from "@/lib/logActivity";
 import { Loader2, Camera, X, ImagePlus, AlertTriangle, Download } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import { downloadLabel, generateKodeLabel, LEBAR_CETAK_MM } from "@/lib/labelUtils";
 import { toast } from "sonner";
 import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
@@ -743,7 +744,7 @@ export default function BreedingForm({ open, onClose, editData }) {
                 <div className="text-muted-foreground">
                   dicatat {kembar.created_by || "entah siapa"}
                   {kembar.created_date
-                    ? ` · ${format(new Date(kembar.created_date), "d MMM yyyy HH:mm", { locale: idLocale })}`
+                    ? ` · ${safeFormatDate(waktuServer(kembar.created_date), "d MMM yyyy HH:mm", "")}`
                     : ""}
                 </div>
               </div>

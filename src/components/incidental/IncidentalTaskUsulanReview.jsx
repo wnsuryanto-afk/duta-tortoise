@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,7 +138,7 @@ export default function IncidentalTaskUsulanReview({ task, open, onClose, onReso
             </p>
             {task.created_date && (
               <p className="text-yellow-600/80 mt-0.5">
-                {new Date(task.created_date).toLocaleString("id-ID")}
+                {safeFormatDate(waktuServer(task.created_date), "d MMM yyyy HH:mm", "")}
               </p>
             )}
           </div>

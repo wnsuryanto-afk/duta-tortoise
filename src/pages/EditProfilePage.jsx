@@ -3,6 +3,7 @@ import UbahPassword from "@/components/profil/UbahPassword";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { upsertUserProfile } from "@/lib/userProfileUpsert";
+import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import { getBestProfile } from "@/lib/getBestProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -343,7 +344,7 @@ export default function EditProfilePage() {
             <div>
               <p className="text-xs text-muted-foreground">Terdaftar Sejak</p>
               <p className="text-sm font-medium">
-                {user?.created_date ? new Date(user.created_date).toLocaleDateString("id-ID") : "-"}
+                {safeFormatDate(waktuServer(user?.created_date), "d MMM yyyy", "-")}
               </p>
             </div>
           </div>

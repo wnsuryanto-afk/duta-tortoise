@@ -42,11 +42,16 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Lock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { selisihHari, tanggalHariIni } from "@/lib/safeDate";
+import { selisihHari, tanggalHariIni, tanggalLokal, waktuServer } from "@/lib/safeDate";
 
 /** Sudah berapa hari kunci ini tidak disentuh. */
 function umurKunci(t) {
-  const disentuh = String(t?.updated_date || t?.created_date || "").slice(0, 10);
+  // tanggalLokal(waktuServer(...)), bukan .slice(0, 10): memotong teks server
+  // memberi tanggal UTC, lalu dibandingkan dengan tanggalHariIni() yang
+  // setempat — dua penanggalan dalam satu pengurangan, meleset sehari untuk
+  // apa pun yang disentuh sebelum pukul tujuh pagi. tanggalLokal() sendirian
+  // tidak cukup: untuk teks berbentuk tanggal ia mengembalikannya apa adanya.
+  const disentuh = tanggalLokal(waktuServer(t?.updated_date || t?.created_date));
   const n = selisihHari(disentuh, tanggalHariIni());
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
