@@ -415,7 +415,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         if (t.di_ubin_kandang === true || titleLower.includes("all kandang") || titleLower.includes("semua kandang")) {
           if (t.id === kebersihanAnchor?.id) {
             // SATU PINTU: kebersihan per-kandang hanya dikerjakan di layar ubin (GuidedHariIni)
-            // yang mewajibkan foto + jeda 60 dtk. Di daftar SOP tampilkan satu baris pengantar.
+            // yang mewajibkan foto + jeda antar pencentangan. Di daftar SOP tampilkan satu baris pengantar.
             items.push({
               id: `kebersihan_kandang_intro`,
               label: ringkasUbin
@@ -1123,7 +1123,8 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         */}
         <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1">
           <Clock className="w-3 h-3 flex-shrink-0" />
-          Ada jeda 60 detik antar pencentangan — hitungan mundurnya muncul di kartunya.
+          Ada jeda antar pencentangan (JEDA_TUGAS_DETIK di lib/jedaTugas.js) —
+          hitungan mundurnya muncul di kartunya.
         </p>
 
         <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -1534,7 +1535,7 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
       setTimeout(() => setPulse(false), 1200);
       return;
     }
-    // Jeda minimum 60 detik antar tugas — kecuali uncheck (isChecked) / absensi / istirahat
+    // Jeda minimum antar tugas (lib/jedaTugas.js) — kecuali uncheck (isChecked) / absensi / istirahat
     if (!isChecked) {
       const remaining = getCooldownRemaining ? getCooldownRemaining() : 0;
       if (remaining > 0) { startCooldownNotice(remaining); return; }

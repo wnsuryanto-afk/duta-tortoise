@@ -21,14 +21,19 @@
  *            membersihkannya. Diturunkan ke 30 detik atas keputusan
  *            pemiliknya, 13 Nov 2026.
  *
- *   TUGAS    Tugas SOP harian, jumlahnya jauh lebih sedikit dan tiap
- *            tugasnya memang panjang. Tetap 60 detik — tidak ikut
- *            diturunkan karena tidak ada yang memintanya, dan menurunkan
- *            angka yang tidak ditanyakan sama saja dengan mengubah aturan
- *            kebun diam-diam.
+ *   TUGAS    Tugas SOP harian. Ikut diturunkan ke 30 detik atas permintaan
+ *            pemiliknya di hari yang sama, sesudah jeda kandang.
  *
- * Keduanya di sini supaya perbedaannya TERLIHAT dan disengaja, bukan
- * kebetulan dua berkas menulis angka yang berbeda.
+ * Keduanya kini bernilai SAMA — dan tetap dua tetapan, bukan satu.
+ *
+ * Itu disengaja. Keduanya menjawab pertanyaan yang berbeda: berapa lama
+ * membersihkan satu kandang, dan berapa lama mengerjakan satu tugas SOP.
+ * Hari ini jawabannya kebetulan sama. Menggabungkannya jadi satu tetapan
+ * berarti suatu hari seseorang menurunkan jeda kandang dan diam-diam ikut
+ * menurunkan jeda tugas SOP yang tidak ditanyakan siapa pun.
+ *
+ * Satu nama untuk dua aturan sama berbahayanya dengan dua salinan untuk
+ * satu aturan — hanya arah salahnya yang berlawanan.
  *
  * ── Kenapa jedanya baru terasa sekarang ──────────────────────────────
  *
@@ -43,7 +48,7 @@
 export const JEDA_KANDANG_DETIK = 30;
 
 /** Jeda minimum antar pencentangan tugas SOP, dalam detik. */
-export const JEDA_TUGAS_DETIK = 60;
+export const JEDA_TUGAS_DETIK = 30;
 
 /**
  * Sisa jeda dalam DETIK; 0 bila sudah boleh lanjut.
