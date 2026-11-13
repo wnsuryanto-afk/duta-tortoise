@@ -129,6 +129,55 @@ export function pagiLokal(nilai) {
 }
 
 /**
+ * Cap waktu dari server Base44 → Date yang benar.
+ *
+ * ── Kejadian yang melahirkannya ──────────────────────────────────────
+ *
+ * 13 Nov 2026, saat menelusuri laporan kiper, ketahuan bahwa Base44
+ * mengirim cap waktunya TANPA penanda zona:
+ *
+ *     "created_date": "2026-11-13T06:34:29.264000"
+ *
+ * Angkanya UTC. Tetapi menurut aturan JavaScript, bentuk tanggal-DAN-jam
+ * tanpa offset dibaca sebagai waktu SETEMPAT — bukan UTC. Jadi peristiwa
+ * yang benar-benar terjadi pukul 13:34 WIB dibaca aplikasi sebagai 06:34,
+ * tujuh jam lebih awal:
+ *
+ *     teks server     2026-11-13T06:34:29.264000   (06:34 UTC = 13:34 WIB)
+ *     dibaca JS jadi  Fri Nov 13 2026 06:34:29     (06:34 WIB)
+ *
+ * Membandingkan DUA cap waktu server satu sama lain tetap benar — keduanya
+ * bergeser sama besar, jadi urutannya tidak berubah. Yang rusak adalah
+ * membandingkannya dengan `Date.now()`, dan menampilkannya kepada orang.
+ *
+ * Buktinya ada di data kebun: jeda wajib 60 detik antar kandang memakai
+ * perbandingan semacam itu, dan pada 13 Nov 2026 Angsolo mencatat E5, E4,
+ * E3, E2, E1 pada 13:34–13:36 — lima kandang dalam dua menit, yang
+ * seharusnya mustahil. Jedanya memang tidak pernah berlaku.
+ *
+ * Yang dilakukan di sini: bila teksnya tanggal-dan-jam tanpa offset, "Z"
+ * ditambahkan supaya dibaca sebagai UTC — persis seperti yang dimaksud
+ * server. Nilai yang sudah membawa offset, sudah berupa Date, atau bukan
+ * cap waktu sama sekali dikembalikan lewat jalur biasa.
+ */
+export function waktuServer(nilai) {
+  if (typeof nilai === "string") {
+    const teks = nilai.trim();
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(teks) && !/(Z|[+-]\d{2}:?\d{2})$/.test(teks)) {
+      const d = new Date(teks.replace(" ", "T") + "Z");
+      return isValidDate(d) ? d : null;
+    }
+  }
+  return safeParseDate(nilai);
+}
+
+/** Cap waktu server → milidetik; 0 bila tidak terbaca (aman untuk Math.max). */
+export function msServer(nilai) {
+  const d = waktuServer(nilai);
+  return d ? d.getTime() : 0;
+}
+
+/**
  * Hari ini dalam "YYYY-MM-DD", menurut jam SETEMPAT.
  *
  * Bukan `new Date().toISOString().slice(0,10)`, yang memberi tanggal UTC: di

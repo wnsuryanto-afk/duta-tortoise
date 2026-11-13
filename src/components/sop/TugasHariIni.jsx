@@ -46,6 +46,7 @@ import { peranPenyetuju, labelSebab } from "@/lib/persetujuanPoin";
 import InfoHint from "@/components/ui/info-hint";
 import { propsTekan } from "@/lib/a11y";
 import { barisAbsensiSah } from "@/lib/absensi";
+import { msServer } from "@/lib/safeDate";
 
 // ── STRUKTURAL (bukan SOPTask: absensi & istirahat) ──
 const STRUCTURAL = [
@@ -359,7 +360,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     let maxMs = 0;
     myLogs.forEach(l => {
       if (l.is_extra) return; // tugas tambahan tidak mengganti jeda
-      const ms = l.created_date ? new Date(l.created_date).getTime() : 0;
+      // msServer, bukan new Date(): Base44 mengirim created_date TANPA Z
+      // ("2026-11-13T06:34:29.264000"), dan JavaScript membaca bentuk itu
+      // sebagai waktu SETEMPAT — tujuh jam lebih awal dari peristiwanya.
+      // Angka ini dibandingkan dengan Date.now(), jadi pergeseran itu
+      // membuat jeda antar tugas tidak pernah berlaku sesudah halaman
+      // dimuat ulang. Lihat waktuServer() di lib/safeDate.js.
+      const ms = msServer(l.created_date);
       if (ms > maxMs) maxMs = ms;
     });
     if (maxMs > 0) lastCheckAtRef.current = Math.max(lastCheckAtRef.current, maxMs);

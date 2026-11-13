@@ -3800,6 +3800,49 @@ let kedaluwarsaUji = 0;
   }
 
   /*
+    Cap waktu server dibaca sebagai UTC, bukan waktu setempat.
+
+    Base44 mengirim created_date TANPA penanda zona —
+    "2026-11-13T06:34:29.264000" — dan aturan JavaScript membaca bentuk
+    tanggal-DAN-jam tanpa offset sebagai waktu SETEMPAT. Peristiwa pukul
+    13:34 WIB jadi terbaca 06:34, tujuh jam lebih awal.
+
+    Yang rusak karenanya: jeda wajib 60 detik antar kandang, yang
+    membandingkan cap itu dengan Date.now(). Bukti di data kebun 13 Nov
+    2026: Angsolo mencatat E5, E4, E3, E2, E1 pada 13:34–13:36 — lima
+    kandang dalam dua menit.
+  */
+  {
+    const SD2 = await import("file://" + join(dir, "safedate.cjs")).then((m) => m.default || m);
+    const KASUS = [
+      ["2026-11-13T06:34:29.264000", "2026-11-13T06:34:29.264Z", "tanpa Z → dibaca UTC"],
+      ["2026-11-13T06:34:29.264Z", "2026-11-13T06:34:29.264Z", "sudah Z → apa adanya"],
+      ["2026-11-13T06:34:29+07:00", "2026-11-12T23:34:29.000Z", "ber-offset → dihormati"],
+      ["2026-11-13", "2026-11-13T00:00:00.000Z", "tanggal saja → tengah malam UTC"],
+    ];
+    for (const [masuk, harus, ket] of KASUS) {
+      kedaluwarsaUji++;
+      const d = SD2.waktuServer(masuk);
+      const dapat = d ? d.toISOString() : String(d);
+      if (dapat !== harus) temuan.push(`waktuServer(${masuk}): ${dapat}, seharusnya ${harus} — ${ket}`);
+    }
+    kedaluwarsaUji++;
+    if (SD2.waktuServer("bukan tanggal") !== null || SD2.msServer("bukan tanggal") !== 0) {
+      temuan.push("waktuServer/msServer: nilai tak terbaca harus null/0, bukan tanggal karangan");
+    }
+    /*
+      Inti cacatnya: jeda 60 detik diukur dari cap waktu server. Dengan
+      pembacaan yang benar, kandang kedua 30 detik kemudian HARUS ditolak.
+    */
+    kedaluwarsaUji++;
+    const capServer = "2026-11-13T06:34:00.000000";            // 13:34 WIB
+    const tigaPuluhDetikKemudian = Date.parse("2026-11-13T06:34:30.000Z");
+    if (tigaPuluhDetikKemudian - SD2.msServer(capServer) >= 60000) {
+      temuan.push("jeda 60 dtk: 30 detik sesudah kandang sebelumnya malah dianggap sudah lewat");
+    }
+  }
+
+  /*
     Sehari penuh di WIB, jam demi jam. Inilah yang dulu bergeser: antara
     tengah malam dan pukul tujuh pagi jawabannya berbeda dari jawaban siang
     hari, untuk tanggal yang sama.
