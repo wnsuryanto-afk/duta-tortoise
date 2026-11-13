@@ -38,6 +38,7 @@ import AksiHarianKiper from "@/components/attendance/AksiHarianKiper";
 import { masukLaporan, tandaChecklistBaru } from "@/lib/laporan";
 import { useCompanySettings } from "@/lib/useCompanySettings";
 import { SARINGAN_ANAKAN, hanyaAnakan } from "@/lib/anakanKura";
+import { msServer } from "@/lib/safeDate";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 function nowStr() { return format(new Date(), "HH:mm"); }
@@ -379,7 +380,13 @@ export default function GuidedHariIni({ user }) {
     let maxMs = 0;
     maintenanceLogs.forEach(l => {
       if ((l.item_id && l.item_id.startsWith("kebersihan_kandang_")) || l.item_id === "kebersihan") {
-        const ms = l.created_date ? new Date(l.created_date).getTime() : 0;
+        // msServer, bukan new Date(): Base44 mengirim created_date TANPA Z
+        // ("2026-11-13T06:34:29.264000"), dan JavaScript membaca bentuk itu
+        // sebagai waktu SETEMPAT — tujuh jam lebih awal dari peristiwanya.
+        // Angka ini dibandingkan dengan Date.now(), jadi pergeseran itu
+        // membuat jeda 60 detik antar kandang tidak pernah berlaku sesudah halaman dimuat
+        // ulang. Lihat waktuServer() di lib/safeDate.js.
+        const ms = msServer(l.created_date);
         if (ms > maxMs) maxMs = ms;
       }
     });
