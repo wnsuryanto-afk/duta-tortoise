@@ -38,6 +38,7 @@
 // ── Label Kotak Telur utilities ──────────────────────────────────────────
 
 import { setelDpiPng } from "@/lib/dpiPng";
+import { jendelaDariBertelur } from "@/lib/jendelaMenetas";
 
 /**
  * Ketajaman cetaknya. Angka ini TIDAK mengubah ukuran label — ukurannya
@@ -73,8 +74,35 @@ export function generateKodeLabel(maleCode, femaleCode, tgl) {
 export function buildLabelHTML({ maleCode, femaleCode, maleEnclosure, femaleEnclosure, tglBertelur, eggCount, inkubatorName, kode, qrDataUrl }) {
   const d = new Date(tglBertelur);
   const tglStr = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-  const hatchD = new Date(d.getTime() + 90 * 86400000);
-  const hatch = hatchD.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+
+  /*
+    Jendela menetas, bukan satu tanggal — dan diambil dari lib/jendelaMenetas.js,
+    bukan dihitung di sini.
+
+    Label ini sampai 13 Nov 2026 mencetak `bertelur + 90 hari`, TETAP. Angka 90
+    tidak cocok dengan ujung mana pun: jendelanya +80 sampai +105. Untuk clutch
+    A35 × A46 yang bertelur 4 Sep 2026, label ini mencetak "3 Desember 2026"
+    sementara telurnya boleh menetas sejak 23 November — sepuluh hari lebih
+    awal daripada yang tertulis di kotaknya sendiri.
+
+    Pemiliknya melaporkannya sebagai "tidak tahu pasti kapan perkiraan
+    menetas", dan bersamaan dengan itu melaporkan telur yang menetas tanpa
+    terpantau. Label yang menyebut tanggal sepuluh hari terlalu lambat adalah
+    salah satu sebabnya.
+  */
+  const jendela = jendelaDariBertelur(tglBertelur);
+  const bentukPanjang = (iso) => {
+    if (!iso) return "—";
+    const [th, bl, hr] = iso.split("-").map(Number);
+    return new Date(th, bl - 1, hr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  };
+  const bentukPendek = (iso) => {
+    if (!iso) return "—";
+    const [th, bl, hr] = iso.split("-").map(Number);
+    return new Date(th, bl - 1, hr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  };
+  const hatch = bentukPanjang(jendela.mulai);
+  const hatchSampai = bentukPendek(jendela.sampai);
   /*
     Nama spesies, generasi, dan alamat situs — tiga yang diperbaiki 12 Okt 2026.
 
@@ -127,10 +155,13 @@ export function buildLabelHTML({ maleCode, femaleCode, maleEnclosure, femaleEncl
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
+        <div style="grid-column:1 / -1;background:#fff7ed;border:1.5px solid #fdba74;border-radius:7px;padding:4px 7px">
+          <div style="font-size:6.5px;color:#9a3412;font-weight:800;letter-spacing:.6px">🐣 MULAI BISA MENETAS</div>
+          <div style="font-size:13px;font-weight:900;color:#7c2d12;line-height:1.15">${hatch}</div>
+          <div style="font-size:6.5px;color:#c2410c">masa menetas sampai ${hatchSampai}</div>
+        </div>
         <div style="background:#fef9c3;border-radius:6px;padding:3px 5px"><div style="font-size:6px;color:#94a3b8">🥚 Jumlah Telur</div><div style="font-size:8px;font-weight:700;color:#713f12">${eggCount ? eggCount + " butir" : "—"}</div></div>
         <div style="background:#f0fdf4;border-radius:6px;padding:3px 5px"><div style="font-size:6px;color:#94a3b8">📅 Tgl Bertelur</div><div style="font-size:8px;font-weight:700;color:#14532d">${tglStr}</div></div>
-        <div style="background:#fff7ed;border-radius:6px;padding:3px 5px"><div style="font-size:6px;color:#94a3b8">🐣 Est. Menetas</div><div style="font-size:8px;font-weight:700;color:#7c2d12">${hatch}</div></div>
-        <div style="background:#f0f9ff;border-radius:6px;padding:3px 5px"><div style="font-size:6px;color:#94a3b8">🌡 Status</div><div style="font-size:8px;font-weight:700;color:#0c4a6e">Inkubasi 🔄</div></div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">

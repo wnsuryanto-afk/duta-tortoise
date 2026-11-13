@@ -224,6 +224,10 @@
         "type": "number"
       },
       "type": "array"
+    },
+    "tray_retak": {
+      "description": "Kotak/tray tempat telur RETAK dari clutch ini dipisahkan. Telur retak dipindahkan ke wadah lain supaya mendapat perhatian khusus, dan sampai 13-11-2026 lokasinya hanya ditulis sebagai teks bebas di egg_records[].retak_catatan \u2014 sehingga tidak bisa dicari dan tidak bisa dihitung. Diisi apa adanya seperti yang tertulis di kotaknya (mis. 'R1', 'kotak retak atas'), karena wadah retak tidak memakai penomoran tray yang sama.",
+      "type": "string"
     }
   },
   "required": [

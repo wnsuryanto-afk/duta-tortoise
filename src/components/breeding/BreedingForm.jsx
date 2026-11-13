@@ -9,9 +9,10 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { logActivity } from "@/lib/logActivity";
 import { Loader2, Camera, X, ImagePlus, AlertTriangle, Download } from "lucide-react";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { safeFormatDate, waktuServer } from "@/lib/safeDate";
+import { jendelaDariBertelur } from "@/lib/jendelaMenetas";
 import { downloadLabel, generateKodeLabel, LEBAR_CETAK_MM } from "@/lib/labelUtils";
 import { toast } from "sonner";
 import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
@@ -62,8 +63,8 @@ export default function BreedingForm({ open, onClose, editData }) {
     incubator_name: "",
     tray_number: "",
     tray_teks: "",
+    tray_retak: "",
     status: "bertelur", incubation_temp: "", notes: "", photos: [],
-    tray_teks: "",
   });
 
   // Generate QR saat kode kopling berubah
@@ -184,12 +185,13 @@ export default function BreedingForm({ open, onClose, editData }) {
   };
 
   const handleEggLayingDate = (value) => {
-    let start = "";
-    let end = "";
-    if (value) {
-      start = format(addDays(new Date(value), 80), "yyyy-MM-dd");
-      end = format(addDays(new Date(value), 105), "yyyy-MM-dd");
-    }
+    // Angka 80 dan 105 TIDAK ditulis di sini lagi. Sampai 13 Nov 2026 aturan
+    // yang sama hidup di empat tempat — dan salah satunya, label 80 mm,
+    // memakai 90, angka yang tidak cocok dengan ujung mana pun. Lihat
+    // lib/jendelaMenetas.js.
+    const { mulai, sampai } = jendelaDariBertelur(value);
+    const start = mulai || "";
+    const end = sampai || "";
     setForm((prev) => ({
       ...prev,
       egg_laying_date: value,
@@ -293,6 +295,10 @@ export default function BreedingForm({ open, onClose, editData }) {
       estimated_hatch_end: form.estimated_hatch_end || undefined,
       induk_perkiraan: !!form.induk_perkiraan,
       tanggal_perkiraan: !!form.tanggal_perkiraan,
+      // Dirapikan, dan kosong disimpan sebagai undefined — bukan "" — supaya
+      // layar yang memeriksa keberadaannya tidak menemukan teks kosong yang
+      // terbaca "ada".
+      tray_retak: String(form.tray_retak || "").trim() || undefined,
     };
     if (editData?.id) {
       await base44.entities.Breeding.update(editData.id, data);
@@ -593,6 +599,35 @@ export default function BreedingForm({ open, onClose, editData }) {
             </div>
           </div>
 
+          {/*
+            KOTAK TELUR RETAK — 13 Nov 2026.
+
+            "Jika ada telur retak, kita biasanya menaruhnya di kotak yang
+            berbeda." Sampai hari ini lokasinya hanya bisa ditulis sebagai
+            teks bebas di catatan perlakuan tiap butir — placeholder-nya
+            sendiri berbunyi "cth: ditutup lilin lebah, dipisah ke tray 7".
+            Teks di dalam catatan per butir tidak bisa dicari, tidak muncul
+            di label kotaknya, dan tidak bisa dihitung.
+
+            Kotak TEKS, bukan angka: wadah telur retak tidak ikut penomoran
+            tray yang sama, dan yang tertulis di kotaknya bisa apa saja.
+          */}
+          <div className="space-y-1.5">
+            <Label>
+              Kotak telur retak{" "}
+              <span className="text-muted-foreground font-normal text-xs">(kalau dipisahkan)</span>
+            </Label>
+            <Input
+              value={form.tray_retak ?? ""}
+              onChange={(e) => handleChange("tray_retak", e.target.value)}
+              placeholder="cth: R1  atau  kotak retak atas"
+            />
+            <p className="text-xs text-muted-foreground">
+              Muncul di label kotak dan di daftar urutan menetas, jadi yang mengambilnya tahu
+              telur retak clutch ini ada di mana.
+            </p>
+          </div>
+
           {/* Foto Dokumentasi */}
           <div className="space-y-1.5">
             <Label>Foto Dokumentasi</Label>
@@ -637,7 +672,25 @@ export default function BreedingForm({ open, onClose, editData }) {
             const kode = previewKode;
             const d = new Date(form.egg_laying_date);
             const tglStr = d.toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" });
-            const hatch = new Date(d.getTime()+90*86400000).toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+            /*
+              SALINAN KELIMA dari angka 90, ditemukan 13 Nov 2026 oleh
+              penjaga cek-jendela.mjs pada hari penjaganya ditulis.
+
+              Pratinjau ini menggambar ulang label kotak telur di dalam
+              formulir — tata letaknya mirip tapi kodenya terpisah dari
+              lib/labelUtils.js. Jadi saat labelnya dibetulkan, pratinjaunya
+              tetap menjanjikan tanggal yang sepuluh hari terlalu lambat,
+              dan justru pratinjau inilah yang dilihat orang saat mencatat
+              clutch — sebelum labelnya dicetak.
+            */
+            const jen = jendelaDariBertelur(form.egg_laying_date);
+            const bentuk = (iso, opsi) => {
+              if (!iso) return "—";
+              const [th, bl, hr] = iso.split("-").map(Number);
+              return new Date(th, bl - 1, hr).toLocaleDateString("id-ID", opsi);
+            };
+            const hatch = bentuk(jen.mulai, { day:"numeric", month:"long", year:"numeric" });
+            const hatchSampai = bentuk(jen.sampai, { day:"numeric", month:"short" });
             const male = males.find(t => t.id === form.male_id);
             const female = females.find(t => t.id === form.female_id);
             return (
@@ -680,8 +733,9 @@ export default function BreedingForm({ open, onClose, editData }) {
                       <div className="text-[10px] font-bold text-green-800">{tglStr}</div>
                     </div>
                     <div className="col-span-2 bg-orange-50 rounded-lg px-2 py-1">
-                      <div className="text-[8px] text-muted-foreground">🐣 Est. Menetas</div>
+                      <div className="text-[8px] text-muted-foreground">🐣 Mulai bisa menetas</div>
                       <div className="text-[10px] font-bold text-orange-800">{hatch}</div>
+                      <div className="text-[8px] text-orange-700/80">masa menetas sampai {hatchSampai}</div>
                     </div>
                   </div>
                   {/* QR Code */}

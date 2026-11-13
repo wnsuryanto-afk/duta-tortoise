@@ -31,6 +31,7 @@ import DaftarPasangan from "@/components/breeding/DaftarPasangan";
 import InkubatorBelumDipantau from "@/components/breeding/InkubatorBelumDipantau";
 import TimelineBatch from "@/components/breeding/TimelineBatch";
 import MonitorInkubator from "@/components/breeding/MonitorInkubator";
+import UrutanMenetas from "@/components/breeding/UrutanMenetas";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import BreedingForm from "@/components/breeding/BreedingForm";
@@ -900,6 +901,13 @@ export default function BreedingAndEggs() {
 
         {/* TAB 3: INKUBATOR */}
         <TabsContent value="inkubator" className="space-y-4">
+          {/* Urutan menetas berdiri di ATAS kartu setelan inkubator.
+              Kartu-kartu itu menjawab "lemari ini bagaimana"; orang yang
+              membuka tab ini sambil berdiri di depan lemarinya menanyakan
+              "yang mana berikutnya". Pertanyaan kedua itu yang lebih sering
+              dibawa, dan sampai 13 Nov 2026 tidak ada layar yang menjawabnya. */}
+          <UrutanMenetas breedings={breedings} incubators={incubators} />
+
           {incubatorLoading ? (
             <div className="flex items-center justify-center py-20">
               <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
