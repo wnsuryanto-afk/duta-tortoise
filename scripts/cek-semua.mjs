@@ -159,6 +159,16 @@
  *                   termasuk — yang baris tabnya memang meluap di layar
  *                   pemiliknya. "157 kasus" bukan cakupan, itu panjang
  *                   daftar yang ditulis tangan
+ *   cek-jsx         komponen JSX dipakai tanpa pernah didefinisikan →
+ *                   13 Nov 2026 Ali mengirim tangkapan layar dari HP-nya:
+ *                   "Widget Tugas Hari Ini bermasalah — AlertTriangle is
+ *                   not defined". Satu ikon dipakai tanpa diimpor, widget
+ *                   runtuh, dan layar yang dia pakai tiap hari berhenti
+ *                   bisa dikerjakan di tengah jam kerja. eslint TIDAK bisa
+ *                   menangkapnya: no-undef hanya melihat acuan yang tidak
+ *                   terpecahkan di lingkup, dan nama di dalam tag JSX tidak
+ *                   pernah jadi acuan semacam itu — dibuktikan dengan
+ *                   berkas percobaan. Build pun tetap hijau
  *   cek-induk       telur yang induknya PERKIRAAN ikut menilai indukan →
  *                   11 Nov 2026 telur ditemukan saat menggali tanah, tanpa
  *                   ada yang melihat betina mana yang bertelur. Formulir
@@ -194,7 +204,9 @@
  *   cek-penjaga     penjaga yang mengupas komentar sendiri → satu atribut
  *                   accept="image/*" membuatnya ikut memakan kode sesudahnya,
  *                   dan penjaganya hijau karena tidak pernah melihatnya
- *   eslint          variabel yang dipakai tapi tidak ada (no-undef). Halaman
+ *   eslint          variabel yang dipakai tapi tidak ada (no-undef) — KECUALI
+ *                   nama di dalam tag JSX, yang tidak pernah dilihatnya;
+ *                   itu urusan cek-jsx. Halaman
  *                   Pembelian pernah mati karena satu sisa nama variabel di
  *                   daftar dependensi useMemo — build tetap hijau. Peringatan
  *                   ikut dihitung dengan langit-langit yang tidak boleh naik:
@@ -208,7 +220,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs", "cek-muat.mjs", "cek-menetas.mjs", "cek-induk.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs", "cek-muat.mjs", "cek-menetas.mjs", "cek-induk.mjs", "cek-jsx.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {
