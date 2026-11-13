@@ -1,13 +1,13 @@
 {
   "name": "Auto Daily Care Tasks",
-  "description": "Buat tugas \"Perawatan [kode] \u2014 [penyakit]\" otomatis tiap pagi untuk kura yang masih sakit (15 poin per kura per diagnosis, dengan sub-langkah).",
+  "description": "Buat tugas \"Perawatan [kode] \u2014 [penyakit]\" otomatis tiap pagi untuk kura yang masih sakit (15 poin per kura per diagnosis, dengan sub-langkah). Jadwal 23:00 UTC = 06:00 WIB keesokan harinya (diperbaiki 13-11-2026; sebelumnya 06:00 UTC = 13:00 WIB, sehingga tugas perawatan baru muncul tengah hari, bukan saat kiper mulai bekerja). Pola konversi sama dengan WA Pengingat Harian Approval 17:30.",
   "trigger": {
     "condition": null,
     "config": {
       "trigger_type": "scheduled",
       "events": [],
       "schedule_mode": "recurring",
-      "cron_expression": "0 6 * * *",
+      "cron_expression": "0 23 * * *",
       "one_time_date": null,
       "timezone": "UTC",
       "interval_value": null,
