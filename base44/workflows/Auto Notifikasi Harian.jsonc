@@ -1,13 +1,13 @@
 {
   "name": "Auto Notifikasi Harian",
-  "description": "Cek obat kadaluarsa, follow-up treatment, kura belum ditimbang, telur mau menetas",
+  "description": "Cek obat kadaluarsa, follow-up treatment, kura belum ditimbang, telur mau menetas. Jadwal 00:00 UTC = 07:00 WIB (diperbaiki 13-11-2026; sebelumnya 07:00 UTC = 14:00 WIB, sehingga peringatan harian baru datang selepas tengah hari, bukan saat kerja dimulai). Pola konversi sama dengan WA Pengingat Harian Approval 17:30.",
   "trigger": {
     "condition": null,
     "config": {
       "trigger_type": "scheduled",
       "events": [],
       "schedule_mode": "recurring",
-      "cron_expression": "0 7 * * *",
+      "cron_expression": "0 0 * * *",
       "one_time_date": null,
       "timezone": "UTC",
       "interval_value": null,
