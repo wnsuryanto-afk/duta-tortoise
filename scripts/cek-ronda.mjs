@@ -3832,14 +3832,17 @@ let kedaluwarsaUji = 0;
       temuan.push("waktuServer/msServer: nilai tak terbaca harus null/0, bukan tanggal karangan");
     }
     /*
-      Inti cacatnya: jeda 60 detik diukur dari cap waktu server. Dengan
-      pembacaan yang benar, kandang kedua 30 detik kemudian HARUS ditolak.
+      Inti cacatnya: selisih yang dipakai jeda diukur dari cap waktu server.
+      Diuji sebagai SELISIH, bukan terhadap panjang jedanya — panjang jeda
+      boleh berubah kapan saja (60 → 30 pada 13 Nov 2026), dan uji yang
+      ikut berubah bersamanya tidak menjaga apa pun.
     */
     kedaluwarsaUji++;
     const capServer = "2026-11-13T06:34:00.000000";            // 13:34 WIB
     const tigaPuluhDetikKemudian = Date.parse("2026-11-13T06:34:30.000Z");
-    if (tigaPuluhDetikKemudian - SD2.msServer(capServer) >= 60000) {
-      temuan.push("jeda 60 dtk: 30 detik sesudah kandang sebelumnya malah dianggap sudah lewat");
+    const selisihDetik = (tigaPuluhDetikKemudian - SD2.msServer(capServer)) / 1000;
+    if (selisihDetik !== 30) {
+      temuan.push(`cap waktu server: selisihnya terbaca ${selisihDetik} detik, seharusnya 30 — pergeseran zona membuat jeda apa pun tidak pernah menahan`);
     }
   }
 
@@ -3865,8 +3868,18 @@ let kedaluwarsaUji = 0;
       temuan.push(`JEDA_KANDANG_DETIK = ${J.JEDA_KANDANG_DETIK}, seharusnya 30`);
     }
     kedaluwarsaUji++;
-    if (J.JEDA_TUGAS_DETIK !== 60) {
-      temuan.push(`JEDA_TUGAS_DETIK = ${J.JEDA_TUGAS_DETIK}, seharusnya 60 — tidak ikut diturunkan`);
+    if (J.JEDA_TUGAS_DETIK !== 30) {
+      temuan.push(`JEDA_TUGAS_DETIK = ${J.JEDA_TUGAS_DETIK}, seharusnya 30`);
+    }
+    /*
+      Keduanya kebetulan bernilai sama hari ini, dan HARUS tetap dua
+      tetapan. Satu nama untuk dua aturan berarti suatu hari seseorang
+      menurunkan jeda kandang dan diam-diam ikut menurunkan jeda tugas SOP
+      yang tidak ditanyakan siapa pun.
+    */
+    kedaluwarsaUji++;
+    if (!("JEDA_KANDANG_DETIK" in J) || !("JEDA_TUGAS_DETIK" in J)) {
+      temuan.push("jedaTugas: kedua tetapan harus tetap ada terpisah, meski nilainya sama");
     }
 
     const KASUS = [
@@ -3876,7 +3889,7 @@ let kedaluwarsaUji = 0;
       [detik(29), 30, 1, "29 detik lalu → sisa 1"],
       [detik(30), 30, 0, "tepat 30 detik → boleh"],
       [detik(31), 30, 0, "31 detik → boleh"],
-      [detik(45), 60, 15, "jeda tugas SOP masih 60"],
+      [detik(45), 90, 45, "jeda yang lebih panjang tetap dihitung benar"],
       [SEKARANG + 5000, 30, 0, "cap waktu dari masa depan tidak boleh mengunci kiper"],
     ];
     for (const [terakhir, jeda, harus, ket] of KASUS) {
