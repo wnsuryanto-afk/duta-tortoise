@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { perluDiperhatikan } from "../../shared/stok.ts";
 import { BATAS_AMBIL } from "../../shared/batas.ts";
+import { wibTanggal, WIB_OFFSET_MS } from "../../shared/otomatis.ts";
 
 // Dipanggil via entity automation saat StockMovement dibuat
 Deno.serve(async (req) => {
@@ -12,7 +13,18 @@ Deno.serve(async (req) => {
     if (!movement || event?.type !== "create") return Response.json({ skipped: true });
 
     const now = new Date().toISOString();
-    const today = now.split("T")[0];
+
+    // Tanggal WIB, bukan potongan UTC dari `now`.
+    //
+    // Kedua sisi perbandingan lama memang sama-sama UTC, jadi tidak ada
+    // ketimpangan penanggalan. Yang salah adalah BATAS HARINYA: satu hari UTC
+    // berjalan dari pukul 07:00 WIB sampai 07:00 WIB berikutnya, yaitu tepat
+    // memotong awal jam kerja kebun ini. Dua permintaan stok pada hari kerja
+    // yang sama — satu pukul 06:30, satu pukul 08:00 — jatuh di dua hari UTC
+    // yang berbeda, dan janji "satu notifikasi per hari" pecah di sana.
+    //
+    // Fungsi ini dipicu KEJADIAN, jadi ia memang berjalan pada jam-jam itu.
+    const today = wibTanggal();
 
     const isDuplicate = async (email, entityId, category) => {
       const existing = await base44.asServiceRole.entities.Notification.filter({
@@ -20,7 +32,13 @@ Deno.serve(async (req) => {
         related_entity_id: entityId,
         category,
       }, null, BATAS_AMBIL);
-      return existing.some(n => n.created_at?.startsWith(today) && !n.is_dismissed);
+      return existing.some(n => {
+        const ca = n.created_at || n.created_date || "";
+        // created_at disimpan UTC; bandingkan tanggal WIB-nya, seperti
+        // notifSekali() di shared/otomatis.ts.
+        const caWib = ca ? wibTanggal(new Date(new Date(ca).getTime() + WIB_OFFSET_MS)) : "";
+        return caWib === today && !n.is_dismissed;
+      });
     };
 
     const allUsers = await base44.asServiceRole.entities.User.list(null, BATAS_AMBIL);

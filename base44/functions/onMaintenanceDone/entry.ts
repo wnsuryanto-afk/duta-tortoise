@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { BATAS_AMBIL } from "../../shared/batas.ts";
 import { kunciTugas as dedupKey } from "../../shared/kunciTugas.ts";
 import { masukLaporan, tandaLaporan } from "../../shared/laporan.ts";
-import { wibTanggal } from "../../shared/otomatis.ts";
+import { wibTanggal, wibBulan, WIB_OFFSET_MS } from "../../shared/otomatis.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -134,11 +134,18 @@ Deno.serve(async (req) => {
             recipient_email: log.done_by_email,
             category: "lainnya",
           }, null, BATAS_AMBIL);
-          const alreadyHas = existingMilestone.some(n =>
-            n.title?.includes(`${milestone} Poin`) &&
-            (n.created_at || n.created_date || "").startsWith(monthKey) &&
-            !n.is_dismissed
-          );
+          const alreadyHas = existingMilestone.some(n => {
+            // monthKey adalah bulan WIB (diambil dari tanggal checklist);
+            // created_at disimpan UTC. Memotong prefiksnya berarti setiap
+            // tanggal 1 antara tengah malam dan pukul tujuh pagi WIB masih
+            // membawa bulan SEBELUMNYA, tidak pernah cocok, dan ucapan
+            // selamat yang sama terkirim dua kali.
+            const ca = n.created_at || n.created_date || "";
+            const caBulan = ca ? wibBulan(new Date(new Date(ca).getTime() + WIB_OFFSET_MS)) : "";
+            return n.title?.includes(`${milestone} Poin`) &&
+              caBulan === monthKey &&
+              !n.is_dismissed;
+          });
           if (!alreadyHas) {
             await base44.asServiceRole.entities.Notification.create({
               recipient_email: log.done_by_email,
