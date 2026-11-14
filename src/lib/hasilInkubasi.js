@@ -168,6 +168,35 @@ export function jumlahTelurClutch(clutch) {
 }
 
 /**
+ * Berapa telur clutch ini yang SUDAH menetas.
+ *
+ * ── Kenapa baris telur didahulukan ──────────────────────────────────────────
+ *
+ * Ada dua tempat yang menyimpan jawabannya: `egg_records[]`, satu baris per
+ * butir dengan statusnya sendiri, dan `hatched_count`, satu angka yang ditulis
+ * ulang oleh EggGrid setiap kali ada telur ditandai. Yang kedua adalah salinan
+ * demi kecepatan; yang pertama kejadiannya.
+ *
+ * Salinan itu bisa tertinggal — clutch yang barisnya diubah lewat jalur lain,
+ * atau penyimpanan yang gagal di tengah. Maka barisnya yang dipercaya bila
+ * ada, dan angkanya hanya dipakai untuk clutch lama yang memang belum pernah
+ * punya baris.
+ *
+ * ── Kenapa ini perlu ────────────────────────────────────────────────────────
+ *
+ * 14 Nov 2026 pemiliknya meminta satu keterangan yang belum pernah ada di
+ * mana-mana kecuali di dalam layar telur itu sendiri: "perlu informasi, ada
+ * berapa telur yang menetas". Untuk menjawabnya di layar lain — daftar
+ * urutan menetas, dialog cetak label — angkanya harus bisa diambil tanpa
+ * membuka clutch-nya satu per satu.
+ */
+export function menetasClutch(clutch) {
+  const baris = clutch?.egg_records;
+  if (Array.isArray(baris) && baris.length > 0) return ringkasDariBarisTelur(baris).hatched_count;
+  return Number(clutch?.hatched_count) || 0;
+}
+
+/**
  * Persentase keberhasilan satu clutch.
  *
  * Dua tombol menutup sebuah clutch — "Selesaikan Inkubasi" di EggGrid dan

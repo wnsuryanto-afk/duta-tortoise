@@ -19,7 +19,7 @@ import { recalcEnclosureCountsAman } from "@/lib/enclosureCount";
 import { TANDA_ANAKAN } from "@/lib/anakanKura";
 import { BATAS_KELAMIN_CM } from "@/lib/kelaminKura";
 import { segarkanBreeding } from "@/lib/kunciBreeding";
-import { barisTelurAwal, terapkanStatus, terapkanSemua, sudahJadiKura } from "@/lib/barisTelur";
+import { barisTelurAwal, terapkanStatus, terapkanSemua, terapkanTerpilih, sudahJadiKura } from "@/lib/barisTelur";
 import { tandaiRetak, retak as telurRetak, ringkasRetak } from "@/lib/telurRetak";
 import KendaliRetak from "@/components/breeding/KendaliRetak";
 import { tanggalHariIni } from "@/lib/safeDate";
@@ -621,6 +621,28 @@ export default function EggGrid({ breeding, onRefresh }) {
   const [showSelesaiDialog, setShowSelesaiDialog] = useState(false);
   const [showBukaKembaliDialog, setShowBukaKembaliDialog] = useState(false);
 
+  /*
+    PILIH BEBERAPA TELUR SEKALIGUS — 14 Nov 2026.
+
+    "Waktu kita konfirmasi sudah menetas atau kita menentukan gagal, ini kan
+    satu-satu. Jadi apakah kita bisa memilih beberapa telur... misalkan
+    langsung lima atau enam atau delapan."
+
+    Satu clutch di kebun ini bisa 28 butir dan yang menetas sering keluar
+    bersamaan dalam sehari. Dua puluh delapan ketukan untuk satu kejadian
+    yang sama adalah dua puluh delapan kesempatan berhenti di tengah — dan
+    clutch yang separuh ditandai lebih buruk daripada yang belum ditandai
+    sama sekali, karena ia terbaca seolah sudah selesai dihitung.
+
+    `modePilih` dipisah dari `pilihan` supaya satu ketukan tidak pernah
+    berarti dua hal. Di luar mode pilih, menekan telur membuka rinciannya
+    seperti biasa; di dalamnya, menekan telur menandai pilihannya dan tidak
+    pernah membuka apa pun. Layar yang artinya berubah tanpa diminta adalah
+    layar yang ditekan salah.
+  */
+  const [modePilih, setModePilih] = useState(false);
+  const [pilihan, setPilihan] = useState(() => new Set());
+
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -840,6 +862,65 @@ export default function EggGrid({ breeding, onRefresh }) {
     }
   };
 
+  /** Satu telur masuk/keluar pilihan. */
+  const togglePilih = (nomor) => {
+    setPilihan((lama) => {
+      const baru = new Set(lama);
+      if (baru.has(nomor)) baru.delete(nomor);
+      else baru.add(nomor);
+      return baru;
+    });
+  };
+
+  const keluarModePilih = () => {
+    setModePilih(false);
+    setPilihan(new Set());
+  };
+
+  /**
+   * Terapkan satu status ke telur yang DIPILIH.
+   *
+   * Memakai aturan yang sama dengan tombol "Semua" — terapkanTerpilih di
+   * lib/barisTelur.js — jadi telur yang sudah jadi kura terdaftar dilewati
+   * di sini persis seperti di sana, dan `hatch_date` terisi untuk yang
+   * ditandai menetas.
+   */
+  const tandaiTerpilih = async (status) => {
+    if (pilihan.size === 0) return;
+    if (!candlingAllowed && (status === "fertile" || status === "infertil")) {
+      toast.error(`Candling tersedia setelah ${30 - daysSinceLaying} hari lagi`);
+      return;
+    }
+    setSaving(true);
+    const today = tanggalHariIni();
+    const { hasil: updated, dilewati, diubah } = terapkanTerpilih(records, {
+      nomor: pilihan, status, hariIni: today,
+    });
+    const ringkas = ringkasDariBarisTelur(updated);
+    try {
+      await base44.entities.Breeding.update(breeding.id, {
+        egg_records: updated,
+        hatched_count: ringkas.hatched_count,
+        failed_count: ringkas.failed_count,
+        fertile_count: ringkas.fertile_count,
+        infertile_count: ringkas.infertile_count,
+      });
+      setTersimpan(updated);
+      segarkanBreeding(qc);
+      toast.success(
+        dilewati > 0
+          ? `${diubah} telur → ${status} · ${dilewati} yang sudah jadi kura dilewati`
+          : `${diubah} telur → ${status}`,
+      );
+      keluarModePilih();
+    } catch (e) {
+      segarkanBreeding(qc);
+      toast.error(`Gagal menandai telur terpilih: ${e?.message || "kesalahan tidak diketahui"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (eggCount === 0) return <p className="text-xs text-muted-foreground">Tidak ada data telur</p>;
 
   const activeEggData = activeEgg !== null ? records.find(e => e.egg_number === activeEgg) : null;
@@ -922,6 +1003,69 @@ export default function EggGrid({ breeding, onRefresh }) {
               {records.filter(sudahJadiKura).length} telur sudah jadi kura — tidak ikut ditandai
             </span>
           )}
+          <button
+            onClick={() => (modePilih ? keluarModePilih() : setModePilih(true))}
+            disabled={saving}
+            className={`text-[11px] px-2.5 py-1 rounded-lg border disabled:opacity-40 ${
+              modePilih
+                ? "bg-blue-600 text-white border-blue-700"
+                : "bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
+            }`}
+          >
+            {modePilih ? "✕ Batal pilih" : "☑️ Pilih beberapa"}
+          </button>
+        </div>
+      )}
+
+      {/*
+        Papan aksi untuk telur yang dipilih.
+
+        Berdiri SENDIRI di bawah tombol-tombol "Semua", bukan bercampur,
+        karena keduanya menjawab pertanyaan berbeda: yang di atas "seluruh
+        clutch ini begini", yang di sini "yang saya tunjuk ini begini". Dua
+        hal itu dulu dipukul oleh satu tombol, dan yang lebih cepat justru
+        yang tidak bertanya.
+      */}
+      {!isReadonly && modePilih && (
+        <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-2.5 space-y-2 dark:border-blue-800 dark:bg-blue-950/40">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-xs font-bold text-blue-900 dark:text-blue-200 tabular-nums">
+              {pilihan.size} telur dipilih
+            </span>
+            <button
+              onClick={() => setPilihan(new Set(records.filter((e) => !sudahJadiKura(e)).map((e) => e.egg_number)))}
+              className="text-[11px] underline text-blue-800 dark:text-blue-300"
+            >
+              Pilih semua
+            </button>
+            <button
+              onClick={() => setPilihan(new Set())}
+              className="text-[11px] underline text-blue-800 dark:text-blue-300"
+            >
+              Kosongkan
+            </button>
+            <span className="text-[11px] text-blue-900/70 dark:text-blue-300/70">
+              Ketuk telurnya untuk memilih
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => tandaiTerpilih("menetas")} disabled={saving || pilihan.size === 0}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-green-600 text-white border border-green-700 hover:bg-green-700 disabled:opacity-40">
+              🐢 Tandai menetas
+            </button>
+            <button onClick={() => tandaiTerpilih("gagal")} disabled={saving || pilihan.size === 0}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-gray-700 text-white border border-gray-800 hover:bg-gray-800 disabled:opacity-40">
+              💀 Tandai gagal
+            </button>
+            <button onClick={() => tandaiTerpilih("fertile")} disabled={saving || pilihan.size === 0 || !candlingAllowed}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-green-100 text-green-700 border border-green-300 hover:bg-green-200 disabled:opacity-40">
+              🟢 Fertile
+            </button>
+            <button onClick={() => tandaiTerpilih("infertil")} disabled={saving || pilihan.size === 0 || !candlingAllowed}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-red-100 text-red-700 border border-red-300 hover:bg-red-200 disabled:opacity-40">
+              🔴 Infertil
+            </button>
+          </div>
         </div>
       )}
 
@@ -930,15 +1074,40 @@ export default function EggGrid({ breeding, onRefresh }) {
         {records.map((egg) => (
           <div key={egg.egg_number} className="relative flex flex-col items-center gap-0.5">
             <button
-              onClick={() => setActiveEgg(activeEgg === egg.egg_number ? null : egg.egg_number)}
+              onClick={() =>
+                modePilih
+                  ? togglePilih(egg.egg_number)
+                  : setActiveEgg(activeEgg === egg.egg_number ? null : egg.egg_number)
+              }
+              aria-pressed={modePilih ? pilihan.has(egg.egg_number) : undefined}
               className={`w-10 h-10 rounded-xl border-2 text-sm font-bold transition-all hover:scale-110 active:scale-95
                 ${STATUS_CELL[egg.status] || STATUS_CELL.belum_dicek}
                 ${isReadonly ? "opacity-80 cursor-pointer" : ""}
+                ${modePilih && !pilihan.has(egg.egg_number) ? "opacity-45" : ""}
               `}
-              title={`Telur #${egg.egg_number} — ${egg.status}${telurRetak(egg) ? " · RETAK" : ""}${isReadonly ? " (Terkunci)" : ""}`}
+              title={
+                modePilih
+                  ? `Telur #${egg.egg_number} — ${pilihan.has(egg.egg_number) ? "dipilih" : "ketuk untuk memilih"}`
+                  : `Telur #${egg.egg_number} — ${egg.status}${telurRetak(egg) ? " · RETAK" : ""}${isReadonly ? " (Terkunci)" : ""}`
+              }
             >
               {egg.egg_number}
             </button>
+            {/*
+              Centang biru di atas telur yang dipilih — bukan warna selnya
+              yang diganti. Warna sel SUDAH dipakai status, dan menimpanya
+              akan menyembunyikan justru hal yang dipakai memutuskan telur
+              mana yang pantas dipilih. Yang TIDAK dipilih diredupkan;
+              itu menyampaikan hal yang sama tanpa menghapus apa pun.
+            */}
+            {modePilih && pilihan.has(egg.egg_number) && (
+              <span
+                className="pointer-events-none absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-background"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+            )}
             {/*
               Cincin oranye, bukan warna sel yang diganti. Warna sel SUDAH
               dipakai status, dan menimpanya akan menukar satu keterangan

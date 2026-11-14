@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { renderColorLabelHTML } from "@/components/breeding/colorEggLabel";
 import { teksTray } from "@/lib/trayTelur";
+import { menetasClutch } from "@/lib/hasilInkubasi";
 import { UKURAN_LABEL_TELUR, UKURAN_TELUR_BAWAAN, cariUkuranTelur, rencanaLembarA4, susunLembarA4HTML, mmKePx, kunciClutch, kandidatLabel, centangAwal } from "@/lib/lembarLabel";
 
 /**
@@ -290,6 +291,16 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
                           {b.egg_count || 0} butir
                           {b.egg_laying_date ? ` · ${format(new Date(b.egg_laying_date), "d MMM", { locale: idLocale })}` : ""}
                           {teksTray(b) ? ` · ${teksTray(b).toLowerCase()}` : ""}
+                          {/* Jumlah menetas ditampilkan DI SINI, bukan dicetak ke
+                              labelnya: label dicetak sekali dan angkanya berubah
+                              tiap kali ada yang menetas, jadi angka tercetak sudah
+                              basi sebelum kertasnya kering. Di layar ia selalu
+                              angka hari ini. */}
+                          {menetasClutch(b) > 0 && (
+                            <span className="text-green-700 dark:text-green-400 font-semibold">
+                              {` · ${menetasClutch(b)} menetas`}
+                            </span>
+                          )}
                         </span>
                       </span>
                       {isCandlingLate(b) && <AlertTriangle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />}
