@@ -82,10 +82,63 @@ export function terapkanStatus(records = [], { eggNumber, status, checkDate, not
  * bisa menyebutkannya alih-alih diam.
  */
 export function terapkanSemua(records = [], { status, hariIni } = {}) {
+  return terapkanTerpilih(records, { nomor: null, status, hariIni });
+}
+
+/**
+ * Beberapa telur yang DIPILIH sekaligus — bukan satu-satu, bukan semuanya.
+ *
+ * ── Permintaannya ───────────────────────────────────────────────────────────
+ *
+ * 14 Nov 2026: "Waktu kita konfirmasi sudah menetas atau kita menentukan
+ * gagal, ini kan satu-satu. Jadi apakah kita bisa memilih beberapa telur,
+ * jadi kita langsung menentukan ini sudah menetas? Misalkan langsung lima
+ * atau enam atau delapan."
+ *
+ * Satu clutch di kebun ini bisa 28 butir, dan yang menetas sering keluar
+ * bersamaan dalam sehari. Dua puluh delapan ketukan untuk satu kejadian yang
+ * sama adalah dua puluh delapan kesempatan berhenti di tengah — dan clutch
+ * yang separuh ditandai lebih buruk daripada yang belum ditandai sama
+ * sekali, karena ia terbaca seolah sudah selesai dihitung.
+ *
+ * ── Kenapa satu fungsi untuk "terpilih" DAN "semua" ─────────────────────────
+ *
+ * `terapkanSemua` sekarang memanggil fungsi ini dengan `nomor: null`. Dua
+ * jalur massal dengan dua aturan sendiri adalah persis bentuk yang sudah
+ * sekali melukai data di berkas ini: jalur satu-per-satu meminta konfirmasi
+ * sejak awal, jalur massal tidak pernah bertanya, dan telur yang sudah jadi
+ * kura ikut ditimpa. Satu badan aturan, dua pintu.
+ *
+ * ── hatch_date, yang dulu hilang di jalur massal ────────────────────────────
+ *
+ * `terapkanStatus` (satu telur) mengisi `hatch_date` saat telur menjadi
+ * "menetas". `terapkanSemua` TIDAK — dan itu tidak pernah ketahuan karena
+ * tombolnya cuma dipakai untuk fertile/infertil. Begitu "menetas" boleh
+ * dipilih massal, lubang itu langsung berarti: bayi yang ditandai menetas
+ * berbondong-bondong tidak akan punya tanggal menetas sama sekali.
+ *
+ * Tanggalnya hanya diisi bila belum ada, sama seperti jalur satu telur:
+ * menandai ulang tidak boleh memindahkan tanggal menetas ke hari ini.
+ *
+ * @param {Array} records
+ * @param {Set<number>|Array<number>|null} nomor egg_number yang dipilih;
+ *   null berarti SEMUA
+ * @returns {{ hasil, dilewati, diubah }}
+ */
+export function terapkanTerpilih(records = [], { nomor = null, status, hariIni } = {}) {
+  const pilih = nomor === null ? null : new Set([...(nomor || [])].map(Number));
   let dilewati = 0;
+  let diubah = 0;
   const hasil = (records || []).map((e) => {
+    if (pilih && !pilih.has(Number(e.egg_number))) return e;
     if (sudahJadiKura(e)) { dilewati += 1; return e; }
-    return { ...e, status, check_date: hariIni };
+    diubah += 1;
+    return {
+      ...e,
+      status,
+      check_date: hariIni,
+      hatch_date: status === "menetas" ? (e.hatch_date || hariIni) : e.hatch_date,
+    };
   });
-  return { hasil, dilewati };
+  return { hasil, dilewati, diubah };
 }

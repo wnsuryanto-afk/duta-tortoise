@@ -148,8 +148,8 @@ export const PALET_TERMAL = {
  * — hanya tidak lagi memakai seperlima label untuk itu.
  */
 export function tinggiJalur(hPx) {
-  const kepala = Math.round(hPx * 0.22);
-  const candling = Math.round(hPx * 0.17);
+  const kepala = Math.round(hPx * 0.20);
+  const candling = Math.round(hPx * 0.16);
   return { kepala, candling, badan: hPx - kepala - candling };
 }
 
@@ -213,6 +213,42 @@ export function tinggiBaris(fs) {
   return Math.round(fs * LH) + Math.ceil(fs * BANTALAN);
 }
 
+/**
+ * Berapa ruang badan yang boleh dipakai baris-barisnya.
+ *
+ * Sisanya sengaja dibiarkan kosong. Label ini digambar di perangkat yang
+ * tidak bisa diukur dari sini — iPad, HP kiper, printer lewat aplikasi
+ * pencetak — dan di sana tinggi sebuah baris tidak persis sama dengan yang
+ * dihitung di peramban pengembang: huruf penggantinya lebih tinggi, atau
+ * pembulatannya berbeda. Yang tidak boleh terjadi adalah baris terakhir
+ * terpotong separuh, karena justru di situ jumlah butir dan tanggalnya
+ * berada.
+ */
+const SISA_AMAN = 0.78;
+
+/**
+ * Faktor pengecil huruf badan, supaya SEMUA barisnya muat.
+ *
+ * Dihitung sebelum apa pun digambar: tinggi tiap baris sudah bisa diketahui
+ * dari ukuran hurufnya lewat tinggiBaris(), jadi tidak perlu menunggu
+ * peramban mengukurnya — dan tidak perlu menebak berapa besar perangkat lain
+ * akan membesarkan hurufnya.
+ *
+ * Mengembalikan 1 bila sudah muat; lebih kecil dari 1 bila perlu dikecilkan.
+ * Dipisah jadi fungsi sendiri supaya scripts/cek-label.mjs bisa memeriksanya
+ * tanpa menjalankan peramban.
+ *
+ * @param {number[]} ukuranHuruf ukuran tiap baris badan, dalam px
+ * @param {number}   tinggiBadan tinggi jalur badan, dalam px
+ * @param {number}   bantalanTegak padding atas + bawah kolom teks, dalam px
+ */
+export function faktorMuat(ukuranHuruf = [], tinggiBadan = 0, bantalanTegak = 0) {
+  const butuh = ukuranHuruf.reduce((s, f) => s + tinggiBaris(f), 0);
+  const tersedia = (tinggiBadan - bantalanTegak) * SISA_AMAN;
+  if (butuh <= 0 || tersedia <= 0 || butuh <= tersedia) return 1;
+  return tersedia / butuh;
+}
+
 export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
   const K = palet;
   const pad = Math.max(3, Math.round(wPx * 0.022));
@@ -248,7 +284,23 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
   */
   const retakDi = String(breeding.tray_retak || "").trim();
   const mulai = tgl(breeding.estimated_hatch_start) || "—";
-  const sampai = tgl(breeding.estimated_hatch_end);
+
+  /*
+    Tahun pada tanggal TUTUP hanya ditulis bila berbeda dari tahun bukanya.
+
+    Percobaan pertama menempelkan "s/d 28 Des 2026" utuh ke baris tanggal
+    besar, dan baris itu langsung terpotong MENDATAR jadi "…" pada 40 × 30 mm
+    — menukar pemotongan di bawah dengan pemotongan di samping, yang persis
+    hal yang sedang diperbaiki.
+
+    Jendela menetas lebarnya 25 hari, jadi hampir selalu berada di tahun yang
+    sama dengan bukanya dan tahun kedua itu tidak menambah apa pun. Saat
+    jendelanya memang menyeberang tahun — bertelur Oktober, menetas Desember
+    sampai Januari — tahunnya tetap ditulis, karena di situlah ia berarti.
+  */
+  const tahunDari = (nilai) => String(nilai || "").slice(0, 4);
+  const bedaTahun = tahunDari(breeding.estimated_hatch_end) !== tahunDari(breeding.estimated_hatch_start);
+  const sampai = tgl(breeding.estimated_hatch_end, bedaTahun ? "d MMM yyyy" : "d MMM");
 
   const cdDate = breeding.egg_laying_date ? new Date(breeding.egg_laying_date) : null;
   if (cdDate && !Number.isNaN(cdDate.getTime())) cdDate.setDate(cdDate.getDate() + 30);
@@ -259,11 +311,60 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
   const fTrayLbl = fs(0.034);
   const fTray = fs(0.056);
   const fKapsi = fs(0.036);
-  const fBesar = fs(0.115);
+  const fBesar = fs(0.105);
   const fSampai = fs(0.05);
-  const fMeta = fs(0.042);
+  const fMeta = fs(0.039);
+
+  /*
+    13 Nov 2026 — ruang badan dilonggarkan, dan kenapa BUKAN dengan
+    menggabungkan baris.
+
+    Pemiliknya mengirim foto label di iPad dengan baris terakhir terpotong di
+    tepi bawah: "17 butir · bertelur 14 Sep 2026" terpangkas separuh. Diukur
+    di peramban sungguhan pada 50 × 30 mm @ 300 dpi, keempat baris badan
+    memakai 149 dari 204 px — 73% penuh — dan mulai terpotong begitu hurufnya
+    membesar sekitar 30%, yang terjadi di perangkat lain.
+
+    Percobaan pertama menempelkan "s/d <tanggal>" ke baris tanggal besar
+    sebagai teks kecil. Secara tegak itu berhasil — satu baris penuh hilang
+    tanpa biaya tinggi — tetapi barisnya lalu terlalu LEBAR dan dipotong
+    mendatar jadi "…", bahkan pada ukuran huruf normal untuk clutch yang
+    jendelanya menyeberang tahun ("21 Des 2026 s/d 15 Jan 2027"). Di kebun
+    ini jendela semacam itu banyak. Menukar potongan di bawah dengan potongan
+    di samping bukan perbaikan.
+
+    Jadi barisnya tetap empat, dan ruangnya diambil dari tempat lain: huruf
+    tanggal besar sedikit diturunkan, huruf keterangan diturunkan, dan jalur
+    kepala serta candling masing-masing menyerahkan sedikit tingginya ke
+    badan. Lihat tinggiJalur().
+  */
   const fCandLbl = fs(0.04);
   const fCandTgl = fs(0.064);
+
+  /*
+    Keempat baris badan dikecilkan bersama-sama bila tidak muat.
+
+    Sampai hari ini ukuran hurufnya dipatok sebagai pecahan tinggi label dan
+    tidak pernah diperiksa apakah jumlahnya muat. Pada 50 × 30 mm mereka
+    memakai 73% ruang badan — cukup di peramban pengembang, tetapi di iPad
+    pemiliknya baris terakhir keluar terpotong separuh.
+
+    Sekarang tingginya dihitung lebih dulu lewat tinggiBaris(), dan kalau
+    jumlahnya melewati batas aman, SELURUH baris badan dikecilkan dengan
+    faktor yang sama. Dikecilkan bersama supaya urutan besar-kecilnya tetap:
+    tanggal menetas harus tetap yang paling besar, apa pun yang terjadi.
+
+    Pada ukuran yang dipakai sekarang faktornya 1 — tidak ada yang berubah.
+    Ia menjaga kalau nanti ada baris yang ditambahkan, atau ukuran label baru
+    yang lebih pendek dipilih.
+  */
+  const bantalanTegak = Math.round(pad * 0.5) * 2;
+  const faktor = faktorMuat([fKapsi, fBesar, sampai ? fSampai : 0, fMeta].filter(Boolean), bodyH, bantalanTegak);
+  const kecil = (f) => Math.max(7, Math.round(f * faktor));
+  const gKapsi = kecil(fKapsi);
+  const gBesar = kecil(fBesar);
+  const gSampai = kecil(fSampai);
+  const gMeta = kecil(fMeta);
 
   const kepalaHtml = `<div style="min-height:${hdrH}px;box-sizing:border-box;background:${K.kepalaBg};padding:${Math.round(pad * 0.3)}px ${pad}px;display:flex;align-items:center;gap:${pad}px;flex:0 0 auto">
     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:${Math.round(pad * 0.7)}px">
@@ -279,10 +380,10 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
 
   const badanHtml = `<div style="flex:1 1 auto;min-height:0;box-sizing:border-box;display:flex;flex-direction:row;overflow:hidden">
     <div style="flex:1 1 auto;min-width:0;padding:${Math.round(pad * 0.5)}px ${pad}px;display:flex;flex-direction:column;justify-content:center">
-      <div style="font-weight:800;letter-spacing:1.2px;color:${K.kapsi};${gayaBaris(fKapsi)}">PERKIRAAN MENETAS</div>
-      <div style="font-weight:900;color:${K.besar};${gayaBaris(fBesar)}">${mulai}</div>
-      ${sampai ? `<div style="font-weight:700;color:${K.sampai};${gayaBaris(fSampai)}">s/d ${sampai}</div>` : ""}
-      <div style="color:${K.meta};${gayaBaris(fMeta)}"><b>${breeding.egg_count || 0} butir</b> &middot; bertelur ${bertelur}${retakDi ? ` &middot; retak di ${retakDi}` : ""}</div>
+      <div style="font-weight:800;letter-spacing:1.2px;color:${K.kapsi};${gayaBaris(gKapsi)}">PERKIRAAN MENETAS</div>
+      <div style="font-weight:900;color:${K.besar};${gayaBaris(gBesar)}">${mulai}</div>
+      ${sampai ? `<div style="font-weight:700;color:${K.sampai};${gayaBaris(gSampai)}">s/d ${sampai}</div>` : ""}
+      <div style="color:${K.meta};${gayaBaris(gMeta)}"><b>${breeding.egg_count || 0} butir</b> &middot; bertelur ${bertelur}${retakDi ? ` &middot; retak di ${retakDi}` : ""}</div>
     </div>
     <div style="width:${qrKolom}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-left:1px solid ${K.qrGaris};background:${K.qrLatar}">
       <img src="${qrDataUrl}" width="${qrSisi}" height="${qrSisi}" style="display:block"/>

@@ -2,6 +2,7 @@ import { Egg, AlertTriangle, ArrowDown, ShieldAlert } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { urutanPerInkubator, ringkasUrutan } from "@/lib/urutanMenetas";
+import { menetasClutch } from "@/lib/hasilInkubasi";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
 
 /**
@@ -91,6 +92,7 @@ function Baris({ b, onPilih }) {
   const sampai = tgl(b.sampai);
   const c = b.clutch;
   const retak = String(c.tray_retak || "").trim();
+  const menetas = menetasClutch(c);
 
   return (
     <li>
@@ -125,8 +127,19 @@ function Baris({ b, onPilih }) {
             <span className="font-semibold text-foreground tabular-nums">{mulai || "—"}</span>
             {sampai && <span className="tabular-nums"> s/d {sampai}</span>}
           </div>
+          {/*
+            Jumlah menetas berdiri di sebelah jumlah butir, bukan di layar
+            lain. 14 Nov 2026: "perlu informasi, ada berapa telur yang
+            menetas." Sampai hari itu angkanya hanya ada di dalam layar telur
+            masing-masing clutch — jadi untuk mengetahuinya, clutch-nya harus
+            dibuka satu per satu, yaitu persis saat orang sedang terburu-buru
+            karena ada yang sedang menetas.
+          */}
           <div className="text-[11px] text-muted-foreground tabular-nums">
             {c.egg_count || 0} butir
+            {menetas > 0 && (
+              <span className="text-green-700 dark:text-green-400 font-semibold"> · {menetas} menetas</span>
+            )}
           </div>
 
           {retak && (
