@@ -7,6 +7,7 @@ import { id as idLocale } from "date-fns/locale";
 import { renderColorLabelHTML } from "@/components/breeding/colorEggLabel";
 import { teksTray } from "@/lib/trayTelur";
 import { menetasClutch } from "@/lib/hasilInkubasi";
+import { urutanMenetas } from "@/lib/urutanMenetas";
 import { UKURAN_LABEL_TELUR, UKURAN_TELUR_BAWAAN, cariUkuranTelur, rencanaLembarA4, susunLembarA4HTML, mmKePx, kunciClutch, kandidatLabel, centangAwal } from "@/lib/lembarLabel";
 
 /**
@@ -42,8 +43,8 @@ export function isCandlingLate(b) {
   return cd < new Date() && !b.candling_day_30_done;
 }
 
-async function renderLabelHTML(breeding, sizeDef) {
-  return renderColorLabelHTML(breeding, sizeDef);
+async function renderLabelHTML(breeding, sizeDef, urutan = null) {
+  return renderColorLabelHTML(breeding, sizeDef, urutan);
 }
 
 async function htmlToPng(html, wPx, hPx, scale = 2) {
@@ -59,8 +60,8 @@ async function htmlToPng(html, wPx, hPx, scale = 2) {
   return canvas.toDataURL("image/png");
 }
 
-async function renderLabelPng(breeding, sizeDef) {
-  const html = await renderLabelHTML(breeding, sizeDef);
+async function renderLabelPng(breeding, sizeDef, urutan = null) {
+  const html = await renderLabelHTML(breeding, sizeDef, urutan);
   return htmlToPng(html, mmKePx(sizeDef.w), mmKePx(sizeDef.h));
 }
 
@@ -72,10 +73,10 @@ async function renderLabelPng(breeding, sizeDef) {
  * sekarang di lib/lembarLabel.js, supaya penjaga bisa menghitung sendiri
  * berapa label yang benar-benar mendarat di kertas.
  */
-async function renderA4SheetPng(breedings, sizeDef) {
+async function renderA4SheetPng(breedings, sizeDef, urutanPerId = null) {
   const labelDef = sizeDef || cariUkuranTelur(UKURAN_TELUR_BAWAAN);
   const labelHtmls = [];
-  for (const b of breedings) labelHtmls.push(await renderLabelHTML(b, labelDef));
+  for (const b of breedings) labelHtmls.push(await renderLabelHTML(b, labelDef, urutanPerId?.get(b.id) ?? null));
   const { html, wA4, hA4 } = susunLembarA4HTML(labelHtmls, labelDef);
   // scale 1: lihat catatan di htmlToPng — lembar A4 sudah 300 DPI, dan
   // menggandakannya membuat kanvasnya melewati batas Safari di iPad.
@@ -126,6 +127,26 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     [breedings, allActiveBreedings],
   );
 
+  /*
+    Nomor urut menetas untuk tiap clutch, dihitung SAAT MENCETAK.
+
+    Diambil dari seluruh clutch yang sedang dierami, bukan hanya yang
+    dicentang: nomor yang dihitung dari daftar centangan akan berubah hanya
+    karena orang mencentang label lain, dan dua kotak di rak yang sama bisa
+    berakhir membawa nomor yang sama.
+
+    Sumbernya urutanMenetas() — aturan yang sama dengan daftar di tab
+    Inkubator, jadi nomor di label tidak bisa berselisih dengan nomor di
+    layar.
+  */
+  const urutanPerId = useMemo(() => {
+    const sumber = allActiveBreedings.length > 0 ? allActiveBreedings : breedings;
+    const peta = new Map();
+    for (const baris of urutanMenetas(sumber)) peta.set(baris.id, baris.urutan);
+    return peta;
+  }, [breedings, allActiveBreedings]
+  );
+
   const [terpilih, setTerpilih] = useState(() => centangAwal(breedings));
 
   // Centang disetel ulang saat layar dibuka atau DAFTARNYA berganti — bukan
@@ -160,12 +181,12 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     if (!open || !contoh) { setPratinjau(null); return; }
     let batal = false;
     setPratinjauSibuk(true);
-    renderLabelPng(contoh, sizeDef)
+    renderLabelPng(contoh, sizeDef, urutanPerId.get(contoh.id) ?? null)
       .then((url) => { if (!batal) setPratinjau(url); })
       .catch(() => { if (!batal) setPratinjau(null); })
       .finally(() => { if (!batal) setPratinjauSibuk(false); });
     return () => { batal = true; };
-  }, [open, contoh, sizeDef]);
+  }, [open, contoh, sizeDef, urutanPerId]);
 
   const triggerDownload = useCallback((dataUrl, filename) => {
     const a = document.createElement("a");
@@ -181,7 +202,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     const out = [];
     for (const b of dipilih) {
       try {
-        out.push({ breeding: b, dataUrl: await renderLabelPng(b, sizeDef) });
+        out.push({ breeding: b, dataUrl: await renderLabelPng(b, sizeDef, urutanPerId.get(b.id) ?? null) });
       } catch {
         out.push({ breeding: b, dataUrl: null });
       }
@@ -211,7 +232,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     setA4Generating(true);
     setA4Done(false);
     try {
-      const dataUrl = await renderA4SheetPng(dipilih, sizeDef);
+      const dataUrl = await renderA4SheetPng(dipilih, sizeDef, urutanPerId);
       triggerDownload(dataUrl, `lembar-A4-label-telur-${sizeTag}-${format(new Date(), "ddMMyyyy")}.png`);
       setA4Done(true);
       setTimeout(() => setA4Done(false), 3500);

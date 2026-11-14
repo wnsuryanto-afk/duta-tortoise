@@ -52,9 +52,9 @@ const salah = (pesan) => { console.log(`  ✗ ${pesan}`); gagal++; };
 
 // Clutch sungguhan dari data peternakan, 5 Okt 2026.
 const CLUTCH = [
-  { nama: "A36×A31 (tray kosong)", b: { male_name: "A36", female_name: "A31", egg_count: 22, egg_laying_date: "2026-10-01", estimated_hatch_start: "2026-12-20", estimated_hatch_end: "2027-01-14", tray_number: null, candling_day_30_done: false } },
-  { nama: "A40×C23 (tray 3)",      b: { male_name: "A40", female_name: "C23", egg_count: 28, egg_laying_date: "2026-10-02", estimated_hatch_start: "2026-12-21", estimated_hatch_end: "2027-01-15", tray_number: 3, candling_day_30_done: false } },
-  { nama: "A40×C23 (candling telat)", b: { male_name: "A40", female_name: "C23", egg_count: 22, egg_laying_date: "2026-08-12", estimated_hatch_start: "2026-10-31", estimated_hatch_end: "2026-11-25", tray_number: 8, candling_day_30_done: false } },
+  { nama: "A36×A31 (tray kosong)", urut: 1, b: { male_name: "A36", female_name: "A31", egg_count: 22, egg_laying_date: "2026-10-01", estimated_hatch_start: "2026-12-20", estimated_hatch_end: "2027-01-14", tray_number: null, candling_day_30_done: false } },
+  { nama: "A40×C23 (tray 3)",      urut: 12, b: { male_name: "A40", female_name: "C23", egg_count: 28, egg_laying_date: "2026-10-02", estimated_hatch_start: "2026-12-21", estimated_hatch_end: "2027-01-15", tray_number: 3, candling_day_30_done: false } },
+  { nama: "A40×C23 (candling telat)", urut: 2, b: { male_name: "A40", female_name: "C23", egg_count: 22, egg_laying_date: "2026-08-12", estimated_hatch_start: "2026-10-31", estimated_hatch_end: "2026-11-25", tray_number: 8, candling_day_30_done: false } },
   { nama: "A37×C22 (dua tray)",    b: { male_name: "A37", female_name: "C22", egg_count: 17, egg_laying_date: "2026-09-14", estimated_hatch_start: "2026-12-03", estimated_hatch_end: "2026-12-28", tray_numbers: [8, 9], candling_day_30_done: true } },
   { nama: "tanpa tanggal apa pun", b: { male_name: "A43", female_name: "B108", egg_count: 13 } },
 ];
@@ -105,7 +105,7 @@ console.log("Keterangan yang dibuang:");
 let kembali = 0;
 for (const u of UKURAN) {
   for (const c of CLUTCH) {
-    const html = labelRingkasHTML(c.b, u, QR, u.palet);
+    const html = labelRingkasHTML(c.b, u, QR, u.palet, c.urut ?? null);
     for (const kata of DIBUANG) {
       if (html.includes(kata)) { salah(`${u.nama} / ${c.nama}: "${kata}" kembali muncul di label`); kembali++; }
     }
@@ -161,7 +161,7 @@ if (klaimSalah === 0) {
 console.log("Isi wajib:");
 for (const u of UKURAN) {
   for (const c of CLUTCH) {
-    const html = labelRingkasHTML(c.b, u, QR, u.palet);
+    const html = labelRingkasHTML(c.b, u, QR, u.palet, c.urut ?? null);
     for (const [apa, pola] of [
       ["QR", /<img src="data:image/],
       ["PERKIRAAN MENETAS", /PERKIRAAN MENETAS/],
@@ -170,6 +170,13 @@ for (const u of UKURAN) {
       ["nama jantan", new RegExp(c.b.male_name)],
       ["nama betina", new RegExp(c.b.female_name)],
       ["kotak centang candling", /border:2px solid [^;]+;background:#fff/],
+      /*
+        Lencana URUT hanya diwajibkan untuk clutch uji yang MEMBAWA nomornya.
+        Label yang dicetak tanpa tahu urutannya sengaja tidak menampilkan
+        lencana sama sekali — lebih baik tidak ada angka daripada angka yang
+        menggoda untuk dipercaya. Lihat labelRingkas.js.
+      */
+      ...(c.urut ? [["lencana URUT", /URUT/], ["angka urut", new RegExp(">" + c.urut + "<")]] : []),
     ]) {
       if (!pola.test(html)) salah(`${u.nama} / ${c.nama}: ${apa} tidak ada`);
     }
@@ -304,7 +311,21 @@ if (!CHROMIUM) {
   const besarkan = (html, k) => (k === 1 ? html : html.replace(/font-size:(\d+(?:\.\d+)?)px/g, (_, n) => `font-size:${(Number(n) * k).toFixed(1)}px`));
   // Tanggal yang HARUS jadi tulisan terbesar, ditulis sama persis seperti
   // labelnya menulisnya.
-  const tglMenetas = "21 Des 2026";   // CLUTCH[1] = A40×C23, 2 Okt 2026
+  /*
+    CLUTCH[1] = A40×C23, bertelur 2 Okt 2026, jendela 21 Des 2026 – 15 Jan 2027.
+
+    Tanpa tahun. Sejak 14 Nov 2026 tanggal buka dan tanggal tutup berbagi SATU
+    baris, dan tahun hanya ditulis di ujung yang membutuhkannya — di sini ujung
+    tutupnya, karena jendelanya menyeberang tahun: "21 Des s/d 15 Jan 2027".
+    Menulisnya di kedua ujung membuat barisnya terpotong mendatar jadi "…"
+    pada 40 × 30 mm, dan clutch yang menyeberang tahun banyak di kebun ini.
+
+    Yang diperiksa di bawah tetap sama: tanggal BUKA jendela harus jadi tulisan
+    terbesar di label. Itu sebabnya keduanya tetap dua elemen terpisah dalam
+    satu baris, bukan satu elemen berisi keduanya — kalau digabung, tidak ada
+    lagi elemen yang isinya persis tanggal itu untuk diukur.
+  */
+  const tglMenetas = "21 Des";
   // Label formulir clutch ikut diukur pemotongannya, tetapi TIDAK dituntut
   // menjadikan perkiraan menetas tulisan terbesarnya: tata letaknya memang
   // berpusat pada kode induknya, dan itu keputusan terpisah dari ukuran.
@@ -320,16 +341,28 @@ if (!CHROMIUM) {
     eggCount: 28, inkubatorName: "Inkubator 1",
   };
 
+  /*
+    Tanggal yang dituntut jadi tulisan terbesar BERBEDA per tata letak, dan
+    itu memang disengaja.
+
+    Label ringkas 50 × 30 dan 40 × 30 berbagi satu baris untuk tanggal buka
+    dan tanggal tutup, jadi tahunnya ditulis sekali di ujung yang
+    membutuhkannya: "21 Des s/d 15 Jan 2027". Label penuh 100 × 50 punya
+    ruang berlimpah dan tetap mencetak tanggalnya utuh.
+
+    Menyamakan keduanya berarti memaksa label yang lapang ikut memendekkan
+    tanggalnya hanya supaya penjaganya lebih mudah ditulis.
+  */
   const HALAMAN = [
-    ["50×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[0], QR, PALET_WARNA), true],
-    ["40×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[1], QR, PALET_WARNA), true],
-    ["50×30 termal", labelRingkasHTML(CLUTCH[1].b, UKURAN[2], QR, PALET_TERMAL), true],
-    ["100×50 penuh", await CE.renderColorLabelHTML(CLUTCH[1].b, { w: 100, h: 50, full: true }), true],
-    ["formulir clutch", LU.buildLabelHTML({ ...bFormulir, kode: LU.generateKodeLabel("A40", "C23", "2026-10-02"), qrDataUrl: QR }), false],
+    ["50×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[0], QR, PALET_WARNA, CLUTCH[1].urut), tglMenetas],
+    ["40×30 ringkas", labelRingkasHTML(CLUTCH[1].b, UKURAN[1], QR, PALET_WARNA, CLUTCH[1].urut), tglMenetas],
+    ["50×30 termal", labelRingkasHTML(CLUTCH[1].b, UKURAN[2], QR, PALET_TERMAL, CLUTCH[1].urut), tglMenetas],
+    ["100×50 penuh", await CE.renderColorLabelHTML(CLUTCH[1].b, { w: 100, h: 50, full: true }, CLUTCH[1].urut), "21 Des 2026"],
+    ["formulir clutch", LU.buildLabelHTML({ ...bFormulir, kode: LU.generateKodeLabel("A40", "C23", "2026-10-02"), qrDataUrl: QR }), null],
   ];
 
   let diukur = 0, diukurMenetas = 0, terbesarOK = 0;
-  for (const [nama, htmlAsli, wajibMenetas] of HALAMAN) {
+  for (const [nama, htmlAsli, tglWajib] of HALAMAN) {
    for (const k of PEMBESARAN) {
     const html = besarkan(htmlAsli, k);
     for (const font of FONT) {
@@ -387,15 +420,15 @@ if (!CHROMIUM) {
         }
         document.body.removeChild(c);
         return { hasil, maks, besarMenetas };
-      }, { html, font, tglMenetas: k === 1 ? tglMenetas : tglMenetas });
+      }, { html, font, tglMenetas: tglWajib || "" });
       diukur++;
       for (const b of buruk.hasil) {
         salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: "${b.teks}" ${b.fs} terpotong ${b.lewat}px oleh ${b.sebab}`);
       }
-      if (!wajibMenetas) continue;
+      if (!tglWajib) continue;
       diukurMenetas++;
       if (!buruk.besarMenetas) {
-        salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: tanggal menetas "${tglMenetas}" tidak ketemu di label`);
+        salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: tanggal menetas "${tglWajib}" tidak ketemu di label`);
       } else if (buruk.besarMenetas < buruk.maks) {
         salah(`${nama} / ${font.split(",")[0]} / huruf ×${k}: perkiraan menetas ${buruk.besarMenetas}px, padahal ada tulisan ${buruk.maks}px`);
       } else {

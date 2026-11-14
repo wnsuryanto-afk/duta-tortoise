@@ -67,6 +67,11 @@ export const PALET_WARNA = {
   trayKosongBg: "#DC2626",
   trayKosongFg: "#FFFFFF",
   trayGaris: "transparent",
+  // Lencana URUT: latar terang di kepala hijau, supaya angkanya terbaca dari
+  // jarak rak tanpa bersaing dengan lencana TRAY yang putih penuh.
+  urutBg: "#95D5B2",
+  urutFg: "#1B4332",
+  urutGaris: "transparent",
   kapsi: "#2D6A4F",
   besar: "#14532D",
   sampai: "#40916C",
@@ -109,6 +114,10 @@ export const PALET_TERMAL = {
   candTgl: "#000",
   candKotak: "#000",
   bulat: false,
+  // Termal hanya hitam-putih: lencana urut memakai bingkai, bukan latar.
+  urutBg: "#FFFFFF",
+  urutFg: "#000",
+  urutGaris: "#000",
 };
 
 /**
@@ -249,7 +258,14 @@ export function faktorMuat(ukuranHuruf = [], tinggiBadan = 0, bantalanTegak = 0)
   return tersedia / butuh;
 }
 
-export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
+/**
+ * @param {object} breeding   satu clutch
+ * @param {object} ukuran     { wPx, hPx }
+ * @param {string} qrDataUrl  QR yang sudah dibangkitkan pemanggil
+ * @param {object} palet      PALET_WARNA atau PALET_TERMAL
+ * @param {number|null} urutan  urutan menetas; null bila tidak diketahui
+ */
+export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, urutan = null) {
   const K = palet;
   const pad = Math.max(3, Math.round(wPx * 0.022));
   const { kepala: hdrH, candling: candH, badan: bodyH } = tinggiJalur(hPx);
@@ -283,7 +299,25 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
     dan tanggal bertelur, yang memang sudah ada.
   */
   const retakDi = String(breeding.tray_retak || "").trim();
-  const mulai = tgl(breeding.estimated_hatch_start) || "—";
+  /*
+    TAHUN DITULIS SEKALI SAJA, di ujung yang membutuhkannya.
+
+    Baris tanggal buka dan tanggal tutup kini SATU baris (lihat di bawah),
+    jadi lebarnya menentukan apakah ia terpotong mendatar. Jendela menetas
+    lebarnya 25 hari, jadi tahun hanya perlu muncul satu kali:
+
+      sejendela setahun   "3 Des 2026 s/d 28 Des"
+      menyeberang tahun   "21 Des s/d 15 Jan 2027"
+
+    Percobaan sebelumnya menulis tahun di KEDUA ujung dan langsung terpotong
+    jadi "…" pada 40 × 30 mm untuk clutch yang menyeberang tahun — dan di
+    kebun ini clutch semacam itu banyak.
+  */
+  const tahunDari = (nilai) => String(nilai || "").slice(0, 4);
+  const bedaTahun =
+    tahunDari(breeding.estimated_hatch_end) !== tahunDari(breeding.estimated_hatch_start) &&
+    Boolean(breeding.estimated_hatch_end);
+  const mulai = tgl(breeding.estimated_hatch_start, bedaTahun ? "d MMM" : "d MMM yyyy") || "—";
 
   /*
     Tahun pada tanggal TUTUP hanya ditulis bila berbeda dari tahun bukanya.
@@ -298,8 +332,6 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
     jendelanya memang menyeberang tahun — bertelur Oktober, menetas Desember
     sampai Januari — tahunnya tetap ditulis, karena di situlah ia berarti.
   */
-  const tahunDari = (nilai) => String(nilai || "").slice(0, 4);
-  const bedaTahun = tahunDari(breeding.estimated_hatch_end) !== tahunDari(breeding.estimated_hatch_start);
   const sampai = tgl(breeding.estimated_hatch_end, bedaTahun ? "d MMM yyyy" : "d MMM");
 
   const cdDate = breeding.egg_laying_date ? new Date(breeding.egg_laying_date) : null;
@@ -366,12 +398,47 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
   const gSampai = kecil(fSampai);
   const gMeta = kecil(fMeta);
 
+  /*
+    LENCANA URUTAN MENETAS — 14 Nov 2026.
+
+    "Alangkah baiknya kalau ada nomor urut. Jadi kita menaruh kotak telurnya,
+    bisa lihat dari sisi labelnya urutan nomor berapa berdasarkan netasnya."
+
+    ── Kenapa nomor tercetak di sini AMAN, padahal urutannya berubah ────
+
+    Begitu clutch nomor 1 menetas, yang nomor 2 menjadi nomor 1, dan angka
+    yang terlanjur tercetak di kotak-kotak lain jadi tidak lagi mulai dari
+    satu. Itu terdengar seperti alasan untuk tidak mencetaknya sama sekali —
+    dan memang itu alasan yang dipakai untuk TIDAK mencetak jumlah menetas.
+
+    Bedanya: yang dipakai orang dari nomor ini bukan angkanya, melainkan
+    URUTANNYA. Jendela menetas tiap clutch sama lebarnya, jadi dua clutch
+    tidak pernah bertukar tempat; nomor yang tercetak boleh bergeser semua
+    bersama-sama, tetapi susunan kotak di rak tetap benar selamanya. Jumlah
+    menetas tidak punya sifat itu — angka 4 yang tercetak akan benar-benar
+    salah begitu telur kelima menetas.
+
+    Nomornya dihitung saat MENCETAK, dari clutch yang sedang dierami, dan
+    diteruskan dari EggLabelGenerator. Label yang tidak tahu urutannya —
+    misalnya dicetak dari layar lain — tidak menampilkan lencana ini sama
+    sekali, bukan menampilkan "?" yang menggoda untuk dipercaya.
+  */
+  const fUrutLbl = fs(0.03);
+  const fUrut = fs(0.072);
+  const urutanHtml = Number.isFinite(Number(urutan)) && Number(urutan) > 0
+    ? `<div style="flex-shrink:0;background:${K.urutBg};border:1.5px solid ${K.urutGaris};border-radius:${r(Math.round(hdrH * 0.16))};padding:${Math.round(hdrH * 0.04)}px ${Math.round(pad * 0.8)}px;text-align:center">
+      <div style="font-weight:800;letter-spacing:1px;color:${K.urutFg};${gayaBaris(fUrutLbl)}">URUT</div>
+      <div style="font-weight:900;color:${K.urutFg};${gayaBaris(fUrut)}">${Number(urutan)}</div>
+    </div>`
+    : "";
+
   const kepalaHtml = `<div style="min-height:${hdrH}px;box-sizing:border-box;background:${K.kepalaBg};padding:${Math.round(pad * 0.3)}px ${pad}px;display:flex;align-items:center;gap:${pad}px;flex:0 0 auto">
     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:${Math.round(pad * 0.7)}px">
       <span style="font-weight:900;color:${K.kepalaFg};${gayaBaris(fNama)}">${breeding.male_name || "—"}</span>
       <span style="font-size:${Math.round(fNama * 0.6)}px;color:${K.kepalaRedup};line-height:1">&times;</span>
       <span style="font-weight:900;color:${K.kepalaFg};${gayaBaris(fNama)}">${breeding.female_name || "—"}</span>
     </div>
+    ${urutanHtml}
     <div style="flex-shrink:0;background:${trayBg};border:1.5px solid ${K.trayGaris};border-radius:${r(Math.round(hdrH * 0.16))};padding:${Math.round(hdrH * 0.04)}px ${Math.round(pad * 0.9)}px;text-align:center">
       <div style="font-weight:800;letter-spacing:1px;color:${trayFg};${gayaBaris(fTrayLbl)}">TRAY</div>
       <div style="font-weight:900;color:${trayFg};${gayaBaris(fTray)}">${trayTeks}</div>
@@ -381,8 +448,10 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet) {
   const badanHtml = `<div style="flex:1 1 auto;min-height:0;box-sizing:border-box;display:flex;flex-direction:row;overflow:hidden">
     <div style="flex:1 1 auto;min-width:0;padding:${Math.round(pad * 0.5)}px ${pad}px;display:flex;flex-direction:column;justify-content:center">
       <div style="font-weight:800;letter-spacing:1.2px;color:${K.kapsi};${gayaBaris(gKapsi)}">PERKIRAAN MENETAS</div>
-      <div style="font-weight:900;color:${K.besar};${gayaBaris(gBesar)}">${mulai}</div>
-      ${sampai ? `<div style="font-weight:700;color:${K.sampai};${gayaBaris(gSampai)}">s/d ${sampai}</div>` : ""}
+      <div style="display:flex;align-items:baseline;gap:${Math.round(pad * 0.5)}px;min-width:0">
+        <span style="font-weight:900;color:${K.besar};${gayaBaris(gBesar)}">${mulai}</span>
+        ${sampai ? `<span style="font-weight:700;color:${K.sampai};${gayaBaris(gSampai)}">s/d ${sampai}</span>` : ""}
+      </div>
       <div style="color:${K.meta};${gayaBaris(gMeta)}"><b>${breeding.egg_count || 0} butir</b> &middot; bertelur ${bertelur}${retakDi ? ` &middot; retak di ${retakDi}` : ""}</div>
     </div>
     <div style="width:${qrKolom}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-left:1px solid ${K.qrGaris};background:${K.qrLatar}">
