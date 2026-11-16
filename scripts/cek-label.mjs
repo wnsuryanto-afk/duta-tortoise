@@ -744,6 +744,65 @@ console.log(salahPakai
   ? `  ${salahPakai} dari 3 pemeriksaan pemakaian GAGAL.`
   : "  layarnya memakai keputusan itu, bukan memilih sendiri.");
 
+
+// ── 12. Lembar tempel urutan menetas ──────────────────────────────────────
+//
+// Kertas yang ditempel di pintu inkubator (16 Nov 2026). Ia tidak digambar
+// peramban di sini — yang diperiksa adalah hitungannya: berapa baris yang
+// MUAT, apakah yang tidak muat dikatakan alih-alih dipotong diam-diam, dan
+// apakah nama inkubator yang aneh bisa menyuntikkan markup ke lembarnya.
+console.log("Lembar tempel urutan:");
+{
+  const keluarLU2 = join(tmp, "lembarUrutan.cjs");
+  execFileSync("npx", [
+    "esbuild", "src/lib/lembarUrutan.js", "--bundle", "--format=cjs",
+    "--platform=node", `--alias:@=${akar}/src`, `--outfile=${keluarLU2}`,
+  ], { cwd: akar, stdio: "pipe" });
+  const LT = await import(`file://${keluarLU2}`).then((m) => m.default || m);
+
+  const baris = (n, nama) => ({
+    nama,
+    baris: Array.from({ length: n }, (_, i) => ({
+      urutan: i + 1, id: `${nama}${i}`,
+      mulai: "2026-12-01", sampai: "2027-01-05",
+      tray: i % 3 === 0 ? [] : [i + 1],
+      clutch: { egg_count: 10 + i },
+    })),
+  });
+  const opsi = { tanggalCetak: "16 November 2026", kode: (b) => `A47-${b.urutan}`, tgl: (x) => x };
+
+  const muat1 = LT.barisMuat(1);
+  if (!(muat1 > 10 && muat1 < 40)) salah(`barisMuat(1) = ${muat1}, di luar rentang masuk akal`);
+
+  // 18 kotak di 2 inkubator — keadaan kebun saat ini — harus muat seluruhnya.
+  const r18 = LT.susunLembarUrutanHTML([baris(9, "Inkubator kecil"), baris(9, "Showcase 2pintu")], opsi);
+  if (r18.dicetak !== 18) salah(`18 kotak: tercetak ${r18.dicetak}, bukan 18`);
+  if (r18.tidakMuat !== 0) salah(`18 kotak: ${r18.tidakMuat} dikatakan tidak muat, padahal muat`);
+  if (!/URUTAN MENETAS/.test(r18.html)) salah("lembar tempel tanpa judul");
+  if (!/16 November 2026/.test(r18.html)) salah("lembar tempel tanpa tanggal cetak");
+  if (!/BELUM/.test(r18.html)) salah("tray kosong tidak ditandai di lembar tempel");
+
+  // Lebih banyak daripada yang muat: sisanya DIKATAKAN, bukan hilang diam-diam.
+  const r60 = LT.susunLembarUrutanHTML([baris(60, "Inkubator besar")], opsi);
+  if (r60.dicetak + r60.tidakMuat !== 60) salah(`60 kotak: ${r60.dicetak} + ${r60.tidakMuat} tidak sama dengan 60`);
+  if (r60.tidakMuat === 0) salah("60 kotak muat semua di satu A4 — hitungannya tidak mungkin benar");
+  if (!/tidak muat di lembar/.test(r60.html)) salah("kotak yang tidak muat tidak dikatakan di lembarnya");
+
+  // Tanpa isi: diam, bukan melempar.
+  const kosong = LT.susunLembarUrutanHTML([], opsi);
+  if (kosong.dicetak !== 0) salah("lembar tempel tanpa clutch mencetak sesuatu");
+
+  // Nama inkubator dan kode berasal dari data; keduanya tidak boleh jadi markup.
+  const jahat = LT.susunLembarUrutanHTML(
+    [{ nama: "<script>x</script>", baris: [{ urutan: 1, id: "a", mulai: "2026-01-01", tray: [], clutch: { egg_count: 1 } }] }],
+    { ...opsi, kode: () => "<b>bold</b>" },
+  );
+  if (/<script>/.test(jahat.html)) salah("nama inkubator menyuntikkan <script> ke lembar tempel");
+  if (/<b>bold<\/b>/.test(jahat.html)) salah("kode clutch menyuntikkan markup ke lembar tempel");
+
+  console.log(`  ${muat1} baris per lembar; 18 kotak muat; 60 kotak -> ${r60.dicetak} tercetak + ${r60.tidakMuat} dikatakan tidak muat; markup dari data dijinakkan.`);
+}
+
 rmSync(tmp, { recursive: true, force: true });
 
 if (gagal) { console.log(`\n${gagal} masalah pada label.`); process.exit(1); }
