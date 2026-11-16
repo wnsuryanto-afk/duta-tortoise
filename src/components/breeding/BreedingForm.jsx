@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { safeFormatDate, waktuServer } from "@/lib/safeDate";
 import { jendelaDariBertelur } from "@/lib/jendelaMenetas";
+import { nomorBerikutnya } from "@/lib/kodeClutch";
 import { downloadLabel, generateKodeLabel, LEBAR_CETAK_MM } from "@/lib/labelUtils";
 import { toast } from "sonner";
 import TortoiseSearchSelect from "@/components/health/TortoiseSearchSelect";
@@ -293,6 +294,20 @@ export default function BreedingForm({ open, onClose, editData }) {
       season_year: form.season_year || (form.egg_laying_date ? new Date(form.egg_laying_date).getFullYear() : new Date().getFullYear()),
       estimated_hatch_start: form.estimated_hatch_start || undefined,
       estimated_hatch_end: form.estimated_hatch_end || undefined,
+      /*
+        NOMOR CLUTCH BETINA, ditetapkan SEKALI saat dicatat.
+
+        Kode "A47-3" dicetak di kertas yang menempel di kotak selama tiga
+        bulan. Kalau nomornya dihitung ulang tiap kali layar dibuka, ia akan
+        bergeser begitu ada clutch LAMA yang baru dicatat belakangan — dan
+        kertas yang sudah menempel tidak ikut bergeser.
+
+        Clutch yang sedang DIEDIT tidak diberi nomor baru: nomornya sudah
+        ada, dan menetapkannya ulang persis hal yang sedang dicegah.
+      */
+      clutch_number:
+        editData?.clutch_number ??
+        (editData?.id ? undefined : nomorBerikutnya(breedings, form.female_name)),
       induk_perkiraan: !!form.induk_perkiraan,
       tanggal_perkiraan: !!form.tanggal_perkiraan,
       // Dirapikan, dan kosong disimpan sebagai undefined — bukan "" — supaya
