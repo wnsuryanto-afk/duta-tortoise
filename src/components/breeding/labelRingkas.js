@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { daftarTray } from "@/lib/trayTelur";
+import { warnaInduk } from "@/lib/warnaInduk";
 
 /**
  * labelRingkas.js — SATU tata letak label ringkas kotak telur.
@@ -69,6 +70,7 @@ export const PALET_WARNA = {
   trayGaris: "transparent",
   // Lencana URUT: latar terang di kepala hijau, supaya angkanya terbaca dari
   // jarak rak tanpa bersaing dengan lencana TRAY yang putih penuh.
+  pakaiWarnaInduk: true,
   urutBg: "#95D5B2",
   urutFg: "#1B4332",
   urutGaris: "transparent",
@@ -265,7 +267,7 @@ export function faktorMuat(ukuranHuruf = [], tinggiBadan = 0, bantalanTegak = 0)
  * @param {object} palet      PALET_WARNA atau PALET_TERMAL
  * @param {number|null} urutan  urutan menetas; null bila tidak diketahui
  */
-export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, urutan = null) {
+export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, urutan = null, kode = null) {
   const K = palet;
   const pad = Math.max(3, Math.round(wPx * 0.022));
   const { kepala: hdrH, candling: candH, badan: bodyH } = tinggiJalur(hPx);
@@ -339,13 +341,12 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, uruta
   const cdStr = cdDate && !Number.isNaN(cdDate.getTime()) ? format(cdDate, "d MMM yyyy", { locale: idLocale }) : "—";
   const telat = Boolean(cdDate && !Number.isNaN(cdDate.getTime()) && cdDate < new Date() && !breeding.candling_day_30_done);
 
-  const fNama = fs(0.075);
   const fTrayLbl = fs(0.034);
   const fTray = fs(0.056);
   const fKapsi = fs(0.036);
-  const fBesar = fs(0.105);
+  const fBesar = fs(0.112);
   const fSampai = fs(0.05);
-  const fMeta = fs(0.039);
+  const fMeta = fs(0.041);
 
   /*
     13 Nov 2026 — ruang badan dilonggarkan, dan kenapa BUKAN dengan
@@ -369,6 +370,29 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, uruta
     tanggal besar sedikit diturunkan, huruf keterangan diturunkan, dan jalur
     kepala serta candling masing-masing menyerahkan sedikit tingginya ke
     badan. Lihat tinggiJalur().
+  */
+  /*
+    RUANG KOSONG DI BADAN ITU DISENGAJA — 16 Nov 2026.
+
+    Pemiliknya meminta "banyak ruang kosong di label yang perlu bisa
+    dimanfaatkan" dan "besar kecilnya efektif". Keduanya benar, tapi
+    permintaan itu bertabrakan dengan keluhannya sendiri dua hari
+    sebelumnya: baris terakhir label terpotong di iPad-nya.
+
+    Diukur pada 50 × 30 mm @ 300 dpi, dengan tiga baris badan:
+
+      huruf tanggal 0,105   badan 57% penuh   terpotong mulai ×1,6
+      huruf tanggal 0,112   badan 59% penuh   terpotong mulai ×1,5
+      huruf tanggal 0,118   badan 62% penuh   terpotong mulai ×1,4
+
+    Baris yang terpotong di iPad itu dulu memakai 73% dan mulai terpotong
+    pada ×1,3. Mengisi ruang kosongnya sampai habis berarti kembali ke
+    keadaan yang dikeluhkan.
+
+    Dipilih 0,112: tanggal menetas naik 7% dari ukuran kemarin, dan sisa
+    ruangnya tetap dua kali lipat lebih longgar daripada bentuk yang
+    terpotong. Sisa yang terlihat kosong itu bukan ruang terbuang — itu
+    jarak amannya.
   */
   const fCandLbl = fs(0.04);
   const fCandTgl = fs(0.064);
@@ -432,11 +456,52 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, uruta
     </div>`
     : "";
 
-  const kepalaHtml = `<div style="min-height:${hdrH}px;box-sizing:border-box;background:${K.kepalaBg};padding:${Math.round(pad * 0.3)}px ${pad}px;display:flex;align-items:center;gap:${pad}px;flex:0 0 auto">
-    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:${Math.round(pad * 0.7)}px">
-      <span style="font-weight:900;color:${K.kepalaFg};${gayaBaris(fNama)}">${breeding.male_name || "—"}</span>
-      <span style="font-size:${Math.round(fNama * 0.6)}px;color:${K.kepalaRedup};line-height:1">&times;</span>
-      <span style="font-weight:900;color:${K.kepalaFg};${gayaBaris(fNama)}">${breeding.female_name || "—"}</span>
+  /*
+    KEPALA LABEL — ditata ulang 16 Nov 2026.
+
+    Sebelumnya yang terbesar di kepala adalah nama pasangan, "A35 × A47".
+    Diukur pada data hari itu: 12 dari 18 kotak aktif memakai nama pasangan
+    yang juga dipakai kotak lain — A35 × A47 sendiri dipakai TIGA kotak.
+    Jadi tulisan terbesar di label justru satu-satunya keterangan yang tidak
+    membedakan, sementara pembedanya (tanggal bertelur) dicetak paling kecil
+    di baris paling bawah.
+
+    Sekarang yang terbesar adalah kode clutch — "A47-3", betina dan clutch
+    keberapa miliknya — dengan tanggal bertelur dan nama pejantan sebagai
+    baris kecil di bawahnya. Tidak ada keterangan yang hilang; yang berubah
+    hanya mana yang dibaca lebih dulu.
+
+    Warna kepala mengikuti induk betinanya, jadi kotak dari induk yang sama
+    terlihat sekelompok dari jarak rak. Itu lapis kedua, bukan pembeda
+    utama — tiga kotak A47 berwarna sama persis, dan justru ketiganya yang
+    paling mungkin tertukar. Lihat lib/warnaInduk.js.
+  */
+  const wInduk = K.pakaiWarnaInduk ? warnaInduk(breeding.female_name) : null;
+  const kepalaBg = wInduk ? wInduk.bg : K.kepalaBg;
+  const kodeTampil = String(kode || "").trim() || `${breeding.male_name || "—"} × ${breeding.female_name || "—"}`;
+  const fKode = fs(0.095);
+
+  /*
+    KEPALA TETAP SATU BARIS. Diukur, bukan dikira.
+
+    Percobaan pertama menaruh tanggal bertelur dan nama pejantan sebagai
+    baris kecil KEDUA di kepala. Badannya memang turun dari empat baris ke
+    tiga — tapi kepalanya naik dari satu baris ke dua, dan kepala itu
+    `flex:0 0 auto`: ia tidak pernah mengalah. Saat hurufnya membesar,
+    kepala dua baris tumbuh dua kali lebih cepat dan memakan jatah badan.
+
+    Terukur pada 50 × 30 mm: kepala 83px pada huruf normal menjadi 115px
+    pada ×1,5, dan batas potong badan hanya bergerak dari ×1,30 ke ×1,35.
+    Nyaris tidak ada perbaikan — hanya memindahkan barisnya dari satu jalur
+    ke jalur lain.
+
+    Jadi keterangan itu pindah ke baris kecil di BADAN, yang memang jalur
+    yang boleh mengalah.
+  */
+
+  const kepalaHtml = `<div style="min-height:${hdrH}px;box-sizing:border-box;background:${kepalaBg};padding:${Math.round(pad * 0.3)}px ${pad}px;display:flex;align-items:center;gap:${pad}px;flex:0 0 auto">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:900;color:${K.kepalaFg};${gayaBaris(fKode)}">${kodeTampil}</div>
     </div>
     ${urutanHtml}
     <div style="flex-shrink:0;background:${trayBg};border:1.5px solid ${K.trayGaris};border-radius:${r(Math.round(hdrH * 0.16))};padding:${Math.round(hdrH * 0.04)}px ${Math.round(pad * 0.9)}px;text-align:center">
@@ -452,7 +517,7 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, uruta
         <span style="font-weight:900;color:${K.besar};${gayaBaris(gBesar)}">${mulai}</span>
         ${sampai ? `<span style="font-weight:700;color:${K.sampai};${gayaBaris(gSampai)}">s/d ${sampai}</span>` : ""}
       </div>
-      <div style="color:${K.meta};${gayaBaris(gMeta)}"><b>${breeding.egg_count || 0} butir</b> &middot; bertelur ${bertelur}${retakDi ? ` &middot; retak di ${retakDi}` : ""}</div>
+      <div style="color:${K.meta};${gayaBaris(gMeta)}">${breeding.male_name ? `&male; ${breeding.male_name} &middot; ` : ""}<b>${breeding.egg_count || 0} butir</b> &middot; ${bertelur}${retakDi ? ` &middot; retak di ${retakDi}` : ""}</div>
     </div>
     <div style="width:${qrKolom}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-left:1px solid ${K.qrGaris};background:${K.qrLatar}">
       <img src="${qrDataUrl}" width="${qrSisi}" height="${qrSisi}" style="display:block"/>

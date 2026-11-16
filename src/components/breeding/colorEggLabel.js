@@ -38,7 +38,7 @@ function ico(type, c, size = 16) {
 const DPI = 300;
 const P = (mm) => Math.round((mm * DPI) / 25.4);
 
-export async function renderColorLabelHTML(breeding, sizeDef, urutan = null) {
+export async function renderColorLabelHTML(breeding, sizeDef, urutan = null, kode = null) {
   const wPx = P(sizeDef.w), hPx = P(sizeDef.h);
   const qrText = `BREED:${breeding.id}`;
   const qrDataUrl = await QRCode.toDataURL(qrText, { width: 400, margin: 1, color: { dark: "#000000", light: "#ffffff" } });
@@ -57,7 +57,7 @@ export async function renderColorLabelHTML(breeding, sizeDef, urutan = null) {
   // Versi ringkas: tata letaknya milik bersama dengan label termal — alasan
   // tiap pembuangan dan pembesaran tertulis di components/breeding/labelRingkas.js.
   if (!sizeDef.full) {
-    return labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, PALET_WARNA, urutan);
+    return labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, PALET_WARNA, urutan, kode);
   }
 
   // ── Versi penuh (100×50) ────────────────────────────────────────────────
