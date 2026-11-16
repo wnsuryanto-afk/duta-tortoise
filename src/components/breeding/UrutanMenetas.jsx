@@ -1,8 +1,11 @@
-import { Egg, AlertTriangle, ArrowDown, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { Egg, AlertTriangle, ArrowDown, ShieldAlert, Printer, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { urutanPerInkubator, ringkasUrutan } from "@/lib/urutanMenetas";
 import { menetasClutch } from "@/lib/hasilInkubasi";
+import { nomorClutchPerId, kodeClutch } from "@/lib/kodeClutch";
+import { susunLembarUrutanHTML, barisMuat } from "@/lib/lembarUrutan";
 import HitungMundurMenetas from "@/components/breeding/HitungMundurMenetas";
 
 /**
@@ -157,10 +160,57 @@ function Baris({ b, onPilih }) {
 }
 
 export default function UrutanMenetas({ breedings = [], incubators = [], onPilihClutch = null }) {
+  const [cetak, setCetak] = useState(false);
   const kelompok = urutanPerInkubator(breedings, incubators);
   const ringkas = ringkasUrutan(breedings);
+  const nomorPerId = nomorClutchPerId(breedings);
+
+  /*
+    LEMBAR TEMPEL — diunduh sebagai PNG, bukan dibuka di jendela cetak.
+
+    Alasannya sama dengan label kotak telur: yang mencetak di sini memakai
+    satu printer inkjet dan memotong sendiri, dan berkas gambar bisa
+    disimpan, dikirim ke orang lain, dan dicetak ulang tanpa membuka
+    aplikasinya lagi. Jendela cetak peramban tidak bisa melakukan itu.
+  */
+  const unduhLembar = async () => {
+    setCetak(true);
+    try {
+      const { html, wA4, hA4 } = susunLembarUrutanHTML(kelompok, {
+        tanggalCetak: format(new Date(), "d MMMM yyyy", { locale: idLocale }),
+        kode: (b) => kodeClutch(b.clutch, nomorPerId.get(b.id)),
+        tgl: (iso) => tgl(iso) || "—",
+      });
+      const wadah = document.createElement("div");
+      wadah.style.cssText = "position:fixed;left:-9999px;top:0;z-index:-1;";
+      wadah.innerHTML = html;
+      document.body.appendChild(wadah);
+      try {
+        const h2c = (await import("html2canvas")).default;
+        const kanvas = await h2c(wadah.firstElementChild, {
+          scale: 1, backgroundColor: "#ffffff", logging: false, width: wA4, height: hA4,
+        });
+        const a = document.createElement("a");
+        a.href = kanvas.toDataURL("image/png");
+        a.download = `urutan-menetas-${format(new Date(), "ddMMyyyy")}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } finally {
+        document.body.removeChild(wadah);
+      }
+    } catch {
+      /* Tombol yang gagal diam akan ditekan berkali-kali; keadaannya
+         dikembalikan di finally supaya tombolnya hidup lagi dan bisa dicoba. */
+    } finally {
+      setCetak(false);
+    }
+  };
 
   if (ringkas.total === 0) return null;
+
+  const muat = barisMuat(kelompok.length);
+  const tidakMuat = Math.max(0, ringkas.total - muat);
 
   return (
     <section className="space-y-3">
@@ -173,7 +223,27 @@ export default function UrutanMenetas({ breedings = [], incubators = [], onPilih
             karena jendelanya sama lebar untuk semua clutch.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={unduhLembar}
+          disabled={cetak}
+          className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-2.5 py-1.5 text-[11px] font-semibold text-green-800 hover:bg-green-100 disabled:opacity-50 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300"
+        >
+          {cetak ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+          Lembar tempel A4
+        </button>
       </div>
+
+      {/*
+        Dikatakan SEBELUM tombolnya ditekan, bukan sesudah lembarnya tercetak
+        dan ternyata kurang. Satu lembar A4 hanya memuat sekian baris, dan
+        tiap inkubator memakan satu baris judul sendiri.
+      */}
+      {tidakMuat > 0 && (
+        <p className="text-[11px] text-amber-800 dark:text-amber-300">
+          Lembar A4 memuat {muat} kotak; {tidakMuat} kotak terakhir tidak ikut tercetak.
+        </p>
+      )}
 
       {ringkas.tanpaTray > 0 && (
         <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/40">
