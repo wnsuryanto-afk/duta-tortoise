@@ -64,6 +64,7 @@ const UnifiedStokPage = muatHalaman(() => import('@/pages/UnifiedStokPage'));
 const PanduanPakanPage = muatHalaman(() => import('@/pages/PanduanPakanPage'));
 const PanduanPenyakitDetailPage = muatHalaman(() => import('@/pages/PanduanPenyakitDetailPage'));
 const PakanHarianPage = muatHalaman(() => import('@/pages/PakanHarianPage'));
+const LaporanBeratKandangPage = muatHalaman(() => import('@/pages/LaporanBeratKandangPage'));
 const TortoisePassport = muatHalaman(() => import('@/pages/TortoisePassport'));
 const RiwayatKlusterPage = muatHalaman(() => import('@/pages/RiwayatKlusterPage'));
 const PengaturanPoinPage = muatHalaman(() => import('@/pages/PengaturanPoinPage'));
@@ -239,6 +240,10 @@ const AuthenticatedApp = () => {
         <Route path="/stok-unified" element={<UnifiedStokPage />} />
         <Route path="/panduan-pakan" element={<PanduanPakanPage />} />
         <Route path="/pakan-harian" element={<PakanHarianPage />} />
+        {/* Laporan kebutuhan pakan per kandang — 3,5% dari total berat badan.
+            Ditautkan dari Pakan Harian, bukan dari menu: ia menjawab pertanyaan
+            yang muncul justru saat orang sedang mencatat pakan. */}
+        <Route path="/laporan-berat-kandang" element={<LaporanBeratKandangPage />} />
         {/* Panduan Penyakit menyatu jadi tab di Catatan Sakit 30-09-2026.
             Halaman RINCIAN per penyakit di bawah TIDAK ikut: ia ditautkan dari
             dalam formulir kesehatan dan panel diagnosis, dan tautan itu harus

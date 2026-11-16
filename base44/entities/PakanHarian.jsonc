@@ -21,7 +21,7 @@
       "type": "string"
     },
     "feed_type_detail": {
-      "description": "Detail jenis pakan (contoh: kangkung, sawi, rumput gajah)",
+      "description": "Jenis pakan, diambil dari nama bahan di Stok Pakan (FeedStock) yang aktif. Sejak 16 Nov 2026 formulirnya berupa pilihan, bukan ketik-bebas, dan wajib diisi \u2014 41 dari 46 catatan sebelum itu kosong, sehingga tidak satu pun bisa dipakai menghitung porsi hijauan. Nilainya disimpan sebagai teks nama bahan supaya catatan lama tetap terbaca apa adanya.",
       "type": "string"
     },
     "is_test_data": {

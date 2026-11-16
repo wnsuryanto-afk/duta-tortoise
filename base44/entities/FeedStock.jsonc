@@ -81,7 +81,7 @@
     "is_active": {
       "type": "boolean",
       "default": true,
-      "description": "Bahan ini masih dilacak sebagai stok. Dimatikan untuk bahan yang memang tidak dicatat masuk-keluarnya - mis. rumput dan kaktus dari kebun sendiri. Bahan nonaktif TIDAK memicu peringatan stok, tidak masuk daftar belanja otomatis, dan tidak dipotong saat SOP dicentang; datanya tetap utuh (termasuk daily_ideal) supaya bisa dihidupkan lagi kapan saja tanpa mengetik ulang."
+      "description": "Bahan ini masih dilacak sebagai stok. Dimatikan untuk bahan yang memang tidak dicatat masuk-keluarnya - mis. rumput dan kaktus dari kebun sendiri. Bahan nonaktif TIDAK memicu peringatan stok, tidak masuk daftar belanja otomatis, dan tidak dipotong saat SOP dicentang; datanya tetap utuh (termasuk daily_ideal) supaya bisa dihidupkan lagi kapan saja tanpa mengetik ulang. Sejak 16 Nov 2026 kolom ini juga menentukan pilihan jenis pakan di formulir Pakan Harian: hanya bahan aktif yang bisa dipilih."
     },
     "storage_location": {
       "type": "string",
@@ -115,6 +115,39 @@
       "type": "string",
       "format": "date-time",
       "description": "Waktu terakhir edit"
+    },
+    "kelas_pakan": {
+      "type": "string",
+      "enum": [
+        "hijauan_utama",
+        "serat_kering",
+        "kaktus",
+        "daun_herba",
+        "buah_manis",
+        "pelet",
+        "suplemen"
+      ],
+      "description": "Golongan pakan, dipakai menghitung porsi hijauan di widget Pakan Harian: hijauan_utama + kaktus + daun_herba dihitung sebagai hijauan, sisanya tidak. Kosong berarti belum digolongkan \u2014 bahan seperti itu tidak dihitung sebagai hijauan, bukan dianggap hijauan."
+    },
+    "dm_percent": {
+      "type": "number",
+      "description": "Bahan kering (% dari berat segar). OPSIONAL \u2014 kosongkan bila bahan belum diuji lab. Jangan menebak angkanya: angka kosong lebih jujur daripada angka karangan, dan hanya dipakai sebagai rujukan, bukan untuk perhitungan stok."
+    },
+    "cf_percent": {
+      "type": "number",
+      "description": "Serat kasar / crude fiber (%). OPSIONAL, kosongkan bila belum diuji lab."
+    },
+    "cp_percent": {
+      "type": "number",
+      "description": "Protein kasar / crude protein (%). OPSIONAL, kosongkan bila belum diuji lab."
+    },
+    "ca_percent": {
+      "type": "number",
+      "description": "Kalsium (%). OPSIONAL, kosongkan bila belum diuji lab."
+    },
+    "p_percent": {
+      "type": "number",
+      "description": "Fosfor (%). OPSIONAL, kosongkan bila belum diuji lab."
     }
   },
   "required": [

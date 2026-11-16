@@ -27,6 +27,7 @@ import IncompleteBadges, { isItemIncomplete } from "@/components/stock/Incomplet
 import QRScannerDialog from "@/components/stock/QRScannerDialog";
 import { toast } from "sonner";
 import { rupiah } from "@/lib/rupiah";
+import { KELAS_PAKAN } from "@/lib/kelasPakan";
 
 
 // stockStatus lokal dihapus. Ambangnya sendiri (`< minimum * 1.5` untuk
@@ -318,7 +319,7 @@ function ItemDetailDialog({ item, onClose, onEdit, onUploadPhoto, canEdit }) {
 }
 
 // ── Item Form ─────────────────────────────────────────────────────────
-const EMPTY = { type: "pakan", name: "", unit: "kg", current_stock: 0, minimum_stock: 1, price: 0, location: "", is_mandatory: false, notes: "", category: "sayuran", daily_ideal: "", needs_replacement: false };
+const EMPTY = { type: "pakan", name: "", unit: "kg", current_stock: 0, minimum_stock: 1, price: 0, location: "", is_mandatory: false, notes: "", category: "sayuran", daily_ideal: "", needs_replacement: false, kelas_pakan: "", dm_percent: "", cf_percent: "", cp_percent: "", ca_percent: "", p_percent: "" };
 
 function ItemForm({ item, onClose }) {
   const qc = useQueryClient();
@@ -338,6 +339,12 @@ function ItemForm({ item, onClose }) {
     hari_pakai_setelah_dibuka: item.hari_pakai_setelah_dibuka ?? "",
     daily_ideal: item.daily_ideal ?? "",
     needs_replacement: item.needs_replacement || false,
+    kelas_pakan: item.kelas_pakan || "",
+    dm_percent: item.dm_percent ?? "",
+    cf_percent: item.cf_percent ?? "",
+    cp_percent: item.cp_percent ?? "",
+    ca_percent: item.ca_percent ?? "",
+    p_percent: item.p_percent ?? "",
   } : EMPTY);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(item?.photo_url || null);
@@ -373,7 +380,18 @@ function ItemForm({ item, onClose }) {
       // bahan belum punya riwayat pemakaian, angka inilah satu-satunya cara
       // hitungSisaHari() bisa memperkirakan kapan stoknya habis. Tanpa itu
       // bahan tersebut selalu dinilai "aman — belum ada data pemakaian".
-      const data = { name: form.name, category: form.category, unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), price_per_unit: Number(form.price), is_mandatory: form.is_mandatory, storage_location: form.location || "gudang", notes: form.notes, photo_url, daily_ideal: form.daily_ideal === "" ? null : Number(form.daily_ideal) };
+      // Kolom gizi dikosongkan (null), bukan diisi nol. Nol berarti "diuji
+      // dan hasilnya nol persen"; bahan yang belum diuji lab bukan itu.
+      const angkaAtauKosong = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
+      const data = {
+        name: form.name, category: form.category, unit: form.unit, current_stock: Number(form.current_stock), minimum_stock: Number(form.minimum_stock), price_per_unit: Number(form.price), is_mandatory: form.is_mandatory, storage_location: form.location || "gudang", notes: form.notes, photo_url, daily_ideal: form.daily_ideal === "" ? null : Number(form.daily_ideal),
+        kelas_pakan: form.kelas_pakan || null,
+        dm_percent: angkaAtauKosong(form.dm_percent),
+        cf_percent: angkaAtauKosong(form.cf_percent),
+        cp_percent: angkaAtauKosong(form.cp_percent),
+        ca_percent: angkaAtauKosong(form.ca_percent),
+        p_percent: angkaAtauKosong(form.p_percent),
+      };
       if (item?.id) await base44.entities.FeedStock.update(item.id, data);
       else await base44.entities.FeedStock.create(data);
     } else {
@@ -547,6 +565,50 @@ function ItemForm({ item, onClose }) {
             antara tanggal cetak dan (tanggal botol dibuka + angka ini). Angkanya dari dokter
             hewan — kosongkan kalau belum tahu.
           </p>
+        </div>
+      )}
+
+      {/* Kandungan gizi — satu grup, semuanya opsional. Dipakai sebagai
+          rujukan penyusunan pakan, bukan untuk menghitung stok. */}
+      {isFeed && (
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+          <div>
+            <p className="text-xs font-semibold">Kandungan gizi (opsional)</p>
+            <p className="text-[10px] text-muted-foreground">
+              Kosongkan bila bahan belum diuji lab — angka kosong lebih jujur daripada tebakan.
+            </p>
+          </div>
+          <div>
+            <Label className="text-xs">Golongan pakan</Label>
+            <Select value={form.kelas_pakan || "kosong"} onValueChange={v => set("kelas_pakan", v === "kosong" ? "" : v)}>
+              <SelectTrigger className="mt-0.5 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="kosong">— Belum digolongkan —</SelectItem>
+                {KELAS_PAKAN.map(k => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Hijauan utama, kaktus, dan daun herba dihitung sebagai hijauan di widget Pakan Harian.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ["dm_percent", "Bahan kering %"],
+              ["cf_percent", "Serat kasar %"],
+              ["cp_percent", "Protein kasar %"],
+              ["ca_percent", "Kalsium %"],
+              ["p_percent", "Fosfor %"],
+            ].map(([kunci, label]) => (
+              <div key={kunci}>
+                <Label className="text-[11px]">{label}</Label>
+                <Input
+                  type="number" min={0} step="0.01" inputMode="decimal"
+                  value={form[kunci]} onChange={e => set(kunci, e.target.value)}
+                  className="mt-0.5" placeholder="—"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

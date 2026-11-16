@@ -1,15 +1,16 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { skuPakanBaru } from "@/lib/skuBarang";
 import { pilihBarisPakan } from "@/lib/namaMirip";
+import { KELAS_PAKAN } from "@/lib/kelasPakan";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Camera, X } from "lucide-react";
+import { Loader2, Camera, X, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useTestMode } from "@/lib/useTestMode";
@@ -71,6 +72,78 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  /*
+    Jenis pakan DIPILIH dari Stok Pakan, tidak lagi diketik bebas.
+
+    Sampai 16 Nov 2026 kolom ini kotak ketik, dan 41 dari 46 catatan lahir
+    kosong — cukup untuk membuat porsi hijauan mustahil dihitung: tidak ada
+    satu pun angka yang bisa dicocokkan dengan golongan bahannya.
+
+    Hanya bahan AKTIF yang ditawarkan: bahan yang sudah dimatikan bukan lagi
+    yang diambil di lapangan. Bahan yang belum ada dibuat lewat tombol
+    "Bahan baru" — yang menulis FeedStock sungguhan, bukan teks lepas yang
+    nanti tidak dikenali siapa pun.
+  */
+  const { data: daftarPakan = [] } = useQuery({
+    queryKey: ["feedstocks"],
+    queryFn: () => base44.entities.FeedStock.list("-created_date", 300),
+    enabled: open,
+  });
+  const pilihanPakan = useMemo(
+    () => (daftarPakan || [])
+      .filter(f => f.is_active !== false)
+      .sort((a, b) => String(a.name).localeCompare(String(b.name))),
+    [daftarPakan],
+  );
+  const [bahanBaru, setBahanBaru] = useState(null); // { name, category, kelas_pakan } | null
+  const [membuatBahan, setMembuatBahan] = useState(false);
+
+  const pilihJenis = (nama) => {
+    const bahan = daftarPakan.find(f => f.name === nama);
+    // Satuannya ikut bahan yang dipilih. Nama yang sudah tercatat dalam
+    // satuan lain ditolak pilihBarisPakan saat menyimpan; menyamakan
+    // satuannya sejak di sini menghapus pertanyaan itu sebelum muncul.
+    const satuanBahan = bahan?.unit === "keranjang" ? "keranjang" : "kg";
+    setForm(f => ({ ...f, feed_type_detail: nama, satuan: satuanBahan }));
+  };
+
+  const simpanBahanBaru = async () => {
+    const nama = String(bahanBaru?.name || "").trim();
+    if (!nama) { toast.error("Nama bahan belum diisi"); return; }
+    setMembuatBahan(true);
+    try {
+      // SKU diberikan di sini juga, dan dari daftar GABUNGAN pakan + gudang —
+      // awalan yang sama dipakai keduanya, jadi nomor dari daftar pakan saja
+      // bisa bertabrakan dengan barang gudang yang sudah ada.
+      const semuaGudang = await base44.entities.WarehouseItem.list("-name", 500);
+      const skuTerpakai = [
+        ...daftarPakan.map(f => f.sku),
+        ...semuaGudang.map(w => w.sku),
+      ].filter(Boolean);
+      const dibuat = await base44.entities.FeedStock.create({
+        name: nama,
+        category: bahanBaru.category,
+        kelas_pakan: bahanBaru.kelas_pakan,
+        sku: skuPakanBaru(bahanBaru.category, skuTerpakai),
+        unit: form.satuan,
+        current_stock: 0,
+        minimum_stock: 1,
+        price_per_unit: 0,
+        is_active: true,
+        notes: "Dibuat dari Pakan Harian",
+        last_edited_by: user?.email || "",
+        last_edited_at: new Date().toISOString(),
+      });
+      setBahanBaru(null);
+      setForm(f => ({ ...f, feed_type_detail: dibuat.name }));
+      qc.invalidateQueries({ queryKey: ["feedstocks"] });
+    } catch (e) {
+      toast.error("Gagal membuat bahan baru: " + (e?.message || e));
+    } finally {
+      setMembuatBahan(false);
+    }
+  };
+
   const handlePhoto = (file) => {
     if (!file) return;
     setPhotoFile(file);
@@ -87,6 +160,10 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
     const jumlah = Number(form.jumlah);
     if (!form.log_date || !(jumlah > 0)) {
       toast.error(`Lengkapi tanggal & jumlah (${form.satuan === "kg" ? "kilogram" : "keranjang"})`);
+      return;
+    }
+    if (!String(form.feed_type_detail || "").trim()) {
+      toast.error("Pilih jenis pakan lebih dulu — pilihannya dari daftar Stok Pakan");
       return;
     }
     if (!photoFile && !photoPreview) {
@@ -353,10 +430,69 @@ export default function PakanHarianForm({ open, onClose, user, onSaved, sopTaskI
             </div>
           </div>
 
-          <div>
-            <Label className="text-xs">Detail jenis (opsional)</Label>
-            <Input value={form.feed_type_detail} onChange={e => set("feed_type_detail", e.target.value)} className="mt-1" placeholder="cth: kangkung, sawi, rumput gajah" />
-          </div>
+          {bahanBaru ? (
+            <div className="rounded-lg border border-dashed p-3 space-y-2">
+              <p className="text-xs font-semibold">+ Bahan baru di Stok Pakan</p>
+              <Input
+                placeholder="Nama bahan (cth: Rumput Gajah)"
+                value={bahanBaru.name}
+                onChange={e => setBahanBaru({ ...bahanBaru, name: e.target.value })}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={bahanBaru.category} onValueChange={v => setBahanBaru({ ...bahanBaru, category: v })}>
+                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["rumput", "sayuran", "buah", "hay", "pelet", "suplemen", "lainnya"].map(k => (
+                      <SelectItem key={k} value={k}>{k}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={bahanBaru.kelas_pakan} onValueChange={v => setBahanBaru({ ...bahanBaru, kelas_pakan: v })}>
+                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {KELAS_PAKAN.map(k => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Tersimpan dalam {form.satuan}. Golongan dipakai menghitung porsi hijauan — kosong berarti tidak dihitung hijauan.
+              </p>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => setBahanBaru(null)}>Batal</Button>
+                <Button type="button" size="sm" className="flex-1" onClick={simpanBahanBaru} disabled={membuatBahan || !bahanBaru.name.trim()}>
+                  {membuatBahan ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Plus className="w-3 h-3 mr-1" />} Buat & pilih
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <Label className="text-xs">Jenis pakan *</Label>
+              <div className="flex gap-2 mt-1">
+                <Select value={form.feed_type_detail} onValueChange={pilihJenis}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Pilih dari Stok Pakan" /></SelectTrigger>
+                  <SelectContent>
+                    {pilihanPakan.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">Belum ada bahan aktif di Stok Pakan</p>
+                    ) : (
+                      pilihanPakan.map(f => <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>)
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  title="Bahan baru"
+                  onClick={() => setBahanBaru({ name: "", category: "rumput", kelas_pakan: "hijauan_utama" })}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Hanya bahan aktif. Belum ada di daftar? Tekan + untuk membuatnya.
+              </p>
+            </div>
+          )}
 
           {/* Satuan dipilih lebih dulu, karena ia yang menentukan arti angkanya
               — dan sebelum ini tidak ada pilihan sama sekali, sehingga berat

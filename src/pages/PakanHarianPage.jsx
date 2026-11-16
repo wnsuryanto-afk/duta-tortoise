@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Plus, Leaf } from "lucide-react";
+import { Plus, Leaf, Scale } from "lucide-react";
+import { Link } from "react-router-dom";
+import WidgetHijauan from "@/components/pakan/WidgetHijauan";
 import { teksJumlah, teksBaris } from "@/lib/pakanHarian";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -76,13 +78,20 @@ export default function PakanHarianPage() {
             : []),
         ]}
         actions={
-          canManage && (
-            <Button onClick={() => setShowForm(true)} className="gap-2 bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4" /> Catat Pengambilan
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button asChild variant="outline" className="gap-2">
+              <Link to="/laporan-berat-kandang"><Scale className="w-4 h-4" /> Berat per Kandang</Link>
             </Button>
-          )
+            {canManage && (
+              <Button onClick={() => setShowForm(true)} className="gap-2 bg-green-600 hover:bg-green-700">
+                <Plus className="w-4 h-4" /> Catat Pengambilan
+              </Button>
+            )}
+          </div>
         }
       />
+
+      <WidgetHijauan />
 
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">
