@@ -79,13 +79,13 @@ function Tray({ daftar }) {
     return (
       <span className="inline-flex items-center gap-1 rounded-md border border-amber-400 bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
         <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-        Tray belum diisi
+        Baki belum diisi
       </span>
     );
   }
   return (
     <span className="inline-flex items-center rounded-md border border-green-300 bg-green-50 px-1.5 py-0.5 text-[11px] font-bold text-green-800 tabular-nums dark:border-green-800 dark:bg-green-950/50 dark:text-green-300">
-      Tray {daftar.join(", ")}
+      Baki {daftar.join(", ")}
     </span>
   );
 }
@@ -251,10 +251,10 @@ export default function UrutanMenetas({ breedings = [], incubators = [], onPilih
             <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="min-w-0 text-xs">
               <p className="font-bold text-amber-900 dark:text-amber-200">
-                {ringkas.tanpaTray} dari {ringkas.total} clutch belum punya nomor tray
+                {ringkas.tanpaTray} dari {ringkas.total} clutch belum punya nomor baki
               </p>
               <p className="text-amber-800/90 dark:text-amber-300/90 mt-0.5 leading-snug">
-                Nomor tray adalah satu-satunya yang menghubungkan bayi yang menetas dengan induknya.
+                Nomor baki adalah satu-satunya yang menghubungkan bayi yang menetas dengan induknya.
                 Tanpa itu, dua clutch yang menetas di hari yang sama tidak bisa lagi dipisahkan —
                 dan silsilahnya tidak bisa dipulihkan belakangan.
                 {ringkas.berikutnya && tgl(ringkas.berikutnya.mulai) && (

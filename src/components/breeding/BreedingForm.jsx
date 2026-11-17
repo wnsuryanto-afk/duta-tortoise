@@ -565,7 +565,7 @@ export default function BreedingForm({ open, onClose, editData }) {
               })()}
             </div>
             <div className="space-y-1.5">
-              <Label>Nomor Tray <span className="text-muted-foreground font-normal text-xs">(boleh lebih dari satu)</span></Label>
+              <Label>Nomor Baki <span className="text-muted-foreground font-normal text-xs">(boleh lebih dari satu)</span></Label>
               {/*
                 Kotak TEKS, bukan angka — satu clutch bisa memakai beberapa tray.
                 Clutch 28 butir (C23, 2 Okt 2026) tidak muat di satu tray, dan
@@ -593,18 +593,18 @@ export default function BreedingForm({ open, onClose, editData }) {
                 return (
                   <>
                     <p className="text-xs text-muted-foreground">
-                      {dipilih.length} tray: {dipilih.join(", ")}
+                      {dipilih.length} baki: {dipilih.join(", ")}
                     </p>
                     {bentrok.length > 0 && (
                       <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                        <strong>Tray {bentrok.join(", ")} sudah dipakai clutch lain</strong> —{" "}
+                        <strong>Baki {bentrok.join(", ")} sudah dipakai clutch lain</strong> —{" "}
                         {bentrok
                           .map((t) => {
                             const b = terpakai.get(t);
                             return `${t}: ${b?.female_name || "?"}`;
                           })
                           .join("; ")}
-                        . Kalau dua clutch dicampur dalam satu tray, saat menetas tidak
+                        . Kalau dua clutch dicampur dalam satu baki, saat menetas tidak
                         bisa lagi dibedakan anak siapa.
                       </div>
                     )}
@@ -620,7 +620,7 @@ export default function BreedingForm({ open, onClose, editData }) {
             "Jika ada telur retak, kita biasanya menaruhnya di kotak yang
             berbeda." Sampai hari ini lokasinya hanya bisa ditulis sebagai
             teks bebas di catatan perlakuan tiap butir — placeholder-nya
-            sendiri berbunyi "cth: ditutup lilin lebah, dipisah ke tray 7".
+            sendiri berbunyi "cth: ditutup lilin lebah, dipisah ke baki 7".
             Teks di dalam catatan per butir tidak bisa dicari, tidak muncul
             di label kotaknya, dan tidak bisa dihitung.
 

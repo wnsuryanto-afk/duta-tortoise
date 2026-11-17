@@ -1753,7 +1753,7 @@ for (const [teks, harap] of [
   }
 }
 
-if (T.teksTray({ tray_numbers: [1, 2] }) !== "Tray 1, 2") temuan.push("teksTray: dua tray salah tulis");
+if (T.teksTray({ tray_numbers: [1, 2] }) !== "Baki 1, 2") temuan.push("teksTray: dua tray salah tulis");
 if (T.teksTray({}) !== "") temuan.push("teksTray: tanpa tray seharusnya kosong");
 
 /*

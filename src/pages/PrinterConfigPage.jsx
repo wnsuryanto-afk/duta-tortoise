@@ -46,7 +46,7 @@ const LABEL_TERSEDIA = [
   {
     judul: "\u{1F95A} Label telur",
     ukuran: "50\u00d730",
-    isi: "Kode induk, nomor telur, tanggal candling",
+    isi: "Kode induk, nomor telur, tanggal teropong",
     di: "Halaman Penangkaran — tombol label pada satu penangkaran",
     ke: "/breeding",
   },

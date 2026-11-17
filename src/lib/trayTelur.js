@@ -53,11 +53,11 @@ export function uraikanTray(teks) {
   return rapikanTray(cocok || []);
 }
 
-/** "Tray 1" / "Tray 1, 2" / "" bila tidak ada. */
+/** "Baki 1" / "Baki 1, 2" / "" bila tidak ada. */
 export function teksTray(breeding) {
   const daftar = daftarTray(breeding);
   if (daftar.length === 0) return "";
-  return `Tray ${daftar.join(", ")}`;
+  return `Baki ${daftar.join(", ")}`;
 }
 
 /**

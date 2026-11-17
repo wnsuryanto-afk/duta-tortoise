@@ -41,6 +41,14 @@ export default function BreedingDetailPage() {
     enabled: !!id,
   });
 
+  // Dipakai label: setelan suhu/kelembapan lemari ikut tercetak, jadi daftar
+  // inkubatornya perlu ada di halaman ini juga.
+  const { data: incubators = [] } = useQuery({
+    queryKey: ["incubators"],
+    queryFn: () => base44.entities.Incubator.list("-created_date", 200),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: healthRecords = [] } = useQuery({
     queryKey: ["breeding-detail-health"],
     queryFn: () => base44.entities.HealthRecord.list("-date", 500),
@@ -104,7 +112,7 @@ export default function BreedingDetailPage() {
 
         {late && (
           <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-medium">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" /> Candling terlambat — segera periksa telur (H+30 sudah lewat).
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" /> Teropong terlambat — segera periksa telur (H+30 sudah lewat).
           </div>
         )}
 
@@ -112,9 +120,9 @@ export default function BreedingDetailPage() {
           <Info label="Jumlah Telur" value={`${b.egg_count || 0} butir`} />
           <Info label="Tanggal Bertelur" value={b.egg_laying_date ? format(new Date(b.egg_laying_date), "d MMMM yyyy", { locale: idLocale }) : "—"} />
           <Info label="Perkiraan Menetas" value={hatchStr} />
-          <Info label="Candling (H+30)" value={cd ? format(cd, "d MMMM yyyy", { locale: idLocale }) : "—"} highlight={late} />
+          <Info label="Teropong (H+30)" value={cd ? format(cd, "d MMMM yyyy", { locale: idLocale }) : "—"} highlight={late} />
           <Info label="Inkubator" value={b.incubator_name || "—"} />
-          <Info label="Tray" value={teksTray(b) || "—"} />
+          <Info label="Baki" value={teksTray(b) || "—"} />
           <Info label="Musim" value={b.season_year ? `Musim ${b.season_year}` : "—"} />
           <Info label="Suhu Inkubasi" value={b.incubation_temp ? `${b.incubation_temp}°C` : "—"} />
         </div>
@@ -130,7 +138,7 @@ export default function BreedingDetailPage() {
       )}
 
       {showLabel && (
-        <EggLabelGenerator breedings={[b]} open={showLabel} onClose={() => setShowLabel(false)} />
+        <EggLabelGenerator breedings={[b]} incubators={incubators} open={showLabel} onClose={() => setShowLabel(false)} />
       )}
     </div>
   );

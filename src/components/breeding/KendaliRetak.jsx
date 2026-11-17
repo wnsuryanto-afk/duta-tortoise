@@ -86,7 +86,7 @@ export default function KendaliRetak({ egg, readonly = false, saving = false, on
           <Input
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
-            placeholder="cth: ditutup lilin lebah, dipisah ke tray 7"
+            placeholder="cth: ditutup lilin lebah, dipisah ke baki 7"
             className="h-8 text-xs"
           />
           <div className="flex gap-2">

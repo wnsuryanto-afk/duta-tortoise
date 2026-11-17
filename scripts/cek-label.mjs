@@ -82,7 +82,7 @@ console.log(`  ${UKURAN.length} ukuran, tidak ada piksel menganggur.`);
 console.log("Nomor tray:");
 const u0 = UKURAN[0];
 const htmlKosong = labelRingkasHTML(CLUTCH[0].b, u0, QR, PALET_WARNA);
-if (!/>TRAY</.test(htmlKosong)) salah("label tanpa tray: tulisan TRAY tidak ada");
+if (!/>BAKI</.test(htmlKosong)) salah("label tanpa tray: tulisan BAKI tidak ada");
 if (!/>\?</.test(htmlKosong)) salah("label tanpa tray: tidak menulis '?' — kekosongannya tidak terlihat");
 if (!htmlKosong.includes(PALET_WARNA.trayKosongBg)) salah("label tanpa tray: tidak memakai latar mencolok");
 
@@ -165,7 +165,7 @@ for (const u of UKURAN) {
     for (const [apa, pola] of [
       ["QR", /<img src="data:image/],
       ["PERKIRAAN MENETAS", /PERKIRAAN MENETAS/],
-      ["CANDLING H\\+30", /CANDLING H\+30/],
+      ["TEROPONG H\\+30", /TEROPONG H\+30/],
       ["jumlah butir", /butir/],
       ["nama jantan", new RegExp(c.b.male_name)],
       ["nama betina", new RegExp(c.b.female_name)],
@@ -251,7 +251,7 @@ if (!cocokScale) {
 // Ini cacat yang paling mahal di label, dan paling sulit dilihat dari kode.
 //
 // Tiap baris memakai `white-space:nowrap; overflow:hidden` supaya nama panjang
-// berakhir "…" alih-alih mendorong lencana TRAY keluar label. Tapi
+// berakhir "…" alih-alih mendorong lencana BAKI keluar label. Tapi
 // `overflow:hidden` memotong ke SEGALA arah: kalau kotak barisnya
 // (font-size × line-height) lebih pendek daripada huruf yang digambar, bagian
 // bawah hurufnya ikut hilang. Pada 5 Okt 2026 itu membuat "23 Des 2026" keluar
