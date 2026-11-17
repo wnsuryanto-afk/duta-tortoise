@@ -38,7 +38,7 @@ function ico(type, c, size = 16) {
 const DPI = 300;
 const P = (mm) => Math.round((mm * DPI) / 25.4);
 
-export async function renderColorLabelHTML(breeding, sizeDef, urutan = null, kode = null) {
+export async function renderColorLabelHTML(breeding, sizeDef, urutan = null, kode = null, inkubator = null) {
   const wPx = P(sizeDef.w), hPx = P(sizeDef.h);
   const qrText = `BREED:${breeding.id}`;
   const qrDataUrl = await QRCode.toDataURL(qrText, { width: 400, margin: 1, color: { dark: "#000000", light: "#ffffff" } });
@@ -57,7 +57,7 @@ export async function renderColorLabelHTML(breeding, sizeDef, urutan = null, kod
   // Versi ringkas: tata letaknya milik bersama dengan label termal — alasan
   // tiap pembuangan dan pembesaran tertulis di components/breeding/labelRingkas.js.
   if (!sizeDef.full) {
-    return labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, PALET_WARNA, urutan, kode);
+    return labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, PALET_WARNA, urutan, kode, inkubator);
   }
 
   // ── Versi penuh (100×50) ────────────────────────────────────────────────
@@ -78,7 +78,7 @@ export async function renderColorLabelHTML(breeding, sizeDef, urutan = null, kod
     </div>
     <div style="color:#D8F3DC;${gayaBaris(13)}">bertelur ${tglShort}</div>
     <div style="background:${adaTrayFull ? "#fff" : "#DC2626"};border-radius:9px;padding:4px 13px;text-align:center;line-height:1;flex-shrink:0">
-      <div style="font-weight:800;letter-spacing:1.5px;color:${adaTrayFull ? "#14532D" : "#fff"};${gayaBaris(11)}">TRAY</div>
+      <div style="font-weight:800;letter-spacing:1.5px;color:${adaTrayFull ? "#14532D" : "#fff"};${gayaBaris(11)}">BAKI</div>
       <div style="font-weight:900;color:${adaTrayFull ? "#14532D" : "#fff"};${gayaBaris(22)}">${trayTeksFull}</div>
     </div>
   </div>`;
@@ -97,7 +97,7 @@ export async function renderColorLabelHTML(breeding, sizeDef, urutan = null, kod
 
   const menetas = `<div style="display:flex;align-items:center;gap:12px;padding:0 16px;flex-shrink:0;min-width:0">
     <div style="flex:1;min-width:0">
-      <div style="font-weight:800;letter-spacing:1.5px;color:#2D6A4F;${gayaBaris(15)}">PERKIRAAN MENETAS</div>
+      <div style="font-weight:800;letter-spacing:1.5px;color:#2D6A4F;${gayaBaris(15)}">PERKIRAAN MENETAS &middot; 80&ndash;105 HARI</div>
       <div style="font-weight:900;color:#14532D;${gayaBaris(64)}">${hs ? format(hs, "d MMM yyyy", { locale: idLocale }) : "—"}</div>
       ${he ? `<div style="font-weight:700;color:#40916C;${gayaBaris(28)}">s/d ${format(he, "d MMM yyyy", { locale: idLocale })}</div>` : ""}
     </div>
@@ -110,15 +110,37 @@ export async function renderColorLabelHTML(breeding, sizeDef, urutan = null, kod
   const candling = `<div style="margin:0 16px;background:${late ? "#FEE2E2" : "#FEF3C7"};border:2.5px solid ${late ? "#DC2626" : "#B45309"};border-radius:11px;padding:8px 12px;flex-shrink:0">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:800;color:${late ? "#991B1B" : "#78350F"};letter-spacing:0.8px;display:inline-block;${gayaBaris(13)}">CANDLING HARI KE-30</span>${late ? ico("alert", "#DC2626", 15) : ""}</div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:800;color:${late ? "#991B1B" : "#78350F"};letter-spacing:0.8px;display:inline-block;${gayaBaris(13)}">TEROPONG HARI KE-30</span>${late ? ico("alert", "#DC2626", 15) : ""}</div>
         <div style="font-weight:900;color:${late ? "#991B1B" : "#1F2937"};${gayaBaris(32)}">${cdStr}${late ? " · TERLAMBAT" : ""}</div>
       </div>
       <div style="width:34px;height:34px;border:2.5px solid ${late ? "#DC2626" : "#1F2937"};background:#fff;border-radius:5px;flex-shrink:0"></div>
     </div>
   </div>`;
 
-  const qrCol = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;flex-shrink:0;border-left:1px solid #B7E4C7;background:#F8FAF9">
-    <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="display:block"/>
+  /*
+    Keterangan lemari dan ruang tulis tangan — alasan lengkapnya ada di
+    components/breeding/labelRingkas.js dan tidak diulang di sini. Pada
+    100 × 50 mm ruangnya jauh lebih longgar, jadi keduanya bisa dicetak
+    lebih besar: nama inkubator dan setelannya di bawah QR, lalu dua garis
+    tulis, bukan satu.
+  */
+  const namaLemariFull = String(breeding.incubator_name || "").trim();
+  const suhuFull = Number(inkubator?.temp_setting);
+  const lembapFull = Number(inkubator?.humidity_setting);
+  const setelanFull = [
+    Number.isFinite(suhuFull) && suhuFull > 0 ? `${suhuFull}&deg;C` : "",
+    Number.isFinite(lembapFull) && lembapFull > 0 ? `${lembapFull}%` : "",
+  ].filter(Boolean).join(" &middot; ");
+
+  const qrCol = `<div style="width:190px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px;flex-shrink:0;border-left:1px solid #B7E4C7;background:#F8FAF9">
+    <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="display:block;flex:0 0 auto"/>
+    ${namaLemariFull ? `<div style="font-weight:800;color:#2D6A4F;text-align:center;${gayaBaris(13)}">${namaLemariFull}</div>` : ""}
+    ${setelanFull ? `<div style="font-weight:700;color:#40916C;text-align:center;${gayaBaris(12)}">${setelanFull}</div>` : ""}
+    <div style="flex:0 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow:hidden">
+      <div style="font-weight:800;letter-spacing:0.8px;color:#52796F;${gayaBaris(11)}">CATATAN</div>
+      <div style="height:18px;border-bottom:1px solid #B7E4C7"></div>
+      <div style="height:18px;border-bottom:1px solid #B7E4C7"></div>
+    </div>
   </div>`;
 
   const body = `<div style="flex:1 1 auto;display:flex;flex-direction:row;min-height:0">

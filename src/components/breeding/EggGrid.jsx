@@ -829,7 +829,7 @@ export default function EggGrid({ breeding, onRefresh }) {
 
   const markAll = async (status) => {
     if (!candlingAllowed && (status === "fertile" || status === "infertil")) {
-      toast.error(`Candling tersedia setelah ${30 - daysSinceLaying} hari lagi`);
+      toast.error(`Teropong tersedia setelah ${30 - daysSinceLaying} hari lagi`);
       return;
     }
     setSaving(true);
@@ -888,7 +888,7 @@ export default function EggGrid({ breeding, onRefresh }) {
   const tandaiTerpilih = async (status) => {
     if (pilihan.size === 0) return;
     if (!candlingAllowed && (status === "fertile" || status === "infertil")) {
-      toast.error(`Candling tersedia setelah ${30 - daysSinceLaying} hari lagi`);
+      toast.error(`Teropong tersedia setelah ${30 - daysSinceLaying} hari lagi`);
       return;
     }
     setSaving(true);
@@ -993,7 +993,7 @@ export default function EggGrid({ breeding, onRefresh }) {
             🔴 Semua Infertil
           </button>
           {!candlingAllowed && (
-            <span className="text-[11px] text-muted-foreground self-center">🔒 Candling H+30 (sisa {30 - daysSinceLaying} hari)</span>
+            <span className="text-[11px] text-muted-foreground self-center">🔒 Teropong H+30 (sisa {30 - daysSinceLaying} hari)</span>
           )}
           {/* Disebut SEBELUM tombolnya ditekan, bukan hanya di pesan sesudahnya:
               yang menekan "Semua Infertil" perlu tahu lebih dulu bahwa telur

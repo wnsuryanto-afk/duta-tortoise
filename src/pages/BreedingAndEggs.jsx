@@ -758,7 +758,7 @@ export default function BreedingAndEggs() {
                           <p className="text-[11px] text-muted-foreground">Ketuk untuk lihat desain &amp; cetak</p>
                           {isCandlingLate(b) && (
                             <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-0.5">
-                              <AlertTriangle className="w-3 h-3" /> Candling terlambat
+                              <AlertTriangle className="w-3 h-3" /> Teropong terlambat
                             </p>
                           )}
                         </div>
@@ -1204,6 +1204,7 @@ export default function BreedingAndEggs() {
         <EggLabelGenerator
           breedings={labelBreedings}
           allActiveBreedings={breedings.filter(clutchAktif)}
+          incubators={incubators}
           open={showLabelDialog}
           onClose={() => setShowLabelDialog(false)}
         />

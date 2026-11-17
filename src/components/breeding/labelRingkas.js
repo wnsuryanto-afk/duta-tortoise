@@ -267,12 +267,24 @@ export function faktorMuat(ukuranHuruf = [], tinggiBadan = 0, bantalanTegak = 0)
  * @param {object} palet      PALET_WARNA atau PALET_TERMAL
  * @param {number|null} urutan  urutan menetas; null bila tidak diketahui
  */
-export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, urutan = null, kode = null) {
+export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, urutan = null, kode = null, inkubator = null) {
   const K = palet;
   const pad = Math.max(3, Math.round(wPx * 0.022));
   const { kepala: hdrH, candling: candH, badan: bodyH } = tinggiJalur(hPx);
   const qrKolom = Math.round(wPx * 0.3);
-  const qrSisi = Math.max(40, Math.min(qrKolom - pad * 2, bodyH - pad * 2));
+  /*
+    QR DIBATASI, supaya ruang tulis tangan di bawahnya benar-benar bisa
+    ditulisi.
+
+    Sebelumnya QR mengambil selebar kolomnya: 151px pada 50 × 30 mm, yaitu
+    12,8 mm. Isinya hanya "BREED:<id>" — pada cetakan 300 DPI, 10 mm sudah
+    jauh di atas ambang baca ponsel untuk muatan sependek itu. Sisa 2,8 mm
+    itu lebih berguna sebagai tempat menulis daripada sebagai QR yang
+    lebih besar dari yang diperlukan.
+
+    0,34 × tinggi label = 120px pada label 30 mm, yaitu 10,2 mm.
+  */
+  const qrSisi = Math.max(40, Math.min(qrKolom - pad * 2, bodyH - pad * 2, Math.round(hPx * 0.34)));
   const fs = (bagian) => Math.max(7, Math.round(hPx * bagian));
   const r = (n) => (K.bulat ? `${n}px` : "0");
 
@@ -343,10 +355,34 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, uruta
 
   const fTrayLbl = fs(0.034);
   const fTray = fs(0.056);
-  const fKapsi = fs(0.036);
-  const fBesar = fs(0.112);
+  /*
+    Huruf badan dibesarkan sedikit, 17 Nov 2026 — DIUKUR, bukan dikira.
+
+    Pemiliknya minta ruang kosong label dipakai. Setelah QR dibatasi dan
+    pita bawah diisi keterangan lemari, kolom kiri masih menyisakan jarak
+    kosong di atas dan di bawah tulisannya. Jadi hurufnya yang naik:
+    tanggal 0,112 → 0,118 (40px → 42px pada label 30 mm), keterangan
+    0,041 → 0,045, kapsi 0,036 → 0,038.
+
+    Batas potongnya disapu di Chromium pada empat tumpukan huruf, naik
+    ×0,05 demi ×0,05:
+
+      sebelum   bersih sampai ×1,55
+      sesudah   bersih sampai ×1,50 (50×30) dan ×1,55 (40×30)
+
+    Penjaga cek-label mewajibkan bersih sampai ×1,25; label yang dulu
+    dikeluhkan terpotong ada di ×1,30. Jadi yang dibelanjakan di sini 0,05
+    dari margin, dan sisanya dua kali lipat dari yang pernah bermasalah.
+
+    Mendatar juga diperiksa: pada 40 × 30 mm dengan jendela menyeberang
+    tahun ("21 Des s/d 15 Jan 2027") tidak ada satu baris pun yang
+    meluap di keempat tumpukan huruf. Satu langkah lebih besar lagi
+    (0,125) membuat barisnya pas-pasan, jadi berhenti di 0,118.
+  */
+  const fKapsi = fs(0.038);
+  const fBesar = fs(0.118);
   const fSampai = fs(0.05);
-  const fMeta = fs(0.041);
+  const fMeta = fs(0.045);
 
   /*
     13 Nov 2026 — ruang badan dilonggarkan, dan kenapa BUKAN dengan
@@ -505,30 +541,91 @@ export function labelRingkasHTML(breeding, { wPx, hPx }, qrDataUrl, palet, uruta
     </div>
     ${urutanHtml}
     <div style="flex-shrink:0;background:${trayBg};border:1.5px solid ${K.trayGaris};border-radius:${r(Math.round(hdrH * 0.16))};padding:${Math.round(hdrH * 0.04)}px ${Math.round(pad * 0.9)}px;text-align:center">
-      <div style="font-weight:800;letter-spacing:1px;color:${trayFg};${gayaBaris(fTrayLbl)}">TRAY</div>
+      <div style="font-weight:800;letter-spacing:1px;color:${trayFg};${gayaBaris(fTrayLbl)}">BAKI</div>
       <div style="font-weight:900;color:${trayFg};${gayaBaris(fTray)}">${trayTeks}</div>
     </div>
   </div>`;
 
+  /*
+    RUANG TULIS TANGAN — di bawah QR, di ruang yang memang sudah kosong.
+
+    Pemiliknya minta satu tempat untuk mencatat dengan pulpen di labelnya
+    sendiri. Baris badan sudah dipangkas sampai muat; menambah satu baris di
+    sana berarti mengembalikan pemotongan tulisan yang baru saja dibereskan.
+
+    Kolom QR tidak begitu. QR-nya dibatasi LEBAR kolom, bukan tingginya:
+    pada 50 × 30 mm kolomnya 177px dan QR-nya 151px, sedangkan jalur badan
+    226px — tersisa sekitar 75px kosong di bawah QR yang tidak dipakai apa
+    pun. Garis tulis ini menempati ruang itu, jadi ia tidak mengambil
+    setitik pun jatah tulisan yang dicetak.
+
+    `flex:0 1 auto` + `overflow:hidden`: saat huruf membesar, inilah yang
+    mengalah lebih dulu — ia ruang kosong, bukan keterangan.
+
+    Dan di DALAMNYA, yang mengalah adalah GARISNYA (`flex:1 1`), bukan kata
+    "CATATAN" (`flex:0 0`). Percobaan pertama memberi garis itu tinggi mati
+    16px, dan penjaga cek-label langsung menangkapnya: pada huruf ×1,25
+    isinya 8px lebih tinggi daripada kotaknya, jadi labelnya terpotong di
+    pembesaran yang justru wajib bersih. Ruang tulis boleh menyempit;
+    tulisan tercetak tidak boleh.
+  */
+  const fNota = fs(0.03);
+  const notaGaris = Math.max(8, Math.round(hPx * 0.1));
+  const notaHtml = `<div style="flex:0 1 auto;min-height:0;width:100%;box-sizing:border-box;padding:0 ${Math.round(pad * 0.8)}px;display:flex;flex-direction:column;overflow:hidden">
+      <div style="flex:0 0 auto;font-weight:800;letter-spacing:0.6px;color:${K.kapsi};${gayaBaris(fNota)}">CATATAN</div>
+      <div style="flex:1 1 ${notaGaris}px;min-height:0;border-bottom:1px solid ${K.qrGaris}"></div>
+    </div>`;
+
   const badanHtml = `<div style="flex:1 1 auto;min-height:0;box-sizing:border-box;display:flex;flex-direction:row;overflow:hidden">
     <div style="flex:1 1 auto;min-width:0;padding:${Math.round(pad * 0.5)}px ${pad}px;display:flex;flex-direction:column;justify-content:center">
-      <div style="font-weight:800;letter-spacing:1.2px;color:${K.kapsi};${gayaBaris(gKapsi)}">PERKIRAAN MENETAS</div>
+      <div style="font-weight:800;letter-spacing:1.2px;color:${K.kapsi};${gayaBaris(gKapsi)}">PERKIRAAN MENETAS &middot; 80&ndash;105 HARI</div>
       <div style="display:flex;align-items:baseline;gap:${Math.round(pad * 0.5)}px;min-width:0">
         <span style="font-weight:900;color:${K.besar};${gayaBaris(gBesar)}">${mulai}</span>
         ${sampai ? `<span style="font-weight:700;color:${K.sampai};${gayaBaris(gSampai)}">s/d ${sampai}</span>` : ""}
       </div>
       <div style="color:${K.meta};${gayaBaris(gMeta)}">${breeding.male_name ? `&male; ${breeding.male_name} &middot; ` : ""}<b>${breeding.egg_count || 0} butir</b> &middot; ${bertelur}${retakDi ? ` &middot; retak di ${retakDi}` : ""}</div>
     </div>
-    <div style="width:${qrKolom}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-left:1px solid ${K.qrGaris};background:${K.qrLatar}">
-      <img src="${qrDataUrl}" width="${qrSisi}" height="${qrSisi}" style="display:block"/>
+    <div style="width:${qrKolom}px;flex-shrink:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Math.round(pad * 0.4)}px;border-left:1px solid ${K.qrGaris};background:${K.qrLatar}">
+      <img src="${qrDataUrl}" width="${qrSisi}" height="${qrSisi}" style="display:block;flex:0 0 auto"/>
+      ${notaHtml}
     </div>
   </div>`;
 
+  /*
+    KETERANGAN LEMARI — 17 Nov 2026, mengisi ruang kosong di tengah pita.
+
+    Pemiliknya meminta ruang kosong label dimanfaatkan dan keterangan lain
+    ditambahkan. Pita bawah punya tulisan di kiri dan kotak centang di
+    kanan; di antaranya selama ini kosong selebar hampir separuh label.
+
+    Yang ditaruh di situ dipilih karena MENDATAR: ia tidak menambah satu
+    baris pun, jadi tidak mengambil kembali jarak aman yang baru saja
+    dibelikan dengan membuang satu baris badan.
+
+    Isinya nama inkubator — kalau satu kotak terbawa ke lemari yang salah,
+    labelnya sendiri yang memberi tahu — dan setelan suhu/kelembapan lemari
+    itu bila datanya ikut dialirkan. Keduanya tidak berubah selama clutch
+    hidup, jadi aman tercetak.
+  */
+  const namaLemari = String(breeding.incubator_name || "").trim();
+  const suhu = Number(inkubator?.temp_setting);
+  const lembap = Number(inkubator?.humidity_setting);
+  const setelan = [
+    Number.isFinite(suhu) && suhu > 0 ? `${suhu}&deg;C` : "",
+    Number.isFinite(lembap) && lembap > 0 ? `${lembap}%` : "",
+  ].filter(Boolean).join(" &middot; ");
+  const isiLemari = [namaLemari, setelan].filter(Boolean).join(" &middot; ");
+  const fLemari = fs(0.038);
+  const lemariHtml = isiLemari
+    ? `<div style="flex:1 1 auto;min-width:0;text-align:right;color:${telat ? K.candFgTelat : K.candFg};${gayaBaris(fLemari)}">${isiLemari}</div>`
+    : `<div style="flex:1 1 auto"></div>`;
+
   const candlingHtml = `<div style="min-height:${candH}px;box-sizing:border-box;background:${telat ? K.candBgTelat : K.candBg};border-top:2px solid ${telat ? K.candGarisTelat : K.candGaris};padding:${Math.round(pad * 0.3)}px ${pad}px;display:flex;align-items:center;gap:${pad}px;flex:0 0 auto">
-    <div style="flex:1;min-width:0">
-      <div style="font-weight:800;letter-spacing:0.8px;color:${telat ? K.candFgTelat : K.candFg};${gayaBaris(fCandLbl)}">CANDLING H+30${telat ? " · TERLAMBAT" : ""}</div>
+    <div style="flex:0 0 auto;min-width:0">
+      <div style="font-weight:800;letter-spacing:0.8px;color:${telat ? K.candFgTelat : K.candFg};${gayaBaris(fCandLbl)}">TEROPONG H+30${telat ? " · TERLAMBAT" : ""}</div>
       <div style="font-weight:900;color:${telat ? K.candFgTelat : K.candTgl};${gayaBaris(fCandTgl)}">${cdStr}</div>
     </div>
+    ${lemariHtml}
     <div style="width:${Math.round(candH * 0.42)}px;height:${Math.round(candH * 0.42)}px;border:2px solid ${telat ? K.candFgTelat : K.candKotak};background:#fff;border-radius:${r(3)};flex-shrink:0"></div>
   </div>`;
 

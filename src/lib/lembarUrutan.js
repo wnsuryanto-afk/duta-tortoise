@@ -113,7 +113,7 @@ export function susunLembarUrutanHTML(kelompok = [], opsi = {}) {
         <thead><tr style="color:#6B7280;font-size:${px(3.4)}px;text-align:left">
           <th style="padding:0 ${px(2)}px ${px(1)}px;text-align:center">URUT</th>
           <th style="padding:0 ${px(2)}px ${px(1)}px">KODE</th>
-          <th style="padding:0 ${px(2)}px ${px(1)}px;text-align:center">TRAY</th>
+          <th style="padding:0 ${px(2)}px ${px(1)}px;text-align:center">BAKI</th>
           <th style="padding:0 ${px(2)}px ${px(1)}px">PERKIRAAN MENETAS</th>
           <th style="padding:0 ${px(2)}px ${px(1)}px;text-align:right">BUTIR</th>
         </tr></thead>

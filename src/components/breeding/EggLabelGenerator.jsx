@@ -44,8 +44,28 @@ export function isCandlingLate(b) {
   return cd < new Date() && !b.candling_day_30_done;
 }
 
-async function renderLabelHTML(breeding, sizeDef, urutan = null, kode = null) {
-  return renderColorLabelHTML(breeding, sizeDef, urutan, kode);
+async function renderLabelHTML(breeding, sizeDef, urutan = null, kode = null, inkubator = null) {
+  return renderColorLabelHTML(breeding, sizeDef, urutan, kode, inkubator);
+}
+
+/**
+ * Inkubator milik satu clutch, dicari dari daftar inkubator.
+ *
+ * Dicocokkan lewat `incubator_id` lebih dulu, lalu namanya — sebab catatan
+ * lama di kebun ini menyimpan nama tanpa id, dan label yang mau mencetak
+ * setelan suhu lemari tetap harus menemukannya. Tidak ketemu berarti null,
+ * dan labelnya cukup mencetak namanya saja tanpa setelan.
+ */
+function cariInkubator(breeding, incubators = []) {
+  if (!breeding) return null;
+  const id = breeding.incubator_id;
+  if (id) {
+    const lewatId = incubators.find((i) => i?.id === id);
+    if (lewatId) return lewatId;
+  }
+  const nama = String(breeding.incubator_name || "").trim().toLowerCase();
+  if (!nama) return null;
+  return incubators.find((i) => String(i?.name || "").trim().toLowerCase() === nama) || null;
 }
 
 async function htmlToPng(html, wPx, hPx, scale = 2) {
@@ -61,8 +81,8 @@ async function htmlToPng(html, wPx, hPx, scale = 2) {
   return canvas.toDataURL("image/png");
 }
 
-async function renderLabelPng(breeding, sizeDef, urutan = null, kode = null) {
-  const html = await renderLabelHTML(breeding, sizeDef, urutan, kode);
+async function renderLabelPng(breeding, sizeDef, urutan = null, kode = null, inkubator = null) {
+  const html = await renderLabelHTML(breeding, sizeDef, urutan, kode, inkubator);
   return htmlToPng(html, mmKePx(sizeDef.w), mmKePx(sizeDef.h));
 }
 
@@ -74,10 +94,10 @@ async function renderLabelPng(breeding, sizeDef, urutan = null, kode = null) {
  * sekarang di lib/lembarLabel.js, supaya penjaga bisa menghitung sendiri
  * berapa label yang benar-benar mendarat di kertas.
  */
-async function renderA4SheetPng(breedings, sizeDef, urutanPerId = null, nomorPerId = null) {
+async function renderA4SheetPng(breedings, sizeDef, urutanPerId = null, nomorPerId = null, incubators = []) {
   const labelDef = sizeDef || cariUkuranTelur(UKURAN_TELUR_BAWAAN);
   const labelHtmls = [];
-  for (const b of breedings) labelHtmls.push(await renderLabelHTML(b, labelDef, urutanPerId?.get(b.id) ?? null, kodeClutch(b, nomorPerId?.get(b.id))));
+  for (const b of breedings) labelHtmls.push(await renderLabelHTML(b, labelDef, urutanPerId?.get(b.id) ?? null, kodeClutch(b, nomorPerId?.get(b.id)), cariInkubator(b, incubators)));
   const { html, wA4, hA4 } = susunLembarA4HTML(labelHtmls, labelDef);
   // scale 1: lihat catatan di htmlToPng — lembar A4 sudah 300 DPI, dan
   // menggandakannya membuat kanvasnya melewati batas Safari di iPad.
@@ -93,7 +113,7 @@ function fileStem(b) {
   return `label-${code}-${ds}`;
 }
 
-export default function EggLabelGenerator({ breedings = [], allActiveBreedings = [], open, onClose }) {
+export default function EggLabelGenerator({ breedings = [], allActiveBreedings = [], incubators = [], open, onClose }) {
   const [sizeId, setSizeId] = useState(UKURAN_TELUR_BAWAAN);
   const [pratinjau, setPratinjau] = useState(null);
   const [pratinjauSibuk, setPratinjauSibuk] = useState(false);
@@ -156,6 +176,11 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     [nomorPerId],
   );
 
+  const inkubatorUntuk = useCallback(
+    (b) => cariInkubator(b, incubators),
+    [incubators],
+  );
+
   const urutanPerId = useMemo(() => {
     const sumber = allActiveBreedings.length > 0 ? allActiveBreedings : breedings;
     const peta = new Map();
@@ -198,12 +223,12 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     if (!open || !contoh) { setPratinjau(null); return; }
     let batal = false;
     setPratinjauSibuk(true);
-    renderLabelPng(contoh, sizeDef, urutanPerId.get(contoh.id) ?? null, kodeUntuk(contoh))
+    renderLabelPng(contoh, sizeDef, urutanPerId.get(contoh.id) ?? null, kodeUntuk(contoh), inkubatorUntuk(contoh))
       .then((url) => { if (!batal) setPratinjau(url); })
       .catch(() => { if (!batal) setPratinjau(null); })
       .finally(() => { if (!batal) setPratinjauSibuk(false); });
     return () => { batal = true; };
-  }, [open, contoh, sizeDef, urutanPerId, kodeUntuk]);
+  }, [open, contoh, sizeDef, urutanPerId, kodeUntuk, inkubatorUntuk]);
 
   const triggerDownload = useCallback((dataUrl, filename) => {
     const a = document.createElement("a");
@@ -219,7 +244,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     const out = [];
     for (const b of dipilih) {
       try {
-        out.push({ breeding: b, dataUrl: await renderLabelPng(b, sizeDef, urutanPerId.get(b.id) ?? null, kodeUntuk(b)) });
+        out.push({ breeding: b, dataUrl: await renderLabelPng(b, sizeDef, urutanPerId.get(b.id) ?? null, kodeUntuk(b), inkubatorUntuk(b)) });
       } catch {
         out.push({ breeding: b, dataUrl: null });
       }
@@ -249,7 +274,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
     setA4Generating(true);
     setA4Done(false);
     try {
-      const dataUrl = await renderA4SheetPng(dipilih, sizeDef, urutanPerId, nomorPerId);
+      const dataUrl = await renderA4SheetPng(dipilih, sizeDef, urutanPerId, nomorPerId, incubators);
       triggerDownload(dataUrl, `lembar-A4-label-telur-${sizeTag}-${format(new Date(), "ddMMyyyy")}.png`);
       setA4Done(true);
       setTimeout(() => setA4Done(false), 3500);
@@ -444,7 +469,7 @@ export default function EggLabelGenerator({ breedings = [], allActiveBreedings =
                     <p className="text-xs text-muted-foreground">{breeding.egg_count || 0} butir · {breeding.incubator_name || "—"}</p>
                     {isCandlingLate(breeding) && (
                       <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-0.5">
-                        <AlertTriangle className="w-3 h-3" /> Candling terlambat
+                        <AlertTriangle className="w-3 h-3" /> Teropong terlambat
                       </p>
                     )}
                   </div>

@@ -161,7 +161,7 @@ export default function EggHatchChart({ breedings = [] }) {
           {hitung.belumCek > 0 && belumCekPct >= 30 && (
             <NoteCard tone="tip" compact className="mt-3" icon={Info}>
               <b>{hitung.belumCek} butir ({belumCekPct}%)</b> belum pernah diperiksa.
-              Hatch rate di atas baru mewakili {checkedTotal} butir — periksa (candling)
+              Hatch rate di atas baru mewakili {checkedTotal} butir — periksa (teropong)
               sisanya agar angkanya bisa dipercaya.
             </NoteCard>
           )}
