@@ -169,6 +169,17 @@
  *                   terpecahkan di lingkup, dan nama di dalam tag JSX tidak
  *                   pernah jadi acuan semacam itu — dibuktikan dengan
  *                   berkas percobaan. Build pun tetap hijau
+ *   cek-suspense    <Outlet /> di luar batas <Suspense> → sejak halaman
+ *                   dipecah per rute, SETIAP halaman adalah React.lazy.
+ *                   AppLayout memberi batasnya, tetapi kiper dan kepala
+ *                   kiper tidak lewat jalur itu: mereka masuk GuidedLayout,
+ *                   dan di sana outletnya telanjang. Hasilnya, sejak 8 Nov
+ *                   2026 setiap layar kiper selain Beranda mati dengan
+ *                   "A component suspended while responding to synchronous
+ *                   input" — dilaporkan 19 Nov sebagai "aplikasinya di
+ *                   kiper tidak bisa dibuka". Dua jalur tata letak, satu
+ *                   diberi batas dan satu tidak: tak terlihat dari membaca
+ *                   salah satu berkasnya saja
  *   cek-jendela     jendela menetas dihitung sendiri di luar satu berkas
  *                   yang memegangnya → aturan "bertelur + 80 sampai +105
  *                   hari" sempat punya LIMA salinan, dua di antaranya
@@ -245,7 +256,7 @@ import { execFileSync } from "child_process";
 // kodenya SAH; tidak satu pun pernah MENJALANKANNYA. Penjaga baru ini merender
 // komponen layar kiper, dan pada hari pertama langsung menemukan tombol yang
 // melempar TypeError saat data user belum termuat.
-const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs", "cek-muat.mjs", "cek-menetas.mjs", "cek-induk.mjs", "cek-jsx.mjs", "cek-stempel.mjs", "cek-hariwib.mjs", "cek-jendela.mjs"];
+const PENJAGA = ["cek-impor.mjs", "cek-kolom-hantu.mjs", "cek-kolom-baca.mjs", "cek-fungsi.mjs", "cek-batch.mjs", "cek-timbang.mjs", "cek-kepatuhan.mjs", "cek-kembar.mjs", "cek-unggah.mjs", "cek-entitas.mjs", "cek-batas.mjs", "cek-laporan.mjs", "cek-render.mjs", "cek-keyakinan.mjs", "cek-pintu.mjs", "cek-temuan.mjs", "cek-modeuji.mjs", "cek-rupiah.mjs", "cek-gaji.mjs", "cek-ronda.mjs", "cek-lebar.mjs", "cek-boolean.mjs", "cek-tataletak.mjs", "cek-penjaga.mjs", "cek-label.mjs", "cek-foto.mjs", "cek-kunci.mjs", "cek-tautan.mjs", "cek-lipat.mjs", "cek-diam.mjs", "cek-sku.mjs", "cek-setuju.mjs", "cek-pencairan.mjs", "cek-kelamin.mjs", "cek-retak.mjs", "cek-berat.mjs", "cek-cakupan.mjs", "cek-zona.mjs", "cek-muat.mjs", "cek-menetas.mjs", "cek-induk.mjs", "cek-jsx.mjs", "cek-stempel.mjs", "cek-hariwib.mjs", "cek-jendela.mjs", "cek-suspense.mjs"];
 let gagal = 0;
 
 for (const p of PENJAGA) {

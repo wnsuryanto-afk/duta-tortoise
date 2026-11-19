@@ -9,7 +9,7 @@
  * FAB "+": 3 aksi cepat (Lapor Sakit, Catat Pakan, Tugas Hari Ini).
  * Profil/Poin/Keluar: via top-bar avatar.
  */
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Home, Salad, HeartPulse, BookOpen, Wallet, X, Star, User, LogOut, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -133,7 +133,48 @@ export default function GuidedLayout({ user, onSwitchToNormal }) {
 
       {/* ── Content ── */}
       <div className="flex-1 overflow-y-auto pb-28">
-        {isHome ? <GuidedHariIni user={user} /> : <Outlet />}
+        {/*
+          BATAS <Suspense> UNTUK LAYAR KIPER — 19 Nov 2026.
+
+          Sejak halaman dipecah per rute (App.jsx, 8 Nov 2026) setiap halaman
+          adalah React.lazy. AppLayout memberi batas Suspense di jalur
+          NORMAL, tapi kiper dan kepala kiper tidak lewat jalur itu: mereka
+          masuk ke GuidedLayout, dan <Outlet /> di sini telanjang.
+
+          Akibatnya, sejak 8 Nov setiap layar kiper selain Beranda mati:
+
+            "A component suspended while responding to synchronous input."
+
+          Beranda selamat hanya karena ia GuidedHariIni — satu-satunya isi di
+          sini yang diimpor statis, bukan lazy. Semua tujuan di bilah bawah
+          (Pakan, Panduan, Slip) dan setiap tautan ke halaman lain jatuh ke
+          layar "Terjadi Kesalahan". Dari sisi kiper: aplikasinya tidak bisa
+          dibuka.
+
+          Diukur ulang di peramban 19 Nov 2026 pada aplikasi terbit, memakai
+          "Lihat Sebagai" peran keeper: /sop, /breeding, /area/kura ketiganya
+          mati dengan galat React #426; sebagai owner ketiganya terbuka
+          normal.
+
+          Fallback-nya disamakan dengan jalur normal: pemutar di tengah isi,
+          sementara bilah bawah dan kepala layar tetap tergambar.
+
+          Penjaga scripts/cek-suspense.mjs menolak <Outlet /> yang tidak
+          berada di dalam <Suspense>.
+        */}
+        {isHome ? (
+          <GuidedHariIni user={user} />
+        ) : (
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-20" role="status" aria-label="Memuat halaman">
+                <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
+        )}
       </div>
 
       {/* ── Quick Action FAB ── */}
