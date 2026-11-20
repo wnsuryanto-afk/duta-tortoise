@@ -100,7 +100,27 @@ const AKAR = process.cwd();
   akan membuat satu kegagalan dilaporkan dua kali. Jadi penulisan itu
   dibayar dengan membereskan dua yang lain, bukan dengan menaikkan batas.
 */
-const BATAS = 194;
+/*
+  Turun 194 → 191 pada 20 Nov 2026, saat foto bukti SOP dibereskan.
+
+  Ketiganya ada di layar yang dipakai kiper tiap hari, dan ketiganya diam
+  total — penangkap galat yang badannya kosong:
+
+    TugasHariIni  simpan timbang & ukur   → dialog tetap terbuka, tanpa sebab
+    TugasHariIni  selesai timbang baby    → tidak ada tanda apa pun
+    TugasHariIni  catat pakan harian      → tidak ada tanda apa pun
+
+  Ketiganya sekarang mencatat galatnya dan memberi tahu kipernya. Tiga
+  penangkap diam lain di berkas yang sama (pembaca log, kuota inisiatif,
+  suplemen dilewati) juga ikut dibereskan, tetapi ketiganya bukan penulisan
+  entity sehingga tidak terhitung di angka ini.
+
+  Yang membuat ini ketahuan: 61 dari 110 tugas wajib foto antara 10–20 Nov
+  2026 tersimpan tanpa foto, dan tak satu pun meninggalkan jejak. Kegagalan
+  yang diam bukan kegagalan yang kecil — ia kegagalan yang baru ditemukan
+  sebelas hari kemudian, oleh orang yang poinnya sudah telanjur dipotong.
+*/
+const BATAS = 191;
 /*
   Turun 135 → 125 pada 29 Okt: seluruh kelompok KAS KECIL dibereskan sekaligus
   — pemakaian, top-up, permintaan top-up, rekonsiliasi, pencairan, dan

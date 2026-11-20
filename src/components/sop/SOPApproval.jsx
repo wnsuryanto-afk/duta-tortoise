@@ -2,6 +2,7 @@ import { persenKeyakinan } from "@/lib/keyakinanAI";
 import { hanyaLaporan } from "@/lib/laporan";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { lengkapiFotoDaftar } from "@/lib/fotoBuktiTugas";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Card } from "@/components/ui/card";
@@ -227,7 +228,26 @@ export default function SOPApproval() {
     Jumlah yang disembunyikan tetap ditulis di bawah. Menghilangkan baris tanpa
     jejak membuat orang mencari-cari sesuatu yang tidak akan ia temukan.
   */
-  const checklists = useMemo(() => hanyaLaporan(checklistMentah), [checklistMentah]);
+  /*
+    FOTO BUKTI DIBACA DARI DUA TEMPAT — lihat lib/fotoBuktiTugas.js.
+
+    Salinan foto di DailyChecklist hilang pada 61 dari 110 tugas wajib foto
+    antara 10–20 Nov 2026, sementara fotonya ada di MaintenanceLog. Layar ini
+    dulu hanya membaca salinannya, jadi ia memberi tahu penyetuju bahwa
+    kipernya tidak memfoto — padahal memfoto.
+
+    Log diambil untuk rentang yang sama dengan checklist yang sedang dibuka.
+  */
+  const { data: logFoto = [] } = useQuery({
+    queryKey: ["maintenance-log-foto-bukti"],
+    queryFn: () => base44.entities.MaintenanceLog.filter({ is_done: true }, "-period_key", 1500),
+    staleTime: 60 * 1000,
+  });
+
+  const checklists = useMemo(
+    () => lengkapiFotoDaftar(hanyaLaporan(checklistMentah), logFoto),
+    [checklistMentah, logFoto],
+  );
   const ujiDisembunyikan = checklistMentah.length - checklists.length;
   const pendingCount = useMemo(() => hanyaLaporan(pendingMentah).length, [pendingMentah]);
 
