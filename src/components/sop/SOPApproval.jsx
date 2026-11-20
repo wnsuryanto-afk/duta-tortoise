@@ -228,6 +228,8 @@ export default function SOPApproval() {
     Jumlah yang disembunyikan tetap ditulis di bawah. Menghilangkan baris tanpa
     jejak membuat orang mencari-cari sesuatu yang tidak akan ia temukan.
   */
+  const pendingCount = useMemo(() => hanyaLaporan(pendingMentah).length, [pendingMentah]);
+
   /*
     FOTO BUKTI DIBACA DARI DUA TEMPAT — lihat lib/fotoBuktiTugas.js.
 
@@ -249,7 +251,6 @@ export default function SOPApproval() {
     [checklistMentah, logFoto],
   );
   const ujiDisembunyikan = checklistMentah.length - checklists.length;
-  const pendingCount = useMemo(() => hanyaLaporan(pendingMentah).length, [pendingMentah]);
 
   const { data: sopTasksAll = [] } = useQuery({
     queryKey: ["sop-tasks-require-photo"],
