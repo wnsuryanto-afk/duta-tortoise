@@ -1712,8 +1712,16 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
             jadi fotonya memang masih bisa diambil. Yang hilang selama ini
             hanya pemberitahuannya. Ini pemberitahuan itu, dan ia berlaku
             untuk SEMUA tugas wajib foto, bukan hanya rempesan.
+
+            `isLocked` SENGAJA DIKELUARKAN. Percobaan pertama memasang strip
+            ini untuk `isChecked || isLocked`, dan diukur di peramban sebagai
+            Pak Angsolo: 6 strip muncul, padahal hari itu ia baru mengerjakan
+            2 tugas. Sisanya tugas yang dikerjakan rekannya — `photoUrl` di
+            sini dibaca dari log MILIK SENDIRI, jadi tugas orang lain selalu
+            terbaca "belum ada foto". Menyuruh orang memfoto pekerjaan yang
+            bukan miliknya adalah cara cepat membuat peringatan ini diabaikan.
           */}
-          {requirePhoto && (isChecked || isLocked) && !photoUrl && (
+          {requirePhoto && isChecked && !isLocked && !photoUrl && (
             <div className="mt-1.5 p-2 rounded-lg bg-red-50 border border-red-300 flex items-start gap-1.5">
               <Camera className="w-3.5 h-3.5 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-[11px] font-semibold text-red-700 leading-snug">
