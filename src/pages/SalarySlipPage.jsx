@@ -40,11 +40,13 @@ export default function SalarySlipPage() {
     queryFn: () => base44.entities.SalarySlip.list("-period", 200),
   });
 
-  const { data: users = [] } = useEmployeeUsers();
+  const isManagerRole = ["owner", "admin", "manajer"].includes(role);
+  // Kiper tidak boleh memanggil getDailyEmployees (403 by design) — lihat
+  // hooks/useEmployeeUsers.js. Jangan ketuk pintu yang pasti terkunci.
+  const { data: users = [] } = useEmployeeUsers(isManagerRole);
 
   const settings = useCompanySettings();
   const employees = users.filter(u => ["keeper", "kepala_feeder"].includes(u.role));
-  const isManagerRole = ["owner", "admin", "manajer"].includes(role);
   const isKeeperView = !isManagerRole;
 
   // Nama karyawan selalu di-resolve dari entity User berdasarkan email
@@ -53,8 +55,12 @@ export default function SalarySlipPage() {
   const nameByEmail = useMemo(() => {
     const m = {};
     users.forEach((u) => { if (u.email) m[u.email] = u.full_name || u.email; });
+    // Kiper hanya melihat slipnya sendiri dan tidak punya daftar karyawan,
+    // jadi namanya diambil dari sesinya sendiri — bukan dibiarkan jatuh ke
+    // alamat email di slip gajinya.
+    if (user?.email && !m[user.email]) m[user.email] = user.full_name || user.email;
     return m;
-  }, [users]);
+  }, [users, user]);
   const resolveName = (email, fallback) => nameByEmail[email] || fallback || email || "—";
 
   const periodLabelOf = (s) => {
