@@ -11,8 +11,9 @@
  *
  * Halaman ini HANYA membaca data. Tidak ada tombol yang mengubah apa pun.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { lengkapiFotoDaftar } from "@/lib/fotoBuktiTugas";
 import UbinAngka from "@/components/ui/ubin-angka";
 import { base44 } from "@/api/base44Client";
 import { poinDisetujui, poinDiklaim } from "@/lib/poinChecklist";
@@ -244,11 +245,25 @@ function KeeperCard({ checklist, attendance }) {
 export default function LayarTimPage() {
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
-  const { data: checklists = [], isLoading } = useQuery({
+  const { data: checklistMentah = [], isLoading } = useQuery({
     queryKey: ["layar-tim-checklist", date],
     queryFn: () => base44.entities.DailyChecklist.filter({ date }),
     staleTime: 60 * 1000,
   });
+
+  /*
+    Foto bukti dibaca dari DUA tempat — lihat lib/fotoBuktiTugas.js. Layar ini
+    menghitung "berapa tugas yang ada fotonya"; membaca salinan di checklist
+    saja membuatnya melaporkan kiper tidak memfoto padahal fotonya ada di
+    MaintenanceLog.
+  */
+  const { data: logFoto = [] } = useQuery({
+    queryKey: ["layar-tim-log-foto", date],
+    queryFn: () => base44.entities.MaintenanceLog.filter({ period_key: date, is_done: true }, "-done_at", 500),
+    staleTime: 60 * 1000,
+  });
+
+  const checklists = useMemo(() => lengkapiFotoDaftar(checklistMentah, logFoto), [checklistMentah, logFoto]);
 
   const { data: attendances = [] } = useQuery({
     queryKey: ["layar-tim-attendance", date],

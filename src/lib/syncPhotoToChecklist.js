@@ -24,9 +24,28 @@ export async function syncPhotoToChecklist({ employeeEmail, date, taskTitle, enc
     return true;
   };
 
-  if (await trySync()) return true;
-  await new Promise(r => setTimeout(r, 1000));
-  if (await trySync()) return true;
-  await new Promise(r => setTimeout(r, 1500));
-  return trySync();
+  /*
+    RENTANG COBA-ULANG — diperpanjang 20 Nov 2026, diukur dari data.
+
+    Baris yang ditambal di sini dibuat oleh automasi server
+    (onMaintenanceDone). Sampai ia selesai, `cariTugas` mengembalikan -1 dan
+    fotonya tidak punya tempat untuk ditempel.
+
+    Rentang lama 0 + 1,0 + 1,5 detik = menyerah setelah 2,5 detik, tanpa
+    suara. Antara 10–20 Nov 2026, 61 dari 110 tugas wajib foto berakhir tanpa
+    foto di checklist sementara fotonya ADA di MaintenanceLog — inilah salah
+    satu dari dua sebabnya (yang lain: lomba tulis dengan syncAIVerification,
+    diperbaiki di pemanggilnya).
+
+    Sekarang 0 + 1 + 2 + 4 + 8 detik = sampai 15 detik. Semuanya berjalan di
+    latar; kipernya tidak menunggu. Lima belas detik bukan jaminan, maka sisi
+    BACA tidak lagi bergantung pada salinan ini sama sekali — lihat
+    lib/fotoBuktiTugas.js.
+  */
+  const JEDA_MS = [0, 1000, 2000, 4000, 8000];
+  for (const jeda of JEDA_MS) {
+    if (jeda) await new Promise(r => setTimeout(r, jeda));
+    if (await trySync()) return true;
+  }
+  return false;
 }

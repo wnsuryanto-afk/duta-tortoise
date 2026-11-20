@@ -746,11 +746,21 @@ export default function GuidedHariIni({ user }) {
       refetchML();
       flashPoin(k, poinUbin(k));
       if (photoUrl) {
+        /*
+          TIDAK ditunggu di sini — sengaja. Rentang coba-ulangnya kini sampai
+          15 detik (lib/syncPhotoToChecklist.js) karena barisnya dibuat
+          automasi server, dan menahan ubin kandang selama itu membuat kiper
+          mengira aplikasinya menggantung.
+
+          Yang berubah: galatnya tidak lagi menjadi penolakan yang tak
+          tertangani, dan bila penyalinan ini gagal fotonya tetap terbaca —
+          sisi baca mengambilnya dari MaintenanceLog (lib/fotoBuktiTugas.js).
+        */
         syncPhotoToChecklist({
           employeeEmail: user.email, date: today,
           taskTitle: `Kebersihan ${k}`, enclosure: k,
           photoUrl, takenAt: nowStr(),
-        });
+        }).catch((e) => console.error("Gagal menyalin foto kandang ke checklist:", e));
       }
     } catch (err) {
       // Gagal simpan (sinyal buruk/error jaringan) → kembalikan ubin ke belum selesai + keterangan tertempel
@@ -850,10 +860,21 @@ export default function GuidedHariIni({ user }) {
       diagnosis_notes: diagNames,
       ...testModeTag,
     });
-    // Set is_currently_sick=true pada Tortoise
+    /*
+      Penanda "sedang sakit" pada Tortoise.
+
+      Dulu galatnya dibuang tanpa jejak sama sekali: catatan kesehatannya
+      tersimpan, penandanya tidak, dan kura itu tidak pernah muncul di daftar
+      sakit — tanpa satu pun jejak kenapa. Laporan kiper yang separuh
+      tersimpan lebih berbahaya daripada laporan yang gagal terang-terangan,
+      karena tidak ada yang tahu harus mengulanginya.
+    */
     try {
       await base44.entities.Tortoise.update(sakitForm.kura, perubahanSakit(kura, today));
-    } catch {}
+    } catch (e) {
+      console.error("Gagal menandai kura sedang sakit:", e);
+      showMsg("warn", "Laporan sakit tersimpan, tapi penanda 'sedang sakit' pada kuranya gagal disimpan — tolong beri tahu admin.");
+    }
     qc.invalidateQueries({ queryKey: ["health-records"] });
     qc.invalidateQueries({ queryKey: ["sick-tortoises-today"] });
     setSakitReports(p => [...p, kura?.name || sakitForm.kura]);
@@ -1805,7 +1826,11 @@ function WidgetSuplemen({ items, user, today, qc, flashPoin }) {
       });
       setSkipped(p => { const n = new Set(p); n.add(item.id); return n; });
       qc.invalidateQueries({ queryKey: ["suplemen-logs-today"] });
-    } catch {
+    } catch (e) {
+      // Tanda "dilewati" hanya dipasang pada keberhasilan, jadi barisnya tetap
+      // terlihat belum dikerjakan — kipernya tidak tertipu. Yang dulu hilang
+      // adalah SEBABNYA; sekarang galatnya tercatat.
+      console.error("Gagal mencatat suplemen dilewati:", e);
     } finally {
       setProcessingId(null);
     }

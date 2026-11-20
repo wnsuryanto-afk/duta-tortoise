@@ -632,7 +632,10 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         if (byOther) {
           return { type: "done", name: byOther.done_by || "karyawan lain", time: byOther.done_at || "" };
         }
-      } catch { /* jika query gagal, izinkan simpan */ }
+      } catch (e) {
+        // Query gagal bukan alasan memblokir simpan — tetapi tetap dicatat.
+        console.error("Gagal membaca log pengerja lain:", e);
+      }
     }
     return null;
   };
@@ -712,7 +715,7 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       const existing = myLogs.find(l => l.item_id === taskId);
       if (existing) {
         await base44.entities.MaintenanceLog.update(existing.id, { photo_url: file_url });
-        syncPhotoToChecklist({
+        await syncPhotoToChecklist({
           employeeEmail: user.email, date: today,
           taskTitle: existing.item_label, enclosure: existing.enclosure_name || "Tugas Harian",
           photoUrl: file_url, takenAt,
@@ -720,7 +723,13 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       }
       refetchLogs();
       markPhotoSaved(taskId);
-    } catch {}
+    } catch (e) {
+      // Foto tetap tersimpan di MaintenanceLog bila yang gagal hanya
+      // penyalinannya ke checklist — sisi baca sudah tidak bergantung pada
+      // salinan itu (lib/fotoBuktiTugas.js). Yang tidak boleh adalah DIAM:
+      // Menelan galatnya diam-diam di sini membuat 61 foto hilang tanpa jejak.
+      console.error("Gagal menyimpan foto bukti:", e);
+    }
     setUploadingPhotoId(null);
   };
 
@@ -729,12 +738,14 @@ export default function TugasHariIni({ user, showTeamView = false }) {
     if (!existing) return;
     try {
       await base44.entities.MaintenanceLog.update(existing.id, { notes: photoNotes });
-      syncPhotoToChecklist({
+      await syncPhotoToChecklist({
         employeeEmail: user.email, date: today,
         taskTitle: existing.item_label, enclosure: existing.enclosure_name || "Tugas Harian",
         photoNotes,
       });
-    } catch {}
+    } catch (e) {
+      console.error("Gagal menyimpan catatan foto:", e);
+    }
   };
 
   const handlePhotoCheck = async (task, file) => {
@@ -775,7 +786,22 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       refetchLogs();
       markPhotoSaved(task.id);
-      syncPhotoToChecklist({
+      /*
+        DITUNGGU, bukan ditembak lalu dilupakan — 20 Nov 2026.
+
+        Baris di bawah ini menjalankan AI Vision, dan AI itu menulis hasilnya
+        ke larik `completed_tasks` yang SAMA lewat syncAIVerification: baca
+        seluruh larik, tambal satu baris, tulis ulang semuanya. Bila ia
+        membaca sebelum foto ini tersimpan lalu menulis sesudahnya, fotonya
+        terhapus oleh hasil AI-nya sendiri.
+
+        Bukti lombanya ada di data: 10 dari 61 baris tanpa foto antara 10–20
+        Nov 2026 punya `ai_status: "selesai"`. AI hanya jalan kalau ada foto.
+
+        Menunggu di sini tidak menahan kipernya: tugasnya sudah tercentang dan
+        layarnya sudah berpindah; yang ditunggu hanya urutan dua penulis.
+      */
+      await syncPhotoToChecklist({
         employeeEmail: user.email, date: today,
         taskTitle: task.label, enclosure: "Tugas Harian",
         photoUrl: file_url, takenAt,
@@ -886,8 +912,12 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       setCheckedIds(p => { const n = new Set(p); n.add(task.id); return n; });
       refetchLogs();
       setUkurTarget(null);
-    } catch {
-      // error — biarkan dialog terbuka, user bisa retry
+    } catch (e) {
+      // Dialognya sengaja dibiarkan terbuka supaya bisa diulang — tetapi
+      // kipernya harus DIBERI TAHU. Gagal yang diam membuat orang mengira
+      // timbangannya sudah tercatat padahal tidak.
+      console.error("Gagal menyimpan timbang & ukur:", e);
+      toast.error("Gagal menyimpan timbangan — cek sinyal, lalu simpan lagi.");
     } finally {
       setSavingId(null);
     }
@@ -925,7 +955,9 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       setTimbangBabyTask(null);
       qc.invalidateQueries({ queryKey: ["tortoises-timbang-reminder"] });
       qc.invalidateQueries({ queryKey: ["tortoises-lineage"] });
-    } catch {
+    } catch (e) {
+      console.error("Gagal menyelesaikan timbang baby:", e);
+      toast.error("Gagal menyimpan — cek sinyal, lalu coba lagi.");
     } finally {
       setSavingId(null);
     }
@@ -971,7 +1003,17 @@ export default function TugasHariIni({ user, showTeamView = false }) {
       setPakanTask(null);
       qc.invalidateQueries({ queryKey: ["pakan-harian-today"] });
       qc.invalidateQueries({ queryKey: ["pakan-harian-list"] });
-    } catch {
+      /*
+        Tugas catat-pakan yang JUGA wajib foto: fotonya belum diambil, karena
+        tombol kameranya tadi membuka formulir ini. Sekarang tugasnya sudah
+        tercentang, jadi tombol kamera yang sama akan membuka kamera.
+      */
+      if (task?.require_photo) {
+        toast.info("Angka pakan tersimpan. Sekarang foto buktinya — ketuk tombol kamera di baris tugas ini.", { duration: 8000 });
+      }
+    } catch (e) {
+      console.error("Gagal mencatat pakan harian:", e);
+      toast.error("Gagal menyimpan catatan pakan — cek sinyal, lalu coba lagi.");
     } finally {
       setSavingId(null);
     }
@@ -1033,9 +1075,11 @@ export default function TugasHariIni({ user, showTeamView = false }) {
         done_by_email: log.done_by_email,
         period_key: log.period_key,
       });
-    } catch {
+    } catch (e) {
       // Gagal mengambil yang segar bukan alasan menggagalkan penilaian; yang
       // ada di layar tetap lebih baik daripada tidak menilai sama sekali.
+      // Tetap dicatat: diam total membuat kuota yang salah hitung tak terlacak.
+      console.error("Gagal mengambil log segar untuk kuota inisiatif:", e);
     }
 
     /*
@@ -1650,6 +1694,32 @@ function TaskRow({ task, idx, isChecked, lockedInfo, isAbsensi, isSaving, attend
             <div className="mt-1.5 p-2 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-1.5 animate-fade-in">
               <Clock className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
               <p className="text-[11px] font-medium text-blue-700 leading-snug">{notice.text}</p>
+            </div>
+          )}
+
+          {/*
+            FOTO BELUM DIAMBIL — menetap di kartu, bukan sekilas.
+
+            Dipasang 20 Nov 2026. Tugas bertanda wajib foto bisa berakhir
+            tercentang tanpa foto lewat beberapa jalan — yang terbanyak:
+            "Cuci rumput / sayuran rempesan (pagi)", yang tombol kameranya
+            sengaja membuka formulir catat pakan lebih dulu, sehingga
+            fotonya tidak pernah diminta. Enam hari berturut tugas itu
+            tersimpan tanpa foto, lalu poinnya dipotong di layar
+            persetujuan karena "tidak ada foto".
+
+            Sesudah tercentang, tombol kameranya TIDAK lagi dialihkan —
+            jadi fotonya memang masih bisa diambil. Yang hilang selama ini
+            hanya pemberitahuannya. Ini pemberitahuan itu, dan ia berlaku
+            untuk SEMUA tugas wajib foto, bukan hanya rempesan.
+          */}
+          {requirePhoto && (isChecked || isLocked) && !photoUrl && (
+            <div className="mt-1.5 p-2 rounded-lg bg-red-50 border border-red-300 flex items-start gap-1.5">
+              <Camera className="w-3.5 h-3.5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] font-semibold text-red-700 leading-snug">
+                Foto belum diambil — tugas ini wajib foto. Ketuk tombol kamera di kanan sekarang,
+                sebelum poinnya dinilai.
+              </p>
             </div>
           )}
 
